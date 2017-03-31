@@ -1,0 +1,34 @@
+// 插件
+apply plugin: 'java' 
+apply plugin: 'maven'  
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+
+// 项目配置
+version = '0.0.1'
+archivesBaseName = 'analytics-proxy'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+// 仓库
+repositories {
+	//mavenCentral()
+	maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
+}
+
+// 依赖
+def nettyVersion = '4.1.9.Final'
+dependencies {
+	testCompile (
+	)
+	compile (
+		// netty
+		[group: 'io.netty', name: 'netty-all', version: nettyVersion],
+		// log4j
+		[group: 'log4j', name: 'log4j', version: '1.2.17'],
+	)
+}
+
+configurations {
+}

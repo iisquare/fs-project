@@ -1,1 +1,5 @@
 /analytics/dest
+/demo/analytics-proxy/.project
+/demo/analytics-proxy/.gradle
+/demo/analytics-proxy/.settings
+/demo/analytics-proxy/.classpath
