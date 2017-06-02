@@ -265,6 +265,7 @@ public class DPUtil {
 		if(empty(string)) {
 			return new String[]{};
 		}
+		if("\\".equals(splitRegex)) splitRegex = "\\\\";
 		for (String str : string.split(splitRegex)) {
 			if(filterEmpty && empty(str)) continue ;
 			if(null != trimStr) {

@@ -39,5 +39,5 @@ dependencies {
     )
 }
 // 项目设置
-eclipse.project.name = 'jw-frame'
+eclipse.project.name = 'etl-visual'
 war.baseName = eclipse.project.name

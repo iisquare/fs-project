@@ -4,3 +4,9 @@
 /demo/analytics-proxy/.settings
 /demo/analytics-proxy/.classpath
 /.idea
+/code/.classpath
+/code/.project
+/code/.gradle
+/code/.settings
+/code/bin
+/code/build
