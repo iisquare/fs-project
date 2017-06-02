@@ -36,6 +36,10 @@
     </servlet>
 
     <servlet-mapping>
+        <servlet-name>default</servlet-name>
+        <url-pattern>/statics/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
         <servlet-name>ApplicationServlet</servlet-name>
         <url-pattern>/*</url-pattern>
     </servlet-mapping>
