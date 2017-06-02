@@ -1,8 +1,6 @@
 package com.iisquare.jwframe.mvc;
 
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -187,8 +185,7 @@ public abstract class ControllerBase {
 	protected Object displayTemplate(String fileUri, Object dataModel) throws Exception {
 		Template template = webApplicationContext.getBean(FreeMarkerConfigurer.class).getConfiguration()
 				.getTemplate(moduleName + "/" + fileUri + webApplicationContext.getBean(Configuration.class).getTemplateSuffix());
-		Writer out = new OutputStreamWriter(response.getOutputStream());
-		template.process(dataModel, out);
+		template.process(dataModel, response.getWriter());
 		return null;
 	}
 	
