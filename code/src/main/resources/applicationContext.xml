@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-4.2.xsd"
+	default-lazy-init="true">
+        
+    <context:component-scan base-package="com.iisquare.jwframe.dao" />
+    <context:component-scan base-package="com.iisquare.jwframe.service" />
+    <context:component-scan base-package="com.iisquare.jwframe.*.controller"
+        name-generator="com.iisquare.jwframe.mvc.BeanNameGenerator" />
+
+    <bean id="initializer" class="com.iisquare.jwframe.core.Initializer" lazy-init="false"></bean>
+
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:application.properties</value>
+                <value>classpath:freemarker.properties</value>
+            </list>
+        </property>
+    </bean>
+    
+    <bean id="configuration" class="com.iisquare.jwframe.Configuration">
+        <property name="controllerNamePath" value="${application.controllerNamePath}" />
+        <property name="characterEncoding" value="${application.characterEncoding}" />
+        <property name="contentType" value="${application.contentType}" />
+        <property name="defaultControllerName" value="${application.defaultControllerName}" />
+        <property name="defaultActionName" value="${application.defaultActionName}" />
+        <property name="defaultErrorController" value="${application.defaultErrorController}" />
+        <property name="defaultErrorAction" value="${application.defaultErrorAction}" />
+        <property name="defaultControllerSuffix" value="${application.defaultControllerSuffix}" />
+        <property name="defaultActionSuffix" value="${application.defaultActionSuffix}" />
+        <property name="allowPathParams" value="${application.allowPathParams}" />
+        <property name="templateLoaderPath" value="${application.templateLoaderPath}" />
+        <property name="templateSuffix" value="${application.templateSuffix}" />
+        <property name="locale" value="${application.locale}" />
+        <property name="dateTimeFormat" value="${application.dateTimeFormat}" />
+    </bean>
+ 
+    <bean id="freeMarkerConfigurer" class="com.iisquare.jwframe.freemarker.FreeMarkerConfigurer">
+        <property name="applicationConfiguration" ref="configuration" />
+    </bean>
+ 
+    <bean id="dbConnectionManager" class="com.iisquare.jwframe.database.ConnectionManager"
+        factory-method="getInstance" scope="singleton" destroy-method="release" />
+        
+    <bean id="dbMySQLConnectorManager"
+        class="com.iisquare.jwframe.database.MySQLConnectorManager" scope="request" destroy-method="release">
+        <constructor-arg>
+            <ref bean="dbConnectionManager" />
+        </constructor-arg>
+    </bean>
+ 
+ 	<bean class="com.iisquare.jwframe.freemarker.FreemarkerTemplateManager" lazy-init="false">
+		<property name="freeMarkerConfigurer" ref="freeMarkerConfigurer" />
+	</bean>
+ 
+</beans>

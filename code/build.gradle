@@ -1,0 +1,43 @@
+// 插件
+apply plugin: 'maven'  
+apply plugin: 'war'  
+apply plugin: 'eclipse-wtp'
+apply plugin: 'idea'
+// 源码目录
+sourceSets {
+    main {
+        java {
+            srcDir 'frame'
+            srcDir 'core'
+            srcDir 'model'
+        }
+    }
+}
+// 仓库
+repositories {
+    mavenCentral()
+}
+// 依赖
+def springVersion = '4.2.7.RELEASE'
+dependencies {
+    providedRuntime ( // 不会打包进war
+    )
+    compile (
+        // J2EE
+        [group: 'javax.servlet', name: 'javax.servlet-api', version: '3.1.0'],
+        [group: 'jstl', name: 'jstl', version: '1.2'],
+        // Spring
+        [group: 'org.springframework', name: 'spring-web', version: springVersion],
+        // JSON
+        [group: 'net.sf.json-lib', name: 'json-lib-ext-spring', version: '1.0.2'],
+        // View
+        [group: 'org.freemarker', name: 'freemarker', version: '2.3.23'],
+        // Log
+        [group: 'log4j', name: 'log4j', version: '1.2.17'],
+        // MySQL
+        [group: 'mysql', name: 'mysql-connector-java', version: '5.1.39']
+    )
+}
+// 项目设置
+eclipse.project.name = 'jw-frame'
+war.baseName = eclipse.project.name
