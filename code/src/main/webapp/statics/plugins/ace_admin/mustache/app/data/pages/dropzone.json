@@ -1,0 +1,9 @@
+{
+ "title" : "Dropzone.js"
+ ,
+ "description" : "Drag & drop file upload with image preview"
+ ,
+ "scripts" : ["dropzone"]
+ ,
+ "styles" : ["dropzone"]
+}

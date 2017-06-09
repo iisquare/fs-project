@@ -1,0 +1,16 @@
+<!-- basic scripts -->
+{{> layout._template.jquery}}
+{{> layout._template.bootstrap}}
+
+
+<!-- ace scripts -->
+{{^site.development}}{{! in production mode use ace-elements.js and ace.js script file }}
+ <script src="{{{path.assets}}}/js/ace-elements{{{path.minified}}}.js"></script>
+ <script src="{{{path.assets}}}/js/ace{{{path.minified}}}.js"></script>
+{{/site.development}}
+
+{{#site.development}}{{! in development mode use separate script files }}
+ {{#site.ace_scripts}}
+  <script src="{{{path.assets}}}/js/src/{{{.}}}"></script>
+ {{/site.ace_scripts}}
+{{/site.development}}

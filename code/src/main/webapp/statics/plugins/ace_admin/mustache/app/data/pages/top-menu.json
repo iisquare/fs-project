@@ -1,0 +1,15 @@
+{
+ "title" : "Top Menu Style"
+ ,
+ "description" : "top menu & navigation"
+ ,
+ "horizontal-menu" : true
+ ,
+ "top_menu" : true
+ ,
+ "side_menu_collapsible" : true
+ ,
+ "user_menu_collapsible" : true
+ ,
+ "no-breadcrumbs" : true
+}

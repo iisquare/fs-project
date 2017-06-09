@@ -1,0 +1,31 @@
+<div class="dialogs" ace-scroll options="{'size': 300}">
+	<div ng-repeat="item in ::getData('conversations')" class="itemdiv dialogdiv">
+		<div class="user">
+			<img alt="{{item.name}}'s Avatar" ng-src="{{ace.path.assets}}/avatars/{{item.avatar}}" />
+		</div>
+
+		<div class="body">
+			<div class="time"><i class="ace-icon fa fa-clock-o"></i> <span class="{{item['time-color']}}" ng-bind="item.time"></span></div>
+			<div class="name">
+				<a href="" ng-bind="item.name"></a>
+				<span ng-if="item.admin" class="label label-info arrowed arrowed-in-right">admin</span>
+			</div>
+			<div class="text" ng-bind="item.message"></div>
+			
+			<div class="tools">
+				<button type="button" class="btn btn-minier btn-info"><i class="icon-only ace-icon fa fa-share"></i></button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<form>
+ <div class="form-actions">
+	<div class="input-group">
+		<input placeholder="Type your message here ..." type="text" class="form-control" name="message" />
+		<span class="input-group-btn">
+			<button class="btn btn-sm btn-info no-radius" type="button"><i class="ace-icon fa fa-share"></i> Send</button>
+		</span>
+	</div>
+  </div>
+</form>

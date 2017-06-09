@@ -1,0 +1,55 @@
+<div class="row">
+{{#treat_as_comment___remove}}
+<!--
+	You can uncomment the following for another style of inbox menus.
+	Just make sure the next ".col-xs-12" becomes ".col-xs-10" or something.
+	And you should also remove tabs, etc and just keep ".message-container" element.
+-->
+
+<!--
+  <div class="col-xs-2 inbox-menu">
+	<div class="center">
+		<a href="#" class="btn btn-purple btn-new-mail">
+			<i class="ace-icon fa fa-envelope"></i>
+			Write Mail
+		</a>
+	</div>
+	<div class="space-6"></div>
+	{{> page.folders}}
+  </div>
+
+  <div class="vspace-8-xs"></div>
+-->
+{{/treat_as_comment___remove}}
+
+ <div class="col-xs-12">
+
+  <!-- #section:pages/inbox -->
+  <div class="tabbable">
+	{{> page.tabs}}
+
+	<div class="tab-content no-border no-padding">
+
+	 <div id="inbox" class="tab-pane in active">
+		<div class="message-container">
+		 {{> page.navbar}}
+
+		 <div class="message-list-container">
+		  {{> page.message_list}}
+		 </div>
+
+		 {{> page.message_footer}}
+		</div>
+	 </div>
+
+	</div><!-- /.tab-content -->
+  </div><!-- /.tabbable -->
+  <!-- /section:pages/inbox -->
+
+ </div><!-- /.col -->
+</div><!-- /.row -->
+
+
+{{> page.message_form}}
+
+{{> page.message_content}}

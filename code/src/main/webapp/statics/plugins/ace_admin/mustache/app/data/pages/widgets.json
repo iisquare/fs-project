@@ -1,0 +1,9 @@
+{
+ "title" : "Widgets"
+ ,
+ "description" : "Draggabble Widget Boxes with Persistent Position and State"
+ ,
+ "styles" : ["jquery-ui"]
+ ,
+ "scripts" : ["jquery-ui"]
+}

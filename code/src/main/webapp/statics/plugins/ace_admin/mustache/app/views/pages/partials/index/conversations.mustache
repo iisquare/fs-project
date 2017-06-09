@@ -1,0 +1,37 @@
+<!-- #section:pages/dashboard.conversations -->
+<div class="dialogs">
+	{{#page.conversations}}
+	<div class="itemdiv dialogdiv">
+		<div class="user">
+			<img alt="{{name}}'s Avatar" src="{{path.assets}}/avatars/{{avatar}}" />
+		</div>
+
+		<div class="body">
+			<div class="time"><i class="ace-icon fa fa-clock-o"></i> <span class="{{time-color}}">{{time}}</span></div>
+			<div class="name">
+				<a href="#">{{name}}</a>
+				{{#admin}}
+				<span class="label label-info arrowed arrowed-in-right">admin</span>
+				{{/admin}}
+			</div>
+			<div class="text">{{message}}</div>
+			
+			<div class="tools">
+				<a href="#" class="btn btn-minier btn-info"><i class="icon-only ace-icon fa fa-share"></i></a>
+			</div>
+		</div>
+	</div>
+	{{/page.conversations}}
+</div>
+<!-- /section:pages/dashboard.conversations -->
+
+<form>
+ <div class="form-actions">
+	<div class="input-group">
+		<input placeholder="Type your message here ..." type="text" class="form-control" name="message" />
+		<span class="input-group-btn">
+			<button class="btn btn-sm btn-info no-radius" type="button"><i class="ace-icon fa fa-share"></i> Send</button>
+		</span>
+	</div>
+  </div>
+</form>

@@ -1,0 +1,17 @@
+{
+ "development" : true,
+
+ "version" : "1.4",
+ "title" : "Ace Admin",
+ "brand_text" : "Ace Admin",
+ "brand_icon" : "fa fa-leaf",
+
+ "remote_jquery" : false,
+ "remote_fonts" : false,
+ "remote_bootstrap_js" : false,
+ "remote_fontawesome" : false,
+
+ "demo": false,
+
+ "onpage_help" : true
+}

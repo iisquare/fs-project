@@ -1,0 +1,197 @@
+<div class="page-header">
+	<h1>Dashboard <small><i class="ace-icon fa fa-angle-double-right"></i> overview &amp; stats</small></h1>
+</div>
+
+<div class="row"><div class="col-xs-12">
+
+ <uib-alert type="success" close="alert.close()" ng-if="alert.shown">
+	<i class="ace-icon fa fa-check green"></i> Welcome to <strong class="green">Ace <small>(v<span ng-bind="::ace.site.version"></span>)</small></strong>,
+	the lightweight, feature-rich and easy to use admin template.
+ </uib-alert>
+
+
+ <div class="row">
+  <div class="space-6"></div>
+
+  <div class="col-sm-7 infobox-container">
+	<div ng-repeat="box in ::getData('stats1')" ng-include="'views/pages/partial/dashboard/infobox.html'" ng-class="['infobox', 'infobox-'+box.color, box.small ? 'infobox-small': '', box.dark ? 'infobox-dark': '']">
+	</div>
+	<div class="space-6"></div>
+	<div ng-repeat="box in ::getData('stats2')" ng-include="'views/pages/partial/dashboard/infobox.html'" ng-class="['infobox', 'infobox-'+box.color, box.small ? 'infobox-small': '', box.dark ? 'infobox-dark': '']">
+	</div>
+  </div>
+
+  <div class="vspace-12-sm"></div>
+
+  <div class="col-sm-5">
+   	<div class="widget-box">
+		<div class="widget-header widget-header-flat widget-header-small">
+			<h5 class="widget-title"><i class="ace-icon fa fa-signal"></i> Traffic Sources</h5>
+			<div class="widget-toolbar no-border">
+			 <div class="inline dropdown-hover">
+				<button class="btn btn-minier btn-primary">
+					This Week <i class="ace-icon fa fa-angle-down icon-on-right bigger-110"></i>
+				</button>
+				<ul class="dropdown-menu dropdown-menu-right dropdown-125 dropdown-lighter dropdown-close dropdown-caret">
+					<li class="active">
+						<a href="" class="blue">
+							<i class="ace-icon fa fa-caret-right bigger-110">&nbsp;</i> This Week
+						</a>
+					</li>
+					<li><a href=""><i class="ace-icon fa fa-caret-right bigger-110 invisible">&nbsp;</i> Last Week</a></li>
+					<li><a href=""><i class="ace-icon fa fa-caret-right bigger-110 invisible">&nbsp;</i> This Month</a></li>
+					<li><a href=""><i class="ace-icon fa fa-caret-right bigger-110 invisible">&nbsp;</i> Last Month</a></li>
+				</ul>
+			 </div>
+			</div>
+		</div>
+		
+		<div class="widget-body">
+		 <div class="widget-main">
+			<flot id="piechart-placeholder" dataset="piechart.data" options="piechart.options" width="90%" height="150px"></flot>
+			
+			<div class="hr hr8 hr-double"></div>
+			
+			<div class="clearfix">
+				<div class="grid3">
+					<span class="grey"><i class="ace-icon fa fa-facebook-square fa-2x blue"></i> &nbsp; likes</span>
+					<h4 class="bigger pull-right">1,255</h4>
+				</div>
+				
+				<div class="grid3">
+					<span class="grey"><i class="ace-icon fa fa-twitter-square fa-2x purple"></i> &nbsp; tweets</span>
+					<h4 class="bigger pull-right">941</h4>
+				</div>
+				
+				<div class="grid3">
+					<span class="grey"><i class="ace-icon fa fa-pinterest-square fa-2x red"></i> &nbsp; pins</span>
+					<h4 class="bigger pull-right">1,050</h4>
+				</div>
+			</div>
+		 </div><!-- /.widget-main -->
+		</div><!-- /.widget-body -->
+	</div><!-- /.widget-box -->
+  </div>
+ </div>
+
+
+ <div class="hr hr32 hr-dotted"></div>
+
+
+ <div class="row">
+
+	<div class="col-sm-5">
+		<div widget-box class="widget-box transparent">
+			<div class="widget-header widget-header-flat">
+				<h4 class="widget-title lighter">
+					<i class="ace-icon fa fa-star orange"></i>
+					Popular Domains
+				</h4>
+				<div class="widget-toolbar">
+					<a href="" data-action="collapse">
+						<i class="ace-icon fa fa-chevron-up"></i>
+					</a>
+				</div>
+			</div>
+
+			<div class="widget-body">
+			 <div class="widget-main no-padding">
+				<div ng-include="'views/pages/partial/dashboard/domains.html'"></div>
+			 </div><!-- /.widget-main -->
+			</div><!-- /.widget-body -->
+		</div><!-- /.widget-box -->
+	</div><!-- /.col -->
+
+
+	<div class="col-sm-7">
+	  <div widget-box class="widget-box transparent">
+		<div class="widget-header widget-header-flat">
+			<h4 class="widget-title lighter"><i class="ace-icon fa fa-signal"></i> Sale Stats</h4>
+			<div class="widget-toolbar">
+				<a href="" data-action="collapse"><i class="ace-icon fa fa-chevron-up"></i></a>
+			</div>
+		</div>
+		
+		<div class="widget-body">
+		 <div class="widget-main padding-4">
+			<flot id="sales-charts" dataset="saleschart.data" options="saleschart.options" width="100%" height="220px"></flot>
+		 </div><!-- /.widget-main -->
+		</div><!-- /.widget-body -->
+	  </div><!-- /.widget-box -->
+	</div><!-- /.col -->
+
+ </div><!-- /.row -->
+
+
+
+ <div class="hr hr32 hr-dotted"></div>
+
+
+
+ <div class="row">
+
+  <div class="col-sm-6">
+	<div class="widget-box transparent" id="recent-box">
+		
+		<div class="widget-header">
+			<h4 class="widget-title lighter smaller"><i class="ace-icon fa fa-rss orange"></i>RECENT</h4>
+			<div class="widget-toolbar no-border">
+				<uib-tabset id="recent-tab-list" ng-show="tabShown">
+					<uib-tab select="setActiveTab(0)" heading="Tasks"></uib-tab>
+					<uib-tab select="setActiveTab(1)" heading="Members"></uib-tab>
+					<uib-tab select="setActiveTab(2)" heading="Comments"></uib-tab>
+				</uib-tabset>
+			</div>
+		</div>
+
+		<div class="widget-body">
+		 <div class="widget-main padding-4">
+			<uib-tabset id="recent-tab-pane" ng-show="tabShown">
+				<uib-tab active="activeTab == 0">
+					<h4 class="smaller lighter green">
+						<i class="ace-icon fa fa-list"></i>
+						Sortable Lists
+					</h4>
+					
+					<div ng-include="'views/pages/partial/dashboard/tasks.html'"></div>
+				</uib-tab>
+				<uib-tab active="activeTab == 1">
+					<ng-include src="'views/pages/partial/dashboard/members.html'"></ng-include>
+				</uib-tab>
+				<uib-tab active="activeTab == 2">
+					<ng-include src="'views/pages/partial/dashboard/comments.html'"></ng-include>
+				</uib-tab>
+			</uib-tabset>
+		 </div><!-- /.widget-main -->
+		</div><!-- /.widget-body -->
+
+
+	</div><!-- /.widget-box -->
+  </div><!-- /.col -->
+ 
+  <div class="col-sm-6">
+	<div class="widget-box ">
+		
+		<div class="widget-header">
+			<h4 class="widget-title lighter smaller">
+				<i class="ace-icon fa fa-comment blue"></i>
+				Conversation
+			</h4>
+		</div>
+		
+		<div class="widget-body">
+		 <div class="widget-main no-padding" ng-include="'views/pages/partial/dashboard/conversations.html'">
+		 </div><!-- /.widget-main -->
+		</div><!-- /.widget-body -->
+		
+	</div><!-- /.widget-box -->
+  </div><!-- /.col -->
+
+ </div><!-- /.row -->
+
+
+</div></div>
+
+
+
+

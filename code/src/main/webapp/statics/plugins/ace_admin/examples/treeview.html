@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Treeview Example</title>
+
+		<link rel="stylesheet" href="../assets/css/bootstrap.css" />
+		<link rel="stylesheet" href="../components/font-awesome/css/font-awesome.css" />
+		
+		<!-- fonts -->
+		<link rel="stylesheet" href="../assets/css/ace-fonts.css" />
+		
+		
+		<link rel="stylesheet" href="../assets/css/ace.css" />
+		<!--[if lte IE 9]>
+		  <link rel="stylesheet" href="../assets/css/ace-ie.css" />
+		<![endif]-->
+	</head>
+
+	<body>
+	 <div class="main-container">
+	  <div class="page-content">
+	  <div class="row">
+
+		<div class="center" style="width:400px; margin:12px;">
+			<div class="widget-box align-left transparent">
+				<div class="widget-header">
+					<h4 class="lighter smaller">Tree element loading data from server <br /> pre-selecting some items randomly</h4>
+				</div>
+
+				<div class="widget-body">
+				 <div class="widget-main padding-8">
+					<div id="treeview" class="tree"></div>
+					<div class="hr"></div>
+					<button id="submit-button" type="button" class="btn btn-sm btn-primary pull-right">
+						<i class="ace-icon fa fa-check"></i>
+						Submit
+					</button>
+				 </div>
+				</div>
+			 </div>
+		</div>
+
+		</div>
+		
+		
+		
+		<div id="modal-tree-items" class="modal" tabindex="-1">
+		 <div class="modal-dialog">
+		  <div class="modal-content">
+
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal">&times;</button>
+				<h4 class="blue bigger">Treeview selection</h4>
+			</div>
+			
+			<div class="modal-body">
+				<div class="row-fluid">
+					 Content can be put inside a hidden input and sent to server
+				</div>
+				
+				<div class="space-6"></div>
+				
+				<div class="row-fluid">
+					<textarea spellcheck="false" id="tree-value"></textarea>
+				</div>
+			</div>
+			
+			<div class="modal-footer">
+				<button class="btn btn-sm" data-dismiss="modal"><i class="ace-icon fa fa-times"></i> Cancel</button>
+				<button class="btn btn-sm btn-primary"><i class="ace-icon fa fa-check"></i> OK</button>
+			</div>
+
+		  </div>
+		 </div>
+		</div>
+		
+	  </div>
+	 </div>
+
+
+		<!-- basic scripts -->
+		<!--[if !IE]> -->
+		<script src="../components/jquery/dist/jquery.js"></script>
+		<!-- <![endif]-->
+		<!--[if IE]>
+		<script src="../components/jquery.1x/dist/jquery.js"></script>
+		<![endif]-->
+		
+		
+		<script src="../components/bootstrap/dist/js/bootstrap.js"></script>
+		
+		<script src="../components/_mod/fuelux/tree.js"></script>
+		
+		<!-- ace scripts -->
+		<script src="../assets/js/ace-elements.js"></script>
+		<script src="../assets/js/ace.js"></script>
+		
+		<script type="text/javascript">
+			$(function() {
+				//construct the data source object to be used by tree
+				var remoteUrl = 'treeview.php';
+				
+				var remoteDateSource = function(options, callback) {
+					var parent_id = null
+					if( !('text' in options || 'type' in options) ){
+						parent_id = 0;//load first level data
+					}
+					else if('type' in options && options['type'] == 'folder') {//it has children
+						if('additionalParameters' in options && 'children' in options.additionalParameters)
+							parent_id = options.additionalParameters['id']
+					}
+					
+					if(parent_id !== null) {
+						$.ajax({
+							url: remoteUrl,
+							data: 'id='+parent_id,
+							type: 'POST',
+							dataType: 'json',
+							success : function(response) {
+								if(response.status == "OK")
+									callback({ data: response.data })
+							},
+							error: function(response) {
+								//console.log(response);
+							}
+						})
+					}
+				}
+
+				$('#treeview').ace_tree({
+					dataSource: remoteDateSource ,
+					multiSelect: true,
+					loadingHTML: '<div class="tree-loading"><i class="ace-icon fa fa-refresh fa-spin blue"></i></div>',
+					'open-icon' : 'ace-icon tree-minus',
+					'close-icon' : 'ace-icon tree-plus',
+					'selectable' : true,
+					'selected-icon' : 'ace-icon fa fa-check',
+					'unselected-icon' : 'ace-icon fa fa-times',
+					cacheItems: true,
+					folderSelect: false
+				});
+				
+				
+				//show selected items inside a modal
+				$('#submit-button').on('click', function() {
+					var output = '';
+					var items = $('#treeview').tree('selectedItems');
+					for(var i in items) if (items.hasOwnProperty(i)) {
+						var item = items[i];
+						output += item.additionalParameters['id'] + ":"+ item.text+"\n";
+					}
+					
+					$('#modal-tree-items').modal('show');
+					$('#tree-value').css({'width':'98%', 'height':'200px'}).val(output);
+				
+				});
+				
+				
+				if(location.protocol == 'file:') alert("For retrieving data from server, you should access this page using a webserver.");
+			});
+		</script>
+
+	</body>
+</html>

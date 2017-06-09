@@ -1,0 +1,195 @@
+<div class="row search-page" id="search-page-1">
+ <div class="col-xs-12">
+
+	<div class="row">
+		<div class="col-xs-12 col-sm-3">
+			<!-- #section:pages/search.well -->
+			<div class="search-area well well-sm">
+				<div class="search-filter-header bg-primary">
+					<h5 class="smaller no-margin-bottom"><i class="ace-icon fa fa-sliders light-green bigger-130"></i>&nbsp; Refine your Search</h5>
+				</div>
+
+				<div class="space-10"></div>
+				<form>
+					<div class="row">
+					 <div class="col-xs-12 col-sm-11 col-md-10">
+						<div class="input-group">
+							<input type="text" class="form-control" name="keywords" placeholder="Look within results" />
+							<div class="input-group-btn">
+								<button type="button" class="btn btn-default no-border btn-sm">
+									<i class="ace-icon fa fa-search icon-on-right bigger-110"></i>
+								</button>
+							</div>
+						</div>
+					 </div>
+					</div>
+				</form>
+				
+				<div class="hr hr-dotted"></div>
+				
+				<h4 class="blue smaller">
+					<i class="fa fa-tags"></i> Category
+				</h4>
+				
+				<!-- #section:plugins/fuelux.treeview -->
+				<div class="tree-container">
+					<ul id="cat-tree"></ul>
+				</div>
+				<!-- /section:plugins/fuelux.treeview -->
+				
+				<div class="hr hr-dotted"></div>
+				
+				<!-- #section:plugins/input.select2 -->
+				<h4 class="blue smaller">
+					<i class="fa fa-map-marker light-orange bigger-110"></i> Location
+				</h4>
+				<div>
+				  <select multiple name="state" class="select2 tag-input-style" data-placeholder="Click to Choose...">
+					<option value="">&nbsp;</option>
+					{{#page.states}}
+					 <option value='{{abbr}}'>{{name}}</option>
+					{{/page.states}}
+				  </select>
+				</div>
+				<!-- /section:plugins/input.select2 -->
+				
+				<div class="hr hr-dotted"></div>
+				
+				<!-- #section:plugins/jquery.slider -->
+				<h4 class="blue smaller">
+					<i class="fa fa-location-arrow light-grey bigger-110"></i> Distance
+				</h4>
+				<div class="search-filter-element">
+					<span>within</span>&nbsp; <div id="slider-range" class="inline"></div> &nbsp;<span>miles</span>
+				</div>
+				<!-- /section:plugins/jquery.slider -->
+				
+				<div class="hr hr-dotted hr-24"></div>
+
+				<div class="text-center">
+					<button type="button" class="btn btn-default btn-round btn-sm btn-white"><i class="ace-icon fa fa-remove red2"></i> Reset</button>
+					<button type="button" class="btn btn-default btn-round btn-white"><i class="ace-icon fa fa-refresh green"></i> Update</button>
+				</div>
+				<div class="space-4"></div>
+			</div>
+			<!-- /section:pages/search.well -->
+		</div>
+
+		<div class="col-xs-12 col-sm-9">
+			<div class="row">
+				<div class="search-area well col-xs-12">
+					<div class="pull-left">
+						<b class="text-primary">Display</b> &nbsp;
+						<div id="toggle-result-format" class="btn-group btn-overlap" data-toggle="buttons">
+							<label title="Thumbnail view" class="btn btn-lg btn-white btn-success active" data-class="btn-success"  aria-pressed="true">
+								<input type="radio" value="2" autocomplete="off" />
+								<i class="icon-only ace-icon fa fa-th"></i>
+							</label>
+							<label title="List view" class="btn btn-lg btn-white btn-grey" data-class="btn-primary">
+								<input type="radio" value="1" checked autocomplete="off" />
+								<i class="icon-only ace-icon fa fa-list"></i>
+							</label>								
+							<label title="Map view" class="btn btn-lg btn-white btn-grey" data-class="btn-warning">
+								<input type="radio" value="3" autocomplete="off" />
+								<i class="icon-only ace-icon fa fa-crosshairs"></i>
+							</label>
+						</div>
+					</div>
+					
+					<div class="pull-right">
+						<b class="text-primary">Order</b> &nbsp;
+						<select>
+							<option>Relevance</option>
+							<option>Newest First</option>
+							<option>Rating</option>
+						</select>
+					</div>
+				</div>
+			</div>
+		
+
+			<div class="row">
+			  {{#page.results_1.thumbnails}}
+			  <div class="col-xs-6 col-sm-4 col-md-3">
+				<!-- #section:pages/search.thumb -->
+				<div class="thumbnail search-thumbnail">
+				  {{#sponsored}}
+				   <span class="search-promotion label label-success arrowed-in arrowed-in-right">Sponsored</span>
+				  {{/sponsored}}
+				  <img class="media-object" data-src="{{img}}" />
+				  <div class="caption">
+					<div class="clearfix">
+						<span class="pull-right label label-grey info-label">{{city}}</span>
+						
+						{{#rating}}
+						<div class="pull-left bigger-110">
+							<i class="ace-icon fa fa-star orange2"></i>
+							<i class="ace-icon fa fa-star orange2"></i>
+							<i class="ace-icon fa fa-star orange2"></i>
+							<i class="ace-icon fa fa-star-half-o orange2"></i>
+							<i class="ace-icon fa fa-star light-grey"></i>
+						</div>
+						{{/rating}}
+					</div>
+					<h3 class="search-title"><a href="#" class="blue">{{title}}</a></h3>
+					
+					<p>{{content}}</p>
+				  </div>
+				</div>
+				<!-- /section:pages/search.thumb -->
+			  </div>
+			  {{/page.results_1.thumbnails}}
+			</div>
+			
+			<div class="space-12"></div>
+			
+			<div class="row">
+			 <div class="col-xs-12">
+				
+				{{#page.results_1.media}}
+				<!-- #section:pages/search.media -->
+				<div class="media search-media {{^available}}disabled{{/available}}">
+				  <div class="media-left">
+					<a href="#">
+					  <img class="media-object" data-src="{{img}}" />
+					</a>
+				  </div>
+				  <div class="media-body">
+					<div>
+						<h4 class="media-heading"><a href="#" class="blue">{{title}}</a></h4>
+					</div>
+					<p>{{content}}</p>
+					
+					<!-- #section:pages/search.media.buttons -->
+					<div class="search-actions text-center">
+						{{#available}}
+						<span class="text-info">$</span><span class="blue bolder bigger-150">{{price}}</span> monthly
+						{{/available}}
+						{{^available}}						
+						<span class="grey">$</span><span class="grey bolder bigger-125">{{price}}</span> monthly
+						{{/available}}
+						<div class="action-buttons bigger-125">
+							<a href="#"><i class="ace-icon fa fa-phone green"></i></a>
+							<a href="#"><i class="ace-icon fa fa-heart red"></i></a>
+							<a href="#"><i class="ace-icon fa fa-star orange2"></i></a>
+						</div>
+						{{#available}}
+						 <a class="search-btn-action btn btn-sm btn-block btn-info">Book it!</a>
+						{{/available}}
+						{{^available}}
+						 <a class="search-btn-action btn btn-sm btn-block btn-grey disabled">Unavailable!</a>
+						{{/available}}
+					</div>
+					<!-- /section:pages/search.media.buttons -->
+				  </div>
+				</div>
+				<!-- /section:pages/search.media -->
+				{{/page.results_1.media}}
+				
+			 </div>
+			</div>
+		</div>
+	</div>
+	 
+ </div>
+</div>

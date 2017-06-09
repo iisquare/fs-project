@@ -1,0 +1,38 @@
+[
+ {
+ "name" : "Alexa",
+ "avatar" : "avatar1.png",
+ "time" : "4 sec",
+ "time-color" : "green",
+ "message" : "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque commodo massa sed ipsum porttitor facilisis."
+ } ,
+ {
+ "name" : "John",
+ "avatar" : "avatar.png",
+ "time" : "38 sec",
+ "time-color" : "blue",
+ "message" : "Raw denim you probably haven't heard of them jean shorts Austin."
+ } ,
+ {
+ "name" : "Bob",
+ "avatar" : "user.jpg",
+ "admin" : true,
+ "time" : "2 min",
+ "time-color" : "orange",
+ "message" : "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque commodo massa sed ipsum porttitor facilisis."
+ } ,
+ {
+ "name" : "Jim",
+ "avatar" : "avatar4.png",
+ "time" : "3 min",
+ "time-color" : "grey",
+ "message" : "Raw denim you probably haven't heard of them jean shorts Austin."
+ } ,
+ {
+ "name" : "Alexa",
+ "avatar" : "avatar1.png",
+ "time" : "4 min",
+ "time-color" : "green",
+ "message" : "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+ }
+]

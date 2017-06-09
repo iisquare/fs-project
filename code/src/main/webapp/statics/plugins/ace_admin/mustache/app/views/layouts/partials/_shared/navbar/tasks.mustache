@@ -1,0 +1,37 @@
+<li class="grey dropdown-modal">
+	<a data-toggle="dropdown" class="dropdown-toggle" href="#">
+		<i class="ace-icon fa fa-tasks"></i>
+		<span class="badge badge-grey">{{layout.navbar_tasks.count}}</span>
+	</a>
+
+	<ul class="dropdown-menu-right dropdown-navbar dropdown-menu dropdown-caret dropdown-close">
+		<li class="dropdown-header">
+			<i class="ace-icon fa fa-check"></i> {{layout.navbar_tasks.count}} Tasks to complete
+		</li>
+
+		<li class="dropdown-content">
+			<ul class="dropdown-menu dropdown-navbar">
+				{{#layout.navbar_tasks.latest}}
+				<li>
+					<a href="#">
+						<div class="clearfix">
+							<span class="pull-left">{{title}}</span>
+							<span class="pull-right">{{percentage}}%</span>
+						</div>
+						<div class="progress progress-mini {{progress-class}}">
+							<div style="width:{{percentage}}%" class="progress-bar {{progress-bar-class}}"></div>
+						</div>
+					</a>
+				</li>
+				{{/layout.navbar_tasks.latest}}
+			</ul>
+		</li>
+
+		<li class="dropdown-footer">
+			<a href="#">
+				See tasks with details
+				<i class="ace-icon fa fa-arrow-right"></i>
+			</a>
+		</li>
+	</ul>
+</li>

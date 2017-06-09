@@ -1,0 +1,113 @@
+[
+   	 { "link" :"index", "title" : "Dashboard", "icon" : "fa fa-tachometer" } ,
+	 {
+	  "link" : null, "title" : "UI & Elements" , "icon" : "fa fa-desktop",
+	  "submenu" :
+	  [
+	   { "link" : null , "title" : "Layouts" ,
+		  "submenu" :
+		  [
+			{ "link" : "top-menu" , "title" : "Top Menu" , "icon" : "fa fa-caret-right" } ,
+			{ "link" : "two-menu-1" , "title" : "Two Menus 1" , "icon" : "fa fa-caret-right" } ,
+			{ "link" : "two-menu-2" , "title" : "Two Menus 2" , "icon" : "fa fa-caret-right" } ,
+			{ "link" : "mobile-menu-1" , "title" : "Default Mobile Menu" , "icon" : "fa fa-caret-right" } ,
+			{ "link" : "mobile-menu-2" , "title" : "Mobile Menu 2" , "icon" : "fa fa-caret-right" } ,
+			{ "link" : "mobile-menu-3" , "title" : "Mobile Menu 3" , "icon" : "fa fa-caret-right" } 
+		  ]
+		} ,
+		
+		{ "link" : "typography", "title" : "Typography" } ,
+	   
+		{ "link" : "elements" , "title" : "Elements" } ,
+
+		{ "link" : "buttons" , "title" : "Buttons & Icons" } ,
+		
+		{ "link" : "content-slider", "title" : "Content Sliders" } ,
+
+		{ "link" : "treeview" , "title" : "Treeview" } ,
+		
+		{ "link" : "jquery-ui" , "title" : "jQuery UI" } ,
+		
+		{ "link" : "nestable-list" , "title" : "Nestable Lists" } ,
+		
+		{ "link" : null , "title" : "Three Level Menu" ,
+		  "submenu" : 
+		  [
+			{ "link" : null , "title" : "Item #1" , "icon" : "fa fa-leaf green" } ,
+			{ "link" : null , "title" : "4th level" , "icon" : "fa fa-pencil orange" ,
+				"submenu" : 
+				  [
+					{ "link" : null , "title" : "Add Product" , "icon" : "fa fa-plus purple" } ,
+					{ "link" : null , "title" : "View Products" , "icon" : "fa fa-eye pink" }
+				  ]
+			}
+		  ]
+		}
+	  ]
+	 } ,
+	 
+	 {
+	  "link" : null , "title" : "Tables" , "icon" : "fa fa-list",
+	  "submenu" :
+	  [
+		{ "link" : "tables" , "title" : "Simple & Dynamic" } ,
+		{ "link" : "jqgrid" , "title" : "jqGrid plugin" }
+	  ]
+	 } ,
+
+	 {
+	  "link" : null, "title" : "Forms" , "icon" : "fa fa-pencil-square-o",
+	  "submenu" :
+	  [
+		{ "link" : "form-elements" , "title" : "Form Elements" } ,
+		{ "link" : "form-elements-2" , "title" : "Form Elements 2" } ,
+		{ "link" : "form-wizard" , "title" : "Wizard & Validation" },
+		{ "link" : "wysiwyg" , "title" : "Wysiwyg & Markdown" },
+		{ "link" : "dropzone" , "title" : "Dropzone File Upload" }
+	  ]
+	 } ,
+
+     { "link" : "widgets" , "title" : "Widgets" , "icon" : "fa fa-list-alt" } ,
+	
+     { "link" : "calendar" , "title" : "Calendar" , "icon" : "fa fa-calendar", "badge" : "<i class='ace-icon fa fa-exclamation-triangle red bigger-130'></i>", "badge-class":"badge-transparent", "tooltip" : "2 Important Events" , "tooltip-class":"tooltip-error"} ,
+	
+	 { "link" : "gallery" , "title" : "Gallery" , "icon" : "fa fa-picture-o" },
+	 
+	 {
+	  "link" : null, "title" : "More Pages" , "icon" : "fa fa-tag",
+	  "submenu" :
+	  [
+		{ "link" : "profile" , "title" : "User Profile" } ,
+
+		{ "link" : "inbox" , "title" : "Inbox" } ,
+
+		{ "link" : "pricing" , "title" : "Pricing Tables" } ,
+
+		{ "link" : "invoice" , "title" : "Invoice" } ,
+		
+		{ "link" : "timeline" , "title" : "Timeline" } ,
+		
+		{ "link" : "search" , "title" : "Search Results" } ,
+		
+		{ "link" : "email" , "title" : "Email Templates" } ,
+
+		{ "link" : "login" , "title" : "Login & Register" }
+	   ]
+	 } ,
+	
+	 {
+	  "link" : null, "title" : "Other Pages" , "icon" : "fa fa-file-o", "badge" : "5", "badge-class":"badge-primary",
+	  "submenu" :
+	  [
+		{ "link" : "faq" , "title" : "FAQ" } ,
+		
+		{ "link" : "error-404" , "title" : "Error 404" } ,
+		
+		{ "link" : "error-500" , "title" : "Error 500" } ,
+		
+		{ "link" : "grid" , "title" : "Grid" } ,
+		
+		{ "link" : "blank" , "title" : "Blank Page" }
+	  ]
+	 }
+]

@@ -1,0 +1,7 @@
+{
+ "title" : "More Elements"
+ ,
+ "styles" : ["duallistbox", "multiselect", "select2"]
+ ,
+ "scripts" : ["duallistbox", "raty", "multiselect", "select2" , "typeahead"]
+}

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Widget Events Example</title>
+		
+		<link rel="stylesheet" href="../assets/css/bootstrap.css" />
+		<link rel="stylesheet" href="../components/font-awesome/css/font-awesome.css" />
+		
+		<!-- fonts -->
+		<link rel="stylesheet" href="../assets/css/ace-fonts.css" />
+		
+		
+		<link rel="stylesheet" href="../assets/css/ace.css" />
+		<!--[if lte IE 9]>
+		  <link rel="stylesheet" href="../assets/css/ace-ie.css" />
+		<![endif]-->
+	</head>
+
+	<body>
+	 <div class="main-container">
+	   <div class="page-content">
+	 
+		<div class="row">
+			<div class="col-xs-12 col-sm-8 col-sm-offset-2">
+				<h3 class="header blue lighter">
+					Widget Events
+				</h3>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-12 col-sm-8 col-sm-offset-2">
+				
+				<div class="widget-box" id="my-widget-box">
+					<div class="widget-header">
+						<h5 class="widget-title">Default Widget Box</h5>
+						<div class="widget-toolbar">
+							<a data-action="settings" href="#"><i class="ace-icon fa fa-cog"></i></a>
+							<a data-action="reload" href="#"><i class="ace-icon fa fa-refresh"></i></a>
+							<a data-action="collapse" href="#"><i class="ace-icon fa fa-chevron-up"></i></a>
+							<a data-action="close" href="#"><i class="ace-icon fa fa-times"></i></a>
+						</div>
+					</div>
+
+					<div class="widget-body">
+					 <div class="widget-main">
+						<p class="alert alert-info">
+							Nunc aliquam enim ut arcu aliquet adipiscing. Fusce dignissim volutpat justo non consectetur. Nulla fringilla eleifend consectetur.
+						</p>
+					 </div>
+					</div>
+				</div>
+				<hr />
+					<a id="id-widget-hide" class="btn btn-link">Hide</a>
+					<a id="id-widget-show" class="btn btn-link">Show</a>
+					<a id="id-widget-close" class="btn btn-link">Close</a>
+					<a id="id-widget-reload" class="btn btn-link">Reload</a>
+				<hr />
+				<textarea id="log-event" style="width:100%; height:300px;"></textarea>
+				
+			</div>
+		</div>
+
+
+	   </div>
+	 </div>
+
+
+		<!-- basic scripts -->
+		<!--[if !IE]> -->
+		<script src="../components/jquery/dist/jquery.js"></script>
+		<!-- <![endif]-->
+		<!--[if IE]>
+		<script src="../components/jquery.1x/dist/jquery.js"></script>
+		<![endif]-->
+		
+		
+		<script src="../components/bootstrap/dist/js/bootstrap.js"></script>
+		
+		<!-- ace scripts -->
+		<script src="../assets/js/ace.js"></script>
+		
+		<script type="text/javascript">
+			jQuery(function($) {
+				function log_event(txt) {
+					var area = $('#log-event');
+					area.val(area.val() + txt + "\n");
+					area.get(0).scrollTop = area.get(0).scrollHeight;
+				}
+				$('#log-event').val('');
+				
+				$('#my-widget-box').on(
+				{
+					'hide.ace.widget' : function(e) {
+						//e.preventDefault();//to prevent hiding
+						log_event('\nhide.ace.widget called before being hidden');
+					},
+					'hidden.ace.widget' : function(e) {
+						log_event('hidden.ace.widget called after widget is hidden');
+					},
+					
+					'show.ace.widget' : function(e) {
+						//e.preventDefault();//to prevent showing
+						log_event('\nshow.ace.widget called before being shown');
+					},
+					'shown.ace.widget' : function(e) {
+						log_event('shown.ace.widget called after widget is shown');
+					},
+					
+					'close.ace.widget' : function(e) {
+						//e.preventDefault();//to prevent closing
+						log_event('\nclose.ace.widget called before being closed');
+					},
+					'closed.ace.widget' : function(e) {
+						log_event('closed.ace.widget called almost when widget is closed');
+					},
+					
+					'reload.ace.widget' : function(e) {
+						//e.preventDefault();//to prevent reloading
+						log_event('\nreload.ace.widget called before reloading widget');
+
+						e.stopPropagation();//stop propagating to the event defined in ace.js which you should remove altogether
+
+						var $box = $(this);
+						setTimeout(function() {
+							$box.trigger('reloaded.ace.widget');
+						}, parseInt(Math.random() * 500 + 500));
+		
+					},
+					'reloaded.ace.widget' : function(e) {
+						log_event('reloaded.ace.widget called after reloading widget');
+					},
+					
+					'setting.ace.widget' : function(e) {
+						log_event('\nsetting.ace.widget called when setting button is clicked');
+					}
+				
+				});
+				
+				$('#id-widget-hide').on('click', function(e) {
+					$('#my-widget-box')
+					.trigger('hide.ace.widget')
+					.widget_box('hide');
+				});
+				$('#id-widget-show').on('click', function(e) {
+					$('#my-widget-box')
+					.trigger('show.ace.widget')
+					.widget_box('show');
+				});
+				$('#id-widget-close').on('click', function(e) {
+					$('#my-widget-box')
+					.trigger('close.ace.widget')
+					.widget_box('close');
+				});
+				$('#id-widget-reload').on('click', function(e) {
+					$('#my-widget-box')
+					.trigger('reload.ace.widget')
+					.widget_box('reload');
+				});
+			});
+		</script>
+
+	</body>
+</html>

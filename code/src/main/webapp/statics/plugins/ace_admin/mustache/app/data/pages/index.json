@@ -1,0 +1,9 @@
+{
+ "title" : "Dashboard"
+ ,
+ "description" : "overview & stats"
+ ,
+ "scripts" : ["jquery-ui", "easy-pie-chart" , "sparkline" , "flot" , "flot.pie" , "flot.resize"]
+ ,
+ "ie_scripts" : [{"version":8, "name":"excanvas"}]
+}

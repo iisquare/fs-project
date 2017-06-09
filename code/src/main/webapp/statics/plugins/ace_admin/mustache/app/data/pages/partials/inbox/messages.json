@@ -1,0 +1,68 @@
+[
+  {
+	"sender" : "Alex John Red Smith",
+	"time" : "1:33 pm",
+	"subject" : "Click to open this message",
+	"starred" : true,
+	"unread" : true
+  } ,
+  {
+	"sender" : "John Doe",
+	"count" : 4,
+	"time" : "7:15 pm",
+	"subject" : "Clik to open this message right here",
+	"tag" : "pink",
+	"attachment" : true,
+	"unread" : true
+  } ,
+  {
+	"sender" : "Philip Markov",
+	"time" : "10:15 am",
+	"subject" : "Photo booth beard raw denim letterpress vegan",
+	"attachment" : true,
+	"flags": true, "replied" : true
+  } ,
+  {
+	"sender" : "Sabrina",
+	"time" : "Yesterday",
+	"subject" : "Nullam quis risus eget urna mollis ornare",
+	"starred" : true
+  } ,
+  {
+	"sender" : "Philip Markov",
+	"time" : "Yesterday",
+	"subject" : "Vestibulum id ligula porta felis euismod",
+	"tag" : "success",
+	"attachment" : true
+  } ,
+  {
+	"sender" : "Doctor Gomenz",
+	"time" : "April 5",
+	"subject" : "Vim te vivendo convenire, summo fuisset"
+  } ,
+  {
+	"sender" : "Robin Hood",
+	"time" : "April 4",
+	"subject" : "No eos veniam equidem mentitum, his porro",
+	"flags": true, "replied" : true
+  } ,
+  {
+	"sender" : "Google Inc",
+	"time" : "April 3",
+	"subject" : "Convallis facilisis euismod urna sodales",
+	"tag" : "grey"
+  } ,
+  {
+	"sender" : "Shrek",
+	"time" : "March 28",
+	"subject" : "Photo booth beard raw denim letterpress vegan messenger",
+	"attachment" : true,
+	"flags": true, "flag" : true
+  } ,
+  {
+	"sender" : "Yahoo!",
+	"time" : "March 27",
+	"subject" : "Tofu biodiesel williamsburg marfa, four loko mcsweeney",
+	"flags": true, "forwarded" : true
+  }
+]

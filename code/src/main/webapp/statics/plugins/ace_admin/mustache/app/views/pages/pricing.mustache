@@ -1,0 +1,44 @@
+<div class="row">
+	<!-- #section:pages/pricing.large -->
+	{{#page.packages-large}}
+	{{> page.package-large}}
+	{{/page.packages-large}}
+	<!-- /section:pages/pricing.large -->
+</div>
+
+
+<div class="space-24"></div>
+
+
+<h3 class="header smaller red">Small Style</h3>
+<div class="row">
+	<!-- #section:pages/pricing.small-header -->
+	<div class="col-xs-4 col-sm-3 pricing-span-header">
+		<div class="widget-box transparent">
+			<div class="widget-header">
+				<h5 class="widget-title bigger lighter">Package Name</h5>
+			</div>
+			<div class="widget-body">
+			 <div class="widget-main no-padding">
+				<ul class="list-unstyled list-striped pricing-table-header">
+					<li>Disk Space </li>
+					<li>Bandwidth </li>
+					<li>Email Accounts </li>
+					<li>MySQL Databases </li>
+					<li>Ad Credit </li>
+					<li>Free Domain </li>
+				</ul>
+			 </div>
+			</div>
+		</div>
+	</div>
+	<!-- /section:pages/pricing.small-header -->
+
+	<!-- #section:pages/pricing.small-body -->
+	<div class="col-xs-8 col-sm-9 pricing-span-body">
+	{{#page.packages-small}}
+	{{> page.package-small}}
+	{{/page.packages-small}}
+	</div>
+	<!-- /section:pages/pricing.small-body -->
+</div>

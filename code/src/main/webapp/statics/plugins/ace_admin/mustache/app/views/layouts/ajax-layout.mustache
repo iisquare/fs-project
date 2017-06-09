@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+		<meta charset="utf-8" />
+
+		<title>Welcome - {{site.title}}</title>	
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+		
+		{{> layout._template.styles}}{{! there are also some scripts as well }}
+	</head>
+
+	<body class="no-skin">
+	{{> layout.navbar}}
+
+		<div class="main-container" id="main-container">
+		 <script type="text/javascript">
+		 try{ace.settings.check('main-container' , 'fixed')}catch(e){}
+		 </script>
+
+		 {{> layout.sidebar}}
+
+			<div class="main-content"><div class="main-content-inner">
+				{{> layout.breadcrumbs}}
+
+				<div class="page-content">
+					{{> layout.settings}}
+
+				   <div class="page-content-area" data-ajax-content="true">
+						<!-- ajax content goes here -->
+				   </div><!-- /.page-content-area -->
+
+				</div><!-- /.page-content -->
+			</div></div><!-- /.main-content -->
+			
+			{{> layout.footer}}
+
+
+			<a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
+				<i class="ace-icon fa fa-angle-double-up icon-only bigger-110"></i>
+			</a>
+		</div><!-- /.main-container -->
+
+		{{> layout._template.scripts}}
+	</body>
+</html>

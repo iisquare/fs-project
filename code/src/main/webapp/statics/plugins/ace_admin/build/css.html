@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+	
+	<title>CSS builder for Ace admin template</title>
+
+	<link href="../assets/css/bootstrap.css" rel="stylesheet" />
+	<link href="files/style.css" rel="stylesheet" />
+	<script>
+	 if( typeof document.createElement("A").download === 'undefined' || !(window.URL || window.webkitURL) ) {
+		alert("Please use a modern browser such as Firefox or Chrome!");
+	 }
+	</script>
+	
+	<script src="../assets/js/ace-extra.js"></script>
+   </head>
+   
+   <body style="display: block !important;">
+   <div class="navbar-fixed-top">
+	<div class="container" style="position: relative;">
+		<a href="javascript:void(0)" class="btn btn-default" id="btn-build-css">Generate</a>
+		&nbsp;
+		<a href="javascript:void(0)" class="btn btn-info hide" id="btn-launch-modal"  data-toggle="modal" data-target="#modal-save-dialog">
+			<i class="glyphicon glyphicon-save"></i>
+		</a>
+		<div class="hide" style="position: absolute; top: 12px; left: 32px;">
+			<select name="selection-list" id="selection-list" class="form-control pull-left" style="width: auto; margin-right: 2px;">
+				<option value="">Restore a selection</option>
+			</select>
+			<button type="button" class="hide btn btn-danger pull-left">&times;</button>
+		</div>
+	 </div>
+	</div>
+
+
+    <div class="container">
+	    <script>
+		 if(document.location.protocol == 'file:') {
+			document.write('<div class="alert alert-danger">\
+			<strong>Please open this page using <span class="text-info">`http` protocol</span>, i.e. access it like this <span class="text-primary">http://127.0.0.1/path/to/ace/build/css.html</span></strong><br />\
+			Demo pages, documentation & CSS/JS builder pages, load data dynamically using ajax and <b>`file` protocol</b> prevents that due to browser restrictions.\<br />\
+			Also some browsers such as Firefox don\'t load fonts when resource files are inside an upper level directory.\
+			</div>');
+		 }
+		</script>
+	
+		<div class="row">
+			<div class="col-xs-12" id="page-content">
+				<div class="alert alert-info">
+					You can use this custom CSS builder to build a custom CSS file for your application.
+					<p>
+					If you enable a plugin, you still need to include its original CSS in your app if there is one.
+				</div>	
+			</div>
+		</div>
+	</div>
+
+
+	<!-- Output CSS dialog -->
+	<div class="modal fade" id="modal-save-dialog">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+			<h4 class="modal-title text-primary">Save CSS output</h4>
+		  </div>
+
+		  <div class="modal-body">
+			<div>
+				<label style="font-weight: normal;">Specify a name for this selection: &nbsp;</label>
+				<input type="text" name="selection-name" id="selection-name" class="form-control" style="width: 200px; display: inline;" />
+				<button type="button" class="btn btn-primary btn-sm" id="btn-save-selection">Save for later</button>
+			</div>
+			
+			<hr />
+			
+			<div id="save-buttons" class="well well-sm clearfix">
+				<div class="pull-left" style="position: relative;">
+					<a href="#" class="btn btn-success dropdown-toggle" data-toggle="dropdown">Click to select and save a file</a>
+					<ul class="dropdown-menu dropdown-filelist">
+						<li><a class="clearfix" href="javascript:void(0)" id="btn-save-ace"><span class="pull-left">Ace CSS</span></a></li>
+						<li><a class="clearfix" href="javascript:void(0)" id="btn-save-ace-part2"><span class="pull-left">Ace CSS Part 2</span></a></li>
+						<li class="separator"><hr /></li>
+						<li><a class="clearfix" href="javascript:void(0)" id="btn-save-bootstrap"><span class="pull-left">Bootstrap</span></a></li>
+						<li class="separator"><hr /></li>
+						<li><a class="clearfix" href="javascript:void(0)" id="btn-save-ace-skins"><span class="pull-left">Ace Skins</span></a></li>
+						<li><a class="clearfix" href="javascript:void(0)" id="btn-save-ace-rtl"><span class="pull-left">Ace RTL</span></a></li>
+					</ul>
+				</div>
+				
+				<div class="pull-right" style="position: relative;">
+					<a href="#" class="btn btn-info dropdown-toggle" data-toggle="dropdown">Click to save minified version</a>
+					<ul class="dropdown-menu dropdown-filelist">
+						<li><a class="clearfix" href="javascript:void(0)" data-id="btn-save-ace"><span class="pull-left">Ace CSS</span></a></li>
+						<li><a class="clearfix" href="javascript:void(0)" data-id="btn-save-ace-part2"><span class="pull-left">Ace CSS Part 2</span></a></li>
+						<li class="separator"><hr /></li>
+						<li><a class="clearfix" href="javascript:void(0)" data-id="btn-save-bootstrap"><span class="pull-left">Bootstrap</span></a></li>
+						<li class="separator"><hr /></li>
+						<li><a class="clearfix" href="javascript:void(0)" data-id="btn-save-ace-skins"><span class="pull-left">Ace Skins</span></a></li>
+						<li><a class="clearfix" href="javascript:void(0)" data-id="btn-save-ace-rtl"><span class="pull-left">Ace RTL</span></a></li>
+					</ul>
+				</div>
+			</div>
+			
+			<div class="hide" id="modal-ie-alert">
+				<div class="alert alert-info">
+					<p>
+						<b class="text-warning"><i class="glyphicon glyphicon-hand-right"></i> Internet Explorer Note:</b>
+						<br />
+						Current CSS selector count exceeds limitations of <strong><em>IE9</em></strong> & below.
+						<code id="id-selector-limit"></code>
+					</p>
+					<p>
+						Therefore the extra part should be saved and included as a separate CSS file.
+					</p>
+					
+					<p>
+						Please save it and use the following IE conditional comment to include it:
+					</p>
+					<p>
+			<pre>&lt;link rel=&quot;stylesheet&quot; href=&quot;path/to/<span class="text-primary">ace<span class="ie-alert-min"></span>.css</span>&quot; /&gt;
+<span class="text-success">&lt;!--[if lte IE 9]&gt;
+ &lt;link rel=&quot;stylesheet&quot; href=&quot;path/to/<span class="text-danger">ace-part2<span class="ie-alert-min"></span>.css</span>&quot; /&gt;
+&lt;![endif]--&gt;</span></pre>
+				</p>
+
+				<p>
+					<i class="glyphicon glyphicon-hand-right"></i> 
+					Read about this IE limitation
+					<a href="http://support.microsoft.com/kb/262161" target="_blank" class="text-info">
+						<b>here</b>
+					</a>
+					and
+					<a href="http://blogs.msdn.com/b/ieinternals/archive/2011/05/14/10164546.aspx" target="_blank" class="text-info">
+						<b>here</b>
+					</a>
+				</p>
+
+		     </div>
+			</div>
+		  </div>
+		  
+		  <div class="modal-footer">
+			<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+		  </div>
+		</div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal#modal-save-dialog -->
+
+
+
+	<script src="../components/jquery/dist/jquery.js" type="text/javascript"></script>
+	<script src="../components/bootstrap/dist/js/bootstrap.js" type="text/javascript"></script>
+	<script src="../components/less/dist/less.js" type="text/javascript"></script>
+	<script src="lib/cleancss-browser.js" type="text/javascript"></script>
+
+	<script src="files/css-builder.js" type="text/javascript"></script>
+	<script src="files/css-strip-media.js" type="text/javascript"></script>
+	<script src="files/fix-ie.js" type="text/javascript"></script>
+	<script src="files/ace-rtl.js" type="text/javascript"></script>
+   </body>
+</html>

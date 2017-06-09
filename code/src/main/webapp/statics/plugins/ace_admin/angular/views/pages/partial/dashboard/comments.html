@@ -1,0 +1,38 @@
+<div class="comments" ace-scroll options="{'size': 300}">
+	<div ng-repeat="item in ::getData('comments')" class="itemdiv commentdiv">
+		<div class="user">
+			<img alt="{{item.name}}'s Avatar" ng-src="{{ace.path.assets}}/avatars/{{item.avatar}}" />
+		</div>
+		
+		<div class="body">
+			<div class="name"><a href="" ng-bind="item.name"></a></div>
+			<div class="time"><i class="ace-icon fa fa-clock-o"></i> <span class="{{item['time-color']}}" ng-bind="item.time"></span></div>
+			<div class="text">
+				<i class="ace-icon fa fa-quote-left"></i> <span ng-bind="item.comment"></span> &hellip;
+			</div>
+		</div>
+		
+		<div class="tools">
+			<div ng-if="item.menu" class="inline pos-rel" uib-dropdown>
+				<button class="btn btn-minier bigger btn-yellow dropdown-toggle" uib-dropdown-toggle><i class="ace-icon fa fa-angle-down icon-only bigger-120"></i></button>
+				<ul class="dropdown-menu dropdown-only-icon dropdown-yellow dropdown-menu-right dropdown-caret dropdown-close">
+					<li><a href="" class="tooltip-success" uib-tooltip="Approve" tooltip-placement="left" title="Approve"><span class="green"><i class="ace-icon fa fa-check bigger-110"></i></span></a></li>
+					<li><a href="" class="tooltip-warning" uib-tooltip="Reject" tooltip-placement="left" title="Reject"><span class="orange"><i class="ace-icon fa fa-times bigger-110"></i></span> </a></li>
+					<li><a href="" class="tooltip-error" uib-tooltip="Delete" tooltip-placement="left" title="Delete"><span class="red"><i class="ace-icon fa fa-trash-o bigger-110"></i></span> </a></li>
+				</ul>
+			</div>
+			<div ng-if="!item.menu" class="action-buttons bigger-125">
+				<a href=""><i class="ace-icon fa fa-pencil blue"></i></a>
+				<a href=""><i class="ace-icon fa fa-trash-o red"></i></a>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="hr hr8"></div>
+<div class="center">
+	<i class="ace-icon fa fa-comments-o fa-2x green middle"></i>
+	&nbsp;
+	<button type="button" class="btn btn-sm btn-white btn-info">See all comments &nbsp; <i class="ace-icon fa fa-arrow-right"></i></button>
+</div>
+<div class="hr hr-double hr8"></div>

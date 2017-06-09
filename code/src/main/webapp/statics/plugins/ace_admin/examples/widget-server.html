@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Save/Restore Widget Order Example</title>
+		
+		<link rel="stylesheet" href="../assets/css/bootstrap.css" />
+		<link rel="stylesheet" href="../components/font-awesome/css/font-awesome.css" />
+		
+		<!-- fonts -->
+		<link rel="stylesheet" href="../assets/css/ace-fonts.css" />
+		
+		
+		<link rel="stylesheet" href="../assets/css/ace.css" />
+		<!--[if lte IE 9]>
+		  <link rel="stylesheet" href="../assets/css/ace-ie.css" />
+		<![endif]-->
+		
+		<style>
+		.widget-container-col {
+			min-height: 10px;
+		}
+		#main-widget-container {
+			opacity: 0;
+		}
+		</style>
+	</head>
+
+	<body>
+	 <div class="main-container">
+	   <div class="page-content">
+	 
+		<div class="row">
+			<div class="col-xs-12">
+				<h3 class="blue">
+					Save/Restore widget arrangement and settings using server storage (PHP sessions)
+				</h3>
+				<a href="../docs/#custom/widget-box">(See widget documentation for a brief explanation)</a>
+				<br />
+				Widgets are arranged a bit differently than in the local example
+			</div>
+		</div>
+		
+		<div class="row">
+			<button type="reset" id="reset-widgets" class="btn btn-primary btn-white btn-bold btn-round pull-right">Reset / Clear</button>
+		</div>
+		
+		<hr />
+		<div id="main-widget-container">
+		 
+		 <div class="row">
+			<div id="widget-container-1" class="col-xs-6 col-sm-3 widget-container-col">	
+				<div class="widget-box widget-color-dark" id="my-widget-1">
+					<div class="widget-header">
+						<h5 class="widget-title">Widget Box 1</h5>
+						<div class="widget-toolbar">
+							<a data-action="collapse" href="#"><i class="ace-icon fa fa-chevron-up"></i></a>
+							<a data-action="close" href="#"><i class="ace-icon fa fa-times"></i></a>
+						</div>
+					</div>
+
+					<div class="widget-body">
+					 <div class="widget-main">
+						<p class="alert">
+							Widget 1
+						</p>
+					 </div>
+					</div>
+				</div>
+				
+				<div class="widget-box widget-color-red" id="my-widget-2">
+					<div class="widget-header">
+						<h5 class="widget-title">Widget Box 2</h5>
+						<div class="widget-toolbar">
+							<a data-action="collapse" href="#"><i class="ace-icon fa fa-chevron-up"></i></a>
+							<a data-action="close" href="#"><i class="ace-icon fa fa-times"></i></a>
+						</div>
+					</div>
+
+					<div class="widget-body">
+					 <div class="widget-main">
+						<p class="alert alert-danger">
+							Widget 2
+						</p>
+					 </div>
+					</div>
+				</div>
+			</div>
+
+			<div id="widget-container-2" class="col-xs-6 col-sm-3 widget-container-col">	
+				<div class="widget-box widget-color-orange" id="my-widget-3">
+					<div class="widget-header">
+						<h5 class="widget-title">Widget Box 3</h5>
+						<div class="widget-toolbar">
+							<a data-action="collapse" href="#"><i class="ace-icon fa fa-chevron-up"></i></a>
+							<a data-action="close" href="#"><i class="ace-icon fa fa-times"></i></a>
+						</div>
+					</div>
+
+					<div class="widget-body">
+					 <div class="widget-main">
+						<p class="alert alert-warning">
+							Widget 3
+						</p>
+					 </div>
+					</div>
+				</div>
+				
+				<div class="widget-box widget-color-blue" id="my-widget-4">
+					<div class="widget-header">
+						<h5 class="widget-title">Widget Box 4</h5>
+						<div class="widget-toolbar">
+							<a data-action="collapse" href="#"><i class="ace-icon fa fa-chevron-up"></i></a>
+							<a data-action="close" href="#"><i class="ace-icon fa fa-times"></i></a>
+						</div>
+					</div>
+
+					<div class="widget-body">
+					 <div class="widget-main">
+						<p class="alert alert-info">
+							Widget 4
+						</p>
+					 </div>
+					</div>
+				</div>
+			</div>
+			
+			<div id="widget-container-3" class="col-xs-6 col-sm-3 widget-container-col">	
+				<div class="widget-box widget-color-green" id="my-widget-5">
+					<div class="widget-header">
+						<h5 class="widget-title">Widget Box 5</h5>
+						<div class="widget-toolbar">
+							<a data-action="collapse" href="#"><i class="ace-icon fa fa-chevron-up"></i></a>
+							<a data-action="close" href="#"><i class="ace-icon fa fa-times"></i></a>
+						</div>
+					</div>
+
+					<div class="widget-body">
+					 <div class="widget-main">
+						<p class="alert">
+							Widget 5
+						</p>
+					 </div>
+					</div>
+				</div>
+				
+				<div class="widget-box widget-color-pink" id="my-widget-6">
+					<div class="widget-header">
+						<h5 class="widget-title">Widget Box 6</h5>
+						<div class="widget-toolbar">
+							<a data-action="collapse" href="#"><i class="ace-icon fa fa-chevron-up"></i></a>
+							<a data-action="close" href="#"><i class="ace-icon fa fa-times"></i></a>
+						</div>
+					</div>
+
+					<div class="widget-body">
+					 <div class="widget-main">
+						<p class="alert">
+							Widget 6
+						</p>
+					 </div>
+					</div>
+				</div>
+			</div>
+			
+			<div id="widget-container-4" class="col-xs-6 col-sm-3 widget-container-col">	
+				<div class="widget-box widget-color-green2" id="my-widget-7">
+					<div class="widget-header">
+						<h5 class="widget-title">Widget Box 7</h5>
+						<div class="widget-toolbar">
+							<a data-action="collapse" href="#"><i class="ace-icon fa fa-chevron-up"></i></a>
+							<a data-action="close" href="#"><i class="ace-icon fa fa-times"></i></a>
+						</div>
+					</div>
+
+					<div class="widget-body">
+					 <div class="widget-main">
+						<p class="alert">
+							Widget 7
+						</p>
+					 </div>
+					</div>
+				</div>
+				
+				<div class="widget-box widget-color-purple" id="my-widget-8">
+					<div class="widget-header">
+						<h5 class="widget-title">Widget Box 8</h5>
+						<div class="widget-toolbar">
+							<a data-action="collapse" href="#"><i class="ace-icon fa fa-chevron-up"></i></a>
+							<a data-action="close" href="#"><i class="ace-icon fa fa-times"></i></a>
+						</div>
+					</div>
+
+					<div class="widget-body">
+					 <div class="widget-main">
+						<p class="alert">
+							Widget 8
+						</p>
+					 </div>
+					</div>
+				</div>
+			</div>
+				
+		 </div>
+		</div><!-- #main-widget-container -->
+
+
+	   </div>
+	 </div>
+
+
+		<!-- basic scripts -->
+		<!--[if !IE]> -->
+		<script src="../components/jquery/dist/jquery.js"></script>
+		<!-- <![endif]-->
+		<!--[if IE]>
+		<script src="../components/jquery.1x/dist/jquery.js"></script>
+		<![endif]-->
+
+		
+		<script src="../components/jquery-ui/jquery-ui.js"></script>
+		
+		<script src="../components/bootstrap/dist/js/bootstrap.js"></script>
+		
+		<!-- ace scripts -->
+		<script src="../assets/js/ace-extra.js"></script>
+
+		<script src="../assets/js/ace.js"></script>
+		
+		
+		<script type="text/javascript">
+			jQuery(function($) {
+
+				(function() {
+					//restore widget order
+					$.ajax({url: 'widget-server.php', method: 'GET', data: {action: 'load'}, dataType: 'json'})
+					.done(function(ajaxResponse) {
+						var container_list = ajaxResponse['widget-order'];
+						if(container_list) {
+							for(var container_id in container_list) if(container_list.hasOwnProperty(container_id)) {
+
+								var widgets_inside_container = container_list[container_id];
+								if(widgets_inside_container.length == 0)continue;
+								
+								for(var i = 0; i < widgets_inside_container.length; i++) {
+									var widget = widgets_inside_container[i];
+									$('#'+widget).appendTo('#'+container_id);
+								}
+			
+							}
+						}
+						
+						
+						var widgets = ajaxResponse['widget-state'];
+						if(widgets != null) {
+							for(var id in widgets) if(widgets.hasOwnProperty(id)) {
+								var state = widgets[id];
+								var widget = $('#'+id);
+								if
+								(
+									(state == 'shown' && widget.hasClass('collapsed'))
+									||
+									(state == 'hidden' && !widget.hasClass('collapsed'))
+								) 
+								{
+									widget.widget_box('toggleFast');
+								}
+								else if(state == 'closed') {
+									widget.widget_box('closeFast');
+								}
+							}
+						}
+						
+					})
+					.complete(function() {	
+						$('#main-widget-container').animate({'opacity':1});
+					});
+				
+				})();
+			
+			
+				// drag & drop
+				$('.widget-container-col').sortable({
+					connectWith: '.widget-container-col',
+					items:'> .widget-box',
+					handle: ace.vars['touch'] ? '.widget-header' : false,
+					cancel: '.fullscreen',
+					opacity:0.8,
+					revert:true,
+					forceHelperSize:true,
+					placeholder: 'widget-placeholder',
+					forcePlaceholderSize:true,
+					tolerance:'pointer',
+					start: function(event, ui) {
+						//when an element is moved, it's parent becomes empty with almost zero height.
+						//we set a min-height for it to be large enough so that later we can easily drop elements back onto it
+						//ui.item.parent().css({'min-height':ui.item.height()})
+					},
+					update: function(event, ui) {
+						//ui.item.parent({'min-height':''});
+						
+						//save a list of widget containers and widget boxes
+						var widget_order = {}
+						$('.widget-container-col').each(function() {
+							var container_id = $(this).attr('id');
+							widget_order[container_id] = []
+							
+							
+							$(this).find('> .widget-box').each(function() {
+								var widget_id = $(this).attr('id');
+								widget_order[container_id].push(widget_id);
+								//now we know each container contains which widgets
+							});
+						});
+						
+						
+						$.ajax({url: 'widget-server.php', method: 'POST', data: {action: 'save', type: 'widget-order', info: JSON.stringify(widget_order)}})
+					}
+				});
+				
+				
+				//when a widget is shown/hidden save its state for later retrieval
+				$(document).on('shown.ace.widget hidden.ace.widget closed.ace.widget', '.widget-box', function(event) {
+					var id = $(this).attr('id');
+					var widget_state = {'id': id, 'state': event.type};
+					$.ajax({url: 'widget-server.php', method: 'POST', data: { action: 'save', type: 'widget-state', info: JSON.stringify(widget_state) }})
+				});
+				
+				
+				
+				$('#reset-widgets').on('click', function() {
+					$.ajax({url: 'widget-server.php', method: 'POST', data: {action: 'reset'}})
+					.complete(function() {	
+						document.location.reload();
+					});					
+				});
+				
+			});
+		</script>
+
+	</body>
+</html>

@@ -1,0 +1,69 @@
+[
+ {
+  "title-color" : "dark",
+  "title" : "Basic Package",
+  "features" :
+   [
+	 {"name" : "10 GB Disk Space"} ,
+	 {"name" : "200 GB Bandwidth"} ,
+	 {"name" : "100 Email Accounts"} ,
+	 {"name" : "10 MySQL Databases"} ,
+	 {"name" : "$10 Ad Credit"},
+	 {"name" : "Free Domain" , "unavailable" : true}
+   ] ,
+   "price":"$5",
+   "duration":"month",
+   "btn-color":"inverse"
+ }
+ ,
+ {
+  "title-color" : "orange",
+  "title" : "Starter Package",
+  "features" :
+   [
+	 {"name" : "50 GB Disk Space"} ,
+	 {"name" : "1 TB Bandwidth"} ,
+	 {"name" : "1000 Email Accounts"} ,
+	 {"name" : "100 MySQL Databases"} ,
+	 {"name" : "$25 Ad Credit"},
+	 {"name" : "Free Domain"}
+   ] ,
+   "price":"$10",
+   "duration":"month",
+   "btn-color":"warning"
+ }
+ ,
+ {
+  "title-color" : "blue",
+  "title" : "Business Package",
+  "features" :
+   [
+	 {"name" : "200 GB Disk Space"} ,
+	 {"name" : "Unlimited Bandwidth"} ,
+	 {"name" : "1000 Email Accounts"} ,
+	 {"name" : "200 MySQL Databases"} ,
+	 {"name" : "$25 Ad Credit"},
+	 {"name" : "Free Domain"}
+   ] ,
+   "price":"$15",
+   "duration":"month",
+   "btn-color":"primary"
+ }
+ ,
+ {
+  "title-color" : "green",
+  "title" : "Ultimate Package",
+  "features" :
+   [
+	 {"name" : "Unlimited Space"} ,
+	 {"name" : "Unlimited Bandwidth"} ,
+	 {"name" : "Unlimited Email Accounts"} ,
+	 {"name" : "Unlimited MySQL Databases"} ,
+	 {"name" : "$50 Ad Credit"},
+	 {"name" : "2 Free Domains"}
+   ] ,
+   "price":"$25",
+   "duration":"month",
+   "btn-color":"success"
+ }
+]

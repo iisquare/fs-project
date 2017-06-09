@@ -1,0 +1,36 @@
+<!--[if !IE]> -->
+<!--
+<link rel="stylesheet" href="{{{path.assets}}}/css/pace{{{path.minified}}}.css" />
+<script data-pace-options='{ "ajax": true, "document": true, "eventLag": false, "elements": false }' src="{{{path.components}}}/PACE/pace{{{path.minified}}}.js"></script>
+-->
+<!-- <![endif]-->
+
+<!-- bootstrap & fontawesome -->
+<link rel="stylesheet" href="{{{path.assets}}}/css/bootstrap{{{path.minified}}}.css" />{{! not using CDN bootstrap.css because we've modified it slightly}}
+{{> layout._template.fontawesome}}
+
+<!-- text fonts -->
+{{> layout._template.fonts}}
+
+<!-- ace styles -->
+<link rel="stylesheet" href="{{{path.assets}}}/css/ace{{{path.minified}}}.css" class="ace-main-stylesheet" id="main-ace-style" />
+<!--[if lte IE 9]>
+	<link rel="stylesheet" href="{{{path.assets}}}/css/ace-part2{{{path.minified}}}.css" class="ace-main-stylesheet" />
+<![endif]-->
+
+<link rel="stylesheet" href="{{{path.assets}}}/css/ace-skins{{{path.minified}}}.css" />
+<link rel="stylesheet" href="{{{path.assets}}}/css/ace-rtl{{{path.minified}}}.css" />
+
+<!--[if lte IE 9]>
+  <link rel="stylesheet" href="{{{path.assets}}}/css/ace-ie{{{path.minified}}}.css" />
+<![endif]-->
+
+
+<!-- ace settings handler -->
+<script src="{{{path.assets}}}/js/ace-extra{{{path.minified}}}.js"></script>
+
+<!-- HTML5shiv and Respond.js for IE8 to support HTML5 elements and media queries -->
+<!--[if lte IE 8]>
+<script src="{{{path.components}}}/html5shiv/dist/html5shiv.min.js"></script>
+<script src="{{{path.components}}}/respond/dest/respond.min.js"></script>
+<![endif]-->

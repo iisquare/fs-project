@@ -1,0 +1,53 @@
+[
+	{
+		"thumb": "images/gallery/thumb-1.jpg",
+		"image": "images/gallery/image-1.jpg",
+		"tags": [
+			{"type": "info", "name": "breakfast"},
+			{"type": "danger", "name": "fruits"},
+			{"type": "success", "name": "toast"},
+			{"type": "warning arrowed-in", "name": "diet"}
+		],
+		"tools": "default"
+	},
+	{
+		"thumb": "images/gallery/thumb-2.jpg",
+		"image": "images/gallery/image-2.jpg",
+		"caption": "Sample Caption on Hover"
+	},
+	{
+		"thumb": "images/gallery/thumb-3.jpg",
+		"image": "images/gallery/image-3.jpg",
+		"caption": "Sample Caption on Hover",
+		"tools": "bottom"
+	},
+	{
+		"thumb": "images/gallery/thumb-4.jpg",
+		"image": "images/gallery/image-4.jpg",
+		"tags": [
+			{"type": "info arrowed", "name": "fountain"},
+			{"type": "danger", "name": "recreation"}
+		],
+		"tools": "top"
+	},
+	{
+		"thumb": "images/gallery/thumb-5.jpg",
+		"image": "images/gallery/image-5.jpg",
+		"tools": "default"
+	},
+	{
+		"thumb": "images/gallery/thumb-6.jpg",
+		"image": "images/gallery/image-6.jpg",
+		"tools": "right"
+	},
+	{
+		"thumb": "images/gallery/thumb-1.jpg",
+		"image": "images/gallery/image-1.jpg",
+		"tools": "top"
+	},
+	{
+		"thumb": "images/gallery/thumb-2.jpg",
+		"image": "images/gallery/image-2.jpg",
+		"tools": "top in"
+	}
+]

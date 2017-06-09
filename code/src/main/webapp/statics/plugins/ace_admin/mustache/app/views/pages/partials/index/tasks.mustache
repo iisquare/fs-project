@@ -1,0 +1,36 @@
+<!-- #section:pages/dashboard.tasks -->
+<ul id="tasks" class="item-list">
+	{{#page.tasks}}
+	<li class="item-{{color}} clearfix">
+		<label class="inline"><input type="checkbox" class="ace" /><span class="lbl"> {{title}}</span></label>
+		{{#progress}}
+		<div class="pull-right easy-pie-chart percentage" data-size="30" data-color="#ECCB71" data-percent="{{progress}}">
+			<span class="percent">{{progress}}</span>%
+		</div>
+		{{/progress}}
+		{{#toolbar}}
+		<!-- #section:custom/extra.action-buttons -->
+		<div class="pull-right action-buttons">
+			<a href="#" class="blue"><i class="ace-icon fa fa-pencil bigger-130"></i></a>
+			<span class="vbar"></span>
+			<a href="#" class="red"><i class="ace-icon fa fa-trash-o bigger-130"></i></a>
+			<span class="vbar"></span>
+			<a href="#" class="green"><i class="ace-icon fa fa-flag bigger-130"></i></a>
+		</div>
+		<!-- /section:custom/extra.action-buttons -->
+		{{/toolbar}}
+		{{#menu}}
+		<!-- #section:elements.dropdown.hover -->
+		<div class="pull-right pos-rel dropdown-hover">
+			<button class="btn btn-minier bigger btn-primary"><i class="ace-icon fa fa-cog icon-only bigger-120"></i></button>
+			<ul class="dropdown-menu dropdown-only-icon dropdown-yellow dropdown-caret dropdown-close dropdown-menu-right">
+				<li><a href="#" class="tooltip-success" data-rel="tooltip" title="Mark&nbsp;as&nbsp;done"><span class="green"><i class="ace-icon fa fa-check bigger-110"></i></span></a></li>
+				<li><a href="#" class="tooltip-error" data-rel="tooltip" title="Delete"><span class="red"><i class="ace-icon fa fa-trash-o bigger-110"></i></span></a></li>
+			</ul>
+		</div>
+		<!-- /section:elements.dropdown.hover -->
+		{{/menu}}
+	</li>
+	{{/page.tasks}}
+</ul>
+<!-- /section:pages/dashboard.tasks -->

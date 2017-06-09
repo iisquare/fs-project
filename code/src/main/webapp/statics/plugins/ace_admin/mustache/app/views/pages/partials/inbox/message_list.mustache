@@ -1,0 +1,45 @@
+<!-- #section:pages/inbox.message-list -->
+<div class="message-list" id="message-list">
+ {{#page.messages}}
+	<!-- #section:pages/inbox.message-list.item -->
+	<div class="message-item{{#unread}} message-unread{{/unread}}">
+		<label class="inline">
+			<input type="checkbox" class="ace" />
+			<span class="lbl"></span>
+		</label>
+
+		<i class="message-star {{#starred}}ace-icon fa fa-star orange2{{/starred}}{{^starred}}ace-icon fa fa-star-o light-grey{{/starred}}"></i>
+		<span class="sender" title="{{sender}}">{{sender}} {{#count}}<span class="light-grey">({{count}})</span>{{/count}}</span>
+		<span class="time">{{time}}</span>
+		{{#attachment}}
+		<span class="attachment">
+			<i class="ace-icon fa fa-paperclip"></i>
+		</span>
+		{{/attachment}}
+
+		<span class="summary">
+			{{#flags}}
+			<span class="message-flags">
+				{{#replied}}
+				<i class="ace-icon fa fa-reply light-grey"></i>
+				{{/replied}}
+				{{#forwarded}}
+				<i class="ace-icon fa fa-mail-forward light-grey"></i>
+				{{/forwarded}}
+				{{#flag}}
+				<i class="ace-icon fa fa-flag fa-flip-horizontal light-grey"></i>
+				{{/flag}}
+			</span>
+			{{/flags}}
+			{{#tag}}
+			<span class="badge badge-{{tag}} mail-tag"></span>
+			{{/tag}}
+			<span class="text">
+			{{subject}}
+			</span>
+		</span>
+	</div>
+	<!-- /section:pages/inbox.message-list.item -->
+ {{/page.messages}}
+</div>
+<!-- /section:pages/inbox.message-list -->

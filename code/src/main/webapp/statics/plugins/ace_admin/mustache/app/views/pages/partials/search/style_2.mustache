@@ -1,0 +1,51 @@
+<div class="row search-page" id="search-page-2">
+	<div class="col-xs-12 col-md-10 col-md-offset-1">
+		<div class="search-area well no-margin-bottom">
+			<form>
+				<div class="row">
+				 <div class="col-md-6">
+					<div class="input-group">
+						<input type="text" class="form-control" name="search" value="Hello World" />
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-primary btn-sm">
+								<i class="ace-icon fa fa-search icon-on-right bigger-110"></i>
+							</button>
+						</div>
+					</div>
+				 </div>
+				</div>
+			</form>
+			<div class="space space-6"></div>
+			<span class="grey">About 263,000,000 results (0.74 seconds)</span>
+		</div>
+		
+		
+		<!-- #section:pages/search.results -->
+		<div class="search-results">
+			{{#page.results_2}}
+			<div class="search-result">
+				<h5 class="search-title"><a href="#">{{{title}}}</a></h5>
+				<a class="text-success" href="#">{{domain}}</a>
+				<p class="search-content">
+					{{{content}}}
+				</p>
+			</div>
+			{{/page.results_2}}
+		</div>
+		<!-- /section:pages/search.results -->
+		
+		
+		<div class="search-area well well-sm text-center">
+			<ul class="pagination">
+				<li class="disabled"><a href="#"><i class="ace-icon fa fa-angle-double-left"></i></a></li>
+				<li class="active"><a href="#">1</a></li>
+				<li><a href="#">2</a></li>
+				<li><a href="#">3</a></li>
+				<li><a href="#">4</a></li>
+				<li><a href="#">5</a></li>
+				<li><a href="#"><i class="ace-icon fa fa-angle-double-right"></i></a></li>
+			</ul>
+		</div>
+
+	</div>
+</div>

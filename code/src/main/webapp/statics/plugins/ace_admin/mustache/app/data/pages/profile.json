@@ -1,0 +1,11 @@
+{
+ "title" : "User Profile Page"
+ ,
+ "description" : "3 styles with inline editable feature"
+ ,
+ "styles" : ["jquery-ui" , "gritter", "select2", "datepicker", "x-editable"]
+ ,
+ "scripts" : ["jquery-ui" , "gritter" , "bootbox" , "easy-pie-chart" , "datepicker", "wysiwyg", "select2" , "spinner", "x-editable", "maskedinput"]
+ ,
+ "ie_scripts" : [{"version":8, "name":"excanvas"}]
+}

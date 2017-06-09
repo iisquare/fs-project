@@ -1,0 +1,268 @@
+v1.4.0
+ * New:
+	AngularJS demo
+	
+ * Enhancements:
+	Bower package manager for installing and updating components
+	
+ * Fixes:
+	A few fixes
+
+v1.3.5
+ * New:
+	Search results page
+	Landing page
+	Coming soon page
+	RequireJS example
+	Example for persistent (restorable) widgets
+	
+ * Enhancements:
+	Updated and improved saving/restoring of element states
+	New options for sidebars
+	New options for ajax
+
+ * Fixes:
+	A few fixes and improvements
+
+ * Updates:
+	Updated all plugins and scripts to their latest version
+
+v1.3.4
+ * Enhancements:
+	New methods and events for ajax
+	New file input element option and event
+	Native scrollbars for fixed sidebar on touch devices (only for second style)
+
+ * Fixes:
+	Selectable folders for treeview element
+
+ * Updates:
+	Updated all plugins and scripts to their latest version
+
+v1.3.3
+ * New:
+	TableTools and ColVis extensions for DataTables
+	Larger checkbox and radio button option
+	3 Different sizes for spinner input
+	White label options
+	PACE progress bar for ajax
+
+ * Enhancements:
+	Improvement and new options for ajax
+	Option to pass arguments to Ace functions and elements using data-* attributes
+	New option for content slider to put it inside a modal or other element
+	Vertical toolbox option for widget box
+
+ * Updates:
+	Updated all plugins and scripts to their latest version
+
+v1.3.2
+ * New:
+	Content sliders based on Bootstrap modals
+	Star rating plugin
+	Dual listbox plugin
+	Bootstrap multiselect plugin
+	Gruntfile.js build file
+
+ * Enhancements:
+	Navbar dropdowns automatically become modal like on small devices
+	Updated sidebar functions allow for multiple sidebars
+	Automatic scrollbars for sidebar submenus when needed
+	Delay before hiding submenus in minimized mode or horizontal mode
+	Automatic scrollbars for fullscreen widgets
+	Horizontal menu now has minimized style as well
+	Image preview for file input element
+	New custom scrollbar option 'hideOnIdle'
+	Ajax content loading can now be applied to any element
+	New data-auto-hide="true" option for audtomatic hiding of sidebar in mobile view
+	
+ * Fixes:
+	Some browser fixes
+	CSS builder fixes
+
+ * Updates:
+	Updated all plugins and scripts to their latest version
+
+
+v1.3.1
+ * New:
+	Email templates along with a converter tool to convert Bootstrap HTML to email friendly table layout
+	Ajax version of the template
+	Onpage Help is now available for use in your application to provide help for users
+	typeahead.js plugin
+   
+ * Enhancements:
+	Sidebar is now optional and can be removed
+	Option to disable responsiveness
+	.hover submenu and .compact are now available on larger devices only
+
+ * Fixes:
+	Some browser fixes
+	CSS builder fixes
+
+ * Updates:
+	Updated all plugins and scripts to their latest version
+
+
+v1.3
+ * New:
+	Custom scrollbar plugin
+	Automatic scrollbars for fixed sidebar
+	2 new mobile menu styles
+	1 new mobile navbar style
+	Horizontal Menu
+	Compact sidebar style
+	Option to display submenu on mouse hover	
+	Alternative active menu item style	
+	Date addon for inline editable plugin
+	New white button styles
+	Bootstrap datetime picker plugin
+	LESS skin files
+	In-browser CSS & JS file builder to make your own minimal files	
+	Updated documentation & help
+	On-page help which lets you pick any element and see how it works
+	Bootstrap date-time picker plugin
+   
+ * Enhancements:
+	Enhanced widget box functions and events
+	ASP.net friendly checkboxes and radio buttons
+	Enhanced file input options
+	Custom color picker enhancements
+	Light and blurred background for login page
+
+ * Fixes:
+	Some browser fixes
+
+ * Updates:
+	Updated all plugins to their latest version
+
+
+v1.2
+ * Enhancements:
+	Spinner
+		Added option for putting increment and decrement buttons on different sides of text input. See docs
+	Widget Boxes
+		Added events for widget toolbar buttons. See examples/widgets.html
+
+ * Fixes:
+	A few fixes
+
+ * Updates:
+	Bootstrap 3.0.0 >> Please note that "bootstrap.css" has been compiled with a gutter width of 24px instead of the default 30px
+	FullCalendar 1.6.4
+	Select2 3.4.2
+	Bootbox.js 4
+	Autosize 1.17.7
+
+
+v1.1.3
+ * New:
+	Inbox page
+	Timeline page with 2 styles
+	FAQ page
+	jqGrid plugin
+	jQuery UI re-styling
+	Dropzone.js drag & drop file upload
+	Nestable hierarchical list plugin
+	Cookie/localStorage helper to save user selected settings
+
+ * Enhancements:
+	Wysiwyg
+		Add a few more options (see examples/wysiwyg.html)
+	UI Elements
+		New tab and accordion style
+		New chosen style like tag input element
+
+ * Fixes:
+	Fixed a file input control issue with IE9/10 
+		** please see "examples/profile-avatar-update.js" and search for "IE10" **
+	Some other fixes
+
+ * Updates:
+	Easy Pie Chart 1.2.5
+	Toopay Markdown Editor 1.1.4
+	FullCalendar 1.6.3
+	jQuery ColorBox 1.4.27
+	X-editable 1.4.6
+	jQuery Chosen v1.0.0
+		>> All CSS class names have been renamed from a chzn- root to a chosen- root.
+		>> All custom Chosen events starting with liszt are now prefaced with a chosen: 
+	jQuery AutoSize v1.17.2
+	Bootstrap Tags 2.2.5
+	Bootstrap DateRange Picker 1.2
+	jQuery Mobile 1.3.2
+
+ * CSS Changes:
+	".navbar" element now has id attribute "#navbar" for easier saving of navbar (fixed) state using cookie/localStorage.
+	Ace style checkbox, radio button and switch elements now require to have ".ace" class, otherwise default browser styles will be displayed.
+	Use ".sidebar-fixed" for fixed sidebar and ".breadcrumbs-fixed" for fixed breadcrumbs.
+
+  * Examples:
+	 Added wysiwyg control example to show customization options and how to send formatted text to server.
+
+
+v1.1.2
+ * New:
+	Profile page with 3 styles
+	Inline editable plugin with 4 new custom editables (image, wysiwyg, spinner and slider)
+	Tag input plugin
+	Select2 plugin
+	RTL support for right to left languages
+
+ * Enhancements:
+	File input control
+		Added some methods and callbacks for better customization
+	Wysiwyg
+		Easier and more customizable creation of wysiwyg editor control
+		Added resize functionality to images on browsers that don't support (Webkit based browsers)
+	---
+	Using jQuery mobile events to use 'tap' event instead of 'click' when possible for quicker response (esp. for side menu)
+	Login social buttons on login page
+	Side navigation with 3rd & 4th level submenu
+	Fixed position breadcrumbs
+
+ * Fixes:
+	File input fixes
+	Wizard fixes
+	Browser compatibility fixes
+	Some other fixes
+
+ * CSS Changes:
+	Side menu and menu toggler text was a "span" element. Now it should have the ".menu-text" class value
+	Removed "id"s from CSS files and replaced with classes, but HTML elements still have the "id".
+	Icons inside buttons don't have default font sizes. Specify using classes such as .bigger-110 ... .bigger-300
+
+  * Docs & Examples:
+	 Documentation Updated.
+	 Added a few examples inside the examples folder. More examples will be available on later updates.
+
+ * Updates:
+	jQuery 2.0.3 (with fallback to 1.10.2 for IE 8)
+	Font Awesome v3.2.1
+	jQuery Sparklines 2.1.2
+	Easy Pie Chart 1.2.1
+	jQuery ColorBox 1.4.26
+	Chosen v0.11.1
+	jQuery AutoSize v1.17.1
+	Bootbox 3.3.0
+	jQuery slimScroll 1.2.0
+	Toopay markdown editor 1.1.1
+
+ * Known Issues:
+	Latest version of Opera is having problems with Treeview and Colorbox when using jQuery 2.x .
+	  >> Problem will be resolved when we use jQuery 1.x .
+	Android's default browser "sometimes" shows the ".label" element with some delay.
+	Internet Explorer (9/10) have problems with wysiwyg editor's link and image input as well as resizing images.
+	  >> Another wysiwyg plugin will be included on next update.
+
+
+v1.1
+ * Added LESS files
+ * Added Mustache templates with relevant PHP and Javascript compilation files
+ * Added Wysiwyg plugin
+ * Added Treeview plguin
+ * Added Markdown editor
+
+ 
+v1.0
+ * Initial Release

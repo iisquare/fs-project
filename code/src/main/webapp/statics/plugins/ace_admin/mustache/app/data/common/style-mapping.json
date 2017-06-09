@@ -1,0 +1,37 @@
+{
+ "chosen" : "components/chosen/chosen.css",
+ 
+ "colorbox" : "components/jquery-colorbox/example1/colorbox.css",
+
+ "colorpicker" : "components/mjolnic-bootstrap-colorpicker/dist/css/bootstrap-colorpicker.css",
+
+ "timepicker" : "components/bootstrap-timepicker/css/bootstrap-timepicker.css",
+
+ "datepicker" : "components/bootstrap-datepicker/dist/css/bootstrap-datepicker3.css",
+
+ "daterangepicker" : "components/bootstrap-daterangepicker/daterangepicker.css",
+ 
+ "datetimepicker" : "components/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.css",
+
+ "fullcalendar" : "components/fullcalendar/dist/fullcalendar.css",
+
+ "gritter" : "components/jquery.gritter/css/jquery.gritter.css",
+
+ "jquery-ui" : "components/_mod/jquery-ui.custom/jquery-ui.custom.css",
+ 
+ "jquery-ui-full" : "components/_mod/jquery-ui/jquery-ui.css",
+ 
+ "jqgrid" : "components/_mod/jqgrid/ui.jqgrid.css",
+
+ "prettify" : "components/_mod/google-code-prettify/prettify.css",
+
+ "x-editable" : "components/_mod/x-editable/bootstrap-editable.css",
+
+ "select2" : "components/select2/dist/css/select2.css",
+ 
+ "dropzone" : "components/dropzone/dist/dropzone.css",
+ 
+ "duallistbox": "components/bootstrap-duallistbox/dist/bootstrap-duallistbox.css",
+ 
+ "multiselect": "components/bootstrap-multiselect/dist/css/bootstrap-multiselect.css"
+}

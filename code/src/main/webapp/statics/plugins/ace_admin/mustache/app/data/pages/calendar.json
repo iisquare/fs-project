@@ -1,0 +1,9 @@
+{
+ "title" : "Full Calendar"
+ ,
+ "description" : "with draggable and editable events"
+ ,
+ "styles" : ["jquery-ui", "fullcalendar"]
+ ,
+ "scripts" : ["jquery-ui" , "fullcalendar" , "bootbox"]
+}

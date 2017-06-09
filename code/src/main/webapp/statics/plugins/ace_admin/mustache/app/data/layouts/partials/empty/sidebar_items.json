@@ -1,0 +1,12 @@
+[
+   	 { "link" :"index", "title" : "Dashboard", "icon" : "fa fa-tachometer" } ,
+	 {
+	  "link" : null, "title" : "UI Elements" , "icon" : "fa fa-desktop",
+	  "submenu" :
+	  [
+		{ "link" : "elements" , "title" : "Elements" } ,
+
+		{ "link" : "buttons" , "title" : "Buttons & Icons" }
+	  ]
+	 }
+]

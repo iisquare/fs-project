@@ -1,0 +1,7 @@
+{{#site.remote_bootstrap_js}}
+<script src="{{{site.protocol}}}//netdna.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap{{{path.minified}}}.js"></script>
+{{/site.remote_bootstrap_js}}
+
+{{^site.remote_bootstrap_js}}
+<script src="{{{path.components}}}/bootstrap/dist/js/bootstrap{{{path.minified}}}.js"></script>
+{{/site.remote_bootstrap_js}}

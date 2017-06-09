@@ -1,0 +1,27 @@
+<div>
+	<ul class="ace-thumbnails clearfix">
+	
+	  <li ng-repeat="item in ::getData('photos') track by $index">
+		<a ng-href="{{ace.path.assets}}/{{item.image}}" title="Photo {{$index+1}} Title" colorboxable='colorbox'>
+			<img width="150" height="150" alt="150x150" ng-src="{{ace.path.assets}}/{{item.thumb}}" />
+			<div ng-if="!!item.caption" class="text">
+				<div class="inner" ng-bind="item.caption"></div>
+			</div>
+		</a>
+		
+		<div ng-if="item.tags" class="tags">
+			<span ng-repeat="tag in item.tags" class="label-holder">
+				<span class="label label-{{tag.type}}" ng-bind="tag.name"></span>
+			</span>
+		</div>
+		
+		<div ng-if="item.tools" class="tools tools-{{item.tools || 'default'}}">
+			<a href=""><i class="ace-icon fa fa-link"></i></a>
+			<a href=""><i class="ace-icon fa fa-paperclip"></i></a>
+			<a href=""><i class="ace-icon fa fa-pencil"></i></a>
+			<a href=""><i class="ace-icon fa fa-times red"></i></a>
+		</div>		
+	  </li>
+	
+   </ul>
+</div>

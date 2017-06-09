@@ -1,0 +1,33 @@
+[
+ {
+ "btn-color" : "btn-light",
+ "name" : "Views",
+ "value" : "1,411",
+ "color" : "blue"
+ } ,
+ {
+ "btn-color" : "btn-yellow",
+ "name" : "Followers",
+ "value" : "32"
+ } ,
+ {
+ "btn-color" : "btn-pink",
+ "name" : "Projects",
+ "value" : "4"
+ } ,
+ {
+ "btn-color" : "btn-grey",
+ "name" : "Reviews",
+ "value" : "23"
+ } ,
+ {
+ "btn-color" : "btn-success",
+ "name" : "Albums",
+ "value" : "7"
+ } ,
+ {
+ "btn-color" : "btn-primary",
+ "name" : "Contacts",
+ "value" : "55"
+ }
+]

@@ -1,0 +1,204 @@
+<div class="row">
+
+ <div class="col-sm-6">
+	<h3 class="header blue lighter smaller">
+		<i class="ace-icon fa fa-calendar-o smaller-90"></i>
+		Datepicker
+	</h3>
+
+
+	<div class="row">
+	  <div class="col-xs-6">
+		<div class="input-group input-group-sm">
+			<input type="text" id="datepicker" class="form-control" />
+			<span class="input-group-addon"><i class="ace-icon fa fa-calendar"></i></span>
+		</div>
+	  </div>
+	</div>
+	
+ </div><!-- ./span -->
+
+
+ <div class="col-sm-6">
+	<h3 class="header blue lighter smaller">
+		<i class="ace-icon fa fa-list-alt smaller-90"></i>
+		Dialogs
+	</h3>
+
+	<a href="#" id="id-btn-dialog2" class="btn btn-info btn-sm">Confirm Dialog</a>
+	<a href="#" id="id-btn-dialog1" class="btn btn-purple btn-sm">Modal Dialog</a>
+
+	<div id="dialog-message" class="hide">
+		<p>
+			This is the default dialog which is useful for displaying information. The dialog window can be moved, resized and closed with the 'x' icon.
+		</p>
+		<div class="hr hr-12 hr-double"></div>
+		<p>
+			Currently using <b>36% of your storage space</b>.
+		</p>
+	</div><!-- #dialog-message -->
+
+
+	<div id="dialog-confirm" class="hide">
+		<div class="alert alert-info bigger-110">
+			These items will be permanently deleted and cannot be recovered.
+		</div>
+		<div class="space-6"></div>
+		<p class="bigger-110 bolder center grey">
+			<i class="ace-icon fa fa-hand-o-right blue bigger-120"></i> Are you sure?
+		</p>
+	</div><!-- #dialog-confirm -->
+ </div><!-- ./span -->
+
+</div><!-- ./row -->
+
+
+<div class="space-12"></div>
+
+
+<div class="row">
+ <div class="col-sm-6">
+	<h3 class="header blue lighter smaller">
+		<i class="ace-icon fa fa-terminal smaller-90"></i>
+		Autocomplete
+	</h3>
+
+
+	<div class="row">
+	 <div class="col-sm-8 col-md-7">
+		<input id="tags" type="text" class="form-control" />
+		<div class="space-4"></div>
+		<input id="search" type="text" class="form-control" placeholder="Type 'a' or 'h'" />
+	 </div>
+	</div>
+   
+	<div class="row">
+	 <div class="col-xs-12">
+		<h3 class="header blue lighter smaller">
+			<i class="ace-icon fa fa-info smaller-90"></i>
+			Tooltip
+		</h3>
+
+		<div class="bigger-110">
+			<p>
+				<a class="grey" id="show-option" href="#" title="slide down on show">
+					<i class="ace-icon fa fa-hand-o-right"></i>
+					slide down on show
+				</a>
+			</p>
+			<p>
+				<a class="blue" id="hide-option" href="#" title="explode on hide">
+					<i class="ace-icon fa fa-hand-o-right"></i>
+					explode on hide
+				</a>
+			</p>
+			<p>
+				<a class="pink" id="open-event" href="#" title="move down on show">
+					<i class="ace-icon fa fa-hand-o-right"></i>
+					move down on show
+				</a>
+			</p>
+		</div>
+	 </div>
+	</div><!-- ./row -->
+ </div><!-- ./col -->
+
+
+ <div class="col-sm-6">
+	<h3 class="header blue lighter smaller">
+		<i class="ace-icon fa fa-bars smaller-90"></i>
+		Menu
+	</h3>
+
+	{{> page.menu}}
+ </div><!-- ./col -->
+</div><!-- ./row -->
+
+
+<div class="space-12"></div>
+
+
+<div class="row">
+ <div class="col-sm-6">
+	<h3 class="header blue lighter smaller">
+		<i class="ace-icon fa fa-retweet smaller-90"></i>
+		Spinner
+	</h3>
+
+	<input id="spinner" name="value" type="text" />
+
+ </div><!-- ./span -->
+
+
+ <div class="col-sm-6">
+	<h3 class="header blue lighter smaller">
+		<i class="ace-icon fa fa-arrows-h smaller-90"></i>
+		Slider
+	</h3>
+
+	<p>
+		Please see <a href="{{#createLinkFunction}}form-elements{{/createLinkFunction}}">form elements page</a> for more slider examples.
+	</p>
+	<div class="space-4"></div>
+	<div id="slider"></div>
+ </div><!-- ./col -->
+</div><!-- ./row -->
+
+
+<div class="space-12"></div>
+
+
+<div class="row">
+ <div class="col-sm-6">
+	<h3 class="header blue lighter smaller">
+		<i class="ace-icon fa fa-list smaller-90"></i>
+		Sortable Accordion
+	</h3>
+
+	{{> page.accordion}}
+ </div><!-- ./span -->
+
+ <div class="col-sm-6">
+	<h3 class="header blue lighter smaller">
+		<i class="ace-icon fa fa-folder-o smaller-90"></i>
+		Tabs
+	</h3>
+
+	{{> page.tabs}}
+
+ </div><!-- ./col -->
+</div><!-- ./row -->
+
+
+<div class="space-12"></div>
+
+
+<div class="row">
+ <div class="col-sm-6">
+	<h3 class="header blue lighter smaller">
+		<i class="ace-icon fa fa-spinner"></i>
+		Progressbar
+	</h3>
+
+	<div id="progressbar"></div>
+ </div><!-- ./col -->
+
+
+ <div class="col-sm-6">
+	<h3 class="header blue lighter smaller">
+		<i class="ace-icon fa fa-spinner"></i>
+		Selectmenu
+	</h3>
+
+	<label for="number" class="block">Select a number</label>
+	<select name="number" id="number">
+		<option>1</option>
+		<option selected="selected">2</option>
+		<option>3</option>
+		<option>4</option>
+		<option>5</option>
+	</select>
+ </div>
+
+
+</div><!-- ./row -->

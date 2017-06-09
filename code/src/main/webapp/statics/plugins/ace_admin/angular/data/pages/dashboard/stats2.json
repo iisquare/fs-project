@@ -1,0 +1,28 @@
+[
+	{
+		"id": "task-completion",
+		"color": "green",
+		"small": true,
+		"dark": true,
+		"progress": "61",
+		"content": ["Task",
+		"Completion"]
+	},
+	{
+		"id": "earnings",
+		"color": "blue",
+		"small": true,
+		"dark": true,
+		"chart": "[3,4,2,3,4,4,2,2]",
+		"content": ["Earnings",
+		"$32,000"]
+	},
+	{
+		"color": "grey",
+		"small": true,
+		"dark": true,
+		"icon": "fa fa-download",
+		"content": ["Downloads",
+		"1,205"]
+	}
+]

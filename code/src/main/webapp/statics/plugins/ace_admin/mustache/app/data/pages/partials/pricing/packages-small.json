@@ -1,0 +1,86 @@
+[
+ {
+  "title" : "Basic",
+  "title-color" : "red3",
+  "values" :
+   [
+	 {"value" : "10 GB"} ,
+	 {"value" : "200 GB"} ,
+	 {"value" : "100"} ,
+	 {"value" : "10"} ,
+	 {"value" : "$10"},
+	 {"unavailable" : true}
+   ] ,
+   "price":"$5",
+   "duration":"month",
+   "btn-color":"danger"
+ }
+ ,
+ {
+  "title" : "Starter",
+  "title-color" : "orange",
+  "values" :
+   [
+	 {"value" : "50 GB"} ,
+	 {"value" : "1 TB"} ,
+	 {"value" : "1000"} ,
+	 {"value" : "100"} ,
+	 {"value" : "$25"},
+	 {"value" : "1", "available" : true}
+   ] ,
+   "price":"$10",
+   "duration":"month",
+   "btn-color":"warning"
+ }
+ ,
+ {
+  "title" : "Business",
+  "title-color" : "blue",
+  "values" :
+   [
+	 {"value" : "200 GB"} ,
+	 {"value" : "Unlimited"} ,
+	 {"value" : "1000"} ,
+	 {"value" : "200"} ,
+	 {"value" : "$25"},
+	 {"value" : "1", "available" : true}
+   ] ,
+   "price":"$15",
+   "duration":"month",
+   "btn-color":"primary"
+ }
+ ,
+ {
+  "title" : "Unlimited",
+  "title-color" : "green",
+  "values" :
+   [
+	 {"value" : "Unlimited"} ,
+	 {"value" : "Unlimited"} ,
+	 {"value" : "Unlimited"} ,
+	 {"value" : "Unlimited"} ,
+	 {"value" : "$50"},
+	 {"value" : "2" , "available" : true}
+   ] ,
+   "price":"$25",
+   "duration":"month",
+   "btn-color":"success"
+ }
+ ,
+ {
+  "title" : "Extreme",
+  "title-color" : "grey",
+  "values" :
+   [
+	 {"value" : "Unlimited"} ,
+	 {"value" : "Unlimited"} ,
+	 {"value" : "Unlimited"} ,
+	 {"value" : "Unlimited"} ,
+	 {"value" : "$100"},
+	 {"value" : "3" , "available" : true}
+   ] ,
+   "price":"$30",
+   "duration":"month",
+   "btn-color":"grey"
+ }
+]

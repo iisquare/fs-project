@@ -1,0 +1,92 @@
+{
+ "bootbox" : "components/bootbox.js/bootbox.js",
+
+ "colorpicker" : "components/mjolnic-bootstrap-colorpicker/dist/js/bootstrap-colorpicker.js",
+
+ "moment" : "components/moment/moment.js",
+ "datepicker"  : "components/bootstrap-datepicker/dist/js/bootstrap-datepicker.js",
+
+ "timepicker" : "components/bootstrap-timepicker/js/bootstrap-timepicker.js",
+ 
+ "datetimepicker" : "components/eonasdan-bootstrap-datetimepicker/src/js/bootstrap-datetimepicker.js",
+
+ "daterangepicker" : ["components/moment/moment.js" , "components/bootstrap-daterangepicker/daterangepicker.js"],
+
+ "chosen" : "components/chosen/chosen.jquery.js",
+
+ "excanvas" : "components/ExplorerCanvas/excanvas.js",
+ 
+ "fullcalendar" : ["components/moment/moment.js", "components/fullcalendar/dist/fullcalendar.js"],
+
+ "autosize" : "components/autosize/dist/autosize.js",
+
+ "colorbox" : "components/jquery-colorbox/jquery.colorbox.js",
+
+ "dataTables" : ["components/datatables/media/js/jquery.dataTables.js" , "components/_mod/datatables/jquery.dataTables.bootstrap.js"],
+ "dataTables-extensions" : ["components/datatables.net-buttons/js/dataTables.buttons.js", "components/datatables.net-buttons/js/buttons.flash.js", "components/datatables.net-buttons/js/buttons.html5.js", "components/datatables.net-buttons/js/buttons.print.js", "components/datatables.net-buttons/js/buttons.colVis.js", "components/datatables.net-select/js/dataTables.select.js"],
+
+
+ "flot" : "components/Flot/jquery.flot.js",
+
+ "flot.pie" : "components/Flot/jquery.flot.pie.js",
+
+ "flot.resize" : "components/Flot/jquery.flot.resize.js",
+
+ "gritter" : "components/jquery.gritter/js/jquery.gritter.js",
+
+ "inputlimiter" : "components/jquery-inputlimiter/jquery.inputlimiter.js",
+
+ "knob" : "components/jquery-knob/js/jquery.knob.js",
+
+ "maskedinput" : "components/jquery.maskedinput/dist/jquery.maskedinput.js",
+
+ "slimscroll" : "components/jquery-slimscroll/jquery.slimscroll.js",
+
+ "sparkline" : "components/jquery.sparkline/index.js",
+
+ "validate" : ["components/jquery-validation/dist/jquery.validate.js" , "components/jquery-validation/dist/additional-methods.js"],
+
+ "jquery-ui" : ["components/_mod/jquery-ui.custom/jquery-ui.custom.js" , "components/jqueryui-touch-punch/jquery.ui.touch-punch.js"],
+ 
+ "jquery-ui-full" : ["components/jquery-ui/jquery-ui.js" , "components/jqueryui-touch-punch/jquery.ui.touch-punch.js"],
+
+ "jqgrid" : ["components/jqGrid/js/jquery.jqGrid.js" , "components/jqGrid/js/i18n/grid.locale-en.js"],
+
+ "prettify" : "components/google-code-prettify/src/prettify.js",
+
+ "spin" : "components/spin.js/spin.js",
+ 
+ "select2" : "components/select2/dist/js/select2.js",
+ 
+ "dropzone" : "components/dropzone/dist/dropzone.js",
+ 
+ "typeahead" : "components/typeahead.js/dist/typeahead.jquery.js",
+ 
+ "raty": "components/raty/lib/jquery.raty.js",
+ 
+ "holder-js": "components/holderjs/holder.js",
+ 
+ "hotkeys" : "components/jquery.hotkeys/index.js",
+ 
+ "wysiwyg" : ["components/jquery.hotkeys/index.js", "components/_mod/bootstrap-wysiwyg/bootstrap-wysiwyg.js"],
+ 
+ "markdown" : ["components/markdown/lib/markdown.js", "components/bootstrap-markdown/js/bootstrap-markdown.js"],
+ 
+ "x-editable" : ["components/_mod/x-editable/bootstrap-editable.js" , "components/_mod/x-editable/ace-editable.js"],
+ 
+ "multiselect": "components/_mod/bootstrap-multiselect/bootstrap-multiselect.js",
+ 
+ "duallistbox": "components/_mod/bootstrap-duallistbox/jquery.bootstrap-duallistbox.js",
+  
+ "tag" : "components/_mod/bootstrap-tag/bootstrap-tag.js",
+ 
+ "nestable" : "components/_mod/jquery.nestable/jquery.nestable.js",
+ 
+ "spinner" : "components/fuelux/js/spinbox.js",
+
+ "wizard" : "components/fuelux/js/wizard.js",
+
+ "tree" : "components/_mod/fuelux/tree.js",
+ 
+ "easy-pie-chart" : "components/_mod/easypiechart/jquery.easypiechart.js"
+}

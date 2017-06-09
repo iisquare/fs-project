@@ -1,0 +1,203 @@
+<div class="alert alert-block alert-success">
+	<button type="button" class="close" data-dismiss="alert"><i class="ace-icon fa fa-times"></i></button>
+	<i class="ace-icon fa fa-check green"></i> Welcome to <strong class="green">Ace <small>(v{{site.version}})</small></strong>,
+	the lightweight, feature-rich and easy to use admin template.
+</div>
+
+
+<div class="row">
+ <div class="space-6"></div>
+
+ <div class="col-sm-7 infobox-container">
+	<!-- #section:pages/dashboard.infobox -->
+	{{#page.stats1}}
+	 {{> page.infobox}}
+	{{/page.stats1}}
+	<!-- /section:pages/dashboard.infobox -->
+	<div class="space-6"></div>
+	<!-- #section:pages/dashboard.infobox.dark -->
+	{{#page.stats2}}
+	 {{> page.infobox}}
+	{{/page.stats2}}
+	<!-- /section:pages/dashboard.infobox.dark -->
+ </div>
+
+ <div class="vspace-12-sm"></div>
+
+ <div class="col-sm-5">
+
+	<div class="widget-box">
+		<div class="widget-header widget-header-flat widget-header-small">
+			<h5 class="widget-title"><i class="ace-icon fa fa-signal"></i> Traffic Sources</h5>
+			<div class="widget-toolbar no-border">
+			 <div class="inline dropdown-hover">
+				<button class="btn btn-minier btn-primary">
+					This Week <i class="ace-icon fa fa-angle-down icon-on-right bigger-110"></i>
+				</button>
+				<ul class="dropdown-menu dropdown-menu-right dropdown-125 dropdown-lighter dropdown-close dropdown-caret">
+					<li class="active">
+						<a href="#" class="blue">
+							<i class="ace-icon fa fa-caret-right bigger-110">&nbsp;</i> This Week
+						</a>
+					</li>
+					<li><a href="#"><i class="ace-icon fa fa-caret-right bigger-110 invisible">&nbsp;</i> Last Week</a></li>
+					<li><a href="#"><i class="ace-icon fa fa-caret-right bigger-110 invisible">&nbsp;</i> This Month</a></li>
+					<li><a href="#"><i class="ace-icon fa fa-caret-right bigger-110 invisible">&nbsp;</i> Last Month</a></li>
+				</ul>
+			 </div>
+			</div>
+		</div>
+		
+		<div class="widget-body">
+		 <div class="widget-main">
+			<!-- #section:plugins/charts.flotchart -->
+			<div id="piechart-placeholder"></div>
+			<!-- /section:plugins/charts.flotchart -->
+			
+			<div class="hr hr8 hr-double"></div>
+			
+			<div class="clearfix">
+				<!-- #section:custom/extra.grid -->
+				<div class="grid3">
+					<span class="grey"><i class="ace-icon fa fa-facebook-square fa-2x blue"></i> &nbsp; likes</span>
+					<h4 class="bigger pull-right">1,255</h4>
+				</div>
+				
+				<div class="grid3">
+					<span class="grey"><i class="ace-icon fa fa-twitter-square fa-2x purple"></i> &nbsp; tweets</span>
+					<h4 class="bigger pull-right">941</h4>
+				</div>
+				
+				<div class="grid3">
+					<span class="grey"><i class="ace-icon fa fa-pinterest-square fa-2x red"></i> &nbsp; pins</span>
+					<h4 class="bigger pull-right">1,050</h4>
+				</div>
+				<!-- /section:custom/extra.grid -->
+			</div>
+		 </div><!-- /.widget-main -->
+		</div><!-- /.widget-body -->
+	</div><!-- /.widget-box -->
+
+
+ </div><!-- /.col -->
+
+</div><!-- /.row -->
+
+<!-- #section:custom/extra.hr -->
+<div class="hr hr32 hr-dotted"></div>
+<!-- /section:custom/extra.hr -->
+
+<div class="row">
+
+	<div class="col-sm-5">
+		<div class="widget-box transparent">
+			<div class="widget-header widget-header-flat">
+				<h4 class="widget-title lighter">
+					<i class="ace-icon fa fa-star orange"></i>
+					Popular Domains
+				</h4>
+				<div class="widget-toolbar">
+					<a href="#" data-action="collapse">
+						<i class="ace-icon fa fa-chevron-up"></i>
+					</a>
+				</div>
+			</div>
+
+			<div class="widget-body">
+			 <div class="widget-main no-padding">
+				{{> page.domains}}
+			 </div><!-- /.widget-main -->
+			</div><!-- /.widget-body -->
+		</div><!-- /.widget-box -->
+	</div><!-- /.col -->
+
+
+	<div class="col-sm-7">
+	  <div class="widget-box transparent">
+		<div class="widget-header widget-header-flat">
+			<h4 class="widget-title lighter"><i class="ace-icon fa fa-signal"></i> Sale Stats</h4>
+			<div class="widget-toolbar">
+				<a href="#" data-action="collapse"><i class="ace-icon fa fa-chevron-up"></i></a>
+			</div>
+		</div>
+		
+		<div class="widget-body">
+		 <div class="widget-main padding-4">
+			<div id="sales-charts"></div>
+		 </div><!-- /.widget-main -->
+		</div><!-- /.widget-body -->
+	  </div><!-- /.widget-box -->
+	</div><!-- /.col -->
+
+</div><!-- /.row -->
+
+
+
+<div class="hr hr32 hr-dotted"></div>
+
+
+<div class="row">
+
+ <div class="col-sm-6">
+	<div class="widget-box transparent" id="recent-box">
+		
+		<div class="widget-header">
+			<h4 class="widget-title lighter smaller"><i class="ace-icon fa fa-rss orange"></i>RECENT</h4>
+			<div class="widget-toolbar no-border">
+				<ul class="nav nav-tabs" id="recent-tab">
+					<li class="active"><a data-toggle="tab" href="#task-tab">Tasks</a></li>
+					<li><a data-toggle="tab" href="#member-tab">Members</a></li>
+					<li><a data-toggle="tab" href="#comment-tab">Comments</a></li>
+				</ul>
+			</div>
+		</div>
+
+		<div class="widget-body">
+		 <div class="widget-main padding-4">
+			<div class="tab-content padding-8">
+				<div id="task-tab" class="tab-pane active">
+					<h4 class="smaller lighter green">
+						<i class="ace-icon fa fa-list"></i>
+						Sortable Lists
+					</h4>
+					{{> page.tasks}}
+				</div>
+
+
+				<div id="member-tab" class="tab-pane">
+					{{> page.members}}
+				</div><!-- /.#member-tab -->
+
+
+				<div id="comment-tab" class="tab-pane">
+					{{> page.comments}}
+				</div>
+			</div>
+		 </div><!-- /.widget-main -->
+		</div><!-- /.widget-body -->
+
+
+	</div><!-- /.widget-box -->
+ </div><!-- /.col -->
+ 
+ <div class="col-sm-6">
+	<div class="widget-box ">
+		
+		<div class="widget-header">
+			<h4 class="widget-title lighter smaller">
+				<i class="ace-icon fa fa-comment blue"></i>
+				Conversation
+			</h4>
+		</div>
+		
+		<div class="widget-body">
+		 <div class="widget-main no-padding">
+			{{> page.conversations}}
+		 </div><!-- /.widget-main -->
+		</div><!-- /.widget-body -->
+		
+	</div><!-- /.widget-box -->
+ </div><!-- /.col -->
+
+</div><!-- /.row -->
+

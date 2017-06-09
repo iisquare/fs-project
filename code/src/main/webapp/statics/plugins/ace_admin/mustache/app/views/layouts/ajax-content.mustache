@@ -1,0 +1,47 @@
+<title>{{page.title}} - {{site.title}}</title>	
+
+{{#page.styles}}
+<link rel="stylesheet" href="{{{path.base}}}/{{{.}}}" />
+{{/page.styles}}
+{{#page.inline_styles}}
+<style>
+{{{page.inline_styles}}}
+</style>
+{{/page.inline_styles}}
+
+
+<!-- ajax layout which only needs content area -->
+{{^page.no-header}}{{!if no such thing as "no-header", then print header}}
+<div class="page-header">
+	<h1>{{page.title}} {{#page.description}}<small><i class="ace-icon fa fa-angle-double-right"></i> {{page.description}}</small>{{/page.description}}</h1>
+</div><!-- /.page-header -->
+{{/page.no-header}}
+
+<div class="row">
+  <div class="col-xs-12">
+	<!-- PAGE CONTENT BEGINS -->
+   {{> page.content }}
+	<!-- PAGE CONTENT ENDS -->
+  </div><!-- /.col -->
+</div><!-- /.row -->
+
+
+<!-- page specific plugin scripts -->
+{{!put IE only scripts here, currently we only use ExCanvas.js from time to time}}
+{{#page.ie_scripts}}
+<!--[if lte IE {{version}}]>
+  <script src="{{{path.base}}}/{{{file_name}}}"></script>
+<![endif]-->
+{{/page.ie_scripts}}
+
+
+
+<script type="text/javascript">
+var scripts = [null,{{#page.scripts}}"{{{path.base}}}/{{{.}}}",{{/page.scripts}} null]
+$('.page-content-area').ace_ajax('loadScripts', scripts, function() {
+  //inline scripts related to this page
+  {{#page.inline_scripts}}
+	 {{{page.inline_scripts}}}
+  {{/page.inline_scripts}}
+});
+</script>

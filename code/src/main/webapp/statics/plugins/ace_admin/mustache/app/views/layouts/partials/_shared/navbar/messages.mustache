@@ -1,0 +1,40 @@
+<li class="green dropdown-modal">
+	<a data-toggle="dropdown" class="dropdown-toggle" href="#">
+		<i class="ace-icon fa fa-envelope icon-animated-vertical"></i>
+		<span class="badge badge-success">{{layout.navbar_messages.count}}</span>
+	</a>
+	<ul class="dropdown-menu-right dropdown-navbar dropdown-menu dropdown-caret dropdown-close">
+		<li class="dropdown-header">
+			<i class="ace-icon fa fa-envelope-o"></i> {{layout.navbar_messages.count}} Messages
+		</li>
+		
+		<li class="dropdown-content">
+			<ul class="dropdown-menu dropdown-navbar">
+			 {{#layout.navbar_messages.latest}}
+				<li>
+					<a href="#" class="clearfix">
+						<img src="{{path.assets}}/avatars/{{img}}" class="msg-photo" alt="{{name}}'s Avatar">
+						<span class="msg-body">
+							<span class="msg-title">
+								<span class="blue">{{name}}:</span>
+								{{summary}}
+							</span>
+							<span class="msg-time">
+								<i class="ace-icon fa fa-clock-o"></i> <span>{{time}}</span>
+							</span>
+						</span>
+					</a>
+				</li>
+			 {{/layout.navbar_messages.latest}}
+			</ul>
+		</li>
+		
+		<li class="dropdown-footer">
+			<a href="{{^site.ajax}}{{#createLinkFunction}}inbox{{/createLinkFunction}}{{/site.ajax}}{{#site.ajax}}{{#createAjaxLinkFunction}}inbox{{/createAjaxLinkFunction}}{{/site.ajax}}">
+				See all messages
+				<i class="ace-icon fa fa-arrow-right"></i>
+			</a>
+		</li>
+
+	</ul>
+</li>

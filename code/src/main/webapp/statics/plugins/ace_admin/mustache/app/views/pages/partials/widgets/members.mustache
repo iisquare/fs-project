@@ -1,0 +1,22 @@
+{{#page.members}}
+ <tr>
+	<td class="">{{name}}</td>
+	<td>
+		<a href="#">{{email}}</a>
+	</td>
+	<td class="hidden-480">
+	{{#pending}}
+	<span class="label label-warning">Pending</span>
+	{{/pending}}
+	{{#approved}}
+	<span class="label label-success arrowed-in arrowed-in-right">Approved</span>
+	{{/approved}}
+	{{#blocked}}
+	<span class="label label-inverse arrowed">Blocked</span>
+	{{/blocked}}
+	{{#online}}
+	<span class="label label-info arrowed-in arrowed-in-right">Online</span>
+	{{/online}}
+	</td>
+ </tr>
+{{/page.members}}

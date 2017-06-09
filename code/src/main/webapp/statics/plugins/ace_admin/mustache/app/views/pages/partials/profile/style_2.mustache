@@ -1,0 +1,227 @@
+<div id="user-profile-2" class="user-profile">
+
+	<div class="tabbable">
+            <ul class="nav nav-tabs padding-18">
+              <li class="active"><a data-toggle="tab" href="#home"><i class="green ace-icon fa fa-user bigger-120"></i> Profile</a></li>
+              <li><a data-toggle="tab" href="#feed"><i class="orange ace-icon fa fa-rss bigger-120"></i> Activity Feed</a></li>
+              <li><a data-toggle="tab" href="#friends"><i class="blue ace-icon fa fa-users bigger-120"></i> Friends</a></li>
+			  <li><a data-toggle="tab" href="#pictures"><i class="pink ace-icon fa fa-picture-o bigger-120"></i> Pictures</a></li>
+            </ul>
+
+            <div class="tab-content no-border padding-24">
+			  <div id="home" class="tab-pane in active">
+				<div class="row">
+					<div class="col-xs-12 col-sm-3 center">
+						<span class="profile-picture">
+							<img class="editable img-responsive" alt="Alex's Avatar" id="avatar2" src="{{{path.assets}}}/avatars/profile-pic.jpg" />
+						</span>
+						<div class="space space-4"></div>
+						<a href="#" class="btn btn-sm btn-block btn-success">
+							<i class="ace-icon fa fa-plus-circle bigger-120"></i>
+							<span class="bigger-110">Add as a friend</span>
+						</a>
+						<a href="#" class="btn btn-sm btn-block btn-primary">
+							<i class="ace-icon fa fa-envelope-o bigger-110"></i>
+							<span class="bigger-110">Send a message</span>
+						</a>
+					</div><!-- /.col -->
+					
+					<div class="col-xs-12 col-sm-9">
+
+						<h4 class="blue">
+							<span class="middle">Alex M. Doe</span> 
+							<span class="label label-purple arrowed-in-right">
+								<i class="ace-icon fa fa-circle smaller-80 align-middle"></i>
+								online
+							</span>
+						</h4>
+						<div class="profile-user-info">
+							{{#page.info1}}{{^last}}{{! Don't print the last item here (the About me field) }}
+							<div class="profile-info-row">
+								<div class="profile-info-name">
+									{{{title}}}
+								</div>
+								
+								<div class="profile-info-value">
+									{{#icon}}
+										<i class="{{icon}} light-orange bigger-110"></i>
+									{{/icon}}
+									{{#content}}
+									<span>{{value}}</span>
+									{{/content}}
+								</div>
+							</div>
+							{{/last}}{{/page.info1}}
+						</div>
+
+						<div class="hr hr-8 dotted"></div>
+
+						<div class="profile-user-info">
+							{{#page.info2}}
+							<div class="profile-info-row">
+								<div class="profile-info-name">
+									{{#facebook}}
+									<i class="middle ace-icon fa fa-facebook-square bigger-150 blue"></i>
+									{{/facebook}}
+									{{#twitter}}
+									<i class="middle ace-icon fa fa-twitter-square bigger-150 light-blue"></i>
+									{{/twitter}}
+									{{title}}
+								</div>
+
+								<div class="profile-info-value">
+									{{#facebook}}
+									<a href="#">Find me on Facebook</a>
+									{{/facebook}}
+									{{#twitter}}
+									<a href="#">Follow me on Twitter</a>
+									{{/twitter}}
+									{{#url}}
+									<a href="#" target="_blank">{{url}}</a>
+									{{/url}}
+								</div>
+							</div>
+							{{/page.info2}}
+						</div>
+
+					</div><!-- /.col -->
+				</div><!-- /.row -->
+				
+				<div class="space-20"></div>
+				
+				<div class="row">
+					<div class="col-xs-12 col-sm-6">
+					 <div class="widget-box transparent">
+						<div class="widget-header widget-header-small">
+							<h4 class="widget-title smaller"><i class="ace-icon fa fa-check-square-o bigger-110"></i> Little About Me</h4>
+						</div>
+		
+						<div class="widget-body"><div class="widget-main">
+							<p>
+							My job is mostly lorem ipsuming and dolor sit ameting as long as consectetur adipiscing elit.
+							</p>
+							<p>
+							Sometimes quisque commodo massa gets in the way and sed ipsum porttitor facilisis.
+							</p>
+
+							<p>
+							The best thing about my job is that vestibulum id ligula porta felis euismod and nullam quis risus eget urna mollis ornare.
+							</p>
+							
+							<p>
+							Thanks for visiting my profile.
+							</p>
+						</div></div>
+					 </div>
+					</div>
+
+					<div class="col-xs-12 col-sm-6">
+					 <div class="widget-box transparent">
+						<div class="widget-header widget-header-small header-color-blue2">
+							<h4 class="widget-title smaller"><i class="ace-icon fa fa-lightbulb-o bigger-120"></i> My Skills</h4>
+						</div>
+						
+						<div class="widget-body"><div class="widget-main padding-16">
+						 <div class="clearfix">
+							<div class="grid3 center">
+							  <!-- #section:plugins/charts.easypiechart -->
+							  <div class="easy-pie-chart percentage" data-percent="45" data-color="#CA5952">
+								<span class="percent">45</span>%
+							  </div>
+							  <!-- /section:plugins/charts.easypiechart -->
+							  <div class="space-2"></div>
+							  Graphic Design
+							</div>
+							
+							
+							<div class="grid3 center">
+							  <div class="center easy-pie-chart percentage" data-percent="90" data-color="#59A84B">
+								<span class="percent">90</span>%
+							  </div>
+							  <div class="space-2"></div>
+							  HTML5 & CSS3
+							</div>
+							
+							
+							<div class="grid3 center">
+							  <div class="center easy-pie-chart percentage" data-percent="80" data-color="#9585BF">
+								<span class="percent">80</span>%
+							  </div>
+							  <div class="space-2"></div>
+							  Javascript/jQuery
+							</div>
+						  </div>
+													
+							<div class="hr hr-16"></div>
+							
+							<!-- #section:pages/profile.skill-progress -->
+							<div class="profile-skills">
+								<div class="progress"><div class="progress-bar" style="width:80%"><span class="pull-left">HTML5 & CSS3</span> <span class="pull-right">80%</span></div></div>
+								<div class="progress"><div class="progress-bar progress-bar-success" style="width:72%"><span class="pull-left">Javascript & jQuery</span><span class="pull-right">72%</span></div></div>
+								<div class="progress"><div class="progress-bar progress-bar-purple" style="width:70%"><span class="pull-left">PHP & MySQL</span><span class="pull-right">70%</span></div></div>
+								<div class="progress"><div class="progress-bar progress-bar-warning" style="width:50%"><span class="pull-left">Wordpress</span><span class="pull-right">50%</span></div></div>
+								<div class="progress"><div class="progress-bar progress-bar-danger" style="width:38%"><span class="pull-left">Photoshop</span><span class="pull-right">38%</span></div></div>
+							</div>
+							<!-- /section:pages/profile.skill-progress -->
+						
+						</div></div>
+
+						
+					 </div>
+					</div>
+			   </div>
+			  </div><!-- /#home -->
+
+			  <div id="feed" class="tab-pane">
+					<div class="profile-feed row">
+					  <div class="col-sm-6">
+						{{#page.activities.first_five}}
+							{{> page.activity}}
+						{{/page.activities.first_five}}
+					  </div><!-- /.col -->
+					  
+					  <div class="col-sm-6">
+						{{#page.activities.second_five}}
+							{{> page.activity}}
+						{{/page.activities.second_five}}
+					  </div><!-- /.col -->
+					</div><!-- /.row -->
+					
+					<div class="space-12"></div>
+
+					<div class="center">
+						<button type="button" class="btn btn-sm btn-primary btn-white btn-round">
+							<i class="ace-icon fa fa-rss bigger-150 middle orange2"></i>
+							<span class="bigger-110">View more activities</span>
+							<i class="icon-on-right ace-icon fa fa-arrow-right"></i>
+						</button>
+					</div>
+			  </div><!-- /#feed -->
+
+
+
+			  <div id="friends" class="tab-pane">
+					<!-- #section:pages/profile.friends -->
+					<div class="profile-users clearfix">
+						{{> page.friends}}
+					</div>
+					<!-- /section:pages/profile.friends -->
+
+					<div class="hr hr10 hr-double"></div>
+					<ul class="pager pull-right">
+					  <li class="previous disabled"><a href="#">&larr; Prev</a></li>
+					  <li class="next"><a href="#">Next &rarr;</a></li>
+					</ul>
+			  </div><!-- /#friends -->
+
+
+
+			  <div id="pictures" class="tab-pane">
+					{{> page.photos}}
+			  </div><!-- /#pictures -->
+
+
+           </div>
+	</div>
+ 
+</div>

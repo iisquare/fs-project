@@ -1,0 +1,31 @@
+[
+ {
+	"name": "Bob Doe",
+	"avatar": "avatar.png",
+	"time": "6 min",
+	"time-color": "green",
+	"comment": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque commodo massa sed ipsum porttitor facilisis",
+	"menu": true
+ } ,
+ {
+	"name": "Jennifer",
+	"avatar": "avatar1.png",
+	"time": "15 min",
+	"time-color": "blue",
+	"comment": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque commodo massa sed ipsum porttitor facilisis"
+ } ,
+ {
+	"name": "Joe",
+	"avatar": "avatar2.png",
+	"time": "22 min",
+	"time-color": "orange",
+	"comment": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque commodo massa sed ipsum porttitor facilisis"
+ } ,
+ {
+	"name": "Rita",
+	"avatar": "avatar3.png",
+	"time": "50 min",
+	"time-color": "red",
+	"comment": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque commodo massa sed ipsum porttitor facilisis"
+ }
+]

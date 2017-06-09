@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+	<title>Start - Ace admin template</title>
+
+	<link href="assets/css/bootstrap.css" rel="stylesheet" />
+	<style>
+		body {
+			background: #E4E6E9;
+		}
+		.main-container {
+			padding-top: 72px;
+		}
+		.navbar-inverse {
+			background-color: #438EB9;
+			border-bottom-color: rgba(0,0,0,0.33);
+		}
+		.navbar-inverse .navbar-brand {
+			color: #EEE;
+		}
+		
+		hr {
+			border-width: 0;
+			margin-top: 6px;
+			margin-bottom: 6px;
+		}
+	</style>
+  </head>
+
+  <body>
+	<div class="navbar navbar-inverse navbar-fixed-top">
+		<div class="container">
+			<div class="navbar-header pull-left">
+				<a class="navbar-brand" href="#">
+						&nbsp;<i class="glyphicon glyphicon-leaf"></i>&nbsp;
+						Ace admin template <span class="smaller-75">(v1.4.0)</span>
+				</a>
+			</div>
+
+		</div>
+    </div>
+	
+    <div class="container main-container">
+		<h2 class="page-header text-primary">Welcome</small></h2>
+
+		<script>
+		 if(document.location.protocol == 'file:') {
+			document.write('<div class="alert alert-danger">\
+			<strong>Please open this page using <span class="text-info">`http` protocol</span>, i.e. access it like this <span class="text-primary">http://127.0.0.1/path/to/ace/index.html</span></strong><br />\
+			Demo pages, documentation & CSS/JS builder pages, load data dynamically using ajax and <b>`file` protocol</b> prevents that due to browser restrictions.\<br />\
+			Also some browsers such as Firefox don\'t load fonts when resource files are inside an upper level directory.\
+			</div>');
+		 }
+		 else {
+			document.write('<h4 class="text-success">Click on an item below to start</h4>');
+		 }
+		</script>
+	
+	
+		
+		<div class="row">
+			<div class="col-xs-12">
+				<div class="list-group">
+					<a href="html/" class="list-group-item">
+						Demo Pages
+					</a>
+					<a href="html/ajax/" class="list-group-item">
+						Ajax Demo Pages
+					</a>
+					<a href="html/#help" class="list-group-item">
+						Demo Pages with Onpage Help Feature Enabled (inside dashboard page, click the blue button on right)
+					</a>
+					<hr />
+					<a href="angular/" class="list-group-item">
+						AngularJS <span class="text-info">(*new*)</span>
+					</a>
+					<hr />					
+					<hr />
+					<a href="docs/" class="list-group-item">
+						Documentation
+					</a>
+					<hr />
+					<a href="build/css.html" class="list-group-item">
+						CSS Builder
+					</a>
+					<a href="build/js.html" class="list-group-item">
+						Javascript Builder
+					</a>
+					<a href="build/email.html" class="list-group-item">
+						Email Converter
+					</a>
+					<hr />
+					<a href="examples/" class="list-group-item">
+						Examples
+					</a>
+					<hr />
+
+					<a href="frontend/landing.html" class="list-group-item">
+						Landing Page
+					</a>
+					<a href="frontend/soon.html" class="list-group-item">
+						Coming Soon
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+
+  </body>
+</html>

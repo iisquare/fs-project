@@ -1,0 +1,36 @@
+<div class="clearfix">
+	<div ng-repeat="member in ::getData('members')" class="itemdiv memberdiv">
+		<div class="user">
+			<img alt="{{member.name}}'s avatar" ng-src="{{ace.path.assets}}/avatars/{{member.avatar}}" />
+		</div>
+		
+		<div class="body">
+			<div class="name"><a href="" ng-bind="member.name"></a></div>
+			<div class="time"><i class="ace-icon fa fa-clock-o"></i> <span class="green" ng-bind="member.time"></span></div>
+			<div>
+				<span ng-if="member.status == 'pending'" class="label label-warning label-sm">pending</span>									
+				<div ng-if="member.status == 'pending'" class="inline pos-rel dropdown" uib-dropdown>
+					<button class="btn btn-minier btn-yellow btn-no-border dropdown-toggle" uib-dropdown-toggle>
+						<i class="ace-icon fa fa-angle-down icon-only bigger-120"></i>
+					</button>
+					<ul class="dropdown-menu dropdown-only-icon dropdown-yellow dropdown-menu-right dropdown-caret dropdown-close">
+						<li><a href="" class="tooltip-success" uib-tooltip="Approve" tooltip-placement="left" title="Approve"><span class="green"><i class="ace-icon fa fa-check bigger-110"></i></span></a></li>
+						<li><a href="" class="tooltip-warning" uib-tooltip="Reject" tooltip-placement="left" title="Reject"><span class="orange"><i class="ace-icon fa fa-times bigger-110"></i></span> </a></li>
+						<li><a href="" class="tooltip-error" uib-tooltip="Delete" tooltip-placement="left" title="Delete"><span class="red"><i class="ace-icon fa fa-trash-o bigger-110"></i></span> </a></li>
+					</ul>
+				</div>
+				<span ng-if="member.status == 'blocked'" class="label label-danger label-sm">blocked</span>
+				<span ng-if="member.status == 'approved'" class="label label-success label-sm arrowed-in">approved</span>
+				<span ng-if="member.status == 'online'" class="label label-info label-sm arrowed-in arrowed-in-right">online</span>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="space-4"></div>
+<div class="center">
+	<i class="ace-icon fa fa-users fa-2x green middle"></i>
+	&nbsp;
+	<button type="button" class="btn btn-sm btn-white btn-info">See all members &nbsp; <i class="ace-icon fa fa-arrow-right"></i></button>
+</div>
+<div class="hr hr-double hr8"></div>

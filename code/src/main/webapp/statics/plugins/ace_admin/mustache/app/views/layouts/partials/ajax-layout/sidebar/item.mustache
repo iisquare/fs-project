@@ -1,0 +1,35 @@
+<li class="{{#class}}{{class}}{{/class}} {{#page.horizontal-menu}}hover{{/page.horizontal-menu}}">{{! print class name (active, open, etc) if it exists }}
+  <a {{#link}}data-url="page/{{link}}"{{/link}} href="{{#link}}{{#no-ajax}}{{#createLinkFunction}}{{link}}{{/createLinkFunction}}{{/no-ajax}}{{^no-ajax}}{{#createAjaxLinkFunction}}{{link}}{{/createAjaxLinkFunction}}{{/no-ajax}}{{/link}}{{^link}}#{{/link}}"{{#submenu?}} class="dropdown-toggle"{{/submenu?}}{{#data-loader}} data-loader="{{data-loader}}"{{/data-loader}}>
+	{{#icon}}<i class="menu-icon {{icon}}"></i>{{/icon}}
+	{{#level-1}}
+	 <span class="menu-text">
+	{{/level-1}}
+
+	 {{#level-2}}{{! if this item is level-2 and no icon assigned to it, use this icon}}
+		{{^icon}}<i class="menu-icon fa fa-caret-right"></i>{{/icon}}
+	 {{/level-2}}
+
+	  {{title}}
+	  {{#badge}}
+			<!-- #section:basics/sidebar.layout.badge -->
+			<span class="badge {{badge-class}} {{tooltip-class}}"{{#tooltip}} title="{{{tooltip}}}"{{/tooltip}}>{{{badge}}}</span>
+			<!-- /section:basics/sidebar.layout.badge -->
+	  {{/badge}}
+	  {{#label}}
+			<span class="label {{label-class}}"{{#label-title}} title="{{label-title}}"{{/label-title}}>{{{label}}}</span>
+	  {{/label}}
+	{{#level-1}}
+	 </span>
+	{{/level-1}}
+
+	{{#submenu?}}<b class="arrow fa fa-angle-down"></b>{{/submenu?}}
+  </a>
+  <b class="arrow"></b>
+  {{#submenu?}}{{! if we have submenu items, print them recursively }}
+	<ul class="submenu">
+	{{#submenu}}
+		{{> layout.sidebar.item}}
+	{{/submenu}}
+	</ul>
+  {{/submenu?}}
+</li>

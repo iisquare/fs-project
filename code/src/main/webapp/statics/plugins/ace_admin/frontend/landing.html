@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+		<meta charset="utf-8" />
+		<title>Ace Application - Landing Page</title>
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+
+		<!-- bootstrap & fontawesome -->
+		<link rel="stylesheet" href="../assets/css/bootstrap.css" />
+		<link rel="stylesheet" href="../components/font-awesome/css/font-awesome.css" />
+
+
+		<!-- text fonts -->
+		<link rel="stylesheet" href="../assets/css/ace-fonts.css" />
+
+		<!-- ace styles -->
+		<link rel="stylesheet" href="../assets/css/ace.css" class="ace-main-stylesheet" id="main-ace-style" />
+		
+		<style>
+		.jumbotron.has-background {
+			background: transparent url("images/home-bg.jpg") top center no-repeat;
+			/* background source: https://pixabay.com/en/apple-steve-jobs-quotes-scrabble-758334/ */
+		}
+		.section-contact {
+			background: #222 url("images/map-contact.jpg") center no-repeat;
+		}
+		</style>
+
+		<!--[if lte IE 9]>
+			<link rel="stylesheet" href="../assets/css/ace-part2.css" class="ace-main-stylesheet" />
+			<link rel="stylesheet" href="../assets/css/ace-ie.css" />
+		<![endif]-->
+		
+		
+		<link rel="stylesheet" href="frontend.css" />
+
+		<!-- HTML5shiv and Respond.js for IE8 to support HTML5 elements and media queries -->
+		<!--[if lte IE 8]>
+		<script src="../components/html5shiv/dist/html5shiv.min.js"></script>
+		<script src="../components/respond/dest/respond.min.js"></script>
+		<![endif]-->
+	</head>
+
+	<body class="no-skin pos-rel" data-spy="scroll" data-target="#menu">
+		<div id="navbar" class="navbar navbar-default navbar-fixed-top">
+			<div class="navbar-container container" id="navbar-container">
+				
+				<button data-target="#menu" data-toggle="collapse" type="button" class="pull-right navbar-toggle collapsed">
+					<span class="sr-only">Toggle menu</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+
+				<div class="navbar-header navbar-left">
+					<a href="#top" class="navbar-brand">
+						<small>
+							<i class="fa fa-leaf"></i>
+							<span class="light-green">Ace</span> Services
+						</small>
+					</a>
+				</div>
+
+				<div class=" navbar-header navbar-right" role="navigation">
+					<div id="menu" class="collapse navbar-collapse">
+						<ul class="nav navbar-nav navbar-right" role="tablist">
+							<li>
+								<a href="#services">Services</a>
+							</li>
+							
+							<li class="sep visible-md visible-lg">
+								<i class="ace-icon fa fa-circle white"></i>
+							</li>
+							
+							<li>
+								<a href="#info">Info</a>
+							</li>
+							
+							<li class="sep visible-md visible-lg">
+								<i class="ace-icon fa fa-circle white"></i>
+							</li>
+							
+							<li>
+								<a href="#slider">Slider</a>
+							</li>
+							
+							<li class="sep visible-md visible-lg">
+								<i class="ace-icon fa fa-circle white"></i>
+							</li>
+							
+							<li>
+								<a href="#contact">Contact</a>
+							</li>
+							
+							<li class="sep visible-md visible-lg">
+								<i class="ace-icon fa fa-circle white"></i>
+							</li>
+							
+							<li>
+								<a href="../html/login.html"><span class="light-green">Login</span> &nbsp;<i class="fa fa-user bigger-110 light-green"></i></a>
+							</li>
+						</ul>
+					</div>				
+				</div>
+			</div><!-- /.navbar-container -->
+		</div>
+		
+		<div class="main-container" id="top">
+			<div class="jumbotron main-background">
+			
+			  <img src="images/home-bg.jpg" class="img-main-background" data-src="https://pixabay.com/en/apple-steve-jobs-quotes-scrabble-758334/" />
+			  
+			  <div class="container pos-rel">
+				<div class="text-center">
+					<h2 class="light-green">Welcome to our page</h2>
+					<h1 class="white">LANDING PAGE</h1>
+					<h3 class="light-blue">We provide <span class="orange2 bigger-110">Ace applications</span> and tools to meet your business needs</h3>
+					<br />
+					<br />
+					<br />
+					<br />
+					<br />
+					<a class="btn btn-purple btn-lg no-border bigger-150" href="#" role="button">&nbsp; Learn more &nbsp;</a>
+				</div>
+			  </div>
+			</div>
+			
+			
+			<section id="services" class="section section-grey">
+				<div class="container">
+					<div class="row">
+						<div class="text-center">
+							<h2 class="text-primary">Services</h2>
+							<h3 class="text-muted">Lorem ipsum dolor sit amet consectetur.</h3>
+						</div>
+					</div>
+					<div class="space-4"></div>
+					<div class="row text-center">
+						<div class="col-md-4">
+							<span class="fa-stack fa-4x">
+								<i class="fa fa-circle fa-stack-2x text-primary"></i>
+								<i class="fa fa-laptop fa-stack-1x fa-inverse"></i>
+							</span>
+							<h4 class="text-info">Responsive Design</h4>
+							<p class="text-muted align-justify">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Minima maxime quam architecto quo inventore harum ex magni, dicta impedit.</p>
+						</div>
+						
+						<div class="col-md-4">
+							<span class="fa-stack fa-4x">
+								<i class="fa fa-circle fa-stack-2x text-primary"></i>
+								<i class="fa fa-cloud fa-stack-1x fa-inverse"></i>
+							</span>
+							<h4 class="text-info">Cloud Computing</h4>
+							<p class="text-muted align-justify">Aenean lacinia bibendum nulla sed consectetur. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum.</p>
+						</div>
+						
+						<div class="col-md-4">
+							<span class="fa-stack fa-4x">
+								<i class="fa fa-circle fa-stack-2x text-primary"></i>
+								<i class="fa fa-pie-chart fa-stack-1x fa-inverse"></i>
+							</span>
+							<h4 class="text-info">Data Analysis</h4>
+							<p class="text-muted align-justify">Veniam marfa mustache skateboard, adipisicing fugiat velit pitchfork beard. Freegan beard aliqua cupidatat mcsweeney's vero.</p>
+						</div>
+					</div>
+				</div>
+			</section>
+			
+			
+			<section id="info" class="section">
+				<div class="container">
+					<div class="row">
+						<div class="col-lg-5 col-sm-6 col-lg-offset-1 text-center">
+							<img alt="Section Image" src="images/ace.png" width="250" class="img-responsive" />
+						</div>
+						
+						<div class="col-lg-5 col-sm-6">
+							<h2 class="text-primary"><i class="ace-icon fa fa-dashboard orange"></i>&nbsp; Section heading</h2>	
+							<div class="hr"></div>
+							<p>
+								Justo odio, dapibus ac facilisis in, egestas eget quam. Donec id elit non mi porta gravida at eget metus.
+								<br />
+								Donec sed odio dui. Nullam quis risus eget urna mollis ornare vel eu leo. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.
+							</p>
+						</div>						
+					</div>
+
+				</div>
+			</section>
+			
+			<section class="section section-grey">
+				<div class="container">
+
+					<div class="row">
+						<div class="col-lg-5 col-sm-6 col-lg-offset-1">
+							<h2 class="text-primary"><i class="ace-icon fa fa-bar-chart green"></i>&nbsp; Section heading</h2>	
+							<div class="hr"></div>
+							<p> Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis. Fusce condimentum nunc ac nisi vulputate fringilla. Donec lacinia congue felis in faucibus.</p>
+						</div>
+						<div class="col-lg-5 col-lg-offset-1 col-sm-6 text-center">
+							<img alt="Section Image" width="250" src="images/ace.png" class="img-responsive inline" />
+						</div>
+					</div>
+
+				</div>
+			</section>
+			
+			
+			<section id="slider" class="section no-padding">
+				<div id="carousel-example" class="carousel slide" data-ride="carousel">
+				  <!-- Indicators -->
+				  <ol class="carousel-indicators">
+					<li data-target="#carousel-example" data-slide-to="0" class="active"></li>
+					<li data-target="#carousel-example" data-slide-to="1"></li>
+					<li data-target="#carousel-example" data-slide-to="2"></li>
+				  </ol>
+
+				  <!-- Wrapper for slides -->
+				  <div class="carousel-inner" role="listbox">
+					<div class="item active">
+					  <img data-src="holder.js/100px400?theme=industrial&text=Slide 1" alt="Slide 1" />
+					  <div class="carousel-caption">
+						<h3>Slide 1</h3>
+					  </div>
+					</div>
+					<div class="item">
+					  <img data-src="holder.js/100px400?theme=industrial&text=Slide 2" alt="Slide 2" />
+					  <div class="carousel-caption">
+						<h3>Slide 2</h3>
+					  </div>
+					</div>
+					<div class="item">
+					  <img data-src="holder.js/100px400?theme=industrial&text=Slide 3" alt="Slide 3" />
+					  <div class="carousel-caption">
+						<h3>Slide 3</h3>
+					  </div>
+					</div>
+				  </div>
+
+				  <!-- Controls -->
+				  <a class="left carousel-control" href="#carousel-example" role="button" data-slide="prev">
+					<span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+					<span class="sr-only">Previous</span>
+				  </a>
+				  <a class="right carousel-control" href="#carousel-example" role="button" data-slide="next">
+					<span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+					<span class="sr-only">Next</span>
+				  </a>
+				</div>
+			</section>
+			
+			
+			
+			<section class="section">
+				<div class="container">
+
+					<div class="row">
+						<div class="col-xs-12">
+							<div class="row">
+							 <div class="col-md-2 text-center">
+							  <h2 class="blue inline bigger">Our Clients</h2>
+							  <div class="space-8 visible-xs visible-sm"></div>
+							 </div>
+							
+							 <div class="col-md-10">
+							  <div class="row">
+								<div class="col-xs-4 col-sm-3 col-md-2 text-center">
+									<i class="fa fa-amazon orange2 fa-3x"></i>
+									<div class="space-4"></div>
+									<span class="bigger-120 text-muted">Amazon</span>
+								</div>								
+								
+								<div class="col-xs-4 col-sm-3 col-md-2 text-center">
+									<i class="fa fa-linkedin text-primary fa-3x"></i>
+									<div class="space-4"></div>
+									<span class="bigger-120 text-muted">LinkedIn</span>
+								</div>
+								
+								<div class="col-xs-4 col-sm-3 col-md-2 text-center">
+									<i class="fa fa-firefox orange fa-3x"></i>
+									<div class="space-4"></div>
+									<span class="bigger-120 text-muted">Firefox</span>
+								</div>
+								
+								<div class="clearfix visible-xs visible-sm"></div>
+								<div class="visible-xs visible-sm space space-12"></div>
+								
+								<div class="col-xs-4 col-sm-3 col-md-2 text-center">
+									<i class="fa fa-android green fa-3x"></i>
+									<div class="space-4"></div>
+									<span class="bigger-120 text-muted">Android</span>
+								</div>
+								
+								<div class="col-xs-4 col-sm-3 col-md-2 text-center">
+									<i class="fa fa-youtube red fa-3x"></i>
+									<div class="space-4"></div>
+									<span class="bigger-120 text-muted">Youtube</span>
+								</div>
+								
+								<div class="col-xs-4 col-sm-3 col-md-2 text-center">
+									<i class="fa fa-twitter light-blue fa-3x"></i>
+									<div class="space-4"></div>
+									<span class="bigger-120 text-muted">Twitter</span>
+								</div>
+							</div>
+							
+						  </div>
+						 </div>
+						</div>
+					</div>
+
+				</div>
+			</section>
+			
+			
+
+			
+			<section id="contact" class="section section-contact">
+				<div class="container">
+					<div class="row">
+						<div class="col-xs-12 text-center">
+							<h2 class="white">Contact Us</h2>
+							<h4 class="light-grey">Lorem ipsum dolor sit amet consectetur</h4>
+						</div>
+					</div>
+					
+					<div class="space-16"></div>
+					
+					<div class="row">
+						<div class="col-xs-12">
+							<form>
+								<div class="row">
+									<div class="col-md-5 col-md-offset-2">
+										<div class="form-group">
+											<input type="text" placeholder="Name" class="form-control input-lg input-transparent" />
+										</div>
+										<div class="form-group">
+											<input type="email" placeholder="Email" class="form-control input-lg input-transparent" />
+										</div>
+										<div class="form-group">
+											<input type="tel" placeholder="Phone Number" class="form-control input-lg input-transparent" />
+										</div>
+									</div>
+									<div class="col-md-5">
+										<div class="form-group">
+											<textarea placeholder="Your Message" class="form-control input-transparent"></textarea>
+										</div>
+									</div>
+									
+									<div class="clearfix"></div>
+									
+									<div class="space-12"></div>
+									
+									<div class="col-md-offset-2 text-center">
+										<button class="btn btn-primary btn-lg no-border" type="button">Send Message</button>
+									</div>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			</section>
+			
+			
+			<footer class="section">
+				<div class="container">
+					<div class="row">
+						<div class="col-md-4 text-left">
+							<span class="bigger-150 text-muted"><span class="blue bolder">Ace</span> Application &copy; 2013-2014</span>
+						</div>
+						<div class="col-md-4 text-center">
+							<span class="action-buttons">
+								<a href="#">
+									<i class="ace-icon fa fa-twitter-square light-blue bigger-200"></i>
+								</a>
+								
+								<a href="#">
+									<i class="ace-icon fa fa-facebook-square text-primary bigger-200"></i>
+								</a>
+								
+								<a href="#">
+									<i class="ace-icon fa fa-rss-square orange bigger-200"></i>
+								</a>
+							</span>
+						</div>
+						
+						<div class="col-md-4 text-right">
+							<a href="#" class="bigger-110">Terms of Use</a>
+						</div>
+					</div>
+				</div>
+			</footer>
+
+		</div>
+
+
+		<!-- basic scripts -->
+
+		<!--[if !IE]> -->
+		<script src="../components/jquery/dist/jquery.js"></script>
+		<!-- <![endif]-->
+		<!--[if IE]>
+		<script src="../components/jquery.1x/dist/jquery.min.js"></script>
+		<![endif]-->
+		
+		
+		<script src="../components/bootstrap/dist/js/bootstrap.js"></script>
+		<script src="../components/holderjs/holder.js"></script>
+		
+		<script type="text/javascript">
+		jQuery(function($) {
+			$('#contact textarea').css('min-height', '150px');
+		
+		
+			///make navbar compact when scrolling down
+			var isCompact = false;
+			$(window)
+			.on('scroll.scroll_nav', function() {
+				var scroll = $(window).scrollTop();
+				var h = $(window).height();
+				var body_sH = document.body.scrollHeight;
+				if(scroll > parseInt(h / 4) || (scroll > 0 && body_sH >= h && h + scroll >= body_sH - 1)) {//|| for smaller pages, when reached end of page
+					if(!isCompact) $('.navbar').addClass('navbar-compact');
+					isCompact = true;
+				}
+				else {
+					$('.navbar').removeClass('navbar-compact');
+					isCompact = false;
+				}
+			}).triggerHandler('scroll.scroll_nav');
+			
+			
+			//optinal: when window is too small change background presentation
+			$(window)
+			.on('resize.bg_update', function() {
+				var width = $(window).width();
+				
+				if(width < 992) {
+					$('.img-main-background').addClass('hide');
+					$('.jumbotron').addClass('has-background');
+				}
+				else {
+					$('.img-main-background').removeClass('hide');
+					$('.jumbotron').removeClass('has-background');
+				}
+			}).triggerHandler('resize.bg_update');
+			
+			
+			//animated scroll to a section
+			$(document).on('click', '#navbar a', function() {
+				var href = $(this).attr('href');
+				if(!( /^\#/.test(href) )) return;
+				var target = $(href);
+				if(target.length == 1) {
+					var offset = target.offset();
+					var top = parseInt(Math.max(offset.top - 30, 0));
+					$('html,body').animate({scrollTop: top}, 250);
+				}
+			});
+
+		});
+		</script>
+
+	</body>
+</html>

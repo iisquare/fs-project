@@ -1,0 +1,45 @@
+{{#page.responsive_style_2}}
+  <a href="#" class="menu-toggler invisible" id="menu-toggler" data-target="#sidebar"></a>
+{{/page.responsive_style_2}}
+<!-- #section:basics/sidebar{{#page.horizontal-menu}}.horizontal{{/page.horizontal-menu}} -->
+<div id="sidebar" class="sidebar
+{{#page.horizontal-menu}} h-sidebar{{/page.horizontal-menu}}
+
+{{^page.side_menu_collapsible}}
+ {{^page.responsive_style_2}}
+   responsive
+ {{/page.responsive_style_2}}
+{{/page.side_menu_collapsible}}
+
+{{#page.side_menu_collapsible}} navbar-collapse collapse{{/page.side_menu_collapsible}}
+{{#page.responsive_style_2}} responsive-min{{/page.responsive_style_2}}
+ace-save-state">
+
+<script type="text/javascript">
+ try{ace.settings.loadState('sidebar')}catch(e){}
+</script>
+
+
+	{{> layout.sidebar.shortcuts}}
+
+	<ul class="nav nav-list">
+		{{#layout.sidebar_items}} {{! the item array}}
+			{{> layout.sidebar.item}} {{! the item partial template}}
+		{{/layout.sidebar_items}}
+	</ul><!-- /.nav-list -->
+
+	<!-- #section:basics/sidebar.layout.minimize -->
+	{{^page.horizontal-menu}}
+	<div class="sidebar-toggle sidebar-collapse" id="sidebar-collapse">		
+		<i id="sidebar-toggle-icon" class="ace-icon fa fa-angle-double-left ace-save-state" data-icon1="ace-icon fa fa-angle-double-left" data-icon2="ace-icon fa fa-angle-double-right"></i>
+	</div>
+	{{/page.horizontal-menu}}
+	{{#page.responsive_style_2}}{{!for expanding minimized menu in small devices}}
+	<div class="sidebar-toggle sidebar-expand" id="sidebar-expand">
+		<i class="ace-icon fa fa-angle-double-right" data-icon1="ace-icon fa fa-angle-double-right" data-icon2="ace-icon fa fa-angle-double-left"></i>
+	</div>
+	{{/page.responsive_style_2}}
+	<!-- /section:basics/sidebar.layout.minimize -->
+
+</div>
+<!-- /section:basics/sidebar{{#page.horizontal-menu}}.horizontal{{/page.horizontal-menu}} -->

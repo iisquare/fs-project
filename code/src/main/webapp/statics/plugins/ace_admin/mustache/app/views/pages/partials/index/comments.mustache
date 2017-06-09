@@ -1,0 +1,46 @@
+<!-- #section:pages/dashboard.comments -->
+<div class="comments">
+	{{#page.comments}}
+	<div class="itemdiv commentdiv">
+		<div class="user">
+			<img alt="{{name}}'s Avatar" src="{{path.assets}}/avatars/{{avatar}}" />
+		</div>
+		
+		<div class="body">
+			<div class="name"><a href="#">{{name}}</a></div>
+			<div class="time"><i class="ace-icon fa fa-clock-o"></i> <span class="{{time-color}}">{{time}}</span></div>
+			<div class="text">
+				<i class="ace-icon fa fa-quote-left"></i> {{comment}} &hellip;
+			</div>
+		</div>
+		
+		<div class="tools">
+			{{#menu}}
+			<div class="inline position-relative">
+				<button class="btn btn-minier bigger btn-yellow dropdown-toggle" data-toggle="dropdown"><i class="ace-icon fa fa-angle-down icon-only bigger-120"></i></button>
+				<ul class="dropdown-menu dropdown-only-icon dropdown-yellow dropdown-menu-right dropdown-caret dropdown-close">
+					<li><a href="#" class="tooltip-success" data-rel="tooltip" title="Approve"><span class="green"><i class="ace-icon fa fa-check bigger-110"></i></span></a></li>
+					<li><a href="#" class="tooltip-warning" data-rel="tooltip" title="Reject"><span class="orange"><i class="ace-icon fa fa-times bigger-110"></i></span> </a></li>
+					<li><a href="#" class="tooltip-error" data-rel="tooltip" title="Delete"><span class="red"><i class="ace-icon fa fa-trash-o bigger-110"></i></span> </a></li>
+				</ul>
+			</div>
+			{{/menu}}
+			{{^menu}}
+			<div class="action-buttons bigger-125">
+				<a href="#"><i class="ace-icon fa fa-pencil blue"></i></a>
+				<a href="#"><i class="ace-icon fa fa-trash-o red"></i></a>
+			</div>
+			{{/menu}}
+		</div>
+	</div>
+	{{/page.comments}}
+</div>
+
+<div class="hr hr8"></div>
+<div class="center">
+	<i class="ace-icon fa fa-comments-o fa-2x green middle"></i>
+	&nbsp;
+	<a href="#" class="btn btn-sm btn-white btn-info">See all comments &nbsp; <i class="ace-icon fa fa-arrow-right"></i></a>
+</div>
+<div class="hr hr-double hr8"></div>
+<!-- /section:pages/dashboard.comments -->

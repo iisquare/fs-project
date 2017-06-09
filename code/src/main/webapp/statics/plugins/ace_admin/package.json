@@ -1,0 +1,42 @@
+{
+  "name": "ace",
+  "version": "1.4.0",
+  "description": "Responsive template",
+  "main": "Gruntfile.js",
+  "directories": {
+    "doc": "docs",
+    "example": "examples"
+  },
+  "devDependencies": {
+    "argh": "*",
+    "grunt": "*",
+    "grunt-angular-templates": "*",
+    "grunt-banner": "*",
+    "grunt-contrib-clean": "*",
+    "grunt-contrib-compress": "*",
+    "grunt-contrib-concat": "*",
+    "grunt-contrib-copy": "*",
+    "grunt-contrib-cssmin": "*",
+    "grunt-contrib-htmlmin": "*",
+    "grunt-contrib-less": "*",
+    "grunt-contrib-uglify": "*",
+    "grunt-exec": "*",
+    "grunt-string-replace": "*",
+    "grunt-text-replace": "*",
+    "hogan.js": "",
+    "htmlparser2": "",
+    "less": "*",
+    "require-csv": "",
+    "xtend": ""
+  },
+  "keywords": [
+    "bootstrap",
+    "angularjs",
+    "responsive",
+    "admin",
+    "html"
+  ],
+  "author": "Mohsen Hosseini",
+  "license": "Commercial",
+  "homepage": "https://wrapbootstrap.com/theme/ace-responsive-admin-template-WB0B30DGR"
+}

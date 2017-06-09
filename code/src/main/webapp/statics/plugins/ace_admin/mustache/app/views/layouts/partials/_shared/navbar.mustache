@@ -1,0 +1,67 @@
+<!-- #section:basics/navbar.layout -->
+<div id="navbar" class="navbar navbar-default
+{{#page.user_menu_collapsible}} navbar-collapse{{/page.user_menu_collapsible}}
+{{^page.user_menu_collapsible}}{{#page.top_menu}} navbar-collapse{{/page.top_menu}}{{/page.user_menu_collapsible}}
+{{#page.horizontal-menu}} h-navbar{{/page.horizontal-menu}} ace-save-state">
+
+
+  <div class="navbar-container ace-save-state" id="navbar-container">
+	{{^page.side_menu_collapsible}}
+	  {{^page.responsive_style_2}}
+	    <!-- #section:basics/sidebar.mobile.toggle -->
+		<button type="button" class="navbar-toggle menu-toggler pull-left" id="menu-toggler" data-target="#sidebar">
+			<span class="sr-only">Toggle sidebar</span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+		</button>
+		<!-- /section:basics/sidebar.mobile.toggle -->
+	  {{/page.responsive_style_2}}
+	{{/page.side_menu_collapsible}}
+
+	
+
+	<div class="navbar-header pull-left">
+	 <!-- #section:basics/navbar.layout.brand -->
+	 <a href="#" class="navbar-brand">
+		<small>
+			<i class="{{site.brand_icon}}"></i>
+			{{site.brand_text}}
+		</small>
+	 </a>
+	 <!-- /section:basics/navbar.layout.brand -->
+	 
+	 <!-- #section:basics/navbar.toggle -->
+	 {{> layout.navbar.toggle_buttons}}
+	 <!-- /section:basics/navbar.toggle -->
+	</div>
+
+
+	<!-- #section:basics/navbar.dropdown -->
+	<div class="navbar-buttons navbar-header pull-right {{#page.user_menu_collapsible}} collapse navbar-collapse{{/page.user_menu_collapsible}}" role="navigation">
+	  <ul class="nav ace-nav">
+			{{#page.user_menu_collapsible}}
+			  {{> layout.navbar.tabbed_user_notifications}}
+			{{/page.user_menu_collapsible}}
+
+			{{^page.user_menu_collapsible}}
+			  {{> layout.navbar.tasks}}
+			  {{> layout.navbar.notifications}}
+			  {{> layout.navbar.messages}}
+			{{/page.user_menu_collapsible}}
+
+			<!-- #section:basics/navbar.user_menu -->
+			{{> layout.navbar.user_menu}}
+			<!-- /section:basics/navbar.user_menu -->
+	  </ul>
+	</div>
+	<!-- /section:basics/navbar.dropdown -->
+
+	{{#page.top_menu}}
+	  {{> layout.navbar.topmenu}}
+	{{/page.top_menu}}
+
+  </div><!-- /.navbar-container -->
+
+</div>
+<!-- /section:basics/navbar.layout -->

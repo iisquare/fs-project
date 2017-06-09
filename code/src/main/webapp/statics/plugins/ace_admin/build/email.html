@@ -1,0 +1,229 @@
+<!doctype html>
+<html>
+<head>
+  <title>Email Converter - Ace Admin Template</title>
+  <meta charset="utf-8"/>
+
+  <link href="../assets/css/bootstrap.css" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="../components/codemirror/lib/codemirror.css" />
+  <link rel="stylesheet" href="../components/codemirror/addon/fold/foldgutter.css" />
+  <link rel="stylesheet" href="../components/codemirror/addon/display/fullscreen.css" />
+  
+  <script src="../components/codemirror/lib/codemirror.js"></script>
+  <script src="../components/codemirror/addon/fold/foldcode.js"></script>
+  <script src="../components/codemirror/addon/fold/foldgutter.js"></script>
+  <script src="../components/codemirror/addon/fold/xml-fold.js"></script>
+  <script src="../components/codemirror/addon/edit/matchtags.js"></script>
+  <script src="../components/codemirror/mode/xml/xml.js"></script>
+  
+  <script src="../components/codemirror/addon/display/placeholder.js"></script>
+  <script src="../components/codemirror/addon/display/fullscreen.js"></script>
+  
+  <script src="../components/jquery/dist/jquery.js"></script>
+  <script src="../components/bootstrap/dist/js/bootstrap.js"></script>
+  
+  <script src="../assets/js/ace-extra.js"></script>
+
+  <style type="text/css" id="test-sheet">
+	body{
+	  padding: 11px;
+	  background-color: #FFF;
+	}
+	.CodeMirror {height: 500px; border-top: 1px solid black; border-bottom: 1px solid black;}
+	.CodeMirror-matchingtag { background: rgba(255, 150, 0, .3); }
+	.CodeMirror { border: 1px solid silver; }
+	.CodeMirror-empty.CodeMirror-focused { outline: none; }
+	.CodeMirror pre.CodeMirror-placeholder { color: #999; }
+	
+	.option-group .list-group-item {
+		position: relative;
+	}
+	.option-group .list-group-item input[type=text] {
+		position: absolute;
+		left: 6px; 
+		right: 6px;
+		top: 4px;
+		bottom: 4px;
+		opacity: 0;
+		
+		padding-left: 8px;
+		max-width: 155px;
+		
+		-webkit-transition: opacity 0.15s linear 0s;
+		-moz-transition: -moz-transform 0.15s linear 0s;
+		-o-transition: -o-transform 0.15s linear 0s;
+		transition: transform 0.15s linear 0s;
+	}
+	.option-group .list-group-item:hover input[type=text], .option-group .list-group-item input[type=text].active {
+		opacity: 1;
+	}
+	
+	ul.spaced > li {
+		margin-bottom: 10px;
+		line-height: 20px;
+	}
+	
+	.modal.in .modal-dialog {
+		height: 85%;
+	}
+	.modal-content {
+		position: absolute;
+		top: 30px;
+		bottom: 10px;
+		left: 20px;
+		right: 10px;
+		max-height: 90%;
+	}
+	.modal-body {
+		height: 90%;
+	}
+	#help-dialog .modal-body {
+		overflow-y: scroll;
+		overflow-x: hidden;
+	}
+	
+	.modal-content {
+		position: absolute;
+		top: 30px;
+		bottom: 10px;
+		left: 20px;
+		right: 10px;
+		max-height: 90%;
+	}
+  </style>
+</head>
+
+<body>
+
+
+<div class="pull-left text-left" style="width: 170px; margin: 0 20px;">
+  <a href="email-guide.html" data-toggle="modal" data-target="#help-dialog" class="btn btn-block btn-default" style="margin-bottom: 5px;">
+	<i class="text-primary glyphicon glyphicon-question-sign"></i> Help
+  </a>
+ 
+  <div id="options" class="option-group list-group">
+	<div class="list-group-item" title="Content width, usually 600px">
+		Width
+		<input type="text" name="option[base-width]" value="600" />
+	</div>
+	
+	<div class="list-group-item" title="Body background color">
+		Background Color
+		<input type="text" name="option[body-background]" value="#E4E6E9" />
+	</div>
+	
+	<div class="list-group-item" title="Content background color">
+		Content Background
+		<input type="text" name="option[content-background]" value="#FFFFFF" />
+	</div>
+	
+	<div class="list-group-item" title="Text color">
+		Text Color
+		<input type="text" name="option[text-color]" value="#444444" />
+	</div>
+	
+	<div class="list-group-item" title="Font family">
+		Font Name
+		<input type="text" name="option[font-family]" value="Arial, sans-serif" />
+	</div>
+	
+	<div class="list-group-item" title="Font size">
+		Font Size
+		<input type="text" name="option[font-size]" value="13" />
+	</div>
+	
+	<div class="list-group-item" title="Horizontal line color">
+		Horizontal Line Color
+		<input type="text" name="option[hr-background]" value="#E8E8E8" />
+	</div>
+	
+	<div class="list-group-item" title="Wrap content inside a slightly larger element so that body background is always visible">
+		Content Wrap Size
+		<input type="text" name="option[wrap-size]" value="8" />
+	</div>
+	
+	<div class="list-group-item">
+		<label>
+		  <input style="vertical-align: top;" type="checkbox" name="option[rtl]" />
+		  RTL (right to left)		
+		</label>
+	</div>
+	
+  </div>
+</div>
+
+
+
+  <form class="pull-left" style="width: 770px; width: calc(100% - 230px);">
+	<div style="margin-bottom: 5px;" class="row">
+		<div class="col-sm-8">
+			<input type="text" class="form-control" id="email-title" name="email-title" placeholder="Email title goes here..." />
+		</div>
+		<div class="col-sm-4" style="padding-left: 0;">
+		   <div class="row">
+			 <div class="col-xs-10">
+				 <select id="saved-templates" class="form-control" placeholder="Load previous templates">
+					<option value="">Load saved emails</option>
+					<option value="">----------------------</option>
+					<option value="demo-confirmation">Demo Confirmation</option>
+					<option value="demo-navbar">Demo Navbar</option>
+					<option value="demo-newsletter">Demo Newsletter</option>
+					<option value="demo-contrast">Demo Contrast</option>
+					<option value="">----------------------</option>
+				 </select>
+			 </div>
+			 <div class="col-xs-2" style="padding-left: 0;">
+				<a id="btn-delete-email" href="#" class="hidden btn btn-danger btn-sm" style="font-size: 14px;">&times;</a>
+			 </div>
+		   </div>
+		</div>
+	</div>
+    
+	<textarea id="email-code" name="email-code" placeholder="Email (html) content goes here..."></textarea></div>
+	<hr />
+	<div class="clearfix">
+		<div class="pull-left">
+			<button id="id-btn-preview" type="button" class="btn btn-success">Preview</button>
+		</div>
+		
+		<div class="pull-right">
+			<button id="id-btn-later" type="button" class="btn btn-info">Save For Later</button>			
+			<button id="id-btn-save" type="button" class="btn btn-primary">Save To File</button>
+			
+			<a href="javascript:void" id="btn-save-html" class="hidden">Get Code</a>
+		</div>
+	</div>
+  </form>
+  
+  <div class="modal" id="preview-dialog">
+	  <div class="modal-dialog modal-lg">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+			<h4 class="modal-title text-primary">Preview Email</h4>
+		  </div>
+
+		  <div class="modal-body">
+			<iframe id="preview-frame" width="100%" style="border: 1px dotted #D36767; min-height: 100%;"></iframe>
+		  </div>
+		</div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+  </div><!-- /.modal#modal-save-dialog -->
+  <iframe id="convert-frame" src="files/email-convert.html" width="0" height="0" style="border-width: 0"></iframe>
+  
+  
+  <div class="modal" id="help-dialog">
+	  <div class="modal-dialog modal-lg">
+		<div class="modal-content">
+		  
+		</div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+  </div><!-- /.modal#modal-save-dialog -->
+  
+
+  <script src="files/email-convert.js"></script>
+  <script src="files/email.js"></script>
+
+</body>
+</html>

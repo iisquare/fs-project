@@ -1,0 +1,91 @@
+<li class="transparent dropdown-modal">
+	<a data-toggle="dropdown" class="dropdown-toggle" href="#">
+		<i class="ace-icon fa fa-bell icon-animated-bell"></i>
+	</a>
+
+	<div class="dropdown-menu-right dropdown-navbar dropdown-menu dropdown-caret dropdown-close">
+		<div class="tabbable">
+            
+			<ul class="nav nav-tabs">
+              <li class="active">
+				<a data-toggle="tab" href="#navbar-tasks">
+					Tasks
+					<span class="badge badge-danger">4</span>
+				</a>
+			  </li>
+              <li>
+				<a data-toggle="tab" href="#navbar-messages">
+					Messages
+					<span class="badge badge-danger">5</span>
+				</a>
+			  </li>
+            </ul><!-- .nav-tabs -->
+			
+            <div class="tab-content">
+			  <div id="navbar-tasks" class="tab-pane in active">
+					<ul class="dropdown-menu-right dropdown-navbar dropdown-menu">
+						<li class="dropdown-content">
+							<ul class="dropdown-menu dropdown-navbar">
+							{{#layout.navbar_tasks.latest}}
+								<li>
+									<a href="#">
+										<div class="clearfix">
+											<span class="pull-left">{{title}}</span>
+											<span class="pull-right">{{percentage}}%</span>
+										</div>
+										<div class="progress progress-mini {{progress-class}}">
+											<div style="width:{{percentage}}%" class="progress-bar {{progress-bar-class}}"></div>
+										</div>
+									</a>
+								</li>
+							{{/layout.navbar_tasks.latest}}
+							</ul>
+						</li>
+
+						<li class="dropdown-footer">
+							<a href="#">
+								See tasks with details
+								<i class="ace-icon fa fa-arrow-right"></i>
+							</a>
+						</li>
+					</ul>
+			  </div><!-- /.tab-pane -->
+			  
+			  <div id="navbar-messages" class="tab-pane">
+					<ul class="dropdown-menu-right dropdown-navbar dropdown-menu">
+						<li class="dropdown-content">
+							<ul class="dropdown-menu dropdown-navbar">
+							{{#layout.navbar_messages.latest}}
+								<li>
+									<a href="#">
+										<img src="{{path.assets}}/avatars/{{img}}" class="msg-photo" alt="{{name}}'s Avatar">
+										<span class="msg-body">
+											<span class="msg-title">
+												<span class="blue">{{name}}:</span>
+												{{summary}}
+											</span>
+											<span class="msg-time">
+												<i class="ace-icon fa fa-clock-o"></i> <span>{{time}}</span>
+											</span>
+										</span>
+									</a>
+								</li>
+							{{/layout.navbar_messages.latest}}
+							</ul>
+						</li>
+						
+						<li class="dropdown-footer">
+							<a href="{{^site.ajax}}{{#createLinkFunction}}inbox{{/createLinkFunction}}{{/site.ajax}}{{#site.ajax}}{{#createAjaxLinkFunction}}inbox{{/createAjaxLinkFunction}}{{/site.ajax}}">
+								See all messages
+								<i class="ace-icon fa fa-arrow-right"></i>
+							</a>
+						</li>
+
+					</ul>
+			  </div><!-- /.tab-pane -->
+            </div><!-- /.tab-content -->
+
+		</div><!-- /.tabbable -->
+
+	</div><!-- /.dropdown-menu -->
+</li>

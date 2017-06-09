@@ -1,0 +1,58 @@
+{
+"thumbnails": [
+{
+	"title": "Thumbnail label" ,
+	"content": "Cras justo odio, dapibus ac facilisis in, egestas eget quam ...",
+	"img": "holder.js/100px200?theme=gray",
+	"city": "London",
+	"sponsored": true,
+	"rating": true
+}
+,
+{
+	"title": "Thumbnail label" ,
+	"content": "Cras justo odio, dapibus ac facilisis in, egestas eget quam ...",
+	"img": "holder.js/100px200?theme=gray",
+	"city": "Tokyo"
+}
+,
+{
+	"title": "Thumbnail label" ,
+	"content": "Cras justo odio, dapibus ac facilisis in, egestas eget quam ...",
+	"img": "holder.js/100px200?theme=gray",
+	"city": "Istanbul"
+}
+,
+{
+	"title": "Thumbnail label" ,
+	"content": "Cras justo odio, dapibus ac facilisis in, egestas eget quam ...",
+	"img": "holder.js/100px200?theme=social",
+	"city": "Chicago"
+}
+] ,
+
+"media": [
+{
+	"title": "Media heading" ,
+	"content": "Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis ...",
+	"img": "holder.js/72x72",
+	"price": "300",
+	"available": true
+}
+,
+{
+	"title": "Media heading" ,
+	"content": "Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis ...",
+	"img": "holder.js/72x72",
+	"price": "250",
+	"available": false
+},
+{
+	"title": "Media heading" ,
+	"content": "Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis ...",
+	"img": "holder.js/72x72",
+	"price": "220",
+	"available": true
+}
+]
+}

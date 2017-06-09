@@ -1,0 +1,13 @@
+<!-- #section:basics/content.breadcrumbs -->
+<div class="breadcrumbs ace-save-state" id="breadcrumbs">
+	<ul class="breadcrumb">
+		<li><i class="ace-icon fa fa-home home-icon"></i> <a href="#">Home</a></li>
+		{{#breadcrumbs.links}}
+		<li><a href="{{link}}">{{title}}</a></li>
+		{{/breadcrumbs.links}}
+		<li class="active">{{breadcrumbs.title}}</li>
+	</ul><!-- /.breadcrumb -->
+
+	{{> layout.searchbox}}
+</div>
+<!-- /section:basics/content.breadcrumbs -->

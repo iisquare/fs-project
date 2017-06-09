@@ -1,0 +1,43 @@
+<table class="table table-bordered table-striped">
+	<thead class="thin-border-bottom">
+		<tr>
+			<th><i class="ace-icon fa fa-caret-right blue"></i>name</th>
+			<th><i class="ace-icon fa fa-caret-right blue"></i>price</th>
+			<th class="hidden-480"><i class="ace-icon fa fa-caret-right blue"></i>status</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{{#page.domains}}
+		<tr>
+			<td>{{name}}</td>
+			<td>
+				{{#old_price}}
+				 <small><s class="red">{{old_price}}</s></small>
+				 <b class="green">{{price}}</b>
+				{{/old_price}}
+				{{^old_price}}
+				 <b class="blue">{{price}}</b>
+				{{/old_price}}
+			</td>
+			<td class="hidden-480">
+				{{#on_sale}}
+				 <span class="label label-info arrowed-right arrowed-in">on sale</span>
+				{{/on_sale}}
+				{{#approved}}
+				 <span class="label label-success arrowed-in arrowed-in-right">approved</span>
+				{{/approved}}
+				{{#pending}}
+				 <span class="label label-danger arrowed">pending</span>
+				{{/pending}}
+				{{#out_of_stock}}
+				 <span class="label arrowed"><s>out of stock</s></span>
+				{{/out_of_stock}}
+				 {{#sold}}
+				<span class="label label-warning arrowed arrowed-right">SOLD</span>
+				{{/sold}}
+			</td>
+		</tr>
+		{{/page.domains}}
+	</tbody>
+</table>

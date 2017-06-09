@@ -1,0 +1,6 @@
+name,price,old_price,status
+internet.com,$19.99,$29.99,on_sale
+online.com,$16.45,,approved
+newnet.com,$15.00,,pending
+web.com,$19.95,$24.99,out_of_stock
+domain.com,$12.00,,sold

@@ -1,0 +1,9 @@
+{
+ "title" : "Search Results"
+ ,
+ "description" : null
+ ,
+ "scripts" : ["tree", "select2", "jquery-ui", "holder-js"]
+ ,
+ "styles" : ["select2", "jquery-ui"]
+}

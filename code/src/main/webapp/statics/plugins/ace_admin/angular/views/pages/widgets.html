@@ -1,0 +1,113 @@
+<div class="page-header">
+	<h1>Widgets <small><i class="ace-icon fa fa-angle-double-right"></i> Draggabble Widget Boxes with Persistent Position and State</small></h1>
+</div>
+
+
+<div ng-show="contentLoaded" jq-sortable options="sortableOpts" connect-with="'.widget-container-col'" target="'.widget-container-col'" save="true">
+
+ <div class="row">
+	<div class="col-xs-12 col-sm-6 widget-container-col" id="widget-container-1">
+	
+		<div save="true" widget-box id="widget-1" ng-class="{'collapsed': is_widget_hidden}" wb-reloading='is_widget_reloading' wb-hidden='is_widget_hidden' wb-toggle='toggle_state' wb-fullscreen='is_widget_fullscreen' on-reload="widget_reload()">
+			<widget-header wb-hidden='is_widget_hidden' toolbar="widget_toolbar_1">Default Widget Box</widget-header>
+			
+			<div class="widget-body"><div class="widget-main">
+				<p class="alert alert-info">
+					Nunc aliquam enim ut arcu aliquet adipiscing. Fusce dignissim volutpat justo non consectetur. Nulla fringilla eleifend consectetur.
+				</p>
+				<p class="alert alert-success">
+					Raw denim you probably haven't heard of them jean shorts Austin.
+				</p>
+			</div></div>
+		</div>
+
+	</div>
+	
+	
+	<div class="col-xs-12 col-sm-6 widget-container-col" id="widget-container-2">
+		<div class="widget-box" id="widget-2" ng-class="widgetColorClass != 'default' ? 'widget-color-'+widgetColorClass:''">
+			<div class="widget-header">
+				<h5 class="widget-title bigger lighter"><i class="ace-icon fa fa-table"></i> Tables &amp; Colors</h5>
+				<div class="widget-toolbar widget-toolbar-light no-border">
+					<div ace-colorpicker colors='widgetColors' options="widgetColorpicker" ng-model="widgetColor" ng-value="widgetColorClass"></div>
+				</div>
+			</div>
+			
+			<div class="widget-body">
+			 <div class="widget-main no-padding">
+			  <table class="table table-striped table-bordered table-hover">
+				<thead class="thin-border-bottom">
+					<tr>
+						<th><i class="ace-icon fa fa-user"></i> User</th>
+						<th><i>@</i> Email</th>
+						<th class="hidden-480">Status</th>
+					</tr>
+				</thead>
+
+				<tbody>
+					 <tr ng-repeat="member in ::getData('members')">
+						<td class="" ng-bind="member.name"></td>
+						<td>
+							<a href="" ng-bind="member.email"></a>
+						</td>
+						<td class="hidden-480">
+							<span ng-if="member.status == 'pending'" class="label label-warning">Pending</span>
+							<span ng-if="member.status == 'approved'" class="label label-success arrowed-in arrowed-in-right">Approved</span>
+							<span ng-if="member.status == 'blocked'" class="label label-inverse arrowed">Blocked</span>
+							<span ng-if="member.status == 'online'" class="label label-info arrowed-in arrowed-in-right">Online</span>
+						</td>
+					 </tr>
+				</tbody>
+			  </table>
+			 </div>
+			</div>
+		</div>
+	</div><!-- /.col -->
+</div><!-- /.row -->
+
+
+
+ <div class="row">
+	<div class="col-xs-12 col-sm-6 widget-container-col" id="widget-container-3">
+
+	</div>
+	
+	
+	<div class="col-xs-12 col-sm-6 widget-container-col" id="widget-container-4">
+		<div widget-box save="true" id="widget-3" class="widget-color-orange" wb-toggle="widget_2_toggle" wb-reloading='is_widget_reloading_2' wb-hidden='is_widget2_hidden' ng-class="{'collapsed': is_widget2_hidden}" on-reload="widget_reload_2()">
+			<div class="widget-header widget-header-small">
+				<h6 class="widget-title"><i class="ace-icon fa fa-sort"></i> Small Header & Collapsed</h6>
+				<div class="widget-toolbar">
+					<a href="" data-action="settings"><i class="ace-icon fa fa-cog"></i></a>
+					<a href="" data-action="reload"><i class="ace-icon fa fa-refresh"></i></a>
+					<a href="" data-action="collapse">
+						<i class="ace-icon fa fa-minus" data-icon-show="fa-plus" data-icon-hide="fa-minus"></i>
+					</a>
+					<a href="" data-action="close"><i class="ace-icon fa fa-times"></i></a>
+				</div>
+			</div>
+			
+			<div class="widget-body">
+			 <div class="widget-main">
+				<p class="alert alert-info">
+					Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque commodo massa sed ipsum porttitor facilisis.
+				</p>
+			 </div>
+			</div>
+		</div>
+	</div><!-- /.col -->
+</div><!-- /.row -->
+
+
+<hr />
+<div class="text-center">
+	<div class="pull-left">
+		<button type="button" class="btn btn-white btn-sm btn-info" ng-click="button_reload()"><i class="fa fa-refresh"></i></button>
+		<button type="button" class="btn btn-white btn-sm btn-info" ng-click="button_fullscreen()"><i class="fa fa-arrows"></i></button>
+		<button type="button" class="btn btn-white btn-sm btn-info" ng-click="button_toggle()"><i class="fa fa-eye"></i></button>
+	</div>
+
+	<button type="reset" class="btn btn-danger btn-white btn-bold btn-round" ng-click="resetStorage()">Reset Position/State</button>
+</div>
+
+</div>

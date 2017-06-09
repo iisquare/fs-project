@@ -1,0 +1,106 @@
+<form class="form-horizontal" role="form">
+	<div class="form-group">
+		<label class="col-sm-3 control-label no-padding-top">
+			Star Rating
+		</label>
+		<div class="col-sm-9">
+			<!-- #section:plugins/misc.raty -->
+			<div class="rating inline"></div>
+			<!-- /section:plugins/misc.raty -->
+			<div class="hr hr-16 hr-dotted"></div>
+		</div>
+	</div>
+	
+	
+	<div class="form-group">
+		<label class="col-sm-3 control-label no-padding-right">Typeahead.js</label>
+		<div class="col-sm-9">
+			<!-- #section:plugins/bootstrap.typeahead-js -->
+			<div class="pos-rel">
+				<input class="typeahead scrollable" type="text" placeholder="States of USA" />
+			</div>
+			<!-- /section:plugins/bootstrap.typeahead-js -->
+		</div>
+	</div>
+
+	
+	<div class="space-6"></div>
+	
+	
+	<div class="form-group">
+		<label class="control-label col-xs-12 col-sm-3 no-padding-right" for="food">Bootstrap Multiselect</label>
+		<div class="col-xs-12 col-sm-9">
+			<!-- #section:plugins/input.multiselect -->
+			<select id="food" class="multiselect" multiple>
+				<option value="cheese">Cheese</option>
+				<option value="tomatoes">Tomatoes</option>
+				<option value="mozarella">Mozzarella</option>
+				<option value="mushrooms">Mushrooms</option>
+				<option value="pepperoni">Pepperoni</option>
+			</select>
+			<!-- /section:plugins/input.multiselect -->
+		</div>
+	</div>
+	
+	<div class="hr hr-16 hr-dotted"></div>
+	
+	<div class="form-group">
+		<label class="col-sm-3 control-label no-padding-top" for="duallist">
+			Dual listbox
+		</label>
+		<div class="col-sm-8">
+			<!-- #section:plugins/input.duallist -->
+			<select multiple="multiple" size="10" name="duallistbox_demo1[]" id="duallist">
+				<option value="option1">Option 1</option>
+				<option value="option2">Option 2</option>
+				<option value="option3" selected="selected">Option 3</option>
+				<option value="option4">Option 4</option>
+				<option value="option5">Option 5</option>
+				<option value="option6" selected="selected">Option 6</option>
+				<option value="option7">Option 7</option>
+				<option value="option8">Option 8</option>
+				<option value="option9">Option 9</option>
+				<option value="option0">Option 10</option>
+			</select>
+			<!-- /section:plugins/input.duallist -->
+			
+			<div class="hr hr-16 hr-dotted"></div>
+		</div>
+	</div>
+
+	
+	<div class="form-group">
+		<label class="control-label col-xs-12 col-sm-3 no-padding-right">
+			Select2
+		
+		</label>
+							
+		<div class="col-xs-12 col-sm-9">
+			<!-- #section:plugins/input.select2 -->
+			<select multiple id="state" name="state" class="select2" data-placeholder="Click to Choose...">
+				{{#page.states}}
+				 <option value='{{abbr}}'>{{name}}</option>
+				{{/page.states}}
+			</select>
+			<!-- /section:plugins/input.select2 -->
+			
+			<span class="inline pull-right">
+				<span class="grey">style:</span>
+				<span class="btn-toolbar inline middle no-margin">
+					<span id="select2-multiple-style" data-toggle="buttons" class="btn-group no-margin">
+						<label class="btn btn-xs btn-yellow active">
+							1
+							<input type="radio" value="1" />
+						</label>
+						<label class="btn btn-xs btn-yellow">
+							2
+							<input type="radio" value="2" />
+						</label>
+					</span>
+				</span>
+			</span>
+		</div>
+	</div>
+	
+
+</form>

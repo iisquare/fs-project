@@ -1,0 +1,86 @@
+<div class="tabbable">
+	<!-- #section:pages/faq -->
+	<ul class="nav nav-tabs padding-18 tab-size-bigger" id="myTab">
+	  <li class="active">
+		<a data-toggle="tab" href="#faq-tab-1">
+			<i class="blue ace-icon fa fa-question-circle bigger-120"></i>
+			General
+		</a>
+	  </li>
+	  <li>
+		<a data-toggle="tab" href="#faq-tab-2">
+			<i class="green ace-icon fa fa-user bigger-120"></i>
+			Account
+		</a>
+	  </li>
+	  <li>
+		<a data-toggle="tab" href="#faq-tab-3">
+			<i class="orange ace-icon fa fa-credit-card bigger-120"></i>
+			Payments
+		</a>
+	  </li>
+	  <li class="dropdown">
+		<a data-toggle="dropdown" class="dropdown-toggle" href="#">
+			<i class="purple ace-icon fa fa-magic bigger-120"></i>
+			Misc<i class="ace-icon fa fa-caret-down"></i>
+		</a>
+
+		<ul class="dropdown-menu dropdown-lighter dropdown-125">
+		  <li>
+			<a data-toggle="tab" href="#faq-tab-4">
+				Affiliates
+			</a>
+		  </li>
+		  <li>
+			<a data-toggle="tab" href="#faq-tab-4">
+				Merchants
+			</a>
+		  </li>
+		</ul>
+	  </li><!-- /.dropdown -->
+	</ul>
+	<!-- /section:pages/faq -->
+
+
+	<div class="tab-content no-border padding-24">
+		<div id="faq-tab-1" class="tab-pane fade in active">
+			<h4 class="blue">
+				<i class="ace-icon fa fa-check bigger-110"></i> General Questions
+			</h4>
+
+			<div class="space-8"></div>
+
+			{{> page.faq1}}
+		</div>
+		  
+		<div id="faq-tab-2" class="tab-pane fade">
+			<h4 class="blue">
+				<i class="green ace-icon fa fa-user bigger-110"></i> Account Questions
+			</h4>
+
+			<div class="space-8"></div>
+
+			{{> page.faq2}}
+		</div>
+		  
+		<div id="faq-tab-3" class="tab-pane fade">
+			<h4 class="blue">
+				<i class="orange ace-icon fa fa-credit-card bigger-110"></i> Payment Questions
+			</h4>
+
+			<div class="space-8"></div>
+
+			{{> page.faq3}}
+		</div>
+		  
+		<div id="faq-tab-4" class="tab-pane fade">
+			<h4 class="blue">
+				<i class="purple ace-icon fa fa-magic bigger-110"></i> Miscellaneous Questions
+			</h4>
+
+			<div class="space-8"></div>
+
+			{{> page.faq4}}
+		</div>
+     </div>
+</div>

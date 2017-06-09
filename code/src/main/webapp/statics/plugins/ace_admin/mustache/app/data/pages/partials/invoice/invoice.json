@@ -1,0 +1,45 @@
+{
+	"title" : "Customer Invoice",
+	"number" : "121212",
+	"date" : "04/04/2014",
+ 
+	"customer" : {
+		"address" : ["Street, City", "Zip Code", "State, Country"] ,
+		"contact" : "Contact Info"
+	} ,
+	
+	"products" : 
+	[
+		{
+			"id" : 1,
+			"name" : "<a href='#'>google.com</a>",
+			"description" : "1 year domain registration",
+			"discount" : "---",
+			"total" : "$10"
+		} ,
+		{
+			"id" : 2,
+			"name" : "<a href='#'>yahoo.com</a>",
+			"description" : "5 year domain registration",
+			"discount" : "5%",
+			"total" : "$45"
+		} ,
+		{
+			"id" : 3,
+			"name" : "Hosting",
+			"description" : "1 year basic hosting",
+			"discount" : "10%",
+			"total" : "$90"
+		} ,
+		{
+			"id" : 4,
+			"name" : "Design",
+			"description" : "Theme customization",
+			"discount" : "50%",
+			"total" : "$250"
+		}
+	]
+	,
+	
+	"total" : "$395"
+}

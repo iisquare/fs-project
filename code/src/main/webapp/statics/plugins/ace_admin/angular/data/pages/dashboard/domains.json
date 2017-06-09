@@ -1,0 +1,32 @@
+[
+	{
+		"name": "internet.com",
+		"price": "$19.99",
+		"old_price": "$29.99",
+		"status": "on_sale"
+	},
+	{
+		"name": "online.com",
+		"price": "$16.45",
+		"old_price": "",
+		"status": "approved"
+	},
+	{
+		"name": "newnet.com",
+		"price": "$15.00",
+		"old_price": "",
+		"status": "pending"
+	},
+	{
+		"name": "web.com",
+		"price": "$19.95",
+		"old_price": "$24.99",
+		"status": "out_of_stock"
+	},
+	{
+		"name": "domain.com",
+		"price": "$12.00",
+		"old_price": "",
+		"status": "sold"
+	}
+]

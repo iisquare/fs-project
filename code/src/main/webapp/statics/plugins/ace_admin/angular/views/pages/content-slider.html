@@ -1,0 +1,53 @@
+<div class="page-header">
+	<h1>Content sliders based on Angular Bootstrap modal</h1>
+</div>
+
+<div class="row"><div class="col-xs-12">
+ <button type="button" class="btn btn-primary btn-white btn-bold btn-round" ng-click="openAside('top', 'vertical')">
+    Top
+ </button>
+ <button type="button" class="btn btn-info btn-white btn-bold btn-round" ng-click="openAside('bottom', 'vertical')">
+    Bottom
+ </button>
+ <button type="button" class="btn btn-default btn-white btn-bold btn-round" ng-click="openAside('right', 'horizontal')">
+    Right
+ </button>
+ <button type="button" class="btn btn-danger btn-white btn-bold btn-round" ng-click="openAside('left', 'horizontal')">
+    Left
+ </button>
+
+
+<script type="text/ng-template" id="aside-vertical.html">
+  <div class="modal-header">
+    <div class="container">
+	  <h3 class="modal-title">ngAside</h3>
+	</div>
+  </div>
+  <div class="modal-body">
+	<div class="container">
+	  Custom content and elements
+	</div>
+  </div>
+
+  <div class="modal-footer">
+   <div class="container">
+	  <button class="btn btn-primary btn-sm" ng-click="ok($event)">OK</button>
+	  <button class="btn btn-default  btn-sm" ng-click="cancel($event)">Cancel</button>
+   </div>
+  </div>
+</script>
+
+<script type="text/ng-template" id="aside-horizontal.html">
+  <div class="modal-header">
+	  <h3 class="modal-title">
+		ngAside
+		<button class="close" type="button" ng-click="cancel($event)">&times;</button>
+	  </h3>
+  </div>
+  <div class="modal-body">
+	Custom content and elements
+  </div>
+</script>
+
+
+</div></div>

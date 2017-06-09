@@ -1,0 +1,461 @@
+<section>
+	<h1 class="blue" data-id="#plugins/fuelux">FuelUX</h1>
+
+	<div class="hr hr-double hr32"></div>
+
+	<div class="help-content">
+		<h3 class="info-title smaller" data-id="#plugins/fuelux.spinner">Spinbox</h3>
+		<!-- #section:plugins/fuelux.spinner -->
+		<div class="info-section">
+		 <ul class="info-list list-unstyled">
+			<li>
+				To use FuelUX spinner you should include <code>components/fuelux/js/spinbox.js</code>
+			</li>
+			
+			<li>
+				For more info and options about it please see its page:
+				<br />
+				<a href="http://getfuelux.com/javascript.html#spinbox">http://getfuelux.com/javascript.html#spinbox</a>
+			</li>
+			
+			<li>
+				For ease of use, I have made a wrapper for the plugin with some extra options:
+<pre data-language="html">
+ <input type="text" name="my-spinner" id="my-spinner" />
+</pre>
+<pre data-language="javascript">
+$('#my-spinner').ace_spinner({
+            min: 0,
+            max: 100,
+           step: 1,
+
+        icon_up: 'fa-plus',
+      icon_down: 'fa-minus',
+   btn_up_class: 'btn-success',
+ btn_down_class: 'btn-danger',
+
+       on_sides: true
+});
+</pre>
+
+			</li>
+			
+			<li>
+				Extra options are :
+				<ol>
+					<li><code>icon_up</code> the icon to be used for "up" button</li>
+					<li><code>icon_down</code> the icon to be used for "down" button</li>
+					<li><code>btn_up_class</code> the button class for "up" button</li>
+					<li><code>btn_down_class</code> the button class for "down" button</li>
+					
+					<li><code>on_sides</code> up and down buttons will be on different sides of input</li>
+					<li><code>touch_spinner</code> bigger buttons will be used</li>
+				</ol>
+			</li>
+			
+			<li>
+				You can also use the following functions to modify spinner element:
+<pre data-language="javascript">
+$('#my-spinner').ace_spinner('disable');
+$('#my-spinner').ace_spinner('enable');
+$('#my-spinner').ace_spinner('value', 3);
+</pre>
+			</li>
+			
+			<li>
+				If you want to use spinbox's functions directly you need to target the <code>.ace-spinner</code>
+				wrapper element:
+<pre data-language="javascript">
+$('#my-spinner').closest('.ace-spinner').spinbox('disable');
+</pre>
+
+				Same is true for events.
+			</li>
+			
+			<li>
+				Latest version of FuelUX renames spinner to spinbox and events are namespaced:
+<pre data-language="javascriot">
+$('#my-spinner').closest('.ace-spinner').on('changed.fu.spinbox', function () {
+  //do something
+})
+</pre>
+			</li>
+			
+			<li>
+				You can add <code>.input-sm</code> to text input element for a smaller and <code>.input-lg</code> for a larger spinner:
+<pre data-language="html">
+ <input type="text" name="my-spinner" id="my-spinner" class="input-lg" />
+</pre>
+			</li>
+			
+			<li>
+				Please note that if you want more advanced functionality, you can use jQuery UI's spinner
+			</li>
+			
+		 </ul>
+		</div>
+
+		<!-- /section:plugins/fuelux.spinner -->
+	</div>
+
+	
+	<div class="hr hr-double hr32"></div>
+
+	
+	<div class="help-content">		
+		<h3 class="info-title smaller" data-id="#plugins/fuelux.wizard">Wizard</h3>
+		<!-- #section:plugins/fuelux.wizard -->
+		<div class="info-section">
+		 <ul class="info-list list-unstyled">
+			<li>
+				To use FuelUX wizard you should include <code>components/fuelux/js/wizard.js</code>
+			</li>
+			
+			<li>
+				For more info and options about the plugin see its page:
+				<br />
+				<a href="http://getfuelux.com/javascript.html#wizard">http://getfuelux.com/javascript.html#wizard</a>
+			</li>
+			
+			<li>
+				For ease of use, I have made a wrapper for the plugin
+			</li>
+			
+			<li>
+				<div class="alert alert-info">
+					Latest version of FuelUX adds several changes to its wizard plugin:
+					<ul class="spaced">
+						<li>Rename <code>ul.wizard-steps</code> to <code>ul.steps</code></li>
+						<li>
+							<code>ul.steps</code> and <code>div.step-content</code> are wrapped inside a parent for example <code>div#my-wizard</code>
+							and <b>ace_wizard</b> or FuelUX's <b>wizard function</b> is applied to <b>div#my-wizard</b>
+							<br />
+							<span class="red">Note that #my-wizard id is arbitrary and can be anything</span>
+						</li>
+						
+						<li>
+							Each <code>ul.steps > li</code> and <code>.step-pane</code>
+							should have a <code>data-step</code> attribute which specifies step number
+						</li>
+						
+						<li><b>change</b> event is now <b>actionclicked.fu.wizard</b> and <span class="text-success">return false</span>
+							doesn't prevent step change.
+							<br />
+							You should use <code>e.preventDefault()</code> now
+						</li>
+						<li>Instead of $('#my-wizard').data('wizard') you should now use $('#my-wizard').data('fu.wizard')</li>
+					</ul>
+				</div>
+			</li>
+			
+			<li>
+				 <!-- #section:plugins/fuelux.wizard.steps -->
+				The format of your wizard HTML should be something like this:
+<pre data-language="html">
+ <div id="my-wizard"><!-- wrap step list and step panes -->
+    
+    <!-- step list -->
+    <ul class="steps">
+       <li data-step="1" class="active">
+          <span class="step">1</span>
+          <span class="title">Step1</span>
+       </li>
+
+       <li data-step="2">
+          <span class="step">2</span>
+          <span class="title">Step2</span>
+       </li>
+    </ul>
+	
+    <!-- step panes -->
+    <div class="step-content">
+      <div class="step-pane active" data-step="1">
+        <!-- step 1 -->
+      </div>
+   
+      <div class="step-pane" data-step="2">
+        <!-- step 2 -->
+      </div>
+   </div>
+ 
+ </div>
+</pre>
+			It's a <code>ul.steps</code> wrapped inside an element which also contains
+			our step panes.
+			<!-- /section:plugins/fuelux.wizard.steps -->
+			<div class="space-6"></div>
+			<!-- #section:plugins/fuelux.wizard.container -->
+			Steps panes container is a <code>.step-content</code> which contains
+			several <code>.step-pane</code> elements each with a <code>data-step</code> attribute.
+			 <!-- /section:plugins/fuelux.wizard.container -->
+			</li>
+			
+			<li>
+				<!-- #section:plugins/fuelux.wizard.buttons -->
+				A <code>.wizard-actions</code> element containing 
+				<code>.btn-prev</code> and <code>.btn-next</code>
+				buttons should be a sibling are wizard:
+<pre data-language="html">
+<div id="my-wizard">
+ 
+</div>
+
+<div class="wizard-actions">
+  <button class="btn-prev btn">
+    <i class="ace-icon fa fa-arrow-left"></i> Prev
+  </button>
+  <button class="btn-next btn btn-success" data-last="Finish ">
+    Next <i class="ace-icon fa fa-arrow-right icon-on-right"></i>
+  </button>
+</div>
+</pre>
+
+				<code>.btn-next</code> should have a  <code>data-last</code> attribute
+				which is "finish" button's text at final step.
+				
+				<br />
+				
+				<div class="well well-sm">
+					There is also a <code>buttons</code> attribute when using <b>ace_wizard</b>
+					function which allows specifying a custom set of action buttons elsewhere.
+				</div>
+				
+				 <!-- /section:plugins/fuelux.wizard.buttons -->
+			</li>
+			
+			<li>
+				Use the following code to initiate the wizard:
+<pre data-language="javascript">
+$('#my-wizard')
+.ace_wizard({
+  //step: 2 //optional argument. wizard will jump to step "2" at first
+  //buttons: '.my-action-buttons' //which is possibly located somewhere else and is not a sibling of wizard
+})
+.on('actionclicked.fu.wizard' , function(e, info) {
+   //info.step
+   //info.direction
+   
+   //use e.preventDefault to cancel
+})
+.on('changed.fu.wizard', function() {
+   //after step has changed
+})
+.on('finished.fu.wizard', function(e) {
+   //do something when finish button is clicked
+}).on('stepclick.fu.wizard', function(e) {
+   //e.preventDefault();//this will prevent clicking and selecting steps
+});
+</pre>
+			</li>
+			
+			<li>
+				There are several functions available for wizard element which you can use like the
+				following example:
+<pre data-language="javascript">
+ var wizard = $('#my-wizard').data('fu.wizard');
+
+ //move to step 3
+ wizard.currentStep = 3;
+ wizard.setState();
+ 
+ //determine selected step
+ wizard.selectedItem().step
+</pre>
+			</li>
+		 </ul>
+		</div>
+	</div>
+	<!-- /section:plugins/fuelux.wizard -->
+	
+	
+
+	
+	
+	<div class="hr hr-double hr32"></div>
+
+	<h3 class="hidden" data-id="#plugins/fuelux.treeview">Treeview</h3>
+	<!-- #section:plugins/fuelux.treeview -->
+	<div class="help-content">
+		<h3 class="info-title smaller">Treeview</h3>
+		<div class="info-section">
+		 <ul class="info-list list-unstyled">
+			<li>
+				To use FuelUX tree you should include <code>components/_mod/fuelux/tree.js</code>
+			</li>
+			
+			<li>
+				For more info and options about the plugin please see plugin's page:
+				<br />
+				<a href="http://getfuelux.com/javascript.html#tree">http://getfuelux.com/javascript.html#tree</a>
+			</li>
+			
+			<li>
+				For ease of use, I have made a wrapper for the plugin and added a few extra options
+			</li>
+
+			<li>
+				Extra options are:
+				<ol>
+					<li><code>open-icon</code> The icon for an open tree node</li>
+					<li><code>close-icon</code> The icon for a closed tree node</li>
+					<li><code>selectable</code> Whether items are selectable or not</li>
+					<li><code>selected-icon</code> Icon for a selected tree node</li>
+					<li><code>unselected-icon</code> Icon for a non-selected tree node</li>
+				</ol>
+			</li>
+			
+			<li>
+				A basic tree is initiated like this:
+<pre data-language="html">
+ <ul id="tree1"></ul>
+</pre>
+<pre data-language="javascript">
+$('#tree1').ace_tree({
+       dataSource : treeDataSource ,
+      multiSelect : true,
+      loadingHTML : '&lt;div class="tree-loading"&gt;&lt;i class="ace-icon fa fa-refresh fa-spin blue"&gt;&lt;/i&gt;&lt;/div&gt;',
+  
+      'open-icon' : 'ace-icon tree-minus',
+     'close-icon' : 'ace-icon tree-plus',
+     'selectable' : true,
+  'selected-icon' : 'ace-icon fa fa-check',
+'unselected-icon' : 'ace-icon fa fa-times'
+});
+</pre>
+			</li>
+			
+			<li>
+				Two additional icon classes are defined for tree:
+				<code>.tree-minus</code> and <code>.tree-plus</code>
+			</li>
+			
+			
+			<li>
+				<div class="alert alert-info">
+					Latest version of FuelUX adds several changes to its tree plugin:
+					<ul class="spaced">
+						<li>Tree should be a <code>ul</code> element</li>
+						<!--
+						<li>
+							There is a new <code>folderSelect</code> option which you should usually set its value as <code>false</code>
+						</li>
+						-->
+						
+						<li>
+							<code>name</code> is now deprecated and <code>text</code> should be used.
+						</li>
+						
+						<li>
+							Events are namespaced:
+<pre data-language="javascript">
+$('#tree1').on('opened.fu.tree', function () {
+  //do something
+})
+</pre>
+						</li>
+						
+						<li>
+							dataSource is now a bit different:
+<pre data-language="javascript">
+$('#tree1').ace_tree({
+  dataSource : treeDataSource
+  // ... other options
+});
+</pre>
+
+<pre data-language="javascript">
+var treeDataSource = function(options , callback) {
+ //options has extra info such as "type" "text" "additionalParameteres", etc
+ //which you can use to specify requested set of data
+ var myData = [ ... ];//set of data
+ callback({ data: myData });
+}
+</pre>
+
+							Please see treeview example page for more info
+						</li>
+					</ul>
+				</div>
+			</li>
+		 </ul>
+		</div>
+			
+			
+		<h3 class="info-title smaller">Data Source</h3>
+		<div class="info-section">
+		 <ul class="info-list list-unstyled">
+			<li>
+				In the demo example, dataSource is static inside page's inline script:
+				<br />
+				<code data-open-file="html" class="open-file"><span class="brief-show">mustache/app/views/assets/scripts/</span>treeview.js</code>
+			</li>
+			
+			<li>
+				An example of a data source dynamically loading data from server is included
+				in <code>examples/treeview.html</code>
+			</li>	
+			
+			<li>
+				You can use <code>additionalParameters</code> parameter to include optional data,
+				for example setting <code>item-selected:true</code> will mark the item as selected upon
+				insertion into tree.
+				<br />
+				Other extra info you can save inside <code>additionalParameters</code>
+				is <code>id</code>, <code>title</code>, etc ...
+			</li>
+			
+			<li>
+				Basically you should define a create dataSource function
+				which is called by the plugin when a subtree is requested:
+<pre data-language="javascript">
+var mySource = function(options , callback) {
+  //retrieve data according to "options" parameters
+  //and when data is loaded, call "callback"
+}
+$('#treeview').ace_tree({
+ dataSource: mySource
+ //other options
+});
+</pre>
+			</li>
+			
+			<li>
+				To get the list of user selected items and posting it to server, you can do the following:
+<pre data-language="javascript">
+var items = $('#treeview').tree('selectedItems');
+//for example convert "items" to a custom string
+for(var i in items) if (items.hasOwnProperty(i)) {
+   var item = items[i];
+   output += item.additionalParameters['id'] + ":"+ item.text+"\n";
+}
+//send output to server
+</pre>
+			</li>
+			
+		 </ul>
+		</div>
+		
+		
+		<h3 class="info-title smaller">Note</h3>
+		<div class="info-section">
+		 <ul class="info-list list-unstyled">
+			<li>
+				I have disabled/removed <code>folderSelect</code> option of FuelUX tree because it has
+				a problem with Ace's styling of treeview element.
+				<br />
+				It allows selecting a folder however does not result in its children being selected automatically.
+				<br />
+				So it seems unnecessary and you can change it into an "item" to make it selectable if there are no
+				children.
+				<br />
+				If it has children you can select the children instead and in your code you will be able
+				to determine the parent of those selected children.
+			</li>
+
+		 </ul>
+		</div>
+
+	</div>
+	<!-- /section:plugins/fuelux.treeview -->
+
+</section>

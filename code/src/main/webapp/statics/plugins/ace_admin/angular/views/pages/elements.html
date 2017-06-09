@@ -1,0 +1,465 @@
+<div class="page-header">
+	<h1>UI Elements <small><i class="ace-icon fa fa-angle-double-right"></i> Common UI Features & Elements</small></h1>
+</div>
+
+<div class="row"><div class="col-xs-12">
+
+ <div class="row">
+
+  <div class="col-sm-6">
+	<uib-tabset ng-show="tabShown">
+		<uib-tab>
+			<uib-tab-heading>
+				<i class="green ace-icon fa fa-home bigger-120"></i> Home
+			</uib-tab-heading>
+			<p>Raw denim you probably haven't heard of them jean shorts Austin.</p>
+		</uib-tab>
+		
+		<uib-tab>
+			<uib-tab-heading>
+				Messages <span class="badge badge-danger">4</span>
+			</uib-tab-heading>
+			<p>Food truck fixie locavore, accusamus mcsweeney's marfa nulla single-origin coffee squid.</p>
+		</uib-tab>
+		
+		<uib-tab>
+			<uib-tab-heading>
+				More &nbsp;<i class="ace-icon fa fa-plus smaller-80 purple"></i>
+			</uib-tab-heading>
+			<p>Etsy mixtape wayfarers, ethical wes anderson tofu before they sold out mcsweeney's organic lomo retro fanny pack lo-fi farm-to-table readymade.</p>
+		</uib-tab>
+	</uib-tabset>
+  </div><!-- /.col -->
+
+  <div class="vspace-6-sm"></div>
+ 
+  <div class="col-sm-6">
+	<uib-tabset id="tab-below" ng-show="tabShown">
+		<uib-tab heading="Home">
+			<p>Raw denim you probably haven't heard of them jean shorts Austin.</p>
+		</uib-tab>
+		
+		<uib-tab heading="Profile">
+			<p>Food truck fixie locavore, accusamus mcsweeney's marfa nulla single-origin coffee squid.</p>
+		</uib-tab>
+		
+		<uib-tab heading="More">
+			<p>Etsy mixtape wayfarers, ethical wes anderson tofu before they sold out mcsweeney's organic lomo retro fanny pack lo-fi farm-to-table readymade.</p>
+		</uib-tab>
+	</uib-tabset>
+  </div>
+
+ </div><!-- /.row -->
+
+ <div class="space"></div>
+
+ <div class="row">
+
+  <div class="col-sm-6">
+	<uib-tabset id="tab-left" ng-show="tabShown">
+		<uib-tab>
+			<uib-tab-heading><i class="pink ace-icon fa fa-tachometer bigger-110"></i> Home</uib-tab-heading>
+			<p>1. Etsy mixtape wayfarers, ethical wes anderson tofu before they sold out mcsweeney's organic lomo retro fanny pack lo-fi farm-to-table readymade.</p>
+			<p>Raw denim you probably haven't heard of them jean shorts Austin.</p>
+		</uib-tab>
+		
+		<uib-tab>
+			<uib-tab-heading><i class="blue ace-icon fa fa-user bigger-110"></i> Profile</uib-tab-heading>
+			<p>2. Etsy mixtape wayfarers, ethical wes anderson tofu before they sold out mcsweeney's organic lomo retro fanny pack lo-fi farm-to-table readymade.</p>
+			<p>Raw denim you probably haven't heard of them jean shorts Austin.</p>
+		</uib-tab>
+		
+		<uib-tab>
+			<uib-tab-heading><i class="ace-icon fa fa-rocket"></i> More</uib-tab-heading>
+			<p>3. Etsy mixtape wayfarers, ethical wes anderson tofu before they sold out mcsweeney's organic lomo retro fanny pack lo-fi farm-to-table readymade.</p>
+			<p>Raw denim you probably haven't heard of them jean shorts Austin.</p>
+		</uib-tab>
+	</uib-tabset>
+  </div><!-- /.col -->
+
+  <div class="vspace-6-sm"></div>
+
+  <div class="col-sm-6">
+    <uib-tabset id="tab-color" ng-show="tabShown">
+		<uib-tab heading="Home">
+			<p>Raw denim you probably haven't heard of them jean shorts Austin.</p>
+		</uib-tab>
+		
+		<uib-tab heading="Profile">
+			<p>Food truck fixie locavore, accusamus mcsweeney's marfa nulla single-origin coffee squid.</p>
+		</uib-tab>
+		
+		<uib-tab heading="More">
+			<p>Etsy mixtape wayfarers, ethical wes anderson tofu before they sold out mcsweeney's organic lomo retro fanny pack lo-fi farm-to-table readymade.</p>
+		</uib-tab>
+	</uib-tabset>
+  </div><!-- /.col -->
+
+ </div><!-- /.row -->
+
+
+ <div class="hr hr-double hr-dotted hr18"></div>
+
+
+ <div class="row">
+	<div class="col-sm-6">
+			<h3 class="row header smaller lighter blue">
+				<span class="col-xs-6">
+					Accordion
+				</span><!-- /.col -->
+				<span class="col-xs-6">
+					<span class="pull-right inline">
+						<span class="grey smaller-80 bolder">style:</span>
+						<span class="btn-toolbar inline middle no-margin">
+							<span id="accordion-style" data-toggle="buttons" class="btn-group no-margin">
+								<label class="btn btn-xs btn-yellow active" ng-model="accordionStyle" uib-btn-radio="1">1</label>
+								<label class="btn btn-xs btn-yellow" ng-model="accordionStyle" uib-btn-radio="2">2</label>
+							</span>
+						</span>
+					</span>
+				</span><!-- /.col -->
+			</h3>
+			
+			<div class="panel-group accordion-style1" ng-class="{'accordion-style2': accordionStyle == 2}">
+				<div class="panel panel-default">
+					<div class="panel-heading">
+					   <h4 class="panel-title">
+						 <a href class="accordion-toggle" ng-class="{'collapsed': !isOpen[0]}" ng-click="toggleOpen(0)">
+							<i class="ace-icon fa bigger-110" ng-class="{'fa-angle-down': isOpen[0], 'fa-angle-right': !isOpen[0]}"></i>
+							&nbsp;Group Item #1
+						 </a>
+					   </h4>
+					</div>
+					<div class="panel-collapse" uib-collapse="!isOpen[0]">
+						<div class="panel-body">
+							Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. 3 wolf moon officia aute, non cupidatat skateboard dolor brunch. Food truck quinoa nesciunt laborum eiusmod. Brunch 3 wolf moon tempor, sunt aliqua put a bird on it squid single-origin coffee nulla assumenda shoreditch et. Nihil anim keffiyeh helvetica, craft beer labore wes anderson cred nesciunt sapiente ea proident.
+						</div>
+					</div>
+				</div>
+
+				<div class="panel panel-default">
+					<div class="panel-heading">
+					   <h4 class="panel-title">
+						 <a href class="accordion-toggle" ng-class="{'collapsed': !isOpen[1]}" ng-click="toggleOpen(1)">
+							<i class="ace-icon fa bigger-110" ng-class="{'fa-angle-down': isOpen[1], 'fa-angle-right': !isOpen[1]}"></i>
+							&nbsp;Group Item #2
+						 </a>
+					   </h4>
+					</div>
+					<div class="panel-collapse" uib-collapse="!isOpen[1]">
+						<div class="panel-body">
+							Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. 3 wolf moon officia aute, non cupidatat skateboard dolor brunch. Food truck quinoa nesciunt laborum eiusmod. Brunch 3 wolf moon tempor, sunt aliqua put a bird on it squid single-origin coffee nulla assumenda shoreditch et. Nihil anim keffiyeh helvetica, craft beer labore wes anderson cred nesciunt sapiente ea proident.
+						</div>
+					</div>
+				</div>
+
+				<div class="panel panel-default">
+					<div class="panel-heading">
+					   <h4 class="panel-title">
+						 <a href class="accordion-toggle" ng-class="{'collapsed': !isOpen[2]}" ng-click="toggleOpen(2)">
+							<i class="ace-icon fa bigger-110" ng-class="{'fa-angle-down': isOpen[2], 'fa-angle-right': !isOpen[2]}"></i>
+							&nbsp;Group Item #3
+						 </a>
+					   </h4>
+					</div>
+					<div class="panel-collapse" uib-collapse="!isOpen[2]">
+						<div class="panel-body">
+							Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. 3 wolf moon officia aute, non cupidatat skateboard dolor brunch. Food truck quinoa nesciunt laborum eiusmod. Brunch 3 wolf moon tempor, sunt aliqua put a bird on it squid single-origin coffee nulla assumenda shoreditch et.
+						</div>
+					</div>
+				</div>
+			</div>
+
+	</div><!-- /.col -->
+	
+
+	
+	<div class="col-sm-6">
+		<h3 class="header smaller lighter green">Progress Bar</h3>
+		<div class="row">
+		<div class="col-xs-8">
+			<uib-progressbar value="66">66%</uib-progressbar>
+			<uib-progressbar class="progress-striped" value="25" type="success"></uib-progressbar>
+			
+			<uib-progressbar class="progress-small progress-striped active" value="40" type="warning"></uib-progressbar>
+
+			<uib-progressbar class="progress-mini" value="35"></uib-progressbar>
+			
+			<uib-progress value="25">
+				<uib-bar type="success" value="35"></uib-bar>
+				<uib-bar type="warning" value="20"></uib-bar>
+				<uib-bar type="danger" value="10"></uib-bar>
+			</uib-progress>
+			
+			<uib-progressbar class="progress-striped" value="65" type="purple"></uib-progressbar>
+			<uib-progressbar class="progress-striped" value="40" type="pink"></uib-progressbar>
+			<uib-progressbar class="progress-striped active" value="60" type="yellow"></uib-progressbar>
+			<uib-progressbar class="progress-striped" value="80" type="inverse"></uib-progressbar>
+			
+		</div><!-- /.col -->
+		
+		<div class="col-xs-4 center">
+			<div ng-repeat="epchart in ::easypiechart">
+			  <div easypiechart class="easy-pie-chart percentage" options="epchart.options" percent="epchart.value" ng-style="{'color': epchart.options.barColor}">
+				<span class="percent" ng-bind="epchart.value"></span>%
+			  </div>
+			  <hr ng-if="!$last" />
+			</div>
+		</div><!-- /.col -->
+		
+		</div><!-- /.row -->
+	
+	</div><!-- /.col -->
+	
+
+	
+ </div><!-- /.row -->
+
+
+ <hr />
+
+
+ <div class="row">
+	<div class="col-sm-6">
+	 <div class="widget-box">
+	  <div class="widget-header">
+		<h4 class="smaller">Tooltips <small>different directions and colors</small></h4>
+	  </div>
+	  <div class="widget-body">
+	   <div class="widget-main">
+		<p class="muted">Tight pants next level keffiyeh <a uib-tooltip="Default tooltip" href="">you probably</a> haven't heard of them. Farm-to-table seitan, mcsweeney's fixie sustainable quinoa 8-bit american apparel <a uib-tooltip="Another tooltip" href="">have a</a> terry richardson vinyl chambray. A really ironic artisan <a href="" uib-tooltip="Another one here too">whatever</a> keytar, scenester farm-to-table banksy Austin <a uib-tooltip="The last tip!" href="">twitter</a> handle.
+        </p>
+		<hr />
+		<p>
+			<span class="btn btn-sm" uib-tooltip="Default">Default</span>
+			<span class="btn btn-warning btn-sm tooltip-warning" tooltip-placement="left" uib-tooltip="Left Warning">Left</span>
+			<span class="btn btn-success btn-sm tooltip-success" tooltip-placement="right" uib-tooltip="Right Success">Right</span>
+			<span class="btn btn-danger btn-sm tooltip-error" tooltip-placement="top" uib-tooltip="Top Danger">Top</span>
+			<span class="btn btn-info btn-sm tooltip-info" tooltip-placement="bottom" uib-tooltip="Bottm Info">Bottom</span>
+		</p>
+	   </div>
+	  </div>
+	 </div>
+	</div><!-- /.col -->
+
+	<div class="col-sm-6">
+	 <div class="widget-box">
+	  <div class="widget-header">
+		<h4 class="smaller">Popovers</h4>
+	  </div>
+	  <div class="widget-body">
+	   <div class="widget-main">
+		<p>
+			<span class="btn btn-sm" popover-title="Default" uib-popover="Heads up! This alert needs your attention, but it's not super important.">Default</span>
+			<span class="btn btn-success btn-sm popover-success" popover-placement="right" popover-title="Right Success" uib-popover="Well done! You successfully read this important alert message.">Right</span>
+			<span class="btn btn-warning btn-sm popover-warning" popover-placement="left" popover-title="Left Warning" uib-popover="Warning! Best check yo self, you're not looking too good.">Left</span>
+		</p>
+		<p>
+			<span class="btn btn-danger btn-sm popover-error" popover-placement="top" popover-title="Top Danger" uib-popover="Oh snap! Change a few things up and try submitting again.">Top</span>
+			<span class="btn btn-info btn-sm popover-info" popover-placement="bottom" popover-title="Some Info" uib-popover="Heads up! This alert needs your attention, but it's not super important.">Bottom</span>
+			<span class="btn btn-inverse btn-sm popover-notitle" popover-placement="bottom" uib-popover="Popover without a title!">No Title</span>
+		</p>
+	   </div>
+	  </div>
+	 </div>
+	</div><!-- /.col -->
+ </div><!-- /.row -->
+
+
+ <hr />
+
+
+ <div class="row">
+	<div class="col-sm-6">
+		<h3 class="header smaller lighter green"><i class="ace-icon fa fa-bullhorn"></i> Alerts</h3>
+
+		<uib-alert type="danger" close="alert.close(0)" ng-if="alert.shown[0]">
+			<strong><i class="ace-icon fa fa-times"></i> Oh snap!</strong>
+			Change a few things up and try submitting again.
+		</uib-alert>
+		
+		<uib-alert type="warning" close="alert.close(1)" ng-if="alert.shown[1]">
+			<strong>Warning!</strong>
+			Best check yo self, you're not looking too good. <br />
+		</uib-alert>
+		
+		<uib-alert type="success" close="alert.close(2)" ng-if="alert.shown[2]">
+			<p>
+			<strong><i class="ace-icon fa fa-check"></i> Well done!</strong>
+			You successfully read this important alert message.
+			</p>
+			<p>
+				<button class="btn btn-sm btn-success">Do This</button>
+				<button class="btn btn-sm">Or This One</button>
+			</p>
+		</uib-alert>
+		
+		<uib-alert type="info" close="alert.close(3)" ng-if="alert.shown[3]">
+			<strong>Heads up!</strong>
+			This alert needs your attention, but it's not super important. <br />
+		</uib-alert>
+	</div><!-- /.col -->
+	
+	<div class="col-sm-6">
+		<h3 class="row header smaller lighter orange">
+			<span class="col-sm-8">
+				<i class="ace-icon fa fa-bell"></i> Gritter Notifications
+			</span><!-- /.col -->
+			<span class="col-sm-4">
+				<label class="pull-right inline">
+					<small class="muted">Light:</small>
+					<input ng-checked="gritter.light" ng-model="gritter.light" type="checkbox" class="ace ace-switch ace-switch-5" />
+					<span class="lbl middle"></span>
+				</label>
+			</span><!-- /.col -->
+		</h3>
+
+		<p>
+			<i>Click to see</i>
+		</p>
+		<p>
+			<button class="btn" ng-click="gritter.show('regular')">Regular</button>
+			<button class="btn btn-info" ng-click="gritter.show('sticky')">Sticky</button>
+			<button class="btn btn-success" ng-click="gritter.show('without-image')">Without Image</button>
+		</p>
+		<p>
+			<button class="btn btn-danger" ng-click="gritter.show('error')">Error</button>
+			<button class="btn btn-warning" ng-click="gritter.show('max-3')">Max 3</button>
+			<button class="btn btn-primary" ng-click="gritter.show('center')">Center</button>
+			<button class="btn btn-inverse" ng-click="gritter.clear()">Remove</button>
+		</p>
+	</div><!-- /.col -->
+ </div><!-- /.row -->
+
+
+ <hr />
+
+
+ <div class="row">
+	<div class="col-sm-6">
+		<script type="text/ng-template" id="modalContent.html">
+			<div class="modal-header">
+				<h3 class="modal-title">Modal Dialog!</h3>
+			</div>
+			<div class="modal-body">
+				Modal Content
+			</div>
+			<div class="modal-footer">
+				<button class="btn btn-primary btn-sm" type="button" ng-click="ok()">OK</button>
+				<button class="btn btn-default btn-sm" type="button" ng-click="cancel()">Cancel</button>
+			</div>
+		</script>
+	
+	
+		<div>
+			<h3 class="header smaller lighter purple">Bootstrap Modals <small></small> </h3>
+			<p>
+				<button class="btn" ng-click="openModal()">Angular Bootstrap Modal</button>
+				<!-- <button class="btn btn-success" ng-click="bootbox.show('custom')">Bootbox.js</button> -->
+			</p>
+		</div><!-- /.row -->
+		
+		<div class="space-24"></div>
+		
+		<div class="row">
+			<div class="col-xs-12">
+				<h3 class="header smaller lighter grey"><i class="ace-icon fa fa-spinner fa-spin orange bigger-125"></i> Imageless Spinner <small>(spin.js)</small></h3>
+			</div>
+
+			<div class="col-xs-12">
+				<i>Change a value to update</i>
+
+				<div class="pull-right center spinner-preview"><span us-spinner="sliderValues"></span></div>
+				<form class="form-horizontal" id="spinner-opts">
+					<div ng-repeat="mySlider in ::sliders" ng-init="key = mySlider.name.toLowerCase()">
+					  <label class="inline">
+						<small class="lighter inline" style="width: 60px;" ng-bind="mySlider.name+':'"></small>
+						<span class="inline ui-slider-small" ng-class="[slider.getStyle($index)]" style="width:125px;" ng-model="sliderValues[key]" ui-slider="{'range': 'min'}" min="{{mySlider.min}}" max="{{mySlider.max}}" step="{{mySlider.step || 1}}" use-decimals></span>
+						<input type="text" ng-model="sliderValues[key]" class="hidden" />	
+					  </label>
+					</div>
+				</form>
+			</div><!-- /.row -->
+
+		</div><!-- /.row -->
+	</div><!-- /.col -->
+	
+	<div class="col-sm-6">
+		<h3 class="header smaller lighter red">Bootstrap Wells</h3>
+		<div class="well">
+			<h4 class="green smaller lighter">Normal Well</h4>
+			Use the well as a simple effect on an element to give it an inset effect.
+		</div>
+		
+		<div class="well well-lg">
+			<h4 class="blue">Large Well</h4>
+			Control padding and rounded corners with two optional modifier classes.
+		</div>
+		
+		<div class="well well-sm">
+			This is a small well
+		</div>
+	</div><!-- /.col -->
+	
+ </div><!-- /.row -->
+
+
+ <div class="row">
+	<div class="col-sm-6">
+		<h3 class="header smaller lighter green">Dropdowns</h3>
+
+		<script type="text/ng-template" id="sampleDropdownTemplate">
+			<li ng-repeat="item in ::dropdown.list" ng-class="{'divider': item.divider, 'dropdown-hover': item.dropdown, 'dropup': item.dropup}">
+				<a ng-if="!item.dropdown && item.text" href="" tabindex="-1" ng-bind="item.text"></a>
+				<a ng-if="item.dropdown" href="" tabindex="-1" class="clearfix">
+					<span class="pull-left" ng-bind="item.text"></span>
+					<i class="ace-icon fa pull-right" ng-class="{'fa-caret-right': !item.dropdown.right, 'fa-caret-left': item.dropdown.right}"></i>
+				</a>
+				<ul ng-if="item.dropdown" ng-init="dropdown = item.dropdown" ng-include="'sampleDropdownTemplate'" class="dropdown-menu" ng-class="[dropdown.type ? 'dropdown-'+dropdown.type : '', dropdown.right ? 'dropdown-menu-right': '']">
+				</ul>
+			</li>
+		</script>
+
+		<div class="dropdown dropdown-preview" ng-repeat="dropdown in ::sampleDropdowns">
+			<ul class="dropdown-menu" ng-include="'sampleDropdownTemplate'" ng-class="[dropdown.type ? 'dropdown-'+dropdown.type : '', dropdown.right ? 'dropdown-menu-right': '']">
+			</ul>
+		</div>
+
+		<div class="dropdown dropdown-preview">
+			<ul class="dropdown-menu dropdown-icon-only dropdown-50 dropdown-light">
+				<li class="action-buttons"><a href="" tabindex="-1" class="center"><i class="fa fa-flag blue bigger-130"></i></a></li>
+				<li class="action-buttons"><a href="" tabindex="-1" class="center"><i class="fa fa-flag red bigger-130"></i></a></li>
+				<li class="action-buttons"><a href="" tabindex="-1" class="center"><i class="fa fa-flag green bigger-130"></i></a></li>
+				<li class="action-buttons"><a href="" tabindex="-1" class="center"><i class="fa fa-flag orange bigger-130"></i></a></li>
+			</ul>
+		</div>
+	</div>
+	
+	<div class="col-sm-6">
+		<h3 class="row header smaller lighter blue">
+			<span class="col-sm-7">
+				<i class="ace-icon fa fa-th-large"></i> Pills
+			</span><!-- /.col -->
+			<span class="col-sm-5">
+				<label class="pull-right inline">
+					<small class="muted">Stacked:</small>
+					<input ng-model="pillsStacked" type="checkbox" class="ace ace-switch ace-switch-5" />
+					<span class="lbl middle"></span>
+				</label>
+			</span><!-- /.col -->
+		</h3>
+		
+		<ul class="nav nav-pills" ng-class="[pillsStacked ? 'nav-stacked': '']">
+			<li class="active"><a href="">Home</a></li>
+			<li class="disabled"><a href="">Profile</a></li>
+			<li><a href="">Messages</a></li>
+		</ul>
+
+	</div>
+ </div>
+
+
+
+
+
+</div></div>

@@ -1,0 +1,36 @@
+<a href="" uib-dropdown-toggle class="dropdown-toggle">
+	<i class="ace-icon fa fa-envelope icon-animated-vertical"></i>
+	<span class="badge badge-success" ng-bind="::getCommonData('navbar').messages.count"></span>
+</a>
+<ul class="dropdown-menu-right dropdown-navbar dropdown-menu dropdown-caret dropdown-close">
+	<li class="dropdown-header">
+		<i class="ace-icon fa fa-envelope-o"></i> {{::getCommonData('navbar').messages.count}} Messages
+	</li>
+	
+	<li class="dropdown-content" ace-scroll options="{'size': 200, 'mouseWheelLock': true, 'reset': false}">
+		<ul class="dropdown-menu dropdown-navbar">
+			<li ng-repeat="message in ::getCommonData('navbar').messages.latest">
+				<a href="" class="clearfix">
+					<img ng-src="{{ace.path.assets}}/avatars/{{message.img}}" class="msg-photo" alt="{{message.name}}'s Avatar">
+					<span class="msg-body">
+						<span class="msg-title">
+							<span class="blue">{{message.name}}:</span>
+							{{message.summary}}
+						</span>
+						<span class="msg-time">
+							<i class="ace-icon fa fa-clock-o"></i> <span>{{message.time}}</span>
+						</span>
+					</span>
+				</a>
+			</li>
+		</ul>
+	</li>
+	
+	<li class="dropdown-footer">
+		<a href="/inbox">
+			See all messages
+			<i class="ace-icon fa fa-arrow-right"></i>
+		</a>
+	</li>
+
+</ul>

@@ -1,0 +1,19 @@
+<div class="profile-activity clearfix">
+	<div>
+		{{#avatar}}
+			<img class="pull-left" alt="{{name}}'s avatar" src="{{{path.assets}}}/avatars/{{avatar}}" />
+		{{/avatar}}
+		{{#icon}}
+			<i class="pull-left thumbicon {{icon}} no-hover"></i>
+		{{/icon}}
+		<a class="user" href="#">
+			{{name}}
+		</a>
+		{{{action}}}
+		<div class="time"><i class="ace-icon fa fa-clock-o bigger-110"></i> {{time}}</div>
+	</div>
+	<div class="tools action-buttons">
+		<a href="#" class="blue"><i class="ace-icon fa fa-pencil bigger-125"></i></a>
+		<a href="#" class="red"><i class="ace-icon fa fa-times bigger-125"></i></a>
+	</div>
+</div>

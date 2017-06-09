@@ -1,0 +1,128 @@
+<section>
+	
+	<h1 class="blue" data-id="#pages/frontend"><i class="ace-icon fa fa-desktop grey"></i> Frontend</h1>
+
+	<div class="hr hr-double hr32"></div>
+	
+	<!-- #section:pages/frontend.landing -->
+	<div class="help-content">
+        <h3 class="info-title smaller">Landing Page</h3>
+        <div class="info-section">
+         <ul class="info-list list-unstyled">
+            <li>
+				Landing page is composed of familiar elements
+			</li>
+			
+			<li>
+				The Ace's demo page is made up of a <code>.jumbotron</code> and <code>.section</code> elements, something like this:
+<pre data-language="html">
+<div class="main-container" id="top">
+ <div class="jumbotron main-background">
+    <img src="home.jpg" class="img-main-background" />
+    <div class="container">
+       Welcome!
+    </div>
+ </div>
+ 
+ <section id="services" class="section section-grey">
+ </section>
+ 
+ <section id="services" class="section">
+ </section>
+
+</div>
+</pre>
+			</li>
+			
+			<li>
+				An extra small CSS file is also used <code>frontend.css</code> which is compiled from <code>assets/css/less/ace-frontend.less</code>
+			</li>
+			
+			<li>
+				A small CSS code in inside <code>HEAD</code> element which is used to specify background images.
+			</li>
+			
+			<li>
+				Some custom Javascript code is at the end of page which is used to do the following optional actions:
+				<ol>
+					<li>Make navbar compact as we scroll down</li>
+					<li>Animated scrolling when a navbar link is clicked</li>
+					<li>Change background image style according to window width (described below)</li>
+				</ol>
+			</li>
+			
+			<li>
+				The top section <code>.jumbotron</code> contains the background image:
+<pre data-language="html">
+<div class="jumbotron main-background">
+   <img src="home.jpg" class="img-main-background" />
+</div>
+</pre>
+
+				In Ace's demo, this image is dynamically scaled when window is resized to fit window's width.
+				<br />
+				However in smaller screens it will be hidden and a CSS background will be used instead so that we don't have a small background image.
+				<br />
+				This is optional and you don't need to do this like.
+<pre data-language="javascript">
+$(window)
+.on('resize.bg_update', function() {
+    var width = $(window).width();
+
+    if(width < 992) {
+        $('.img-main-background').addClass('hide');
+        $('.jumbotron').addClass('has-background');
+    }
+    else {
+        $('.img-main-background').removeClass('hide');
+        $('.jumbotron').removeClass('has-background');
+    }
+}).triggerHandler('resize.bg_update');
+</pre>
+			</li>
+			
+			
+			<li>
+				<code>ace.js</code> and <code>ace-elements.js</code> are not required
+			</li>
+
+		 </ul><!-- /.info-list -->
+		</div><!-- /.info-section -->
+	</div>	
+	<!-- /section:pages/frontend.landing -->
+	
+	
+	<div class="hr hr-double hr32"></div>
+	
+	
+	<!-- #section:pages/frontend.soon -->
+	<div class="help-content">
+        <h3 class="info-title smaller">Coming Soon</h3>
+        <div class="info-section">
+         <ul class="info-list list-unstyled">
+            
+			<li>
+				Coming soon page is similar to landing page.
+			</li>
+			
+			<li>
+				There is only timer element with following code:
+<pre data-language="html">
+<div class="timer" id="timer-minute" data-type="minute">
+    <div class="timer-value">26</div>
+    <div class="timer-text"><span class="label label-success arrowed-in arrowed-in-right">Minutes</span></div>
+</div>
+</pre>
+			</li>
+			
+			<li>
+				A simple javascript to run the timer is at the end of page
+			</li>
+			
+			
+		 </ul><!-- /.info-list -->
+		</div><!-- /.info-section -->
+	</div>	
+	<!-- /section:pages/frontend.soon -->
+	
+</section>

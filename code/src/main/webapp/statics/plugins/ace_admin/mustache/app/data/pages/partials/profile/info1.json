@@ -1,0 +1,28 @@
+[
+ {
+ "title" : "Username",
+ "content" : [{"id" : "username" , "value" : "alexdoe"}]
+ } ,
+ {
+ "title" : "Location",
+ "content" : [{"id" : "country" , "value" : "Netherlands"}, {"id" : "city" , "value" : "Amsterdam"}],
+ "icon" : "fa fa-map-marker"
+ } ,
+ {
+ "title" : "Age",
+ "content" : [{"id" : "age" , "value" : 38}]
+ } ,
+ {
+ "title" : "Joined",
+ "content" : [{"id" : "signup" , "value" : "2010/06/20"}]
+ } ,
+ {
+ "title" : "Last Online",
+ "content" : [{"id" : "login" , "value" : "3 hours ago"}]
+ } ,
+ {
+ "title" : "About Me",
+ "content" : [{"id" : "about" , "value" : "Editable as WYSIWYG"}],
+ "last" : true
+ }
+]

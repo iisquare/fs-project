@@ -1,0 +1,9 @@
+{
+ "title" : "Collapsible Responsive(mobile) Menu"
+ ,
+ "description" : null
+ ,
+ "side_menu_collapsible" : true
+ ,
+ "user_menu_collapsible" : true
+}

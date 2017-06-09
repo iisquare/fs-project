@@ -1,0 +1,16 @@
+For more info please refer to docs >> changes >> fontawesome
+
+You can use this script to update your Fontawesome icons from v3.x to v4.x
+If you want to use a name other than "ace-icon" for your icons, make sure to modify `ace_icon` variable inside "icon.js"
+
+Options are:
+  path: Path to the folder or file you want to update.
+  ext: If specified only this extensions will be updated.
+
+node icon.js --path=".../html/myfile.html"
+node icon.js --path=".../mydir/"
+node icon.js --path="path/to/folder" --ext="html|php|js"
+
+Note the three dots "..." when referring to upper level folders!
+
+Please see documentation, Changes/FontAwesome  section

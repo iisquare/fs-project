@@ -1,0 +1,13 @@
+{
+ "title" : "Two Menu Style"
+ ,
+ "horizontal-menu" : true
+ ,
+ "top_menu" : true
+ ,
+ "side_menu_collapsible" : true
+ ,
+ "user_menu_collapsible" : true
+ ,
+ "no-breadcrumbs" : true
+}

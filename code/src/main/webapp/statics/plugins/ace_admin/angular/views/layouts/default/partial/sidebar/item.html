@@ -1,0 +1,32 @@
+<a ng-if="!item.submenu" ui-sref="{{item.url}}">
+	<i ng-if="item.icon" class="menu-icon" ng-class="[item.icon]"></i>
+	 
+	<span ng-if="item['level-1']" class="menu-text">
+		{{::item.title}}
+		
+		<span ng-if="item.badge" ng-class="['badge', item['badge-class'], item['tooltip-class']]" uib-tooltip-html="'{{item.tooltip}}'" tooltip-placement="right" ng-bind-html="::item.badge"></span>
+		<span ng-if="item.label" ng-class="['label', item['label-class']]" ng-attr-title="{{item['label-title']}}" ng-bind="::item.label"></span>
+	</span>
+	 
+	<i ng-if="!item.icon && item['level-2']" class="menu-icon fa fa-caret-right"></i>
+	<span ng-if="!item['level-1']">{{::item.title}}</span>
+</a>
+  
+<a ng-if="item.submenu" href="" ng-class="'dropdown-toggle'" ng-click="toggleSubmenu(item.name)">
+	<i ng-if="item.icon" class="menu-icon" ng-class="[item.icon]"></i>
+	
+	<span class="menu-text">
+		{{::item.title}}
+		
+		<span ng-if="item.badge" ng-class="['badge', item['badge-class'], item['tooltip-class']]" uib-tooltip-html="'{{item.tooltip}}'" tooltip-placement="right" ng-bind-html="::item.badge"></span>
+		<span ng-if="item.label" ng-class="['label', item['label-class']]" ng-attr-title="{{item['label-title']}}" ng-bind="::item.label"></span>
+	</span>
+	
+	<b class="arrow fa fa-angle-down"></b>
+</a>
+  
+<b class="arrow"></b>
+  
+<ul class="submenu" ng-if="item.submenu" ng-attr-data-name="{{item.name}}">
+    <li ng-repeat="item in ::item.submenu" ng-include="'views/layouts/default/partial/sidebar/item.html'" ng-class="{'open':item.submenu && isSubOpen(item.name), 'active': isActiveItem(item.name), 'hover': $parent.ace.settings.hover}"></li>
+</ul>

@@ -1,0 +1,42 @@
+[
+ {
+  "color" : "green",
+  "icon" : "fa fa-comments",
+  "number" : "32",
+  "content" : ["comments + 2 reviews"],
+  "stat-success" : "8%"
+ } ,
+ {
+  "color" : "blue",
+  "icon" : "fa fa-twitter",
+  "number" : "11",
+  "content" : ["new followers"],
+  "badge-success" : "+32%"
+ } ,
+ {
+  "color" : "pink",
+  "icon" : "fa fa-shopping-cart",
+  "number" : "8",
+  "content" : ["new orders"],
+  "stat-important" : "4%"
+ } ,
+ {
+  "color" : "red",
+  "icon" : "fa fa-flask",
+  "number" : "7",
+  "content" : ["experiments"]
+ } ,
+ {
+  "color" : "orange2",
+  "chart" : "196,128,202,177,154,94,100,170,224",
+  "number" : "6,251",
+  "content" : ["pageviews"],
+  "badge-success" : "7.2%"
+ } ,
+ {
+  "color" : "blue2",
+  "progress" : "42",
+  "text" : "traffic used",
+  "content" : ["<span class='bigger-110'>~</span> 58GB remaining"]
+ }
+]
