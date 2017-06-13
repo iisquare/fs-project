@@ -37,13 +37,28 @@
 <script src="${webUrl}/statics/plugins/jsplumb/jsplumb.js"></script>
 <script type="application/javascript">
 jsPlumb.bind("ready", function() {
+    var flowChartIndex = 0;
+    var flowChartData = {};
     $('#flow-chart-canvas').droppable({
         onDrop : function (e, source) {
-            $(this).append(source);
+            if(!$(source).hasClass('tree-node')) return true;
+            var node = $('#flow-nodes-tree').tree('getData', source);
+            flowChartData[flowChartIndex] = node;
+            var obj = $('<button data-index="' + flowChartIndex + '">' + node.text + '</button>');
+            obj.linkbutton({
+                iconCls : node.iconCls
+            });
+            obj.draggable({});
+            $(this).append(obj);
+            flowChartIndex++;
         }
     });
     $('#flow-nodes-tree').tree({
         dnd : true,
+        proxy:function (source) {
+            console.log(source);
+            return source;
+        },
         onBeforeDrag : function (node) {
             return typeof node.draggable != 'undefined' && node.draggable;
         },
@@ -53,34 +68,12 @@ jsPlumb.bind("ready", function() {
         data : [{
             "id":1,
             "text":"Folder1",
-            "iconCls":"icon-save",
+            "iconCls":"tree-folder",
             "children":[{
+                "id":2,
                 "text":"File1",
-                "checked":true
-            },{
-                "text":"Books",
-                "state":"open",
-                "attributes":{
-                    "url":"/demo/book/abc",
-                    "price":100
-                },
-                "children":[{
-                    "text":"PhotoShop",
-                    "checked":true,
-                    "draggable" : true
-                },{
-                    "id": 8,
-                    "text":"Sub Bookds",
-                    "state":"closed"
-                }]
-            }]
-        },{
-            "text":"Languages",
-            "state":"closed",
-            "children":[{
-                "text":"Java"
-            },{
-                "text":"C#"
+                "iconCls":"tree-file",
+                "draggable" : true
             }]
         }]
     });
