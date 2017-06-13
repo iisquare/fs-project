@@ -56,7 +56,12 @@ jsPlumb.bind("ready", function() {
             });
             $(this).append(obj);
             jsPlumbInstance.draggable(id, {containment:'#flow-chart-canvas'});
-            jsPlumbInstance.addEndpoints(id, [{anchor : "TopCenter"}, {anchor : "RightMiddle"}, {anchor : "BottomCenter"}, {anchor : "LeftMiddle"}]);
+            jsPlumbInstance.addEndpoints(id, [{anchor : "TopCenter"}, {anchor : "RightMiddle"}, {anchor : "BottomCenter"}, {anchor : "LeftMiddle"}], {
+                isSource : true,
+                isTarget : true,
+                maxConnections : -1,
+                connectorOverlays: [["Arrow", { width: 10, length: 10, location: 1 }]]
+            });
             flowChartIndex++;
         }
     });
