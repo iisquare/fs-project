@@ -1,0 +1,81 @@
+<!doctype html>
+[#include "../public/common.inc.htm"]
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flow Demo</title>
+    <link rel="stylesheet" type="text/css" href="${webUrl}/statics/plugins/jquery-easyui/themes/bootstrap/easyui.css">
+    <link rel="stylesheet" type="text/css" href="${webUrl}/statics/plugins/jquery-easyui/themes/icon.css">
+</head>
+<body class="easyui-layout">
+    <div data-options="region:'north'" style="height:28px;">
+        <button class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true">保存</button>
+    </div>
+    <div data-options="region:'south'" style="height:22px;padding: 2px;">状态信息：</div>
+    <div data-options="region:'east',title:'属性',split:true" style="width:280px;">
+        <table id="flow-property-table" style="width:100%;"></table>
+    </div>
+    <div data-options="region:'west',title:'节点',split:true" style="width:180px;">
+        <ul id="flow-nodes-tree"></ul>
+    </div>
+    <div data-options="region:'center',title:'流程图'" style="padding:5px;background:#eee;"></div>
+[#include "../public/resource.js.htm"]
+<script src="${webUrl}/statics/js/jquery-1.12.4.js"></script>
+<script src="${webUrl}/statics/plugins/jquery-easyui/jquery.easyui.min.js"></script>
+<script src="${webUrl}/statics/plugins/jsplumb/jsplumb.js"></script>
+<script type="application/javascript">
+jsPlumb.bind("ready", function() {
+    $('#flow-nodes-tree').tree({
+        data : [{
+            "id":1,
+            "text":"Folder1",
+            "iconCls":"icon-save",
+            "children":[{
+                "text":"File1",
+                "checked":true
+            },{
+                "text":"Books",
+                "state":"open",
+                "attributes":{
+                    "url":"/demo/book/abc",
+                    "price":100
+                },
+                "children":[{
+                    "text":"PhotoShop",
+                    "checked":true
+                },{
+                    "id": 8,
+                    "text":"Sub Bookds",
+                    "state":"closed"
+                }]
+            }]
+        },{
+            "text":"Languages",
+            "state":"closed",
+            "children":[{
+                "text":"Java"
+            },{
+                "text":"C#"
+            }]
+        }]
+    });
+    $('#flow-property-table').propertygrid({
+        border : false,
+        data : {"total":4,"rows":[
+            {"name":"Name","value":"Bill Smith","group":"ID Settings","editor":"text"},
+            {"name":"Address","value":"","group":"ID Settings","editor":"text"},
+            {"name":"SSN","value":"123-456-7890","group":"ID Settings","editor":"text"},
+            {"name":"Email","value":"bill@gmail.com","group":"Marketing Settings","editor":{
+                "type":"validatebox",
+                "options":{
+                    "validType":"email"
+                }
+            }}
+        ]}
+    });
+});
+</script>
+</body>
+</html>
