@@ -14,7 +14,6 @@
         .layout-east{width:280px;}
         .layout-west{width:180px;}
         .layout-center{background:url("${webUrl}/statics/images/grid.gif");}
-        #flow-chart-canvas{width: 100%; height: 100%;}
         .flow-chart-item{position: absolute;}
     </style>
 </head>
@@ -29,8 +28,8 @@
     <div class="layout-west" data-options="region:'west',title:'节点',split:true">
         <ul id="flow-nodes-tree"></ul>
     </div>
-    <div class="layout-center" data-options="region:'center',title:'流程图'">
-        <div id="flow-chart-canvas"></div>
+    <div class="layout-center" data-options="region:'center',title:'流程图',content:''">
+        <div id="flow-chart-canvas" class="easyui-layout"data-options="fit:true"></div>
     </div>
 [#include "../public/resource.js.htm"]
 <script src="${webUrl}/statics/js/jquery-1.12.4.js"></script>
@@ -43,7 +42,6 @@ jsPlumb.bind("ready", function() {
     var jsPlumbInstance = jsPlumb.getInstance({
         Endpoint:["Dot", {radius:2}]
     });
-    //jsPlumbInstance.setContainer($('#flow-chart-canvas'));
     $('#flow-chart-canvas').droppable({
         onDrop : function (e, source) {
             if(!$(source).hasClass('tree-node')) return true;
