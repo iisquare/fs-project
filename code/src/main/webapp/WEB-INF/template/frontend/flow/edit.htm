@@ -8,6 +8,7 @@
     <title>Flow Demo</title>
     <link rel="stylesheet" type="text/css" href="${webUrl}/statics/plugins/jquery-easyui/themes/bootstrap/easyui.css">
     <link rel="stylesheet" type="text/css" href="${webUrl}/statics/plugins/jquery-easyui/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="${webUrl}/statics/plugins/ace_admin/components/font-awesome/css/font-awesome.css">
     <style type="text/css">
         .layout-north{height:28px;}
         .layout-south{height:22px;padding: 2px;}
@@ -16,7 +17,6 @@
         .layout-center{background:#eee; position: relative;}
         #flow-chart-canvas{width:700px; height:500px; position:relative; margin:auto; background:url("${webUrl}/statics/images/grid.gif");}
         .flow-chart-item{position: absolute;}
-        #context-menu{display: none;}
     </style>
 </head>
 <body class="easyui-layout">
@@ -94,6 +94,28 @@ jsPlumb.bind("ready", function() {
         var propertygrid = $.extend(true, {data:{total:0, rows:[]}}, node.propertygrid || {}, {
             onAfterEdit : function (rowIndex, rowData, changes) {
                 flowChartValue[_this.id][rowIndex] = rowData;
+                function bindTips(content) {
+                    if(!content) content = '暂无备注';
+                    $obj.find('.ace-icon').tooltip({
+                        position: 'right',
+                        content: content.replace(/\n/g, '<br>')
+                    });
+                }
+                switch (rowIndex) {
+                    case 1 :
+                        var value = rowData.value;
+                        if(flowChartValue[_this.id][2]) value += '<i class="ace-icon fa fa-comments-o"></i>';
+                        $obj.linkbutton({text:value});
+                        bindTips(flowChartValue[_this.id][2]);
+                        break;
+                    case 2 :
+                        var value = $obj.text();
+                        if(flowChartValue[_this.id][1]) value = flowChartValue[_this.id][1].value;
+                        if(rowData.value) value += '<i class="ace-icon fa fa-comments-o"></i>';
+                        $obj.linkbutton({text:value});
+                        bindTips(rowData.value);
+                        break;
+                }
             }
         });
         propertygrid.data.rows.unshift({"name":"备注","value":"","group":"基础信息","editor":"textarea"});
@@ -104,10 +126,6 @@ jsPlumb.bind("ready", function() {
             propertygrid.data.rows[index] = flowChartValue[_this.id][index];
         }
         $('#flow-property-table').propertygrid(propertygrid);
-    }).on('hover', '.flow-chart-item', function (e) {
-
-    }, function (e) {
-
     });
     $(window).on('resize', function () {
         window.setTimeout(function () {
