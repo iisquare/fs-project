@@ -58,14 +58,15 @@ jsPlumb.bind("ready", function() {
         this.container.append($contextMenu);
         $contextMenu.menu('show', {top: e.pageY, left: e.pageX});
     }
-    var flowChartIndex = 0;
-    var flowChartData = {};
+    var flowChartIndex = 0; // 节点索引
+    var flowChartData = {}; // 对应节点类型数据
+    var flowChartValue = {}; // 对应节点配置数据
     var flowChartLastMouseMoveEvent = null;
     var jsPlumbInstance = jsPlumb.getInstance({
         Endpoint:["Dot", {radius:2}]
     });
     $('.layout-center').on('contextmenu', function () {return false;});
-    $('#flow-property-table').propertygrid({border : false});
+    $('#flow-property-table').propertygrid({showGroup : true,border : false});
     jsPlumbInstance.bind('contextmenu', function (connInfo, originalEvent) {
         if(!(connInfo instanceof jsPlumb.Connection)) return true;
         new ContextMenu(originalEvent, [{
@@ -87,8 +88,20 @@ jsPlumb.bind("ready", function() {
             }
         }]);
     }).on('click', '.flow-chart-item', function (e) {
+        var _this = this;
         var node = flowChartData[this.id];
-        var propertygrid = node.propertygrid || {data:{total:0, rows:[]}};
+        var $obj = $(this);
+        var propertygrid = $.extend(true, {data:{total:0, rows:[]}}, node.propertygrid || {}, {
+            onAfterEdit : function (rowIndex, rowData, changes) {
+                flowChartValue[_this.id][rowIndex] = rowData;
+            }
+        });
+        propertygrid.data.rows.unshift({"name":"备注","value":"","group":"基础信息","editor":"textarea"});
+        propertygrid.data.rows.unshift({"name":"名称","value":$obj.text(),"group":"基础信息","editor":"text"});
+        if(typeof flowChartValue[_this.id] == "undefined") flowChartValue[_this.id] = {};
+        for (var index in flowChartValue[_this.id]) {
+            propertygrid.data.rows[index] = flowChartValue[_this.id][index];
+        }
         $('#flow-property-table').propertygrid(propertygrid);
     }).on('hover', '.flow-chart-item', function (e) {
 
@@ -152,7 +165,6 @@ jsPlumb.bind("ready", function() {
                 "iconCls":"tree-file",
                 "draggable" : true,
                 "propertygrid" : {
-                    showGroup : true,
                     data : {"rows":[
                         {"name":"主机","value":"127.0.0.1","group":"连接设置","editor":"text"},
                         {"name":"端口","value":"3306","group":"连接设置","editor":"text"},
@@ -160,7 +172,7 @@ jsPlumb.bind("ready", function() {
                         {"name":"密码","value":"root","group":"连接设置","editor":"text"},
                         {"name":"数据库","value":"test","group":"连接设置","editor":"text"},
                         {"name":"编码","value":"utf-8","group":"连接设置","editor":"text"},
-                        {"name":"SQL","value":"","group":"数据查询","editor":"text"},
+                        {"name":"SQL","value":"","group":"数据查询","editor":"textarea"},
                     ]}
                 }
             }, {
