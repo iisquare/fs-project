@@ -65,6 +65,7 @@ jsPlumb.bind("ready", function() {
         Endpoint:["Dot", {radius:2}]
     });
     $('.layout-center').on('contextmenu', function () {return false;});
+    $('#flow-property-table').propertygrid({border : false});
     jsPlumbInstance.bind('contextmenu', function (connInfo, originalEvent) {
         if(!(connInfo instanceof jsPlumb.Connection)) return true;
         new ContextMenu(originalEvent, [{
@@ -85,6 +86,14 @@ jsPlumb.bind("ready", function() {
                 $obj.remove();
             }
         }]);
+    }).on('click', '.flow-chart-item', function (e) {
+        var node = flowChartData[this.id];
+        var propertygrid = node.propertygrid || {data:{total:0, rows:[]}};
+        $('#flow-property-table').propertygrid(propertygrid);
+    }).on('hover', '.flow-chart-item', function (e) {
+
+    }, function (e) {
+
     });
     $(window).on('resize', function () {
         window.setTimeout(function () {
@@ -100,8 +109,8 @@ jsPlumb.bind("ready", function() {
         onDrop : function (e, source) {
             if(!$(source).hasClass('tree-node')) return true;
             var node = $('#flow-nodes-tree').tree('getData', source);
-            flowChartData[flowChartIndex] = node;
             var id = 'flowChartItem' + flowChartIndex;
+            flowChartData[id] = node;
             var $obj = $('<button id="' + id + '" class="flow-chart-item">' + node.text + '[' + flowChartIndex + ']</button>');
             $obj.linkbutton({
                 iconCls : node.iconCls
@@ -141,7 +150,19 @@ jsPlumb.bind("ready", function() {
                 "id":11,
                 "text":"读取MySQL",
                 "iconCls":"tree-file",
-                "draggable" : true
+                "draggable" : true,
+                "propertygrid" : {
+                    showGroup : true,
+                    data : {"rows":[
+                        {"name":"主机","value":"127.0.0.1","group":"连接设置","editor":"text"},
+                        {"name":"端口","value":"3306","group":"连接设置","editor":"text"},
+                        {"name":"账号","value":"root","group":"连接设置","editor":"text"},
+                        {"name":"密码","value":"root","group":"连接设置","editor":"text"},
+                        {"name":"数据库","value":"test","group":"连接设置","editor":"text"},
+                        {"name":"编码","value":"utf-8","group":"连接设置","editor":"text"},
+                        {"name":"SQL","value":"","group":"数据查询","editor":"text"},
+                    ]}
+                }
             }, {
                 "id":12,
                 "text":"读取MongoDB",
@@ -257,20 +278,6 @@ jsPlumb.bind("ready", function() {
                 "draggable" : true
             }]
         }]
-    });
-    $('#flow-property-table').propertygrid({
-        border : false,
-        data : {"total":4,"rows":[
-            {"name":"Name","value":"Bill Smith","group":"ID Settings","editor":"text"},
-            {"name":"Address","value":"","group":"ID Settings","editor":"text"},
-            {"name":"SSN","value":"123-456-7890","group":"ID Settings","editor":"text"},
-            {"name":"Email","value":"bill@gmail.com","group":"Marketing Settings","editor":{
-                "type":"validatebox",
-                "options":{
-                    "validType":"email"
-                }
-            }}
-        ]}
     });
 });
 </script>
