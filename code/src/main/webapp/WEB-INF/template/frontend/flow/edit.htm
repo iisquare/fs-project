@@ -13,7 +13,8 @@
         .layout-south{height:22px;padding: 2px;}
         .layout-east{width:280px;}
         .layout-west{width:180px;}
-        .layout-center{background:url("${webUrl}/statics/images/grid.gif");}
+        .layout-center{background:#eee; position: relative;}
+        #flow-chart-canvas{width:700px; height:500px; position:relative; margin:auto; background:url("${webUrl}/statics/images/grid.gif");}
         .flow-chart-item{position: absolute;}
     </style>
 </head>
@@ -29,7 +30,7 @@
         <ul id="flow-nodes-tree"></ul>
     </div>
     <div class="layout-center" data-options="region:'center',title:'流程图',content:''">
-        <div id="flow-chart-canvas" class="easyui-layout"data-options="fit:true"></div>
+        <div id="flow-chart-canvas"></div>
     </div>
 [#include "../public/resource.js.htm"]
 <script src="${webUrl}/statics/js/jquery-1.12.4.js"></script>
@@ -43,6 +44,13 @@ jsPlumb.bind("ready", function() {
     var jsPlumbInstance = jsPlumb.getInstance({
         Endpoint:["Dot", {radius:2}]
     });
+    $(window).on('resize', function () {
+        window.setTimeout(function () {
+            var top = $('.layout-center').height() - $('#flow-chart-canvas').height();
+            if(top < 0) top = 0;
+            $('#flow-chart-canvas').css({'margin-top':top / 2});
+        }, 200);
+    }).trigger('resize');
     $('#flow-chart-canvas').on('mousemove', function (e) {
         flowChartLastMouseMoveEvent = e;
     });
