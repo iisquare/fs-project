@@ -98,6 +98,7 @@ jsPlumb.bind("ready", function() {
         });
         propertygrid.data.rows.unshift({"name":"备注","value":"","group":"基础信息","editor":"textarea"});
         propertygrid.data.rows.unshift({"name":"名称","value":$obj.text(),"group":"基础信息","editor":"text"});
+        propertygrid.data.rows.unshift({"name":"节点","value":_this.id,"group":"基础信息"});
         if(typeof flowChartValue[_this.id] == "undefined") flowChartValue[_this.id] = {};
         for (var index in flowChartValue[_this.id]) {
             propertygrid.data.rows[index] = flowChartValue[_this.id][index];
