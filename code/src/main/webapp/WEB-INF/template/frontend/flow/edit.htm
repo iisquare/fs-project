@@ -16,6 +16,7 @@
         .layout-center{background:#eee; position: relative;}
         #flow-chart-canvas{width:700px; height:500px; position:relative; margin:auto; background:url("${webUrl}/statics/images/grid.gif");}
         .flow-chart-item{position: absolute;}
+        #context-menu{display: none;}
     </style>
 </head>
 <body class="easyui-layout">
@@ -38,11 +39,41 @@
 <script src="${webUrl}/statics/plugins/jsplumb/jsplumb.js"></script>
 <script type="application/javascript">
 jsPlumb.bind("ready", function() {
+    function ContextMenu(container, data, e) {
+        this.container = $(container);
+        this.container.children('.context-menu, .menu-shadow').remove();
+        var _this = this;
+        var $contextMenu = $('<div class="context-menu"></div>');
+        $contextMenu.menu({
+            onHide : function () {
+                _this.container.children('.context-menu, .menu-shadow').remove();
+            }
+        });
+        for (var index in data) {
+            var item = data[index];
+            $contextMenu.menu('appendItem', item);
+        }
+        this.container.append($contextMenu);
+        console.log(e, $(e.target).position(), $(e.target).parent(), $(e.target).parent().position());
+        $contextMenu.menu('show', $(e.target).parent().position());
+    }
     var flowChartIndex = 0;
     var flowChartData = {};
     var flowChartLastMouseMoveEvent = null;
     var jsPlumbInstance = jsPlumb.getInstance({
         Endpoint:["Dot", {radius:2}]
+    });
+    $('.layout-center').on('contextmenu', function () {return false;});
+    jsPlumbInstance.bind('contextmenu', function (connInfo, originalEvent) {
+        if(!(connInfo instanceof jsPlumb.Connection)) return true;
+        new ContextMenu('#flow-chart-canvas', [{
+            id : 'delete',
+            text : '删除',
+            iconCls : 'icon-delete',
+            onclick : function () {
+                jsPlumbInstance.deleteConnection(connInfo);
+            }
+        }], originalEvent);
     });
     $(window).on('resize', function () {
         window.setTimeout(function () {
@@ -60,14 +91,14 @@ jsPlumb.bind("ready", function() {
             var node = $('#flow-nodes-tree').tree('getData', source);
             flowChartData[flowChartIndex] = node;
             var id = 'flowChartItem' + flowChartIndex;
-            var obj = $('<button id="' + id + '" class="flow-chart-item">' + node.text + '[' + flowChartIndex + ']</button>');
-            obj.linkbutton({
+            var $obj = $('<button id="' + id + '" class="flow-chart-item">' + node.text + '[' + flowChartIndex + ']</button>');
+            $obj.linkbutton({
                 iconCls : node.iconCls
             });
-            $(this).append(obj);
-            obj.css({
-                top : flowChartLastMouseMoveEvent.offsetY - obj.height() / 2,
-                left : flowChartLastMouseMoveEvent.offsetX - obj.width() / 2
+            $(this).append($obj);
+            $obj.css({
+                top : flowChartLastMouseMoveEvent.offsetY - $obj.height() / 2,
+                left : flowChartLastMouseMoveEvent.offsetX - $obj.width() / 2
             });
             jsPlumbInstance.draggable(id, {containment:'#flow-chart-canvas'});
             jsPlumbInstance.addEndpoints(id, [{anchor : "TopCenter"}, {anchor : "RightMiddle"}, {anchor : "BottomCenter"}, {anchor : "LeftMiddle"}], {
