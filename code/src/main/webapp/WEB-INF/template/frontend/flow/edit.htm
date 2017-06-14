@@ -39,14 +39,16 @@
 <script src="${webUrl}/statics/plugins/jsplumb/jsplumb.js"></script>
 <script type="application/javascript">
 jsPlumb.bind("ready", function() {
-    function ContextMenu(container, data, e) {
-        this.container = $(container);
+    function ContextMenu(e, data) {
+        this.container = $('body');
         this.container.children('.context-menu, .menu-shadow').remove();
         var _this = this;
         var $contextMenu = $('<div class="context-menu"></div>');
         $contextMenu.menu({
             onHide : function () {
-                _this.container.children('.context-menu, .menu-shadow').remove();
+                window.setTimeout(function () {
+                    $contextMenu.menu('destroy');
+                }, 200);
             }
         });
         for (var index in data) {
@@ -54,8 +56,7 @@ jsPlumb.bind("ready", function() {
             $contextMenu.menu('appendItem', item);
         }
         this.container.append($contextMenu);
-        console.log(e, $(e.target).position(), $(e.target).parent(), $(e.target).parent().position());
-        $contextMenu.menu('show', $(e.target).parent().position());
+        $contextMenu.menu('show', {top: e.pageY, left: e.pageX});
     }
     var flowChartIndex = 0;
     var flowChartData = {};
@@ -66,14 +67,14 @@ jsPlumb.bind("ready", function() {
     $('.layout-center').on('contextmenu', function () {return false;});
     jsPlumbInstance.bind('contextmenu', function (connInfo, originalEvent) {
         if(!(connInfo instanceof jsPlumb.Connection)) return true;
-        new ContextMenu('#flow-chart-canvas', [{
+        new ContextMenu(originalEvent, [{
             id : 'delete',
             text : '删除',
-            iconCls : 'icon-delete',
+            iconCls : 'icon-remove',
             onclick : function () {
                 jsPlumbInstance.deleteConnection(connInfo);
             }
-        }], originalEvent);
+        }]);
     });
     $(window).on('resize', function () {
         window.setTimeout(function () {
