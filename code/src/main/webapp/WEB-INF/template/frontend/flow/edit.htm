@@ -100,13 +100,15 @@ jsPlumb.bind("ready", function() {
                         position: 'right',
                         content: content.replace(/\n/g, '<br>')
                     });
+                    jsPlumbInstance.repaintEverything();
                 }
                 switch (rowIndex) {
                     case 1 :
                         var value = rowData.value;
-                        if(flowChartValue[_this.id][2]) value += '<i class="ace-icon fa fa-comments-o"></i>';
+                        var content = flowChartValue[_this.id][2] ? flowChartValue[_this.id][2].value : null;
+                        if(content) value += '<i class="ace-icon fa fa-comments-o"></i>';
                         $obj.linkbutton({text:value});
-                        bindTips(flowChartValue[_this.id][2]);
+                        bindTips(content);
                         break;
                     case 2 :
                         var value = $obj.text();
