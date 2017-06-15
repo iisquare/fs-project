@@ -40,6 +40,18 @@ dependencies {
         [group: 'mysql', name: 'mysql-connector-java', version: '5.1.39']
     )
 }
+
 // 项目设置
 eclipse.project.name = 'etl-visual'
 war.baseName = eclipse.project.name
+
+// 部署测试文件
+task deployTest() {
+	for(node in ['single', 'node1', 'node2', 'node3']) {
+		delete "src/main/webapp/WEB-INF/classes/"
+		copy {
+			from 'src/main/resources'
+			into "src/main/webapp/WEB-INF/classes"
+		}
+	}
+}
