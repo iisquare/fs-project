@@ -93,7 +93,8 @@ jsPlumb.bind("ready", function() {
         var $obj = $(this);
         var propertygrid = $.extend(true, {data:{total:0, rows:[]}}, node.propertygrid || {}, {
             onAfterEdit : function (rowIndex, rowData, changes) {
-                flowChartValue[_this.id][rowIndex] = rowData;
+                if(!rowData.key) return true;
+                flowChartValue[_this.id][rowData.key] = rowData;
                 function bindTips(content) {
                     if(!content) content = '暂无备注';
                     $obj.find('.ace-icon').tooltip({
@@ -102,17 +103,17 @@ jsPlumb.bind("ready", function() {
                     });
                     jsPlumbInstance.repaintEverything();
                 }
-                switch (rowIndex) {
-                    case 1 :
+                switch (rowData.key) {
+                    case "text" :
                         var value = rowData.value;
-                        var content = flowChartValue[_this.id][2] ? flowChartValue[_this.id][2].value : null;
+                        var content = flowChartValue[_this.id]["description"] ? flowChartValue[_this.id]["description"].value : null;
                         if(content) value += '<i class="ace-icon fa fa-comments-o"></i>';
                         $obj.linkbutton({text:value});
                         bindTips(content);
                         break;
-                    case 2 :
+                    case "description" :
                         var value = $obj.text();
-                        if(flowChartValue[_this.id][1]) value = flowChartValue[_this.id][1].value;
+                        if(flowChartValue[_this.id]["text"]) value = flowChartValue[_this.id]["text"].value;
                         if(rowData.value) value += '<i class="ace-icon fa fa-comments-o"></i>';
                         $obj.linkbutton({text:value});
                         bindTips(rowData.value);
@@ -120,12 +121,14 @@ jsPlumb.bind("ready", function() {
                 }
             }
         });
-        propertygrid.data.rows.unshift({"name":"备注","value":"","group":"基础信息","editor":"textarea"});
-        propertygrid.data.rows.unshift({"name":"名称","value":$obj.text(),"group":"基础信息","editor":"text"});
-        propertygrid.data.rows.unshift({"name":"节点","value":_this.id,"group":"基础信息"});
+        propertygrid.data.rows.unshift({"name":"备注","key":"description","value":"","group":"基础信息","editor":"textarea"});
+        propertygrid.data.rows.unshift({"name":"名称","key":"text","value":$obj.text(),"group":"基础信息","editor":"text"});
+        propertygrid.data.rows.unshift({"name":"别名","key":"alias","value":"","group":"基础信息","editor":"text"});
+        propertygrid.data.rows.unshift({"name":"节点","key":"node","value":_this.id,"group":"基础信息"});
         if(typeof flowChartValue[_this.id] == "undefined") flowChartValue[_this.id] = {};
-        for (var index in flowChartValue[_this.id]) {
-            propertygrid.data.rows[index] = flowChartValue[_this.id][index];
+        for (var index in propertygrid.data.rows) {
+            if(!propertygrid.data.rows[index].key || !flowChartValue[_this.id][propertygrid.data.rows[index].key]) continue;
+            propertygrid.data.rows[index] = flowChartValue[_this.id][propertygrid.data.rows[index].key];
         }
         $('#flow-property-table').propertygrid(propertygrid);
     });
@@ -187,13 +190,13 @@ jsPlumb.bind("ready", function() {
                 "draggable" : true,
                 "propertygrid" : {
                     data : {"rows":[
-                        {"name":"主机","value":"127.0.0.1","group":"连接设置","editor":"text"},
-                        {"name":"端口","value":"3306","group":"连接设置","editor":"text"},
-                        {"name":"账号","value":"root","group":"连接设置","editor":"text"},
-                        {"name":"密码","value":"root","group":"连接设置","editor":"text"},
-                        {"name":"数据库","value":"test","group":"连接设置","editor":"text"},
-                        {"name":"编码","value":"utf-8","group":"连接设置","editor":"text"},
-                        {"name":"SQL","value":"","group":"数据查询","editor":"textarea"},
+                        {"name":"主机","key":"host","value":"127.0.0.1","group":"连接设置","editor":"text"},
+                        {"name":"端口","key":"port","value":"3306","group":"连接设置","editor":"text"},
+                        {"name":"账号","key":"username","value":"root","group":"连接设置","editor":"text"},
+                        {"name":"密码","key":"password","value":"root","group":"连接设置","editor":"text"},
+                        {"name":"数据库","key":"database","value":"test","group":"连接设置","editor":"text"},
+                        {"name":"编码","key":"charset","value":"utf-8","group":"连接设置","editor":"text"},
+                        {"name":"SQL","key":"sql","value":"","group":"数据查询","editor":"textarea"},
                     ]}
                 }
             }, {
