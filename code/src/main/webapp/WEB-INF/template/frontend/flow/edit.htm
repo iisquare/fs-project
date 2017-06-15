@@ -70,7 +70,7 @@ jsPlumb.bind("ready", function() {
     jsPlumbInstance.bind('contextmenu', function (connInfo, originalEvent) {
         if(!(connInfo instanceof jsPlumb.Connection)) return true;
         new ContextMenu(originalEvent, [{
-            text : '删除',
+            text : '删除连线',
             iconCls : 'icon-remove',
             onclick : function () {
                 jsPlumbInstance.deleteConnection(connInfo);
@@ -80,7 +80,7 @@ jsPlumb.bind("ready", function() {
     $('#flow-chart-canvas').on('contextmenu', '.flow-chart-item', function (e) {
         var $obj = $(this);
         new ContextMenu(e, [{
-            text : '删除',
+            text : '删除节点',
             iconCls : 'icon-remove',
             onclick : function () {
                 jsPlumbInstance.removeAllEndpoints($obj);
