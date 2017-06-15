@@ -91,6 +91,9 @@ jsPlumb.bind("ready", function() {
         var _this = this;
         var node = flowChartData[this.id];
         var $obj = $(this);
+        var $propertyTable = $('#flow-property-table');
+        if($propertyTable.data('id') == this.id) return true;
+        $propertyTable.data('id', this.id);
         var propertygrid = $.extend(true, {data:{total:0, rows:[]}}, node.propertygrid || {}, {
             onAfterEdit : function (rowIndex, rowData, changes) {
                 if(!rowData.key) return true;
@@ -130,7 +133,7 @@ jsPlumb.bind("ready", function() {
             if(!propertygrid.data.rows[index].key || !flowChartValue[_this.id][propertygrid.data.rows[index].key]) continue;
             propertygrid.data.rows[index] = flowChartValue[_this.id][propertygrid.data.rows[index].key];
         }
-        $('#flow-property-table').propertygrid(propertygrid);
+        $propertyTable.propertygrid(propertygrid);
     });
     $(window).on('resize', function () {
         window.setTimeout(function () {
