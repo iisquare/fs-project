@@ -157,6 +157,7 @@ jsPlumb.bind("ready", function() {
                 top : flowChartLastMouseMoveEvent.offsetY - $obj.height() / 2,
                 left : flowChartLastMouseMoveEvent.offsetX - $obj.width() / 2
             });
+            $obj.trigger('click');
             jsPlumbInstance.draggable(id, {containment:'#flow-chart-canvas'});
             jsPlumbInstance.addEndpoints(id, [{anchor : "TopCenter"}, {anchor : "RightMiddle"}, {anchor : "BottomCenter"}, {anchor : "LeftMiddle"}], {
                 isSource : true,
