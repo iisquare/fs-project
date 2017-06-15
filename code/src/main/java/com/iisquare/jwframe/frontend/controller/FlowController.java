@@ -21,5 +21,9 @@ public class FlowController extends CoreController {
 	public Object editAction() throws Exception {
 		return displayTemplate();
 	}
+	
+	public Object pluginsAction() throws Exception {
+		return displayTemplate();
+	}
 
 }

@@ -1,0 +1,135 @@
+[{
+	"id":1,
+	"text":"数据读取",
+	"iconCls":"tree-folder",
+	"children":[{
+		"id":11,
+		"text":"读取MySQL",
+		"iconCls":"tree-file",
+		"draggable" : true,
+		"propertygrid" : {
+			"data" : {"rows":[
+				{"name":"主机","key":"host","value":"127.0.0.1","group":"连接设置","editor":"text"},
+				{"name":"端口","key":"port","value":"3306","group":"连接设置","editor":"text"},
+				{"name":"账号","key":"username","value":"root","group":"连接设置","editor":"text"},
+				{"name":"密码","key":"password","value":"root","group":"连接设置","editor":"text"},
+				{"name":"数据库","key":"database","value":"test","group":"连接设置","editor":"text"},
+				{"name":"编码","key":"charset","value":"utf-8","group":"连接设置","editor":"text"},
+				{"name":"SQL","key":"sql","value":"","group":"数据查询","editor":"textarea"}
+			]}
+		}
+	}, {
+		"id":12,
+		"text":"读取MongoDB",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}, {
+		"id":13,
+		"text":"读取Elasticsearch",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}, {
+		"id":14,
+		"text":"读取Redis",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}, {
+		"id":15,
+		"text":"读取HBase",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}]
+}, {
+	"id":2,
+	"text":"数据计算",
+	"iconCls":"tree-folder",
+	"children":[{
+		"id":21,
+		"text":"SparkRDD",
+		"iconCls":"tree-folder",
+		"state":"closed",
+		"children":[{
+			"id":211,
+			"text":"count",
+			"iconCls":"tree-file",
+			"draggable" : true
+		}]
+	}, {
+		"id":22,
+		"text":"分组计算",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}]
+}, {
+	"id":3,
+	"text":"数据写入",
+	"iconCls":"tree-folder",
+	"children":[{
+		"id":31,
+		"text":"写入MySQL",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}, {
+		"id":32,
+		"text":"写入MongoDB",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}, {
+		"id":33,
+		"text":"写入Elasticsearch",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}, {
+		"id":34,
+		"text":"写入Redis",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}, {
+		"id":35,
+		"text":"写入HBase",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}]
+}, {
+	"id":4,
+	"text":"机器学习",
+	"iconCls":"tree-folder",
+	"state":"closed",
+	"children":[{
+		"id":41,
+		"text":"KNN",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}, {
+		"id":42,
+		"text":"K-Means",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}, {
+		"id":43,
+		"text":"CF",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}]
+}, {
+	"id":5,
+	"text":"神经网络",
+	"iconCls":"tree-folder",
+	"state":"closed",
+	"children":[{
+		"id":51,
+		"text":"CNN",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}, {
+		"id":52,
+		"text":"RNN",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}, {
+		"id":53,
+		"text":"DNN",
+		"iconCls":"tree-file",
+		"draggable" : true
+	}]
+}]

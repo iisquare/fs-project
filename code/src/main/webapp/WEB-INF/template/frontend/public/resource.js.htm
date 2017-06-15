@@ -37,4 +37,21 @@
 		}
 		return idArray;
 	}
+
+	$.fn.linkbuttonToggle = function () {
+		var $obj = $(this);
+		if(arguments.length) {
+			if(true == $obj.data('toggle')) return true;
+			$obj.data('toggle', true);
+			var options = $obj.linkbutton('options');
+			$obj.data('text', options.text);
+			options.text = arguments[0];
+			$obj.linkbutton(options);
+			return false;
+		}
+		$obj.data('toggle', false);
+		var options = $obj.linkbutton('options');
+		options.text = $obj.data('text');
+		$obj.linkbutton(options);
+	}
 </script>
