@@ -58,6 +58,21 @@ jsPlumb.bind("ready", function() {
         this.container.append($contextMenu);
         $contextMenu.menu('show', {top: e.pageY, left: e.pageX});
     }
+    function generatePropertyRows(target, nodeRows, configRows) {
+        var rows = [
+            {"name":"节点","key":"node","value":target.id,"group":"基础信息"},
+            {"name":"别名","key":"alias","value":"","group":"基础信息","editor":"text"},
+            {"name":"名称","key":"text","value":$(target).text(),"group":"基础信息","editor":"text"},
+            {"name":"备注","key":"description","value":"","group":"基础信息","editor":"textarea"}
+        ];
+        rows = rows.concat(nodeRows);
+        for (var index in rows) {
+            var item = rows[index];
+            if(!item.key || !configRows[item.key]) continue;
+            rows[index] = configRows[item.key];
+        }
+        return rows;
+    }
     var flowChartIndex = 0; // 节点索引
     var flowChartData = {}; // 对应节点类型数据
     var flowChartValue = {}; // 对应节点配置数据
@@ -124,15 +139,8 @@ jsPlumb.bind("ready", function() {
                 }
             }
         });
-        propertygrid.data.rows.unshift({"name":"备注","key":"description","value":"","group":"基础信息","editor":"textarea"});
-        propertygrid.data.rows.unshift({"name":"名称","key":"text","value":$obj.text(),"group":"基础信息","editor":"text"});
-        propertygrid.data.rows.unshift({"name":"别名","key":"alias","value":"","group":"基础信息","editor":"text"});
-        propertygrid.data.rows.unshift({"name":"节点","key":"node","value":_this.id,"group":"基础信息"});
-        if(typeof flowChartValue[_this.id] == "undefined") flowChartValue[_this.id] = {};
-        for (var index in propertygrid.data.rows) {
-            if(!propertygrid.data.rows[index].key || !flowChartValue[_this.id][propertygrid.data.rows[index].key]) continue;
-            propertygrid.data.rows[index] = flowChartValue[_this.id][propertygrid.data.rows[index].key];
-        }
+        if(!flowChartValue[_this.id]) flowChartValue[_this.id] = {};
+        propertygrid.data.rows = generatePropertyRows(_this, propertygrid.data.rows, flowChartValue[_this.id]);
         $propertyTable.propertygrid(propertygrid);
     });
     $(window).on('resize', function () {
@@ -182,6 +190,7 @@ jsPlumb.bind("ready", function() {
         }
     });
     $('.flow-chart-act-save').on('click', function () {
+        var _this = this;
         var $obj = $(this);
         if($obj.linkbuttonToggle('保存中...')) return false;
         var $canvas = $('#flow-chart-canvas');
@@ -189,6 +198,25 @@ jsPlumb.bind("ready", function() {
             width : $canvas.width(),
             height : $canvas.height()
         };
+        data['nodes'] = {};
+        for (var index in flowChartData) {
+            var $node = $('#' + index);
+            var nodeRows = (
+                flowChartData[index].propertygrid
+                && flowChartData[index].propertygrid.data
+                && flowChartData[index].propertygrid.data.rows
+            ) ? flowChartData[index].propertygrid.data.rows : [];
+            var configRows = flowChartValue[index] ? flowChartValue[index] : {};
+            var position = $node.position();
+            var item = {
+                top : position.top,
+                left : position.left,
+                width : $node.width(),
+                height : $node.height(),
+                property : generatePropertyRows(_this, nodeRows, configRows)
+            };
+            data['nodes'][index] = item;
+        }
         console.log(data);
         $obj.linkbuttonToggle();
     });
