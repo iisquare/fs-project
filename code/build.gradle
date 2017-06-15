@@ -15,12 +15,14 @@ sourceSets {
 }
 // 仓库
 repositories {
-    mavenCentral()
+    //mavenCentral()
+    maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
 }
 // 依赖
 def springVersion = '4.2.7.RELEASE'
 dependencies {
-    providedRuntime ( // 不会打包进war
+    testCompile (
+        [group: 'org.eclipse.jetty', name: 'jetty-webapp', version: '8.2.0.v20160908']
     )
     compile (
         // J2EE
