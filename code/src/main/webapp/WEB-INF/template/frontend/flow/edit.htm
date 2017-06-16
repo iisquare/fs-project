@@ -23,7 +23,7 @@
     <div class="layout-north" data-options="region:'north'">
         <button class="easyui-linkbutton flow-chart-act-save" data-options="iconCls:'icon-save',plain:true">保存</button>
     </div>
-    <div class="layout-south" data-options="region:'south'">状态信息：</div>
+    <div class="layout-south" data-options="region:'south'">状态信息：<span id="tips-status"></span></div>
     <div class="layout-east" data-options="region:'east',title:'属性',split:true">
         <table id="flow-property-table" style="width:100%;"></table>
     </div>
@@ -73,6 +73,15 @@ jsPlumb.bind("ready", function() {
         }
         return rows;
     }
+    function jsPlumbFlowNode(id) {
+        jsPlumbInstance.draggable(id, {containment:'#flow-chart-canvas'});
+        jsPlumbInstance.addEndpoints(id, [{anchor : "TopCenter"}, {anchor : "RightMiddle"}, {anchor : "BottomCenter"}, {anchor : "LeftMiddle"}], {
+            isSource : true,
+            isTarget : true,
+            maxConnections : -1,
+            connectorOverlays: [["Arrow", { width: 10, length: 10, location: 1 }]]
+        });
+    }
     var flowChartIndex = 0; // 节点索引
     var flowChartValue = {}; // 对应节点配置数据
     var flowChartLastMouseMoveEvent = null;
@@ -80,6 +89,7 @@ jsPlumb.bind("ready", function() {
     var $layoutCenter = $('.layout-center');
     var $flowPropertyTable = $('#flow-property-table');
     var $flowNodesTree = $('#flow-nodes-tree');
+    var $tipsStatus = $('#tips-status');
     var jsPlumbInstance = jsPlumb.getInstance({
         Endpoint:["Dot", {radius:2}]
     });
@@ -161,6 +171,7 @@ jsPlumb.bind("ready", function() {
             var node = $flowNodesTree.tree('getData', source);
             var id = 'flowChartItem' + flowChartIndex;
             var $obj = $('<button id="' + id + '" class="flow-chart-item">' + node.text + '[' + flowChartIndex + ']</button>');
+            $obj.data('index', flowChartIndex);
             $obj.data('parent', node.id);
             $obj.linkbutton({
                 iconCls : node.iconCls
@@ -171,24 +182,8 @@ jsPlumb.bind("ready", function() {
                 left : flowChartLastMouseMoveEvent.offsetX - $obj.width() / 2
             });
             $obj.trigger('click');
-            jsPlumbInstance.draggable(id, {containment:'#flow-chart-canvas'});
-            jsPlumbInstance.addEndpoints(id, [{anchor : "TopCenter"}, {anchor : "RightMiddle"}, {anchor : "BottomCenter"}, {anchor : "LeftMiddle"}], {
-                isSource : true,
-                isTarget : true,
-                maxConnections : -1,
-                connectorOverlays: [["Arrow", { width: 10, length: 10, location: 1 }]]
-            });
             flowChartIndex++;
-        }
-    });
-    $flowNodesTree.tree({
-        url : '${webUrl}/${controllerName}/plugins/',
-        dnd : true,
-        onBeforeDrag : function (node) {
-            return typeof node.draggable != 'undefined' && node.draggable;
-        },
-        onBeforeDrop : function (target,source,point) {
-            return false;
+            jsPlumbFlowNode(id);
         }
     });
     $('.flow-chart-act-save').on('click', function () {
@@ -207,6 +202,8 @@ jsPlumb.bind("ready", function() {
             var configRows = flowChartValue[this.id] ? flowChartValue[this.id] : {};
             var position = $obj.position();
             var item = {
+                id : this.id,
+                index : $obj.data('index'),
                 top : position.top,
                 left : position.left,
                 width : $obj.width(),
@@ -216,9 +213,83 @@ jsPlumb.bind("ready", function() {
             };
             data['nodes'][this.id] = item;
         });
-        console.log(jsPlumbInstance.getAllConnections());
-        console.log(data);
-        $obj.linkbuttonToggle();
+        data['connections'] = [];
+        var allConnections = jsPlumbInstance.getAllConnections();
+        for (var i in allConnections) {
+            var connection = allConnections[i];
+            var item = {
+                sourceId : connection.sourceId,
+                targetId : connection.targetId
+            };
+            for (var j in connection.endpoints) {
+                var endpoint = connection.endpoints[j];
+                if(!item['sourceAnchor'] && connection.sourceId == endpoint.anchor.elementId) {
+                    item['sourceAnchor'] = endpoint.anchor.type;
+                } else {
+                    item['targetAnchor'] = endpoint.anchor.type;
+                }
+            }
+            data['connections'].push(item);
+        }
+        $.ajax({
+            url : '${webUrl}/${controllerName}/save/',
+            data : {
+                id : '',
+                flow : JSON.stringify(data)
+            },
+            type : 'POST',
+            success : function (result) {
+                $obj.linkbuttonToggle();
+                $tipsStatus.html(result);
+            }
+        });
+    });
+    $flowNodesTree.tree({
+        url : '${webUrl}/${controllerName}/plugins/',
+        dnd : true,
+        onBeforeDrag : function (node) {
+            return typeof node.draggable != 'undefined' && node.draggable;
+        },
+        onBeforeDrop : function (target,source,point) {
+            return false;
+        },
+        onLoadSuccess : function (node, data) {
+            (function (data) {
+                if(!data) return;
+                var data = $.parseJSON(data);
+                console.log(data);
+                $flowChartCanvas.css({width:data.width, height:data.height});
+                for (var i in data.nodes) {
+                    var item = data.nodes[i];
+                    if(item.index > flowChartIndex) flowChartIndex = item.index;
+                    var node = $flowNodesTree.tree('find', item.parent);
+                    var $obj = $('<button id="' + item.id + '" class="flow-chart-item">' + node.text + '[' + item.index + ']</button>');
+                    $obj.data('index', item.index);
+                    $obj.data('parent', node.id);
+                    $obj.linkbutton({
+                        iconCls : node.iconCls
+                    });
+                    $flowChartCanvas.append($obj);
+                    $obj.css({
+                        top : item.top,
+                        left : item.left
+                    });
+                    jsPlumbFlowNode(item.id);
+                    flowChartValue[item.id] = {};
+                    for(var j in item.property) {
+                        flowChartValue[item.id][item.property[j].key] = item.property[j];
+                    }
+                }
+                flowChartIndex++;
+                for (var i in data.connections) {
+                    var connection = data.connections[i];
+                    jsPlumbInstance.connect({
+                        source : connection.sourceId,
+                        target : connection.targetId
+                    });
+                }
+            })('${flowJson}');
+        }
     });
 });
 </script>
