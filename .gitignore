@@ -11,3 +11,4 @@
 /code/bin
 /code/build
 /code/src/main/webapp/.idea
+/code/src/main/webapp/WEB-INF/logs

@@ -74,14 +74,17 @@ jsPlumb.bind("ready", function() {
         return rows;
     }
     var flowChartIndex = 0; // 节点索引
-    var flowChartData = {}; // 对应节点类型数据
     var flowChartValue = {}; // 对应节点配置数据
     var flowChartLastMouseMoveEvent = null;
+    var $flowChartCanvas = $('#flow-chart-canvas');
+    var $layoutCenter = $('.layout-center');
+    var $flowPropertyTable = $('#flow-property-table');
+    var $flowNodesTree = $('#flow-nodes-tree');
     var jsPlumbInstance = jsPlumb.getInstance({
         Endpoint:["Dot", {radius:2}]
     });
-    $('.layout-center').on('contextmenu', function () {return false;});
-    $('#flow-property-table').propertygrid({showGroup : true,border : false});
+    $layoutCenter.on('contextmenu', function () {return false;});
+    $flowPropertyTable.propertygrid({showGroup : true,border : false});
     jsPlumbInstance.bind('contextmenu', function (connInfo, originalEvent) {
         if(!(connInfo instanceof jsPlumb.Connection)) return true;
         new ContextMenu(originalEvent, [{
@@ -92,7 +95,7 @@ jsPlumb.bind("ready", function() {
             }
         }]);
     });
-    $('#flow-chart-canvas').on('contextmenu', '.flow-chart-item', function (e) {
+    $flowChartCanvas.on('contextmenu', '.flow-chart-item', function (e) {
         var $obj = $(this);
         new ContextMenu(e, [{
             text : '删除节点',
@@ -104,11 +107,10 @@ jsPlumb.bind("ready", function() {
         }]);
     }).on('click', '.flow-chart-item', function (e) {
         var _this = this;
-        var node = flowChartData[this.id];
         var $obj = $(this);
-        var $propertyTable = $('#flow-property-table');
-        if($propertyTable.data('id') == this.id) return true;
-        $propertyTable.data('id', this.id);
+        var node = $flowNodesTree.tree('find', $obj.data('parent'));
+        if($flowPropertyTable.data('id') == this.id) return true;
+        $flowPropertyTable.data('id', this.id);
         var propertygrid = $.extend(true, {data:{total:0, rows:[]}}, node.propertygrid || {}, {
             onAfterEdit : function (rowIndex, rowData, changes) {
                 if(!rowData.key) return true;
@@ -141,25 +143,25 @@ jsPlumb.bind("ready", function() {
         });
         if(!flowChartValue[_this.id]) flowChartValue[_this.id] = {};
         propertygrid.data.rows = generatePropertyRows(_this, propertygrid.data.rows, flowChartValue[_this.id]);
-        $propertyTable.propertygrid(propertygrid);
+        $flowPropertyTable.propertygrid(propertygrid);
     });
     $(window).on('resize', function () {
         window.setTimeout(function () {
-            var top = $('.layout-center').height() - $('#flow-chart-canvas').height();
+            var top = $('.layout-center').height() - $flowChartCanvas.height();
             if(top < 0) top = 0;
-            $('#flow-chart-canvas').css({'margin-top':top / 2});
+            $flowChartCanvas.css({'margin-top':top / 2});
         }, 200);
     }).trigger('resize');
-    $('#flow-chart-canvas').on('mousemove', function (e) {
+    $flowChartCanvas.on('mousemove', function (e) {
         flowChartLastMouseMoveEvent = e;
     });
-    $('#flow-chart-canvas').droppable({
+    $flowChartCanvas.droppable({
         onDrop : function (e, source) {
             if(!$(source).hasClass('tree-node')) return true;
-            var node = $('#flow-nodes-tree').tree('getData', source);
+            var node = $flowNodesTree.tree('getData', source);
             var id = 'flowChartItem' + flowChartIndex;
-            flowChartData[id] = node;
             var $obj = $('<button id="' + id + '" class="flow-chart-item">' + node.text + '[' + flowChartIndex + ']</button>');
+            $obj.data('parent', node.id);
             $obj.linkbutton({
                 iconCls : node.iconCls
             });
@@ -179,7 +181,7 @@ jsPlumb.bind("ready", function() {
             flowChartIndex++;
         }
     });
-    $('#flow-nodes-tree').tree({
+    $flowNodesTree.tree({
         url : '${webUrl}/${controllerName}/plugins/',
         dnd : true,
         onBeforeDrag : function (node) {
@@ -193,30 +195,28 @@ jsPlumb.bind("ready", function() {
         var _this = this;
         var $obj = $(this);
         if($obj.linkbuttonToggle('保存中...')) return false;
-        var $canvas = $('#flow-chart-canvas');
         var data = {
-            width : $canvas.width(),
-            height : $canvas.height()
+            width : $flowChartCanvas.width(),
+            height : $flowChartCanvas.height()
         };
         data['nodes'] = {};
-        for (var index in flowChartData) {
-            var $node = $('#' + index);
-            var nodeRows = (
-                flowChartData[index].propertygrid
-                && flowChartData[index].propertygrid.data
-                && flowChartData[index].propertygrid.data.rows
-            ) ? flowChartData[index].propertygrid.data.rows : [];
-            var configRows = flowChartValue[index] ? flowChartValue[index] : {};
-            var position = $node.position();
+        $('.flow-chart-item').each(function () {
+            var $obj = $(this);
+            var node = $flowNodesTree.tree('find', $obj.data('parent'));
+            var nodeRows = (node.propertygrid && node.propertygrid.data && node.propertygrid.data.rows) ? node.propertygrid.data.rows : [];
+            var configRows = flowChartValue[this.id] ? flowChartValue[this.id] : {};
+            var position = $obj.position();
             var item = {
                 top : position.top,
                 left : position.left,
-                width : $node.width(),
-                height : $node.height(),
-                property : generatePropertyRows(_this, nodeRows, configRows)
+                width : $obj.width(),
+                height : $obj.height(),
+                parent : node.id,
+                property : generatePropertyRows(this, nodeRows, configRows)
             };
-            data['nodes'][index] = item;
-        }
+            data['nodes'][this.id] = item;
+        });
+        console.log(jsPlumbInstance.getAllConnections());
         console.log(data);
         $obj.linkbuttonToggle();
     });
