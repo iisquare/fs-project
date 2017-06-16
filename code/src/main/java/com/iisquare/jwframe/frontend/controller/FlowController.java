@@ -16,7 +16,7 @@ public class FlowController extends CoreController {
 
 	@Autowired
 	public DemoService demoService;
-	private String flowJson = null;
+	private static String flowJson = null;
 	
 	public Object demoAction() throws Exception {
 		return displayTemplate();

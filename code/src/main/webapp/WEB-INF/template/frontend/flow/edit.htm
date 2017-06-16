@@ -87,6 +87,13 @@ jsPlumb.bind("ready", function() {
         }
         return result;
     }
+    function bindTips($obj, content) {
+        if(!content) content = '暂无备注';
+        $obj.find('.ace-icon').tooltip({
+            position: 'right',
+            content: content.replace(/\n/g, '<br>')
+        });
+    }
     var flowChartIndex = 0; // 节点索引
     var flowChartValue = {}; // 对应节点配置数据
     var flowChartLastMouseMoveEvent = null;
@@ -130,28 +137,22 @@ jsPlumb.bind("ready", function() {
             onAfterEdit : function (rowIndex, rowData, changes) {
                 if(!rowData.key) return true;
                 flowChartValue[_this.id][rowData.key] = rowData;
-                function bindTips(content) {
-                    if(!content) content = '暂无备注';
-                    $obj.find('.ace-icon').tooltip({
-                        position: 'right',
-                        content: content.replace(/\n/g, '<br>')
-                    });
-                    jsPlumbInstance.repaintEverything();
-                }
                 switch (rowData.key) {
                     case "text" :
                         var value = rowData.value;
                         var content = flowChartValue[_this.id]["description"] ? flowChartValue[_this.id]["description"].value : null;
                         if(content) value += '<i class="ace-icon fa fa-comments-o"></i>';
                         $obj.linkbutton({text:value});
-                        bindTips(content);
+                        bindTips($obj, content);
+                        jsPlumbInstance.repaintEverything();
                         break;
                     case "description" :
                         var value = $obj.text();
                         if(flowChartValue[_this.id]["text"]) value = flowChartValue[_this.id]["text"].value;
                         if(rowData.value) value += '<i class="ace-icon fa fa-comments-o"></i>';
                         $obj.linkbutton({text:value});
-                        bindTips(rowData.value);
+                        bindTips($obj, rowData.value);
+                        jsPlumbInstance.repaintEverything();
                         break;
                 }
             }
@@ -267,11 +268,19 @@ jsPlumb.bind("ready", function() {
                 for (var i in data.nodes) {
                     var item = data.nodes[i];
                     if(item.index > flowChartIndex) flowChartIndex = item.index;
+                    var property = {};
+                    for(var j in item.property) {
+                        property[item.property[j].key] = item.property[j];
+                    }
+                    flowChartValue[item.id] = property;
                     var node = $flowNodesTree.tree('find', item.parent);
-                    var $obj = $('<button id="' + item.id + '" class="flow-chart-item">' + node.text + '[' + item.index + ']</button>');
+                    var value = property['text'].value;
+                    if(property['description'].value) value += '<i class="ace-icon fa fa-comments-o"></i>';
+                    var $obj = $('<button id="' + item.id + '" class="flow-chart-item"></button>');
                     $obj.data('index', item.index);
-                    $obj.data('parent', node.id);
+                    $obj.data('parent', item.parent);
                     $obj.linkbutton({
+                        text : value,
                         iconCls : node.iconCls
                     });
                     $flowChartCanvas.append($obj);
@@ -279,11 +288,8 @@ jsPlumb.bind("ready", function() {
                         top : item.top,
                         left : item.left
                     });
+                    bindTips($obj, property['description'].value);
                     $.extend(endpoints, jsPlumbFlowNode(item.id));
-                    flowChartValue[item.id] = {};
-                    for(var j in item.property) {
-                        flowChartValue[item.id][item.property[j].key] = item.property[j];
-                    }
                 }
                 flowChartIndex++;
                 for (var i in data.connections) {
