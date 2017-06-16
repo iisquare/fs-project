@@ -75,12 +75,17 @@ jsPlumb.bind("ready", function() {
     }
     function jsPlumbFlowNode(id) {
         jsPlumbInstance.draggable(id, {containment:'#flow-chart-canvas'});
-        jsPlumbInstance.addEndpoints(id, [{anchor : "TopCenter"}, {anchor : "RightMiddle"}, {anchor : "BottomCenter"}, {anchor : "LeftMiddle"}], {
-            isSource : true,
-            isTarget : true,
-            maxConnections : -1,
-            connectorOverlays: [["Arrow", { width: 10, length: 10, location: 1 }]]
-        });
+        var anchors = ["TopCenter", "RightMiddle", "BottomCenter", "LeftMiddle"];
+        var result = {};
+        for (var index in anchors) {
+            result[id + '_' + anchors[index]] = jsPlumbInstance.addEndpoint(id, {anchor : anchors[index]}, {
+                isSource : true,
+                isTarget : true,
+                maxConnections : -1,
+                connectorOverlays: [["Arrow", { width: 10, length: 10, location: 1 }]]
+            });
+        }
+        return result;
     }
     var flowChartIndex = 0; // 节点索引
     var flowChartValue = {}; // 对应节点配置数据
@@ -257,8 +262,8 @@ jsPlumb.bind("ready", function() {
             (function (data) {
                 if(!data) return;
                 var data = $.parseJSON(data);
-                console.log(data);
                 $flowChartCanvas.css({width:data.width, height:data.height});
+                var endpoints = {};
                 for (var i in data.nodes) {
                     var item = data.nodes[i];
                     if(item.index > flowChartIndex) flowChartIndex = item.index;
@@ -274,7 +279,7 @@ jsPlumb.bind("ready", function() {
                         top : item.top,
                         left : item.left
                     });
-                    jsPlumbFlowNode(item.id);
+                    $.extend(endpoints, jsPlumbFlowNode(item.id));
                     flowChartValue[item.id] = {};
                     for(var j in item.property) {
                         flowChartValue[item.id][item.property[j].key] = item.property[j];
@@ -284,8 +289,8 @@ jsPlumb.bind("ready", function() {
                 for (var i in data.connections) {
                     var connection = data.connections[i];
                     jsPlumbInstance.connect({
-                        source : connection.sourceId,
-                        target : connection.targetId
+                        source : endpoints[connection.sourceId + '_' + connection.sourceAnchor],
+                        target : endpoints[connection.targetId + '_' + connection.targetAnchor]
                     });
                 }
             })('${flowJson}');
