@@ -299,6 +299,9 @@ jsPlumb.bind("ready", function() {
                         target : endpoints[connection.targetId + '_' + connection.targetAnchor]
                     });
                 }
+                window.setTimeout(function () {
+                    jsPlumbInstance.repaintEverything();
+                }, 200);
             })('${flowJson}');
         }
     });
