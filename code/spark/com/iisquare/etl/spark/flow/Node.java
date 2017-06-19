@@ -7,6 +7,8 @@ import java.util.Set;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.types.StructType;
 
 public abstract class Node implements Serializable {
 
@@ -16,7 +18,8 @@ public abstract class Node implements Serializable {
 	protected Set<Node> source = new HashSet<>();
 	protected Set<Node> target = new HashSet<>();
 	protected Properties properties;
-	protected JavaRDD<?> result;
+	protected JavaRDD<Row> result;
+	protected StructType structType;
 	
 	public SparkConf getSparkConf() {
 		return sparkConf;
@@ -58,14 +61,22 @@ public abstract class Node implements Serializable {
 		this.properties = properties;
 	}
 
-	public JavaRDD<?> getResult() {
+	public JavaRDD<Row> getResult() {
 		return result;
 	}
 
-	public void setResult(JavaRDD<?> result) {
+	public void setResult(JavaRDD<Row> result) {
 		this.result = result;
 	}
 
-	public abstract JavaRDD<?> process() throws Exception;
+	public StructType getStructType() {
+		return structType;
+	}
+
+	public void setStructType(StructType structType) {
+		this.structType = structType;
+	}
+
+	public abstract JavaRDD<Row> process() throws Exception;
 	
 }

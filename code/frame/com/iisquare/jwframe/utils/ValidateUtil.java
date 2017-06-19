@@ -73,6 +73,7 @@ public class ValidateUtil {
 	}
 	
 	public static Integer filterInteger(Object object, boolean bBound, Integer min, Integer max, Integer defaultValue) {
+		if(null == object) return defaultValue;
 		int obj = DPUtil.parseInt(object);
 		if(null != min && obj < min) return bBound ? min : defaultValue;
 		if(null != max && obj > max) return bBound ? max : defaultValue;
@@ -80,20 +81,23 @@ public class ValidateUtil {
 	}
 	
 	public static Long filterLong(Object object, boolean bBound, Long min, Long max, Long defaultValue) {
+		if(null == object) return defaultValue;
 		long obj = DPUtil.parseLong(object);
 		if(null != min && obj < min) return bBound ? min : defaultValue;
 		if(null != max && obj > max) return bBound ? max : defaultValue;
 		return obj;
 	}
 	
-	public static Double filterDouble(Object object, boolean bBound, Double min, Double max, Integer defaultValue) {
+	public static Double filterDouble(Object object, boolean bBound, Double min, Double max, Double defaultValue) {
+		if(null == object) return defaultValue;
 		double obj = DPUtil.parseDouble(object);
 		if(null != min && obj < min) return bBound ? min : defaultValue;
 		if(null != max && obj > max) return bBound ? max : defaultValue;
 		return obj;
 	}
 	
-	public static Float filterFloat(Object object, boolean bBound, Float min, Float max, Integer defaultValue) {
+	public static Float filterFloat(Object object, boolean bBound, Float min, Float max, Float defaultValue) {
+		if(null == object) return defaultValue;
 		float obj = DPUtil.parseFloat(object);
 		if(null != min && obj < min) return bBound ? min : defaultValue;
 		if(null != max && obj > max) return bBound ? max : defaultValue;
@@ -101,6 +105,7 @@ public class ValidateUtil {
 	}
 	
 	public static String filterLength(String object, Integer min, Integer max, String defaultValue) {
+		if(null == object) return defaultValue;
 		int obj = object.length();
 		if(null != min && obj < min) return defaultValue;
 		if(null != max && obj > max) return defaultValue;

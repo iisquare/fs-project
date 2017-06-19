@@ -3,15 +3,17 @@ package com.iisquare.etl.test.spark;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.rdd.JdbcRDD;
 import org.apache.spark.rdd.JdbcRDD.ConnectionFactory;
+import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 
 import com.iisquare.etl.spark.flow.Node;
@@ -22,10 +24,9 @@ import com.iisquare.jwframe.utils.ValidateUtil;
 public class ReadMySQLNode extends Node {
 
 	private static final long serialVersionUID = 1L;
-
+	
 	@Override
-	public JavaRDD<?> process() {
-		System.out.println(this.getClass());
+	public JavaRDD<Row> process() {
 		// 执行参数
 		int numPartitions = ValidateUtil.filterInteger(properties.get("numPartitions"), true, 1, null, 3);
 		Long lowerBound = ValidateUtil.filterLong(properties.get("lowerBound"), true, 0L, null, 0L);
@@ -41,28 +42,29 @@ public class ReadMySQLNode extends Node {
 		mysqlOptions.put("user", properties.getProperty("username"));
 		mysqlOptions.put("password", properties.getProperty("password"));
 		JavaSparkContext sparkContext = new JavaSparkContext(SparkSession.builder().config(sparkConf).getOrCreate().sparkContext());
-		JavaRDD<List<Map<String, Object>>> rdd = JdbcRDD.create(sparkContext, new ConnectionFactory() {
+		JavaRDD<List<Row>> rdd = JdbcRDD.create(sparkContext, new ConnectionFactory() {
 			private static final long serialVersionUID = 1L;
 			@Override
 			public Connection getConnection() throws Exception {
 				return JdbcUtil.getConnection(mysqlOptions);
 			}
-		}, properties.getProperty("sql"), lowerBound, upperBound, numPartitions, new Function<ResultSet, List<Map<String, Object>>>() {
+		}, properties.getProperty("sql"), lowerBound, upperBound, numPartitions, new Function<ResultSet, List<Row>>() {
 			private static final long serialVersionUID = 1L;
 			@Override
-			public List<Map<String, Object>> call(ResultSet v1) throws Exception {
+			public List<Row> call(ResultSet v1) throws Exception {
+				if(null == structType) structType = SQLUtil.structType(v1);
 				return SQLUtil.fetchResultSet(v1);
 			}
 			
 		});
-		rdd.foreach(new VoidFunction<List<Map<String,Object>>>() {
+		return rdd.flatMap(new FlatMapFunction<List<Row>, Row> () {
 			private static final long serialVersionUID = 1L;
 			@Override
-			public void call(List<Map<String, Object>> t) throws Exception {
-				System.out.println(t);
+			public Iterator<Row> call(List<Row> t) throws Exception {
+				return t.iterator();
 			}
+			
 		});
-		return rdd;
 	}
 
 }

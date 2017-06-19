@@ -2,6 +2,7 @@ package com.iisquare.etl.test.spark;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.sql.Row;
 import org.elasticsearch.spark.rdd.EsSpark;
 
 import com.iisquare.etl.spark.flow.Node;
@@ -12,7 +13,7 @@ public class WriteElasticsearchNode extends Node {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	public JavaRDD<?> process() {
+	public JavaRDD<Row> process() {
 		System.out.println(this.getClass());
 		SparkConf sparkConf = this.sparkConf.clone();
 		sparkConf.set("es.nodes", properties.getProperty("nodes"));

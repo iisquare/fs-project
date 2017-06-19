@@ -3,6 +3,12 @@ apply plugin: 'maven'
 apply plugin: 'war'  
 apply plugin: 'eclipse-wtp'
 apply plugin: 'idea'
+
+// 项目配置
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
 // 源码目录
 sourceSets {
     main {
