@@ -19,7 +19,9 @@ public class CalculateSQLNode extends Node {
 		for (Node node : source) {
 			String viewName = node.getProperties().getProperty("alias");
 			if(DPUtil.empty(viewName)) viewName = node.getProperties().getProperty("node");
-			Dataset<Row> dataset = sqlContext.createDataFrame(node.getResult(), node.getStructType());
+			JavaRDD<Row> rdd = node.getResult();
+			rdd.first();
+			Dataset<Row> dataset = sqlContext.createDataFrame(rdd, node.getStructType());
 			dataset.show();
 			dataset.createTempView(viewName);
 		}

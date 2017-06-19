@@ -5,8 +5,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 
 public class SQLUtil {
@@ -19,7 +21,7 @@ public class SQLUtil {
 		ResultSetMetaData rsmd = rs.getMetaData();
 		int count = rsmd.getColumnCount();
 		for (int i = 1; i <= count; i++) {
-			structType.add(rsmd.getColumnName(i), rsmd.getColumnTypeName(i), ResultSetMetaData.columnNoNulls != rsmd.isNullable(i));
+			structType.add(rsmd.getColumnName(i), DataTypes.StringType, ResultSetMetaData.columnNoNulls != rsmd.isNullable(i));
 		}
 		return structType;
 	}
@@ -33,7 +35,7 @@ public class SQLUtil {
 		do {
 			Object[] values = new Object[count];
 			for (int i = 0; i < count; i++) {
-				values[i] = rs.getObject(i);
+				values[i] = rs.getObject(i + 1);
 			}
 			list.add(RowFactory.create(values));
 		} while (rs.next());
