@@ -10,6 +10,7 @@ sourceSets {
             srcDir 'frame'
             srcDir 'core'
             srcDir 'model'
+            srcDir 'spark'
         }
     }
 }
@@ -20,6 +21,9 @@ repositories {
 }
 // 依赖
 def springVersion = '4.2.7.RELEASE'
+def sparkVersion = '2.1.0'
+def hbaseVersion = '1.2.4'
+def elasticsearchVersion = '5.1.1'
 dependencies {
     testCompile (
         [group: 'org.eclipse.jetty', name: 'jetty-webapp', version: '8.2.0.v20160908']
@@ -37,7 +41,18 @@ dependencies {
         // Log
         [group: 'log4j', name: 'log4j', version: '1.2.17'],
         // MySQL
-        [group: 'mysql', name: 'mysql-connector-java', version: '5.1.39']
+        [group: 'mysql', name: 'mysql-connector-java', version: '5.1.39'],
+        // Spark
+		[group: 'org.apache.spark', name: 'spark-core_2.11', version: sparkVersion],
+		[group: 'org.apache.spark', name: 'spark-streaming_2.11', version: sparkVersion],
+		[group: 'org.apache.spark', name: 'spark-streaming-kafka-0-8_2.11', version: sparkVersion],
+		[group: 'org.apache.spark', name: 'spark-sql_2.11', version: sparkVersion],
+		[group: 'org.apache.spark', name: 'spark-mllib_2.11', version: sparkVersion],
+		// HBase
+		[group: 'org.apache.hbase', name: 'hbase-client', version: hbaseVersion],
+		[group: 'org.apache.hbase', name: 'hbase-server', version: hbaseVersion],
+		// Elasticsearch
+		[group: 'org.elasticsearch', name: 'elasticsearch-spark-20_2.11', version: elasticsearchVersion],
     )
 }
 
