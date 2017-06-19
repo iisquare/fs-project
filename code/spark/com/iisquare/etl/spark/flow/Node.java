@@ -4,13 +4,25 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.spark.api.java.JavaSparkContext;
+
 public abstract class Node {
 
+	protected JavaSparkContext sparkContext;
 	protected boolean isReady = false;
 	protected Set<Node> source = new HashSet<>();
 	protected Set<Node> target = new HashSet<>();
 	protected Properties properties;
+	protected Object result;
 	
+	public JavaSparkContext getSparkContext() {
+		return sparkContext;
+	}
+
+	public void setSparkContext(JavaSparkContext sparkContext) {
+		this.sparkContext = sparkContext;
+	}
+
 	public boolean isReady() {
 		return isReady;
 	}
@@ -41,6 +53,14 @@ public abstract class Node {
 
 	public void setProperties(Properties properties) {
 		this.properties = properties;
+	}
+
+	public Object getResult() {
+		return result;
+	}
+
+	public void setResult(Object result) {
+		this.result = result;
 	}
 
 	public abstract Object process();

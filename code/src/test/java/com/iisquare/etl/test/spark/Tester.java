@@ -8,9 +8,12 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.spark.api.java.JavaSparkContext;
+
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import com.iisquare.etl.spark.config.Configuration;
 import com.iisquare.etl.spark.flow.Node;
 import com.iisquare.jwframe.utils.DPUtil;
 import com.iisquare.jwframe.utils.FileUtil;
@@ -40,7 +43,7 @@ public class Tester {
 		}
 		// 执行任务（可尝试采用线程池并发执行）
 		for (Node node : list) {
-			node.process();
+			node.setResult(node.process());
 			node.setReady(true);
 		}
 		return !list.isEmpty();
@@ -48,6 +51,8 @@ public class Tester {
 	
 	public static void main(String[] args) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
 		Tester tester = new Tester();
+		Configuration config = Configuration.getInstance();
+		JavaSparkContext sparkContext = new JavaSparkContext(config.getSparkConf());
 		JSONObject flow = DPUtil.parseJSON(tester.loadJSON());
 		// 解析节点
 		JSONObject nodes = flow.getJSONObject("nodes");
@@ -61,6 +66,7 @@ public class Tester {
 				properties.setProperty(prop.getString("key"), prop.getString("value"));
 			}
 			Node node = (Node) Class.forName(item.getString("parent")).newInstance();
+			node.setSparkContext(sparkContext);
 			node.setProperties(properties);
 			nodeMap.put(item.getString("id"), node);
 		}
