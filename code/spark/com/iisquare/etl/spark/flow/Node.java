@@ -1,26 +1,29 @@
 package com.iisquare.etl.spark.flow;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaRDD;
 
-public abstract class Node {
+public abstract class Node implements Serializable {
 
-	protected JavaSparkContext sparkContext;
+	private static final long serialVersionUID = 1L;
+	protected SparkConf sparkConf;
 	protected boolean isReady = false;
 	protected Set<Node> source = new HashSet<>();
 	protected Set<Node> target = new HashSet<>();
 	protected Properties properties;
-	protected Object result;
+	protected JavaRDD<?> result;
 	
-	public JavaSparkContext getSparkContext() {
-		return sparkContext;
+	public SparkConf getSparkConf() {
+		return sparkConf;
 	}
 
-	public void setSparkContext(JavaSparkContext sparkContext) {
-		this.sparkContext = sparkContext;
+	public void setSparkConf(SparkConf sparkConf) {
+		this.sparkConf = sparkConf;
 	}
 
 	public boolean isReady() {
@@ -55,14 +58,14 @@ public abstract class Node {
 		this.properties = properties;
 	}
 
-	public Object getResult() {
+	public JavaRDD<?> getResult() {
 		return result;
 	}
 
-	public void setResult(Object result) {
+	public void setResult(JavaRDD<?> result) {
 		this.result = result;
 	}
 
-	public abstract Object process();
+	public abstract JavaRDD<?> process() throws Exception;
 	
 }

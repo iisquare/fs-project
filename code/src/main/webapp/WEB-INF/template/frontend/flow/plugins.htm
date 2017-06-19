@@ -55,10 +55,15 @@
 			"draggable" : true
 		}]
 	}, {
-		"id":"com.iisquare.etl.test.spark.CalculateCountNode",
-		"text":"统计计算",
+		"id":"com.iisquare.etl.test.spark.CalculateSQLNode",
+		"text":"SparkSQL",
 		"iconCls":"tree-file",
-		"draggable" : true
+		"draggable" : true,
+		"propertygrid" : {
+			"data" : {"rows":[
+				{"name":"SQL","key":"sql","value":"","group":"数据查询","editor":"textarea"}
+			]}
+		}
 	}]
 }, {
 	"id":3,
@@ -78,7 +83,17 @@
 		"id":"com.iisquare.etl.test.spark.WriteElasticsearchNode",
 		"text":"写入Elasticsearch",
 		"iconCls":"tree-file",
-		"draggable" : true
+		"draggable" : true,
+		"propertygrid" : {
+			"data" : {"rows":[
+				{"name":"主机","key":"nodes","value":"127.0.0.1","group":"连接设置","editor":"text"},
+				{"name":"端口","key":"port","value":"9200","group":"连接设置","editor":"text"},
+				{"name":"账号","key":"user","value":"","group":"连接设置","editor":"text"},
+				{"name":"密码","key":"pass","value":"","group":"连接设置","editor":"text"},
+				{"name":"集合","key":"collection","value":"test","group":"连接设置","editor":"text"},
+				{"name":"自动创建","key":"autoCreate","value":"true","group":"连接设置","editor":"text"}
+			]}
+		}
 	}, {
 		"id":34,
 		"text":"写入Redis",
