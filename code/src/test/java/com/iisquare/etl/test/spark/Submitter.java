@@ -12,11 +12,11 @@ public class Submitter {
 	public static void main(String[] args) throws Exception {
 		Configuration config = Configuration.getInstance();
 		args = new String[] {
-			"--master", config.getProperty("master"),
-			"--deploy-mode", config.getProperty("deploy.mode"),
-			"--name", config.getProperty("app.name"),
+			"--master", config.getProperty("master", "local"),
+			"--deploy-mode", config.getProperty("deploy.mode", "client"),
+			"--name", config.getProperty("app.name", "etl-visual"),
 			"--class", TaskRunner.class.getName(),
-			""
+			"build/libs/code.jar"
 		};
 		SparkSubmit.main(args);
 	}

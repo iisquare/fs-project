@@ -9,9 +9,11 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.apache.spark.SparkConf;
+
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import com.iisquare.etl.spark.config.Configuration;
 import com.iisquare.etl.spark.flow.Node;
 import com.iisquare.jwframe.utils.DPUtil;
 import com.iisquare.jwframe.utils.FileUtil;
@@ -49,7 +51,7 @@ public class TaskRunner {
 	
 	public static void main(String[] args) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
 		TaskRunner tester = new TaskRunner();
-		SparkConf sparkConf = new SparkConf();
+		SparkConf sparkConf = Configuration.getInstance().getSparkConf();
 		JSONObject flow = DPUtil.parseJSON(tester.loadJSON());
 		// 解析节点
 		JSONObject nodes = flow.getJSONObject("nodes");

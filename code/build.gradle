@@ -5,8 +5,8 @@ apply plugin: 'eclipse-wtp'
 apply plugin: 'idea'
 
 // 项目配置
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
 // 源码目录
@@ -27,7 +27,7 @@ repositories {
 }
 // 依赖
 def springVersion = '4.2.7.RELEASE'
-def sparkVersion = '2.1.1'
+def sparkVersion = '2.1.0'
 def hbaseVersion = '1.2.4'
 def elasticsearchVersion = '5.1.1'
 dependencies {
@@ -73,4 +73,16 @@ task deployTest() {
 		from 'src/main/resources'
 		into "src/main/webapp/WEB-INF/classes"
 	}
+}
+
+// 下载依赖JAR
+task downloadJar(type: Copy) {
+	from configurations.runtime
+	into 'build/depends'
+}
+
+// 依赖编译，然后打包JAR
+task taskJar(type:Jar, dependsOn: [compileJava, downloadJar]) {
+	from 'build/classes/main'
+	destinationDir = file('build/libs')
 }

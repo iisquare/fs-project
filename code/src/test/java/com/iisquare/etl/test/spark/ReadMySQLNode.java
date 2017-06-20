@@ -27,7 +27,7 @@ public class ReadMySQLNode extends Node {
 	@Override
 	public JavaRDD<Map<String, Object>> call() {
 		// 执行参数
-		int numPartitions = ValidateUtil.filterInteger(properties.get("numPartitions"), true, 1, null, 3);
+		int numPartitions = ValidateUtil.filterInteger(properties.get("numPartitions"), true, 1, null, 1);
 		Long lowerBound = ValidateUtil.filterLong(properties.get("lowerBound"), true, 0L, null, 0L);
 		Long upperBound = ValidateUtil.filterLong(properties.get("upperBound"), true, 0L, null, Long.MAX_VALUE);
 		final Map<String, String> mysqlOptions = new HashMap<>();
