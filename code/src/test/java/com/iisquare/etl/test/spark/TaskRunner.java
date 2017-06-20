@@ -12,12 +12,11 @@ import org.apache.spark.SparkConf;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
-import com.iisquare.etl.spark.config.Configuration;
 import com.iisquare.etl.spark.flow.Node;
 import com.iisquare.jwframe.utils.DPUtil;
 import com.iisquare.jwframe.utils.FileUtil;
 
-public class Tester {
+public class TaskRunner {
 
 	public String loadJSON() {
 		return FileUtil.getContent("src/main/webapp/WEB-INF/template/frontend/flow/test.json");
@@ -49,9 +48,8 @@ public class Tester {
 	}
 	
 	public static void main(String[] args) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-		Tester tester = new Tester();
-		Configuration config = Configuration.getInstance();
-		SparkConf sparkConf = config.getSparkConf();
+		TaskRunner tester = new TaskRunner();
+		SparkConf sparkConf = new SparkConf();
 		JSONObject flow = DPUtil.parseJSON(tester.loadJSON());
 		// 解析节点
 		JSONObject nodes = flow.getJSONObject("nodes");
