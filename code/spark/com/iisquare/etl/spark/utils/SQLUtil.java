@@ -2,42 +2,42 @@ package com.iisquare.etl.spark.utils;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.spark.sql.Row;
-import org.apache.spark.sql.RowFactory;
-import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 
 public class SQLUtil {
 
 	/**
-	 * 获取ResultSet对应的字段名称
+	 * 将Row转换为Map
 	 */
-	public static StructType structType(ResultSet rs) throws SQLException {
-		StructType structType = new StructType();
-		ResultSetMetaData rsmd = rs.getMetaData();
-		int count = rsmd.getColumnCount();
-		for (int i = 1; i <= count; i++) {
-			structType.add(rsmd.getColumnName(i), DataTypes.StringType, ResultSetMetaData.columnNoNulls != rsmd.isNullable(i));
+	public static Map<String, Object> rowToMap (Row row) {
+		StructType structType = row.schema();
+		String[] fieldNames = structType.fieldNames();
+		Map<String, Object> map = new LinkedHashMap<>();
+		for (int i = 0; i < fieldNames.length; i++) {
+			map.put(fieldNames[i], row.get(i));
 		}
-		return structType;
+		return map;
 	}
 	
 	/**
 	 * 读取ResultSet到List<Map<String, Object>>
 	 */
-	public static List<Row> fetchResultSet(ResultSet rs) throws Exception {
-		List<Row> list = new ArrayList<>();
-		int count = rs.getMetaData().getColumnCount();
+	public static List<Map<String, Object>> fetchResultSet(ResultSet rs) throws Exception {
+		ResultSetMetaData rsmd = rs.getMetaData();
+		List<Map<String, Object>> list = new ArrayList<>();
+		int count = rsmd.getColumnCount();
 		do {
-			Object[] values = new Object[count];
-			for (int i = 0; i < count; i++) {
-				values[i] = rs.getObject(i + 1);
+			Map<String, Object> item = new LinkedHashMap<>();
+			for (int i = 1; i <= count; i++) {
+				item.put(rsmd.getColumnName(i), rs.getObject(i));
 			}
-			list.add(RowFactory.create(values));
+			list.add(item);
 		} while (rs.next());
 		return list;
 	}
