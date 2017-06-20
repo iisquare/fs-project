@@ -14,7 +14,7 @@ public class WriteElasticsearchNode extends Node {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	public JavaRDD<Map<String, Object>> process() {
+	public JavaRDD<Map<String, Object>> call() {
 		Map<String, String> config = new HashMap<>();
 		config.put("es.nodes", properties.getProperty("nodes"));
 		config.put("es.port", properties.getProperty("port"));

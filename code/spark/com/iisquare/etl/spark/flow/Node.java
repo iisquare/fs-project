@@ -67,6 +67,15 @@ public abstract class Node implements Serializable {
 		this.result = result;
 	}
 
-	public abstract JavaRDD<Map<String, Object>> process() throws Exception;
+	protected abstract JavaRDD<Map<String, Object>> call() throws Exception;
+	
+	public boolean process() {
+		try {
+			result = call();
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
 	
 }

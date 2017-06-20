@@ -25,7 +25,7 @@ public class ReadMySQLNode extends Node {
 	private static final long serialVersionUID = 1L;
 	
 	@Override
-	public JavaRDD<Map<String, Object>> process() {
+	public JavaRDD<Map<String, Object>> call() {
 		// 执行参数
 		int numPartitions = ValidateUtil.filterInteger(properties.get("numPartitions"), true, 1, null, 3);
 		Long lowerBound = ValidateUtil.filterLong(properties.get("lowerBound"), true, 0L, null, 0L);

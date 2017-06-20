@@ -19,7 +19,7 @@ public class CalculateSQLNode extends Node {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	public JavaRDD<Map<String, Object>> process() throws Exception {
+	public JavaRDD<Map<String, Object>> call() throws Exception {
 		SQLContext sqlContext = SparkSession.builder().config(sparkConf).getOrCreate().sqlContext();
 		for (Node node : source) {
 			String viewName = node.getProperties().getProperty("alias");

@@ -9,7 +9,6 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaRDD;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
@@ -43,14 +42,7 @@ public class Tester {
 		}
 		// 执行任务
 		for (Node node : list) {
-			JavaRDD<Map<String, Object>> result = null;
-			try {
-				result = node.process();
-			} catch (Exception e) {
-				e.printStackTrace();
-				return false;
-			}
-			node.setResult(result);
+			if(!node.process()) return false;
 			node.setReady(true);
 		}
 		return !list.isEmpty();
