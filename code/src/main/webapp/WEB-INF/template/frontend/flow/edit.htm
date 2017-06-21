@@ -154,7 +154,7 @@ jsPlumb.bind("ready", function() {
         var _this = this;
         var $obj = $(this);
         var node = $flowNodesTree.tree('find', $obj.data('parent'));
-        if($flowPropertyTable.data('id') == this.id) return true;
+        if($flowPropertyTable.data('id') == this.id) return false;
         $flowPropertyTable.data('id', this.id);
         var propertygrid = $.extend(true, {data:{total:0, rows:[]}}, node.propertygrid || {}, {
             onAfterEdit : function (rowIndex, rowData, changes) {
