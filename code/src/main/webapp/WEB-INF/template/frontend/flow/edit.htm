@@ -95,6 +95,27 @@ jsPlumb.bind("ready", function() {
             content: content.replace(/\n/g, '<br>')
         });
     }
+    function propertygridCanvas() {
+        $flowPropertyTable.propertygrid({
+            showGroup : true,
+            border : false,
+            data:{total:0, rows:[
+                {"name":"宽度","key":"width","value":$flowChartCanvas.width(),"group":"画布设置","editor":"numberbox"},
+                {"name":"高度","key":"height","value":$flowChartCanvas.height(),"group":"画布设置","editor":"numberbox"}
+            ]},
+            onAfterEdit : function (rowIndex, rowData, changes) {
+                if(!rowData.key) return true;
+                switch (rowData.key) {
+                    case "width" :
+                        $flowChartCanvas.width(rowData.value);
+                        break;
+                    case "height" :
+                        $flowChartCanvas.height(rowData.value);
+                        break;
+                }
+            }
+        });
+    }
     var flowChartIndex = 0; // 节点索引
     var flowChartValue = {}; // 对应节点配置数据
     var flowChartLastMouseMoveEvent = null;
@@ -106,8 +127,8 @@ jsPlumb.bind("ready", function() {
     var jsPlumbInstance = jsPlumb.getInstance({
         Endpoint:["Dot", {radius:2}]
     });
+    propertygridCanvas();
     $layoutCenter.on('contextmenu', function () {return false;});
-    $flowPropertyTable.propertygrid({showGroup : true,border : false});
     jsPlumbInstance.bind('contextmenu', function (connInfo, originalEvent) {
         if(!(connInfo instanceof jsPlumb.Connection)) return true;
         new ContextMenu(originalEvent, [{
@@ -126,6 +147,7 @@ jsPlumb.bind("ready", function() {
             onclick : function () {
                 jsPlumbInstance.removeAllEndpoints($obj);
                 $obj.remove();
+                propertygridCanvas();
             }
         }]);
     }).on('click', '.flow-chart-item', function (e) {
@@ -161,6 +183,9 @@ jsPlumb.bind("ready", function() {
         if(!flowChartValue[_this.id]) flowChartValue[_this.id] = {};
         propertygrid.data.rows = generatePropertyRows(_this, propertygrid.data.rows, flowChartValue[_this.id]);
         $flowPropertyTable.propertygrid(propertygrid);
+        return false;
+    }).on('click', function () {
+        propertygridCanvas();
     });
     $(window).on('resize', function () {
         window.setTimeout(function () {
@@ -268,6 +293,7 @@ jsPlumb.bind("ready", function() {
                 if(!data) return;
                 var data = $.parseJSON(data);
                 $flowChartCanvas.css({width:data.width, height:data.height});
+                propertygridCanvas();
                 var endpoints = {};
                 for (var i in data.nodes) {
                     var item = data.nodes[i];
