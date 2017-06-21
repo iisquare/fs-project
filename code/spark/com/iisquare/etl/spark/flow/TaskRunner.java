@@ -1,4 +1,4 @@
-package com.iisquare.etl.test.spark;
+package com.iisquare.etl.spark.flow;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -10,20 +10,12 @@ import java.util.Set;
 
 import org.apache.spark.SparkConf;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
 import com.iisquare.etl.spark.config.Configuration;
 import com.iisquare.etl.spark.flow.Node;
 import com.iisquare.jwframe.utils.DPUtil;
-import com.iisquare.jwframe.utils.FileUtil;
 
 public class TaskRunner {
 
-	public String loadJSON() {
-		return FileUtil.getContent("src/main/webapp/WEB-INF/template/frontend/flow/test.json");
-	}
-	
 	public boolean process(Map<String, Node> nodeMap) {
 		// 查找入度为零的全部节点
 		List<Node> list = new ArrayList<>();
@@ -50,36 +42,36 @@ public class TaskRunner {
 	}
 	
 	public static void main(String[] args) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-		TaskRunner tester = new TaskRunner();
+		Map<?, ?> flow = DPUtil.parseJSON(args[0], Map.class);
 		SparkConf sparkConf = Configuration.getInstance().getSparkConf();
-		JSONObject flow = DPUtil.parseJSON(tester.loadJSON());
 		// 解析节点
-		JSONObject nodes = flow.getJSONObject("nodes");
+		Map<?, ?> nodes = (Map<?, ?>) flow.get("nodes");
 		Map<String, Node> nodeMap = new LinkedHashMap<>();
 		for (Object obj1 : nodes.values()) {
-			JSONObject item = (JSONObject) obj1;
-			JSONArray property = item.getJSONArray("property");
+			Map<?, ?> item = (Map<?, ?>) obj1;
+			List<?> property = (List<?>) item.get("property");
 			Properties properties = new Properties();
 			for (Object obj2 : property) {
-				JSONObject prop = (JSONObject) obj2;
-				properties.setProperty(prop.getString("key"), prop.getString("value"));
+				Map<?, ?> prop = (Map<?, ?>) obj2;
+				properties.getProperty(prop.get("key").toString(), prop.get("value").toString());
 			}
-			Node node = (Node) Class.forName(item.getString("parent")).newInstance();
+			Node node = (Node) Class.forName(item.get("parent").toString()).newInstance();
 			node.setSparkConf(sparkConf);
 			node.setProperties(properties);
-			nodeMap.put(item.getString("id"), node);
+			nodeMap.put(item.get("id").toString(), node);
 		}
 		// 解析连线
-		JSONArray connections = flow.getJSONArray("connections");
+		List<?> connections = (List<?>) flow.get("connections");
 		for (Object obj1 : connections) {
-			JSONObject connection = (JSONObject) obj1;
-			Node source = nodeMap.get(connection.getString("sourceId"));
-			Node target = nodeMap.get(connection.getString("targetId"));
+			Map<?, ?> connection = (Map<?, ?>) obj1;
+			Node source = nodeMap.get(connection.get("sourceId").toString());
+			Node target = nodeMap.get(connection.get("targetId").toString());
 			source.getTarget().add(target);
 			target.getSource().add(source);
 		}
 		// 查找入度为零的节点并执行
-		while(tester.process(nodeMap)) {}
+		TaskRunner taskRunner = new TaskRunner();
+		while(taskRunner.process(nodeMap)) {}
 	}
 
 }

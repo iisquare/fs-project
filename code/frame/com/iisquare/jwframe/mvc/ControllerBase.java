@@ -6,15 +6,13 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.iisquare.jwframe.Configuration;
 import com.iisquare.jwframe.freemarker.FreeMarkerConfigurer;
+import com.iisquare.jwframe.utils.DPUtil;
 
 import freemarker.template.Template;
 
@@ -210,13 +208,7 @@ public abstract class ControllerBase {
 	 * 输出JSON信息
 	 */
 	protected Object displayJSON(Object object) throws Exception {
-		String result;
-		if (object instanceof Map) {
-			result = JSONObject.fromObject(object).toString();
-		} else {
-			result = JSONArray.fromObject(object).toString();
-		}
-		return displayText(result);
+		return displayText(DPUtil.stringifyJSON(object));
 	}
 
 	/**

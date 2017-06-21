@@ -1,4 +1,4 @@
-package com.iisquare.etl.test.spark;
+package com.iisquare.etl.spark.plugins.core;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,8 +27,9 @@ public class WriteElasticsearchNode extends Node {
 		String mappingId = properties.getProperty("mappingId");
 		if(!DPUtil.empty(mappingId)) config.put("es.mapping.id", mappingId);
 		for (Node node : source) {
-			if(null == node.getResult()) continue;
-			JavaEsSpark.saveToEs(node.getResult(), properties.getProperty("collection"), config);
+			JavaRDD<Map<String, Object>> rdd = node.getResult();
+			if(null == rdd) continue;
+			JavaEsSpark.saveToEs(rdd, properties.getProperty("collection"), config);
 		}
 		return null;
 	}

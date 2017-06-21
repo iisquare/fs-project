@@ -1,8 +1,6 @@
-package com.iisquare.etl.test.spark;
+package com.iisquare.etl.spark.plugins.core;
 
 import java.util.Map;
-
-import net.sf.json.JSONObject;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
@@ -29,7 +27,7 @@ public class CalculateSQLNode extends Node {
 				private static final long serialVersionUID = 1L;
 				@Override
 				public String call(Map<String, Object> v1) throws Exception {
-					return JSONObject.fromObject(v1).toString();
+					return DPUtil.stringifyJSON(v1);
 			}}));
 			dataset.createTempView(viewName);
 		}

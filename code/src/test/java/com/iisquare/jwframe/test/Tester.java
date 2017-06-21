@@ -1,14 +1,16 @@
 package com.iisquare.jwframe.test;
 
 import java.util.List;
-import com.iisquare.jwframe.utils.DPUtil;
+import java.util.Map;
+
+import com.iisquare.jwframe.service.FlowService;
 
 public class Tester {
 
 	public static void main(String[] args) throws Exception {
-	    String sql = "SELECT * FROM t_demo WHERE id=:id and name=:name ORDER BY id LIMIT 1";
-	    List<String> list = DPUtil.getMatcher(":[a-zA-Z0-9_]+", sql, false);
-	    System.out.println(list);
+		FlowService flowService = new FlowService();
+		List<Map<String, Object>> list = flowService.generateTree(true);
+		System.out.println(list);
 	}
 
 }

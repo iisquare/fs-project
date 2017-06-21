@@ -16,7 +16,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.sf.json.JSONObject;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * 
@@ -369,15 +370,8 @@ public class DPUtil {
 	/**
 	 * 深度复制对象信息
 	 */
-	public static Object clone(Object object) {
-		return JSONObject.fromObject(JSONObject.fromObject(object).toString());
-	}
-	
-	/**
-	 * 深度复制Bean信息
-	 */
-	public static Object clone(Object object, Class<?> beanClass) {
-		return JSONObject.toBean((JSONObject) clone(object), beanClass);
+	public static <T> T clone(Object object, Class<T> valueType) {
+		return parseJSON(stringifyJSON(object), valueType);
 	}
 	
 	/**
@@ -631,13 +625,26 @@ public class DPUtil {
 	
 	/**
 	 * 解析JSON字符串
+	 * @return 
 	 */
-	public static JSONObject parseJSON(String json) {
+	public static <T> T parseJSON(String json, Class<T> valueType) {
 		if(empty(json)) return null;
 		try {
-			return JSONObject.fromObject(json);
+			return new ObjectMapper().readValue(json, valueType);
 		} catch (Exception e) {
 			return null;
 		}
-	} 
+	}
+	
+	/**
+	 * 生成JSON字符串
+	 */
+	public static String stringifyJSON(Object value) {
+		try {
+			return new ObjectMapper().writeValueAsString(value);
+		} catch (JsonProcessingException e) {
+			return null;
+		}
+	}
+	
 }

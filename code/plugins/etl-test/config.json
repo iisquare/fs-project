@@ -1,0 +1,17 @@
+[{
+	"id":"com.iisquare.etl.spark.plugins.test",
+	"parent":"",
+	"text":"SparkTest",
+	"sort":2,
+	"children":[]
+}, {
+	"id":"com.iisquare.etl.spark.plugins.test.TestSimpleNode",
+	"parent":"com.iisquare.etl.spark.plugins.core",
+	"text":"功能性测试",
+	"sort":1,
+	"iconCls":"tree-file",
+	"draggable" : true,
+	"propertygrid" : {
+		"data" : {"rows":[]}
+	}
+}]

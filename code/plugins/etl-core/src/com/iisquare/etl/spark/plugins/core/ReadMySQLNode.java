@@ -1,4 +1,4 @@
-package com.iisquare.etl.test.spark;
+package com.iisquare.etl.spark.plugins.core;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
