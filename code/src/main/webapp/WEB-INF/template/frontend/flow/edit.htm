@@ -22,6 +22,7 @@
 <body class="easyui-layout">
     <div class="layout-north" data-options="region:'north'">
         <button class="easyui-linkbutton flow-chart-act-save" data-options="iconCls:'icon-save',plain:true">保存</button>
+        <button class="easyui-linkbutton flow-chart-act-node-refresh" data-options="iconCls:'icon-reload',plain:true">刷新节点</button>
     </div>
     <div class="layout-south" data-options="region:'south'">状态信息：<span id="tips-status"></span></div>
     <div class="layout-east" data-options="region:'east',title:'属性',split:true">
@@ -249,6 +250,9 @@ jsPlumb.bind("ready", function() {
                 $tipsStatus.html(result);
             }
         });
+    });
+    $('.flow-chart-act-node-refresh').on('click', function () {
+        $flowNodesTree.tree({url:'${webUrl}/${controllerName}/plugins/?forceReload=1'});
     });
     $flowNodesTree.tree({
         url : '${webUrl}/${controllerName}/plugins/',
