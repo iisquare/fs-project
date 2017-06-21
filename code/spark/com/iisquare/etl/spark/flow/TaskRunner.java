@@ -53,7 +53,7 @@ public class TaskRunner {
 			Properties properties = new Properties();
 			for (Object obj2 : property) {
 				Map<?, ?> prop = (Map<?, ?>) obj2;
-				properties.getProperty(prop.get("key").toString(), prop.get("value").toString());
+				properties.setProperty(prop.get("key").toString(), prop.get("value").toString());
 			}
 			Node node = (Node) Class.forName(item.get("parent").toString()).newInstance();
 			node.setSparkConf(sparkConf);

@@ -34,7 +34,7 @@ def hbaseVersion = '1.2.4'
 def elasticsearchVersion = '5.1.1'
 dependencies {
     testCompile (
-        [group: 'org.eclipse.jetty', name: 'jetty-webapp', version: '8.2.0.v20160908']
+        [group: 'org.eclipse.jetty', name: 'jetty-webapp', version: '9.4.6.v20170531']
     )
     compile (
         // J2EE

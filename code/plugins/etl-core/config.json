@@ -3,6 +3,8 @@
 	"parent":"",
 	"text":"SparkCore",
 	"sort":1,
+	"iconCls":"tree-folder",
+	"state":"open",
 	"children":[]
 }, {
 	"id":"com.iisquare.etl.spark.plugins.core.ReadMySQLNode",
@@ -60,7 +62,7 @@
 			{"name":"端口","key":"port","value":"9200","group":"连接设置","editor":"text"},
 			{"name":"账号","key":"user","value":"","group":"连接设置","editor":"text"},
 			{"name":"密码","key":"pass","value":"","group":"连接设置","editor":"text"},
-			{"name":"集合名词","key":"collection","value":"test","group":"集合设置","editor":"text"},
+			{"name":"集合名词","key":"collection","value":"etl-test/default","group":"集合设置","editor":"text"},
 			{"name":"自动创建","key":"autoCreate","value":"true","group":"集合设置","editor":"text"},
 			{"name":"文档主键","key":"mappingId","value":"","group":"集合设置","editor":"text"}
 		]}
