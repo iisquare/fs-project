@@ -32,10 +32,11 @@ def springVersion = '4.2.7.RELEASE'
 def sparkVersion = '2.1.0'
 def hbaseVersion = '1.2.4'
 def elasticsearchVersion = '5.1.1'
+def gradleVersion = gradle.gradleVersion
 dependencies {
-testCompile (
-	[group: 'org.eclipse.jetty', name: 'jetty-webapp', version: '9.4.6.v20170531']
-)
+	testCompile (
+		[group: 'org.eclipse.jetty', name: 'jetty-webapp', version: '9.4.6.v20170531']
+	)
 	compile (
 		// J2EE
 		[group: 'javax.servlet', name: 'javax.servlet-api', version: '3.1.0'],
@@ -62,7 +63,10 @@ testCompile (
 		// Elasticsearch
 		[group: 'org.elasticsearch', name: 'elasticsearch-spark-20_2.11', version: elasticsearchVersion],
 		// Gradle
-		[group: 'org.gradle', name: 'gradle-core', version: '4.0'],
+		fileTree(
+			dir:gradle.gradleHomeDir.getAbsolutePath() + '/lib',
+			include:['gradle-*.jar', 'native-*.jar', 'jansi-*.jar', 'kotlin-*.jar', 'groovy-*.jar']
+		),
 	)
 }
 
