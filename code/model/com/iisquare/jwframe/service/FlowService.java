@@ -2,10 +2,12 @@ package com.iisquare.jwframe.service;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +26,7 @@ public class FlowService extends ServiceBase {
 	@Autowired
 	protected WebApplicationContext webApplicationContext;
 	private static List<Map<String, Object>> generateTree = null;
-	private static List<String> generateJars = null;
+	private static Set<String> generateJars = null;
 	
 	public List<Map<String, Object>> generateTree(Map<String, Map<String, Object>> itemMap, String parent) {
 		Map<Integer, Map<String, Object>> map = new TreeMap<>();
@@ -67,19 +69,19 @@ public class FlowService extends ServiceBase {
 		return generateTree = generateTree(itemMap, "");
 	}
 	
-	public List<String> generateJars(boolean forceReload) {
+	public Set<String> generateJars(boolean forceReload) {
 		if(!forceReload && null != generateJars) return generateJars;
-		List<String> list = new ArrayList<>();
+		Set<String> jarsSet = new HashSet<>();
 		File pluginsDir = new File(getPluginsPath());
-		if(!pluginsDir.exists() || !pluginsDir.isDirectory()) return generateJars = list;
+		if(!pluginsDir.exists() || !pluginsDir.isDirectory()) return generateJars = jarsSet;
 		for (File file : pluginsDir.listFiles()) {
 			if(!file.isDirectory()) continue;
 			for (File jar : file.listFiles()) {
 				if(!jar.getName().endsWith(".jar")) continue;
-				list.add(jar.getAbsolutePath());
+				jarsSet.add(jar.getAbsolutePath());
 			}
 		}
-		return generateJars = list;
+		return generateJars = jarsSet;
 	}
 	
 }

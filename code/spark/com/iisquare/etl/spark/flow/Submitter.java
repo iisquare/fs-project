@@ -2,6 +2,7 @@ package com.iisquare.etl.spark.flow;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.spark.deploy.SparkSubmit;
 
@@ -24,7 +25,7 @@ public class Submitter {
 			TaskRunner.main(new String[]{json});
 		} else {
 			FlowService flowService = new FlowService();
-			List<String> jarList = flowService.generateJars(forceReload);
+			Set<String> jarsSet = flowService.generateJars(forceReload);
 			List<String> argList = new ArrayList<>();
 			argList.add("--master");
 			argList.add(master);
@@ -34,9 +35,9 @@ public class Submitter {
 			argList.add(config.getProperty("deploy.mode", "client"));
 			argList.add("--class");
 			argList.add(TaskRunner.class.getName());
-			if(!jarList.isEmpty()) {
+			if(!jarsSet.isEmpty()) {
 				argList.add("--jars");
-				argList.add(DPUtil.implode(",", DPUtil.collectionToArray(jarList)));
+				argList.add(DPUtil.implode(",", DPUtil.collectionToArray(jarsSet)));
 			}
 			argList.add("build/libs/etl-visual.jar");
 			argList.add(json);
