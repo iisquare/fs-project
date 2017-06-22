@@ -1,8 +1,8 @@
 dependencies {
-    compile (
-        // MySQL
-        [group: 'mysql', name: 'mysql-connector-java', version: '5.1.39'],
-        // Elasticsearch
-        [group: 'org.elasticsearch', name: 'elasticsearch-spark-20_2.11', version: elasticsearchVersion],
-    )
+	compile (
+		// MySQL
+		[group: 'mysql', name: 'mysql-connector-java', version: '5.1.39'],
+		// Elasticsearch
+		[group: 'org.elasticsearch', name: 'elasticsearch-spark-20_2.11', version: elasticsearchVersion],
+	)
 }
