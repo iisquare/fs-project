@@ -24,6 +24,7 @@ public class FlowService extends ServiceBase {
 	@Autowired
 	protected WebApplicationContext webApplicationContext;
 	private static List<Map<String, Object>> generateTree = null;
+	private static List<String> generateJars = null;
 	
 	public List<Map<String, Object>> generateTree(Map<String, Map<String, Object>> itemMap, String parent) {
 		Map<Integer, Map<String, Object>> map = new TreeMap<>();
@@ -37,16 +38,20 @@ public class FlowService extends ServiceBase {
 		return new ArrayList<>(map.values());
 	}
 	
-	@SuppressWarnings("unchecked")
-	public List<Map<String, Object>> generateTree(boolean forceReload) {
-		if(!forceReload && null != generateTree) return generateTree;
+	public String getPluginsPath() {
 		String path = System.getProperty("ETL_HOME");
 		if(null == path) {
 			path = "";
 		} else {
 			path += "/";
 		}
-		File pluginsDir = new File(path + "plugins");
+		return path + "plugins";
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<Map<String, Object>> generateTree(boolean forceReload) {
+		if(!forceReload && null != generateTree) return generateTree;
+		File pluginsDir = new File(getPluginsPath());
 		if(!pluginsDir.exists() || !pluginsDir.isDirectory()) return generateTree = new ArrayList<>();
 		Map<String, Map<String, Object>> itemMap = new LinkedHashMap<>();
 		for (File file : pluginsDir.listFiles()) {
@@ -60,6 +65,21 @@ public class FlowService extends ServiceBase {
 			}
 		}
 		return generateTree = generateTree(itemMap, "");
+	}
+	
+	public List<String> generateJars(boolean forceReload) {
+		if(!forceReload && null != generateJars) return generateJars;
+		List<String> list = new ArrayList<>();
+		File pluginsDir = new File(getPluginsPath());
+		if(!pluginsDir.exists() || !pluginsDir.isDirectory()) return generateJars = list;
+		for (File file : pluginsDir.listFiles()) {
+			if(!file.isDirectory()) continue;
+			for (File jar : file.listFiles()) {
+				if(!jar.getName().endsWith(".jar")) continue;
+				list.add(jar.getAbsolutePath());
+			}
+		}
+		return generateJars = list;
 	}
 	
 }

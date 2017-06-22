@@ -1,17 +1,14 @@
 package com.iisquare.jwframe.test;
 
-import java.util.List;
-import java.util.Map;
-
-import com.iisquare.jwframe.service.FlowService;
-import com.iisquare.jwframe.utils.DPUtil;
+import com.iisquare.etl.spark.flow.Submitter;
+import com.iisquare.jwframe.utils.FileUtil;
 
 public class Tester {
 
 	public static void main(String[] args) throws Exception {
-		FlowService flowService = new FlowService();
-		List<Map<String, Object>> list = flowService.generateTree(true);
-		System.out.println(DPUtil.stringifyJSON(list));
+		String json = FileUtil.getContent("src/main/webapp/WEB-INF/template/frontend/flow/test.json");
+		boolean result = Submitter.submit(json, true);
+		System.out.println(result);
 	}
 
 }

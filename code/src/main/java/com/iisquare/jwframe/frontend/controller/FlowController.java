@@ -36,8 +36,9 @@ public class FlowController extends CoreController {
 	
 	public Object saveAction() throws Exception {
 		String flowJson = getParam("flow");
-		Submitter.submit(flowJson);
-		return displayMessage(0, null, null);
+		boolean forceReload = !DPUtil.empty(getParam("forceReload"));
+		boolean result = Submitter.submit(flowJson, forceReload);
+		return displayMessage(0, null, result);
 	}
 
 }

@@ -17,6 +17,10 @@ sourceSets {
             srcDir 'core'
             srcDir 'model'
             srcDir 'spark'
+        }
+    }
+    test {
+        java {
             srcDir 'plugins/etl-core/src'
             srcDir 'plugins/etl-test/src'
         }
@@ -65,7 +69,8 @@ dependencies {
 }
 
 // 项目设置
-eclipse.project.name = 'etl-visual'
+archivesBaseName = 'etl-visual'
+eclipse.project.name = archivesBaseName
 war.baseName = eclipse.project.name
 
 // 部署测试文件
@@ -77,14 +82,8 @@ task deployTest() {
 	}
 }
 
-// 下载依赖JAR
-task downloadJar(type: Copy) {
-	from configurations.runtime
-	into 'build/depends'
-}
-
 // 依赖编译，然后打包JAR
-task taskJar(type:Jar, dependsOn: [compileJava, downloadJar]) {
-	from 'build/classes/main'
+task taskJar(type:Jar, dependsOn: compileJava) {
+	from 'build/classes/java/main'
 	destinationDir = file('build/libs')
 }
