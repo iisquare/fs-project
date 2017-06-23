@@ -24,6 +24,7 @@ public class Submitter {
 			System.setProperty("spark.app.name", appName);
 			TaskRunner.main(new String[]{json});
 		} else {
+			// 使用  --packages|--exclude-packages|--repositories处理依赖
 			FlowService flowService = new FlowService();
 			Set<String> jarsSet = flowService.generateJars(forceReload);
 			List<String> argList = new ArrayList<>();
