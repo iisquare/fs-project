@@ -57,16 +57,7 @@ dependencies {
 		[group: 'org.apache.spark', name: 'spark-mllib_2.11', version: sparkVersion],
 		// Elasticsearch
 		[group: 'org.elasticsearch', name: 'elasticsearch-spark-20_2.11', version: elasticsearchVersion],
-		// Gradle
-		[group: 'org.ow2.asm', name: 'asm-all', version: '5.1'],
-		fileTree(
-			dir:gradle.gradleHomeDir.getAbsolutePath() + '/lib',
-			include:['gradle-*.jar', 'native-*.jar', 'jansi-*.jar', 'kotlin-*.jar', 'groovy-*.jar', 'log4j-*.jar']
-		),
 	)
-}
-configurations {
-	all*.exclude group: 'org.slf4j', module: 'slf4j-log4j12'
 }
 
 // 项目设置
