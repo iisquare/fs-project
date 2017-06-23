@@ -12,3 +12,5 @@
 /code/build
 /code/src/main/webapp/.idea
 /code/src/main/webapp/WEB-INF/logs
+.gradle
+/code/plugins/etl-core/lib

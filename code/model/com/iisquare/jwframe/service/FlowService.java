@@ -80,6 +80,12 @@ public class FlowService extends ServiceBase {
 				if(!jar.getName().endsWith(".jar")) continue;
 				jarsSet.add(jar.getAbsolutePath());
 			}
+			File libDir = new File(file.getAbsolutePath() + "/lib");
+			if(!libDir.exists() || !libDir.isDirectory()) continue;
+			for (File libJar : libDir.listFiles()) {
+				if(!libJar.getName().endsWith(".jar")) continue;
+				jarsSet.add(libJar.getAbsolutePath());
+			}
 		}
 		return generateJars = jarsSet;
 	}

@@ -22,8 +22,13 @@ dependencies {
 		[group: 'org.elasticsearch', name: 'elasticsearch-spark-20_2.11', version: elasticsearchVersion],
 	)
 }
+configurations {
+	all*.exclude group: 'org.apache.spark'
+	all*.exclude group: 'org.scala-lang'
+}
 
 task downloadJars(type: Copy) {
+	delete 'lib'
 	from configurations.runtime
-	into '.'
+	into 'lib'
 }
