@@ -17,8 +17,8 @@ sourceSets {
 			srcDir 'core'
 			srcDir 'model'
 			srcDir 'spark'
-			srcDir 'plugins/etl-core/src'
-			srcDir 'plugins/etl-test/src'
+			srcDir 'plugins/etl-core/src/main/java'
+			srcDir 'plugins/etl-test/src/main/java'
 		}
 	}
 }
