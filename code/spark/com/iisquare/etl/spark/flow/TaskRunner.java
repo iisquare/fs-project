@@ -10,7 +10,6 @@ import java.util.Set;
 
 import org.apache.spark.SparkConf;
 
-import com.iisquare.etl.spark.config.Configuration;
 import com.iisquare.etl.spark.flow.Node;
 import com.iisquare.jwframe.utils.DPUtil;
 
@@ -43,7 +42,7 @@ public class TaskRunner {
 	
 	public static void main(String[] args) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
 		Map<?, ?> flow = DPUtil.parseJSON(args[0], Map.class);
-		SparkConf sparkConf = Configuration.getInstance().getSparkConf();
+		SparkConf sparkConf = new SparkConf();
 		// 解析节点
 		Map<?, ?> nodes = (Map<?, ?>) flow.get("nodes");
 		Map<String, Node> nodeMap = new LinkedHashMap<>();

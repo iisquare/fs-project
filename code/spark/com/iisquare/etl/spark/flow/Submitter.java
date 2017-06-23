@@ -41,7 +41,6 @@ public class Submitter {
 			}
 			argList.add("build/libs/etl-visual.jar");
 			argList.add(json);
-			System.out.println(argList);
 			SparkSubmit.main(DPUtil.collectionToStringArray(argList));
 		}
 		return true;
