@@ -17,7 +17,6 @@ import org.apache.spark.sql.SparkSession;
 
 import com.iisquare.etl.spark.flow.Node;
 import com.iisquare.etl.spark.utils.JdbcUtil;
-import com.iisquare.etl.spark.utils.SQLUtil;
 import com.iisquare.jwframe.utils.ValidateUtil;
 
 public class ReadMySQLNode extends Node {
@@ -51,7 +50,7 @@ public class ReadMySQLNode extends Node {
 			private static final long serialVersionUID = 1L;
 			@Override
 			public List<Map<String, Object>> call(ResultSet v1) throws Exception {
-				return SQLUtil.fetchResultSet(v1);
+				return JdbcUtil.fetchResultSet(v1);
 			}
 		});
 		return rdd.flatMap(new FlatMapFunction<List<Map<String, Object>>, Map<String, Object>> () {

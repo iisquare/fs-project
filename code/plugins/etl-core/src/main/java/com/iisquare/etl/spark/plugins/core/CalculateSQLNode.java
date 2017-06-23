@@ -8,8 +8,9 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
+
 import com.iisquare.etl.spark.flow.Node;
-import com.iisquare.etl.spark.utils.SQLUtil;
+import com.iisquare.etl.spark.utils.JdbcUtil;
 import com.iisquare.jwframe.utils.DPUtil;
 
 public class CalculateSQLNode extends Node {
@@ -36,7 +37,7 @@ public class CalculateSQLNode extends Node {
 			private static final long serialVersionUID = 1L;
 			@Override
 			public Map<String, Object> call(Row v1) throws Exception {
-				return SQLUtil.rowToMap(v1);
+				return JdbcUtil.rowToMap(v1);
 			}
 		});
 	}
