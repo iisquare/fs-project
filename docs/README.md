@@ -20,3 +20,11 @@
 
 - 执行com.iisquare.jwframe.test.jetty.WebRunner.java
 
+> 远程Spark配置
+
+- 修改code/src/main/resources/spark.properties文件中的master地址
+
+- 执行gradle taskJar生成提交JAR文件
+
+- 进入每个plugins插件目录，执行gradle downloadJars下载依赖文件
+
