@@ -6,7 +6,9 @@ import java.util.Map;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
 
 import com.iisquare.etl.spark.flow.Node;
@@ -17,19 +19,16 @@ public class TestSimpleNode extends Node {
 
 	@Override
 	public JavaRDD<Map<String, Object>> call() throws Exception {
-		JavaSparkContext sparkContext = new JavaSparkContext(SparkSession.builder().config(sparkConf).getOrCreate().sparkContext());
+		SparkSession session = SparkSession.builder().config(sparkConf).getOrCreate();
+		JavaSparkContext sparkContext = new JavaSparkContext(session.sparkContext());
 		List<String> list = new ArrayList<>();
 		for (int i = 0; i < 100; i++) {
-			list.add("s" + i);
+			list.add("{\"s\":" + i + "}");
 		}
 		JavaRDD<String> rdd = sparkContext.parallelize(list);
-		rdd.foreach(new VoidFunction<String>() {
-			private static final long serialVersionUID = 1L;
-			@Override
-			public void call(String t) throws Exception {
-				System.out.println(t);
-			}
-		});
+		SQLContext sqlContext = session.sqlContext();
+		Dataset<Row> dataset = sqlContext.read().json(rdd);
+		dataset.show();
 		sparkContext.close();
 		return null;
 	}
