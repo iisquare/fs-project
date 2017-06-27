@@ -26,7 +26,10 @@ public class Submitter {
 		} else {
 			// 使用  --packages|--exclude-packages|--repositories处理依赖
 			FlowService flowService = new FlowService();
-			Set<String> jarsSet = flowService.generateJars(forceReload);
+			Set<String> jarsSet = flowService.generateJars(config.getProperty("plugins.uri"), forceReload);
+			if(forceReload) flowService.generateDependencies(forceReload);
+			Set<String> packagesSet = flowService.generatePackages();
+			Set<String> excludeSet = flowService.generateExcludePackages();
 			List<String> argList = new ArrayList<>();
 			argList.add("--master");
 			argList.add(master);
@@ -40,7 +43,15 @@ public class Submitter {
 				argList.add("--jars");
 				argList.add(DPUtil.implode(",", DPUtil.collectionToArray(jarsSet)));
 			}
-			argList.add("build/libs/etl-visual.jar");
+			if(!packagesSet.isEmpty()) {
+				argList.add("--packages");
+				argList.add(DPUtil.implode(",", DPUtil.collectionToArray(packagesSet)));
+			}
+			if(!excludeSet.isEmpty()) {
+				argList.add("--exclude-packages");
+				argList.add(DPUtil.implode(",", DPUtil.collectionToArray(excludeSet)));
+			}
+			argList.add(config.getProperty("app.jar.url", "build/libs/etl-visual.jar"));
 			argList.add(json);
 			SparkSubmit.main(DPUtil.collectionToStringArray(argList));
 		}

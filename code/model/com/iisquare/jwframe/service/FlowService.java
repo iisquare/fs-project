@@ -27,6 +27,7 @@ public class FlowService extends ServiceBase {
 	protected WebApplicationContext webApplicationContext;
 	private static List<Map<String, Object>> generateTree = null;
 	private static Set<String> generateJars = null;
+	private static Map<String, String> generateDependencies = null;
 	
 	public List<Map<String, Object>> generateTree(Map<String, Map<String, Object>> itemMap, String parent) {
 		Map<Integer, Map<String, Object>> map = new TreeMap<>();
@@ -59,7 +60,9 @@ public class FlowService extends ServiceBase {
 		for (File file : pluginsDir.listFiles()) {
 			String json = FileUtil.getContent(file.getAbsolutePath() + "/config.json");
 			if(null == json) continue;
-			List<?> itemList = DPUtil.parseJSON(json, List.class);
+			Map<?, ?> flowMap = DPUtil.parseJSON(json, Map.class);
+			if(null == flowMap) continue;
+			List<?> itemList = (List<?>) flowMap.get("nodes");
 			if(null == itemList) continue;
 			for (Object obj : itemList) {
 				Map<String, Object> item = (Map<String, Object>) obj;
@@ -69,7 +72,7 @@ public class FlowService extends ServiceBase {
 		return generateTree = generateTree(itemMap, "");
 	}
 	
-	public Set<String> generateJars(boolean forceReload) {
+	public Set<String> generateJars(String uri, boolean forceReload) {
 		if(!forceReload && null != generateJars) return generateJars;
 		Set<String> jarsSet = new HashSet<>();
 		File pluginsDir = new File(getPluginsPath());
@@ -78,16 +81,72 @@ public class FlowService extends ServiceBase {
 			if(!file.isDirectory()) continue;
 			for (File jar : file.listFiles()) {
 				if(!jar.getName().endsWith(".jar")) continue;
-				jarsSet.add(jar.getAbsolutePath());
-			}
-			File libDir = new File(file.getAbsolutePath() + "/lib");
-			if(!libDir.exists() || !libDir.isDirectory()) continue;
-			for (File libJar : libDir.listFiles()) {
-				if(!libJar.getName().endsWith(".jar")) continue;
-				jarsSet.add(libJar.getAbsolutePath());
+				if(null == uri) {
+					jarsSet.add(jar.getAbsolutePath());
+				} else {
+					jarsSet.add(uri + "/" + file.getName() + "/" + jar.getName());
+				}
 			}
 		}
 		return generateJars = jarsSet;
+	}
+	
+	public Set<String> generatePackages() {
+		Set<String> set = new HashSet<>();
+		if(null == generateDependencies) return set;
+		for (Entry<String, String> entry : generateDependencies.entrySet()) {
+			String key = entry.getKey();
+			if(!key.startsWith("packages:")) continue;
+			set.add(key.replaceFirst("packages:", "") + ":" + entry.getValue());
+		}
+		return set;
+	}
+	
+	public Set<String> generateExcludePackages() {
+		Set<String> set = new HashSet<>();
+		if(null == generateDependencies) return set;
+		for (Entry<String, String> entry : generateDependencies.entrySet()) {
+			String key = entry.getKey();
+			if(!key.startsWith("exclude:")) continue;
+			set.add(key.replaceFirst("exclude:", ""));
+		}
+		return set;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Map<String, String> generateDependencies(boolean forceReload) {
+		if(!forceReload && null != generateDependencies) return generateDependencies;
+		File pluginsDir = new File(getPluginsPath());
+		if(!pluginsDir.exists() || !pluginsDir.isDirectory()) return generateDependencies = new LinkedHashMap<>();
+		Map<String, String> itemMap = new LinkedHashMap<>();
+		for (File file : pluginsDir.listFiles()) {
+			String json = FileUtil.getContent(file.getAbsolutePath() + "/config.json");
+			if(null == json) continue;
+			Map<?, ?> flowMap = DPUtil.parseJSON(json, Map.class);
+			if(null == flowMap) continue;
+			Map<?, ?> dependenciesMap = (Map<?, ?>) flowMap.get("dependencies");
+			if(null == dependenciesMap) continue;
+			List<?> itemList = (List<?>) dependenciesMap.get("packages");
+			if(null != itemList) {
+				for (Object obj : itemList) {
+					Map<String, String> item = (Map<String, String>) obj;
+					String key = "packages:" + item.get("groupId") + ":" + item.get("artifactId");
+					String value = item.get("version");
+					String version = itemMap.get(key);
+					if(null != version && version.compareToIgnoreCase(value) < 0) continue;
+					itemMap.put(key, value);
+				}
+			}
+			itemList = (List<?>) dependenciesMap.get("exclude");
+			if(null != itemList) {
+				for (Object obj : itemList) {
+					Map<String, String> item = (Map<String, String>) obj;
+					String key = "exclude:" + item.get("groupId") + ":" + item.get("artifactId");
+					itemMap.put(key, "*");
+				}
+			}
+		}
+		return generateDependencies = itemMap;
 	}
 	
 }
