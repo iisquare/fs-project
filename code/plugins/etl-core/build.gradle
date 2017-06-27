@@ -1,0 +1,34 @@
+// 插件
+apply plugin: 'maven'
+apply plugin: 'java'
+
+// 项目配置
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+// 仓库
+repositories {
+	//mavenCentral()
+	maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
+}
+// 依赖
+def elasticsearchVersion = '5.1.1'
+dependencies {
+	compile (
+		// MySQL
+		[group: 'mysql', name: 'mysql-connector-java', version: '5.1.39'],
+		// Elasticsearch
+		[group: 'org.elasticsearch', name: 'elasticsearch-spark-20_2.11', version: elasticsearchVersion],
+	)
+}
+configurations {
+	all*.exclude group: 'org.apache.spark'
+	all*.exclude group: 'org.scala-lang'
+}
+
+task downloadJars(type: Copy) {
+	delete 'lib'
+	from configurations.runtime
+	into 'lib'
+}
