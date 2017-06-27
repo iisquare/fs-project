@@ -1,22 +1,4 @@
 {
-	"dependencies" : {
-		"packages" : [{
-			"groupId" : "mysql",
-			"artifactId" : "mysql-connector-java",
-			"version" : "5.1.39"
-		}, {
-			"groupId" : "org.elasticsearch",
-			"artifactId" : "elasticsearch-spark-20_2.11",
-			"version" : "5.1.1"
-		}],
-		"exclude" : [{
-			"groupId" : "org.apache.spark",
-			"artifactId" : "*"
-		}, {
-			"groupId" : "org.scala-lang",
-			"artifactId" : "*"
-		}]
-	},
 	"nodes" : [{
 		"id":"com.iisquare.etl.spark.plugins.core",
 		"parent":"",
