@@ -15,7 +15,7 @@ public class Submitter {
 	/**
 	 * 参照：http://spark.apache.org/docs/latest/submitting-applications.html
 	 */
-	public static boolean submit(String json, boolean forceReload) throws Exception {
+	public static boolean submit(String json, boolean forceReload, boolean verbose) throws Exception {
 		Configuration config = Configuration.getInstance();
 		String master = config.getProperty("master", "local");
 		String appName = config.getProperty("app.name", "etl-visual");
@@ -39,6 +39,7 @@ public class Submitter {
 				argList.add("--jars");
 				argList.add(DPUtil.implode(",", DPUtil.collectionToArray(jarsSet)));
 			}
+			if(verbose) argList.add("--verbose");
 			argList.add(config.getProperty("app.jar.url", "build/libs/etl-visual.jar"));
 			argList.add(json);
 			SparkSubmit.main(DPUtil.collectionToStringArray(argList));
