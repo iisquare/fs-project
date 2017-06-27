@@ -87,13 +87,23 @@ public class FlowService extends ServiceBase {
 					jarsSet.add(uri + "/" + file.getName() + "/" + jar.getName());
 				}
 			}
+			File libDir = new File(file.getAbsolutePath() + "/lib");
+			if(!libDir.exists() || !libDir.isDirectory()) continue;
+			for (File libJar : libDir.listFiles()) {
+				if(!libJar.getName().endsWith(".jar")) continue;
+				if(null == uri) {
+					jarsSet.add(libJar.getAbsolutePath());
+				} else {
+					jarsSet.add(uri + "/" + file.getName() + "/lib/" + libJar.getName());
+				}
+			}
 		}
 		return generateJars = jarsSet;
 	}
 	
 	public Set<String> generatePackages() {
 		Set<String> set = new HashSet<>();
-		if(null == generateDependencies) return set;
+		if(null == generateDependencies(false)) return set;
 		for (Entry<String, String> entry : generateDependencies.entrySet()) {
 			String key = entry.getKey();
 			if(!key.startsWith("packages:")) continue;
@@ -104,7 +114,7 @@ public class FlowService extends ServiceBase {
 	
 	public Set<String> generateExcludePackages() {
 		Set<String> set = new HashSet<>();
-		if(null == generateDependencies) return set;
+		if(null == generateDependencies(false)) return set;
 		for (Entry<String, String> entry : generateDependencies.entrySet()) {
 			String key = entry.getKey();
 			if(!key.startsWith("exclude:")) continue;

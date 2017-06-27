@@ -24,13 +24,8 @@ public class Submitter {
 			System.setProperty("spark.app.name", appName);
 			TaskRunner.main(new String[]{json});
 		} else {
-			// 使用  --packages|--exclude-packages|--repositories处理依赖
 			FlowService flowService = new FlowService();
 			Set<String> jarsSet = flowService.generateJars(config.getProperty("plugins.uri"), forceReload);
-			if(forceReload) flowService.generateDependencies(forceReload);
-			Set<String> packagesSet = flowService.generatePackages();
-			Set<String> excludeSet = flowService.generateExcludePackages();
-			String repositories = config.getProperty("maven.repositories");
 			List<String> argList = new ArrayList<>();
 			argList.add("--master");
 			argList.add(master);
@@ -43,18 +38,6 @@ public class Submitter {
 			if(!jarsSet.isEmpty()) {
 				argList.add("--jars");
 				argList.add(DPUtil.implode(",", DPUtil.collectionToArray(jarsSet)));
-			}
-			if(!packagesSet.isEmpty()) {
-				argList.add("--packages");
-				argList.add(DPUtil.implode(",", DPUtil.collectionToArray(packagesSet)));
-			}
-			if(!excludeSet.isEmpty()) {
-				argList.add("--exclude-packages");
-				argList.add(DPUtil.implode(",", DPUtil.collectionToArray(excludeSet)));
-			}
-			if(!DPUtil.empty(repositories)) {
-				argList.add("--repositories");
-				argList.add(repositories);
 			}
 			argList.add(config.getProperty("app.jar.url", "build/libs/etl-visual.jar"));
 			argList.add(json);
