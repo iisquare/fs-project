@@ -33,7 +33,7 @@ public class Submitter {
 			argList.add("--name");
 			argList.add(appName);
 			argList.add("--deploy-mode");
-			argList.add(config.getProperty("deploy.mode", "client"));
+			argList.add("cluster");
 			argList.add("--class");
 			argList.add(TaskRunner.class.getName());
 			if(!jarsSet.isEmpty()) {

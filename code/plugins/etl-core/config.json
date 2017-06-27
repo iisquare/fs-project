@@ -1,70 +1,90 @@
-[{
-	"id":"com.iisquare.etl.spark.plugins.core",
-	"parent":"",
-	"text":"SparkCore",
-	"sort":1,
-	"iconCls":"tree-folder",
-	"state":"open",
-	"children":[]
-}, {
-	"id":"com.iisquare.etl.spark.plugins.core.ReadMySQLNode",
-	"parent":"com.iisquare.etl.spark.plugins.core",
-	"text":"读取MySQL",
-	"sort":1,
-	"iconCls":"tree-file",
-	"draggable" : true,
-	"propertygrid" : {
-		"data" : {"rows":[
-			{"name":"主机","key":"host","value":"127.0.0.1","group":"连接设置","editor":"text"},
-			{"name":"端口","key":"port","value":"3306","group":"连接设置","editor":"text"},
-			{"name":"账号","key":"username","value":"root","group":"连接设置","editor":"text"},
-			{"name":"密码","key":"password","value":"root","group":"连接设置","editor":"text"},
-			{"name":"数据库","key":"database","value":"test","group":"连接设置","editor":"text"},
-			{"name":"编码","key":"charset","value":"utf-8","group":"连接设置","editor":"text"},
-			{"name":"分区数量","key":"numPartitions","value":"1","group":"分布式","editor":"numberbox"},
-			{"name":"读取下限","key":"lowerBound","value":"0","group":"分布式","editor":"numberbox"},
-			{"name":"读取上限","key":"upperBound","value":"2147483647","group":"分布式","editor":"numberbox"},
-			{"name":"SQL","key":"sql","value":"","group":"数据查询","editor":"textarea"}
-		]}
-	}
-}, {
-	"id":"com.iisquare.etl.spark.plugins.core.CalculateSQLNode",
-	"parent":"com.iisquare.etl.spark.plugins.core",
-	"text":"SQL查询",
-	"sort":2,
-	"iconCls":"tree-file",
-	"draggable" : true,
-	"propertygrid" : {
-		"data" : {"rows":[
-			{"name":"SQL","key":"sql","value":"","group":"数据查询","editor":"textarea"}
-		]}
-	}
-}, {
-	"id":"com.iisquare.etl.spark.plugins.core.WriteConsoleNode",
-	"parent":"com.iisquare.etl.spark.plugins.core",
-	"text":"Console打印",
-	"sort":3,
-	"iconCls":"tree-file",
-	"draggable" : true,
-	"propertygrid" : {
-		"data" : {"rows":[]}
-	}
-}, {
-	"id":"com.iisquare.etl.spark.plugins.core.WriteElasticsearchNode",
-	"parent":"com.iisquare.etl.spark.plugins.core",
-	"text":"写入Elasticsearch",
-	"sort":4,
-	"iconCls":"tree-file",
-	"draggable" : true,
-	"propertygrid" : {
-		"data" : {"rows":[
-			{"name":"主机","key":"nodes","value":"127.0.0.1","group":"连接设置","editor":"text"},
-			{"name":"端口","key":"port","value":"9200","group":"连接设置","editor":"text"},
-			{"name":"账号","key":"user","value":"","group":"连接设置","editor":"text"},
-			{"name":"密码","key":"pass","value":"","group":"连接设置","editor":"text"},
-			{"name":"集合名称","key":"collection","value":"etl-test/default","group":"集合设置","editor":"text"},
-			{"name":"自动创建","key":"autoCreate","value":"true","group":"集合设置","editor":"text"},
-			{"name":"文档主键","key":"mappingId","value":"","group":"集合设置","editor":"text"}
-		]}
-	}
-}]
+{
+	"dependencies" : {
+		"packages" : [{
+			"groupId" : "mysql",
+			"artifactId" : "mysql-connector-java",
+			"version" : "5.1.39"
+		}, {
+			"groupId" : "org.elasticsearch",
+			"artifactId" : "elasticsearch-spark-20_2.11",
+			"version" : "5.1.1"
+		}],
+		"exclude" : [{
+			"groupId" : "org.apache.spark",
+			"artifactId" : "*"
+		}, {
+			"groupId" : "org.scala-lang",
+			"artifactId" : "*"
+		}]
+	},
+	"nodes" : [{
+		"id":"com.iisquare.etl.spark.plugins.core",
+		"parent":"",
+		"text":"SparkCore",
+		"sort":1,
+		"iconCls":"tree-folder",
+		"state":"open",
+		"children":[]
+	}, {
+		"id":"com.iisquare.etl.spark.plugins.core.ReadMySQLNode",
+		"parent":"com.iisquare.etl.spark.plugins.core",
+		"text":"读取MySQL",
+		"sort":1,
+		"iconCls":"tree-file",
+		"draggable" : true,
+		"propertygrid" : {
+			"data" : {"rows":[
+				{"name":"主机","key":"host","value":"127.0.0.1","group":"连接设置","editor":"text"},
+				{"name":"端口","key":"port","value":"3306","group":"连接设置","editor":"text"},
+				{"name":"账号","key":"username","value":"root","group":"连接设置","editor":"text"},
+				{"name":"密码","key":"password","value":"root","group":"连接设置","editor":"text"},
+				{"name":"数据库","key":"database","value":"test","group":"连接设置","editor":"text"},
+				{"name":"编码","key":"charset","value":"utf-8","group":"连接设置","editor":"text"},
+				{"name":"分区数量","key":"numPartitions","value":"1","group":"分布式","editor":"numberbox"},
+				{"name":"读取下限","key":"lowerBound","value":"0","group":"分布式","editor":"numberbox"},
+				{"name":"读取上限","key":"upperBound","value":"2147483647","group":"分布式","editor":"numberbox"},
+				{"name":"SQL","key":"sql","value":"","group":"数据查询","editor":"textarea"}
+			]}
+		}
+	}, {
+		"id":"com.iisquare.etl.spark.plugins.core.CalculateSQLNode",
+		"parent":"com.iisquare.etl.spark.plugins.core",
+		"text":"SQL查询",
+		"sort":2,
+		"iconCls":"tree-file",
+		"draggable" : true,
+		"propertygrid" : {
+			"data" : {"rows":[
+				{"name":"SQL","key":"sql","value":"","group":"数据查询","editor":"textarea"}
+			]}
+		}
+	}, {
+		"id":"com.iisquare.etl.spark.plugins.core.WriteConsoleNode",
+		"parent":"com.iisquare.etl.spark.plugins.core",
+		"text":"Console打印",
+		"sort":3,
+		"iconCls":"tree-file",
+		"draggable" : true,
+		"propertygrid" : {
+			"data" : {"rows":[]}
+		}
+	}, {
+		"id":"com.iisquare.etl.spark.plugins.core.WriteElasticsearchNode",
+		"parent":"com.iisquare.etl.spark.plugins.core",
+		"text":"写入Elasticsearch",
+		"sort":4,
+		"iconCls":"tree-file",
+		"draggable" : true,
+		"propertygrid" : {
+			"data" : {"rows":[
+				{"name":"主机","key":"nodes","value":"127.0.0.1","group":"连接设置","editor":"text"},
+				{"name":"端口","key":"port","value":"9200","group":"连接设置","editor":"text"},
+				{"name":"账号","key":"user","value":"","group":"连接设置","editor":"text"},
+				{"name":"密码","key":"pass","value":"","group":"连接设置","editor":"text"},
+				{"name":"集合名称","key":"collection","value":"etl-test/default","group":"集合设置","editor":"text"},
+				{"name":"自动创建","key":"autoCreate","value":"true","group":"集合设置","editor":"text"},
+				{"name":"文档主键","key":"mappingId","value":"","group":"集合设置","editor":"text"}
+			]}
+		}
+	}]
+}
