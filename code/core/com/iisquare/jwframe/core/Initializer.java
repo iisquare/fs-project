@@ -14,6 +14,9 @@ public class Initializer {
 	}
 	
 	public void init() {
+		LinkedHashMap<String, String> domains = new LinkedHashMap<>();
+		domains.put("*", "backend");
+		Router.init(domains);
 		Router.get("frontend", "/news/{date}/{id}.shtml", new Generator() {
 			@Override
 			public RouteAction call(String... args) {
