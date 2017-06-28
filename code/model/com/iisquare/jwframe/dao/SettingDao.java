@@ -29,7 +29,7 @@ public class SettingDao extends MySQLBase<SettingDao> {
 	public LinkedHashMap<String, Map<String, Object>> columns() {
 		if(null != columns) return columns;
 		columns = new LinkedHashMap<>();
-		columns.put("group", null); // 分组
+		columns.put("type", null); // 类型
 		columns.put("parameter", null); // 参数名
 		columns.put("name", null); // 名称
 		columns.put("content", null); // 参数值

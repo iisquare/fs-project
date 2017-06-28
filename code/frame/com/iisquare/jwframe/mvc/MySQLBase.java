@@ -439,10 +439,11 @@ public abstract class MySQLBase<T> extends DaoBase {
 		ResultSetMetaData rsmd = rs.getMetaData();
 		List<Map<String, Object>> tempList = new ArrayList<>();
 		Map<String, Object> tempHash = null;
+		int count = rsmd.getColumnCount();
 		while (rs.next()) {
 			tempHash = new LinkedHashMap<String, Object>();
-			for (int i = 0; i < rsmd.getColumnCount(); i++) {
-				tempHash.put(rsmd.getColumnName(i + 1), rs.getObject(rsmd.getColumnName(i + 1)));
+			for (int i = 1; i <= count; i++) {
+				tempHash.put(rsmd.getColumnName(i), rs.getObject(i));
 			}
 			tempList.add(tempHash);
 		}
