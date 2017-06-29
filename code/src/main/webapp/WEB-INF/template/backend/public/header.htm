@@ -70,7 +70,7 @@
         <ul class="nav nav-list platform-menu-left[#if !menuTop.checked] hide[/#if]" data-parent="${menuTop.id}">
             [#list menuTop.children as menuLeft]
             <li class="platform-menu-item[#if menuLeft.checked] active open[/#if]">
-                <a href="${menuLeft.url}" class="dropdown-toggle">
+                <a href="${menuLeft.url}" class="[#if menuLeft.children?size > 0]dropdown-toggle[/#if]">
                     <i class="menu-icon ${menuLeft.icon}"></i>
                     <span class="menu-text"> ${menuLeft.name} </span>
                     [#if menuLeft.children?size > 0]<b class="arrow fa fa-angle-down"></b>[/#if]

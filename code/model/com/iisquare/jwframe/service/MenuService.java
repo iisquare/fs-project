@@ -75,6 +75,8 @@ public class MenuService extends ServiceBase {
 			String url = DPUtil.parseString(value.get("url"));
 			if(DPUtil.empty(url)) {
 				url = "javascript:void(0);";
+			} else if (url.startsWith("/")) {
+				url = webUrl + url.replaceFirst("/", "");
 			} else if(!url.matches("^\\w+://.*$")) {
 				url = webUrl + url;
 			}
