@@ -35,7 +35,8 @@ public class MenuDao extends MySQLBase<MenuDao> {
 		columns.put("module", null); // 模块
 		columns.put("url", null); // 链接地址
 		columns.put("target", null); // 打开方式
-		columns.put("icon", null); //图标
+		columns.put("icon", null); // 图标
+		columns.put("state", null); // 展开状态
 		columns.put("status", null); // 状态
 		columns.put("sort", null); // 排序
 		columns.put("description", null); // 描述
