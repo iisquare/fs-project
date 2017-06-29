@@ -53,3 +53,11 @@ $.fn.linkbuttonToggle = function () {
     options.text = $obj.data('text');
     $obj.linkbutton(options);
 }
+$.ajax({
+    url : webUrl + '/menu/tree/',
+    dataType : 'json',
+    success : function (result) {
+        if(!result || 0 != result.code) return;
+
+    }
+});
