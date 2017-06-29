@@ -26,5 +26,4 @@
 
 - 执行gradle sparkJar生成提交JAR文件
 
-- 进入每个plugins插件目录，执行gradle downloadJars下载依赖文件
-
+- 执行com.iisquare.jwframe.test.spark.TestSubmitter.java
