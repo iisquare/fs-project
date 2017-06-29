@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 
 import com.iisquare.jwframe.service.SettingService;
+import com.iisquare.jwframe.service.UserService;
 
 @Controller
 @Scope("prototype")
@@ -12,6 +13,8 @@ public abstract class RbacController extends CoreController {
 
 	@Autowired
 	protected SettingService settingService;
+	@Autowired
+	protected UserService userService;
 	
 	@Override
 	protected Object displayTemplate(String controller, String action) throws Exception {

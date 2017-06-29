@@ -39,7 +39,7 @@ public class MenuService extends ServiceBase {
 		if(!forceReload && generateTree.containsKey(module)) return generateTree.get(module);
 		MenuDao menuDao = webApplicationContext.getBean(MenuDao.class);
 		Map<Object, Map<String, Object>> itemMap = menuDao.select("id,name,parent_id,url,target,icon,state")
-			.where("module=:module and status=1", ":module", module).orderBy("sort acs").all("id");
+			.where("module=:module and status=1", ":module", module).orderBy("sort asc").all("id");
 		List<Map<String, Object>> list = generateTree(itemMap, 0);
 		generateTree.put(module, list);
 		return list;
