@@ -33,8 +33,6 @@ public class MenuDao extends MySQLBase<MenuDao> {
 		columns.put("name", null); // 名称
 		columns.put("parent_id", null); // 父级
 		columns.put("module", null); // 模块
-		columns.put("controller", null); // 控制器
-		columns.put("action", null); // 活动
 		columns.put("url", null); // 链接地址
 		columns.put("target", null); // 打开方式
 		columns.put("status", null); // 状态
