@@ -19,7 +19,7 @@ import freemarker.template.Template;
 @Controller
 @Scope("prototype")
 public abstract class ControllerBase {
-	
+
 	protected WebApplicationContext webApplicationContext;
 	protected String appUri, appUrl, appPath, rootPath;
 	protected String moduleName, controllerName, actionName;
@@ -135,17 +135,17 @@ public abstract class ControllerBase {
 	}
 
 	protected String getParam(String key) {
-        return getParam(key, null);
-    }
-	
+		return getParam(key, null);
+	}
+
 	protected String getParam(String key, String defaultValue) {
-        if(null == key) return null;
-        if(!params.containsKey(key)) return defaultValue;
-        String[] values = params.get(key);
-        if(null == values || 0 == values.length) return null;
-        return values[0];
-    }
-	
+		if (null == key) return null;
+		if (!params.containsKey(key)) return defaultValue;
+		String[] values = params.get(key);
+		if (null == values || 0 == values.length) return null;
+		return values[0];
+	}
+
 	/**
 	 * 设置视图中需要的参数
 	 */
@@ -153,40 +153,41 @@ public abstract class ControllerBase {
 		assign.put(key, value);
 	}
 
-	protected String url() {
+	public String url() {
 		return url(controllerName, actionName);
 	}
 
-	protected String url(String action) {
+	public String url(String action) {
 		return url(controllerName, action);
 	}
 
 	/**
 	 * 获取URL地址
 	 */
-	protected String url(String controller, String action) {
+	public String url(String controller, String action) {
 		return appPath + controller + "/" + action + "/";
 	}
 
 	protected Object displayTemplate() throws Exception {
 		return displayTemplate(controllerName, actionName);
 	}
-	
+
 	protected Object displayTemplate(String action) throws Exception {
 		return displayTemplate(controllerName, action);
 	}
-	
+
 	protected Object displayTemplate(String controller, String action) throws Exception {
 		return displayTemplate(controller + "/" + action, assign);
 	}
-	
+
 	protected Object displayTemplate(String fileUri, Object dataModel) throws Exception {
-		Template template = webApplicationContext.getBean(FreeMarkerConfigurer.class).getConfiguration()
-				.getTemplate(moduleName + "/" + fileUri + webApplicationContext.getBean(Configuration.class).getTemplateSuffix());
+		Template template = webApplicationContext.getBean(
+			FreeMarkerConfigurer.class).getConfiguration().getTemplate(moduleName
+			+ "/" + fileUri + webApplicationContext.getBean(Configuration.class).getTemplateSuffix());
 		template.process(dataModel, response.getWriter());
 		return null;
 	}
-	
+
 	/**
 	 * 输出文本信息
 	 */

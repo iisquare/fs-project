@@ -265,7 +265,7 @@ jsPlumb.bind("ready", function() {
             data['connections'].push(item);
         }
         $.ajax({
-            url : '${webUrl}/${controllerName}/save/',
+            url : '${_base_.url("save")}',
             data : {
                 id : '',
                 flow : JSON.stringify(data)
@@ -278,10 +278,10 @@ jsPlumb.bind("ready", function() {
         });
     });
     $('.flow-chart-act-node-refresh').on('click', function () {
-        $flowNodesTree.tree({url:'${webUrl}/${controllerName}/plugins/?forceReload=1'});
+        $flowNodesTree.tree({url:'${_base_.url("plugins")}?forceReload=1'});
     });
     $flowNodesTree.tree({
-        url : '${webUrl}/${controllerName}/plugins/',
+        url : '${_base_.url("plugins")}',
         dnd : true,
         onBeforeDrag : function (node) {
             return typeof node.draggable != 'undefined' && node.draggable;

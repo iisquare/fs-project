@@ -19,7 +19,7 @@
 <script type="application/javascript">
 $(function () {
     $('.page-table-list').datagrid({
-        url : '${webUrl}/${controllerName}/list/',
+        url : '${_base_.url("list")}',
         pagination : true,
         border : false,
         toolbar : '#toolbar',
@@ -43,11 +43,17 @@ $(function () {
                 return Web_formatDateTime(value);
             }},
             {field:'operate',title:'操作',formatter:function (value, row, index) {
+                var html = [];
+                html.push('<a href="${_base_.url("edit")}?type=', row.type, '&parameter=', row.parameter,
+                        '" class="page-table-button" data-options="iconCls:\'icon-edit\'">修改</a>',
+                        '<a href="${_base_.url("delete")}?type=', row.type, '&parameter=', row.parameter,
+                        '" class="page-table-button" data-options="iconCls:\'icon-remove\'">删除</a>');
+                return html.join('');
             }}
         ]],
         onLoadSuccess : function (data) {
-            /*$('.js-list-button').linkbutton({plain : true});
-            $(this).datagrid('autoSizeColumn', 'operate');*/
+            $('.page-table-button').linkbutton({plain : true});
+            $(this).datagrid('autoSizeColumn', 'operate');
         }
     });
 });

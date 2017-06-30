@@ -47,8 +47,7 @@ public abstract class CoreController extends ControllerBase {
 	@Override
 	protected Object displayTemplate(String controller, String action) throws Exception {
 		assign("webUrl", appPath.substring(0, appPath.length() - 1));
-		assign("controllerName", controllerName);
-		assign("actionName", actionName);
+		assign("_base_", this);
 		return super.displayTemplate(controller, action);
 	}
 	
