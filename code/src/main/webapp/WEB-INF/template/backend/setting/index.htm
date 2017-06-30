@@ -19,33 +19,27 @@
 <script type="application/javascript">
 $(function () {
     $('.page-table-list').datagrid({
-        //url : '${webUrl}/${controllerName}/list/',
+        url : '${webUrl}/${controllerName}/list/',
         pagination : true,
         border : false,
-        idField : 'id',
         toolbar : '#toolbar',
         rownumbers : true,
         fitColumns : true,
         fit : true,
         nowrap : true,
         singleSelect : true,
-        checkOnSelect : false,
-        selectOnCheck : false,
         columns:[[
-            {field:'id',checkbox:true},
-            {field:'show_id',title:'ID',formatter:function (value, row, index) {
-                return row.id;
-            }},
-            {field:'name',title:'名称'},
             {field:'type',title:'类型'},
-            {field:'content',title:'内容'},
-            {field:'remark',title:'备注'},
-            {field:'operate_id',title:'操作者',formatter:function (value, row, index) {
-                if(!row.operate_id_info) return '';
-                return '[' + row.operate_id_info.serial + ']' + row.operate_id_info.name;
+            {field:'parameter',title:'参数名'},
+            {field:'name',title:'名称'},
+            {field:'content',title:'参数值'},
+            {field:'sort',title:'排序'},
+            {field:'description',title:'描述'},
+            {field:'update_uid',title:'操作者',formatter:function (value, row, index) {
+                if(!row.update_uid_info) return '';
+                return '[' + row.update_uid_info.username + ']' + row.operate_id_info.name;
             }},
-            {field:'operate_ip',title:'IP'},
-            {field:'operate_time',title:'操作时间',formatter:function (value, row, index) {
+            {field:'update_time',title:'操作时间',formatter:function (value, row, index) {
                 return Web_formatDateTime(value);
             }},
             {field:'operate',title:'操作',formatter:function (value, row, index) {

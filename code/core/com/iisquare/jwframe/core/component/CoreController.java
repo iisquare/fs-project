@@ -7,11 +7,19 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 
 import com.iisquare.jwframe.mvc.ControllerBase;
+import com.iisquare.jwframe.utils.ServletUtil;
 
 @Controller
 @Scope("prototype")
 public abstract class CoreController extends ControllerBase {
 
+	/**
+	 * 解析请求参数
+	 */
+	protected Map<String, Object> getParameter() {
+		return ServletUtil.parseParameterMap(params);
+	}
+	
 	protected Object displayMessage(int code, Object message, Object data) throws Exception {
 		if(null == message) {
 			switch (code) {

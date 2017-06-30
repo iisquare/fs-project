@@ -176,7 +176,7 @@ public abstract class MySQLBase<T> extends DaoBase {
 
 	@SuppressWarnings("unchecked")
 	public T bindValue(String name, Object value) {
-		pendingParams.put(name, value);
+		pendingParams.put(":" + name, value);
 		return (T) this;
 	}
 
@@ -184,7 +184,7 @@ public abstract class MySQLBase<T> extends DaoBase {
 	public T bindValues(Map<String, Object> values) {
 		if (null == values) return (T) this;
 		for (Entry<String, Object> entry : values.entrySet()) {
-			pendingParams.put(entry.getKey(), entry.getValue());
+			pendingParams.put(":" + entry.getKey(), entry.getValue());
 		}
 		return (T) this;
 	}
@@ -277,6 +277,13 @@ public abstract class MySQLBase<T> extends DaoBase {
 	@SuppressWarnings("unchecked")
 	public T offset(int offset) {
 		this.offset = offset;
+		return (T) this;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public T page(int page, int pageSize) {
+		this.offset = (page - 1) * pageSize;
+		this.limit = pageSize;
 		return (T) this;
 	}
 

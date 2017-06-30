@@ -2,8 +2,12 @@ package com.iisquare.jwframe.utils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import com.iisquare.jwframe.mvc.MySQLBase;
 
 /**
  * 通用业务辅助处理类
@@ -17,30 +21,29 @@ public class ServiceUtil {
 	/**
 	 * 填充关联记录
 	 */
-/*	public static Map<String, Object> fillRelations(Map<String, Object> map,
-			DaoBase<?> relationDao, String[] relationFields, Object[] fillFields, String fieldPostfix) {
+	public static Map<String, Object> fillRelations(Map<String, Object> map,
+			MySQLBase<?> relationDao, String[] relationFields, String[] fillFields, String fieldPostfix) {
 		List<Map<String, Object>> list = new ArrayList<Map<String, Object>>(1);
 		list.add(map);
 		list = fillRelations(list, relationDao, relationFields, fillFields, fieldPostfix);
 		return list.get(0);
-	}*/
+	}
 	
 	/**
 	 * 填充关联记录
 	 */
-/*	public static List<Map<String, Object>> fillRelations(List<Map<String, Object>> list,
-			DaoBase<?> relationDao, String[] relationFields, Object[] fillFields, String fieldPostfix) {
-		String primaryKey = relationDao.getIdName();
-		List<Object> idList = ServiceUtil.getFieldValues(list, relationFields);
-		if(DPUtil.empty(fillFields)) {
+	public static List<Map<String, Object>> fillRelations(List<Map<String, Object>> list,
+			MySQLBase<?> relationDao, String[] relationFields, String[] fillFields, String fieldPostfix) {
+		String primaryKey = fillFields[0];
+		Set<Object> idSet = ServiceUtil.getFieldValues(list, relationFields);
+		if(idSet.size() < 1) return list;
+		if(1 == fillFields.length) {
 			fillFields = new String[]{"*"};
-		} else {
-			if(!DPUtil.isItemExist(fillFields, primaryKey)) {
-				fillFields = DPUtil.arrayUnShift(fillFields, primaryKey);
-			}
 		}
-		List<Map<String, Object>> settingList = relationDao.getByIds(
-				DPUtil.implode(",", fillFields), DPUtil.collectionToArray(idList));
+		relationDao.select(DPUtil.implode(",", fillFields));
+		relationDao.where(primaryKey + " in ("
+			+ DPUtil.implode(",", DPUtil.arrayToIntegerArray(DPUtil.collectionToArray(idSet)))  + ")");
+		List<Map<String, Object>> settingList = relationDao.all();
 		Map<Object, Map<String, Object>> indexMap = ServiceUtil.indexMapList(settingList, primaryKey);
 		if(null == fieldPostfix) fieldPostfix = relInfoPostfix;
 		for (Map<String, Object> item : list) {
@@ -49,7 +52,7 @@ public class ServiceUtil {
 			}
 		}
 		return list;
-	}*/
+	}
 	
 	/**
 	 * 填充属性信息
@@ -167,16 +170,16 @@ public class ServiceUtil {
 	/**
 	 * 获取对应字段的值列表
 	 */
-	public static List<Object> getFieldValues(List<Map<String, Object>> list, String... fields) {
-		List<Object> valueList = new ArrayList<Object>(list.size());
+	public static Set<Object> getFieldValues(List<Map<String, Object>> list, String... fields) {
+		Set<Object> valueSet = new HashSet<>();
 		for (Map<String, Object> item : list) {
 			for (String field : fields) {
 				Object value = item.get(field);
 				if(null == value) continue;
-				valueList.add(value);
+				valueSet.add(value);
 			}
 		}
-		return valueList;
+		return valueSet;
 	}
 	
 	/**
