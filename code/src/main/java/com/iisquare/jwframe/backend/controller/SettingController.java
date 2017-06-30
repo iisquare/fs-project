@@ -28,17 +28,20 @@ public class SettingController extends RbacController {
 		return displayJSON();
 	}
 	
-	/*public String showAction() throws Exception {
-		Integer id = ValidateUtil.filterInteger(get("id"), true, 0, null, null);
-		Map<String, Object> info = settingService.getById(id, true);
-		if(null == info) {
-			return displayInfo("信息不存在，请刷新后再试", null);
+	public Object deleteAction() throws Exception {
+		if(!params.containsKey("type") || !params.containsKey("parameter")) {
+			return displayInfo(10001, "参数异常", url("index"));
 		}
-		assign("info", info);
-		return displayTemplate();
+		int result = settingService.delete(getParameter());
+		if(result >= 0) {
+			return displayInfo(0, null, url("index"));
+		} else {
+			return displayInfo(500, null, null);
+		}
 	}
 	
-	public String editAction() throws Exception {
+	/*
+	public Object editAction() throws Exception {
 		Integer id = ValidateUtil.filterInteger(get("id"), true, 0, null, null);
 		Setting info;
 		if(DPUtil.empty(id)) {
@@ -50,6 +53,7 @@ public class SettingController extends RbacController {
 		assign("info", info);
 		return displayTemplate();
 	}
+	
 	
 	public String saveAction() throws Exception {
 		Integer id = ValidateUtil.filterInteger(get("id"), true, 0, null, null);
@@ -85,14 +89,6 @@ public class SettingController extends RbacController {
 		}
 	}
 	
-	public String deleteAction() throws Exception {
-		Object[] idArray = getArray("ids");
-		int result = settingService.delete(idArray);
-		if(result > 0) {
-			return displayInfo("操作成功", url("layout"));
-		} else {
-			return displayInfo("操作失败，请刷新后再试", null);
-		}
-	}*/
+	*/
 	
 }

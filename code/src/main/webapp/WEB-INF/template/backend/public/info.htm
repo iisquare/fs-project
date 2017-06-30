@@ -1,0 +1,88 @@
+[#include "../public/header.htm"]
+<div class="page-content">
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="error-container">
+                <div class="well">
+                    <h1 class="grey lighter smaller">
+                        <span class="blue bigger-125"><i class="${icon}"></i> ${message} </span>
+                        No:${code}
+                    </h1>
+                    <hr>
+                    <h3 class="lighter smaller">页面将在<strong id="sec">8</strong>秒后自动跳转……</h3>
+                    <div>
+                        <div class="space"></div>
+                        <h4 class="smaller">如果您在使用中遇到问题，请尝试以下操作:</h4>
+
+                        <ul class="list-unstyled spaced inline bigger-110 margin-15">
+                            <li>
+                                <i class="ace-icon fa fa-hand-o-right blue"></i>
+                                强制刷新浏览器（按ctrl+f5键）
+                            </li>
+
+                            <li>
+                                <i class="ace-icon fa fa-hand-o-right blue"></i>
+                                清除浏览器缓存
+                            </li>
+
+                            <li>
+                                <i class="ace-icon fa fa-hand-o-right blue"></i>
+                                联系系统管理员
+                            </li>
+                        </ul>
+                    </div>
+
+                    <hr>
+                    <div class="space"></div>
+
+                    <div class="center">
+                        <a href="javascript:void(0);" class="btn btn-grey js-controll-forward">
+                            <i class="ace-icon fa fa-arrow-left"></i>
+                            返回上一页
+                        </a>
+                        <a href="javascript:void(0);" class="btn btn-primary js-controll-forward">
+                            <i class="ace-icon fa fa-exchange"></i>
+                            立即跳转
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+$(function () {
+    var timer = null;
+    var $sec = $("#sec");
+    function lazyGo() {
+        if(!$sec.data('run')) return;
+        var sec = $sec.text();
+        $sec.text(--sec);
+        if (sec > 0) {
+            timer = window.setTimeout(lazyGo, 1000);
+        } else {
+            $('.js-controll-forward').trigger('click');
+        }
+    }
+    $("#sec").on('click', function () {
+        if($sec.data('run')) {
+            $sec.data('run', false);
+        } else {
+            $sec.data('run', true);
+            lazyGo();
+        }
+    }).trigger('click');
+    $('.js-controll-back').on('click', function () {
+        window.history.back();
+    });
+    $('.js-controll-forward').on('click', function () {
+        var url = '${forward!""}';
+        if(url.length > 0) {
+            window.location.href = url;
+        } else {
+            window.history.back();
+        }
+    });
+});
+</script>
+[#include "../public/footer.htm"]

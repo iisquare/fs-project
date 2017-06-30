@@ -22,6 +22,28 @@ public class SettingService extends ServiceBase {
 	@Autowired
 	protected WebApplicationContext webApplicationContext;
 
+	public int delete(Map<String, Object> map) {
+		StringBuilder where = new StringBuilder("1=1");
+		Map<String, Object> params = new HashMap<String, Object>();
+		Object type = map.get("type");
+		if(!DPUtil.empty(type)) {
+			where.append(" and type = :type");
+			params.put("type", type);
+		}
+		Object parameter = map.get("parameter");
+		if(!DPUtil.empty(parameter)) {
+			where.append(" and parameter = :parameter");
+			params.put("parameter", parameter);
+		}
+		Object name = map.get("name");
+		if(!DPUtil.empty(name)) {
+			where.append(" and name = :name");
+			params.put("name", name);
+		}
+		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
+		return settingDao.where(where.toString(), params).delete().intValue();
+	}
+	
 	public Map<Object, Object> search(Map<String, Object> map, String orderBy, int page, int pageSize) {
 		StringBuilder where = new StringBuilder("1=1");
 		Map<String, Object> params = new HashMap<String, Object>();

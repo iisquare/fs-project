@@ -170,7 +170,7 @@ public class DPUtil {
 		while(matcher.find()) {
 			if(bGroup) {
 				int count = matcher.groupCount();
-				for(int i = 0; i <= count; i++) {
+				for(int i = 1; i <= count; i++) {
 					list.add(matcher.group(i));
 				}
 			} else {
