@@ -1,0 +1,61 @@
+[#include "../public/header.htm"]
+<div class="main-content-inner">
+    <div class="breadcrumbs ace-save-state" id="breadcrumbs">
+        <ul class="breadcrumb">
+            <li>
+                <i class="ace-icon fa fa-home home-icon"></i>
+                <a href="${webUrl}/">主页</a>
+            </li>
+            <li class="active">参数设置</li>
+        </ul>
+    </div>
+    <div class="page-content-full">
+        <table class="page-table-list"></table>
+        <div id="toolbar">
+            <a href="javascript:void(0);" class="easyui-linkbutton js-control-search" data-options="iconCls:'icon-search',plain:true">搜索</a>
+        </div>
+    </div>
+</div>
+<script type="application/javascript">
+$(function () {
+    $('.page-table-list').datagrid({
+        //url : '${webUrl}/${controllerName}/list/',
+        pagination : true,
+        border : false,
+        idField : 'id',
+        toolbar : '#toolbar',
+        rownumbers : true,
+        fitColumns : true,
+        fit : true,
+        nowrap : true,
+        singleSelect : true,
+        checkOnSelect : false,
+        selectOnCheck : false,
+        columns:[[
+            {field:'id',checkbox:true},
+            {field:'show_id',title:'ID',formatter:function (value, row, index) {
+                return row.id;
+            }},
+            {field:'name',title:'名称'},
+            {field:'type',title:'类型'},
+            {field:'content',title:'内容'},
+            {field:'remark',title:'备注'},
+            {field:'operate_id',title:'操作者',formatter:function (value, row, index) {
+                if(!row.operate_id_info) return '';
+                return '[' + row.operate_id_info.serial + ']' + row.operate_id_info.name;
+            }},
+            {field:'operate_ip',title:'IP'},
+            {field:'operate_time',title:'操作时间',formatter:function (value, row, index) {
+                return Web_formatDateTime(value);
+            }},
+            {field:'operate',title:'操作',formatter:function (value, row, index) {
+            }}
+        ]],
+        onLoadSuccess : function (data) {
+            /*$('.js-list-button').linkbutton({plain : true});
+            $(this).datagrid('autoSizeColumn', 'operate');*/
+        }
+    });
+});
+</script>
+[#include "../public/footer.htm"]

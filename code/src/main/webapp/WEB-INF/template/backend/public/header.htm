@@ -18,6 +18,8 @@
     <!--[if lte IE 9]>
     <link rel="stylesheet" href="${webUrl}/statics/plugins/ace_admin/assets/css/ace-ie.css" />
     <![endif]-->
+    <link rel="stylesheet" type="text/css" href="${webUrl}/statics/plugins/jquery-easyui/themes/bootstrap/easyui.css">
+    <link rel="stylesheet" type="text/css" href="${webUrl}/statics/plugins/jquery-easyui/themes/icon.css">
     <link rel="stylesheet" href="${webUrl}/statics/css/backend.css" />
     <script src="${webUrl}/statics/plugins/ace_admin/assets/js/ace-extra.js"></script>
     <!--[if lte IE 8]>
@@ -92,3 +94,9 @@
         [/#list]
     </div>
     <div class="main-content">
+        <!--[if !IE]> -->
+        <script src="${webUrl}/statics/plugins/ace_admin/components/jquery/dist/jquery.js"></script>
+        <!-- <![endif]-->
+        <!--[if IE]>
+        <script src="${webUrl}/statics/plugins/ace_admin/components/jquery.1x/dist/jquery.js"></script>
+        <![endif]-->

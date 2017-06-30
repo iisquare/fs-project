@@ -61,8 +61,12 @@ $.fn.linkbuttonToggle = function () {
     $obj.linkbutton(options);
 }
 $(function () {
+    var $window = $(window);
     var $platformMenuTop = $('#platform-menu-top');
     var $platformMenuLeft = $('.platform-menu-left');
+    var $pageContentFull = $('.page-content-full');
+    var $pageContentFullPrev = $pageContentFull.prev();
+    var $pageTableList = $pageContentFull.children('.page-table-list');
     $platformMenuTop.children('.platform-menu-item').on('click', function () {
         var id = $(this).data('id');
         $platformMenuLeft.addClass('hide');
@@ -73,4 +77,10 @@ $(function () {
             return false;
         });
     });
+    if($pageContentFull.length < 1) return;
+    $window.on('resize', function () {
+        $pageContentFull.height($window.height()
+            - $pageContentFullPrev.position().top - $pageContentFullPrev.height() - 2);
+        $pageTableList.datagrid('resize');
+    }).trigger('resize');
 });
