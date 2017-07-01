@@ -53,7 +53,7 @@ public class MenuService extends ServiceBase {
 		if(!forceReload && generateTree.containsKey(module)) return generateTree.get(module);
 		MenuDao menuDao = webApplicationContext.getBean(MenuDao.class);
 		Map<Object, Map<String, Object>> itemMap = menuDao.select("id,name,parent_id,url,target,icon,state")
-			.where("module=:module and status=1", "module", module).orderBy("sort asc").all("id");
+			.where("module=:module and status=1", ":module", module).orderBy("sort asc").all("id");
 		int id = 0; // 查找当前菜单项
 		for (Entry<Object, Map<String, Object>> entry : itemMap.entrySet()) {
 			Map<String, Object> value = entry.getValue();

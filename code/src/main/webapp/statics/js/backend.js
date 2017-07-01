@@ -19,6 +19,9 @@ Date.prototype.format = function(format){
     }
     return format;
 };
+/**
+ * 格式化日期
+ */
 function Web_formatDateTime(dateVal) {
     if(!dateVal) return '';
     var dateObj = new Date(dateVal);
@@ -60,6 +63,118 @@ $.fn.linkbuttonToggle = function () {
     options.text = $obj.data('text');
     $obj.linkbutton(options);
 }
+/**
+ * 消息提示
+ */
+function Web_alertInfo(msg, callBack) {
+    $.messager.alert('提示' , msg, 'info', callBack);
+}
+/**
+ * 消息确认
+ */
+function Web_confirm(msg, callBack) {
+    $.messager.confirm('提示' , msg, callBack);
+}
+
+/**
+ * 刷新当前页面
+ */
+function Web_refreshCurrentPage() {
+    window.location.reload();
+}
+
+/**
+ * 打开新页面
+ */
+function Web_openPage(url) {
+    window.open(url);
+}
+
+/**
+ * 页面跳转，若url为整数则前进或后退历史记录
+ */
+function Web_redirectPage(url) {
+    if(isNaN(url)) {
+        window.location.href = url;
+    } else {
+        window.history.go(url);
+    }
+}
+
+/**
+ * 判断对象是否为空
+ */
+function Web_empty(object) {
+    if(typeof object == "undefined") return true;
+    if(null == object) return true;
+    if(typeof object == "boolean") return !object;
+    object += "";
+    if(object.length < 1) return true;
+    if("0" == object) return true;
+    return false;
+}
+
+/**
+ * 去除字符串两边指定的字符串
+ */
+function Web_trim(str, trimStr) {
+    if(Web_empty(str)) return "";
+    if(typeof trimStr == "undefined" || null == trimStr) {
+        trimStr = "";
+    }
+    var regexLeft = eval("/^" + trimStr + "*/");
+    str = str.replace(regexLeft, "");
+    var regexRight = eval("/" + trimStr + "*$/");
+    str = str.replace(regexRight, "");
+    return str;
+}
+/**
+ * 去除字符串左边指定的字符串
+ */
+function Web_trimLeft(str, trimStr) {
+    if(Web_empty(str)) return "";
+    if(typeof trimStr == "undefined" || null == trimStr) {
+        trimStr = "";
+    }
+    var regexLeft = eval("/^" + trimStr + "*/");
+    str = str.replace(regexLeft, "");
+    return str;
+}
+/**
+ * 去除字符串右边指定的字符串
+ */
+function Web_trimRight(str, trimStr) {
+    if(Web_empty(str)) return "";
+    if(typeof trimStr == "undefined" || null == trimStr) {
+        trimStr = "";
+    }
+    var regexRight = eval("/" + trimStr + "*$/");
+    str = str.replace(regexRight, "");
+    return str;
+}
+/**
+ * 按照约定规则解析JSON字符串
+ */
+function Web_parseMessage(json) {
+    if(typeof json == "string") {
+        try {
+            json = $.parseJSON(json);
+        } catch (e) {
+            json = null;
+        }
+    }
+    if(null == json) {
+        json = {
+            status : 500,
+            message : '登陆超时，或服务器处理异常',
+            data : null
+        };
+    }
+    return json;
+}
+/**
+ * 界面通用处理
+ */
 $(function () {
     var $window = $(window);
     var $platformMenuTop = $('#platform-menu-top');

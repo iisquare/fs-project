@@ -1,6 +1,7 @@
 package com.iisquare.jwframe.backend.controller;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.context.annotation.Scope;
@@ -8,7 +9,6 @@ import org.springframework.stereotype.Controller;
 
 import com.iisquare.jwframe.core.component.RbacController;
 import com.iisquare.jwframe.utils.DPUtil;
-import com.iisquare.jwframe.utils.ServletUtil;
 import com.iisquare.jwframe.utils.ValidateUtil;
 
 @Controller
@@ -40,55 +40,37 @@ public class SettingController extends RbacController {
 		}
 	}
 	
-	/*
 	public Object editAction() throws Exception {
-		Integer id = ValidateUtil.filterInteger(get("id"), true, 0, null, null);
-		Setting info;
-		if(DPUtil.empty(id)) {
-			info = new Setting();
+		String type = getParam("type");
+		String parameter = getParam("parameter");
+		Map<String, Object> info;
+		if(null == type || null == parameter) {
+			info = new HashMap<>();
 		} else {
-			info = settingService.getById(id);
-			if(DPUtil.empty(info)) return displayInfo("信息不存在，请刷新后再试", null);
+			info = settingService.getInfo(type, parameter);
+			if(null == info) return displayInfo(404, null, null);
 		}
 		assign("info", info);
 		return displayTemplate();
 	}
 	
-	
-	public String saveAction() throws Exception {
-		Integer id = ValidateUtil.filterInteger(get("id"), true, 0, null, null);
-		Setting persist;
-		if(DPUtil.empty(id)) {
-			persist = new Setting();
+	public Object saveAction() throws Exception {
+		String type = DPUtil.trim(getParam("type"));
+		if(DPUtil.empty(type)) return displayMessage(10001, "类型不能为空", null);
+		String parameter = DPUtil.trim(getParam("parameter"));
+		if(DPUtil.empty(parameter)) return displayMessage(10002, "参数名不能为空", null);
+		Map<String, Object> data = getParameter();
+		data.put("type", type);
+		data.put("parameter", parameter);
+		data.put("sort", DPUtil.parseInt(getParam("sort")));
+		data.put("update_uid", 0);
+		data.put("update_time", System.currentTimeMillis());
+		if(settingService.exists(type, parameter)) {
+			if(!settingService.update(data)) return displayMessage(500, "修改失败", null);
 		} else {
-			persist = settingService.getById(id);
-			if(DPUtil.empty(persist)) return displayMessage(3001, "信息不存在，请刷新后再试", null);
+			if(!settingService.insert(data)) return displayMessage(500, "添加失败", null);
 		}
-		String name = ValidateUtil.filterSimpleString(get("name"), true, 1, 64, null);
-		if(DPUtil.empty(name)) return displayMessage(3002, "名称参数错误", null);
-		persist.setName(name);
-		String type = ValidateUtil.filterSimpleString(get("type"), true, 1, 64, null);
-		if(DPUtil.empty(type)) return displayMessage(3003, "类型参数错误", null);
-		persist.setType(type);
-		persist.setContent(DPUtil.trim(get("content")));
-		persist.setRemark(DPUtil.parseString(get("remark")));
-		persist.setOperateId(currentMember.getId());
-		persist.setOperateIp(ServletUtil.getRemoteAddr(request));
-		long time = System.currentTimeMillis();
-		persist.setOperateTime(time);
-		int result;
-		if(DPUtil.empty(persist.getId())) {
-			result = settingService.insert(persist);
-		} else {
-			result = settingService.update(persist);
-		}
-		if(result > 0) {
-			return displayMessage(0, "操作成功", null);
-		} else {
-			return displayMessage(500, "操作失败", null);
-		}
+		return displayMessage(0, null, null);
 	}
-	
-	*/
 	
 }
