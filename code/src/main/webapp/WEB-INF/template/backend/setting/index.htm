@@ -59,4 +59,67 @@ $(function () {
     });
 });
 </script>
+<div class="hidden">
+    <div id="js-search-dialog" style="width:255px;height:312px" data-options="buttons:'#js-search-button',modal:true,resizable:true">
+        <form id="searchForm" method="post" action="${_base_.url('index')}">
+            <table align="center" class="table-horizontal tr-height25">
+                <tr>
+                    <th>开始时间</th>
+                    <td><input class="easyui-datetimebox width150" type="text" name="timeStart" value="" /></td>
+                </tr>
+                <tr>
+                    <th>结束时间</th>
+                    <td><input class="easyui-datetimebox width150" type="text" name="timeEnd" value="" /></td>
+                </tr>
+                <tr>
+                    <th>名称</th>
+                    <td><input class="easyui-textbox width150" type="text" name="name" value="" /></td>
+                </tr>
+                <tr>
+                    <th>类型</th>
+                    <td><input class="easyui-textbox width150" type="text" name="type" value="" /></td>
+                </tr>
+                <tr>
+                    <th>内容</th>
+                    <td><input class="easyui-textbox width150" type="text" name="content" value="" /></td>
+                </tr>
+                <tr>
+                    <th>备注</th>
+                    <td><input class="easyui-textbox width150" type="text" name="remark" value="" /></td>
+                </tr>
+                <tr>
+                    <th>操作账号</th>
+                    <td><input class="easyui-textbox width150" type="text" name="serial" value="" /></td>
+                </tr>
+                <tr>
+                    <th>操作IP</th>
+                    <td><input class="easyui-textbox width150" type="text" name="operateIp" value="" /></td>
+                </tr>
+            </table>
+        </form>
+    </div>
+    <div id="js-search-button">
+        <a href="javascript:void(0);" class="easyui-linkbutton js-control-ok" data-options="iconCls:'icon-search'">搜索</a>
+        <a href="javascript:void(0);" class="easyui-linkbutton js-control-cancel" data-options="iconCls:'icon-cancel'">取消</a>
+    </div>
+</div>
+<script type="text/javascript">
+    $(function () {
+        var $searchDialog = $('#js-search-dialog');
+        $('.js-control-search').bind('click', function () {
+            $searchDialog.dialog({
+                title : '筛选条件',
+                iconCls : 'icon-search'
+            });
+        });
+
+        $('#js-search-button').find('.js-control-ok').unbind('click.action').bind('click.action' ,function () {
+            $('.js-list-table').datagrid('load', $('#searchForm').form('getData'));
+            $searchDialog.dialog('close');
+        });
+        $('#js-search-button').find('.js-control-cancel').unbind('click.action').bind('click.action' ,function () {
+            $searchDialog.dialog('close');
+        });
+    });
+</script>
 [#include "../public/footer.htm"]
