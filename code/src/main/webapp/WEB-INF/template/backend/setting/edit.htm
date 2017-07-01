@@ -9,7 +9,7 @@
             <li>
                 <a href="${_base_.url('index')}">参数设置</a>
             </li>
-            <li class="active">添加参数</li>
+            <li class="active">[#if empty(info.type)]信息添加[#else]信息修改[/#if]</li>
         </ul>
     </div>
     <div class="page-content">
@@ -54,11 +54,9 @@
                     </div>
                     <div class="form-group">
                         <label class="col-sm-3 control-label no-padding-right"> 操作者 </label>
-                        <div class="col-sm-9">
-                            <span>
-                            [#if !empty(info.update_uid_info)][${info.update_uid_info.username}]${info.update_uid_info.name}[/#if]
+                        <div class="col-sm-9 padding-top-8">
+                            [#if !empty(info.update_uid_info)][${info.update_uid_info.username}]${info.update_uid_info.name}[#else]无[/#if]
                             [#if !empty(info.update_time)](${millisToDateTime(info.update_time)})[/#if]
-                            </span>
                         </div>
                     </div>
                     <div class="clearfix form-actions">
