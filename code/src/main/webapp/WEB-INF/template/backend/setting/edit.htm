@@ -55,9 +55,10 @@
                     <div class="form-group">
                         <label class="col-sm-3 control-label no-padding-right"> 操作者 </label>
                         <div class="col-sm-9">
+                            <span>
                             [#if !empty(info.update_uid_info)][${info.update_uid_info.username}]${info.update_uid_info.name}[/#if]
                             [#if !empty(info.update_time)](${millisToDateTime(info.update_time)})[/#if]
-                            <input name="name" value="${info.type!''}" type="text" placeholder="参数类型" class="col-xs-10 col-sm-5">
+                            </span>
                         </div>
                     </div>
                     <div class="clearfix form-actions">
