@@ -67,6 +67,7 @@ public class RoleController extends RbacController {
 		Map<String, Object> data = params;
 		data.put("name", name);
 		data.put("sort", DPUtil.parseInt(getParam("sort")));
+		data.put("status", DPUtil.parseInt(getParam("status")));
 		data.put("update_uid", 0);
 		data.put("update_time", time);
 		int result = -1;
