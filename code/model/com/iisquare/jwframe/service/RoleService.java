@@ -49,7 +49,7 @@ public class RoleService extends ServiceBase {
 			params.put(":name", "%" + name + "%");
 		}
 		Object status = map.get("status");
-		if(!DPUtil.empty(status)) {
+		if(null != status && !"".equals(status)) {
 			condition.append(" and status = :status");
 			params.put(":status", status);
 		}
