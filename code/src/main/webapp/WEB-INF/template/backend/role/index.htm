@@ -48,7 +48,7 @@ $(function () {
             }},
             {field:'operate',title:'操作',formatter:function (value, row, index) {
                 var html = [];
-                html.push('<a href="${_base_.url("edit")}?ids[]=', row.id,
+                html.push('<a href="${_base_.url("edit")}?id=', row.id,
                         '" class="page-table-button" data-options="iconCls:\'icon-edit\'">修改</a>',
                         '<a href="${_base_.url("delete")}?ids[]=', row.id,
                         '" class="page-table-button js-delete-confirm" data-options="iconCls:\'icon-remove\'">删除</a>');

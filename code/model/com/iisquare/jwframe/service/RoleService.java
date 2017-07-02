@@ -84,6 +84,7 @@ public class RoleService extends ServiceBase {
 	}
 	
 	public int insert(Map<String, Object> data) {
+		if(DPUtil.empty(data.get("id"))) data.remove("id");
 		RoleDao dao = webApplicationContext.getBean(RoleDao.class);
 		return dao.insert(data).intValue();
 	}
