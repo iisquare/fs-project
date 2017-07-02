@@ -12,7 +12,6 @@ import org.springframework.web.context.WebApplicationContext;
 
 import com.iisquare.jwframe.Configuration;
 import com.iisquare.jwframe.dao.RoleDao;
-import com.iisquare.jwframe.dao.SettingDao;
 import com.iisquare.jwframe.dao.UserDao;
 import com.iisquare.jwframe.mvc.ServiceBase;
 import com.iisquare.jwframe.utils.DPUtil;
@@ -79,65 +78,19 @@ public class RoleService extends ServiceBase {
 		return DPUtil.buildMap(new String[]{"total", "rows"}, new Object[]{total, rows});
 	}
 	
-	public boolean exists(String type, String key) {
-		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		Number result = settingDao.select("content")
-				.where("type=:type and parameter=:parameter", ":type", type, ":parameter", key).count();
-		return null != result && result.intValue() > 0;
+	public Map<String, Object> getInfo(Object id) {
+		RoleDao dao = webApplicationContext.getBean(RoleDao.class);
+		return dao.where("id = :id", ":id", id).one();
 	}
 	
-	public boolean setProperty(String type, String key, String value) {
-		if(null == type) type = "system";
-		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		Number result;
-		if(exists(type, key)) {
-			Map<String, Object> data = new HashMap<>();
-			data.put("content", value);
-			result = settingDao.where("type=:type and parameter=:parameter", ":type", type, ":parameter", key).update(data);
-		} else {
-			Map<String, Object> data = new HashMap<>();
-			data.put("type", type);
-			data.put("parameter", key);
-			data.put("content", value);
-			result = settingDao.insert(data);
-		}
-		return null != result;
+	public int insert(Map<String, Object> data) {
+		RoleDao dao = webApplicationContext.getBean(RoleDao.class);
+		return dao.insert(data).intValue();
 	}
 	
-	public String getProperty(String type, String key, String defaultValue) {
-		if(null == type) type = "system";
-		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		Map<String, Object> info = settingDao.select("content")
-				.where("type=:type and parameter=:parameter", ":type", type, ":parameter", key).one();
-		if(null == info) return defaultValue;
-		Object value = info.get("content");
-		if(null == value) return defaultValue;
-		return value.toString();
+	public int update(Map<String, Object> data) {
+		RoleDao dao = webApplicationContext.getBean(RoleDao.class);
+		return dao.where("id = :id", ":id", data.get("id")).update(data).intValue();
 	}
 	
-	public boolean insert(Map<String, Object> data) {
-		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		return null != settingDao.insert(data);
-	}
-	
-	public boolean update(Map<String, Object> data) {
-		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		return null != settingDao.where("type=:type and parameter=:parameter",
-			":type", data.get("type"), ":parameter", data.get("parameter")).update(data);
-	}
-	
-	public boolean save(Map<String, Object> data) {
-		if(exists(DPUtil.parseString(data.get("type")), DPUtil.parseString(data.get("parameter")))) {
-			return insert(data);
-		} else {
-			return update(data);
-		}
-	}
-	
-	public Map<String, Object> getInfo(String type, String key) {
-		if(null == type || null == key) return null;
-		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		return settingDao.where("type=:type and parameter=:parameter", ":type", type, ":parameter", key).one();
-	}
-
 }

@@ -47,36 +47,39 @@ public class RoleController extends RbacController {
 	}
 	
 	public Object editAction() throws Exception {
-		String type = getParam("type");
-		String parameter = getParam("parameter");
+		Integer id = ValidateUtil.filterInteger(getParam("id"), true, 0, null, null);
 		Map<String, Object> info;
-		if(null == type || null == parameter) {
+		if(null == id) {
 			info = new HashMap<>();
 		} else {
-			info = roleService.getInfo(type, parameter);
+			info = roleService.getInfo(id);
 			if(null == info) return displayInfo(404, null, null);
 		}
 		assign("info", info);
+		assign("statusMap", roleService.getStatusMap());
 		return displayTemplate();
 	}
 	
 	public Object saveAction() throws Exception {
-		String type = DPUtil.trim(getParam("type"));
-		if(DPUtil.empty(type)) return displayMessage(10001, "类型不能为空", null);
-		String parameter = DPUtil.trim(getParam("parameter"));
-		if(DPUtil.empty(parameter)) return displayMessage(10002, "参数名不能为空", null);
+		String name = DPUtil.trim(getParam("name"));
+		if(DPUtil.empty(name)) return displayMessage(10001, "名称不能为空", null);
+		long time = System.currentTimeMillis();
 		Map<String, Object> data = params;
-		data.put("type", type);
-		data.put("parameter", parameter);
+		data.put("name", name);
 		data.put("sort", DPUtil.parseInt(getParam("sort")));
 		data.put("update_uid", 0);
-		data.put("update_time", System.currentTimeMillis());
-		if(roleService.exists(type, parameter)) {
-			if(!roleService.update(data)) return displayMessage(500, "修改失败", null);
+		data.put("update_time", time);
+		int result = -1;
+		if(DPUtil.empty(getParam("id"))) {
+			data.put("create_uid", 0);
+			data.put("create_time", time);
+			result = roleService.insert(data);
+			if(1 > result) return displayMessage(500, "添加失败", null);
 		} else {
-			if(!roleService.insert(data)) return displayMessage(500, "添加失败", null);
+			result = roleService.update(data);
+			if(0 > result) return displayMessage(500, "修改失败", null);
 		}
-		return displayMessage(0, null, null);
+		return displayMessage(0, null, result);
 	}
 	
 }
