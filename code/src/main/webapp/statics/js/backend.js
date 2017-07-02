@@ -215,6 +215,9 @@ $(function () {
             return false;
         });
     });
+    $(document).on('click', '.js-delete-confirm', function () {
+        return window.confirm('确定要删除吗？');
+    });
     if($pageContentFull.length < 1) return;
     $window.on('resize', function () {
         $pageContentFull.height($window.height()

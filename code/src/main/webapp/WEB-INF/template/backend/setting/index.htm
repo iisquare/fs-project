@@ -48,7 +48,7 @@ $(function () {
                 html.push('<a href="${_base_.url("edit")}?type=', row.type, '&parameter=', row.parameter,
                         '" class="page-table-button" data-options="iconCls:\'icon-edit\'">修改</a>',
                         '<a href="${_base_.url("delete")}?type=', row.type, '&parameter=', row.parameter,
-                        '" class="page-table-button" data-options="iconCls:\'icon-remove\'">删除</a>');
+                        '" class="page-table-button js-delete-confirm" data-options="iconCls:\'icon-remove\'">删除</a>');
                 return html.join('');
             }}
         ]],
