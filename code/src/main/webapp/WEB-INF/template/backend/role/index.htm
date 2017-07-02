@@ -6,7 +6,7 @@
                 <i class="ace-icon fa fa-home home-icon"></i>
                 <a href="${webUrl}/">主页</a>
             </li>
-            <li class="active">参数设置</li>
+            <li class="active">角色管理</li>
         </ul>
     </div>
     <div class="page-content-full">
@@ -30,13 +30,16 @@ $(function () {
         nowrap : true,
         singleSelect : true,
         columns:[[
-            {field:'type',title:'类型'},
-            {field:'parameter',title:'参数名'},
+            {field:'id',title:'ID'},
             {field:'name',title:'名称'},
-            {field:'content',title:'参数值'},
+            {field:'status_text',title:'状态'},
             {field:'sort',title:'排序'},
             {field:'description',title:'描述'},
-            {field:'update_uid',title:'操作者',formatter:function (value, row, index) {
+            {field:'create_uid',title:'创建者',formatter:function (value, row, index) {
+                if(!row.create_uid_info) return '';
+                return '[' + row.create_uid_info.username + ']' + row.create_uid_info.name;
+            }},
+            {field:'update_uid',title:'修改者',formatter:function (value, row, index) {
                 if(!row.update_uid_info) return '';
                 return '[' + row.update_uid_info.username + ']' + row.update_uid_info.name;
             }},
@@ -45,9 +48,9 @@ $(function () {
             }},
             {field:'operate',title:'操作',formatter:function (value, row, index) {
                 var html = [];
-                html.push('<a href="${_base_.url("edit")}?type=', row.type, '&parameter=', row.parameter,
+                html.push('<a href="${_base_.url("edit")}?id=', row.id,
                         '" class="page-table-button" data-options="iconCls:\'icon-edit\'">修改</a>',
-                        '<a href="${_base_.url("delete")}?type=', row.type, '&parameter=', row.parameter,
+                        '<a href="${_base_.url("delete")}?id=', row.id,
                         '" class="page-table-button js-delete-confirm" data-options="iconCls:\'icon-remove\'">删除</a>');
                 return html.join('');
             }}
@@ -60,7 +63,7 @@ $(function () {
 });
 </script>
 <div class="hidden">
-    <div id="js-search-dialog" style="width:255px;height:298px" data-options="buttons:'#js-search-button',modal:true,resizable:true">
+    <div id="js-search-dialog" style="width:255px;height:235px" data-options="buttons:'#js-search-button',modal:true,resizable:true">
         <form id="searchForm" method="post" action="${_base_.url('index')}">
             <table align="center" class="table-horizontal tr-height25">
                 <tr>
@@ -72,20 +75,16 @@ $(function () {
                     <td><input class="easyui-datetimebox width150" type="text" name="timeEnd" value="${escapeHtml(qargs.timeEnd)}" /></td>
                 </tr>
                 <tr>
-                    <th>类型</th>
-                    <td><input class="easyui-textbox width150" type="text" name="type" value="${escapeHtml(qargs.type)}" /></td>
-                </tr>
-                <tr>
-                    <th>参数名</th>
-                    <td><input class="easyui-textbox width150" type="text" name="parameter" value="${escapeHtml(qargs.parameter)}" /></td>
-                </tr>
-                <tr>
                     <th>名称</th>
                     <td><input class="easyui-textbox width150" type="text" name="name" value="${escapeHtml(qargs.name)}" /></td>
                 </tr>
                 <tr>
-                    <th>参数值</th>
-                    <td><input class="easyui-textbox width150" type="text" name="content" value="${escapeHtml(qargs.content)}" /></td>
+                    <th>状态</th>
+                    <th>
+                        <select class="easyui-combobox" name="status" data-options="required:true,editable:false">
+                            [@getMapOption map=statusMap default=qargs.status!"" tips="请选择记录状态" /]
+                        </select>
+                    </td>
                 </tr>
                 <tr>
                     <th>描述</th>
