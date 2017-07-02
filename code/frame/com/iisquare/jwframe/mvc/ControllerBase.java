@@ -1,6 +1,7 @@
 package com.iisquare.jwframe.mvc;
 
 import java.io.PrintWriter;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -27,7 +28,7 @@ public abstract class ControllerBase {
 	protected HttpServletRequest request;
 	protected HttpServletResponse response;
 
-	protected Map<String, String[]> params; // 请求参数
+	protected Map<String, Object> params; // 请求参数
 	protected Map<String, Object> assign; // 视图数据Map对象
 
 	public WebApplicationContext getWebApplicationContext() {
@@ -110,11 +111,11 @@ public abstract class ControllerBase {
 		this.response = response;
 	}
 
-	public Map<String, String[]> getParams() {
+	public Map<String, Object> getParams() {
 		return params;
 	}
 
-	public void setParams(Map<String, String[]> params) {
+	public void setParams(Map<String, Object> params) {
 		this.params = params;
 	}
 
@@ -134,6 +135,10 @@ public abstract class ControllerBase {
 		return actionVal;
 	}
 
+	protected boolean hasParam(String key) {
+		return params.containsKey(key);
+	}
+	
 	protected String getParam(String key) {
 		return getParam(key, null);
 	}
@@ -141,9 +146,28 @@ public abstract class ControllerBase {
 	protected String getParam(String key, String defaultValue) {
 		if (null == key) return null;
 		if (!params.containsKey(key)) return defaultValue;
-		String[] values = params.get(key);
-		if (null == values || 0 == values.length) return null;
-		return values[0];
+		Object value = params.get(key);
+		if (null == value) return null;
+		return value.toString();
+	}
+	
+	/**
+	 * 获取请求参数数组
+	 */
+	protected String[] getArray(String key) {
+		Object value = params.get(key);
+		if(null == value || !value.getClass().isArray()) return new String[]{};
+		return (String[]) value;
+	}
+	
+	/**
+	 * 获取请求参数Map
+	 */
+	@SuppressWarnings("unchecked")
+	protected Map<String, Object> getMap(String key) {
+		Object value = params.get(key);
+		if(null == value || !(value instanceof Map)) return new LinkedHashMap<String, Object>();
+		return (Map<String, Object>) value;
 	}
 
 	/**

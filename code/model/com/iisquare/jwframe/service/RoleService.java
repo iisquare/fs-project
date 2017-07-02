@@ -34,26 +34,11 @@ public class RoleService extends ServiceBase {
 		return map;
 	}
 	
-	public int delete(Map<String, Object> map) {
-		StringBuilder condition = new StringBuilder("1=1");
-		Map<String, Object> params = new HashMap<String, Object>();
-		Object type = map.get("type");
-		if(!DPUtil.empty(type)) {
-			condition.append(" and type = :type");
-			params.put(":type", type);
-		}
-		Object parameter = map.get("parameter");
-		if(!DPUtil.empty(parameter)) {
-			condition.append(" and parameter = :parameter");
-			params.put(":parameter", parameter);
-		}
-		Object name = map.get("name");
-		if(!DPUtil.empty(name)) {
-			condition.append(" and name = :name");
-			params.put(":name", name);
-		}
-		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		return settingDao.where(condition.toString(), params).delete().intValue();
+	public int delete(Object ...ids) {
+		if(DPUtil.empty(ids)) return -1;
+		RoleDao dao = webApplicationContext.getBean(RoleDao.class);
+		return dao.where("id in ("
+			+ DPUtil.implode(",", DPUtil.arrayToIntegerArray(ids)) + ")", new HashMap<>()).delete().intValue();
 	}
 	
 	public Map<Object, Object> search(Map<String, Object> map, String orderBy, int page, int pageSize) {

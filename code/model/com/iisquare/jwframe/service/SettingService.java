@@ -43,8 +43,8 @@ public class SettingService extends ServiceBase {
 			condition.append(" and name = :name");
 			params.put(":name", name);
 		}
-		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		return settingDao.where(condition.toString(), params).delete().intValue();
+		SettingDao dao = webApplicationContext.getBean(SettingDao.class);
+		return dao.where(condition.toString(), params).delete().intValue();
 	}
 	
 	public Map<Object, Object> search(Map<String, Object> map, String orderBy, int page, int pageSize) {
@@ -85,9 +85,9 @@ public class SettingService extends ServiceBase {
 			condition.append(" and update_time <= :timeEnd");
 			params.put(":timeEnd", DPUtil.dateTimeToMillis(timeEnd, configuration.getDateTimeFormat()));
 		}
-		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		int total = settingDao.where(condition.toString(), params).count().intValue();
-		List<Map<String, Object>> rows = settingDao.orderBy(orderBy).page(page, pageSize).all();
+		SettingDao dao = webApplicationContext.getBean(SettingDao.class);
+		int total = dao.where(condition.toString(), params).count().intValue();
+		List<Map<String, Object>> rows = dao.orderBy(orderBy).page(page, pageSize).all();
 		UserDao userDao = webApplicationContext.getBean(UserDao.class);
 		rows = ServiceUtil.fillRelations(rows, userDao,
 				new String[]{"update_uid"}, new String[]{"id", "username", "name"}, null);
@@ -95,34 +95,34 @@ public class SettingService extends ServiceBase {
 	}
 	
 	public boolean exists(String type, String key) {
-		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		Number result = settingDao.select("content")
+		SettingDao dao = webApplicationContext.getBean(SettingDao.class);
+		Number result = dao.select("content")
 				.where("type=:type and parameter=:parameter", ":type", type, ":parameter", key).count();
 		return null != result && result.intValue() > 0;
 	}
 	
 	public boolean setProperty(String type, String key, String value) {
 		if(null == type) type = "system";
-		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
+		SettingDao dao = webApplicationContext.getBean(SettingDao.class);
 		Number result;
 		if(exists(type, key)) {
 			Map<String, Object> data = new HashMap<>();
 			data.put("content", value);
-			result = settingDao.where("type=:type and parameter=:parameter", ":type", type, ":parameter", key).update(data);
+			result = dao.where("type=:type and parameter=:parameter", ":type", type, ":parameter", key).update(data);
 		} else {
 			Map<String, Object> data = new HashMap<>();
 			data.put("type", type);
 			data.put("parameter", key);
 			data.put("content", value);
-			result = settingDao.insert(data);
+			result = dao.insert(data);
 		}
 		return null != result;
 	}
 	
 	public String getProperty(String type, String key, String defaultValue) {
 		if(null == type) type = "system";
-		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		Map<String, Object> info = settingDao.select("content")
+		SettingDao dao = webApplicationContext.getBean(SettingDao.class);
+		Map<String, Object> info = dao.select("content")
 				.where("type=:type and parameter=:parameter", ":type", type, ":parameter", key).one();
 		if(null == info) return defaultValue;
 		Object value = info.get("content");
@@ -131,13 +131,13 @@ public class SettingService extends ServiceBase {
 	}
 	
 	public boolean insert(Map<String, Object> data) {
-		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		return null != settingDao.insert(data);
+		SettingDao dao = webApplicationContext.getBean(SettingDao.class);
+		return null != dao.insert(data);
 	}
 	
 	public boolean update(Map<String, Object> data) {
-		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		return null != settingDao.where("type=:type and parameter=:parameter",
+		SettingDao dao = webApplicationContext.getBean(SettingDao.class);
+		return null != dao.where("type=:type and parameter=:parameter",
 			":type", data.get("type"), ":parameter", data.get("parameter")).update(data);
 	}
 	
@@ -151,8 +151,8 @@ public class SettingService extends ServiceBase {
 	
 	public Map<String, Object> getInfo(String type, String key) {
 		if(null == type || null == key) return null;
-		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		return settingDao.where("type=:type and parameter=:parameter", ":type", type, ":parameter", key).one();
+		SettingDao dao = webApplicationContext.getBean(SettingDao.class);
+		return dao.where("type=:type and parameter=:parameter", ":type", type, ":parameter", key).one();
 	}
 	
 }

@@ -21,7 +21,7 @@ public class RoleController extends RbacController {
 	protected RoleService roleService;
 	
 	public Object indexAction () throws Exception {
-		assign("qargs", getParameter());
+		assign("qargs", params);
 		assign("statusMap", roleService.getStatusMap());
 		return displayTemplate();
 	}
@@ -29,17 +29,16 @@ public class RoleController extends RbacController {
 	public Object listAction () throws Exception {
 		int page = ValidateUtil.filterInteger(getParam("page"), true, 0, null, 1);
 		int pageSize = ValidateUtil.filterInteger(getParam("rows"), true, 0, 500, 30);
-		Map<Object, Object> map = roleService.search(getParameter(), "sort asc, update_time desc", page, pageSize);
+		Map<Object, Object> map = roleService.search(params, "sort asc, update_time desc", page, pageSize);
 		assign("total", map.get("total"));
 		assign("rows", DPUtil.collectionToArray((Collection<?>) map.get("rows")));
 		return displayJSON();
 	}
 	
 	public Object deleteAction() throws Exception {
-		if(!params.containsKey("type") || !params.containsKey("parameter")) {
-			return displayInfo(10001, "参数异常", url("index"));
-		}
-		int result = settingService.delete(getParameter());
+		Object[] idArray = getArray("ids");
+		int result = roleService.delete(idArray);
+		if(-1 == result) return displayInfo(10001, "参数异常", null);
 		if(result >= 0) {
 			return displayInfo(0, null, url("index"));
 		} else {
@@ -54,7 +53,7 @@ public class RoleController extends RbacController {
 		if(null == type || null == parameter) {
 			info = new HashMap<>();
 		} else {
-			info = settingService.getInfo(type, parameter);
+			info = roleService.getInfo(type, parameter);
 			if(null == info) return displayInfo(404, null, null);
 		}
 		assign("info", info);
@@ -66,16 +65,16 @@ public class RoleController extends RbacController {
 		if(DPUtil.empty(type)) return displayMessage(10001, "类型不能为空", null);
 		String parameter = DPUtil.trim(getParam("parameter"));
 		if(DPUtil.empty(parameter)) return displayMessage(10002, "参数名不能为空", null);
-		Map<String, Object> data = getParameter();
+		Map<String, Object> data = params;
 		data.put("type", type);
 		data.put("parameter", parameter);
 		data.put("sort", DPUtil.parseInt(getParam("sort")));
 		data.put("update_uid", 0);
 		data.put("update_time", System.currentTimeMillis());
-		if(settingService.exists(type, parameter)) {
-			if(!settingService.update(data)) return displayMessage(500, "修改失败", null);
+		if(roleService.exists(type, parameter)) {
+			if(!roleService.update(data)) return displayMessage(500, "修改失败", null);
 		} else {
-			if(!settingService.insert(data)) return displayMessage(500, "添加失败", null);
+			if(!roleService.insert(data)) return displayMessage(500, "添加失败", null);
 		}
 		return displayMessage(0, null, null);
 	}
