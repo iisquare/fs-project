@@ -60,47 +60,43 @@ $(function () {
 });
 </script>
 <div class="hidden">
-    <div id="js-search-dialog" style="width:255px;height:312px" data-options="buttons:'#js-search-button',modal:true,resizable:true">
+    <div id="js-search-dialog" style="width:255px;height:298px" data-options="buttons:'#js-search-button',modal:true,resizable:true">
         <form id="searchForm" method="post" action="${_base_.url('index')}">
             <table align="center" class="table-horizontal tr-height25">
                 <tr>
                     <th>开始时间</th>
-                    <td><input class="easyui-datetimebox width150" type="text" name="timeStart" value="" /></td>
+                    <td><input class="easyui-datetimebox width150" type="text" name="timeStart" value="${escapeHtml(qargs.timeStart)}" /></td>
                 </tr>
                 <tr>
                     <th>结束时间</th>
-                    <td><input class="easyui-datetimebox width150" type="text" name="timeEnd" value="" /></td>
-                </tr>
-                <tr>
-                    <th>名称</th>
-                    <td><input class="easyui-textbox width150" type="text" name="name" value="" /></td>
+                    <td><input class="easyui-datetimebox width150" type="text" name="timeEnd" value="${escapeHtml(qargs.timeEnd)}" /></td>
                 </tr>
                 <tr>
                     <th>类型</th>
-                    <td><input class="easyui-textbox width150" type="text" name="type" value="" /></td>
+                    <td><input class="easyui-textbox width150" type="text" name="type" value="${escapeHtml(qargs.type)}" /></td>
                 </tr>
                 <tr>
-                    <th>内容</th>
-                    <td><input class="easyui-textbox width150" type="text" name="content" value="" /></td>
+                    <th>参数名</th>
+                    <td><input class="easyui-textbox width150" type="text" name="parameter" value="${escapeHtml(qargs.parameter)}" /></td>
                 </tr>
                 <tr>
-                    <th>备注</th>
-                    <td><input class="easyui-textbox width150" type="text" name="remark" value="" /></td>
+                    <th>名称</th>
+                    <td><input class="easyui-textbox width150" type="text" name="name" value="${escapeHtml(qargs.name)}" /></td>
                 </tr>
                 <tr>
-                    <th>操作账号</th>
-                    <td><input class="easyui-textbox width150" type="text" name="serial" value="" /></td>
+                    <th>参数值</th>
+                    <td><input class="easyui-textbox width150" type="text" name="content" value="${escapeHtml(qargs.content)}" /></td>
                 </tr>
                 <tr>
-                    <th>操作IP</th>
-                    <td><input class="easyui-textbox width150" type="text" name="operateIp" value="" /></td>
+                    <th>描述</th>
+                    <td><input class="easyui-textbox width150" type="text" name="description" value="${escapeHtml(qargs.description)}" /></td>
                 </tr>
             </table>
         </form>
     </div>
     <div id="js-search-button">
         <a href="javascript:void(0);" class="easyui-linkbutton js-control-ok" data-options="iconCls:'icon-search'">搜索</a>
-        <a href="javascript:void(0);" class="easyui-linkbutton js-control-cancel" data-options="iconCls:'icon-cancel'">取消</a>
+        <a href="javascript:void(0);" class="easyui-linkbutton js-control-undo" data-options="iconCls:'icon-undo'">重置</a>
     </div>
 </div>
 <script type="text/javascript">
@@ -112,13 +108,12 @@ $(function () {
                 iconCls : 'icon-search'
             });
         });
-
         $('#js-search-button').find('.js-control-ok').unbind('click.action').bind('click.action' ,function () {
-            $('.js-list-table').datagrid('load', $('#searchForm').form('getData'));
+            $('.page-table-list').datagrid('load', $('#searchForm').form('getData'));
             $searchDialog.dialog('close');
         });
-        $('#js-search-button').find('.js-control-cancel').unbind('click.action').bind('click.action' ,function () {
-            $searchDialog.dialog('close');
+        $('#js-search-button').find('.js-control-undo').unbind('click.action').bind('click.action' ,function () {
+            $('#searchForm').form('reset');
         });
     });
 </script>

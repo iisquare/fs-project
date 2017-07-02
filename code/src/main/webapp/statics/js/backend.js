@@ -173,6 +173,29 @@ function Web_parseMessage(json) {
     return json;
 }
 /**
+ * 拓展easyUI.form组件
+ */
+$.extend($.fn.form.methods, {
+    /**
+     * 获取表单数据
+     * $('#id').form('getData');
+     */
+    getData: function(jq, params){
+        var formArray = jq.serializeArray();
+        var oRet = {};
+        for (var i in formArray) {
+            if($.type(oRet[formArray[i].name]) == 'undefined') {
+                oRet[formArray[i].name] = formArray[i].value;
+            } else if($.type(oRet[formArray[i].name]) == 'array'){
+                oRet[formArray[i].name].push(formArray[i].value);
+            } else {
+                oRet[formArray[i].name] = [oRet[formArray[i].name], formArray[i].value];
+            }
+        }
+        return oRet;
+    }
+});
+/**
  * 界面通用处理
  */
 $(function () {

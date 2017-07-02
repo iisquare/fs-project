@@ -16,6 +16,7 @@ import com.iisquare.jwframe.utils.ValidateUtil;
 public class SettingController extends RbacController {
 
 	public Object indexAction () throws Exception {
+		assign("qargs", getParameter());
 		return displayTemplate();
 	}
 	

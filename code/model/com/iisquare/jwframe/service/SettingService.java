@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.WebApplicationContext;
 
+import com.iisquare.jwframe.Configuration;
 import com.iisquare.jwframe.dao.SettingDao;
 import com.iisquare.jwframe.dao.UserDao;
 import com.iisquare.jwframe.mvc.ServiceBase;
@@ -21,59 +22,71 @@ public class SettingService extends ServiceBase {
 	
 	@Autowired
 	protected WebApplicationContext webApplicationContext;
+	@Autowired
+	protected Configuration configuration;
 
 	public int delete(Map<String, Object> map) {
-		StringBuilder where = new StringBuilder("1=1");
+		StringBuilder condition = new StringBuilder("1=1");
 		Map<String, Object> params = new HashMap<String, Object>();
 		Object type = map.get("type");
 		if(!DPUtil.empty(type)) {
-			where.append(" and type = :type");
+			condition.append(" and type = :type");
 			params.put(":type", type);
 		}
 		Object parameter = map.get("parameter");
 		if(!DPUtil.empty(parameter)) {
-			where.append(" and parameter = :parameter");
+			condition.append(" and parameter = :parameter");
 			params.put(":parameter", parameter);
 		}
 		Object name = map.get("name");
 		if(!DPUtil.empty(name)) {
-			where.append(" and name = :name");
+			condition.append(" and name = :name");
 			params.put(":name", name);
 		}
 		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		return settingDao.where(where.toString(), params).delete().intValue();
+		return settingDao.where(condition.toString(), params).delete().intValue();
 	}
 	
 	public Map<Object, Object> search(Map<String, Object> map, String orderBy, int page, int pageSize) {
-		StringBuilder where = new StringBuilder("1=1");
+		StringBuilder condition = new StringBuilder("1=1");
 		Map<String, Object> params = new HashMap<String, Object>();
 		Object type = map.get("type");
 		if(!DPUtil.empty(type)) {
-			where.append(" and type = :type");
+			condition.append(" and type = :type");
 			params.put(":type", type);
 		}
 		Object parameter = map.get("parameter");
 		if(!DPUtil.empty(parameter)) {
-			where.append(" and parameter like :parameter");
+			condition.append(" and parameter like :parameter");
 			params.put(":parameter", "%" + parameter + "%");
 		}
 		Object name = map.get("name");
 		if(!DPUtil.empty(name)) {
-			where.append(" and name like :name");
+			condition.append(" and name like :name");
 			params.put(":name", "%" + name + "%");
 		}
 		Object content = map.get("content");
 		if(!DPUtil.empty(content)) {
-			where.append(" and content like :content");
+			condition.append(" and content like :content");
 			params.put(":content", "%" + content + "%");
 		}
 		Object description = map.get("description");
 		if(!DPUtil.empty(description)) {
-			where.append(" and description like :description");
+			condition.append(" and description like :description");
 			params.put(":description", "%" + description + "%");
 		}
+		Object timeStart = map.get("timeStart");
+		if(!DPUtil.empty(timeStart)) {
+			condition.append(" and update_time >= :timeStart");
+			params.put(":timeStart", DPUtil.dateTimeToMillis(timeStart, configuration.getDateTimeFormat()));
+		}
+		Object timeEnd = map.get("timeEnd");
+		if(!DPUtil.empty(timeEnd)) {
+			condition.append(" and update_time <= :timeEnd");
+			params.put(":timeEnd", DPUtil.dateTimeToMillis(timeEnd, configuration.getDateTimeFormat()));
+		}
 		SettingDao settingDao = webApplicationContext.getBean(SettingDao.class);
-		int total = settingDao.where(where.toString(), params).count().intValue();
+		int total = settingDao.where(condition.toString(), params).count().intValue();
 		List<Map<String, Object>> rows = settingDao.orderBy(orderBy).page(page, pageSize).all();
 		UserDao userDao = webApplicationContext.getBean(UserDao.class);
 		rows = ServiceUtil.fillRelations(rows, userDao,

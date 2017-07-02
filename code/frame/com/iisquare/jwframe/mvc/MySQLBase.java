@@ -353,7 +353,6 @@ public abstract class MySQLBase<T> extends DaoBase {
 				statement.setObject(index, param);
 			}
 		}
-		pendingParams = new LinkedHashMap<>();
 	}
 
 	private boolean execute(int retry) {
