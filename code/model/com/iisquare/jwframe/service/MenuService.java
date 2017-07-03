@@ -17,6 +17,7 @@ import org.springframework.web.context.WebApplicationContext;
 import com.iisquare.jwframe.dao.MenuDao;
 import com.iisquare.jwframe.mvc.ServiceBase;
 import com.iisquare.jwframe.utils.DPUtil;
+import com.iisquare.jwframe.utils.ServiceUtil;
 
 @Service
 @Scope("singleton")
@@ -76,7 +77,7 @@ public class MenuService extends ServiceBase {
 			value.put("children", childrenList);
 			list.add(value);
 		}
-		return list;
+		return ServiceUtil.fillFields(list, new String[]{"status"}, new Map<?, ?>[]{getStatusMap()}, null);
 	}
 	
 	/**

@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50624
 File Encoding         : 65001
 
-Date: 2017-07-03 14:26:48
+Date: 2017-07-03 15:01:00
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -36,7 +36,7 @@ CREATE TABLE `t_menu` (
   `update_uid` int(11) NOT NULL DEFAULT '0' COMMENT '修改者',
   `update_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '修改时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COMMENT='菜单信息表';
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8 COMMENT='菜单信息表';
 
 -- ----------------------------
 -- Records of t_menu
@@ -51,6 +51,8 @@ INSERT INTO `t_menu` VALUES ('7', '添加用户', '2', 'backend', '/user/edit/',
 INSERT INTO `t_menu` VALUES ('8', '用户列表', '2', 'backend', '/user/index/', '', '', '', '1', '0', '', '0', '0', '0', '0');
 INSERT INTO `t_menu` VALUES ('9', '添加菜单', '4', 'backend', '/menu/edit/', '', '', '', '1', '0', '', '0', '0', '0', '0');
 INSERT INTO `t_menu` VALUES ('10', '菜单列表', '4', 'backend', '/menu/index/', '', '', '', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('12', '添加资源', '5', 'backend', '/resource/edit/', '', '', '', '1', '0', '', '0', '1499064520519', '0', '1499064520519');
+INSERT INTO `t_menu` VALUES ('13', '资源列表', '5', 'backend', '/resource/index/', '', '', '', '1', '0', '', '0', '1499064552744', '0', '1499064770069');
 
 -- ----------------------------
 -- Table structure for t_relation
