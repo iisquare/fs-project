@@ -1,0 +1,122 @@
+[#include "../public/header.htm"]
+<div class="main-content-inner">
+    <div class="breadcrumbs ace-save-state" id="breadcrumbs">
+        <ul class="breadcrumb">
+            <li>
+                <i class="ace-icon fa fa-home home-icon"></i>
+                <a href="${webUrl}/">主页</a>
+            </li>
+            <li>
+                <a href="${_base_.url('index')}">角色管理</a>
+            </li>
+            <li class="active">权限设置</li>
+        </ul>
+    </div>
+    <div class="page-content">
+        <div class="row">
+            <div class="col-xs-12">
+                <form id="submitForm" method="post" action="${_base_.url('save')}" class="form-horizontal" role="form">
+                    <input type="hidden" name="id" value="${info.id!''}">
+                    <div class="form-group">
+                        <div class="col-sm-6">
+                            <table class="js-list-table-resource"></table>
+                            <div id="toolbar-resource">权限</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <table class="js-list-table-menu"></table>
+                            <div id="toolbar-menu">菜单</div>
+                        </div>
+                    </div>
+                    <div class="clearfix form-actions">
+                        <div class="col-md-offset-3 col-md-9">
+                            <button class="btn btn-info" type="button"><i class="ace-icon fa fa-check bigger-110"></i> 提交 </button>
+                            &nbsp; &nbsp; &nbsp;
+                            <button class="btn" type="reset"><i class="ace-icon fa fa-undo bigger-110"></i> 重置 </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    $(function () {
+        $('.js-list-table-resource').treegrid({
+            url : '${_base_.url("resource", "list")}?no_refer=1',
+            idField : 'id',
+            treeField : 'name',
+            toolbar : '#toolbar-resource',
+            rownumbers : true,
+            fitcolumns : true,
+            fit : true,
+            nowrap : true,
+            singleSelect : true,
+            checkOnSelect : false,
+            selectOnCheck : false,
+            columns:[[
+                {field:'id',checkbox:true},
+                {field:'show_id',title:'ID',formatter:function (value, row, index) {
+                    return row.id;
+                }},
+                {field:'name',title:'名称'},
+                {field:'status_text',title:'状态'},
+                {field:'module',title:'模块'},
+                {field:'controller',title:'控制器'},
+                {field:'action',title:'方法'}
+            ]],
+            onLoadSuccess : function (data) {
+                var ids = '${resourceIds}'.split(',');
+                for (var key in ids) {
+                    if(!Web_empty(ids[key])) $(this).treegrid('checkRow', ids[key]);
+                }
+                $(this).treegrid('autoSizeColumn');
+            }
+        });
+        $('.js-list-table-menu').treegrid({
+            url : '${_base_.url("menu", "list")}',
+            idField : 'id',
+            treeField : 'name',
+            toolbar : '#toolbar-menu',
+            rownumbers : true,
+            fitcolumns : true,
+            fit : true,
+            nowrap : true,
+            singleSelect : true,
+            checkOnSelect : false,
+            selectOnCheck : false,
+            columns:[[
+                {field:'id',checkbox:true},
+                {field:'show_id',title:'ID',formatter:function (value, row, index) {
+                    return row.id;
+                }},
+                {field:'name',title:'名称'},
+                {field:'status_text',title:'状态'},
+                {field:'target_text',title:'打开方式'},
+                {field:'url',title:'地址'}
+            ]],
+            onLoadSuccess : function (data) {
+                var ids = '${menuIds}'.split(',');
+                for (var key in ids) {
+                    if(!Web_empty(ids[key])) $(this).treegrid('checkRow', ids[key]);
+                }
+                $(this).treegrid('autoSizeColumn');
+            }
+        });
+
+        $('#buttonOk').bind('click', function () {
+            $.post('${_base_.url("savePower")}', {
+                id : '${info.id}',
+                resourceIds : Web_getDatagridIdArray($('.js-list-table-resource'), 'checked'),
+                menuIds : Web_getDatagridIdArray($('.js-list-table-menu'), 'checked')
+            }, function (data) {
+                data = Web_parseMessage(data);
+                if(0 != data.status) {
+                    Web_alertInfo(data.message);
+                } else {
+                    Web_redirectPage('${_base_.url("layout")}');
+                }
+            });
+        });
+    });
+</script>
+[#include "../public/footer.htm"]

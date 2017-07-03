@@ -11,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import com.iisquare.jwframe.core.component.RbacController;
 import com.iisquare.jwframe.service.RoleService;
 import com.iisquare.jwframe.utils.DPUtil;
+import com.iisquare.jwframe.utils.ServletUtil;
 import com.iisquare.jwframe.utils.ValidateUtil;
 
 @Controller
@@ -19,6 +20,16 @@ public class RoleController extends RbacController {
 
 	@Autowired
 	protected RoleService roleService;
+	
+	public Object permitAction () throws Exception {
+		Integer id = ValidateUtil.filterInteger(getParam("id"), true, 0, null, null);
+		if(!ServletUtil.isAjax(request)) {
+			Map<String, Object> info = roleService.getInfo(id);
+			if(null == info) return displayInfo(404, null, null);
+			return displayTemplate();
+		}
+		return displayMessage(0, null, null);
+	}
 	
 	public Object indexAction () throws Exception {
 		assign("qargs", params);

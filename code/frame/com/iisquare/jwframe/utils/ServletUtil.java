@@ -22,11 +22,18 @@ public class ServletUtil {
 	public static final String regexParameterMapKey = "((?<!\\[)[^\\[\\]]+(?!\\])|(?<=\\[)[^\\[\\]]*(?=\\]))";
 	
 	/**
+	 * 判断是否为异步请求
+	 */
+	public static boolean isAjax(HttpServletRequest request) {
+		String characteristic = request.getHeader("X-Requested-With");
+		return null != characteristic && "XMLHttpRequest".equals(characteristic);
+	}
+	
+	/**
 	 * 解析ParameterMap，将中括号[]中的字符串转换为下标
 	 * 下标支持非中括号[]的任意字符，包括空格等
 	 * 若存在多个相同的下标（以中括号[]标识的数组除外），默认取最后一个下标对应的值
 	 * @param parameterMap 参数Map
-	 * @return
 	 */
 	public static Map<String, Object> parseParameterMap(Map<String, String[]> parameterMap) {
 		Map<String, Object> map = new LinkedHashMap<String, Object>();
@@ -44,7 +51,6 @@ public class ServletUtil {
 	 * @param valueArray 下标对应值
 	 * @param index 下标当前位置
 	 * @param length 处理深度
-	 * @return
 	 */
 	@SuppressWarnings("unchecked")
 	public static Map<String, Object> generateParameterMap(Map<String, Object> map,
@@ -153,7 +159,6 @@ public class ServletUtil {
 	/**
 	 * 获取项目物理路径
 	 * @param request
-	 * @return
 	 */
 	public static String getWebRoot(HttpServletRequest request) {
 		String webRoot = request.getSession().getServletContext().getRealPath("/");
@@ -164,7 +169,6 @@ public class ServletUtil {
 	 * 获取项目访问地址
 	 * @param request
 	 * @param bWithDomain 是否携带域名地址
-	 * @return
 	 */
 	public static String getWebUrl(HttpServletRequest request, boolean bWithDomain) {
 		StringBuilder sb = new StringBuilder();
@@ -181,7 +185,6 @@ public class ServletUtil {
 	 * @param request
 	 * @param bWithWebUrl 是否携带项目地址
 	 * @param bWithQuery 是否携带请求参数
-	 * @return
 	 */
 	public static String getFullUrl(HttpServletRequest request, boolean bWithWebUrl, boolean bWithQuery) {
 		String requestUrl = request.getRequestURL().toString();
@@ -196,7 +199,6 @@ public class ServletUtil {
 	/**
 	 * 获取目录分隔符
 	 * @param request
-	 * @return
 	 */
 	public static String getDirectorySeparator(HttpServletRequest request) {
 		String webRoot = getWebRoot(request);

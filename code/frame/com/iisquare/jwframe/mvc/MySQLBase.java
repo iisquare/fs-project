@@ -511,8 +511,7 @@ public abstract class MySQLBase<T> extends DaoBase {
 		List<Map<String, Object>> list = all();
 		this.offset = offset;
 		this.limit = limit;
-		if (null == list) return null;
-		if (list.isEmpty()) return new LinkedHashMap<>();
+		if (null == list || list.isEmpty()) return null;
 		return list.get(0);
 	}
 
