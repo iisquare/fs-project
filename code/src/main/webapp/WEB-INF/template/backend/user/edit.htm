@@ -1,0 +1,102 @@
+[#include "../public/header.htm"]
+<div class="main-content-inner">
+    <div class="breadcrumbs ace-save-state" id="breadcrumbs">
+        <ul class="breadcrumb">
+            <li>
+                <i class="ace-icon fa fa-home home-icon"></i>
+                <a href="${webUrl}/">主页</a>
+            </li>
+            <li>
+                <a href="${_base_.url('index')}">用户管理</a>
+            </li>
+            <li class="active">[#if empty(info.id)]信息添加[#else]信息修改[/#if]</li>
+        </ul>
+    </div>
+    <div class="page-content">
+        <div class="row">
+            <div class="col-xs-12">
+                <form id="submitForm" method="post" action="${_base_.url('save')}" class="form-horizontal" role="form">
+                    <input type="hidden" name="id" value="${info.id!''}">
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right"> 昵称 </label>
+                        <div class="col-sm-9">
+                            <input name="name" value="${info.name!''}" data-options="required:true" type="text" placeholder="用户昵称" class="col-xs-10 col-sm-5 easyui-validatebox">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right"> 账号 </label>
+                        <div class="col-sm-9">
+                            <input name="username" value="${info.username!''}" data-options="required:true" type="text" placeholder="登录账号" class="col-xs-10 col-sm-5 easyui-validatebox">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right"> 密码 </label>
+                        <div class="col-sm-9">
+                            <input name="password" value="" type="text" placeholder="登录密码，留空表示不修改或采用默认密码" class="col-xs-10 col-sm-5">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right"> 状态 </label>
+                        <div class="col-sm-9">
+                            <select class="col-xs-10 col-sm-5" name="status">
+                                [@getMapOption map=statusMap default=info.status!"" tips="请选择记录状态" /]
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right"> 排序 </label>
+                        <div class="col-sm-9">
+                            <input name="sort" value="${info.sort!''}" type="number" placeholder="排序值，从小到大">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right"> 描述 </label>
+                        <div class="col-sm-9">
+                            <textarea name="description" type="text" placeholder="简短介绍下该用户" class="col-xs-10 col-sm-5">${info.description!''}</textarea>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right"> 创建者 </label>
+                        <div class="col-sm-9 padding-top-8">
+                            [#if !empty(info.create_uid_info)][${info.create_uid_info.username}]${info.create_uid_info.name}[#else]无[/#if]
+                            [#if !empty(info.create_time)](${millisToDateTime(info.create_time)})[/#if]
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right"> 修改者 </label>
+                        <div class="col-sm-9 padding-top-8">
+                            [#if !empty(info.update_uid_info)][${info.update_uid_info.username}]${info.update_uid_info.name}[#else]无[/#if]
+                            [#if !empty(info.update_time)](${millisToDateTime(info.update_time)})[/#if]
+                        </div>
+                    </div>
+                    <div class="clearfix form-actions">
+                        <div class="col-md-offset-3 col-md-9">
+                            <button class="btn btn-info" type="button"><i class="ace-icon fa fa-check bigger-110"></i> 提交 </button>
+                            &nbsp; &nbsp; &nbsp;
+                            <button class="btn" type="reset"><i class="ace-icon fa fa-undo bigger-110"></i> 重置 </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+$(function () {
+    var $submitForm = $('#submitForm');
+    $submitForm.form({
+        success : function (data) {
+            data = Web_parseMessage(data);
+            if(0 != data.code) {
+                Web_alertInfo(data.message);
+            } else {
+                Web_redirectPage('${_base_.url("index")}');
+            }
+        }
+    });
+    $submitForm.find('.btn-info').on('click', function () {
+        if($submitForm.form('validate')) $submitForm.form('submit');
+    });
+});
+</script>
+[#include "../public/footer.htm"]

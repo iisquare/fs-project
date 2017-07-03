@@ -6,7 +6,7 @@
                 <i class="ace-icon fa fa-home home-icon"></i>
                 <a href="${webUrl}/">主页</a>
             </li>
-            <li class="active">角色管理</li>
+            <li class="active">用户管理</li>
         </ul>
     </div>
     <div class="page-content-full">
@@ -31,7 +31,8 @@ $(function () {
         singleSelect : true,
         columns:[[
             {field:'id',title:'ID'},
-            {field:'name',title:'名称'},
+            {field:'name',title:'昵称'},
+            {field:'username',title:'账号'},
             {field:'status_text',title:'状态'},
             {field:'sort',title:'排序'},
             {field:'description',title:'描述'},
@@ -66,32 +67,36 @@ $(function () {
 });
 </script>
 <div class="hidden">
-    <div id="js-search-dialog" style="width:255px;height:235px" data-options="buttons:'#js-search-button',modal:true,resizable:true">
+    <div id="js-search-dialog" style="width:392px;height:204px" data-options="buttons:'#js-search-button',modal:true,resizable:true">
         <form id="searchForm" method="post" action="${_base_.url('index')}">
             <table align="center" class="table-horizontal tr-height25">
                 <tr>
-                    <th>开始时间</th>
-                    <td><input class="easyui-datetimebox width150" type="text" name="timeStart" value="${escapeHtml(qargs.timeStart)}" /></td>
+                    <th>账号</th>
+                    <td><input class="easyui-textbox width150" type="text" name="username" value="" /></td>
+                    <th>昵称</th>
+                    <td><input class="easyui-textbox width150" type="text" name="name" value="" /></td>
                 </tr>
                 <tr>
-                    <th>结束时间</th>
-                    <td><input class="easyui-datetimebox width150" type="text" name="timeEnd" value="${escapeHtml(qargs.timeEnd)}" /></td>
+                    <th>创建时间</th>
+                    <td><input class="easyui-datetimebox width150" type="text" name="timeCreateStart" value="" /></td>
+                    <th>～</th>
+                    <td><input class="easyui-datetimebox width150" type="text" name="timeCreateEnd" value="" /></td>
                 </tr>
                 <tr>
-                    <th>名称</th>
-                    <td><input class="easyui-textbox width150" type="text" name="name" value="${escapeHtml(qargs.name)}" /></td>
+                    <th>修改时间</th>
+                    <td><input class="easyui-datetimebox width150" type="text" name="timeUpdateStart" value="" /></td>
+                    <th>～</th>
+                    <td><input class="easyui-datetimebox width150" type="text" name="timeUpdateEnd" value="" /></td>
                 </tr>
                 <tr>
+                    <th>角色</th>
+                    <td><input class="easyui-textbox width150" type="text" name="roleIds[]" multiple value="" /></td>
                     <th>状态</th>
-                    <th>
-                        <select class="easyui-combobox" name="status" data-options="required:true,editable:false">
-                            [@getMapOption map=statusMap default=qargs.status!"" tips="请选择记录状态" /]
+                    <td>
+                        <select class="easyui-combobox" name="status" data-options="editable:false">
+                            [@getMapOption map=statusMap default="" tips="全部" /]
                         </select>
                     </td>
-                </tr>
-                <tr>
-                    <th>描述</th>
-                    <td><input class="easyui-textbox width150" type="text" name="description" value="${escapeHtml(qargs.description)}" /></td>
                 </tr>
             </table>
         </form>
