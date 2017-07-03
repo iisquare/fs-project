@@ -33,13 +33,6 @@ public class RoleService extends ServiceBase {
 		return map;
 	}
 	
-	public int delete(Object ...ids) {
-		if(DPUtil.empty(ids)) return -1;
-		RoleDao dao = webApplicationContext.getBean(RoleDao.class);
-		return dao.where("id in ("
-			+ DPUtil.implode(",", DPUtil.arrayToIntegerArray(ids)) + ")", new HashMap<>()).delete().intValue();
-	}
-	
 	public Map<Object, Object> search(Map<String, Object> map, String orderBy, int page, int pageSize) {
 		StringBuilder condition = new StringBuilder("1=1");
 		Map<String, Object> params = new HashMap<String, Object>();
@@ -92,6 +85,13 @@ public class RoleService extends ServiceBase {
 	public int update(Map<String, Object> data) {
 		RoleDao dao = webApplicationContext.getBean(RoleDao.class);
 		return dao.where("id = :id", ":id", data.get("id")).update(data).intValue();
+	}
+	
+	public int delete(Object ...ids) {
+		if(DPUtil.empty(ids)) return -1;
+		RoleDao dao = webApplicationContext.getBean(RoleDao.class);
+		return dao.where("id in ("
+			+ DPUtil.implode(",", DPUtil.arrayToIntegerArray(ids)) + ")", new HashMap<>()).delete().intValue();
 	}
 	
 }

@@ -112,7 +112,17 @@ $(function () {
         $('.js-control-search').bind('click', function () {
             $searchDialog.dialog({
                 title : '筛选条件',
-                iconCls : 'icon-search'
+                iconCls : 'icon-search',
+                onOpen : function () {
+                    $('input[name="roleIds[]"]').combobox({
+                        url : '${_base_.url("role", "list")}',
+                        valueField:'id',
+                        textField:'name',
+                        loadFilter : function (data) {
+                            return data.rows;
+                        }
+                    });
+                }
             });
         });
         $('#js-search-button').find('.js-control-ok').unbind('click.action').bind('click.action' ,function () {
@@ -122,6 +132,7 @@ $(function () {
         $('#js-search-button').find('.js-control-undo').unbind('click.action').bind('click.action' ,function () {
             $('#searchForm').form('reset');
         });
+
     });
 </script>
 [#include "../public/footer.htm"]

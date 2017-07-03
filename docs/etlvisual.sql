@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50624
 File Encoding         : 65001
 
-Date: 2017-07-03 09:12:46
+Date: 2017-07-03 14:26:48
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -30,24 +30,27 @@ CREATE TABLE `t_menu` (
   `state` varchar(255) NOT NULL DEFAULT '' COMMENT '展开状态',
   `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '状态',
   `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序',
+  `description` text NOT NULL COMMENT '描述',
   `create_uid` int(11) NOT NULL DEFAULT '0' COMMENT '创建者',
   `create_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '创建时间',
   `update_uid` int(11) NOT NULL DEFAULT '0' COMMENT '修改者',
   `update_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '修改时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COMMENT='菜单信息表';
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COMMENT='菜单信息表';
 
 -- ----------------------------
 -- Records of t_menu
 -- ----------------------------
-INSERT INTO `t_menu` VALUES ('1', '系统管理', '0', 'backend', '', '', 'fa fa-cogs', '', '1', '0', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('2', '用户管理', '1', 'backend', '', '', 'glyphicon glyphicon-user', '', '1', '0', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('3', '角色管理', '1', 'backend', '/role/index/', '', 'glyphicon glyphicon-road', '', '1', '0', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('4', '菜单管理', '1', 'backend', '', '', 'glyphicon glyphicon-indent-left', '', '1', '0', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('5', '资源管理', '1', 'backend', '', '', 'glyphicon glyphicon-inbox', '', '1', '0', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('6', '参数设置', '1', 'backend', '/setting/index/', '', 'fa fa-globe', '', '1', '0', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('7', '添加用户', '2', 'backend', '/user/edit/', '', '', '', '1', '0', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('8', '用户列表', '2', 'backend', '/user/index/', '', '', '', '1', '0', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('1', '系统管理', '0', 'backend', '', '', 'fa fa-cogs', 'closed', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('2', '用户管理', '1', 'backend', '', '', 'glyphicon glyphicon-user', 'closed', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('3', '角色管理', '1', 'backend', '/role/index/', '', 'glyphicon glyphicon-road', '', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('4', '菜单管理', '1', 'backend', '', '', 'glyphicon glyphicon-indent-left', 'closed', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('5', '资源管理', '1', 'backend', '', '', 'glyphicon glyphicon-inbox', 'closed', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('6', '参数设置', '1', 'backend', '/setting/index/', '', 'fa fa-globe', '', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('7', '添加用户', '2', 'backend', '/user/edit/', '', '', '', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('8', '用户列表', '2', 'backend', '/user/index/', '', '', '', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('9', '添加菜单', '4', 'backend', '/menu/edit/', '', '', '', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('10', '菜单列表', '4', 'backend', '/menu/index/', '', '', '', '1', '0', '', '0', '0', '0', '0');
 
 -- ----------------------------
 -- Table structure for t_relation
@@ -130,7 +133,8 @@ CREATE TABLE `t_setting` (
 -- ----------------------------
 -- Records of t_setting
 -- ----------------------------
-INSERT INTO `t_setting` VALUES ('system', 'siteName', '系统名称', '数据报表调度平台', '0', '', '0', '0');
+INSERT INTO `t_setting` VALUES ('system', 'defaultPassword', '用户默认密码', 'admin888', '0', '创建用户时，若密码项留空，则采用该值作为用户默认密码', '0', '1499050437900');
+INSERT INTO `t_setting` VALUES ('system', 'siteName', '系统名称', '数据报表调度平台', '0', '通过修改该值用来更换系统显示标题和名称', '0', '1499050481885');
 
 -- ----------------------------
 -- Table structure for t_user
@@ -150,8 +154,10 @@ CREATE TABLE `t_user` (
   `update_uid` int(11) NOT NULL DEFAULT '0' COMMENT '修改者',
   `update_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '修改时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='用户信息表';
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT='用户信息表';
 
 -- ----------------------------
 -- Records of t_user
 -- ----------------------------
+INSERT INTO `t_user` VALUES ('1', '系统管理员', 'admin', 'd53333790b3613e28e8f9f645cfecb9b', '390455', '1', '1', '', '0', '1499049919402', '0', '1499050329037');
+INSERT INTO `t_user` VALUES ('2', 'test', 'test', 'ce0f14b2f013ff077c5685b21b69a186', '157585', '1', '0', '', '0', '1499050281568', '0', '1499050281568');

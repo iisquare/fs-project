@@ -1,0 +1,62 @@
+[#include "../public/header.htm"]
+<div class="main-content-inner">
+    <div class="breadcrumbs ace-save-state" id="breadcrumbs">
+        <ul class="breadcrumb">
+            <li>
+                <i class="ace-icon fa fa-home home-icon"></i>
+                <a href="${webUrl}/">主页</a>
+            </li>
+            <li class="active">菜单管理</li>
+        </ul>
+    </div>
+    <div class="page-content-full">
+        <table class="page-table-list"></table>
+        <div id="toolbar">
+            <a href="${_base_.url('edit')}" class="easyui-linkbutton js-control-add" data-options="iconCls:'icon-add',plain:true">添加</a>
+        </div>
+    </div>
+</div>
+<script type="application/javascript">
+$(function () {
+    $('.page-table-list').treegrid({
+        url : '${_base_.url("list")}',
+        idField : 'id',
+        treeField : 'name',
+        border : false,
+        toolbar : '#toolbar',
+        rownumbers : true,
+        fitColumns : true,
+        fit : true,
+        nowrap : true,
+        singleSelect : true,
+        columns:[[
+            {field:'id',title:'ID'},
+            {field:'name',title:'名称'},
+            {field:'module',title:'模块'},
+            {field:'url',title:'链接地址'},
+            {field:'target',title:'打开方式'},
+            {field:'icon',title:'图标',formatter:function (value, row, index) {
+                return '<i class="' + value + '"></i> ' + value;
+            }},
+            {field:'state',title:'展开状态'},
+            {field:'status_text',title:'状态'},
+            {field:'sort',title:'排序'},
+            {field:'operate',title:'操作',formatter:function (value, row, index) {
+                var html = [];
+                html.push('<a href="${_base_.url("edit")}?id=', row.id,
+                        '" class="page-table-button" data-options="iconCls:\'icon-edit\'">修改</a>',
+                        '<a href="${_base_.url("delete")}?ids[]=', row.id,
+                        '" class="page-table-button js-delete-confirm" data-options="iconCls:\'icon-remove\'">删除</a>');
+                return html.join('');
+            }}
+        ]],
+        onLoadSuccess : function (data) {
+            $('.page-table-button').linkbutton({plain : true});
+        },
+        onSelect : function (row) {
+            $('.js-control-add').attr('href', '${_base_.url("edit")}?parentId=' + row.id);
+        }
+    });
+});
+</script>
+[#include "../public/footer.htm"]
