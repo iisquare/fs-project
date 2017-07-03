@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50624
 File Encoding         : 65001
 
-Date: 2017-07-03 15:01:00
+Date: 2017-07-03 15:49:48
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -30,7 +30,7 @@ CREATE TABLE `t_menu` (
   `state` varchar(255) NOT NULL DEFAULT '' COMMENT '展开状态',
   `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '状态',
   `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序',
-  `description` text NOT NULL COMMENT '描述',
+  `description` tinytext NOT NULL COMMENT '描述',
   `create_uid` int(11) NOT NULL DEFAULT '0' COMMENT '创建者',
   `create_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '创建时间',
   `update_uid` int(11) NOT NULL DEFAULT '0' COMMENT '修改者',
@@ -83,16 +83,18 @@ CREATE TABLE `t_resource` (
   `operation` varchar(255) NOT NULL DEFAULT '' COMMENT '操作',
   `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '状态',
   `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序',
+  `description` tinytext NOT NULL COMMENT '描述',
   `create_uid` int(11) NOT NULL DEFAULT '0' COMMENT '创建者',
   `create_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '创建时间',
   `update_uid` int(11) NOT NULL DEFAULT '0' COMMENT '修改者',
   `update_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '修改时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='资源信息表';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COMMENT='资源信息表';
 
 -- ----------------------------
 -- Records of t_resource
 -- ----------------------------
+INSERT INTO `t_resource` VALUES ('1', '用户管理', '0', 'backend', 'user', 'index', '', '1', '0', '', '0', '1499067915669', '0', '1499067915669');
 
 -- ----------------------------
 -- Table structure for t_role
@@ -103,7 +105,7 @@ CREATE TABLE `t_role` (
   `name` varchar(255) NOT NULL DEFAULT '' COMMENT '名称',
   `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '状态',
   `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序',
-  `description` text COMMENT '描述',
+  `description` tinytext COMMENT '描述',
   `create_uid` int(11) NOT NULL DEFAULT '0' COMMENT '创建者',
   `create_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '创建时间',
   `update_uid` int(11) NOT NULL DEFAULT '0' COMMENT '修改者',
@@ -126,7 +128,7 @@ CREATE TABLE `t_setting` (
   `name` varchar(255) NOT NULL DEFAULT '' COMMENT '名称',
   `content` text NOT NULL COMMENT '参数值',
   `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序',
-  `description` text COMMENT '描述',
+  `description` tinytext COMMENT '描述',
   `update_uid` int(11) NOT NULL DEFAULT '0' COMMENT '修改者',
   `update_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '修改时间',
   PRIMARY KEY (`type`,`parameter`)
