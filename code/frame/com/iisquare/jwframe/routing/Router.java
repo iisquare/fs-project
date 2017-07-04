@@ -31,6 +31,13 @@ public class Router {
 	private HttpServletRequest request;
 	private HttpServletResponse response;
 	private Logger logger = Logger.getLogger(getClass().getName());
+	public class ExceptionMessage {
+		public static final String NO_ROUTE_MATCHES = "no route matches!";
+		public static final String NO_MODULE_MATCHES = "no module matches!";
+		public static final String APP_URI_ERROR = "app uri error!";
+		public static final String CONTROLLER_INIT_ERROR = "initError";
+		public static final String CONTROLLER_DESTROY_ERROR = "destroyError";
+	}
 
 	static {
 		domains.put("*", "frontend");
@@ -136,7 +143,7 @@ public class Router {
 	}
 
 	private Exception invoke(String module, RouteAction route, Object arg) {
-		if (null == route) return new ApplicationException("no route matches!");
+		if (null == route) return new ApplicationException(ExceptionMessage.NO_ROUTE_MATCHES);
 		String controllerName = route.getControllerName();
 		String actionName = route.getActionName();
 		Class<?> controller;
@@ -171,7 +178,8 @@ public class Router {
 			instance.setParams(ServletUtil.parseParameterMap(params));
 			instance.setAssign(new LinkedHashMap<String, Object>());
 			Object initVal = instance.init();
-			if (null != initVal) return new ApplicationException("initError");
+			if (null != initVal) return new ApplicationException(ExceptionMessage.CONTROLLER_INIT_ERROR,
+					initVal instanceof Exception ? (Exception) initVal : new Throwable(initVal.toString()));
 			Object actionVal;
 			if (null == arg) {
 				actionVal = controller.getMethod(
@@ -181,7 +189,8 @@ public class Router {
 						+ configuration.getDefaultActionSuffix(), Exception.class).invoke(instance, arg);
 			}
 			Object destroyVal = instance.destroy(actionVal);
-			if (null != destroyVal) return new ApplicationException("destroyError");
+			if (null != destroyVal) return new ApplicationException(ExceptionMessage.CONTROLLER_DESTROY_ERROR,
+					destroyVal instanceof Exception ? (Exception) destroyVal : new Throwable(destroyVal.toString()));
 		} catch (Exception e) {
 			return new Exception("Route:controller["
 					+ route.getControllerName() + "] - action[" + route.getActionName() + "]", e);
@@ -192,10 +201,10 @@ public class Router {
 	public Object dispatch() {
 		// 模块检测
 		String module = parseModule(request.getServerName());
-		if (null == module) return new ApplicationException("no module matches!");
+		if (null == module) return new ApplicationException(ExceptionMessage.NO_MODULE_MATCHES);
 		// URI检测
 		String uri = request.getRequestURI();
-		if (!uri.startsWith(appUri)) return new ApplicationException("app uri error!");
+		if (!uri.startsWith(appUri)) return new ApplicationException(ExceptionMessage.APP_URI_ERROR);
 		uri = "/" + uri.substring(appUri.length());
 		// 默认编码设置
 		String characterEncoding = configuration.getCharacterEncoding();

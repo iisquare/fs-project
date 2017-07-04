@@ -53,12 +53,7 @@ public abstract class RbacController extends CoreController {
 		userInfo = userService.getCurrentUserInfo(request, true);
 		preCheckPermit();
 		if(!isCheckPermit || hasPermit()) return super.init();
-		try {
-			if(ServletUtil.isAjax(request)) return displayMessage(403, null, null);
-			return displayInfo(403, null, appPath);
-		} catch (Exception e) {
-			return e;
-		}
+		return new Exception("403");
 	}
 
 	/**
@@ -88,6 +83,7 @@ public abstract class RbacController extends CoreController {
 	/**
 	 * 判断是否拥有对应Module、Controller、Action、Operation的权限
 	 */
+	@SuppressWarnings("unchecked")
 	public boolean hasPermit (String module, String controller, String action, String operation) {
 		//if(isCheckPermit) return true; // 调试模式，拥有所有权限
 		Map<String, Object> resourceInfo = resourceService.getInfoByRouter(null, module, controller, action, operation);
@@ -97,7 +93,13 @@ public abstract class RbacController extends CoreController {
 		if(1 != status) return false; // 全部阻止访问
 		if(null == userInfo) return false; // 用户未登录
 		int uid = DPUtil.parseInt(userInfo.get("id"));
-		Set<Object> resourceIdSet = resourceService.getIdSetByRoleIds(DPUtil.collectionToArray(roleService.getIdSetByUserId(uid)));
+		Set<Object> resourceIdSet = (Set<Object>) userInfo.get("resourceIds");
+		if(null == resourceIdSet) {
+			Set<Object> roleIdSet = roleService.getIdSetByUserId(uid);
+			userInfo.put("roleIds", roleIdSet);
+			resourceIdSet = resourceService.getIdSetByRoleIds(DPUtil.collectionToArray(roleIdSet));
+			userInfo.put("resourceIds", resourceIdSet);
+		}
 		if(resourceIdSet.contains(resourceInfo.get("id"))) return true; // 验证登录用户是否拥有当前资源
 		return false;
 	}
