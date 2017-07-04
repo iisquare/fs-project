@@ -40,17 +40,18 @@ public class MenuController extends RbacController {
 	public Object saveAction() throws Exception {
 		String name = DPUtil.trim(getParam("name"));
 		if(DPUtil.empty(name)) return displayMessage(10001, "名称不能为空", null);
+		int uid = DPUtil.parseInt(userInfo.get("id"));
 		long time = System.currentTimeMillis();
 		Map<String, Object> data = params;
 		data.put("name", name);
 		data.put("parent_id", DPUtil.parseInt(getParam("parent_id")));
 		data.put("sort", DPUtil.parseInt(getParam("sort")));
 		data.put("status", DPUtil.parseInt(getParam("status")));
-		data.put("update_uid", 0);
+		data.put("update_uid", uid);
 		data.put("update_time", time);
 		int result = -1;
 		if(DPUtil.empty(getParam("id"))) {
-			data.put("create_uid", 0);
+			data.put("create_uid", uid);
 			data.put("create_time", time);
 			result = menuService.insert(data);
 			if(1 > result) return displayMessage(500, "添加失败", null);

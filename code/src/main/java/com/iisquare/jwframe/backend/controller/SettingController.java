@@ -60,11 +60,12 @@ public class SettingController extends RbacController {
 		if(DPUtil.empty(type)) return displayMessage(10001, "类型不能为空", null);
 		String parameter = DPUtil.trim(getParam("parameter"));
 		if(DPUtil.empty(parameter)) return displayMessage(10002, "参数名不能为空", null);
+		int uid = DPUtil.parseInt(userInfo.get("id"));
 		Map<String, Object> data = params;
 		data.put("type", type);
 		data.put("parameter", parameter);
 		data.put("sort", DPUtil.parseInt(getParam("sort")));
-		data.put("update_uid", 0);
+		data.put("update_uid", uid);
 		data.put("update_time", System.currentTimeMillis());
 		if(settingService.exists(type, parameter)) {
 			if(!settingService.update(data)) return displayMessage(500, "修改失败", null);

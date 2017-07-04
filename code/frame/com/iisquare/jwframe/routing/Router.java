@@ -114,7 +114,7 @@ public class Router {
 		ArrayList<RouteURI> list = routes.get(module);
 		if (null == list) return null;
 		for (RouteURI route : list) {
-			List<String> matches = DPUtil.getMatcher(route.getUri(), uri, true);
+			List<String> matches = DPUtil.getMatcher(route.getUri(), uri, true, true);
 			if (matches.isEmpty()) continue;
 			Generator generator = route.getAction();
 			if (null == generator) return null;

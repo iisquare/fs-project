@@ -313,7 +313,7 @@ public abstract class MySQLBase<T> extends DaoBase {
 	private void bindPendingParams() throws SQLException {
 		String sql = this.sql;
 		List<Object> list = new ArrayList<>();
-		List<String> params = DPUtil.getMatcher(PARAM_REGEX, sql, false); // 获取全部命名参数
+		List<String> params = DPUtil.getMatcher(PARAM_REGEX, sql, false, false); // 获取全部命名参数
 		int size = params.size();
 		for (int index = 0; index < size; index++) {
 			String key = params.get(index);

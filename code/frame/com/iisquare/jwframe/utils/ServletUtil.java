@@ -38,7 +38,7 @@ public class ServletUtil {
 	public static Map<String, Object> parseParameterMap(Map<String, String[]> parameterMap) {
 		Map<String, Object> map = new LinkedHashMap<String, Object>();
 		for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
-			List<String> keys = DPUtil.getMatcher(regexParameterMapKey, entry.getKey(), true);
+			List<String> keys = DPUtil.getMatcher(regexParameterMapKey, entry.getKey(), true, false);
 			generateParameterMap(map, keys, entry.getValue(), 0, keys.size());
 		}
 		return map;

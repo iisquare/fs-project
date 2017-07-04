@@ -161,16 +161,17 @@ public class DPUtil {
 	 * @param regex 正则表达式
 	 * @param str 匹配字符串
 	 * @param bGroup 将捕获组作为结果返回
-	 * @return
+	 * @param bEntire 是否返回捕获组的全匹配结果
 	 */
-	public static List<String> getMatcher(String regex, String str, boolean bGroup) {
+	public static List<String> getMatcher(String regex, String str, boolean bGroup, boolean bEntire) {
 		List<String> list = new ArrayList<String>();
 		Pattern pattern = Pattern.compile(regex);
 		Matcher matcher = pattern.matcher(str);
+		int start = bEntire ? 0 : 1;
 		while(matcher.find()) {
 			if(bGroup) {
 				int count = matcher.groupCount();
-				for(int i = 1; i <= count; i++) {
+				for(int i = start; i <= count; i++) {
 					list.add(matcher.group(i));
 				}
 			} else {

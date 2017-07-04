@@ -89,17 +89,18 @@ public class UserController extends RbacController {
 		String username = DPUtil.trim(getParam("username"));
 		if(DPUtil.empty(username)) return displayMessage(10002, "账号不能为空", null);
 		String password = DPUtil.trim(getParam("password"));
+		int uid = DPUtil.parseInt(userInfo.get("id"));
 		long time = System.currentTimeMillis();
 		Map<String, Object> data = params;
 		data.put("name", name);
 		data.put("username", username);
 		data.put("sort", DPUtil.parseInt(getParam("sort")));
 		data.put("status", DPUtil.parseInt(getParam("status")));
-		data.put("update_uid", 0);
+		data.put("update_uid", uid);
 		data.put("update_time", time);
 		int result = -1;
 		if(DPUtil.empty(getParam("id"))) {
-			data.put("create_uid", 0);
+			data.put("create_uid", uid);
 			data.put("create_time", time);
 			if(DPUtil.empty(password)) {
 				password = settingService.getProperty(null, "defaultPassword", "admin888");
