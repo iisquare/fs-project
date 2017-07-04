@@ -5,6 +5,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,34 @@ public class UserService extends ServiceBase {
 		map.put("0", "禁用");
 		map.put("1", "正常");
 		return map;
+	}
+	
+	public boolean setCurrentUserInfo(HttpServletRequest request, Map<String, Object> userInfo) {
+		if(null == userInfo) return false;
+		Object uid = userInfo.get("id");
+		if(DPUtil.empty(uid)) return false;
+		request.getSession().setAttribute("uid", uid);
+		return true;
+	}
+	
+	public Map<String, Object> getCurrentUserInfo(HttpServletRequest request, boolean isUpdate) {
+		int uid = DPUtil.parseInt(request.getSession().getAttribute("uid"));
+		if(DPUtil.empty(uid)) return null;
+		Map<String, Object> info = getInfo(uid);
+		if(null == info || 1 != DPUtil.parseInt(info.get("status"))) return null;
+		if(isUpdate) {
+			UserDao dao = webApplicationContext.getBean(UserDao.class);
+			Map<String, Object> data = new LinkedHashMap<>();
+			data.put("active_ip", com.iisquare.jwframe.utils.ServletUtil.getRemoteAddr(request));
+			data.put("active_time", System.currentTimeMillis());
+			dao.where("id = :id", ":id", uid).update(data);
+		}
+		return info;
+	}
+	
+	public Map<String, Object> getInfoByUsername(Object username) {
+		UserDao dao = webApplicationContext.getBean(UserDao.class);
+		return dao.where("username = :username", ":username", username).one();
 	}
 	
 	public int delete(Object ...ids) {

@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -27,6 +28,12 @@ public class RoleService extends ServiceBase {
 	protected WebApplicationContext webApplicationContext;
 	@Autowired
 	protected Configuration configuration;
+	
+	public Set<Object> getIdSetByUserId(int uid) {
+		RelationDao dao = webApplicationContext.getBean(RelationDao.class);
+		List<Map<String, Object>> list = dao.where("type='user_role' and aid=:uid", ":uid", uid).all();
+		return ServiceUtil.getFieldValues(list, "bid");
+	}
 	
 	public Map<String, String> getStatusMap() {
 		Map<String, String> map = new LinkedHashMap<String, String>();

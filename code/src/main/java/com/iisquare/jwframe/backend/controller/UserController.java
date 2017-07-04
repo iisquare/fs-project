@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 
 import com.iisquare.jwframe.core.component.RbacController;
 import com.iisquare.jwframe.utils.DPUtil;
+import com.iisquare.jwframe.utils.ServletUtil;
 import com.iisquare.jwframe.utils.ValidateUtil;
 
 @Controller
@@ -19,6 +20,33 @@ public class UserController extends RbacController {
 		assign("qargs", params);
 		assign("statusMap", userService.getStatusMap());
 		return displayTemplate();
+	}
+	
+	public Object loginAction () throws Exception {
+		if(!ServletUtil.isAjax(request)) {
+			String forward = convertForward(getParam("forward"));
+			if(null != userInfo) return redirect(forward);
+			assign("forward", forward);
+			return displayTemplate();
+		}
+		String username = ValidateUtil.filterSimpleString(getParam("username"), true, 1, 64, null);
+		String password = ValidateUtil.filterSimpleString(getParam("password"), true, 1, null, null);
+		if(DPUtil.empty(username) || DPUtil.empty(password)) {
+			return displayMessage(10001, "请输入正确的账号和密码！", null);
+		}
+		Map<String, Object> info  = userService.getInfoByUsername(username);
+		if(null == info) return displayMessage(10002, "账号或密码错误，请重新输入！", null);
+		if(1 != DPUtil.parseInt(info.get("status"))) return displayMessage(10002, "账号或密码错误，请重新输入！", null);
+		if(!userService.generatePassword(password, DPUtil.parseString(info.get("salt"))).equals(info.get("password"))) {
+			return displayMessage(10003, "账号或密码错误，请重新输入！", null);
+		}
+		userService.setCurrentUserInfo(request, info);
+		return displayMessage(0, "登录成功", convertForward(getParam("forward")));
+	}
+	
+	public Object logoutAction() throws Exception {
+		request.getSession().invalidate();
+		return redirect(appPath);
 	}
 	
 	public Object listAction () throws Exception {
@@ -91,6 +119,26 @@ public class UserController extends RbacController {
 			if(0 > result) return displayMessage(500, "修改失败", null);
 		}
 		return displayMessage(0, null, result);
+	}
+	
+	private String convertForward(String forward) throws Exception {
+		String platformUrl = appPath;
+		if(DPUtil.empty(forward)) {
+			return platformUrl;
+		} else {
+			if("back".equals(forward)) {
+				String backUrl = request.getHeader("Referer");
+				if(null == backUrl) {
+					return platformUrl;
+				} else {
+					return backUrl;
+				}
+			} else if("login".equals(forward)) {
+				return appPath + "/login";
+			} else {
+				return forward;
+			}
+		}
 	}
 	
 }

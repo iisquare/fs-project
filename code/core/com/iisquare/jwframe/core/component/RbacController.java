@@ -1,12 +1,18 @@
 package com.iisquare.jwframe.core.component;
 
+import java.util.Map;
+import java.util.Set;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 
 import com.iisquare.jwframe.service.MenuService;
+import com.iisquare.jwframe.service.ResourceService;
+import com.iisquare.jwframe.service.RoleService;
 import com.iisquare.jwframe.service.SettingService;
 import com.iisquare.jwframe.service.UserService;
+import com.iisquare.jwframe.utils.DPUtil;
 import com.iisquare.jwframe.utils.ServletUtil;
 
 @Controller
@@ -19,6 +25,82 @@ public abstract class RbacController extends CoreController {
 	protected UserService userService;
 	@Autowired
 	protected MenuService menuService;
+	@Autowired
+	protected ResourceService resourceService;
+	@Autowired
+	protected RoleService roleService;
+	protected Map<String, Object> userInfo = null; // 当前登录用户信息
+	private boolean isCheckPermit = true; // 是否进行权限验证
+	
+	public boolean isCheckPermit() {
+		return isCheckPermit;
+	}
+
+	public void setCheckPermit(boolean isCheckPermit) {
+		this.isCheckPermit = isCheckPermit;
+	}
+	
+	public Map<String, Object> getUserInfo() {
+		return userInfo;
+	}
+
+	public void setUserInfo(Map<String, Object> userInfo) {
+		this.userInfo = userInfo;
+	}
+
+	@Override
+	public Object init() {
+		userInfo = userService.getCurrentUserInfo(request, true);
+		preCheckPermit();
+		if(!isCheckPermit || hasPermit()) return super.init();
+		try {
+			if(ServletUtil.isAjax(request)) return displayMessage(403, null, null);
+			return displayInfo(403, null, appPath);
+		} catch (Exception e) {
+			return e;
+		}
+	}
+
+	/**
+	 * 检测权限前执行
+	 */
+	protected void preCheckPermit() {}
+	
+	/**
+	 * 判断是否拥有当前Action的权限
+	 */
+	public boolean hasPermit () {
+		return hasPermit(moduleName, controllerName, actionName, "");
+	}
+	
+	public boolean hasPermit (String operation) {
+		return hasPermit(moduleName, controllerName, actionName, operation);
+	}
+	
+	public boolean hasPermit (String action, String operation) {
+		return hasPermit(moduleName, controllerName, action, operation);
+	}
+	
+	public boolean hasPermit (String controller, String action, String operation) {
+		return hasPermit(moduleName, controller, action, operation);
+	}
+	
+	/**
+	 * 判断是否拥有对应Module、Controller、Action、Operation的权限
+	 */
+	public boolean hasPermit (String module, String controller, String action, String operation) {
+		//if(isCheckPermit) return true; // 调试模式，拥有所有权限
+		Map<String, Object> resourceInfo = resourceService.getInfoByRouter(null, module, controller, action, operation);
+		if(null == resourceInfo) return false; // 资源不存在
+		int status = DPUtil.parseInt(resourceInfo.get("status"));
+		if(-1 == status) return true; // 全部允许访问
+		if(1 != status) return false; // 全部阻止访问
+		if(null == userInfo) return false; // 用户未登录
+		int uid = DPUtil.parseInt(userInfo.get("id"));
+		Set<Object> resourceIdSet = resourceService.getIdSetByRoleIds(DPUtil.collectionToArray(roleService.getIdSetByUserId(uid)));
+		if(resourceIdSet.contains(resourceInfo.get("id"))) return true; // 验证登录用户是否拥有当前资源
+		return false;
+	}
 	
 	@Override
 	protected Object displayTemplate(String controller, String action) throws Exception {

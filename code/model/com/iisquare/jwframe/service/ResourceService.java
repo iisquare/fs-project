@@ -1,9 +1,11 @@
 package com.iisquare.jwframe.service;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.iisquare.jwframe.Configuration;
+import com.iisquare.jwframe.dao.RelationDao;
 import com.iisquare.jwframe.dao.ResourceDao;
 import com.iisquare.jwframe.dao.UserDao;
 import com.iisquare.jwframe.mvc.ServiceBase;
@@ -28,9 +31,18 @@ public class ResourceService extends ServiceBase {
 	
 	public Map<String, String> getStatusMap() {
 		Map<String, String> map = new LinkedHashMap<String, String>();
-		map.put("0", "禁用");
-		map.put("1", "正常");
+		map.put("-1", "全部允许");
+		map.put("0", "全部阻止");
+		map.put("1", "正常验证");
 		return map;
+	}
+	
+	public Set<Object> getIdSetByRoleIds(Object[] roleIdArray) {
+		if(DPUtil.empty(roleIdArray)) return new HashSet<>();
+		RelationDao dao = webApplicationContext.getBean(RelationDao.class);
+		List<Map<String, Object>> list = dao.where(
+				"type='role_resource' and aid in (" + DPUtil.arrayToIntegerArray(roleIdArray) + ")", new HashMap<>()).all();
+		return ServiceUtil.getFieldValues(list, "bid");
 	}
 	
 	public Map<Object, Object> search(Map<String, Object> map, String orderBy, int page, int pageSize) {
@@ -99,6 +111,14 @@ public class ResourceService extends ServiceBase {
 	public Map<String, Object> getInfo(Object id) {
 		ResourceDao dao = webApplicationContext.getBean(ResourceDao.class);
 		return dao.where("id = :id", ":id", id).one();
+	}
+	
+	public Map<String, Object> getInfoByRouter(
+			Integer exceptId, String module, String controller, String action, String operation) {
+		if(null == exceptId) exceptId = 0;
+		ResourceDao dao = webApplicationContext.getBean(ResourceDao.class);
+		return dao.where("id!=:id and module=:module and controller=:controller and action=:action and operation=:operation",
+			":id", exceptId, ":module", module, ":controller", controller, ":action", action, ":operation", operation).one();
 	}
 	
 	public int insert(Map<String, Object> data) {
