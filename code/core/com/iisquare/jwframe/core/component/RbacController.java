@@ -85,7 +85,7 @@ public abstract class RbacController extends CoreController {
 	 */
 	@SuppressWarnings("unchecked")
 	public boolean hasPermit (String module, String controller, String action, String operation) {
-		//if(isCheckPermit) return true; // 调试模式，拥有所有权限
+		if(!DPUtil.empty(settingService.getProperty(null, "permitAll", null))) return true; // 调试模式，拥有所有权限
 		Map<String, Object> resourceInfo = resourceService.getInfoByRouter(null, module, controller, action, operation);
 		if(null == resourceInfo) return false; // 资源不存在
 		int status = DPUtil.parseInt(resourceInfo.get("status"));

@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50624
 File Encoding         : 65001
 
-Date: 2017-07-03 15:49:48
+Date: 2017-07-04 16:10:30
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -68,6 +68,19 @@ CREATE TABLE `t_relation` (
 -- ----------------------------
 -- Records of t_relation
 -- ----------------------------
+INSERT INTO `t_relation` VALUES ('role_menu', '1', '1');
+INSERT INTO `t_relation` VALUES ('role_menu', '1', '2');
+INSERT INTO `t_relation` VALUES ('role_menu', '1', '3');
+INSERT INTO `t_relation` VALUES ('role_menu', '1', '4');
+INSERT INTO `t_relation` VALUES ('role_menu', '1', '5');
+INSERT INTO `t_relation` VALUES ('role_menu', '1', '6');
+INSERT INTO `t_relation` VALUES ('role_menu', '1', '7');
+INSERT INTO `t_relation` VALUES ('role_menu', '1', '8');
+INSERT INTO `t_relation` VALUES ('role_menu', '1', '9');
+INSERT INTO `t_relation` VALUES ('role_menu', '1', '10');
+INSERT INTO `t_relation` VALUES ('role_menu', '1', '12');
+INSERT INTO `t_relation` VALUES ('role_menu', '1', '13');
+INSERT INTO `t_relation` VALUES ('role_resource', '1', '1');
 
 -- ----------------------------
 -- Table structure for t_resource
@@ -89,12 +102,13 @@ CREATE TABLE `t_resource` (
   `update_uid` int(11) NOT NULL DEFAULT '0' COMMENT '修改者',
   `update_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '修改时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COMMENT='资源信息表';
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT='资源信息表';
 
 -- ----------------------------
 -- Records of t_resource
 -- ----------------------------
-INSERT INTO `t_resource` VALUES ('1', '用户管理', '0', 'backend', 'user', 'index', '', '1', '0', '', '0', '1499067915669', '0', '1499067915669');
+INSERT INTO `t_resource` VALUES ('1', '用户登录', '0', 'backend', 'user', 'login', '', '-1', '0', '', '0', '1499067915669', '0', '1499067915669');
+INSERT INTO `t_resource` VALUES ('2', '系统首页', '0', 'backend', 'index', 'index', '', '0', '0', '', '0', '0', '0', '0');
 
 -- ----------------------------
 -- Table structure for t_role
@@ -138,6 +152,7 @@ CREATE TABLE `t_setting` (
 -- Records of t_setting
 -- ----------------------------
 INSERT INTO `t_setting` VALUES ('system', 'defaultPassword', '用户默认密码', 'admin888', '0', '创建用户时，若密码项留空，则采用该值作为用户默认密码', '0', '1499050437900');
+INSERT INTO `t_setting` VALUES ('system', 'permitAll', '开放全部权限', '1', '0', '慎用该配置，若值不为空则系统权限验证全部失效', '1', '1499155751703');
 INSERT INTO `t_setting` VALUES ('system', 'siteName', '系统名称', '数据报表调度平台', '0', '通过修改该值用来更换系统显示标题和名称', '0', '1499050481885');
 
 -- ----------------------------
@@ -152,7 +167,9 @@ CREATE TABLE `t_user` (
   `salt` char(6) NOT NULL DEFAULT '' COMMENT '混淆码',
   `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '状态',
   `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序',
-  `description` text COMMENT '描述',
+  `description` text NOT NULL COMMENT '描述',
+  `active_ip` varchar(255) NOT NULL DEFAULT '' COMMENT '最后登录IP',
+  `active_time` int(11) NOT NULL DEFAULT '0' COMMENT '最后登录时间',
   `create_uid` int(11) NOT NULL DEFAULT '0' COMMENT '创建者',
   `create_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '创建时间',
   `update_uid` int(11) NOT NULL DEFAULT '0' COMMENT '修改者',
@@ -163,5 +180,5 @@ CREATE TABLE `t_user` (
 -- ----------------------------
 -- Records of t_user
 -- ----------------------------
-INSERT INTO `t_user` VALUES ('1', '系统管理员', 'admin', 'd53333790b3613e28e8f9f645cfecb9b', '390455', '1', '1', '', '0', '1499049919402', '0', '1499050329037');
-INSERT INTO `t_user` VALUES ('2', 'test', 'test', 'ce0f14b2f013ff077c5685b21b69a186', '157585', '1', '0', '', '0', '1499050281568', '0', '1499050281568');
+INSERT INTO `t_user` VALUES ('1', '系统管理员', 'admin', 'd53333790b3613e28e8f9f645cfecb9b', '390455', '1', '1', '', '', '0', '0', '1499049919402', '0', '1499050329037');
+INSERT INTO `t_user` VALUES ('2', 'test', 'test', 'ce0f14b2f013ff077c5685b21b69a186', '157585', '1', '0', '', '', '0', '0', '1499050281568', '0', '1499050281568');
