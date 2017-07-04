@@ -50,7 +50,7 @@ public abstract class RbacController extends CoreController {
 
 	@Override
 	public Object init() {
-		userInfo = userService.getCurrentUserInfo(request, true);
+		userInfo = userService.getCurrentUserInfo(request);
 		preCheckPermit();
 		if(!isCheckPermit || hasPermit()) return super.init();
 		return new Exception("403");
@@ -109,6 +109,7 @@ public abstract class RbacController extends CoreController {
 		assign("siteName", settingService.getProperty(null, "siteName", "系统名称未设置"));
 		String uri = ServletUtil.getFullUrl(request, false, true);
 		assign("menuTree", menuService.generateTree(appPath, null, uri, true));
+		assign("userInfo", userInfo);
 		return super.displayTemplate(controller, action);
 	}
 	

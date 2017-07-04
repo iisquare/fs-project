@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50624
 File Encoding         : 65001
 
-Date: 2017-07-04 16:10:30
+Date: 2017-07-04 16:35:20
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -169,7 +169,7 @@ CREATE TABLE `t_user` (
   `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序',
   `description` text NOT NULL COMMENT '描述',
   `active_ip` varchar(255) NOT NULL DEFAULT '' COMMENT '最后登录IP',
-  `active_time` int(11) NOT NULL DEFAULT '0' COMMENT '最后登录时间',
+  `active_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '最后登录时间',
   `create_uid` int(11) NOT NULL DEFAULT '0' COMMENT '创建者',
   `create_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '创建时间',
   `update_uid` int(11) NOT NULL DEFAULT '0' COMMENT '修改者',
@@ -180,5 +180,5 @@ CREATE TABLE `t_user` (
 -- ----------------------------
 -- Records of t_user
 -- ----------------------------
-INSERT INTO `t_user` VALUES ('1', '系统管理员', 'admin', 'd53333790b3613e28e8f9f645cfecb9b', '390455', '1', '1', '', '', '0', '0', '1499049919402', '0', '1499050329037');
+INSERT INTO `t_user` VALUES ('1', '系统管理员', 'admin', 'd53333790b3613e28e8f9f645cfecb9b', '390455', '1', '1', '', '127.0.0.1', '1499157299025', '0', '1499049919402', '0', '1499050329037');
 INSERT INTO `t_user` VALUES ('2', 'test', 'test', 'ce0f14b2f013ff077c5685b21b69a186', '157585', '1', '0', '', '', '0', '0', '1499050281568', '0', '1499050281568');

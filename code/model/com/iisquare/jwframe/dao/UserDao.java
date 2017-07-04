@@ -37,6 +37,8 @@ public class UserDao extends MySQLBase<UserDao> {
 		columns.put("status", null); // 状态
 		columns.put("sort", null); // 排序
 		columns.put("description", null); // 描述
+		columns.put("active_ip", null); // 最后登录IP
+		columns.put("active_time", null); // 最后登录时间
 		columns.put("create_uid", null); // 创建者
 		columns.put("create_time", null); // 创建时间
 		columns.put("update_uid", null); // 修改者

@@ -18,6 +18,7 @@ import com.iisquare.jwframe.mvc.ServiceBase;
 import com.iisquare.jwframe.utils.CodeUtil;
 import com.iisquare.jwframe.utils.DPUtil;
 import com.iisquare.jwframe.utils.ServiceUtil;
+import com.iisquare.jwframe.utils.ServletUtil;
 
 @Service
 @Scope("singleton")
@@ -44,21 +45,20 @@ public class UserService extends ServiceBase {
 		Object uid = userInfo.get("id");
 		if(DPUtil.empty(uid)) return false;
 		request.getSession().setAttribute("uid", uid);
+		UserDao dao = webApplicationContext.getBean(UserDao.class);
+		Map<String, Object> data = new LinkedHashMap<>();
+		data.put("active_ip", ServletUtil.getRemoteAddr(request));
+		data.put("active_time", System.currentTimeMillis());
+		dao.where("id = :id", ":id", uid).update(data);
 		return true;
 	}
 	
-	public Map<String, Object> getCurrentUserInfo(HttpServletRequest request, boolean isUpdate) {
+	public Map<String, Object> getCurrentUserInfo(HttpServletRequest request) {
 		int uid = DPUtil.parseInt(request.getSession().getAttribute("uid"));
 		if(DPUtil.empty(uid)) return null;
-		Map<String, Object> info = getInfo(uid);
+		UserDao dao = webApplicationContext.getBean(UserDao.class);
+		Map<String, Object> info = dao.select("id,name,username,status").where("id = :id", ":id", uid).one();
 		if(null == info || 1 != DPUtil.parseInt(info.get("status"))) return null;
-		if(isUpdate) {
-			UserDao dao = webApplicationContext.getBean(UserDao.class);
-			Map<String, Object> data = new LinkedHashMap<>();
-			data.put("active_ip", com.iisquare.jwframe.utils.ServletUtil.getRemoteAddr(request));
-			data.put("active_time", System.currentTimeMillis());
-			dao.where("id = :id", ":id", uid).update(data);
-		}
 		return info;
 	}
 	
