@@ -11,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import com.iisquare.jwframe.core.component.RbacController;
 import com.iisquare.jwframe.service.RoleService;
 import com.iisquare.jwframe.utils.DPUtil;
+import com.iisquare.jwframe.utils.ServiceUtil;
 import com.iisquare.jwframe.utils.ServletUtil;
 import com.iisquare.jwframe.utils.ValidateUtil;
 
@@ -26,8 +27,15 @@ public class RoleController extends RbacController {
 		if(!ServletUtil.isAjax(request)) {
 			Map<String, Object> info = roleService.getInfo(id);
 			if(null == info) return displayInfo(404, null, null);
+			assign("info", info);
+			assign("resourceIds", DPUtil.implode(",", DPUtil.collectionToArray(
+					ServiceUtil.getFieldValues(roleService.getResourceRelList(id), "bid"))));
+			assign("menuIds", DPUtil.implode(",", DPUtil.collectionToArray(
+					ServiceUtil.getFieldValues(roleService.getMenuRelList(id), "bid"))));
 			return displayTemplate();
 		}
+		boolean result = roleService.permit(id, getArray("resourceIds"), getArray("menuIds"));
+		if(!result) return displayMessage(500, "保存失败", null);
 		return displayMessage(0, null, null);
 	}
 	

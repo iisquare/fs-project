@@ -1,5 +1,6 @@
 package com.iisquare.jwframe.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.iisquare.jwframe.Configuration;
+import com.iisquare.jwframe.dao.RelationDao;
 import com.iisquare.jwframe.dao.RoleDao;
 import com.iisquare.jwframe.dao.UserDao;
 import com.iisquare.jwframe.mvc.ServiceBase;
@@ -31,6 +33,39 @@ public class RoleService extends ServiceBase {
 		map.put("0", "禁用");
 		map.put("1", "正常");
 		return map;
+	}
+	
+	public boolean permit(Object roleId, Object[] resourceIds, Object[] menuIds) {
+		RelationDao dao = webApplicationContext.getBean(RelationDao.class);
+		Number result = dao.where("type='role_menu' and aid=:roleId", ":roleId", roleId).delete();
+		if(null == result) return false;
+		List<Map<String, Object>> datas = new ArrayList<>();
+		for (Object id : resourceIds) {
+			Map<String, Object> item = new LinkedHashMap<>();
+			item.put("type", "role_resource");
+			item.put("aid", roleId);
+			item.put("bid", id);
+			datas.add(item);
+		}
+		for (Object id : menuIds) {
+			Map<String, Object> item = new LinkedHashMap<>();
+			item.put("type", "role_menu");
+			item.put("aid", roleId);
+			item.put("bid", id);
+			datas.add(item);
+		}
+		result = dao.batchInsert(datas);
+		return null != result;
+	}
+	
+	public List<Map<String, Object>> getResourceRelList(Object roleId) {
+		RelationDao dao = webApplicationContext.getBean(RelationDao.class);
+		return dao.where("type='role_resource' and aid=:roleId", ":roleId", roleId).all();
+	}
+	
+	public List<Map<String, Object>> getMenuRelList(Object roleId) {
+		RelationDao dao = webApplicationContext.getBean(RelationDao.class);
+		return dao.where("type='role_menu' and aid=:roleId", ":roleId", roleId).all();
 	}
 	
 	public Map<Object, Object> search(Map<String, Object> map, String orderBy, int page, int pageSize) {

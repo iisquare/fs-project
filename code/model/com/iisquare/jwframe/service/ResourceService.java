@@ -83,7 +83,12 @@ public class ResourceService extends ServiceBase {
 		}
 		ResourceDao dao = webApplicationContext.getBean(ResourceDao.class);
 		int total = dao.where(condition.toString(), params).count().intValue();
-		List<Map<String, Object>> rows = dao.orderBy(orderBy).page(page, pageSize).all();
+		List<Map<String, Object>> rows;
+		if(-1 == pageSize) {
+			rows = dao.orderBy(orderBy).all();
+		} else {
+			rows = dao.orderBy(orderBy).page(page, pageSize).all();
+		}
 		rows = ServiceUtil.fillFields(rows, new String[]{"status"}, new Map<?, ?>[]{getStatusMap()}, null);
 		UserDao userDao = webApplicationContext.getBean(UserDao.class);
 		rows = ServiceUtil.fillRelations(rows, userDao,

@@ -15,23 +15,21 @@
     <div class="page-content">
         <div class="row">
             <div class="col-xs-12">
-                <form id="submitForm" method="post" action="${_base_.url('save')}" class="form-horizontal" role="form">
+                <form id="submitForm" method="post" action="${_base_.url()}" class="form-horizontal" role="form">
                     <input type="hidden" name="id" value="${info.id!''}">
                     <div class="form-group">
-                        <div class="col-sm-6">
+                        <div class="col-sm-6" style="height: 500px;">
                             <table class="js-list-table-resource"></table>
-                            <div id="toolbar-resource">权限</div>
+                            <div id="toolbar-resource"><i class="glyphicon glyphicon-road"></i> 资源权限</div>
                         </div>
-                        <div class="col-sm-6">
+                        <div class="col-sm-6" style="height: 500px;">
                             <table class="js-list-table-menu"></table>
-                            <div id="toolbar-menu">菜单</div>
+                            <div id="toolbar-menu"><i class="glyphicon glyphicon-indent-left"></i> 菜单显示</div>
                         </div>
                     </div>
                     <div class="clearfix form-actions">
-                        <div class="col-md-offset-3 col-md-9">
+                        <div class="col-md-12 center">
                             <button class="btn btn-info" type="button"><i class="ace-icon fa fa-check bigger-110"></i> 提交 </button>
-                            &nbsp; &nbsp; &nbsp;
-                            <button class="btn" type="reset"><i class="ace-icon fa fa-undo bigger-110"></i> 重置 </button>
                         </div>
                     </div>
                 </form>
@@ -41,10 +39,11 @@
 </div>
 <script type="text/javascript">
     $(function () {
-        $('.js-list-table-resource').treegrid({
+        var $jsListTableResource = $('.js-list-table-resource');
+        var $jsListTableMenu = $('.js-list-table-menu');
+        $jsListTableResource.datagrid({
             url : '${_base_.url("resource", "list")}?no_refer=1',
             idField : 'id',
-            treeField : 'name',
             toolbar : '#toolbar-resource',
             rownumbers : true,
             fitcolumns : true,
@@ -62,17 +61,18 @@
                 {field:'status_text',title:'状态'},
                 {field:'module',title:'模块'},
                 {field:'controller',title:'控制器'},
-                {field:'action',title:'方法'}
+                {field:'action',title:'活动'},
+                {field:'operation',title:'操作'}
             ]],
             onLoadSuccess : function (data) {
                 var ids = '${resourceIds}'.split(',');
                 for (var key in ids) {
-                    if(!Web_empty(ids[key])) $(this).treegrid('checkRow', ids[key]);
+                    if(!Web_empty(ids[key])) $jsListTableResource.datagrid('checkRow', $jsListTableResource.datagrid('getRowIndex', ids[key]));
                 }
-                $(this).treegrid('autoSizeColumn');
+                $jsListTableResource.datagrid('autoSizeColumn');
             }
         });
-        $('.js-list-table-menu').treegrid({
+        $jsListTableMenu.treegrid({
             url : '${_base_.url("menu", "list")}',
             idField : 'id',
             treeField : 'name',
@@ -91,29 +91,29 @@
                 }},
                 {field:'name',title:'名称'},
                 {field:'status_text',title:'状态'},
-                {field:'target_text',title:'打开方式'},
+                {field:'module',title:'模块'},
                 {field:'url',title:'地址'}
             ]],
             onLoadSuccess : function (data) {
                 var ids = '${menuIds}'.split(',');
                 for (var key in ids) {
-                    if(!Web_empty(ids[key])) $(this).treegrid('checkRow', ids[key]);
+                    if(!Web_empty(ids[key])) $jsListTableMenu.treegrid('checkRow', ids[key]);
                 }
-                $(this).treegrid('autoSizeColumn');
+                $jsListTableMenu.treegrid('autoSizeColumn');
             }
         });
 
-        $('#buttonOk').bind('click', function () {
-            $.post('${_base_.url("savePower")}', {
+        $('.btn-info').bind('click', function () {
+            $.post('${_base_.url()}', {
                 id : '${info.id}',
-                resourceIds : Web_getDatagridIdArray($('.js-list-table-resource'), 'checked'),
-                menuIds : Web_getDatagridIdArray($('.js-list-table-menu'), 'checked')
+                resourceIds : Web_getDatagridCheckedIdArray($('.js-list-table-resource'), 'id'),
+                menuIds : Web_getDatagridCheckedIdArray($('.js-list-table-menu'), 'id')
             }, function (data) {
                 data = Web_parseMessage(data);
-                if(0 != data.status) {
+                if(0 != data.code) {
                     Web_alertInfo(data.message);
                 } else {
-                    Web_redirectPage('${_base_.url("layout")}');
+                    Web_redirectPage('${_base_.url("index")}');
                 }
             });
         });

@@ -62,6 +62,7 @@ public class MenuService extends ServiceBase {
 	
 	public List<Map<String, Object>> generateTree(Object parent) {
 		MenuDao dao = webApplicationContext.getBean(MenuDao.class);
+		dao.select("id, name, parent_id, module, url, status");
 		Map<Object, Map<String, Object>> itemMap = dao.orderBy("sort asc").all("id");
 		return generateTree(itemMap, DPUtil.parseInt(parent));
 	}
