@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50624
 File Encoding         : 65001
 
-Date: 2017-07-04 16:35:20
+Date: 2017-07-04 17:11:13
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -25,6 +25,7 @@ CREATE TABLE `t_menu` (
   `parent_id` int(11) NOT NULL DEFAULT '0' COMMENT '父级',
   `module` varchar(255) NOT NULL DEFAULT '' COMMENT '模块',
   `url` varchar(255) NOT NULL DEFAULT '' COMMENT '链接地址',
+  `pattern` tinytext NOT NULL COMMENT '通配符',
   `target` varchar(255) NOT NULL DEFAULT '' COMMENT '打开方式',
   `icon` varchar(255) NOT NULL DEFAULT '' COMMENT '图标',
   `state` varchar(255) NOT NULL DEFAULT '' COMMENT '展开状态',
@@ -41,18 +42,18 @@ CREATE TABLE `t_menu` (
 -- ----------------------------
 -- Records of t_menu
 -- ----------------------------
-INSERT INTO `t_menu` VALUES ('1', '系统管理', '0', 'backend', '', '', 'fa fa-cogs', 'closed', '1', '0', '', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('2', '用户管理', '1', 'backend', '', '', 'glyphicon glyphicon-user', 'closed', '1', '0', '', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('3', '角色管理', '1', 'backend', '/role/index/', '', 'glyphicon glyphicon-road', '', '1', '0', '', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('4', '菜单管理', '1', 'backend', '', '', 'glyphicon glyphicon-indent-left', 'closed', '1', '0', '', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('5', '资源管理', '1', 'backend', '', '', 'glyphicon glyphicon-inbox', 'closed', '1', '0', '', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('6', '参数设置', '1', 'backend', '/setting/index/', '', 'fa fa-globe', '', '1', '0', '', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('7', '添加用户', '2', 'backend', '/user/edit/', '', '', '', '1', '0', '', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('8', '用户列表', '2', 'backend', '/user/index/', '', '', '', '1', '0', '', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('9', '添加菜单', '4', 'backend', '/menu/edit/', '', '', '', '1', '0', '', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('10', '菜单列表', '4', 'backend', '/menu/index/', '', '', '', '1', '0', '', '0', '0', '0', '0');
-INSERT INTO `t_menu` VALUES ('12', '添加资源', '5', 'backend', '/resource/edit/', '', '', '', '1', '0', '', '0', '1499064520519', '0', '1499064520519');
-INSERT INTO `t_menu` VALUES ('13', '资源列表', '5', 'backend', '/resource/index/', '', '', '', '1', '0', '', '0', '1499064552744', '0', '1499064770069');
+INSERT INTO `t_menu` VALUES ('1', '系统管理', '0', 'backend', '', '', '', 'fa fa-cogs', 'closed', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('2', '用户管理', '1', 'backend', '', '', '', 'glyphicon glyphicon-user', 'closed', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('3', '角色管理', '1', 'backend', '/role/index/', '', '', 'glyphicon glyphicon-road', '', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('4', '菜单管理', '1', 'backend', '', '', '', 'glyphicon glyphicon-indent-left', 'closed', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('5', '资源管理', '1', 'backend', '', '', '', 'glyphicon glyphicon-inbox', 'closed', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('6', '参数设置', '1', 'backend', '/setting/index/', '', '', 'fa fa-globe', '', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('7', '添加用户', '2', 'backend', '/user/edit/', '/user/edit/.*', '', '', '', '1', '0', '', '0', '0', '1', '1499159216539');
+INSERT INTO `t_menu` VALUES ('8', '用户列表', '2', 'backend', '/user/index/', '', '', '', '', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('9', '添加菜单', '4', 'backend', '/menu/edit/', '', '', '', '', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('10', '菜单列表', '4', 'backend', '/menu/index/', '', '', '', '', '1', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_menu` VALUES ('12', '添加资源', '5', 'backend', '/resource/edit/', '', '', '', '', '1', '0', '', '0', '1499064520519', '0', '1499064520519');
+INSERT INTO `t_menu` VALUES ('13', '资源列表', '5', 'backend', '/resource/index/', '', '', '', '', '1', '0', '', '0', '1499064552744', '0', '1499064770069');
 
 -- ----------------------------
 -- Table structure for t_relation

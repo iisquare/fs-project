@@ -62,7 +62,7 @@ public class MenuService extends ServiceBase {
 	
 	public List<Map<String, Object>> generateTree(Object parent) {
 		MenuDao dao = webApplicationContext.getBean(MenuDao.class);
-		dao.select("id, name, parent_id, module, url, status");
+		dao.select("id, name, parent_id, module, url, pattern, icon, status");
 		Map<Object, Map<String, Object>> itemMap = dao.orderBy("sort asc").all("id");
 		return generateTree(itemMap, DPUtil.parseInt(parent));
 	}
@@ -102,7 +102,9 @@ public class MenuService extends ServiceBase {
 		for (Entry<Object, Map<String, Object>> entry : itemMap.entrySet()) {
 			Map<String, Object> value = entry.getValue();
 			if(0 == id && 0 == DPUtil.parseInt(value.get("parent_id"))) id = DPUtil.parseInt(value.get("id"));
-			if(!uri.equals(value.get("url"))) continue;
+			String pattern = DPUtil.parseString(value.get("pattern"));
+			if(DPUtil.empty(pattern)) pattern = DPUtil.parseString(value.get("url"));
+			if(!uri.matches(pattern)) continue;
 			id = DPUtil.parseInt(value.get("id"));
 			break;
 		}
