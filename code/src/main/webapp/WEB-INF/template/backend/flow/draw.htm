@@ -1,5 +1,5 @@
 <!doctype html>
-[#include "../public/common.inc.htm"]
+[#include "../../public/common.inc.htm"]
 <html lang="zh-CN">
 <head>
     <meta charset="utf-8">
@@ -39,7 +39,7 @@
 <script src="${webUrl}/statics/js/jquery-1.12.4.js"></script>
 <script src="${webUrl}/statics/plugins/jquery-easyui/jquery.easyui.min.js"></script>
 <script src="${webUrl}/statics/plugins/jsplumb/jsplumb.js"></script>
-[#include "../public/resource.js.htm"]
+<script src="${webUrl}/statics/js/backend.js"></script>
 <script type="application/javascript">
 jsPlumb.bind("ready", function() {
     function ContextMenu(e, data) {
@@ -267,7 +267,7 @@ jsPlumb.bind("ready", function() {
             data['connections'].push(item);
         }
         $.ajax({
-            url : '${_base_.url("save")}',
+            url : '${_base_.url()}',
             data : {
                 id : '${info.id!""}',
                 content : JSON.stringify(data)

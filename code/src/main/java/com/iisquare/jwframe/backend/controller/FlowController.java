@@ -12,6 +12,7 @@ import org.springframework.stereotype.Controller;
 import com.iisquare.jwframe.core.component.RbacController;
 import com.iisquare.jwframe.service.FlowService;
 import com.iisquare.jwframe.utils.DPUtil;
+import com.iisquare.jwframe.utils.ServletUtil;
 import com.iisquare.jwframe.utils.ValidateUtil;
 
 @Controller
@@ -20,6 +21,31 @@ public class FlowController extends RbacController {
 
 	@Autowired
 	public FlowService flowService;
+	
+	public Object drawAction() throws Exception {
+		Integer id = ValidateUtil.filterInteger(getParam("id"), true, 0, null, null);
+		if(ServletUtil.isAjax(request)) {
+			String content = DPUtil.trim(getParam("content"));
+			if(DPUtil.empty(content)) return displayMessage(10001, "参数异常", null);
+			int uid = DPUtil.parseInt(userInfo.get("id"));
+			long time = System.currentTimeMillis();
+			Map<String, Object> data = params;
+			data.put("update_uid", uid);
+			data.put("update_time", time);
+			int result = flowService.update(data);
+			if(0 > result) return displayMessage(500, "修改失败", null);
+			return displayMessage(0, null, result);
+		}
+		Map<String, Object> info;
+		if(null == id) {
+			info = new HashMap<>();
+		} else {
+			info = flowService.getInfo(id);
+			if(null == info) return displayInfo(404, null, null);
+		}
+		assign("info", info);
+		return displayTemplate();
+	}
 	
 	public Object indexAction () throws Exception {
 		assign("qargs", params);
