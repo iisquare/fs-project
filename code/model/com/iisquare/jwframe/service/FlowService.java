@@ -2,6 +2,7 @@ package com.iisquare.jwframe.service;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,9 +16,13 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.WebApplicationContext;
 
+import com.iisquare.jwframe.Configuration;
+import com.iisquare.jwframe.dao.FlowDao;
+import com.iisquare.jwframe.dao.UserDao;
 import com.iisquare.jwframe.mvc.ServiceBase;
 import com.iisquare.jwframe.utils.DPUtil;
 import com.iisquare.jwframe.utils.FileUtil;
+import com.iisquare.jwframe.utils.ServiceUtil;
 
 @Service
 @Scope("singleton")
@@ -25,17 +30,88 @@ public class FlowService extends ServiceBase {
 	
 	@Autowired
 	protected WebApplicationContext webApplicationContext;
-	private static List<Map<String, Object>> generateTree = null;
-	private static Set<String> generateJars = null;
-	private static Map<String, String> generateDependencies = null;
+	private static List<Map<String, Object>> pluginTree = null;
+	private static Set<String> pluginJars = null;
+	private static Map<String, String> pluginDependencies = null;
+	@Autowired
+	protected Configuration configuration;
 	
-	public List<Map<String, Object>> generateTree(Map<String, Map<String, Object>> itemMap, String parent) {
+	public Map<String, String> getStatusMap() {
+		Map<String, String> map = new LinkedHashMap<String, String>();
+		map.put("0", "禁用");
+		map.put("1", "正常");
+		return map;
+	}
+	
+	public Map<Object, Object> search(Map<String, Object> map, String orderBy, int page, int pageSize) {
+		StringBuilder condition = new StringBuilder("1=1");
+		Map<String, Object> params = new HashMap<String, Object>();
+		Object name = map.get("name");
+		if(!DPUtil.empty(name)) {
+			condition.append(" and name like :name");
+			params.put(":name", "%" + name + "%");
+		}
+		Object status = map.get("status");
+		if(null != status && !"".equals(status)) {
+			condition.append(" and status = :status");
+			params.put(":status", status);
+		}
+		Object description = map.get("description");
+		if(!DPUtil.empty(description)) {
+			condition.append(" and description like :description");
+			params.put(":description", "%" + description + "%");
+		}
+		Object timeStart = map.get("timeStart");
+		if(!DPUtil.empty(timeStart)) {
+			condition.append(" and update_time >= :timeStart");
+			params.put(":timeStart", DPUtil.dateTimeToMillis(timeStart, configuration.getDateTimeFormat()));
+		}
+		Object timeEnd = map.get("timeEnd");
+		if(!DPUtil.empty(timeEnd)) {
+			condition.append(" and update_time <= :timeEnd");
+			params.put(":timeEnd", DPUtil.dateTimeToMillis(timeEnd, configuration.getDateTimeFormat()));
+		}
+		FlowDao dao = webApplicationContext.getBean(FlowDao.class);
+		int total = dao.where(condition.toString(), params).count().intValue();
+		List<Map<String, Object>> rows = dao.orderBy(orderBy).page(page, pageSize).all();
+		rows = ServiceUtil.fillFields(rows, new String[]{"status"}, new Map<?, ?>[]{getStatusMap()}, null);
+		UserDao userDao = webApplicationContext.getBean(UserDao.class);
+		rows = ServiceUtil.fillRelations(rows, userDao,
+				new String[]{"create_uid", "update_uid"}, new String[]{"id", "username", "name"}, null);
+		return DPUtil.buildMap(new String[]{"total", "rows"}, new Object[]{total, rows});
+	}
+	
+	public Map<String, Object> getInfo(Object id) {
+		FlowDao dao = webApplicationContext.getBean(FlowDao.class);
+		return dao.where("id = :id", ":id", id).one();
+	}
+	
+	public int insert(Map<String, Object> data) {
+		if(DPUtil.empty(data.get("id"))) data.remove("id");
+		FlowDao dao = webApplicationContext.getBean(FlowDao.class);
+		return dao.insert(data).intValue();
+	}
+	
+	public int update(Map<String, Object> data) {
+		FlowDao dao = webApplicationContext.getBean(FlowDao.class);
+		return dao.where("id = :id", ":id", data.get("id")).update(data).intValue();
+	}
+	
+	public int delete(Object ...ids) {
+		if(DPUtil.empty(ids)) return -1;
+		FlowDao dao = webApplicationContext.getBean(FlowDao.class);
+		// if(count > 0) return -2; 暂不处理依赖关系
+		return dao.where("id in ("
+			+ DPUtil.implode(",", DPUtil.arrayToIntegerArray(ids)) + ")", new HashMap<>()).delete().intValue();
+	}
+	
+	public List<Map<String, Object>> pluginTree(Map<String, Map<String, Object>> itemMap, String parent) {
 		Map<Integer, Map<String, Object>> map = new TreeMap<>();
 		for (Entry<String, Map<String, Object>> entry : itemMap.entrySet()) {
 			String key = entry.getKey();
 			Map<String, Object> value = entry.getValue();
 			if(!parent.equals(value.get("parent"))) continue;
-			if(value.containsKey("children")) value.put("children", generateTree(itemMap, key));
+			if(value.containsKey("children")) value.put("children", pluginTree(itemMap, key));
 			map.put(DPUtil.parseInt(value.get("sort")), value);
 		}
 		return new ArrayList<>(map.values());
@@ -52,10 +128,10 @@ public class FlowService extends ServiceBase {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public List<Map<String, Object>> generateTree(boolean forceReload) {
-		if(!forceReload && null != generateTree) return generateTree;
+	public List<Map<String, Object>> pluginTree(boolean forceReload) {
+		if(!forceReload && null != pluginTree) return pluginTree;
 		File pluginsDir = new File(getPluginsPath());
-		if(!pluginsDir.exists() || !pluginsDir.isDirectory()) return generateTree = new ArrayList<>();
+		if(!pluginsDir.exists() || !pluginsDir.isDirectory()) return pluginTree = new ArrayList<>();
 		Map<String, Map<String, Object>> itemMap = new LinkedHashMap<>();
 		for (File file : pluginsDir.listFiles()) {
 			String json = FileUtil.getContent(file.getAbsolutePath() + "/config.json");
@@ -69,14 +145,14 @@ public class FlowService extends ServiceBase {
 				itemMap.put(item.get("id").toString(), item);
 			}
 		}
-		return generateTree = generateTree(itemMap, "");
+		return pluginTree = pluginTree(itemMap, "");
 	}
 	
-	public Set<String> generateJars(String uri, boolean forceReload) {
-		if(!forceReload && null != generateJars) return generateJars;
+	public Set<String> pluginJars(String uri, boolean forceReload) {
+		if(!forceReload && null != pluginJars) return pluginJars;
 		Set<String> jarsSet = new HashSet<>();
 		File pluginsDir = new File(getPluginsPath());
-		if(!pluginsDir.exists() || !pluginsDir.isDirectory()) return generateJars = jarsSet;
+		if(!pluginsDir.exists() || !pluginsDir.isDirectory()) return pluginJars = jarsSet;
 		for (File file : pluginsDir.listFiles()) {
 			if(!file.isDirectory()) continue;
 			for (File jar : file.listFiles()) {
@@ -98,13 +174,13 @@ public class FlowService extends ServiceBase {
 				}
 			}
 		}
-		return generateJars = jarsSet;
+		return pluginJars = jarsSet;
 	}
 	
-	public Set<String> generatePackages() {
+	public Set<String> pluginPackages() {
 		Set<String> set = new HashSet<>();
-		if(null == generateDependencies(false)) return set;
-		for (Entry<String, String> entry : generateDependencies.entrySet()) {
+		if(null == pluginDependencies(false)) return set;
+		for (Entry<String, String> entry : pluginDependencies.entrySet()) {
 			String key = entry.getKey();
 			if(!key.startsWith("packages:")) continue;
 			set.add(key.replaceFirst("packages:", "") + ":" + entry.getValue());
@@ -112,10 +188,10 @@ public class FlowService extends ServiceBase {
 		return set;
 	}
 	
-	public Set<String> generateExcludePackages() {
+	public Set<String> pluginExcludePackages() {
 		Set<String> set = new HashSet<>();
-		if(null == generateDependencies(false)) return set;
-		for (Entry<String, String> entry : generateDependencies.entrySet()) {
+		if(null == pluginDependencies(false)) return set;
+		for (Entry<String, String> entry : pluginDependencies.entrySet()) {
 			String key = entry.getKey();
 			if(!key.startsWith("exclude:")) continue;
 			set.add(key.replaceFirst("exclude:", ""));
@@ -124,10 +200,10 @@ public class FlowService extends ServiceBase {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public Map<String, String> generateDependencies(boolean forceReload) {
-		if(!forceReload && null != generateDependencies) return generateDependencies;
+	public Map<String, String> pluginDependencies(boolean forceReload) {
+		if(!forceReload && null != pluginDependencies) return pluginDependencies;
 		File pluginsDir = new File(getPluginsPath());
-		if(!pluginsDir.exists() || !pluginsDir.isDirectory()) return generateDependencies = new LinkedHashMap<>();
+		if(!pluginsDir.exists() || !pluginsDir.isDirectory()) return pluginDependencies = new LinkedHashMap<>();
 		Map<String, String> itemMap = new LinkedHashMap<>();
 		for (File file : pluginsDir.listFiles()) {
 			String json = FileUtil.getContent(file.getAbsolutePath() + "/config.json");
@@ -156,7 +232,7 @@ public class FlowService extends ServiceBase {
 				}
 			}
 		}
-		return generateDependencies = itemMap;
+		return pluginDependencies = itemMap;
 	}
 	
 }

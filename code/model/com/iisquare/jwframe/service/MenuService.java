@@ -60,10 +60,11 @@ public class MenuService extends ServiceBase {
 			+ DPUtil.implode(",", DPUtil.arrayToIntegerArray(ids)) + ")", new HashMap<>()).delete().intValue();
 	}
 	
-	public List<Map<String, Object>> generateTree(Object parent) {
+	public List<Map<String, Object>> generateTree(Object parent, boolean ignoreState) {
 		MenuDao dao = webApplicationContext.getBean(MenuDao.class);
-		dao.select("id, name, parent_id, module, url, pattern, icon, status");
-		Map<Object, Map<String, Object>> itemMap = dao.orderBy("sort asc").all("id");
+		String columns = "id, name, parent_id, module, url, pattern, icon, status, sort";
+		if(!ignoreState) columns += ", state";
+		Map<Object, Map<String, Object>> itemMap = dao.select(columns).orderBy("sort asc").all("id");
 		return generateTree(itemMap, DPUtil.parseInt(parent));
 	}
 	

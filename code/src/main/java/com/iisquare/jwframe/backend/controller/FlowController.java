@@ -1,30 +1,39 @@
 package com.iisquare.jwframe.backend.controller;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 
 import com.iisquare.jwframe.core.component.RbacController;
+import com.iisquare.jwframe.service.FlowService;
 import com.iisquare.jwframe.utils.DPUtil;
 import com.iisquare.jwframe.utils.ValidateUtil;
 
 @Controller
 @Scope("prototype")
-public class MenuController extends RbacController {
+public class FlowController extends RbacController {
 
+	@Autowired
+	public FlowService flowService;
+	
 	public Object indexAction () throws Exception {
+		assign("qargs", params);
+		assign("statusMap", flowService.getStatusMap());
 		return displayTemplate();
 	}
 	
 	public Object listAction () throws Exception {
-		boolean ignoreState = !DPUtil.empty(getParam("ignoreState"));
-		return displayJSON(menuService.generateTree(getParam("parentId"), ignoreState));
-	}
-	
-	public Object iconAction () throws Exception {
-		return displayTemplate();
+		int page = ValidateUtil.filterInteger(getParam("page"), true, 0, null, 1);
+		int pageSize = ValidateUtil.filterInteger(getParam("rows"), true, 0, 500, 30);
+		Map<Object, Object> map = flowService.search(params, "sort asc, update_time desc", page, pageSize);
+		assign("total", map.get("total"));
+		assign("rows", DPUtil.collectionToArray((Collection<?>) map.get("rows")));
+		return displayJSON();
 	}
 	
 	public Object editAction() throws Exception {
@@ -32,13 +41,12 @@ public class MenuController extends RbacController {
 		Map<String, Object> info;
 		if(null == id) {
 			info = new HashMap<>();
-			info.put("parent_id", DPUtil.parseInt(getParam("parentId")));
 		} else {
-			info = menuService.getInfo(id);
+			info = flowService.getInfo(id);
 			if(null == info) return displayInfo(404, null, null);
 		}
 		assign("info", info);
-		assign("statusMap", menuService.getStatusMap());
+		assign("statusMap", flowService.getStatusMap());
 		return displayTemplate();
 	}
 	
@@ -49,7 +57,6 @@ public class MenuController extends RbacController {
 		long time = System.currentTimeMillis();
 		Map<String, Object> data = params;
 		data.put("name", name);
-		data.put("parent_id", DPUtil.parseInt(getParam("parent_id")));
 		data.put("sort", DPUtil.parseInt(getParam("sort")));
 		data.put("status", DPUtil.parseInt(getParam("status")));
 		data.put("update_uid", uid);
@@ -58,10 +65,10 @@ public class MenuController extends RbacController {
 		if(DPUtil.empty(getParam("id"))) {
 			data.put("create_uid", uid);
 			data.put("create_time", time);
-			result = menuService.insert(data);
+			result = flowService.insert(data);
 			if(1 > result) return displayMessage(500, "添加失败", null);
 		} else {
-			result = menuService.update(data);
+			result = flowService.update(data);
 			if(0 > result) return displayMessage(500, "修改失败", null);
 		}
 		return displayMessage(0, null, result);
@@ -69,7 +76,7 @@ public class MenuController extends RbacController {
 	
 	public Object deleteAction() throws Exception {
 		Object[] idArray = getArray("ids");
-		int result = menuService.delete(idArray);
+		int result = flowService.delete(idArray);
 		if(-1 == result) return displayInfo(10001, "参数异常", null);
 		if(-2 == result) return displayInfo(10002, "该记录拥有下级节点，不允许删除", null);
 		if(result >= 0) {
@@ -77,6 +84,12 @@ public class MenuController extends RbacController {
 		} else {
 			return displayInfo(500, null, null);
 		}
+	}
+	
+	public Object pluginsAction() throws Exception {
+		boolean forceReload = !DPUtil.empty(getParam("forceReload"));
+		List<Map<String, Object>> list = flowService.pluginTree(forceReload);
+		return displayJSON(list);
 	}
 	
 }

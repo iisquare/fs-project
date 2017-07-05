@@ -57,6 +57,8 @@ dependencies {
 		[group: 'org.apache.spark', name: 'spark-mllib_2.11', version: sparkVersion],
 		// Elasticsearch
 		[group: 'org.elasticsearch', name: 'elasticsearch-spark-20_2.11', version: elasticsearchVersion],
+		// Quartz
+		[group: 'org.quartz-scheduler', name: 'quartz', version: '2.2.1'],
 	)
 }
 

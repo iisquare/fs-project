@@ -30,7 +30,7 @@ public class FlowController extends CoreController {
 	
 	public Object pluginsAction() throws Exception {
 		boolean forceReload = !DPUtil.empty(getParam("forceReload"));
-		List<Map<String, Object>> list = flowService.generateTree(forceReload);
+		List<Map<String, Object>> list = flowService.pluginTree(forceReload);
 		return displayJSON(list);
 	}
 	

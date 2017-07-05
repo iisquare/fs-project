@@ -56,7 +56,12 @@
                     <div class="form-group">
                         <label class="col-sm-3 control-label no-padding-right"> 图标 </label>
                         <div class="col-sm-9">
-                            <input name="icon" value="${info.icon!''}" type="text" placeholder="图标对应的类名称" class="col-xs-10 col-sm-5">
+                            <div class="col-xs-10 col-sm-5 input-group">
+                                <input name="icon" value="${info.icon!''}" type="text" placeholder="图标对应的类名称" class="form-control input-mask-date">
+                                <span class="input-group-btn">
+                                <a href="${_base_.url('icon')}" target="_blank" class="btn btn-sm btn-default"><i class="ace-icon fa fa-calendar bigger-110"></i> 查看图标 </a>
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">

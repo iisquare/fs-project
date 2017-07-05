@@ -25,10 +25,10 @@ public class Submitter {
 			TaskRunner.main(new String[]{json});
 		} else {
 			FlowService flowService = new FlowService();
-			Set<String> jarsSet = flowService.generateJars(config.getProperty("plugins.uri"), forceReload);
-			if(forceReload) flowService.generateDependencies(forceReload);
-			Set<String> packagesSet = flowService.generatePackages();
-			Set<String> excludeSet = flowService.generateExcludePackages();
+			Set<String> jarsSet = flowService.pluginJars(config.getProperty("plugins.uri"), forceReload);
+			if(forceReload) flowService.pluginDependencies(forceReload);
+			Set<String> packagesSet = flowService.pluginPackages();
+			Set<String> excludeSet = flowService.pluginExcludePackages();
 			String repositories = config.getProperty("maven.repositories");
 			List<String> argList = new ArrayList<>();
 			argList.add("--master");
