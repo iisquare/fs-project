@@ -36,6 +36,10 @@ $(function () {
             {field:'dependencies',title:'依赖'},
             {field:'sort',title:'排序'},
             {field:'description',title:'描述'},
+            {field:'trigger',title:'任务调度',formatter:function (value, row, index) {
+                if(!row.trigger || !row.trigger.cronExpression) return '';
+                return row.trigger.cronExpression;
+            }},
             {field:'update_uid',title:'修改者',formatter:function (value, row, index) {
                 if(!row.update_uid_info) return '';
                 return '[' + row.update_uid_info.username + ']' + row.update_uid_info.name;
@@ -51,6 +55,13 @@ $(function () {
                         '" class="page-table-button js-delete-confirm" data-options="iconCls:\'icon-remove\'">删除</a>');
                 html.push('<a target="_blank" href="${_base_.url("draw")}?id=', row.id,
                         '" class="page-table-button" data-options="iconCls:\'icon-sum\'">编辑流程</a>');
+                if(row.trigger) {
+                    html.push('<a href="${_base_.url("schedule")}?op=delete&id=', row.id,
+                            '" class="page-table-button" data-options="plain:true"><span class="fa fa-coffee">取消调度</span></a>');
+                } else {
+                    html.push('<a href="${_base_.url("schedule")}?id=', row.id,
+                            '" class="page-table-button" data-options="plain:true"><span class="fa fa-coffee">任务调度</span></a>');
+                }
                 return html.join('');
             }}
         ]],

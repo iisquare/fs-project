@@ -13,6 +13,7 @@ import javax.annotation.PreDestroy;
 import org.apache.log4j.Logger;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobBuilder;
+import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
 import org.quartz.Scheduler;
@@ -32,6 +33,7 @@ import org.springframework.web.context.WebApplicationContext;
 import com.iisquare.etl.spark.flow.QuartzJob;
 import com.iisquare.jwframe.mvc.ServiceBase;
 import com.iisquare.jwframe.test.TestQuartz;
+import com.iisquare.jwframe.utils.DPUtil;
 import com.iisquare.jwframe.utils.PropertiesUtil;
 
 @Service
@@ -56,6 +58,14 @@ public class JobService extends ServiceBase {
 			logger.error("quartz service init faild!", e);
 		}
 		
+	}
+	
+	public Map<Integer, Map<String, Object>> parseTriggers(List<Map<String, Object>> list) {
+		Map<Integer, Map<String, Object>> map = new LinkedHashMap<>();
+		for (Map<String, Object> item : list) {
+			map.put(DPUtil.parseInt(item.get("flowId")), item);
+		}
+		return map;
 	}
 	
 	public List<Map<String, Object>> getTriggers() {
@@ -88,6 +98,8 @@ public class JobService extends ServiceBase {
 					item.put("cronExpression", "");
 				}
 				item.put("triggerState", scheduler.getTriggerState(triggerKey).name());
+				JobDataMap jobDataMap = scheduler.getJobDetail(trigger.getJobKey()).getJobDataMap();
+				item.put("flowId", jobDataMap.get("flowId"));
 				list.add(item);
 			}
 			return list;
@@ -188,16 +200,14 @@ public class JobService extends ServiceBase {
 		}
 	}
 	
-	public boolean updateJob(int flowId) {
-		if(!unscheduleJob(flowId)) return false;
-		return scheduleJob(flowId);
-	}
-	
-	public boolean scheduleJob(int flowId) {
+	public boolean scheduleJob(int flowId, String cronExpression, int priority, String description) {
 		if(null == scheduler) return false;
-		JobDetail job = JobBuilder.newJob(QuartzJob.class).withIdentity(jobName(flowId), GROUP_NAME).build();
+		JobDataMap jobDataMap = new JobDataMap();
+		jobDataMap.put("flowId", flowId);
+		JobDetail job = JobBuilder.newJob(QuartzJob.class).withIdentity(jobName(flowId), GROUP_NAME).setJobData(jobDataMap).build();
 		Trigger trigger = TriggerBuilder.newTrigger().withIdentity(triggerName(flowId), GROUP_NAME)
-				.withSchedule(CronScheduleBuilder.cronSchedule("0/15 * * * * ?")).forJob(job).build();
+				.withSchedule(CronScheduleBuilder.cronSchedule(cronExpression)).withPriority(priority)
+				.withDescription(description).forJob(job).build();
 		try {
 			scheduler.scheduleJob(job, trigger);
 			return true;

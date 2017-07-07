@@ -23,7 +23,6 @@ public class JobController extends RbacController {
 	}
 	
 	public Object scheduleAction () throws Exception {
-		jobService.clearError();
 		String op = DPUtil.parseString(getParam("op"));
 		switch (op) {
 		case "list":
