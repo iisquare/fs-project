@@ -35,14 +35,14 @@ import com.iisquare.jwframe.test.TestQuartz;
 import com.iisquare.jwframe.utils.PropertiesUtil;
 
 @Service
-@Scope("singleton")
+@Scope("prototype")
 public class JobService extends ServiceBase {
 	
 	public static final String CONFIG_FILE_NAME = "spark.properties";
 	public static final String GROUP_NAME = "ETLVisual";
 	@Autowired
 	protected WebApplicationContext webApplicationContext;
-	private Scheduler scheduler = null;
+	private static Scheduler scheduler = null;
 	private Logger logger = Logger.getLogger(getClass().getName());
 
 	@PostConstruct

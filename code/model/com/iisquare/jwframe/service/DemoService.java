@@ -12,7 +12,7 @@ import com.iisquare.jwframe.dao.DemoDao;
 import com.iisquare.jwframe.mvc.ServiceBase;
 
 @Service
-@Scope("singleton")
+@Scope("prototype")
 public class DemoService extends ServiceBase {
 	
 	@Autowired

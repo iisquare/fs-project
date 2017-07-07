@@ -17,7 +17,7 @@ import com.iisquare.jwframe.utils.DPUtil;
 import com.iisquare.jwframe.utils.ServiceUtil;
 
 @Service
-@Scope("singleton")
+@Scope("prototype")
 public class SettingService extends ServiceBase {
 	
 	@Autowired

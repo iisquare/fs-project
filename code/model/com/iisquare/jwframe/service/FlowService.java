@@ -25,7 +25,7 @@ import com.iisquare.jwframe.utils.FileUtil;
 import com.iisquare.jwframe.utils.ServiceUtil;
 
 @Service
-@Scope("singleton")
+@Scope("prototype")
 public class FlowService extends ServiceBase {
 	
 	@Autowired

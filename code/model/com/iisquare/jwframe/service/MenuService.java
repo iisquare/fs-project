@@ -20,7 +20,7 @@ import com.iisquare.jwframe.utils.DPUtil;
 import com.iisquare.jwframe.utils.ServiceUtil;
 
 @Service
-@Scope("singleton")
+@Scope("prototype")
 public class MenuService extends ServiceBase {
 	
 	private static Map<String, List<Map<String, Object>>> generateTree = new HashMap<>();

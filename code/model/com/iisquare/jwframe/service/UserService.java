@@ -21,7 +21,7 @@ import com.iisquare.jwframe.utils.ServiceUtil;
 import com.iisquare.jwframe.utils.ServletUtil;
 
 @Service
-@Scope("singleton")
+@Scope("prototype")
 public class UserService extends ServiceBase {
 	
 	@Autowired

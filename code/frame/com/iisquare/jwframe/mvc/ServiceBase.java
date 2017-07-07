@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 @Service
-@Scope("singleton")
+@Scope("prototype")
 public abstract class ServiceBase {
 
 	protected Map<String, Object> lastError;
