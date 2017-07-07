@@ -13,6 +13,7 @@
         name-generator="com.iisquare.jwframe.mvc.BeanNameGenerator" />
 
     <bean id="initializer" class="com.iisquare.jwframe.core.Initializer" lazy-init="false"></bean>
+    <bean class="com.iisquare.jwframe.service.JobService" lazy-init="false"></bean>
 
     <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
         <property name="locations">

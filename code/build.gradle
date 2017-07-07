@@ -58,7 +58,7 @@ dependencies {
 		// Elasticsearch
 		[group: 'org.elasticsearch', name: 'elasticsearch-spark-20_2.11', version: elasticsearchVersion],
 		// Quartz
-		[group: 'org.quartz-scheduler', name: 'quartz', version: '2.2.1'],
+		[group: 'org.quartz-scheduler', name: 'quartz', version: '2.2.3'],
 	)
 }
 

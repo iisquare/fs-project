@@ -26,6 +26,10 @@ public abstract class ServiceBase {
 	
 	public boolean hasError() {
 		return null != lastError;
-	}	
+	}
+	
+	public void clearError() {
+		lastError = null;
+	}
 	
 }
