@@ -57,6 +57,8 @@ public class TaskRunner {
 		JobService jobService = new JobService(dataMap);
 		Map<?, ?> flow = DPUtil.parseJSON(DPUtil.parseString(dataMap.get("flowContent")), Map.class);
 		SparkConf sparkConf = new SparkConf();
+		SparkSession session = SparkSession.builder().config(sparkConf).getOrCreate();
+		jobService.updateApplicationId(session.sparkContext().applicationId());
 		// 解析节点
 		Map<?, ?> nodes = (Map<?, ?>) flow.get("nodes");
 		Map<String, Node> nodeMap = new LinkedHashMap<>();
@@ -87,7 +89,7 @@ public class TaskRunner {
 		// 查找入度为零的节点并执行
 		TaskRunner taskRunner = new TaskRunner(jobService);
 		while(taskRunner.process(nodeMap)) {}
-		SparkSession.builder().config(sparkConf).getOrCreate().close();
+		session.close();
 		jobService.update("complete");
 	}
 

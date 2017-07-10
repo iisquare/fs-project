@@ -24,10 +24,13 @@ public class JobService implements Closeable {
 	private Map<String, Object> dataMap;
 	private int flowId;
 	private String tablePrefix;
+	private Properties prop;
 	private Logger logger = Logger.getLogger(getClass().getName());
 	
 	public JobService(Map<String, Object> dataMap) {
 		this.dataMap = dataMap;
+		prop = PropertiesUtil.load(getClass().getClassLoader(), "jdbc.properties");
+		tablePrefix = prop.getProperty("mysql.tablePrefix", "");
 	}
 	
 	public Map<String, Object> getDataMap() {
@@ -155,6 +158,26 @@ public class JobService implements Closeable {
 		}
 	}
 	
+	public boolean updateApplicationId(String applicationId) {
+		Map<String, Object> data = new LinkedHashMap<>();
+		data.put("application_id", applicationId);
+		data.put("id", DPUtil.parseInt(dataMap.get("jobId")));
+		String sql = "update " + tablePrefix + "job set application_id=? where id=? limit 1";
+		PreparedStatement statement = null;
+		try {
+			statement = getConnection().prepareStatement(sql);
+			bindPendingParams(statement, data);
+			statement.executeUpdate();
+			return true;
+		} catch (SQLException e) {
+			return false;
+		} finally {
+			try {
+				if(null != statement) statement.close();
+			} catch (SQLException e) {}
+		}
+	}
+	
 	public boolean record() {
 		Map<String, Object> data = new LinkedHashMap<>();
 		data.put("flow_id", dataMap.get("flowId"));
@@ -201,12 +224,10 @@ public class JobService implements Closeable {
 			logger.error("load mysql driver failed", e);
 			return null;
 		}
-		Properties prop = PropertiesUtil.load(getClass().getClassLoader(), "jdbc.properties");
 		String url = "jdbc:mysql://" + prop.getProperty("mysql.master", "127.0.0.1:3306") + "/"
 				+ prop.getProperty("mysql.dbname") + "?characterEncoding=" + prop.getProperty("mysql.charset", "utf8");
 		try {
 			conn = DriverManager.getConnection(url, prop.getProperty("mysql.username", "root"), prop.getProperty("mysql.password", "root"));
-			tablePrefix = prop.getProperty("mysql.tablePrefix", "");
 		} catch (SQLException e) {
 			logger.error("get mysql connection", e);
 			conn = null;

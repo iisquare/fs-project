@@ -22,6 +22,7 @@ public class JobDao extends MySQLBase<JobDao> {
 		LinkedHashMap<String, Map<String, Object>> columns = new LinkedHashMap<>();
 		columns.put("id", null); // 主键
 		columns.put("flow_id", null); // 流程图主键
+		columns.put("application_id", null); // 任务主键
 		columns.put("flow_content", null); // 流程图快照
 		columns.put("status", null); // 当前状态
 		columns.put("trigger_time", null); // 任务触发时间
