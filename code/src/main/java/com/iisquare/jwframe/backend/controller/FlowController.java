@@ -49,6 +49,15 @@ public class FlowController extends RbacController {
 				}
 				return displayInfo(500, "操作失败", null);
 			}
+		case "trigger":
+			if(jobService.triggerJob(id)) {
+				return displayMessage(0, "操作成功", null);
+			} else {
+				if(jobService.hasError()) {
+					return displayJSON(jobService.getLastError());
+				}
+				return displayMessage(500, "操作失败", null);
+			}
 		}
 		if(null == info) return displayInfo(404, null, null);
 		assign("info", info);

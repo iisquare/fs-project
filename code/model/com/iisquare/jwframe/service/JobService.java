@@ -184,16 +184,27 @@ public class JobService extends ServiceBase {
 	}
 	
 	public String jobName(int flowId) {
-		return "flowJob" + flowId;
+		return "FlowJob" + flowId;
 	}
 	
 	public String triggerName(int flowId) {
-		return "flowTrigger" + flowId;
+		return "FlowTrigger" + flowId;
 	}
 	
 	public boolean triggerJob(int flowId) {
 		try {
-			scheduler.triggerJob(JobKey.jobKey(jobName(flowId), GROUP_NAME));
+			JobKey jobKey = JobKey.jobKey(jobName(flowId), GROUP_NAME);
+			if(scheduler.checkExists(jobKey)) {
+				scheduler.triggerJob(jobKey);
+				return true;
+			}
+			jobKey = JobKey.jobKey("Temp_" + jobName(flowId), GROUP_NAME);
+			JobDataMap jobDataMap = new JobDataMap();
+			jobDataMap.put("flowId", flowId);
+			jobDataMap.put("deleteOnCompleted", true);
+			JobDetail jobDetail = JobBuilder.newJob(QuartzJob.class).withIdentity(jobKey).storeDurably().setJobData(jobDataMap).build();
+			scheduler.addJob(jobDetail, true);
+			scheduler.triggerJob(jobKey);
 			return true;
 		} catch (SchedulerException e) {
 			return setLastError(500, e.getMessage(), null, false);

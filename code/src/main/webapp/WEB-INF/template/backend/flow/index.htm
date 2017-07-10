@@ -14,11 +14,34 @@
         <div id="toolbar">
             <a href="${_base_.url('edit')}" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true">添加</a>
             <a href="javascript:void(0);" class="easyui-linkbutton js-control-search" data-options="iconCls:'icon-search',plain:true">搜索</a>
+            <a href="javascript:void(0);" class="easyui-linkbutton js-control-trigger" data-options="plain:true"><span class="glyphicon glyphicon-play">立即执行</span></a>
         </div>
     </div>
 </div>
 <script type="application/javascript">
 $(function () {
+    $('.js-control-trigger').on('click', function () {
+        var row = $('.page-table-list').datagrid('getSelected');
+        if(!row) {
+            Web_alertInfo('请选择要执行的流程图');
+            return false;
+        }
+        var $obj = $(this);
+        if($obj.linkbuttonToggle('执行中...')) return false;
+        $.ajax({
+            url : '${_base_.url("schedule")}',
+            data : {
+                id : row.id,
+                op:'trigger'
+            },
+            type : 'POST',
+            success : function (result) {
+                $obj.linkbuttonToggle();
+                result = Web_parseMessage(result);
+                Web_alertInfo(result.message);
+            }
+        });
+    });
     $('.page-table-list').datagrid({
         url : '${_base_.url("list")}',
         pagination : true,
