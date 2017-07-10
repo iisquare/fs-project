@@ -26,7 +26,7 @@ public class JdbcUtil {
 			Class.forName(options.get("driver"));
 			return DriverManager.getConnection(options.get("url"), options.get("user"), options.get("password"));
 		} catch (ClassNotFoundException | SQLException e) {
-			logger.error("jdbc getConnection failed", e);
+			logger.error("jdbc getConnection failed at " + options.get("url"), e);
 			return null;
 		}
 	}

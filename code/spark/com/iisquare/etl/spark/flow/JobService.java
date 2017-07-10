@@ -38,41 +38,48 @@ public class JobService implements Closeable {
 		flowId = DPUtil.parseInt(dataMap.get("flowId"));
 		if(flowId < 1) return false;
 		if(!reload) return true;
+		Statement stmt = null;
+		ResultSet rs = null;
 		try {
-			Statement stmt = getConnection().createStatement();
+			stmt = getConnection().createStatement();
 			String sql = "select * from " + tablePrefix + "flow where id = " + flowId + " limit 1";
-			ResultSet rs = stmt.executeQuery(sql);
+			rs = stmt.executeQuery(sql);
 			if(rs.next()) {
 				dataMap.put("flowContent", rs.getString("content"));
 				dataMap.put("flowStatus", rs.getInt("status"));
 			}
-			rs.close();
-			stmt.close();
-			if(!dataMap.containsKey("content")) return false;
+			return dataMap.containsKey("flowContent");
 		} catch (SQLException e) {
 			return false;
+		} finally {
+			try {
+				if(null != rs) rs.close();
+				if(null != stmt) stmt.close();
+			} catch (SQLException e) {}
 		}
-		
-		return true;
 	}
 	
 	public boolean nodeStart(String nodeId) {
 		Map<String, Object> data = new LinkedHashMap<>();
-		data.put("job_id", dataMap.get("flowId"));
-		data.put("node_id", dataMap.get("flowContent"));
+		data.put("job_id", DPUtil.parseInt(dataMap.get("jobId")));
+		data.put("node_id", nodeId);
 		data.put("content", "");
 		data.put("start_time", System.currentTimeMillis());
 		String sql = "insert into " + tablePrefix + "job_node ("
 				+ DPUtil.implode(",", DPUtil.collectionToStringArray(data.keySet())) + ") values ("
 				+ DPUtil.implode(",", DPUtil.getFillArray(data.size(), "?")) + ")";
+		PreparedStatement statement = null;
 		try {
-			PreparedStatement statement = getConnection().prepareStatement(sql);
+			statement = getConnection().prepareStatement(sql);
 			bindPendingParams(statement, data);
-			boolean result = statement.execute();
-			statement.close();
-			return result;
+			statement.executeUpdate();
+			return true;
 		} catch (SQLException e) {
 			return false;
+		} finally {
+			try {
+				if(null != statement) statement.close();
+			} catch (SQLException e) {}
 		}
 	}
 	
@@ -83,14 +90,18 @@ public class JobService implements Closeable {
 		data.put("job_id", DPUtil.parseInt(dataMap.get("jobId")));
 		data.put("node_id", nodeId);
 		String sql = "update " + tablePrefix + "job_node set content=?, end_time=? where job_id=? and node_id=? limit 1";
+		PreparedStatement statement = null;
 		try {
-			PreparedStatement statement = getConnection().prepareStatement(sql);
+			statement = getConnection().prepareStatement(sql);
 			bindPendingParams(statement, data);
-			boolean result = statement.execute();
-			statement.close();
-			return result;
+			statement.executeUpdate();
+			return true;
 		} catch (SQLException e) {
 			return false;
+		} finally {
+			try {
+				if(null != statement) statement.close();
+			} catch (SQLException e) {}
 		}
 	}
 	
@@ -127,16 +138,20 @@ public class JobService implements Closeable {
 		case "complete":status = 6;break;
 		default:return false;
 		}
+		String sql = "update " + tablePrefix + "job set status=" + status + ", "
+				+ step + "_time=" + System.currentTimeMillis() + " where id="
+				+ DPUtil.parseInt(dataMap.get("jobId")) + " limit 1";
+		Statement statement = null;
 		try {
-			Statement statement = getConnection().createStatement();
-			String sql = "update " + tablePrefix + "job set status=" + status + ", "
-					+ step + "_time=" + System.currentTimeMillis() + " where id="
-					+ DPUtil.parseInt(dataMap.get("jobId")) + " limit 1";
-			boolean result = statement.execute(sql);
-			statement.close();
-			return result;
+			statement = getConnection().createStatement();
+			statement.executeUpdate(sql);
+			return true;
 		} catch (SQLException e) {
 			return false;
+		} finally {
+			try {
+				if(null != statement) statement.close();
+			} catch (SQLException e) {}
 		}
 	}
 	
@@ -149,22 +164,25 @@ public class JobService implements Closeable {
 		String sql = "insert into " + tablePrefix + "job ("
 				+ DPUtil.implode(",", DPUtil.collectionToStringArray(data.keySet())) + ") values ("
 				+ DPUtil.implode(",", DPUtil.getFillArray(data.size(), "?")) + ")";
+		PreparedStatement statement = null;
+		ResultSet rs = null;
 		try {
-			PreparedStatement statement = getConnection().prepareStatement(sql);
+			statement = getConnection().prepareStatement(sql);
 			bindPendingParams(statement, data);
-			if(statement.execute()) {
-				ResultSet keys = statement.executeQuery("SELECT last_insert_id();");
-				if (keys.next()) {
-					dataMap.put("jobId", ((Number) keys.getObject(1)).intValue());
-				}
-				keys.close();
+			statement.executeUpdate();
+			rs = statement.executeQuery("SELECT last_insert_id();");
+			if (rs.next()) {
+				dataMap.put("jobId", ((Number) rs.getObject(1)).intValue());
 			}
-			statement.close();
-			if(!dataMap.containsKey("jobId")) return false;
+			return dataMap.containsKey("jobId");
 		} catch (SQLException e) {
 			return false;
+		} finally {
+			try {
+				if(null != rs) rs.close();
+				if(null != statement) statement.close();
+			} catch (SQLException e) {}
 		}
-		return true;
 	}
 	
 	public Connection getConnection() {

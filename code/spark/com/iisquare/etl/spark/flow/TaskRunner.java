@@ -9,6 +9,7 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.apache.spark.SparkConf;
+import org.apache.spark.sql.SparkSession;
 
 import com.iisquare.etl.spark.flow.Node;
 import com.iisquare.jwframe.utils.DPUtil;
@@ -86,6 +87,7 @@ public class TaskRunner {
 		// 查找入度为零的节点并执行
 		TaskRunner taskRunner = new TaskRunner(jobService);
 		while(taskRunner.process(nodeMap)) {}
+		SparkSession.builder().config(sparkConf).getOrCreate().close();
 		jobService.update("complete");
 	}
 

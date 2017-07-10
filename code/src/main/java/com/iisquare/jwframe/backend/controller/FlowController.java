@@ -51,7 +51,7 @@ public class FlowController extends RbacController {
 			}
 		case "trigger":
 			if(jobService.triggerJob(id)) {
-				return displayMessage(0, "操作成功", null);
+				return displayMessage(0, "任务提交成功", null);
 			} else {
 				if(jobService.hasError()) {
 					return displayJSON(jobService.getLastError());
