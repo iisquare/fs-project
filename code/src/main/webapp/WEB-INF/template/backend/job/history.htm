@@ -1,0 +1,121 @@
+[#include "../public/header.htm"]
+<div class="main-content-inner">
+    <div class="breadcrumbs ace-save-state" id="breadcrumbs">
+        <ul class="breadcrumb">
+            <li>
+                <i class="ace-icon fa fa-home home-icon"></i>
+                <a href="${webUrl}/">主页</a>
+            </li>
+            <li class="active">历史作业</li>
+        </ul>
+    </div>
+    <div class="page-content-full">
+        <table class="page-table-list"></table>
+        <div id="toolbar">
+            <a href="javascript:void(0);" class="easyui-linkbutton js-control-search" data-options="iconCls:'icon-search',plain:true">搜索</a>
+        </div>
+    </div>
+</div>
+<script type="application/javascript">
+    $(function () {
+        $('.page-table-list').datagrid({
+            url : '${_base_.url()}?op=list',
+            pagination : true,
+            border : false,
+            toolbar : '#toolbar',
+            rownumbers : true,
+            fitColumns : true,
+            fit : true,
+            nowrap : true,
+            singleSelect : true,
+            columns:[[
+                {field:'id',title:'ID'},
+                {field:'flow_id',title:'流程图',formatter:function (value, row, index) {
+                    if(!row.flow_id_info) return value;
+                    return '[' + row.flow_id_info.id + ']' + row.flow_id_info.name;
+                }},
+                {field:'application_id',title:'应用ID',formatter:function (value, row, index) {
+                    return '<a href="${sparkUi}/app/?appId=' + value + '" target="_black">' + value + '</a>';
+                }},
+                {field:'status_text',title:'状态'},
+                {field:'trigger_time',title:'触发时间',formatter:function (value, row, index) {
+                    return Web_formatDateTime(value);
+                }},
+                {field:'dispatch_time',title:'分发时间',formatter:function (value, row, index) {
+                    return Web_formatDateTime(value);
+                }},
+                {field:'dispatched_time',title:'分发完成',formatter:function (value, row, index) {
+                    return Web_formatDateTime(value);
+                }},
+                {field:'complete_time',title:'执行完成',formatter:function (value, row, index) {
+                    return Web_formatDateTime(value);
+                }},
+                {field:'operate',title:'操作',formatter:function (value, row, index) {
+                    var html = [];
+                    html.push('<a target="_blank" href="${_base_.url("detail")}?id=', row.id,
+                            '" class="page-table-button"><span class="glyphicon glyphicon-retweet">查看</span></a>');
+                    return html.join('');
+                }}
+            ]],
+            onLoadSuccess : function (data) {
+                $('.page-table-button').linkbutton({plain : true});
+                $(this).datagrid('autoSizeColumn', 'operate');
+            }
+        });
+    });
+</script>
+<div class="hidden">
+    <div id="js-search-dialog" style="width:255px;height:235px" data-options="buttons:'#js-search-button',modal:true,resizable:true">
+        <form id="searchForm" method="post" action="${_base_.url('index')}">
+            <table align="center" class="table-horizontal tr-height25">
+                <tr>
+                    <th>开始时间</th>
+                    <td><input class="easyui-datetimebox width150" type="text" name="timeStart" value="${escapeHtml(qargs.timeStart)}" /></td>
+                </tr>
+                <tr>
+                    <th>结束时间</th>
+                    <td><input class="easyui-datetimebox width150" type="text" name="timeEnd" value="${escapeHtml(qargs.timeEnd)}" /></td>
+                </tr>
+                <tr>
+                    <th>名称</th>
+                    <td><input class="easyui-textbox width150" type="text" name="name" value="${escapeHtml(qargs.name)}" /></td>
+                </tr>
+                <tr>
+                    <th>状态</th>
+                    <th>
+                        <select class="easyui-combobox" name="status" data-options="required:true,editable:false">
+                            [@getMapOption map=statusMap default=qargs.status!"" tips="请选择记录状态" /]
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th>描述</th>
+                    <td><input class="easyui-textbox width150" type="text" name="description" value="${escapeHtml(qargs.description)}" /></td>
+                </tr>
+            </table>
+        </form>
+    </div>
+    <div id="js-search-button">
+        <a href="javascript:void(0);" class="easyui-linkbutton js-control-ok" data-options="iconCls:'icon-search'">搜索</a>
+        <a href="javascript:void(0);" class="easyui-linkbutton js-control-undo" data-options="iconCls:'icon-undo'">重置</a>
+    </div>
+</div>
+<script type="text/javascript">
+    $(function () {
+        var $searchDialog = $('#js-search-dialog');
+        $('.js-control-search').bind('click', function () {
+            $searchDialog.dialog({
+                title : '筛选条件',
+                iconCls : 'icon-search'
+            });
+        });
+        $('#js-search-button').find('.js-control-ok').unbind('click.action').bind('click.action' ,function () {
+            $('.page-table-list').datagrid('load', $('#searchForm').form('getData'));
+            $searchDialog.dialog('close');
+        });
+        $('#js-search-button').find('.js-control-undo').unbind('click.action').bind('click.action' ,function () {
+            $('#searchForm').form('reset');
+        });
+    });
+</script>
+[#include "../public/footer.htm"]
