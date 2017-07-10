@@ -32,7 +32,6 @@ import org.springframework.web.context.WebApplicationContext;
 
 import com.iisquare.etl.spark.flow.QuartzJob;
 import com.iisquare.jwframe.mvc.ServiceBase;
-import com.iisquare.jwframe.test.TestQuartz;
 import com.iisquare.jwframe.utils.DPUtil;
 import com.iisquare.jwframe.utils.PropertiesUtil;
 
@@ -51,7 +50,7 @@ public class JobService extends ServiceBase {
 	public void init() {
 		try {
 			SchedulerFactory schedulerFactory = new StdSchedulerFactory(
-					PropertiesUtil.load(TestQuartz.class.getClassLoader(), "quartz.properties"));
+					PropertiesUtil.load(JobService.class.getClassLoader(), "quartz.properties"));
 			scheduler = schedulerFactory.getScheduler();
 			scheduler.start();
 		} catch (SchedulerException e) {
@@ -201,7 +200,7 @@ public class JobService extends ServiceBase {
 			jobKey = JobKey.jobKey("Temp_" + jobName(flowId), GROUP_NAME);
 			JobDataMap jobDataMap = new JobDataMap();
 			jobDataMap.put("flowId", flowId);
-			jobDataMap.put("deleteOnCompleted", true);
+			jobDataMap.put("deleteJobOnCompleted", true);
 			JobDetail jobDetail = JobBuilder.newJob(QuartzJob.class).withIdentity(jobKey).storeDurably().setJobData(jobDataMap).build();
 			scheduler.addJob(jobDetail, true);
 			scheduler.triggerJob(jobKey);

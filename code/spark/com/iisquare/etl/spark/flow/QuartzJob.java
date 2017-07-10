@@ -1,6 +1,6 @@
 package com.iisquare.etl.spark.flow;
 
-import java.util.Date;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.quartz.Job;
@@ -19,17 +19,29 @@ public class QuartzJob implements Job {
 	
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException {
-		System.out.println("Hello, Quartz! - executing its JOB at "+  new Date() + " by " + context.getTrigger().getKey().toString());
 		JobDetail jobDetail = context.getJobDetail();
+		JobKey jobKey = jobDetail.getKey();
 		JobDataMap jobDataMap = jobDetail.getJobDataMap();
-		if(!DPUtil.empty(jobDataMap.get("deleteOnCompleted"))) {
-			JobKey jobKey = jobDetail.getKey();
+		JobService jobService = new JobService(jobDataMap);
+		jobService.init(true);
+		jobService.record(); // 记录作业
+		// TODO:判断作业是否可调度
+		jobService.update("dispatch"); // 开始调度
+		Map<String, Object> dataMap = jobService.getDataMap();
+		try {
+			Submitter.submit(DPUtil.stringifyJSON(dataMap), false, false);
+		} catch (Exception e1) {
+			logger.error("submitJob[" + jobKey.getName() + ", " + jobKey.getGroup() + "] error!", e1);
+		}
+		if(!DPUtil.empty(jobDataMap.get("deleteJobOnCompleted"))) {
 			try {
 				context.getScheduler().deleteJob(jobKey);
 			} catch (SchedulerException e) {
 				logger.error("deleteJob[" + jobKey.getName() + ", " + jobKey.getGroup() + "] error!", e);
 			}
 		}
+		jobService.update("dispatched"); // 调度完成
+		jobService.close();
 	}
 
 }

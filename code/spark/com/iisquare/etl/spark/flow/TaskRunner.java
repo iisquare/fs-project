@@ -15,6 +15,12 @@ import com.iisquare.jwframe.utils.DPUtil;
 
 public class TaskRunner {
 
+	private JobService jobService;
+	
+	public TaskRunner(JobService jobService) {
+		this.jobService = jobService;
+	}
+	
 	public boolean process(Map<String, Node> nodeMap) {
 		// 查找入度为零的全部节点
 		List<Node> list = new ArrayList<>();
@@ -34,14 +40,21 @@ public class TaskRunner {
 		}
 		// 执行任务
 		for (Node node : list) {
-			if(!node.process()) return false;
+			String nodeId = node.getId();
+			jobService.nodeStart(nodeId);
+			Object result = node.process();
+			jobService.nodeEnd(nodeId, null == result ? "" : result.toString());
+			if(null != result) return false;
 			node.setReady(true);
 		}
 		return !list.isEmpty();
 	}
 	
+	@SuppressWarnings("unchecked")
 	public static void main(String[] args) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-		Map<?, ?> flow = DPUtil.parseJSON(args[0], Map.class);
+		Map<String, Object> dataMap = DPUtil.parseJSON(args[0], Map.class);
+		JobService jobService = new JobService(dataMap);
+		Map<?, ?> flow = DPUtil.parseJSON(DPUtil.parseString(dataMap.get("flowContent")), Map.class);
 		SparkConf sparkConf = new SparkConf();
 		// 解析节点
 		Map<?, ?> nodes = (Map<?, ?>) flow.get("nodes");
@@ -54,10 +67,12 @@ public class TaskRunner {
 				Map<?, ?> prop = (Map<?, ?>) obj2;
 				properties.setProperty(prop.get("key").toString(), prop.get("value").toString());
 			}
+			String id = DPUtil.parseString(item.get("id"));
 			Node node = (Node) Class.forName(item.get("parent").toString()).newInstance();
 			node.setSparkConf(sparkConf);
+			node.setId(id);
 			node.setProperties(properties);
-			nodeMap.put(item.get("id").toString(), node);
+			nodeMap.put(id, node);
 		}
 		// 解析连线
 		List<?> connections = (List<?>) flow.get("connections");
@@ -69,8 +84,9 @@ public class TaskRunner {
 			target.getSource().add(source);
 		}
 		// 查找入度为零的节点并执行
-		TaskRunner taskRunner = new TaskRunner();
+		TaskRunner taskRunner = new TaskRunner(jobService);
 		while(taskRunner.process(nodeMap)) {}
+		jobService.update("complete");
 	}
 
 }

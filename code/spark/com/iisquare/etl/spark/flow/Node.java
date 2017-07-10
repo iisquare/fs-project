@@ -16,6 +16,7 @@ public abstract class Node implements Serializable {
 	protected boolean isReady = false;
 	protected Set<Node> source = new HashSet<>();
 	protected Set<Node> target = new HashSet<>();
+	protected String id;
 	protected Properties properties;
 	protected JavaRDD<Map<String, Object>> result;
 	
@@ -51,6 +52,14 @@ public abstract class Node implements Serializable {
 		this.target = target;
 	}
 	
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
 	public Properties getProperties() {
 		return properties;
 	}
@@ -69,12 +78,12 @@ public abstract class Node implements Serializable {
 
 	protected abstract JavaRDD<Map<String, Object>> call() throws Exception;
 	
-	public boolean process() {
+	public Object process() {
 		try {
 			result = call();
-			return true;
+			return null;
 		} catch (Exception e) {
-			return false;
+			return e;
 		}
 	}
 	

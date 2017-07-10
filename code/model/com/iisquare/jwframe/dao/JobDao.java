@@ -26,8 +26,6 @@ public class JobDao extends MySQLBase<JobDao> {
 		columns.put("status", null); // 当前状态
 		columns.put("trigger_time", null); // 任务触发时间
 		columns.put("dispatch_time", null); // 调度开始时间
-		columns.put("submit_time", null); // 作业提交开始时间
-		columns.put("submitted_time", null); // 作业提交完成时间
 		columns.put("dispatched_time", null); // 调度完成时间
 		columns.put("complete_time", null); // 处理完成事件
 		return columns;
