@@ -39,6 +39,11 @@ public class JobController extends RbacController {
 		return displayTemplate();
 	}
 	
+	public Object stateAction() throws Exception {
+		Integer id = ValidateUtil.filterInteger(getParam("id"), true, 0, null, null);
+		return displayMessage(0, null, jobService.getJobStates(id));
+	}
+	
 	public Object scheduleAction () throws Exception {
 		String op = DPUtil.parseString(getParam("op"));
 		switch (op) {

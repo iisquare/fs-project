@@ -35,6 +35,7 @@ import com.iisquare.etl.spark.flow.QuartzJob;
 import com.iisquare.jwframe.Configuration;
 import com.iisquare.jwframe.dao.FlowDao;
 import com.iisquare.jwframe.dao.JobDao;
+import com.iisquare.jwframe.dao.JobNodeDao;
 import com.iisquare.jwframe.mvc.ServiceBase;
 import com.iisquare.jwframe.utils.DPUtil;
 import com.iisquare.jwframe.utils.PropertiesUtil;
@@ -79,6 +80,11 @@ public class JobService extends ServiceBase {
 	public Map<String, Object> getInfo(Object id) {
 		JobDao dao = webApplicationContext.getBean(JobDao.class);
 		return dao.where("id = :id", ":id", id).one();
+	}
+	
+	public Map<Object, Map<String, Object>> getJobStates(Object jobId) {
+		JobNodeDao dao = webApplicationContext.getBean(JobNodeDao.class);
+		return dao.where("job_id=:job_id", ":job_id", jobId).all("node_id");
 	}
 	
 	public Map<Object, Object> search(Map<String, Object> map, String orderBy, int page, int pageSize) {

@@ -19,14 +19,28 @@
         .layout-center{background:#eee; position: relative;}
         #flow-chart-canvas{width:700px; height:500px; position:relative; margin:auto; background:url("${webUrl}/statics/images/grid.gif");}
         .flow-chart-item{position: absolute;}
+        .easyui-linkbutton i{border-bottom-style: solid; border-bottom-width: 1px;}
+        .message-underline-none{}
+        .message-underline-grey{border-bottom-color: grey;}
+        .message-underline-blue{border-bottom-color: blue;}
+        .message-underline-green{border-bottom-color: green;}
+        .message-underline-yellow{border-bottom-color: yellow;}
+        .message-underline-red{border-bottom-color: red;}
     </style>
 </head>
 <body class="easyui-layout">
     <div class="layout-north" data-options="region:'north'">
-        <button class="easyui-linkbutton flow-chart-act-save" data-options="iconCls:'icon-save',plain:true">保存</button>
-        <button class="easyui-linkbutton flow-chart-act-node-refresh" data-options="iconCls:'icon-reload',plain:true">刷新节点</button>
+        <span>操作：</span>
+        <button class="easyui-linkbutton flow-chart-state-refresh" data-options="iconCls:'icon-reload',plain:true">同步状态</button>
+        <span>状态：</span>
+        <button class="easyui-linkbutton" data-options="plain:true"><i class="message-underline-grey">Waiting</i></button>
+        <button class="easyui-linkbutton" data-options="plain:true"><i class="message-underline-blue">Running</i></button>
+        <button class="easyui-linkbutton" data-options="plain:true"><i class="message-underline-green">Succeed</i></button>
+        <button class="easyui-linkbutton" data-options="plain:true"><i class="message-underline-yellow">Warning</i></button>
+        <button class="easyui-linkbutton" data-options="plain:true"><i class="message-underline-red">Failed</i></button>
     </div>
-    <div class="layout-south" data-options="region:'south'">状态信息：<span id="tips-status"></span></div>
+    <div class="layout-south" data-options="region:'south'">状态信息：<span id="tips-status">
+    </span></div>
     <div class="layout-east" data-options="region:'east',title:'属性',split:true">
         <table id="flow-property-table" style="width:100%;"></table>
     </div>
@@ -132,28 +146,7 @@ jsPlumb.bind("ready", function() {
     });
     propertygridCanvas();
     $layoutCenter.on('contextmenu', function () {return false;});
-    jsPlumbInstance.bind('contextmenu', function (connInfo, originalEvent) {
-        if(!(connInfo instanceof jsPlumb.Connection)) return true;
-        new ContextMenu(originalEvent, [{
-            text : '删除连线',
-            iconCls : 'icon-remove',
-            onclick : function () {
-                jsPlumbInstance.deleteConnection(connInfo);
-            }
-        }]);
-    });
-    $flowChartCanvas.on('contextmenu', '.flow-chart-item', function (e) {
-        var $obj = $(this);
-        new ContextMenu(e, [{
-            text : '删除节点',
-            iconCls : 'icon-remove',
-            onclick : function () {
-                jsPlumbInstance.removeAllEndpoints($obj);
-                $obj.remove();
-                propertygridCanvas();
-            }
-        }]);
-    }).on('click', '.flow-chart-item', function (e) {
+    $flowChartCanvas.on('click', '.flow-chart-item', function (e) {
         var _this = this;
         var $obj = $(this);
         var node = $flowNodesTree.tree('find', $obj.data('parent'));
@@ -200,97 +193,8 @@ jsPlumb.bind("ready", function() {
     $flowChartCanvas.on('mousemove', function (e) {
         flowChartLastMouseMoveEvent = e;
     });
-    $flowChartCanvas.droppable({
-        onDrop : function (e, source) {
-            if(!$(source).hasClass('tree-node')) return true;
-            var node = $flowNodesTree.tree('getData', source);
-            var id = 'flowChartItem' + flowChartIndex;
-            var $obj = $('<button id="' + id + '" class="flow-chart-item">' + node.text + '[' + flowChartIndex + ']</button>');
-            $obj.data('index', flowChartIndex);
-            $obj.data('parent', node.id);
-            $obj.linkbutton({
-                iconCls : node.iconCls
-            });
-            $(this).append($obj);
-            $obj.css({
-                top : flowChartLastMouseMoveEvent.offsetY - $obj.height() / 2,
-                left : flowChartLastMouseMoveEvent.offsetX - $obj.width() / 2
-            });
-            $obj.trigger('click');
-            flowChartIndex++;
-            jsPlumbFlowNode(id);
-        }
-    });
-    $('.flow-chart-act-save').on('click', function () {
-        var _this = this;
-        var $obj = $(this);
-        if($obj.linkbuttonToggle('保存中...')) return false;
-        var data = {
-            width : $flowChartCanvas.width(),
-            height : $flowChartCanvas.height()
-        };
-        data['nodes'] = {};
-        $('.flow-chart-item').each(function () {
-            var $obj = $(this);
-            var node = $flowNodesTree.tree('find', $obj.data('parent'));
-            var nodeRows = (node.propertygrid && node.propertygrid.data && node.propertygrid.data.rows) ? node.propertygrid.data.rows : [];
-            var configRows = flowChartValue[this.id] ? flowChartValue[this.id] : {};
-            var position = $obj.position();
-            var item = {
-                id : this.id,
-                index : $obj.data('index'),
-                top : position.top,
-                left : position.left,
-                width : $obj.width(),
-                height : $obj.height(),
-                parent : node.id,
-                property : generatePropertyRows(this, nodeRows, configRows)
-            };
-            data['nodes'][this.id] = item;
-        });
-        data['connections'] = [];
-        var allConnections = jsPlumbInstance.getAllConnections();
-        for (var i in allConnections) {
-            var connection = allConnections[i];
-            var item = {
-                sourceId : connection.sourceId,
-                targetId : connection.targetId
-            };
-            for (var j in connection.endpoints) {
-                var endpoint = connection.endpoints[j];
-                if(!item['sourceAnchor'] && connection.sourceId == endpoint.anchor.elementId) {
-                    item['sourceAnchor'] = endpoint.anchor.type;
-                } else {
-                    item['targetAnchor'] = endpoint.anchor.type;
-                }
-            }
-            data['connections'].push(item);
-        }
-        $.ajax({
-            url : '${_base_.url()}',
-            data : {
-                id : '${info.id!""}',
-                content : JSON.stringify(data)
-            },
-            type : 'POST',
-            success : function (result) {
-                $obj.linkbuttonToggle();
-                $tipsStatus.html(result);
-            }
-        });
-    });
-    $('.flow-chart-act-node-refresh').on('click', function () {
-        $flowNodesTree.tree({url:'${_base_.url("plugins")}?forceReload=1'});
-    });
     $flowNodesTree.tree({
         url : '${_base_.url("flow", "plugins")}',
-        dnd : true,
-        onBeforeDrag : function (node) {
-            return typeof node.draggable != 'undefined' && node.draggable;
-        },
-        onBeforeDrop : function (target,source,point) {
-            return false;
-        },
         onLoadSuccess : function (node, data) {
             (function (data) {
                 if(!data) return;
@@ -334,6 +238,50 @@ jsPlumb.bind("ready", function() {
                 }
                 window.setTimeout(function () {
                     jsPlumbInstance.repaintEverything();
+                    $('.flow-chart-state-refresh').on('click', function () {
+                        var $obj = $(this);
+                        if($obj.linkbuttonToggle('同步中...')) return false;
+                        $.ajax({
+                            url : '${_base_.url("state")}?id=${info.id}',
+                            success : function (result) {
+                                $obj.linkbuttonToggle();
+                                result = Web_parseMessage(result);
+                                if(0 != result.code) {
+                                    $tipsStatus.html(result);
+                                    return;
+                                } else {
+                                    $tipsStatus.html('状态已同步');
+                                }
+                                var messageClass = ['message-underline-none', 'message-underline-grey', 'message-underline-blue',
+                                    'message-underline-green', 'message-underline-yellow', 'message-underline-red'];
+                                var $flowChartItem = $('.flow-chart-item');
+                                for (var i in messageClass) {
+                                    $flowChartItem.removeClass(messageClass[i]);
+                                }
+                                $flowChartItem.each(function () {
+                                    var $node = $(this);
+                                    var id = $node.attr('id');
+                                    var item = result.data[id];
+                                    if(!item) {
+                                        $node.addClass('message-underline-grey');
+                                    } else if('' != item.content) {
+                                        $node.addClass('message-underline-red');
+                                    } else if(0 == item.end_time) {
+                                        $node.addClass('message-underline-blue');
+                                    } else {
+                                        $node.addClass('message-underline-green');
+                                    }
+                                    $node.off('click.state').on('click.state', function () {
+                                        var html = [];
+                                        html.push('开始时间:' + Web_formatDateTime(item.start_time));
+                                        html.push('结束时间:' + Web_formatDateTime(item.end_time));
+                                        html.push('附加信息:' + item.content);
+                                        $tipsStatus.html(html.join(', '));
+                                    });
+                                });
+                            }
+                        });
+                    }).trigger('click');
                 }, 200);
             })('${info.flow_content!""}');
         }
