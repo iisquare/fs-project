@@ -317,8 +317,8 @@ public class JobService extends ServiceBase {
 		jobDataMap.put("flowId", flowId);
 		JobDetail job = JobBuilder.newJob(QuartzJob.class).withIdentity(jobName(flowId), GROUP_NAME).setJobData(jobDataMap).build();
 		Trigger trigger = TriggerBuilder.newTrigger().withIdentity(triggerName(flowId), GROUP_NAME)
-				.withSchedule(CronScheduleBuilder.cronSchedule(cronExpression)).withPriority(priority)
-				.withDescription(description).forJob(job).build();
+				.withSchedule(CronScheduleBuilder.cronSchedule(cronExpression).withMisfireHandlingInstructionDoNothing())
+				.withPriority(priority).withDescription(description).forJob(job).build();
 		try {
 			scheduler.scheduleJob(job, trigger);
 			return true;
