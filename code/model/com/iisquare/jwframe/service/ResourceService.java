@@ -40,8 +40,8 @@ public class ResourceService extends ServiceBase {
 	public Set<Object> getIdSetByRoleIds(Object[] roleIdArray) {
 		if(DPUtil.empty(roleIdArray)) return new HashSet<>();
 		RelationDao dao = webApplicationContext.getBean(RelationDao.class);
-		List<Map<String, Object>> list = dao.where(
-				"type='role_resource' and aid in (" + DPUtil.arrayToIntegerArray(roleIdArray) + ")", new HashMap<>()).all();
+		List<Map<String, Object>> list = dao.where("type='role_resource' and aid in ("
+				+ DPUtil.implode(",", DPUtil.arrayToIntegerArray(roleIdArray)) + ")", new HashMap<>()).all();
 		return ServiceUtil.getFieldValues(list, "bid");
 	}
 	

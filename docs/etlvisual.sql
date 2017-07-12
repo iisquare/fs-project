@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50624
 File Encoding         : 65001
 
-Date: 2017-07-12 12:06:31
+Date: 2017-07-12 12:24:23
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -480,6 +480,7 @@ INSERT INTO `t_relation` VALUES ('role_resource', '1', '48');
 INSERT INTO `t_relation` VALUES ('role_resource', '1', '49');
 INSERT INTO `t_relation` VALUES ('role_resource', '1', '50');
 INSERT INTO `t_relation` VALUES ('role_resource', '1', '51');
+INSERT INTO `t_relation` VALUES ('role_resource', '1', '52');
 INSERT INTO `t_relation` VALUES ('user_role', '1', '1');
 
 -- ----------------------------
@@ -502,7 +503,7 @@ CREATE TABLE `t_resource` (
   `update_uid` int(11) NOT NULL DEFAULT '0' COMMENT '修改者',
   `update_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '修改时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=52 DEFAULT CHARSET=utf8 COMMENT='资源信息表';
+) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8 COMMENT='资源信息表';
 
 -- ----------------------------
 -- Records of t_resource
@@ -558,6 +559,7 @@ INSERT INTO `t_resource` VALUES ('48', '绘制流程', '0', 'backend', 'flow', '
 INSERT INTO `t_resource` VALUES ('49', '流程插件', '0', 'backend', 'flow', 'plugins', '', '1', '0', '', '1', '1499825867052', '1', '1499825867052');
 INSERT INTO `t_resource` VALUES ('50', '流程调度', '0', 'backend', 'flow', 'schedule', '', '1', '0', '', '1', '1499825875737', '1', '1499825875737');
 INSERT INTO `t_resource` VALUES ('51', '从属关系', '0', 'backend', 'user', 'pemit', '', '1', '0', '', '1', '1499826350870', '1', '1499826350870');
+INSERT INTO `t_resource` VALUES ('52', '资源面板', '0', 'backend', 'setting', 'index', '', '1', '0', '', '1', '1499833229884', '1', '1499833229884');
 
 -- ----------------------------
 -- Table structure for t_role
@@ -601,7 +603,7 @@ CREATE TABLE `t_setting` (
 -- Records of t_setting
 -- ----------------------------
 INSERT INTO `t_setting` VALUES ('system', 'defaultPassword', '用户默认密码', 'admin888', '0', '创建用户时，若密码项留空，则采用该值作为用户默认密码', '0', '1499050437900');
-INSERT INTO `t_setting` VALUES ('system', 'permitAll', '开放全部权限', '1', '0', '慎用该配置，若值不为空则系统权限验证全部失效', '1', '1499155751703');
+INSERT INTO `t_setting` VALUES ('system', 'permitAll', '开放全部权限', '', '0', '慎用该配置，若值不为空则系统权限验证全部失效', '1', '1499833072992');
 INSERT INTO `t_setting` VALUES ('system', 'siteName', '系统名称', '数据报表调度平台', '0', '通过修改该值用来更换系统显示标题和名称', '0', '1499050481885');
 
 -- ----------------------------
