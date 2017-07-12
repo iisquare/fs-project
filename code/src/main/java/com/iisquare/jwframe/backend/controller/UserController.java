@@ -23,6 +23,13 @@ public class UserController extends RbacController {
 		return displayTemplate();
 	}
 	
+	public Object profileAction() throws Exception {
+		Map<String, Object> info = userService.getInfo(userInfo.get("id"));
+		if(null == info) return redirect(appPath + "user/logout/");
+		assign("info", info);
+		return displayTemplate();
+	}
+	
 	public Object permitAction () throws Exception {
 		Integer id = ValidateUtil.filterInteger(getParam("id"), true, 0, null, null);
 		if(!ServletUtil.isAjax(request)) {
@@ -97,6 +104,33 @@ public class UserController extends RbacController {
 		assign("info", info);
 		assign("statusMap", userService.getStatusMap());
 		return displayTemplate();
+	}
+	
+	public Object passwordAction() throws Exception {
+		if(!ServletUtil.isAjax(request) && !"POST".equals(request.getMethod())) return displayTemplate();
+		String passwordOld = DPUtil.trim(getParam("passwordOld"));
+		if(DPUtil.empty(passwordOld)) return displayMessage(10001, "原密码不能为空", null);
+		int uid = DPUtil.parseInt(userInfo.get("id"));
+		Map<String, Object> info = userService.getInfo(uid);
+		if(null == info || !userService.generatePassword(
+				passwordOld, DPUtil.parseString(info.get("salt"))).equals(info.get("password"))) {
+			return displayMessage(10002, "原密码不正确", null);
+		}
+		String password = DPUtil.trim(getParam("password"));
+		if(DPUtil.empty(password)) return displayMessage(10003, "新密码不能为空", null);
+		if(!password.equals(getParam("passwordNew"))) return displayMessage(10004, "两次密码输入不一致", null);
+		if(password.equals(passwordOld)) return displayMessage(10005, "新密码不能与原密码一致", null);
+		long time = System.currentTimeMillis();
+		Map<String, Object> data = params;
+		data.put("id", info.get("id"));
+		data.put("update_uid", uid);
+		data.put("update_time", time);
+		String salt = DPUtil.random(6);
+		data.put("salt", salt);
+		data.put("password", userService.generatePassword(password, salt));
+		int result = userService.update(data);
+		if(0 > result) return displayMessage(500, "修改失败", null);
+		return displayMessage(0, null, result);
 	}
 	
 	public Object saveAction() throws Exception {

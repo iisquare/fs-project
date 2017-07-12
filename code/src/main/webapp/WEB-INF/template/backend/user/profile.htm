@@ -1,0 +1,70 @@
+[#include "../public/header.htm"]
+<div class="main-content-inner">
+    <div class="breadcrumbs ace-save-state" id="breadcrumbs">
+        <ul class="breadcrumb">
+            <li>
+                <i class="ace-icon fa fa-home home-icon"></i>
+                <a href="${webUrl}/">主页</a>
+            </li>
+            <li class="active">个人信息</li>
+        </ul>
+    </div>
+    <div class="page-content">
+        <div class="row">
+            <div class="col-xs-12">
+                <form id="submitForm" method="post" action="${_base_.url('save')}" class="form-horizontal" role="form">
+                    <input type="hidden" name="id" value="${info.id!''}">
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right"> 昵称 </label>
+                        <div class="col-sm-9 padding-top-8">${info.name!''}</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right"> 账号 </label>
+                        <div class="col-sm-9 padding-top-8">${info.username!''}</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right"> 排序 </label>
+                        <div class="col-sm-9 padding-top-8">${info.sort!''}</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right"> 描述 </label>
+                        <div class="col-sm-9 padding-top-8">${info.description!''}</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right"> 创建者 </label>
+                        <div class="col-sm-9 padding-top-8">
+                            [#if !empty(info.create_uid_info)][${info.create_uid_info.username}]${info.create_uid_info.name}[#else]无[/#if]
+                            [#if !empty(info.create_time)](${millisToDateTime(info.create_time)})[/#if]
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right"> 修改者 </label>
+                        <div class="col-sm-9 padding-top-8">
+                            [#if !empty(info.update_uid_info)][${info.update_uid_info.username}]${info.update_uid_info.name}[#else]无[/#if]
+                            [#if !empty(info.update_time)](${millisToDateTime(info.update_time)})[/#if]
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+$(function () {
+    var $submitForm = $('#submitForm');
+    $submitForm.form({
+        success : function (data) {
+            data = Web_parseMessage(data);
+            if(0 != data.code) {
+                Web_alertInfo(data.message);
+            } else {
+                Web_redirectPage('${_base_.url("index")}');
+            }
+        }
+    });
+    $submitForm.find('.btn-info').on('click', function () {
+        if($submitForm.form('validate')) $submitForm.form('submit');
+    });
+});
+</script>
+[#include "../public/footer.htm"]
