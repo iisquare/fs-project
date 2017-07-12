@@ -108,8 +108,10 @@ public abstract class RbacController extends CoreController {
 	protected Object displayTemplate(String controller, String action) throws Exception {
 		assign("siteName", settingService.getProperty(null, "siteName", "系统名称未设置"));
 		String uri = ServletUtil.getFullUrl(request, false, true);
-		assign("menuTree", menuService.generateTree(appPath, null, uri, true));
-		assign("userInfo", userInfo);
+		if(null != userInfo) {
+			assign("menuTree", menuService.generateTree(DPUtil.parseInt(userInfo.get("id")), appPath, null, uri));
+			assign("userInfo", userInfo);
+		}
 		return super.displayTemplate(controller, action);
 	}
 	

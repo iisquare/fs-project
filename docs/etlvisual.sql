@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50624
 File Encoding         : 65001
 
-Date: 2017-07-12 16:17:31
+Date: 2017-07-12 17:36:45
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -370,7 +370,7 @@ CREATE TABLE `t_menu` (
   `update_uid` int(11) NOT NULL DEFAULT '0' COMMENT '修改者',
   `update_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '修改时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8 COMMENT='菜单信息表';
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8 COMMENT='菜单信息表';
 
 -- ----------------------------
 -- Records of t_menu
@@ -395,6 +395,9 @@ INSERT INTO `t_menu` VALUES ('18', '任务调度', '14', 'backend', '', '', '', 
 INSERT INTO `t_menu` VALUES ('19', '监控面板', '18', 'backend', '/job/index/', '', '', '', '', '1', '0', '', '1', '1499393045107', '1', '1499394393288');
 INSERT INTO `t_menu` VALUES ('20', '历史作业', '18', 'backend', '/job/history/', '', '', '', '', '1', '0', '', '1', '1499393103654', '1', '1499393121716');
 INSERT INTO `t_menu` VALUES ('21', '计划任务', '18', 'backend', '/job/schedule/', '', '', '', '', '1', '0', '', '1', '1499394355973', '1', '1499394355973');
+INSERT INTO `t_menu` VALUES ('22', '系统主页', '16', 'backend', '/index/index/', '', '', 'glyphicon glyphicon-home', '', '1', '0', '', '1', '1499850654936', '1', '1499850711646');
+INSERT INTO `t_menu` VALUES ('23', '个人信息', '16', 'backend', '/user/profile/', '', '', 'glyphicon glyphicon-user', '', '1', '0', '', '1', '1499850748732', '1', '1499850748732');
+INSERT INTO `t_menu` VALUES ('24', '修改密码', '16', 'backend', '/user/password/', '', '', 'fa fa-key', '', '1', '0', '', '1', '1499850784777', '1', '1499850784777');
 
 -- ----------------------------
 -- Table structure for t_relation
@@ -430,6 +433,9 @@ INSERT INTO `t_relation` VALUES ('role_menu', '1', '18');
 INSERT INTO `t_relation` VALUES ('role_menu', '1', '19');
 INSERT INTO `t_relation` VALUES ('role_menu', '1', '20');
 INSERT INTO `t_relation` VALUES ('role_menu', '1', '21');
+INSERT INTO `t_relation` VALUES ('role_menu', '1', '22');
+INSERT INTO `t_relation` VALUES ('role_menu', '1', '23');
+INSERT INTO `t_relation` VALUES ('role_menu', '1', '24');
 INSERT INTO `t_relation` VALUES ('role_resource', '1', '1');
 INSERT INTO `t_relation` VALUES ('role_resource', '1', '2');
 INSERT INTO `t_relation` VALUES ('role_resource', '1', '3');
@@ -482,6 +488,8 @@ INSERT INTO `t_relation` VALUES ('role_resource', '1', '49');
 INSERT INTO `t_relation` VALUES ('role_resource', '1', '50');
 INSERT INTO `t_relation` VALUES ('role_resource', '1', '51');
 INSERT INTO `t_relation` VALUES ('role_resource', '1', '52');
+INSERT INTO `t_relation` VALUES ('role_resource', '1', '53');
+INSERT INTO `t_relation` VALUES ('role_resource', '1', '54');
 INSERT INTO `t_relation` VALUES ('user_role', '1', '1');
 
 -- ----------------------------
@@ -504,7 +512,7 @@ CREATE TABLE `t_resource` (
   `update_uid` int(11) NOT NULL DEFAULT '0' COMMENT '修改者',
   `update_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '修改时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8 COMMENT='资源信息表';
+) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8 COMMENT='资源信息表';
 
 -- ----------------------------
 -- Records of t_resource
@@ -561,6 +569,8 @@ INSERT INTO `t_resource` VALUES ('49', '流程插件', '0', 'backend', 'flow', '
 INSERT INTO `t_resource` VALUES ('50', '流程调度', '0', 'backend', 'flow', 'schedule', '', '1', '0', '', '1', '1499825875737', '1', '1499825875737');
 INSERT INTO `t_resource` VALUES ('51', '从属关系', '0', 'backend', 'user', 'pemit', '', '1', '0', '', '1', '1499826350870', '1', '1499826350870');
 INSERT INTO `t_resource` VALUES ('52', '资源面板', '0', 'backend', 'setting', 'index', '', '1', '0', '', '1', '1499833229884', '1', '1499833229884');
+INSERT INTO `t_resource` VALUES ('53', '个人信息', '0', 'backend', 'user', 'profile', '', '1', '0', '', '1', '1499848290441', '1', '1499848290441');
+INSERT INTO `t_resource` VALUES ('54', '密码修改', '0', 'backend', 'user', 'password', '', '1', '0', '', '1', '1499848894169', '1', '1499848894169');
 
 -- ----------------------------
 -- Table structure for t_role
@@ -632,5 +642,5 @@ CREATE TABLE `t_user` (
 -- ----------------------------
 -- Records of t_user
 -- ----------------------------
-INSERT INTO `t_user` VALUES ('1', '系统管理员', 'admin', 'd53333790b3613e28e8f9f645cfecb9b', '390455', '1', '1', '', '127.0.0.1', '1499845837160', '0', '1499049919402', '0', '1499050329037');
+INSERT INTO `t_user` VALUES ('1', '系统管理员', 'admin', '4c5787b6eda06181dc3da6260a4765f7', '202369', '1', '1', '', '127.0.0.1', '1499852140860', '0', '1499049919402', '1', '1499850489428');
 INSERT INTO `t_user` VALUES ('2', 'test', 'test', 'ce0f14b2f013ff077c5685b21b69a186', '157585', '1', '0', '', '', '0', '0', '1499050281568', '0', '1499050281568');

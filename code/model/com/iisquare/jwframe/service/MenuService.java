@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.iisquare.jwframe.dao.MenuDao;
+import com.iisquare.jwframe.dao.RelationDao;
 import com.iisquare.jwframe.mvc.ServiceBase;
 import com.iisquare.jwframe.utils.DPUtil;
 import com.iisquare.jwframe.utils.ServiceUtil;
@@ -23,7 +24,6 @@ import com.iisquare.jwframe.utils.ServiceUtil;
 @Scope("prototype")
 public class MenuService extends ServiceBase {
 	
-	private static Map<String, List<Map<String, Object>>> generateTree = new HashMap<>();
 	@Autowired
 	protected WebApplicationContext webApplicationContext;
 
@@ -93,12 +93,22 @@ public class MenuService extends ServiceBase {
 		generateChecked(checkedSet, itemMap, item.get("parent_id"));
 	}
 	
-	public List<Map<String, Object>> generateTree(String webUrl, String module, String uri, boolean forceReload) {
+	public List<Map<String, Object>> generateTree(int userId, String webUrl, String module, String uri) {
 		if(null == module) module = "backend";
-		if(!forceReload && generateTree.containsKey(module)) return generateTree.get(module);
+		String where = "module=:module and status=1";
+		if(!DPUtil.empty(userId)) {
+			RelationDao relationDao = webApplicationContext.getBean(RelationDao.class);
+			Set<Object> roleIds = ServiceUtil.getFieldValues(
+					relationDao.where("type='user_role' and aid=:userId", ":userId", userId).all(), "bid");
+			if(DPUtil.empty(roleIds)) return new ArrayList<Map<String, Object>>();
+			Set<Object> menuIds = ServiceUtil.getFieldValues(relationDao.where(
+					"type='role_menu' and aid in (" + DPUtil.implode(",", DPUtil.collectionToArray(roleIds)) + ")").all(), "bid");
+			if(DPUtil.empty(menuIds)) return new ArrayList<Map<String, Object>>();
+			where += " and id in (" + DPUtil.implode(",", DPUtil.collectionToArray(menuIds)) + ")";
+		}
 		MenuDao dao = webApplicationContext.getBean(MenuDao.class);
-		Map<Object, Map<String, Object>> itemMap = dao.select("id,name,parent_id,url,target,icon,state")
-			.where("module=:module and status=1", ":module", module).orderBy("sort asc").all("id");
+		Map<Object, Map<String, Object>> itemMap = dao.select(
+				"id,name,parent_id,url,target,icon,state").where(where, ":module", module).orderBy("sort asc").all("id");
 		int id = 0; // 查找当前菜单项
 		for (Entry<Object, Map<String, Object>> entry : itemMap.entrySet()) {
 			Map<String, Object> value = entry.getValue();
@@ -127,9 +137,7 @@ public class MenuService extends ServiceBase {
 			value.put("url", url);
 		}
 		// 生成树结构
-		List<Map<String, Object>> list = generateTree(itemMap, 0);
-		generateTree.put(module, list);
-		return list;
+		return generateTree(itemMap, 0);
 	}
 	
 }

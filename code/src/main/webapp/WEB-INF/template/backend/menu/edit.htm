@@ -131,7 +131,7 @@ $(function () {
             if(0 != data.code) {
                 Web_alertInfo(data.message);
             } else {
-                Web_redirectPage('${_base_.url("index")}');
+                Web_redirectPage('${_base_.url("index")}', true);
             }
         }
     });
