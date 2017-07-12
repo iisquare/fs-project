@@ -1,0 +1,82 @@
+[#include "../public/header.htm"]
+<div class="main-content-inner">
+    <div class="breadcrumbs ace-save-state" id="breadcrumbs">
+        <ul class="breadcrumb">
+            <li>
+                <i class="ace-icon fa fa-home home-icon"></i>
+                <a href="${webUrl}/">主页</a>
+            </li>
+            <li>
+                <a href="${_base_.url('index')}">用户管理</a>
+            </li>
+            <li class="active">从属关系</li>
+        </ul>
+    </div>
+    <div class="page-content">
+        <div class="row">
+            <div class="col-xs-12">
+                <form id="submitForm" method="post" action="${_base_.url()}" class="form-horizontal" role="form">
+                    <input type="hidden" name="id" value="${info.id!''}">
+                    <div class="form-group">
+                        <div class="col-sm-12" style="height: 500px;">
+                            <table class="js-list-table-role"></table>
+                            <div id="toolbar-role"><i class="glyphicon glyphicon-road"></i> 所属角色</div>
+                        </div>
+                    </div>
+                    <div class="clearfix form-actions">
+                        <div class="col-md-12 center">
+                            <button class="btn btn-info" type="button"><i class="ace-icon fa fa-check bigger-110"></i> 提交 </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    $(function () {
+        var $jsListTableRole = $('.js-list-table-role');
+        $jsListTableRole.datagrid({
+            url : '${_base_.url("role", "list")}?no_refer=1',
+            idField : 'id',
+            toolbar : '#toolbar-role',
+            rownumbers : true,
+            fitcolumns : true,
+            fit : true,
+            nowrap : true,
+            singleSelect : true,
+            checkOnSelect : false,
+            selectOnCheck : false,
+            columns:[[
+                {field:'id',checkbox:true},
+                {field:'show_id',title:'ID',formatter:function (value, row, index) {
+                    return row.id;
+                }},
+                {field:'name',title:'名称'},
+                {field:'status_text',title:'状态'},
+                {field:'description',title:'描述'}
+            ]],
+            onLoadSuccess : function (data) {
+                var ids = '${resourceIds}'.split(',');
+                for (var key in ids) {
+                    if(!Web_empty(ids[key])) $jsListTableRole.datagrid('checkRow', $jsListTableRole.datagrid('getRowIndex', ids[key]));
+                }
+                $jsListTableRole.datagrid('autoSizeColumn');
+            }
+        });
+        $('.btn-info').bind('click', function () {
+            $.post('${_base_.url()}', {
+                id : '${info.id}',
+                roleIds : Web_getDatagridCheckedIdArray($jsListTableRole, 'id')
+            }, function (data) {
+                data = Web_parseMessage(data);
+                if(0 != data.code) {
+                    Web_alertInfo(data.message);
+                } else {
+                    Web_redirectPage('${_base_.url("index")}');
+                }
+            });
+        });
+    });
+</script>
+[#include "../public/footer.htm"]

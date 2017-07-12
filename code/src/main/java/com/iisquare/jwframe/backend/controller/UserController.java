@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 
 import com.iisquare.jwframe.core.component.RbacController;
 import com.iisquare.jwframe.utils.DPUtil;
+import com.iisquare.jwframe.utils.ServiceUtil;
 import com.iisquare.jwframe.utils.ServletUtil;
 import com.iisquare.jwframe.utils.ValidateUtil;
 
@@ -20,6 +21,21 @@ public class UserController extends RbacController {
 		assign("qargs", params);
 		assign("statusMap", userService.getStatusMap());
 		return displayTemplate();
+	}
+	
+	public Object permitAction () throws Exception {
+		Integer id = ValidateUtil.filterInteger(getParam("id"), true, 0, null, null);
+		if(!ServletUtil.isAjax(request)) {
+			Map<String, Object> info = userService.getInfo(id);
+			if(null == info) return displayInfo(404, null, null);
+			assign("info", info);
+			assign("roleIds", DPUtil.implode(",", DPUtil.collectionToArray(
+					ServiceUtil.getFieldValues(userService.getRoleRelList(id), "bid"))));
+			return displayTemplate();
+		}
+		boolean result = userService.permit(id, getArray("roleIds"));
+		if(!result) return displayMessage(500, "保存失败", null);
+		return displayMessage(0, null, null);
 	}
 	
 	public Object loginAction () throws Exception {

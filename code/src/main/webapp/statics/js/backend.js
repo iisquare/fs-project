@@ -93,11 +93,19 @@ function Web_openPage(url) {
 /**
  * 页面跳转，若url为整数则前进或后退历史记录
  */
-function Web_redirectPage(url) {
-    if(isNaN(url)) {
-        window.location.href = url;
+function Web_redirectPage(url, stay, tips) {
+    if(stay) {
+        if(!tips) tips = '处理成功，是否继续操作？';
+        Web_confirm(tips, function (result) {
+            if(result) return true;
+            Web_redirectPage(url);
+        });
     } else {
-        window.history.go(url);
+        if(isNaN(url)) {
+            window.location.href = url;
+        } else {
+            window.history.go(url);
+        }
     }
 }
 

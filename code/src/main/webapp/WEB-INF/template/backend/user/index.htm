@@ -35,6 +35,7 @@ $(function () {
             {field:'username',title:'账号'},
             {field:'status_text',title:'状态'},
             {field:'sort',title:'排序'},
+            {field:'role_info_text',title:'所属角色'},
             {field:'description',title:'描述'},
             {field:'create_uid',title:'创建者',formatter:function (value, row, index) {
                 if(!row.create_uid_info) return '';
@@ -53,9 +54,11 @@ $(function () {
             {field:'operate',title:'操作',formatter:function (value, row, index) {
                 var html = [];
                 html.push('<a href="${_base_.url("edit")}?id=', row.id,
-                        '" class="page-table-button" data-options="iconCls:\'icon-edit\'">修改</a>',
-                        '<a href="${_base_.url("delete")}?ids[]=', row.id,
+                        '" class="page-table-button" data-options="iconCls:\'icon-edit\'">修改</a>');
+                html.push('<a href="${_base_.url("delete")}?ids[]=', row.id,
                         '" class="page-table-button js-delete-confirm" data-options="iconCls:\'icon-remove\'">删除</a>');
+                html.push('<a href="${_base_.url("permit")}?id=', row.id,
+                        '" class="page-table-button" data-options="iconCls:\'icon-lock\'">从属关系</a>');
                 return html.join('');
             }}
         ]],

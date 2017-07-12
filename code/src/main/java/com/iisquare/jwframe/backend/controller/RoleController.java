@@ -48,6 +48,7 @@ public class RoleController extends RbacController {
 	public Object listAction () throws Exception {
 		int page = ValidateUtil.filterInteger(getParam("page"), true, 0, null, 1);
 		int pageSize = ValidateUtil.filterInteger(getParam("rows"), true, 0, 500, 30);
+		if(!DPUtil.empty(getParam("no_refer"))) pageSize = -1;
 		Map<Object, Object> map = roleService.search(params, "sort asc, update_time desc", page, pageSize);
 		assign("total", map.get("total"));
 		assign("rows", DPUtil.collectionToArray((Collection<?>) map.get("rows")));

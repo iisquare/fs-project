@@ -41,9 +41,10 @@
     $(function () {
         var $jsListTableResource = $('.js-list-table-resource');
         var $jsListTableMenu = $('.js-list-table-menu');
-        $jsListTableResource.datagrid({
+        $jsListTableResource.treegrid({
             url : '${_base_.url("resource", "list")}?no_refer=1',
             idField : 'id',
+            treeField : 'name',
             toolbar : '#toolbar-resource',
             rownumbers : true,
             fitcolumns : true,
@@ -52,6 +53,26 @@
             singleSelect : true,
             checkOnSelect : false,
             selectOnCheck : false,
+            loadFilter : function (data,parentId) {
+                data = data.rows;
+                var levels = ['module', 'controller', 'action', 'operation'];
+                return (function generateTree(parent, index) {
+                    if(index >= levels.length) return null;
+                    var next = index + 1 >= levels.length ? null : (index + 1);
+                    var list = [];
+                    scan : for (var i in data) {
+                        var item = data[i];
+                        for (var j = 0; j < index; j++) {
+                            if(parent[levels[j]] != item[levels[j]]) continue scan;
+                        }
+                        if('' == item[levels[index]]) continue;
+                        if(next && '' != item[levels[next]]) continue;
+                        if(next) item['children'] = generateTree(item, next);
+                        list.push(item);
+                    }
+                    return list;
+                })({}, 0);
+            },
             columns:[[
                 {field:'id',checkbox:true},
                 {field:'show_id',title:'ID',formatter:function (value, row, index) {
@@ -67,9 +88,9 @@
             onLoadSuccess : function (data) {
                 var ids = '${resourceIds}'.split(',');
                 for (var key in ids) {
-                    if(!Web_empty(ids[key])) $jsListTableResource.datagrid('checkRow', $jsListTableResource.datagrid('getRowIndex', ids[key]));
+                    if(!Web_empty(ids[key])) $jsListTableResource.treegrid('checkRow', ids[key]);
                 }
-                $jsListTableResource.datagrid('autoSizeColumn');
+                $jsListTableResource.treegrid('autoSizeColumn');
             }
         });
         $jsListTableMenu.treegrid({

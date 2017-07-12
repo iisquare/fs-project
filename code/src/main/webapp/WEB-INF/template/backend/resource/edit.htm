@@ -64,7 +64,7 @@
                     <div class="form-group">
                         <label class="col-sm-3 control-label no-padding-right"> 描述 </label>
                         <div class="col-sm-9">
-                            <textarea name="description" type="text" placeholder="简短介绍下该角色的作用" class="col-xs-10 col-sm-5">${info.description!''}</textarea>
+                            <textarea name="description" type="text" placeholder="简短介绍下该资源的作用" class="col-xs-10 col-sm-5">${info.description!''}</textarea>
                         </div>
                     </div>
                     <div class="form-group">
@@ -102,7 +102,7 @@ $(function () {
             if(0 != data.code) {
                 Web_alertInfo(data.message);
             } else {
-                Web_redirectPage('${_base_.url("index")}');
+                Web_redirectPage('${_base_.url("index")}', true);
             }
         }
     });

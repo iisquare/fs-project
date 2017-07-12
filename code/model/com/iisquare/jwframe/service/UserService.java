@@ -1,9 +1,11 @@
 package com.iisquare.jwframe.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -13,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.iisquare.jwframe.Configuration;
+import com.iisquare.jwframe.dao.RelationDao;
+import com.iisquare.jwframe.dao.RoleDao;
 import com.iisquare.jwframe.dao.UserDao;
 import com.iisquare.jwframe.mvc.ServiceBase;
 import com.iisquare.jwframe.utils.CodeUtil;
@@ -31,6 +35,27 @@ public class UserService extends ServiceBase {
 	
 	public String generatePassword(String password, String salt) {
 		return CodeUtil.md5(password + salt);
+	}
+	
+	public List<Map<String, Object>> getRoleRelList(Object userId) {
+		RelationDao dao = webApplicationContext.getBean(RelationDao.class);
+		return dao.where("type='user_role' and aid=:userId", ":userId", userId).all();
+	}
+	
+	public boolean permit(Object userId, Object[] roleIds) {
+		RelationDao dao = webApplicationContext.getBean(RelationDao.class);
+		Number result = dao.where("type='user_role' and aid=:userId", ":userId", userId).delete();
+		if(null == result) return false;
+		List<Map<String, Object>> datas = new ArrayList<>();
+		for (Object id : roleIds) {
+			Map<String, Object> item = new LinkedHashMap<>();
+			item.put("type", "user_role");
+			item.put("aid", userId);
+			item.put("bid", id);
+			datas.add(item);
+		}
+		result = dao.batchInsert(datas);
+		return null != result;
 	}
 	
 	public Map<String, String> getStatusMap() {
@@ -124,7 +149,40 @@ public class UserService extends ServiceBase {
 		UserDao userDao = webApplicationContext.getBean(UserDao.class);
 		rows = ServiceUtil.fillRelations(rows, userDao,
 				new String[]{"create_uid", "update_uid"}, new String[]{"id", "username", "name"}, null);
-		return DPUtil.buildMap(new String[]{"total", "rows"}, new Object[]{total, rows});
+		return DPUtil.buildMap(new String[]{"total", "rows"}, new Object[]{total, fillList(rows)});
+	}
+	
+	@SuppressWarnings("unchecked")
+	public String formatRoleRelText(List<Map<String, Object>> list) {
+		if(DPUtil.empty(list)) return "";
+		List<Object> returnList = new ArrayList<Object>();
+		for (Map<String, Object> map : list) {
+			Object roleRel = map.get("bid_info");
+			if(DPUtil.empty(roleRel)) continue ;
+			returnList.add(((Map<String, Object>) roleRel).get("name"));
+		}
+		return DPUtil.implode(",", DPUtil.collectionToArray(returnList));
+	}
+	
+	public List<Map<String, Object>> fillList(List<Map<String, Object>> list) {
+		Set<Object> ids = ServiceUtil.getFieldValues(list, "id");
+		if(DPUtil.empty(ids)) return list;
+		RelationDao relationDao = webApplicationContext.getBean(RelationDao.class);
+		List<Map<String, Object>> roleRelList = relationDao.where(
+				"type='user_role' and aid in (" + DPUtil.implode(",", DPUtil.collectionToArray(ids)) + ")").all();
+		RoleDao roleDao = webApplicationContext.getBean(RoleDao.class);
+		roleRelList = ServiceUtil.fillRelations(roleRelList, roleDao, new String[]{"bid"}, new String[]{"id", "name"}, null);
+		Map<Object, List<Map<String, Object>>> roleIndexMapList = ServiceUtil.indexesMapList(roleRelList, "aid");
+		String roleRelKey = DPUtil.stringConcat("role", ServiceUtil.relInfoPostfix);
+		String roleRelKeyText = DPUtil.stringConcat(roleRelKey, "_text");
+		List<Map<String, Object>> tempList;
+		for (Map<String, Object> map : list) {
+			map.remove("password");
+			tempList = roleIndexMapList.get(map.get("id"));
+			map.put(roleRelKey, ServiceUtil.getFieldValues(tempList, "bid_info"));
+			map.put(roleRelKeyText, formatRoleRelText(tempList));
+		}
+		return list;
 	}
 	
 	public Map<String, Object> getInfo(Object id) {

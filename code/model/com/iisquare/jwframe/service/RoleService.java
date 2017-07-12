@@ -44,7 +44,7 @@ public class RoleService extends ServiceBase {
 	
 	public boolean permit(Object roleId, Object[] resourceIds, Object[] menuIds) {
 		RelationDao dao = webApplicationContext.getBean(RelationDao.class);
-		Number result = dao.where("type='role_menu' and aid=:roleId", ":roleId", roleId).delete();
+		Number result = dao.where("type in ('role_menu', 'role_resource') and aid=:roleId", ":roleId", roleId).delete();
 		if(null == result) return false;
 		List<Map<String, Object>> datas = new ArrayList<>();
 		for (Object id : resourceIds) {
@@ -105,7 +105,12 @@ public class RoleService extends ServiceBase {
 		}
 		RoleDao dao = webApplicationContext.getBean(RoleDao.class);
 		int total = dao.where(condition.toString(), params).count().intValue();
-		List<Map<String, Object>> rows = dao.orderBy(orderBy).page(page, pageSize).all();
+		List<Map<String, Object>> rows;
+		if(-1 == pageSize) {
+			rows = dao.orderBy(orderBy).all();
+		} else {
+			rows = dao.orderBy(orderBy).page(page, pageSize).all();
+		}
 		rows = ServiceUtil.fillFields(rows, new String[]{"status"}, new Map<?, ?>[]{getStatusMap()}, null);
 		UserDao userDao = webApplicationContext.getBean(UserDao.class);
 		rows = ServiceUtil.fillRelations(rows, userDao,

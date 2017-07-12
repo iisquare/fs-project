@@ -171,6 +171,7 @@ public class ServiceUtil {
 	 * 获取对应字段的值列表
 	 */
 	public static Set<Object> getFieldValues(List<Map<String, Object>> list, String... fields) {
+		if(null == list) return null;
 		Set<Object> valueSet = new HashSet<>();
 		for (Map<String, Object> item : list) {
 			for (String field : fields) {
