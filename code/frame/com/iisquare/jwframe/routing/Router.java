@@ -33,6 +33,7 @@ public class Router {
 	private Logger logger = Logger.getLogger(getClass().getName());
 	public class ExceptionMessage {
 		public static final String NO_ROUTE_MATCHES = "no route matches!";
+		public static final String NO_ROUTE_FOUND = "no route found!";
 		public static final String NO_MODULE_MATCHES = "no module matches!";
 		public static final String APP_URI_ERROR = "app uri error!";
 		public static final String CONTROLLER_INIT_ERROR = "initError";
@@ -192,8 +193,7 @@ public class Router {
 			if (null != destroyVal) return new ApplicationException(ExceptionMessage.CONTROLLER_DESTROY_ERROR,
 					destroyVal instanceof Exception ? (Exception) destroyVal : new Throwable(destroyVal.toString()));
 		} catch (Exception e) {
-			return new Exception("Route:controller["
-					+ route.getControllerName() + "] - action[" + route.getActionName() + "]", e);
+			return new Exception(ExceptionMessage.NO_ROUTE_FOUND, e);
 		}
 		return null;
 	}

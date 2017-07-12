@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50624
 File Encoding         : 65001
 
-Date: 2017-07-12 12:24:23
+Date: 2017-07-12 16:17:31
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -431,6 +431,7 @@ INSERT INTO `t_relation` VALUES ('role_menu', '1', '19');
 INSERT INTO `t_relation` VALUES ('role_menu', '1', '20');
 INSERT INTO `t_relation` VALUES ('role_menu', '1', '21');
 INSERT INTO `t_relation` VALUES ('role_resource', '1', '1');
+INSERT INTO `t_relation` VALUES ('role_resource', '1', '2');
 INSERT INTO `t_relation` VALUES ('role_resource', '1', '3');
 INSERT INTO `t_relation` VALUES ('role_resource', '1', '4');
 INSERT INTO `t_relation` VALUES ('role_resource', '1', '5');
@@ -509,7 +510,7 @@ CREATE TABLE `t_resource` (
 -- Records of t_resource
 -- ----------------------------
 INSERT INTO `t_resource` VALUES ('1', '用户登录', '0', 'backend', 'user', 'login', '', '-1', '0', '', '0', '1499067915669', '0', '1499067915669');
-INSERT INTO `t_resource` VALUES ('2', '系统首页', '0', 'backend', 'index', 'index', '', '0', '0', '', '0', '0', '0', '0');
+INSERT INTO `t_resource` VALUES ('2', '系统首页', '0', 'backend', 'index', 'index', '', '1', '0', '', '0', '0', '0', '0');
 INSERT INTO `t_resource` VALUES ('3', '管理系统', '0', 'backend', '', '', '', '1', '0', '', '1', '1499824130352', '1', '1499824130352');
 INSERT INTO `t_resource` VALUES ('4', '菜单管理', '0', 'backend', 'menu', '', '', '1', '0', '', '1', '1499824161755', '1', '1499824161755');
 INSERT INTO `t_resource` VALUES ('5', '菜单面板', '0', 'backend', 'menu', 'index', '', '1', '0', '', '1', '1499824300113', '1', '1499824300113');
@@ -536,7 +537,7 @@ INSERT INTO `t_resource` VALUES ('25', '编辑角色', '0', 'backend', 'role', '
 INSERT INTO `t_resource` VALUES ('26', '保存角色', '0', 'backend', 'role', 'save', '', '1', '0', '', '1', '1499825462047', '1', '1499825462047');
 INSERT INTO `t_resource` VALUES ('27', '角色面板', '0', 'backend', 'role', 'index', '', '1', '0', '', '1', '1499825474370', '1', '1499825474370');
 INSERT INTO `t_resource` VALUES ('28', '角色列表', '0', 'backend', 'role', 'list', '', '1', '0', '', '1', '1499825484072', '1', '1499825484072');
-INSERT INTO `t_resource` VALUES ('29', '角色权限', '0', 'backend', 'role', 'pemit', '', '1', '0', '', '1', '1499825495633', '1', '1499825495633');
+INSERT INTO `t_resource` VALUES ('29', '角色权限', '0', 'backend', 'role', 'permit', '', '1', '0', '', '1', '1499825495633', '1', '1499825495633');
 INSERT INTO `t_resource` VALUES ('30', '资源管理', '0', 'backend', 'resource', '', '', '1', '0', '', '1', '1499825560154', '1', '1499825560154');
 INSERT INTO `t_resource` VALUES ('31', '资源面板', '0', 'backend', 'resource', 'index', '', '1', '0', '', '1', '1499825570240', '1', '1499825570240');
 INSERT INTO `t_resource` VALUES ('32', '资源列表', '0', 'backend', 'resource', 'list', '', '1', '0', '', '1', '1499825580183', '1', '1499825580183');
@@ -631,5 +632,5 @@ CREATE TABLE `t_user` (
 -- ----------------------------
 -- Records of t_user
 -- ----------------------------
-INSERT INTO `t_user` VALUES ('1', '系统管理员', 'admin', 'd53333790b3613e28e8f9f645cfecb9b', '390455', '1', '1', '', '127.0.0.1', '1499829662856', '0', '1499049919402', '0', '1499050329037');
+INSERT INTO `t_user` VALUES ('1', '系统管理员', 'admin', 'd53333790b3613e28e8f9f645cfecb9b', '390455', '1', '1', '', '127.0.0.1', '1499845837160', '0', '1499049919402', '0', '1499050329037');
 INSERT INTO `t_user` VALUES ('2', 'test', 'test', 'ce0f14b2f013ff077c5685b21b69a186', '157585', '1', '0', '', '', '0', '0', '1499050281568', '0', '1499050281568');

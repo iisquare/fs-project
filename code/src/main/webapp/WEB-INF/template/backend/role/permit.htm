@@ -56,7 +56,7 @@
             loadFilter : function (data,parentId) {
                 data = data.rows;
                 var levels = ['module', 'controller', 'action', 'operation'];
-                return (function generateTree(parent, index) {
+                var rows = (function generateTree(parent, index) {
                     if(index >= levels.length) return null;
                     var next = index + 1 >= levels.length ? null : (index + 1);
                     var list = [];
@@ -69,9 +69,14 @@
                         if(next && '' != item[levels[next]]) continue;
                         if(next) item['children'] = generateTree(item, next);
                         list.push(item);
+                        delete data[i];
                     }
                     return list;
                 })({}, 0);
+                for (var i in data) {
+                    rows.push(data[i]);
+                }
+                return rows;
             },
             columns:[[
                 {field:'id',checkbox:true},
