@@ -91,6 +91,8 @@ public class JobController extends RbacController {
 			assign("rows", DPUtil.collectionToArray((Collection<?>) map.get("rows")));
 			return displayJSON();
 		}
+		assign("qargs", params);
+		assign("statusMap", jobService.getStatusMap());
 		Configuration config = Configuration.getInstance();
 		assign("sparkUi", config.getProperty("url.ui", "http://127.0.0.1:8080"));
 		return displayTemplate();

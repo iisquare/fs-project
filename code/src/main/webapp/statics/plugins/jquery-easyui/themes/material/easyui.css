@@ -2558,13 +2558,13 @@
   border-width: 1px;
   border-style: solid;
 }
-.menu-text {
+.jmenu-text {
   height: 20px;
   line-height: 20px;
   float: left;
   padding-left: 28px;
 }
-.menu-icon {
+.jmenu-icon {
   position: absolute;
   width: 16px;
   height: 16px;
@@ -2608,8 +2608,8 @@
   filter: alpha(opacity=50);
   cursor: default;
 }
-.menu-text,
-.menu-text span {
+.jmenu-text,
+.jmenu-text span {
   font-size: 12px;
 }
 .menu-shadow {

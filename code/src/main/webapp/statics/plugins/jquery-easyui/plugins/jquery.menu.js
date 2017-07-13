@@ -77,9 +77,9 @@ _14.addClass("menu-sep");
 }
 if(!_14.hasClass("menu-sep")){
 _14.addClass("menu-item");
-_14.empty().append($("<div class=\"menu-text\"></div>").html(_15.text));
+_14.empty().append($("<div class=\"jmenu-text\"></div>").html(_15.text));
 if(_15.iconCls){
-$("<div class=\"menu-icon\"></div>").addClass(_15.iconCls).appendTo(_14);
+$("<div class=\"jmenu-icon\"></div>").addClass(_15.iconCls).appendTo(_14);
 }
 if(_15.id){
 _14.attr("id",_15.id);
@@ -106,7 +106,7 @@ var _1b=_18.is(":visible");
 _18.css({display:"block",left:-10000,height:"auto",overflow:"hidden"});
 _18.find(".menu-item").each(function(){
 $(this)._outerHeight(_19.itemHeight);
-$(this).find(".menu-text").css({height:(_19.itemHeight-2)+"px",lineHeight:(_19.itemHeight-2)+"px"});
+$(this).find(".jmenu-text").css({height:(_19.itemHeight-2)+"px",lineHeight:(_19.itemHeight-2)+"px"});
 });
 _18.removeClass("menu-noline").addClass(_19.noline?"menu-noline":"");
 var _1c=_18.data("menu").options;
@@ -114,7 +114,7 @@ var _1d=_1c.width;
 var _1e=_1c.height;
 if(isNaN(parseInt(_1d))){
 _1d=0;
-_18.find("div.menu-text").each(function(){
+_18.find("div.jmenu-text").each(function(){
 if(_1d<$(this).outerWidth()){
 _1d=$(this).outerWidth();
 }
@@ -433,15 +433,15 @@ _61(this);
 return jq.each(function(){
 var _67=$(_66.target).data("menuitem").options;
 _67.text=_66.text;
-$(_66.target).children("div.menu-text").html(_66.text);
+$(_66.target).children("div.jmenu-text").html(_66.text);
 });
 },setIcon:function(jq,_68){
 return jq.each(function(){
 var _69=$(_68.target).data("menuitem").options;
 _69.iconCls=_68.iconCls;
-$(_68.target).children("div.menu-icon").remove();
+$(_68.target).children("div.jmenu-icon").remove();
 if(_68.iconCls){
-$("<div class=\"menu-icon\"></div>").addClass(_68.iconCls).appendTo(_68.target);
+$("<div class=\"jmenu-icon\"></div>").addClass(_68.iconCls).appendTo(_68.target);
 }
 });
 },getItem:function(jq,_6a){

@@ -98,9 +98,9 @@
 		}
 		if (!item.hasClass('menu-sep')){
 			item.addClass('menu-item');
-			item.empty().append($('<div class="menu-text"></div>').html(itemOpts.text));
+			item.empty().append($('<div class="jmenu-text"></div>').html(itemOpts.text));
 			if (itemOpts.iconCls){
-				$('<div class="menu-icon"></div>').addClass(itemOpts.iconCls).appendTo(item);
+				$('<div class="jmenu-icon"></div>').addClass(itemOpts.iconCls).appendTo(item);
 			}
 			if (itemOpts.id){
 				item.attr('id', itemOpts.id);
@@ -133,7 +133,7 @@
 		});
 		menu.find('.menu-item').each(function(){
 			$(this)._outerHeight(opts.itemHeight);
-			$(this).find('.menu-text').css({
+			$(this).find('.jmenu-text').css({
 				height: (opts.itemHeight-2)+'px',
 				lineHeight: (opts.itemHeight-2)+'px'
 			});
@@ -145,7 +145,7 @@
 		var height = mopts.height;
 		if (isNaN(parseInt(width))){
 			width = 0;
-			menu.find('div.menu-text').each(function(){
+			menu.find('div.jmenu-text').each(function(){
 				if (width < $(this).outerWidth()){
 					width = $(this).outerWidth();
 				}
@@ -517,7 +517,7 @@
 			return jq.each(function(){
 				var item = $(param.target).data('menuitem').options;
 				item.text = param.text;
-				$(param.target).children('div.menu-text').html(param.text);
+				$(param.target).children('div.jmenu-text').html(param.text);
 			});
 		},
 		/**
@@ -531,9 +531,9 @@
 			return jq.each(function(){
 				var item = $(param.target).data('menuitem').options;
 				item.iconCls = param.iconCls;
-				$(param.target).children('div.menu-icon').remove();
+				$(param.target).children('div.jmenu-icon').remove();
 				if (param.iconCls){
-					$('<div class="menu-icon"></div>').addClass(param.iconCls).appendTo(param.target);
+					$('<div class="jmenu-icon"></div>').addClass(param.iconCls).appendTo(param.target);
 				}
 			});
 		},

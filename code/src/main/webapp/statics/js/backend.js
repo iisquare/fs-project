@@ -278,4 +278,9 @@ $(function () {
             - $pageContentFullPrev.position().top - $pageContentFullPrev.height() - 2);
         $pageTableList.datagrid('resize');
     }).trigger('resize');
+    $(document).on(ace.click_event+'.ace.menu', '.sidebar-collapse', function(e){
+        window.setTimeout(function () {$window.trigger('resize');}, 200);
+    }).on(ace.click_event+'.ace.menu', '.sidebar-expand', function(e){
+        window.setTimeout(function () {$window.trigger('resize');}, 200);
+    });
 });
