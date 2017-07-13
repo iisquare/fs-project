@@ -100,7 +100,21 @@
     if('ontouchstart' in document.documentElement) document.write("<script src='${webUrl}/statics/plugins/ace_admin/components/_mod/jquery.mobile.custom/jquery.mobile.custom.js'>"+"<"+"/script>");
 </script>
 <script type="text/javascript">
+    $.fn.buttonToggle = function () {
+        var $obj = $(this);
+        if(arguments.length) {
+            if(true == $obj.data('toggle')) return true;
+            $obj.data('toggle', true);
+            $obj.data('text', $obj.html());
+            $obj.html(arguments[0]);
+            return false;
+        }
+        $obj.data('toggle', false);
+        $obj.html($obj.data('text'));
+    }
     $('.js-control-login').on('click', function () {
+        var $obj = $(this);
+        if($obj.buttonToggle('登录中...')) return false;
         $.ajax({
             url : '${_base_.url()}',
             data : {
@@ -111,11 +125,13 @@
             type : 'post',
             dataType : 'json',
             success : function (result) {
+                $obj.buttonToggle();
                 if(!result) {
                     alert('服务器异常');
                 } else if(0 != result.code) {
                     alert(result.message);
                 } else {
+                    $obj.buttonToggle('跳转中...');
                     window.location.href = result.data;
                 }
             }

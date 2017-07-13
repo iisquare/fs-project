@@ -63,6 +63,18 @@ $.fn.linkbuttonToggle = function () {
     options.text = $obj.data('text');
     $obj.linkbutton(options);
 }
+$.fn.buttonToggle = function () {
+    var $obj = $(this);
+    if(arguments.length) {
+        if(true == $obj.data('toggle')) return true;
+        $obj.data('toggle', true);
+        $obj.data('text', $obj.html());
+        $obj.html(arguments[0]);
+        return false;
+    }
+    $obj.data('toggle', false);
+    $obj.html($obj.data('text'));
+}
 /**
  * 消息提示
  */
