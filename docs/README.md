@@ -3,8 +3,8 @@
 > 环境要求
 
 - JDK8+
-
 - Gradle4+
+- Scala-2.11.x
 
 > 项目导入
 
@@ -17,13 +17,10 @@
 > 开发调试
 
 - gradle deployTest
-
 - 执行com.iisquare.jwframe.test.jetty.WebRunner.java
 
 > 远程Spark配置
 
 - 修改code/src/main/resources/spark.properties文件中的master地址
-
 - 执行gradle sparkJar生成提交JAR文件
-
 - 执行com.iisquare.jwframe.test.spark.TestSubmitter.java
