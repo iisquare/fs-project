@@ -1,6 +1,0 @@
-name,email,status
-"Alex","alex@email.com",pending
-"Fred","fred@email.com",approved
-"Jack","jack@email.com",pending
-"John","john@email.com",blocked
-"James","james@email.com",online

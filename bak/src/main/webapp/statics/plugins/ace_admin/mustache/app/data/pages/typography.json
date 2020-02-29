@@ -1,9 +1,0 @@
-{
- "title" : "Typography"
- ,
- "description" : "This is page-header (.page-header > h1)"
- ,
- "scripts" : ["prettify"]
- ,
- "styles" : ["prettify"]
-}

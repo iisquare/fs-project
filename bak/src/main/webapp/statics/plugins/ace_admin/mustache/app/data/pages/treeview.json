@@ -1,7 +1,0 @@
-{
- "title" : "Treeview"
- ,
- "description" : "with selectable elements and custom icons"
- ,
- "scripts" : ["tree"]
-}

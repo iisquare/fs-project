@@ -1,9 +1,0 @@
-name,avatar,time,status
-"Bob Doe","user.jpg","20 min",pending
-"Joe Doe","avatar2.png","1 hour",pending
-"Jim Doe","avatar.png","2 hour",pending
-"Alex Doe","avatar5.png","3 hour",blocked
-"Bob Doe","avatar2.png","6 hour",approved
-"Susan","avatar3.png","yesterday",approved
-"Phil Doe","avatar4.png","2 days ago",online
-"Alexa Doe","avatar1.png","3 days ago",approved

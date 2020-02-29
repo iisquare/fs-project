@@ -1,9 +1,0 @@
-{
- "title" : "jqGrid"
- ,
- "description" : "Dynamic tables and grids using jqGrid plugin"
- ,
- "styles" : ["jquery-ui-full", "datepicker", "jqgrid"]
- ,
- "scripts" : ["datepicker", "jqgrid"]
-}

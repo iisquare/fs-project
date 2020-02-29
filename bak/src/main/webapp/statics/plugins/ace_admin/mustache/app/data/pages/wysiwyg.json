@@ -1,9 +1,0 @@
-{
- "title" : "Wysiwyg & Markdown Editor"
- ,
- "description" : null
- ,
- "styles" : ["jquery-ui"]
- ,
- "scripts" : ["jquery-ui", "markdown", "wysiwyg" , "bootbox"]
-}
