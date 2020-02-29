@@ -1,0 +1,4 @@
+rootProject.name = 'fs-project'
+
+include 'base:core'
+include 'base:test'

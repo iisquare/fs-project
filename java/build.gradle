@@ -1,0 +1,56 @@
+
+buildscript {
+    ext {
+        springBootVersion = '2.2.5.RELEASE'
+    }
+    repositories {
+        maven { url 'https://maven.aliyun.com/repository/central' }
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+
+subprojects {
+
+    apply plugin: 'java'
+    apply plugin: 'idea'
+    apply plugin: 'org.springframework.boot'
+
+    version = '0.0.1-SNAPSHOT'
+
+    sourceCompatibility = 1.8
+    [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+    repositories {
+        maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'http://central.maven.org/maven2' }
+    }
+
+    // 定义版本号
+    ext {
+        springBootVersion = '2.2.5.RELEASE'
+        springCloudVersion = '2.1.1.RELEASE'
+        flinkVersion = '1.7.2'
+        hadoopVersion = '2.7.6'
+        swaggerVersion = '2.9.2'
+        elasticsearchVersion = '5.1.1'
+        mongodbVersion = '3.8.0'
+        tensorflowVersion = '1.8.0'
+        hbaseVersion = '2.1.0'
+    }
+
+    bootJar {
+        enabled = true
+    }
+
+    jar {
+        enabled = true
+    }
+
+    task jars(type: Copy) {
+        from configurations.runtime
+        into 'build/opt' // 目标依赖位置
+    }
+
+}
