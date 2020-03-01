@@ -1,0 +1,5 @@
+
+dependencies {
+    compile project(':base:cloud')
+    compile project(':base:swagger')
+}

@@ -1,0 +1,77 @@
+# 通过Gitlab同步，请勿在Consul中直接修改该数据
+spring:
+  data:
+    elasticsearch:
+      rest-api: http://127.0.0.1:9200
+      cluster-name: elasticsearch
+      cluster-nodes: 127.0.0.1:9300
+    mongo:
+      hosts: 127.0.0.1:27017
+      database: admin
+      username: root
+      password: admin888
+      connectionsPerHost: 8
+      threadsAllowedToBlockForConnectionMultiplier: 4
+      connectTimeout: 1000
+      maxWaitTime: 1500
+      socketTimeout: 1500
+    hbase:
+      zookeeper:
+        quorum: 127.0.0.1:2181
+        znode:
+          parent: /hbase-unsecure
+        recovery:
+          retry: 1
+      client:
+        retries:
+          number: 5
+    kafka:
+      zk-nodes: 127.0.0.1:2181
+      brokers: 127.0.0.1:9092
+  redis:
+    database: 1
+    host: 127.0.0.1
+    port: 6379
+    password:
+    timeout: 30000
+    pool:
+      max-active: 8 # 连接池最大连接数（使用负值表示没有限制）
+      max-wait: -1 # 连接池最大阻塞等待时间（使用负值表示没有限制）
+      max-idle: 8 # 连接池中的最大空闲连接
+      min-idle: 0 # 连接池中的最小空闲连接
+  datasource:
+    primary:
+      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8
+      type: com.alibaba.druid.pool.DruidDataSource
+      username: root
+      password: admin888
+      driver-class-name: com.mysql.jdbc.Driver
+      max-idle: 10
+      max-wait: 10000
+      min-idle: 5
+      initial-size: 5
+      validation-query: SELECT 1
+      test-on-borrow: false
+      test-while-idle: true
+      time-between-eviction-runs-millis: 18800
+    memory:
+      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8
+      type: com.alibaba.druid.pool.DruidDataSource
+      username: root
+      password: admin888
+      driver-class-name: com.mysql.jdbc.Driver
+    quartz:
+      url: jdbc:mysql://127.0.0.1:3306/quartz?characterEncoding=utf-8
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/quartz?characterEncoding=utf-8
+      type: com.alibaba.druid.pool.DruidDataSource
+      username: root
+      password: admin888
+      driver-class-name: com.mysql.jdbc.Driver
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        enable_lazy_load_no_trans: true

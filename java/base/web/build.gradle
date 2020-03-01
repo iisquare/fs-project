@@ -1,0 +1,7 @@
+dependencies {
+    compile project(':base:core')
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: springBootVersion
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-actuator', version: springBootVersion
+    compile group: 'org.springframework.cloud', name: 'spring-cloud-starter-openfeign', version: springCloudVersion
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-thymeleaf', version: springBootVersion
+}

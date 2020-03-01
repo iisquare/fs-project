@@ -1,0 +1,45 @@
+var mapping = {
+    '所属小区：': 'home',
+    '房屋户型：': 'model',
+    '房屋单价：': 'price',
+    '所在位置：': 'location',
+    '建筑面积：': 'area',
+    '参考首付：': 'payment',
+    '建造年代：': 'dating',
+    '房屋朝向：': 'direction',
+    '参考月供：': 'monthly',
+    '房屋类型：': 'pptype',
+    '所在楼层：': 'floor',
+    '装修程度：': 'fitment',
+    '产权年限：': 'equity',
+    '配套电梯：': 'elevator',
+    '房本年限：': 'permit',
+    '产权性质：': 'nature',
+    '配套供暖：': 'heating',
+    '唯一住房：': 'sole',
+    '一手房源：': 'firsthand'
+};
+var data = {
+    title: context.data.title,
+    detail: context.data.detail,
+    property: JSON.stringify(context.data.property),
+    point: context.data.point,
+    mention: context.data.mention,
+    description: context.data.description
+};
+for (var i = 0; i < context.data.property.length; i++) {
+    var item = context.data.property[i];
+    var key = mapping[item.key];
+    if (key) {
+        data[key] = item.value;
+    }
+}
+return {
+    output: [Object.assign(data, {
+        url: context.url.split("?")[0],
+        citycode: context.param.cityen,
+        status: context.status,
+        exception: context.exception,
+        mtime: DateUtil.format()
+    })]
+};

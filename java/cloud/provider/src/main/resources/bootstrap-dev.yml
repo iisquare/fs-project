@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: springcloud-demo-provider
+  cloud:
+    consul:
+      host: 127.0.0.1
+      port: 8500
+      enable: true
+      discovery:
+        instanceId: ${spring.application.name}:${spring.application.instance_id:${spring.application.instance_id:${random.value}}}
+        register: true
+        preferIpAddress: true
+        healthCheckPath: /actuator/health
+        healthCheckInterval: 15s
+      config:
+        enable: true
+        format: YAML
+        data-key: data
+        watch:
+          enabled: false
+    stream:
+      kafka:
+        binder:
+          zk-nodes: 127.0.0.1:2181
+          brokers: 127.0.0.1:9092

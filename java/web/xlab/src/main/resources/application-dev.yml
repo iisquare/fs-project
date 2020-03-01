@@ -1,0 +1,6 @@
+server:
+  port: 8714
+
+custom:
+  opencv:
+    libs: web/xlab

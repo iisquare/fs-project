@@ -1,0 +1,33 @@
+server:
+  port: 7086
+
+rpc:
+  flink:
+    rest: http://127.0.0.1:8101
+  web:
+    rest: http://127.0.0.1:8082
+
+spring:
+  jpa:
+    hibernate:
+      naming:
+        physical-strategy: com.iisquare.fs.base.jpa.mvc.PhysicalNamingStrategy
+org:
+  quartz:
+    scheduler:
+      instanceName: fs-project-quartz
+      instanceId: AUTO
+    threadPool:
+      threadCount: 8
+    jobStore:
+      class: org.quartz.impl.jdbcjobstore.JobStoreTX
+      driverDelegateClass: org.quartz.impl.jdbcjobstore.StdJDBCDelegate
+      dataSource: quartz
+      misfireThreshold: 5000
+      isClustered: true
+    dataSource:
+      quartz:
+        driver: com.mysql.jdbc.Driver
+        URL: jdbc:mysql://127.0.0.1:3306/quartz?characterEncoding=utf-8
+        user: root
+        password: admin888

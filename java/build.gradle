@@ -1,13 +1,17 @@
 
 buildscript {
     ext {
-        springBootVersion = '2.2.5.RELEASE'
+        springBootVersion = '2.2.0.RELEASE'
+        shadowVersion = '4.0.3'
     }
     repositories {
         maven { url 'https://maven.aliyun.com/repository/central' }
+        mavenCentral()
+        jcenter()
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath("com.github.jengelman.gradle.plugins:shadow:${shadowVersion}")
     }
 }
 
@@ -15,7 +19,6 @@ subprojects {
 
     apply plugin: 'java'
     apply plugin: 'idea'
-    apply plugin: 'org.springframework.boot'
 
     version = '0.0.1-SNAPSHOT'
 
@@ -29,23 +32,13 @@ subprojects {
 
     // 定义版本号
     ext {
-        springBootVersion = '2.2.5.RELEASE'
-        springCloudVersion = '2.1.1.RELEASE'
+        springBootVersion = '2.2.0.RELEASE'
+        springCloudVersion = '2.2.0.RELEASE'
         flinkVersion = '1.7.2'
-        hadoopVersion = '2.7.6'
+        scalaVersion = '2.11'
+        hadoopVersion = '2.8.3'
         swaggerVersion = '2.9.2'
-        elasticsearchVersion = '5.1.1'
-        mongodbVersion = '3.8.0'
-        tensorflowVersion = '1.8.0'
-        hbaseVersion = '2.1.0'
-    }
-
-    bootJar {
-        enabled = true
-    }
-
-    jar {
-        enabled = true
+        tensorflowVersion = '1.15.0'
     }
 
     task jars(type: Copy) {

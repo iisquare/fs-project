@@ -1,0 +1,586 @@
+{
+  "name": "${name}",
+  "version": "${version}",
+  "description": "${description}",
+  "java": {
+    "version": "${targetCompatibility}"
+  },
+  "flink": {
+    "version": "${flinkVersion}"
+  },
+  "nodes" : [{
+    "name": "JDBCSource",
+    "type": "source",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.JDBCSourceNode",
+    "property": [
+      {"name":"驱动","key":"driver","value":"com.mysql.jdbc.Driver","group":"连接设置","editor":"text"},
+      {"name":"链接","key":"url","value":"jdbc:mysql://127.0.0.1:3306/mysql?characterEncoding=utf-8","group":"连接设置","editor":"text"},
+      {"name":"账号","key":"username","value":"root","group":"连接设置","editor":"text"},
+      {"name":"密码","key":"password","value":"root","group":"连接设置","editor":"text"},
+      {"name":"SQL","key":"sql","value":"","group":"数据查询","editor":"textarea"}
+    ],
+    "returns": []
+  }, {
+    "name": "SQLTransform",
+    "type": "transform",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.SQLTransformNode",
+    "property": [
+      {"name":"SQL","key":"sql","value":"","group":"数据查询","editor":"textarea"}
+    ],
+    "returns": []
+  }, {
+    "name":"ConsoleSink",
+    "type":"sink",
+    "icon":"tree-file",
+    "classname":"com.iisquare.fs.flink.plugins.core.node.ConsoleSinkNode",
+    "property": [{"name":"mode","key":"mode","value":"json","group":"数据处理","editor": {
+      "type": "combobox",
+      "options": {
+        "valueField": "value",
+        "textField": "label",
+        "data": [
+          {
+            "label": "输出为JSON字符串",
+            "value": "json"
+          },
+          {
+            "label": "输出为键值对字符串",
+            "value": "map"
+          },
+          {
+            "label": "输出为逗号分隔文本",
+            "value": "line"
+          }
+        ],
+        "required": true
+      }
+    }}],
+    "returns": []
+  }, {
+    "name": "KafkaSource",
+    "type": "source",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.KafkaSourceNode",
+    "property": [
+      {"name":"bootstrap","key":"bootstrap","value":"127.0.0.1:9092","group":"连接设置","editor":"text"},
+      {"name":"zookeeper","key":"zookeeper","value":"127.0.0.1:2181","group":"连接设置","editor":"text"},
+      {"name":"offset","key":"offset","value":"earliest","group":"连接设置","editor":{
+        "type": "combobox",
+        "options": {
+          "valueField": "value",
+          "textField": "label",
+          "data": [
+            {
+              "label": "largest",
+              "value": "largest"
+            },
+            {
+              "label": "latest",
+              "value": "latest"
+            },
+            {
+              "label": "earliest",
+              "value": "earliest"
+            },
+            {
+              "label": "smallest",
+              "value": "smallest"
+            }
+          ],
+          "required": true
+        }
+      }},
+      {"name":"group","key":"group","value":"analytics-flow","group":"连接设置","editor":"text"},
+      {"name":"topic","key":"topic","value":"","group":"连接设置","editor":"text"}
+    ],
+    "returns": []
+  }, {
+    "name": "KafkaSink",
+    "type": "sink",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.KafkaSinkNode",
+    "property": [
+      {"name":"bootstrap","key":"bootstrap","value":"127.0.0.1:9092","group":"连接设置","editor":"text"},
+      {"name":"topic","key":"topic","value":"","group":"连接设置","editor":"text"},
+      {"name":"field","key":"field","value":"","group":"连接设置","editor":"text"}
+    ],
+    "returns": []
+  }, {
+    "name": "ElasticsearchSource",
+    "type": "source",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.ElasticsearchSourceNode",
+    "property": [
+      {"name":"cluster","key":"cluster","value":"elasticsearch","group":"连接设置","editor":"text"},
+      {"name":"servers","key":"servers","value":"127.0.0.1:9300","group":"连接设置","editor":"text"},
+      {"name":"collectionIndex","key":"collectionIndex","value":"","group":"连接设置","editor":"text"},
+      {"name":"collectionType","key":"collectionType","value":"","group":"连接设置","editor":"text"},
+      {"name":"query","key":"query","value":"","group":"连接设置","editor":"text"}
+    ],
+    "returns": []
+  }, {
+    "name": "ElasticsearchSink",
+    "type": "sink",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.ElasticsearchSinkNode",
+    "property": [
+      {"name":"cluster","key":"cluster","value":"elasticsearch","group":"连接设置","editor":"text"},
+      {"name":"servers","key":"servers","value":"127.0.0.1:9300","group":"连接设置","editor":"text"},
+      {"name":"collectionIndex","key":"collectionIndex","value":"","group":"连接设置","editor":"text"},
+      {"name":"collectionType","key":"collectionType","value":"","group":"连接设置","editor":"text"},
+      {"name":"maxActions","key":"maxActions","value":"1","group":"连接设置","editor":"text"},
+      {"name":"idField","key":"idField","value":"_id","group":"连接设置","editor":"text"},
+      {"name":"tableField","key":"tableField","value":"_table","group":"连接设置","editor":"text"}
+    ],
+    "returns": []
+  }, {
+    "name": "HBaseSource",
+    "type": "source",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.HBaseSourceNode",
+    "property": [
+      {"name":"quorum","key":"quorum","value":"127.0.0.1:2181","group":"连接设置","editor":"text"},
+      {"name":"znode","key":"znode","value":"/hbase-unsecure","group":"连接设置","editor":"text"},
+      {"name":"zkRetry","key":"zkRetry","value":"3","group":"连接设置","editor":"text"},
+      {"name":"clientRetry","key":"clientRetry","value":"10","group":"连接设置","editor":"text"},
+      {"name":"tableName","key":"tableName","value":"","group":"连接设置","editor":"text"},
+      {"name":"fields","key":"fields","value":"family:qualifier","group":"连接设置","editor":"textarea"},
+      {"name":"startRow","key":"startRow","value":"","group":"连接设置","editor":"text"},
+      {"name":"endRow","key":"endRow","value":"","group":"连接设置","editor":"text"}
+    ],
+    "returns": [
+      {"field":"rowkey","from":"","classname":"java.lang.String"}
+    ]
+  }, {
+    "name": "HBaseSink",
+    "type": "sink",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.HBaseSinkNode",
+    "property": [
+      {"name":"quorum","key":"quorum","value":"127.0.0.1:2181","group":"连接设置","editor":"text"},
+      {"name":"znode","key":"znode","value":"/hbase-unsecure","group":"连接设置","editor":"text"},
+      {"name":"zkRetry","key":"zkRetry","value":"3","group":"连接设置","editor":"text"},
+      {"name":"clientRetry","key":"clientRetry","value":"10","group":"连接设置","editor":"text"},
+      {"name":"tableName","key":"tableName","value":"","group":"连接设置","editor":"text"},
+      {"name":"idField","key":"idField","value":"_id","group":"连接设置","editor":"text"},
+      {"name":"tableField","key":"tableField","value":"_table","group":"连接设置","editor":"text"}
+    ],
+    "returns": []
+  }, {
+    "name": "RegularTransform",
+    "type": "transform",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.RegularTransformNode",
+    "property": [
+      {"name":"field","key":"field","value":"","group":"数据处理","editor":"text"},
+      {"name":"pattern","key":"pattern","value":"","group":"数据处理","editor":"text"},
+      {"name":"mode","key":"mode","value":"append","group":"数据处理","editor": {
+        "type": "combobox",
+        "options": {
+          "valueField": "value",
+          "textField": "label",
+          "data": [
+            {
+              "label": "附加到原字段列表后",
+              "value": "append"
+            },
+            {
+              "label": "添加到原字段列表前",
+              "value": "unshift"
+            },
+            {
+              "label": "替换原字段列表内容",
+              "value": "replace"
+            }
+          ],
+          "required": true
+        }
+      }}
+    ],
+    "returns": []
+  }, {
+    "name": "DateTransform",
+    "type": "transform",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.DateTransformNode",
+    "property": [
+      {"name":"field","key":"field","value":"","group":"数据处理","editor":"text"},
+      {"name":"pattern","key":"pattern","value":"","group":"数据处理","editor":"text"},
+      {"name":"timezone","key":"timezone","value":"GMT+8","group":"数据处理","editor": {
+        "type": "combobox",
+        "options": {
+          "valueField": "value",
+          "textField": "label",
+          "data": [
+            {"label": "GMT", "value": "GMT"},
+            {"label": "GMT+1", "value": "GMT+1"},
+            {"label": "GMT+2", "value": "GMT+2"},
+            {"label": "GMT+3", "value": "GMT+3"},
+            {"label": "GMT+4", "value": "GMT+4"},
+            {"label": "GMT+5", "value": "GMT+5"},
+            {"label": "GMT+6", "value": "GMT+6"},
+            {"label": "GMT+7", "value": "GMT+7"},
+            {"label": "GMT+8", "value": "GMT+8"},
+            {"label": "GMT+9", "value": "GMT+9"},
+            {"label": "GMT+10", "value": "GMT+10"},
+            {"label": "GMT+11", "value": "GMT+11"},
+            {"label": "GMT-1", "value": "GMT-1"},
+            {"label": "GMT-2", "value": "GMT-2"},
+            {"label": "GMT-3", "value": "GMT-3"},
+            {"label": "GMT-4", "value": "GMT-4"},
+            {"label": "GMT-5", "value": "GMT-5"},
+            {"label": "GMT-6", "value": "GMT-6"},
+            {"label": "GMT-7", "value": "GMT-7"},
+            {"label": "GMT-8", "value": "GMT-8"},
+            {"label": "GMT-9", "value": "GMT-9"},
+            {"label": "GMT-10", "value": "GMT-10"},
+            {"label": "GMT-11", "value": "GMT-11"}
+          ],
+          "required": true
+        }
+      }},
+      {"name":"locale","key":"locale","value":"en","group":"数据处理","editor": {
+        "type": "combobox",
+        "options": {
+          "valueField": "value",
+          "textField": "label",
+          "data": [
+            {"label": "ENGLISH", "value": "en"},
+            {"label": "FRENCH", "value": "fr"},
+            {"label": "GERMAN", "value": "de"},
+            {"label": "ITALIAN", "value": "it"},
+            {"label": "JAPANESE", "value": "ja"},
+            {"label": "KOREAN", "value": "ko"},
+            {"label": "CHINESE", "value": "zh"},
+            {"label": "SIMPLIFIED_CHINESE", "value": "zh_CN"},
+            {"label": "TRADITIONAL_CHINESE", "value": "zh_TW"},
+            {"label": "FRANCE", "value": "fr_FR"},
+            {"label": "GERMANY", "value": "de_DE"},
+            {"label": "ITALY", "value": "it_IT"},
+            {"label": "JAPAN", "value": "ja_JP"},
+            {"label": "KOREA", "value": "ko_KR"},
+            {"label": "UK", "value": "en_GB"},
+            {"label": "US", "value": "en_US"},
+            {"label": "CANADA", "value": "en_CA"},
+            {"label": "CANADA_FRENCH", "value": "fr_CA"}
+          ],
+          "required": true
+        }
+      }},
+      {"name":"mode","key":"mode","value":"append","group":"数据处理","editor": {
+        "type": "combobox",
+        "options": {
+          "valueField": "value",
+          "textField": "label",
+          "data": [
+            {
+              "label": "附加到原字段列表后",
+              "value": "append"
+            },
+            {
+              "label": "添加到原字段列表前",
+              "value": "unshift"
+            },
+            {
+              "label": "替换原字段列表内容",
+              "value": "replace"
+            }
+          ],
+          "required": true
+        }
+      }}
+    ],
+    "returns": []
+  }, {
+    "name": "DateGenerate",
+    "type": "other",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.DateGenerateNode",
+    "property": [
+      {"name":"field","key":"field","value":"datetime","group":"数据处理","editor":"text"},
+      {"name":"datetime","key":"datetime","value":"","group":"数据处理","editor":"text"},
+      {"name":"pattern","key":"pattern","value":"","group":"数据处理","editor":"text"},
+      {"name":"timezone","key":"timezone","value":"GMT+8","group":"数据处理","editor": {
+        "type": "combobox",
+        "options": {
+          "valueField": "value",
+          "textField": "label",
+          "data": [
+            {"label": "GMT", "value": "GMT"},
+            {"label": "GMT+1", "value": "GMT+1"},
+            {"label": "GMT+2", "value": "GMT+2"},
+            {"label": "GMT+3", "value": "GMT+3"},
+            {"label": "GMT+4", "value": "GMT+4"},
+            {"label": "GMT+5", "value": "GMT+5"},
+            {"label": "GMT+6", "value": "GMT+6"},
+            {"label": "GMT+7", "value": "GMT+7"},
+            {"label": "GMT+8", "value": "GMT+8"},
+            {"label": "GMT+9", "value": "GMT+9"},
+            {"label": "GMT+10", "value": "GMT+10"},
+            {"label": "GMT+11", "value": "GMT+11"},
+            {"label": "GMT-1", "value": "GMT-1"},
+            {"label": "GMT-2", "value": "GMT-2"},
+            {"label": "GMT-3", "value": "GMT-3"},
+            {"label": "GMT-4", "value": "GMT-4"},
+            {"label": "GMT-5", "value": "GMT-5"},
+            {"label": "GMT-6", "value": "GMT-6"},
+            {"label": "GMT-7", "value": "GMT-7"},
+            {"label": "GMT-8", "value": "GMT-8"},
+            {"label": "GMT-9", "value": "GMT-9"},
+            {"label": "GMT-10", "value": "GMT-10"},
+            {"label": "GMT-11", "value": "GMT-11"}
+          ],
+          "required": true
+        }
+      }},
+      {"name":"locale","key":"locale","value":"en","group":"数据处理","editor": {
+        "type": "combobox",
+        "options": {
+          "valueField": "value",
+          "textField": "label",
+          "data": [
+            {"label": "ENGLISH", "value": "en"},
+            {"label": "FRENCH", "value": "fr"},
+            {"label": "GERMAN", "value": "de"},
+            {"label": "ITALIAN", "value": "it"},
+            {"label": "JAPANESE", "value": "ja"},
+            {"label": "KOREAN", "value": "ko"},
+            {"label": "CHINESE", "value": "zh"},
+            {"label": "SIMPLIFIED_CHINESE", "value": "zh_CN"},
+            {"label": "TRADITIONAL_CHINESE", "value": "zh_TW"},
+            {"label": "FRANCE", "value": "fr_FR"},
+            {"label": "GERMANY", "value": "de_DE"},
+            {"label": "ITALY", "value": "it_IT"},
+            {"label": "JAPAN", "value": "ja_JP"},
+            {"label": "KOREA", "value": "ko_KR"},
+            {"label": "UK", "value": "en_GB"},
+            {"label": "US", "value": "en_US"},
+            {"label": "CANADA", "value": "en_CA"},
+            {"label": "CANADA_FRENCH", "value": "fr_CA"}
+          ],
+          "required": true
+        }
+      }}
+    ],
+    "returns": []
+  }, {
+    "name": "DateFormat",
+    "type": "other",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.DateFormatNode",
+    "property": [
+      {"name":"field","key":"field","value":"datetime","group":"数据处理","editor":"text"},
+      {"name":"pattern","key":"pattern","value":"","group":"数据处理","editor":"text"},
+      {"name":"timezone","key":"timezone","value":"GMT+8","group":"数据处理","editor": {
+        "type": "combobox",
+        "options": {
+          "valueField": "value",
+          "textField": "label",
+          "data": [
+            {"label": "GMT", "value": "GMT"},
+            {"label": "GMT+1", "value": "GMT+1"},
+            {"label": "GMT+2", "value": "GMT+2"},
+            {"label": "GMT+3", "value": "GMT+3"},
+            {"label": "GMT+4", "value": "GMT+4"},
+            {"label": "GMT+5", "value": "GMT+5"},
+            {"label": "GMT+6", "value": "GMT+6"},
+            {"label": "GMT+7", "value": "GMT+7"},
+            {"label": "GMT+8", "value": "GMT+8"},
+            {"label": "GMT+9", "value": "GMT+9"},
+            {"label": "GMT+10", "value": "GMT+10"},
+            {"label": "GMT+11", "value": "GMT+11"},
+            {"label": "GMT-1", "value": "GMT-1"},
+            {"label": "GMT-2", "value": "GMT-2"},
+            {"label": "GMT-3", "value": "GMT-3"},
+            {"label": "GMT-4", "value": "GMT-4"},
+            {"label": "GMT-5", "value": "GMT-5"},
+            {"label": "GMT-6", "value": "GMT-6"},
+            {"label": "GMT-7", "value": "GMT-7"},
+            {"label": "GMT-8", "value": "GMT-8"},
+            {"label": "GMT-9", "value": "GMT-9"},
+            {"label": "GMT-10", "value": "GMT-10"},
+            {"label": "GMT-11", "value": "GMT-11"}
+          ],
+          "required": true
+        }
+      }},
+      {"name":"locale","key":"locale","value":"en","group":"数据处理","editor": {
+        "type": "combobox",
+        "options": {
+          "valueField": "value",
+          "textField": "label",
+          "data": [
+            {"label": "ENGLISH", "value": "en"},
+            {"label": "FRENCH", "value": "fr"},
+            {"label": "GERMAN", "value": "de"},
+            {"label": "ITALIAN", "value": "it"},
+            {"label": "JAPANESE", "value": "ja"},
+            {"label": "KOREAN", "value": "ko"},
+            {"label": "CHINESE", "value": "zh"},
+            {"label": "SIMPLIFIED_CHINESE", "value": "zh_CN"},
+            {"label": "TRADITIONAL_CHINESE", "value": "zh_TW"},
+            {"label": "FRANCE", "value": "fr_FR"},
+            {"label": "GERMANY", "value": "de_DE"},
+            {"label": "ITALY", "value": "it_IT"},
+            {"label": "JAPAN", "value": "ja_JP"},
+            {"label": "KOREA", "value": "ko_KR"},
+            {"label": "UK", "value": "en_GB"},
+            {"label": "US", "value": "en_US"},
+            {"label": "CANADA", "value": "en_CA"},
+            {"label": "CANADA_FRENCH", "value": "fr_CA"}
+          ],
+          "required": true
+        }
+      }}
+    ],
+    "returns": []
+  }, {
+    "name": "CalendarOffset",
+    "type": "other",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.CalendarOffsetNode",
+    "property": [
+      {"name":"field","key":"field","value":"datetime","group":"数据处理","editor":"text"},
+      {"name":"offset","key":"offset","value":"0","group":"数据处理","editor":"text"},
+      {"name":"doValue","key":"doValue","value":"","group":"数据处理","editor":"text"},
+      {"name":"doMethod","key":"doMethod","value":"","group":"数据处理","editor": {
+        "type": "combobox",
+        "options": {
+          "valueField": "value",
+          "textField": "label",
+          "data": [
+            {"label": "METHOD.NOTHING", "value": ""},
+            {"label": "METHOD.SET", "value": "set"},
+            {"label": "METHOD.ADD", "value": "add"}
+          ],
+          "required": true
+        }
+      }},
+      {"name":"doField","key":"doField","value":"0","group":"数据处理","editor": {
+        "type": "combobox",
+        "options": {
+          "valueField": "value",
+          "textField": "label",
+          "data": [
+            {"label": "Calendar.NOTHING", "value": "0"},
+            {"label": "Calendar.YEAR", "value": "1"},
+            {"label": "Calendar.MONTH", "value": "2"},
+            {"label": "Calendar.WEEK_OF_YEAR", "value": "3"},
+            {"label": "Calendar.WEEK_OF_MONTH", "value": "4"},
+            {"label": "Calendar.DAY_OF_MONTH", "value": "5"},
+            {"label": "Calendar.DAY_OF_YEAR", "value": "6"},
+            {"label": "Calendar.DAY_OF_WEEK", "value": "7"},
+            {"label": "Calendar.DAY_OF_WEEK_IN_MONTH", "value": "8"},
+            {"label": "Calendar.HOUR", "value": "10"},
+            {"label": "Calendar.HOUR_OF_DAY", "value": "11"},
+            {"label": "Calendar.MINUTE", "value": "12"},
+            {"label": "Calendar.SECOND", "value": "13"},
+            {"label": "Calendar.MILLISECOND", "value": "14"}
+          ],
+          "required": true
+        }
+      }},
+      {"name":"timezone","key":"timezone","value":"GMT+8","group":"数据处理","editor": {
+        "type": "combobox",
+        "options": {
+          "valueField": "value",
+          "textField": "label",
+          "data": [
+            {"label": "GMT", "value": "GMT"},
+            {"label": "GMT+1", "value": "GMT+1"},
+            {"label": "GMT+2", "value": "GMT+2"},
+            {"label": "GMT+3", "value": "GMT+3"},
+            {"label": "GMT+4", "value": "GMT+4"},
+            {"label": "GMT+5", "value": "GMT+5"},
+            {"label": "GMT+6", "value": "GMT+6"},
+            {"label": "GMT+7", "value": "GMT+7"},
+            {"label": "GMT+8", "value": "GMT+8"},
+            {"label": "GMT+9", "value": "GMT+9"},
+            {"label": "GMT+10", "value": "GMT+10"},
+            {"label": "GMT+11", "value": "GMT+11"},
+            {"label": "GMT-1", "value": "GMT-1"},
+            {"label": "GMT-2", "value": "GMT-2"},
+            {"label": "GMT-3", "value": "GMT-3"},
+            {"label": "GMT-4", "value": "GMT-4"},
+            {"label": "GMT-5", "value": "GMT-5"},
+            {"label": "GMT-6", "value": "GMT-6"},
+            {"label": "GMT-7", "value": "GMT-7"},
+            {"label": "GMT-8", "value": "GMT-8"},
+            {"label": "GMT-9", "value": "GMT-9"},
+            {"label": "GMT-10", "value": "GMT-10"},
+            {"label": "GMT-11", "value": "GMT-11"}
+          ],
+          "required": true
+        }
+      }},
+      {"name":"locale","key":"locale","value":"en","group":"数据处理","editor": {
+        "type": "combobox",
+        "options": {
+          "valueField": "value",
+          "textField": "label",
+          "data": [
+            {"label": "ENGLISH", "value": "en"},
+            {"label": "FRENCH", "value": "fr"},
+            {"label": "GERMAN", "value": "de"},
+            {"label": "ITALIAN", "value": "it"},
+            {"label": "JAPANESE", "value": "ja"},
+            {"label": "KOREAN", "value": "ko"},
+            {"label": "CHINESE", "value": "zh"},
+            {"label": "SIMPLIFIED_CHINESE", "value": "zh_CN"},
+            {"label": "TRADITIONAL_CHINESE", "value": "zh_TW"},
+            {"label": "FRANCE", "value": "fr_FR"},
+            {"label": "GERMANY", "value": "de_DE"},
+            {"label": "ITALY", "value": "it_IT"},
+            {"label": "JAPAN", "value": "ja_JP"},
+            {"label": "KOREA", "value": "ko_KR"},
+            {"label": "UK", "value": "en_GB"},
+            {"label": "US", "value": "en_US"},
+            {"label": "CANADA", "value": "en_CA"},
+            {"label": "CANADA_FRENCH", "value": "fr_CA"}
+          ],
+          "required": true
+        }
+      }}
+    ],
+    "returns": []
+  }, {
+    "name": "UnionTransform",
+    "type": "transform",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.UnionTransformNode",
+    "property": [],
+    "returns": []
+  }, {
+    "name": "FileSource",
+    "type": "source",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.FileSourceNode",
+    "property": [
+      {"name":"filepath","key":"filepath","value":"","group":"数据处理","editor":"text"},
+      {"name":"charset","key":"charset","value":"UTF-8","group":"数据处理","editor":"text"},
+      {"name":"field","key":"field","value":"line","group":"数据处理","editor":"text"}
+    ],
+    "returns": []
+  }, {
+    "name": "JsonTransform",
+    "type": "transform",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.JsonTransformNode",
+    "property": [
+      {"name":"field","key":"field","value":"line","group":"数据处理","editor":"text"}
+    ],
+    "returns": []
+  }, {
+    "name": "CharsetTransform",
+    "type": "transform",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.CharsetTransformNode",
+    "property": [
+      {"name":"字符编码","key":"fromCharset","value":"","group":"数据处理","editor":"text"},
+      {"name":"目标编码","key":"toEncoding","value":"","group":"数据处理","editor":"text"}
+    ],
+    "returns": []
+  }]
+}

@@ -1,0 +1,21 @@
+jsoup {
+    housetitle: select(".house-title > h1").text(),
+    price: select(".house-basic-item1 > .price").text(),
+    district: select(".xiaoqu-desc > li:eq(1) > span:eq(1) > a:eq(0)").text(),
+    block: select(".xiaoqu-desc > li:eq(1) > span:eq(1) > a:eq(1)").text(),
+    communityname: select(".xiaoqu-name > a").text(),
+    base64: select("script").eq(0).html(),
+    -: body() {
+        -1: select("#generalSituation") {
+            property: select("li") [
+                key: select("span:eq(0)").text(),
+                value: select("span:eq(1)").text()
+            ]
+        },
+       -2: select(".general-pic-list") {
+            house_pic: select("li") [
+                value: select("img").attr("data-src")
+            ]
+        }
+    }
+}

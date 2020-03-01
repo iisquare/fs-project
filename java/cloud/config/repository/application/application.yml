@@ -1,0 +1,22 @@
+# 全局配置
+server:
+  port: 0
+
+spring:
+  http:
+    encoding:
+      charset: UTF-8
+
+management:
+  security:
+    enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    shutdown:
+      enabled: true
+      sensitive: false
+    restart:
+      enabled: true

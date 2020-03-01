@@ -1,0 +1,8 @@
+server:
+  port: 7096
+
+custom:
+  flow:
+    plugins:
+      path: ./web/flink/plugins
+      nfs: # plugins path for class loader

@@ -1,0 +1,8 @@
+dependencies {
+    compile project(':base:web')
+    compile group: 'org.springframework.cloud', name: 'spring-cloud-starter-consul-discovery', version: springCloudVersion
+    compile group: 'org.springframework.cloud', name: 'spring-cloud-starter-consul-config', version: springCloudVersion
+    compile group: 'org.springframework.cloud', name: 'spring-cloud-starter-netflix-hystrix', version: springCloudVersion
+    compile group: 'org.springframework.cloud', name: 'spring-cloud-starter-openfeign', version: springCloudVersion
+    compile group: 'org.springframework.cloud', name: 'spring-cloud-starter-bus-kafka', version: springCloudVersion
+}

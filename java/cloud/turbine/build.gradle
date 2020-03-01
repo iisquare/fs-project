@@ -1,0 +1,4 @@
+dependencies {
+    compile group: 'org.springframework.cloud', name: 'spring-cloud-netflix-turbine', version: springCloudVersion
+    compile group: 'org.springframework.cloud', name: 'spring-cloud-starter-netflix-hystrix-dashboard', version: springCloudVersion
+}

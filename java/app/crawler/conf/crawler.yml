@@ -1,0 +1,29 @@
+# 若该字段存在，则读取kvConsulUrl配置，以追加方式覆盖本地配置项
+# kvConsulUrl: http://127.0.0.1:8500/v1/kv/config/application,dev/data
+crawler:
+  server:
+    host: 127.0.0.1
+    port: 8433
+  schedule:
+    minIdle: 1
+    maxIdle: 5
+    maxTotal: 500
+    emptyAwaitTime: 30000
+    doneCheckThreshold: 3
+    doneCheckDelay: 15000
+  redis:
+    uri: "redis://127.0.0.1:6379/0"
+    prefix: "crawler:"
+  zookeeper:
+    host: 127.0.0.1:2181/crawler
+    timeout: 2000
+  tracer:
+    type: elasticsearch
+    uri: "http://127.0.0.1:9200/crawler-trace-{date:yyyy-MM}/default"
+    level: trace
+
+webdriver:
+  chrome:
+    driver: "D:\\openservices\\selenium\\chromedriver.exe"
+xlab:
+  server: "http://127.0.0.1:8714"

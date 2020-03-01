@@ -1,0 +1,4 @@
+dependencies {
+    compile project(':base:test')
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: springBootVersion
+}

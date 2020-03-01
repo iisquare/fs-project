@@ -1,0 +1,18 @@
+dependencies {
+    compile project(':base:jpa')
+    compile project(':base:swagger')
+    compile project(':base:flink')
+    compile group: 'org.glassfish', name: 'javax.el', version: '3.0.0'
+    compile group: 'org.apache.flink', name: 'flink-yarn_' + scalaVersion, version: flinkVersion
+    compile group: 'org.apache.httpcomponents', name: 'httpasyncclient', version: '4.1.4'
+    compile group: 'org.springframework.cloud', name: 'spring-cloud-starter-consul-discovery', version: springCloudVersion
+    compile group: 'org.yaml', name: 'snakeyaml', version: '1.24'
+}
+configurations {
+    /**
+     * 移除flink-table和flink-yarn中的servlet依赖，不然会导致jar冲突
+     * fixed: java.lang.NoSuchMethodError: javax.servlet.ServletContext.getVirtualServerName()Ljava/lang/String;
+     */
+    compile.exclude group: 'javax.servlet', module: 'servlet-api'
+    compile.exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+}

@@ -1,0 +1,36 @@
+server:
+  port: 7008
+
+zuul:
+  host:
+    connect-timeout-millis: 1000
+    socket-timeout-millis: 30000
+  sensitive-headers:
+  add-host-header: true
+
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 30000
+            ribbon:
+              ReadTimeout: 30000
+              ConnectTimeout: 1000
+    springcloud-demo-provider:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 45000
+            ribbon:
+              ReadTimeout: 10000
+              ConnectTimeout: 1000
+
+springcloud-demo-provider:
+  ribbon:
+    ReadTimeout: 10000
+    ConnectTimeout: 1000
+    MaxAutoRetries: 1
+    OkToRetryOnAllOperations: true
+    MaxAutoRetriesNextServer: 1

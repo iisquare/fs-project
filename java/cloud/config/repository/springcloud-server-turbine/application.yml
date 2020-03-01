@@ -1,0 +1,5 @@
+turbine:
+  aggregator:
+    clusterConfig: default
+#  appConfig: springcloud-demo-consumer,springcloud-demo-provider
+  clusterNameExpression: "'default'"

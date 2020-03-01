@@ -1,0 +1,27 @@
+dependencies {
+    compile project(':base:core')
+    compile group: 'org.glassfish.jersey.core', name: 'jersey-client', version: '2.27'
+    compile group: 'org.apache.flink', name: 'flink-java', version: flinkVersion
+    compile group: 'org.apache.flink', name: 'flink-scala_' + scalaVersion, version: flinkVersion
+    compile group: 'org.apache.flink', name: 'flink-streaming-java_' + scalaVersion, version: flinkVersion
+    compile group: 'org.apache.flink', name: 'flink-streaming-scala_' + scalaVersion, version: flinkVersion
+    compile group: 'org.apache.flink', name: 'flink-table_' + scalaVersion, version: flinkVersion
+    compile group: 'org.apache.hadoop', name: 'hadoop-common', version: hadoopVersion
+    compile group: 'org.apache.flink', name: 'flink-hbase_' + scalaVersion, version: flinkVersion
+    compile group: 'org.apache.flink', name: 'flink-connector-kafka_' + scalaVersion, version: flinkVersion
+    compile group: 'org.apache.flink', name: 'flink-connector-elasticsearch5_' + scalaVersion, version: flinkVersion
+    compile group: 'mysql', name: 'mysql-connector-java', version: '5.1.48'
+}
+
+jars.doLast { // 移除与运行程序冲突的依赖
+    FileTree tree = fileTree(dir: 'build/opt')
+    tree.each {File file ->
+        if(file.getName().startsWith(rootProject.name + '-base-core-')){
+            delete file
+        } else if(file.getName().startsWith("log4j-")) {
+            delete file
+        } else if(file.getName().startsWith("slf4j-")) {
+            delete file
+        }
+    }
+}

@@ -1,0 +1,11 @@
+spring:
+  profiles:
+    active: dev
+
+server:
+  port: 7001
+
+custom:
+  config:
+    repository: cloud/config/repository
+    data-key: data

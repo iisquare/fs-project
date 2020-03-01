@@ -1,0 +1,5 @@
+dependencies {
+    compile project(':base:jpa')
+    testCompile project(':web:test')
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-redis', version: springBootVersion
+}

@@ -1,0 +1,60 @@
+apply plugin: 'com.github.johnrengelman.shadow'
+
+dependencies {
+    compile project(':base:core')
+    testCompile project(':base:test')
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.9'
+    compile group: 'org.apache.commons', name: 'commons-pool2', version: '2.6.2'
+    compile group: 'org.jsoup', name: 'jsoup', version: '1.11.3' // HTML Parser
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '3.141.59' // Headless Browser
+    // 版本兼容问题@see(https://curator.apache.org/zk-compatibility.html)
+    compile (group: 'org.apache.curator', name: 'curator-recipes', version: '4.2.0') { // ZooKeeper
+        exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+    }
+    compile group: 'org.apache.zookeeper', name: 'zookeeper', version: '3.4.14'
+    compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.8'
+    compile group: 'io.netty', name: 'netty-all', version: '4.1.36.Final'
+    compile group: 'org.yaml', name: 'snakeyaml', version: '1.24'
+    compile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.26'
+    compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
+    compile group: 'io.lettuce', name: 'lettuce-core', version: '5.1.6.RELEASE' // Redis
+    compile group: 'mysql', name: 'mysql-connector-java', version: '5.1.46'
+    compile group: 'org.mongodb', name: 'mongo-java-driver', version: '3.8.0'
+}
+
+shadowJar {
+    manifest {
+        attributes 'Main-Class': 'com.iisquare.fs.app.crawler.CrawlerApplication'
+    }
+}
+
+// 生成插件压缩文件
+task zip(type: Zip, dependsOn: [clean, shadowJar]) {
+    def appBaseDir = 'crawler-' + version
+    into (appBaseDir) {
+        from('build/libs') {
+            include archivesBaseName + '-' + version + '-all.jar'
+            rename { 'crawler.jar' }
+        }
+    }
+    into (appBaseDir + '/bin') {
+        from('bin') {
+            include '*.*'
+        }
+    }
+    into (appBaseDir + '/conf') {
+        from('conf') {
+            include '*.*'
+        }
+    }
+    into (appBaseDir + '/docs') {
+        from('docs') {
+            include '*.*'
+        }
+    }
+    into (appBaseDir + '/logs') {
+        from('logs') {
+            include '.gitkeep'
+        }
+    }
+}

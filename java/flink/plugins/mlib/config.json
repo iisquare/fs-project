@@ -1,0 +1,94 @@
+{
+  "name": "${name}",
+  "version": "${version}",
+  "description": "${description}",
+  "java": {
+    "version": "${targetCompatibility}"
+  },
+  "flink": {
+    "version": "${flinkVersion}"
+  },
+  "nodes" : [{
+    "name": "JDBCSource",
+    "type": "source",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.JDBCSourceNode",
+    "property": [
+      {"name":"驱动","key":"driver","value":"com.mysql.jdbc.Driver","group":"连接设置","editor":"text"},
+      {"name":"链接","key":"url","value":"jdbc:mysql://127.0.0.1:3306/mysql?characterEncoding=utf-8","group":"连接设置","editor":"text"},
+      {"name":"账号","key":"username","value":"root","group":"连接设置","editor":"text"},
+      {"name":"密码","key":"password","value":"root","group":"连接设置","editor":"text"},
+      {"name":"SQL","key":"sql","value":"","group":"数据查询","editor":"textarea"}
+    ],
+    "returns": []
+  }, {
+    "name": "SQLTransform",
+    "type": "transform",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.SQLTransformNode",
+    "property": [
+      {"name":"SQL","key":"sql","value":"","group":"数据查询","editor":"textarea"}
+    ],
+    "returns": []
+  }, {
+    "name":"ConsoleSink",
+    "type":"sink",
+    "icon":"tree-file",
+    "classname":"com.iisquare.fs.flink.plugins.core.node.ConsoleSinkNode",
+    "property": [],
+    "returns": []
+  }, {
+    "name": "KafkaSource",
+    "type": "source",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.KafkaSourceNode",
+    "property": [
+      {"name":"bootstrap","key":"bootstrap","value":"127.0.0.1:9092","group":"连接设置","editor":"text"},
+      {"name":"zookeeper","key":"zookeeper","value":"127.0.0.1:2181","group":"连接设置","editor":"text"},
+      {"name":"offset","key":"offset","value":"earliest","group":"连接设置","editor":{
+        "type": "combobox",
+        "options": {
+          "valueField": "value",
+          "textField": "label",
+          "data": [
+            {
+              "label": "largest",
+              "value": "largest"
+            },
+            {
+              "label": "latest",
+              "value": "latest"
+            },
+            {
+              "label": "earliest",
+              "value": "earliest"
+            },
+            {
+              "label": "smallest",
+              "value": "smallest"
+            }
+          ],
+          "required": true
+        }
+      }},
+      {"name":"group","key":"group","value":"analytics-flow","group":"连接设置","editor":"text"},
+      {"name":"topic","key":"topic","value":"","group":"连接设置","editor":"textarea"}
+    ],
+    "returns": []
+  }, {
+    "name": "ElasticsearchSink",
+    "type": "sink",
+    "icon": "tree-file",
+    "classname": "com.iisquare.fs.flink.plugins.core.node.ElasticsearchSinkNode",
+    "property": [
+      {"name":"cluster","key":"cluster","value":"elasticsearch","group":"连接设置","editor":"text"},
+      {"name":"servers","key":"servers","value":"127.0.0.1:9300","group":"连接设置","editor":"text"},
+      {"name":"collectionIndex","key":"collectionIndex","value":"","group":"连接设置","editor":"text"},
+      {"name":"collectionType","key":"collectionType","value":"","group":"连接设置","editor":"text"},
+      {"name":"maxActions","key":"maxActions","value":"1","group":"连接设置","editor":"text"},
+      {"name":"idField","key":"idField","value":"_id","group":"连接设置","editor":"text"},
+      {"name":"tableField","key":"tableField","value":"_table","group":"连接设置","editor":"text"}
+    ],
+    "returns": []
+  }]
+}
