@@ -55,7 +55,7 @@ spring:
       test-on-borrow: false
       test-while-idle: true
       time-between-eviction-runs-millis: 18800
-    memory:
+    second:
       url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8
       jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8
       type: com.alibaba.druid.pool.DruidDataSource
