@@ -13,9 +13,9 @@ import org.springframework.context.annotation.ComponentScan;
     "com.iisquare.fs.web.admin",
 })
 @EnableFeignClients
-public class AdminApplication {
+public class ManageApplication {
 
     public static void main(String[] args) {
-        new SpringApplicationBuilder(AdminApplication.class).beanNameGenerator(new BeanNameGenerator()).run(args);
+        new SpringApplicationBuilder(ManageApplication.class).beanNameGenerator(new BeanNameGenerator()).run(args);
     }
 }

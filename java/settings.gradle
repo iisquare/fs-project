@@ -6,6 +6,7 @@ include 'base:flink'
 include 'base:jpa'
 include 'base:swagger'
 include 'base:test'
+include 'base:view'
 include 'base:web'
 
 include 'cloud:config'
