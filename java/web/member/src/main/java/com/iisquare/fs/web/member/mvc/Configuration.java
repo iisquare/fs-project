@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Setter
 public class Configuration {
 
-    @Value("${custom.date.format}")
-    private String dateFormat;
+    @Value("${fs.format.date}")
+    private String formatDate;
 
 }

@@ -1,9 +1,13 @@
 package com.iisquare.fs.web.member.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.base.web.util.ServletUtil;
+import com.iisquare.fs.web.core.rbac.RbacServiceBase;
 import com.iisquare.fs.web.member.dao.MenuDao;
 import com.iisquare.fs.web.member.dao.RelationDao;
 import com.iisquare.fs.web.member.dao.ResourceDao;
@@ -22,7 +26,9 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
-public class RbacService extends ServiceBase {
+public class RbacService extends RbacServiceBase {
+
+    public static final String RESOURCE_ATTRIBUTE_KEY = "resource";
 
     @Autowired
     private MenuDao menuDao;
@@ -30,6 +36,53 @@ public class RbacService extends ServiceBase {
     private ResourceDao resourceDao;
     @Autowired
     private RelationDao relationDao;
+
+    @Override
+    public JsonNode currentInfo(HttpServletRequest request) {
+        return DPUtil.convertJSON(currentInfo(request, null));
+    }
+
+    @Override
+    public boolean hasPermit(HttpServletRequest request, String module, String controller, String action) {
+        JsonNode resource = resource(request, null);
+        String key = keyPermit(module, controller, action);
+        return resource.has(key) ? resource.get(key).asBoolean() : false;
+    }
+
+    @Override
+    public boolean hasPermit(HttpServletRequest request, Map<String, Boolean> name2boolean) {
+        if (null == name2boolean) return false;
+        JsonNode resource = resource(request, null);
+        for (Map.Entry<String, Boolean> entry : name2boolean.entrySet()) {
+            String key = entry.getKey();
+            if (resource.has(key) && resource.get(key).asBoolean()) return true;
+        }
+        return false;
+    }
+
+    @Override
+    public JsonNode resource(HttpServletRequest request, Map<String, Boolean> name2boolean) {
+        ObjectNode result = DPUtil.objectNode();
+        int uid = DPUtil.parseInt(ServletUtil.getSession(request, "uid"));
+        if(uid < 1) return result;
+        result = (ObjectNode) request.getAttribute(RESOURCE_ATTRIBUTE_KEY);
+        if (null == result) {
+            result = loadResource(uid);
+            request.setAttribute(RESOURCE_ATTRIBUTE_KEY, result);
+        }
+        if (null == name2boolean) return result;
+        ObjectNode data = DPUtil.objectNode();
+        for (Map.Entry<String, Boolean> entry : name2boolean.entrySet()) {
+            String key = entry.getKey();
+            data.put(key, result.has(key) ? result.get(key).asBoolean() : entry.getValue());
+        }
+        return result;
+    }
+
+    @Override
+    public JsonNode menu(HttpServletRequest request, Integer parentId) {
+        return DPUtil.convertJSON(loadMenu(request, parentId));
+    }
 
     public Map<String, Object> currentInfo(HttpServletRequest request, Map<?, ?> info) {
         Map<String, Object> result = ServletUtil.getSessionMap(request);
@@ -41,24 +94,12 @@ public class RbacService extends ServiceBase {
         return result;
     }
 
-    public boolean hasPermit(HttpServletRequest request, String module, String controller, String action) {
-        Map<String, Map<String, Set<String>>> result = resource(request);
-        Map<String, Set<String>> controllers = result.get(module);
-        if(null == controllers) return false;
-        Set<String> actions = controllers.get(null == controller ? "" : controller);
-        if(null == actions) return false;
-        return actions.contains(null == action ? "" : action);
-    }
-
-    public Map<String, Map<String, Set<String>>> resource(HttpServletRequest request) {
-        int uid = DPUtil.parseInt(ServletUtil.getSession(request, "uid"));
-        if(uid < 1) return new HashMap<>();
-        Map<String, Map<String, Set<String>>> result = (Map<String, Map<String, Set<String>>>) request.getAttribute("resource");
-        if(null != result) return result;
+    private ObjectNode loadResource(int uid) {
+        ObjectNode result = DPUtil.objectNode();
         Set<Integer> roleIds = ServiceUtil.getPropertyValues(relationDao.findAllByTypeAndAid("user_role", uid), Integer.class, "bid");
-        if(roleIds.size() < 1) return new HashMap<>();
+        if(roleIds.size() < 1) return result;
         Set<Integer> bids = ServiceUtil.getPropertyValues(relationDao.findAllByTypeAndAidIn("role_resource", roleIds), Integer.class, "bid");
-        if(bids.size() < 1) return new HashMap<>();
+        if(bids.size() < 1) return result;
         List<Resource> data = resourceDao.findAll(new Specification() {
             @Override
             public Predicate toPredicate(Root root, CriteriaQuery query, CriteriaBuilder cb) {
@@ -68,25 +109,13 @@ public class RbacService extends ServiceBase {
                 return cb.and(predicates.toArray(new Predicate[predicates.size()]));
             }
         });
-        result = new HashMap<>();
         for (Resource item : data) {
-            Map<String, Set<String>> controllers = result.get(item.getModule());
-            if(null == controllers) {
-                controllers = new HashMap<>();
-                result.put(item.getModule(), controllers);
-            }
-            Set<String> actions = controllers.get(item.getController());
-            if(null == actions) {
-                actions = new HashSet<>();
-                controllers.put(item.getController(), actions);
-            }
-            actions.add(item.getAction());
+            result.put(keyPermit(item.getModule(), item.getController(), item.getAction()), true);
         }
-        request.setAttribute("resource", result);
         return result;
     }
 
-    public List<Menu> menu(HttpServletRequest request, Integer parentId) {
+    public List<Menu> loadMenu(HttpServletRequest request, Integer parentId) {
         int uid = DPUtil.parseInt(ServletUtil.getSession(request, "uid"));
         if(uid < 1) return new ArrayList<>();
         Set<Integer> roleIds = ServiceUtil.getPropertyValues(relationDao.findAllByTypeAndAid("user_role", uid), Integer.class, "bid");

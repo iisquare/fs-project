@@ -25,6 +25,8 @@ public class Menu implements Serializable {
     @Column
     private String name;
     @Column
+    private String fullName; // 自动拼接上级名称
+    @Column
     private Integer parentId;
     @Transient
     private String parentIdName;

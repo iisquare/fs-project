@@ -125,19 +125,19 @@ public class UserService extends ServiceBase {
                 }
                 String createdTimeStart = DPUtil.trim(DPUtil.parseString(param.get("createdTimeStart")));
                 if(!DPUtil.empty(createdTimeStart)) {
-                    predicates.add(cb.ge(root.get("createdTime"), DPUtil.dateTimeToMillis(createdTimeStart, configuration.getDateFormat())));
+                    predicates.add(cb.ge(root.get("createdTime"), DPUtil.dateTimeToMillis(createdTimeStart, configuration.getFormatDate())));
                 }
                 String createdTimeEnd = DPUtil.trim(DPUtil.parseString(param.get("createdTimeEnd")));
                 if(!DPUtil.empty(createdTimeEnd)) {
-                    predicates.add(cb.le(root.get("createdTime"), DPUtil.dateTimeToMillis(createdTimeEnd, configuration.getDateFormat())));
+                    predicates.add(cb.le(root.get("createdTime"), DPUtil.dateTimeToMillis(createdTimeEnd, configuration.getFormatDate())));
                 }
                 String updatedTimeStart = DPUtil.trim(DPUtil.parseString(param.get("updatedTimeStart")));
                 if(!DPUtil.empty(updatedTimeStart)) {
-                    predicates.add(cb.ge(root.get("updatedTime"), DPUtil.dateTimeToMillis(updatedTimeStart, configuration.getDateFormat())));
+                    predicates.add(cb.ge(root.get("updatedTime"), DPUtil.dateTimeToMillis(updatedTimeStart, configuration.getFormatDate())));
                 }
                 String updatedTimeEnd = DPUtil.trim(DPUtil.parseString(param.get("updatedTimeEnd")));
                 if(!DPUtil.empty(updatedTimeEnd)) {
-                    predicates.add(cb.le(root.get("updatedTime"), DPUtil.dateTimeToMillis(updatedTimeEnd, configuration.getDateFormat())));
+                    predicates.add(cb.le(root.get("updatedTime"), DPUtil.dateTimeToMillis(updatedTimeEnd, configuration.getFormatDate())));
                 }
                 String loginedIp = DPUtil.trim(DPUtil.parseString(param.get("loginedIp")));
                 if(!DPUtil.empty(loginedIp)) {
@@ -145,19 +145,19 @@ public class UserService extends ServiceBase {
                 }
                 String loginedTimeStart = DPUtil.trim(DPUtil.parseString(param.get("loginedTimeStart")));
                 if(!DPUtil.empty(loginedTimeStart)) {
-                    predicates.add(cb.ge(root.get("loginedTime"), DPUtil.dateTimeToMillis(loginedTimeStart, configuration.getDateFormat())));
+                    predicates.add(cb.ge(root.get("loginedTime"), DPUtil.dateTimeToMillis(loginedTimeStart, configuration.getFormatDate())));
                 }
                 String loginedTimeEnd = DPUtil.trim(DPUtil.parseString(param.get("loginedTimeEnd")));
                 if(!DPUtil.empty(loginedTimeEnd)) {
-                    predicates.add(cb.le(root.get("loginedTime"), DPUtil.dateTimeToMillis(loginedTimeEnd, configuration.getDateFormat())));
+                    predicates.add(cb.le(root.get("loginedTime"), DPUtil.dateTimeToMillis(loginedTimeEnd, configuration.getFormatDate())));
                 }
                 String lockedTimeStart = DPUtil.trim(DPUtil.parseString(param.get("lockedTimeStart")));
                 if(!DPUtil.empty(lockedTimeStart)) {
-                    predicates.add(cb.ge(root.get("lockedTime"), DPUtil.dateTimeToMillis(lockedTimeStart, configuration.getDateFormat())));
+                    predicates.add(cb.ge(root.get("lockedTime"), DPUtil.dateTimeToMillis(lockedTimeStart, configuration.getFormatDate())));
                 }
                 String lockedTimeEnd = DPUtil.trim(DPUtil.parseString(param.get("lockedTimeEnd")));
                 if(!DPUtil.empty(lockedTimeEnd)) {
-                    predicates.add(cb.le(root.get("lockedTime"), DPUtil.dateTimeToMillis(lockedTimeEnd, configuration.getDateFormat())));
+                    predicates.add(cb.le(root.get("lockedTime"), DPUtil.dateTimeToMillis(lockedTimeEnd, configuration.getFormatDate())));
                 }
                 List<Integer> roleIds = (List<Integer>) param.get("roleIds");
                 if(!DPUtil.empty(roleIds)) {
