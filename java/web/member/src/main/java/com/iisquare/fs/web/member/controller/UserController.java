@@ -166,6 +166,7 @@ public class UserController extends PermitControllerBase {
     public String loginAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         User info = null;
         Map<String, Object> session = null;
+        String module = DPUtil.parseString(param.get("module"));
         if(param.containsKey("serial")) {
             info = userService.infoBySerial(DPUtil.parseString(param.get("serial")));
             if(null == info) return ApiUtil.echoResult(1001, "账号不存在", null);
@@ -179,7 +180,7 @@ public class UserController extends PermitControllerBase {
             info.setLoginedIp(ServletUtil.getRemoteAddr(request));
             userService.save(info, 0);
             session = rbacService.currentInfo(request, DPUtil.buildMap("uid", info.getId()));
-            if(!rbacService.hasPermit(request, request.getAttribute("module").toString(), null, null)) {
+            if(!rbacService.hasPermit(request, module, null, null)) {
                 logoutAction(request);
                 return ApiUtil.echoResult(403, null, null);
             }
@@ -188,12 +189,12 @@ public class UserController extends PermitControllerBase {
             info = userService.info(DPUtil.parseInt(session.get("uid")));
         }
         if(null != info) {
-            info.setPassword("");
-            info.setSalt("");
+            info.setPassword("******");
+            info.setSalt("******");
         }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("info", info);
-        result.put("menu", rbacService.menu(request, DPUtil.parseInt(settingService.get("admin", "menuParentId"))));
+        result.put("menu", rbacService.menu(request, DPUtil.parseInt(settingService.get(module, "menu-parent-id"))));
         result.put("resource", rbacService.resource(request));
         return ApiUtil.echoResult(0, null, result);
     }

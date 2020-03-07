@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -18,6 +19,7 @@ public class DefaultRbacService extends RbacServiceBase {
     private MemberRpc memberRpc;
 
     private JsonNode post(String uri, Map param) {
+        if (null == param) param = new HashMap();
         return RpcUtil.data(memberRpc.post("/rbac/" + uri, param));
     }
 
