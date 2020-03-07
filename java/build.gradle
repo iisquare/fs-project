@@ -32,6 +32,7 @@ subprojects {
 
     // 定义版本号
     ext {
+        lombokVersion = '1.18.12'
         springBootVersion = '2.2.0.RELEASE'
         springCloudVersion = '2.2.0.RELEASE'
         flinkVersion = '1.7.2'
@@ -39,6 +40,13 @@ subprojects {
         hadoopVersion = '2.8.3'
         swaggerVersion = '2.9.2'
         tensorflowVersion = '1.15.0'
+    }
+
+    dependencies {
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: lombokVersion
+        annotationProcessor group: 'org.projectlombok', name: 'lombok', version: lombokVersion
+        testCompileOnly group: 'org.projectlombok', name: 'lombok', version: lombokVersion
+        testAnnotationProcessor group: 'org.projectlombok', name: 'lombok', version: lombokVersion
     }
 
     task jars(type: Copy) {

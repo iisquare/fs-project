@@ -16,7 +16,6 @@ import java.util.List;
 @AllArgsConstructor
 @DynamicInsert
 @DynamicUpdate
-@Table(name = "etl_resource")
 public class Resource implements Serializable {
 
     @Id

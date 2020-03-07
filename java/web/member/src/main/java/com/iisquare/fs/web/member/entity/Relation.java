@@ -14,7 +14,6 @@ import java.io.Serializable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "etl_relation")
 public class Relation implements Serializable {
 
     @Id

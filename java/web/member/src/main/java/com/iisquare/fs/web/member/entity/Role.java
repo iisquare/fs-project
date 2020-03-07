@@ -15,7 +15,6 @@ import java.io.Serializable;
 @AllArgsConstructor
 @DynamicInsert
 @DynamicUpdate
-@Table(name = "etl_role")
 public class Role implements Serializable {
 
     @Id

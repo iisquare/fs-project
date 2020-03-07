@@ -16,7 +16,6 @@ import java.util.List;
 @AllArgsConstructor
 @DynamicInsert
 @DynamicUpdate
-@Table(name = "etl_menu")
 public class Menu implements Serializable {
 
     @Id

@@ -16,7 +16,6 @@ import java.util.List;
 @AllArgsConstructor
 @DynamicInsert
 @DynamicUpdate
-@Table(name = "etl_user")
 public class User implements Serializable {
 
     @Id
