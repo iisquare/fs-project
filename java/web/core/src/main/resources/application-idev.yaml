@@ -15,6 +15,9 @@ rpc:
     rest: http://127.0.0.1:7805
 
 spring:
+  http:
+    encoding:
+      charset: UTF-8
   datasource:
     primary:
       url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false

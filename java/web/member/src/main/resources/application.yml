@@ -6,3 +6,11 @@ spring:
     hibernate:
       naming:
         physical-strategy: com.iisquare.fs.web.member.dsconfig.NamingStrategy
+
+server:
+  session:
+    servlet:
+      timeout: 86400
+      session:
+        cookie:
+          max-age: 2592000
