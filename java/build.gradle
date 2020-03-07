@@ -1,7 +1,7 @@
 
 buildscript {
     ext {
-        springBootVersion = '2.2.0.RELEASE'
+        springBootVersion = '2.2.1.RELEASE'
         shadowVersion = '4.0.3'
     }
     repositories {
@@ -27,14 +27,15 @@ subprojects {
 
     repositories {
         maven { url 'https://maven.aliyun.com/repository/central' }
-        maven { url 'http://central.maven.org/maven2' }
+        mavenCentral()
+        jcenter()
     }
 
     // 定义版本号
     ext {
         lombokVersion = '1.18.12'
-        springBootVersion = '2.2.0.RELEASE'
-        springCloudVersion = '2.2.0.RELEASE'
+        springBootVersion = '2.2.1.RELEASE'
+        springCloudVersion = '2.2.1.RELEASE'
         flinkVersion = '1.7.2'
         scalaVersion = '2.11'
         hadoopVersion = '2.8.3'
