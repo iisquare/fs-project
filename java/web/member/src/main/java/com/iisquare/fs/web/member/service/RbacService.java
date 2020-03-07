@@ -1,12 +1,11 @@
 package com.iisquare.fs.web.member.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.base.web.util.ServletUtil;
+import com.iisquare.fs.web.core.rbac.PermitInterceptor;
 import com.iisquare.fs.web.core.rbac.RbacServiceBase;
 import com.iisquare.fs.web.member.dao.MenuDao;
 import com.iisquare.fs.web.member.dao.RelationDao;
@@ -28,8 +27,6 @@ import java.util.*;
 @Service
 public class RbacService extends RbacServiceBase {
 
-    public static final String RESOURCE_ATTRIBUTE_KEY = "resource";
-
     @Autowired
     private MenuDao menuDao;
     @Autowired
@@ -39,44 +36,25 @@ public class RbacService extends RbacServiceBase {
 
     @Override
     public JsonNode currentInfo(HttpServletRequest request) {
-        return DPUtil.convertJSON(currentInfo(request, null));
+        JsonNode info = (JsonNode) request.getAttribute(PermitInterceptor.ATTRIBUTE_USER);
+        if (null != info) return info;
+        info = DPUtil.convertJSON(currentInfo(request, null));
+        request.setAttribute(PermitInterceptor.ATTRIBUTE_RESOURCE, info);
+        return info;
     }
 
     @Override
-    public boolean hasPermit(HttpServletRequest request, String module, String controller, String action) {
-        JsonNode resource = resource(request, null);
-        String key = keyPermit(module, controller, action);
-        return resource.has(key) ? resource.get(key).asBoolean() : false;
-    }
-
-    @Override
-    public boolean hasPermit(HttpServletRequest request, Map<String, Boolean> name2boolean) {
-        if (null == name2boolean) return false;
-        JsonNode resource = resource(request, null);
-        for (Map.Entry<String, Boolean> entry : name2boolean.entrySet()) {
-            String key = entry.getKey();
-            if (resource.has(key) && resource.get(key).asBoolean()) return true;
-        }
-        return false;
-    }
-
-    @Override
-    public JsonNode resource(HttpServletRequest request, Map<String, Boolean> name2boolean) {
-        ObjectNode result = DPUtil.objectNode();
+    public JsonNode resource(HttpServletRequest request) {
+        JsonNode resource = (JsonNode) request.getAttribute(PermitInterceptor.ATTRIBUTE_RESOURCE);
+        if (null != resource) return resource;
         int uid = DPUtil.parseInt(ServletUtil.getSession(request, "uid"));
-        if(uid < 1) return result;
-        result = (ObjectNode) request.getAttribute(RESOURCE_ATTRIBUTE_KEY);
-        if (null == result) {
-            result = loadResource(uid);
-            request.setAttribute(RESOURCE_ATTRIBUTE_KEY, result);
+        if(uid < 1) {
+            resource = DPUtil.objectNode();
+        } else {
+            resource = loadResource(uid);
         }
-        if (null == name2boolean) return result;
-        ObjectNode data = DPUtil.objectNode();
-        for (Map.Entry<String, Boolean> entry : name2boolean.entrySet()) {
-            String key = entry.getKey();
-            data.put(key, result.has(key) ? result.get(key).asBoolean() : entry.getValue());
-        }
-        return result;
+        request.setAttribute(PermitInterceptor.ATTRIBUTE_RESOURCE, resource);
+        return resource;
     }
 
     @Override

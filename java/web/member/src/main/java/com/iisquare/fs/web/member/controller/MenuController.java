@@ -7,6 +7,7 @@ import com.iisquare.fs.web.member.entity.Menu;
 import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
 import com.iisquare.fs.web.member.service.MenuService;
+import com.iisquare.fs.web.member.service.RbacService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,6 +23,8 @@ import java.util.Map;
 @RequestMapping("/menu")
 public class MenuController extends PermitControllerBase {
 
+    @Autowired
+    private RbacService rbacService;
     @Autowired
     private MenuService menuService;
 
@@ -58,11 +61,11 @@ public class MenuController extends PermitControllerBase {
         String target = DPUtil.trim(DPUtil.parseString(param.get("target")));
         Menu info = null;
         if(id > 0) {
-            if(!hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
             info = menuService.info(id);
             if(null == info) return ApiUtil.echoResult(404, null, id);
         } else {
-            if(!hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
             info = new Menu();
         }
         info.setName(name);
@@ -73,7 +76,7 @@ public class MenuController extends PermitControllerBase {
         info.setSort(sort);
         info.setStatus(status);
         info.setDescription(description);
-        info = menuService.save(info, uid(request));
+        info = menuService.save(info, rbacService.uid(request));
         return ApiUtil.echoResult(null == info ? 500 : 0, null, info);
     }
 
@@ -86,7 +89,7 @@ public class MenuController extends PermitControllerBase {
         } else {
             ids = Arrays.asList(DPUtil.parseInt(param.get("ids")));
         }
-        boolean result = menuService.delete(ids, uid(request));
+        boolean result = menuService.delete(ids, rbacService.uid(request));
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }
 

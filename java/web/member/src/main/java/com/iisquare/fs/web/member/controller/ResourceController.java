@@ -6,6 +6,7 @@ import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.web.member.entity.Resource;
 import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
+import com.iisquare.fs.web.member.service.RbacService;
 import com.iisquare.fs.web.member.service.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
@@ -22,6 +23,8 @@ import java.util.Map;
 @RequestMapping("/resource")
 public class ResourceController extends PermitControllerBase {
 
+    @Autowired
+    private RbacService rbacService;
     @Autowired
     private ResourceService resourceService;
 
@@ -58,11 +61,11 @@ public class ResourceController extends PermitControllerBase {
         String action = DPUtil.trim(DPUtil.parseString(param.get("action")));
         Resource info = null;
         if(id > 0) {
-            if(!hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
             info = resourceService.info(id);
             if(null == info) return ApiUtil.echoResult(404, null, id);
         } else {
-            if(!hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
             info = new Resource();
         }
         info.setName(name);
@@ -73,7 +76,7 @@ public class ResourceController extends PermitControllerBase {
         info.setSort(sort);
         info.setStatus(status);
         info.setDescription(description);
-        info = resourceService.save(info, uid(request));
+        info = resourceService.save(info, rbacService.uid(request));
         return ApiUtil.echoResult(null == info ? 500 : 0, null, info);
     }
 
@@ -86,7 +89,7 @@ public class ResourceController extends PermitControllerBase {
         } else {
             ids = Arrays.asList(DPUtil.parseInt(param.get("ids")));
         }
-        boolean result = resourceService.delete(ids, uid(request));
+        boolean result = resourceService.delete(ids, rbacService.uid(request));
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }
 

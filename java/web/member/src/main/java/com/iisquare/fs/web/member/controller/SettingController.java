@@ -6,6 +6,7 @@ import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.web.member.entity.Setting;
 import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
+import com.iisquare.fs.web.member.service.RbacService;
 import com.iisquare.fs.web.member.service.SettingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,6 +23,8 @@ import java.util.Map;
 @RequestMapping("/setting")
 public class SettingController extends PermitControllerBase {
 
+    @Autowired
+    private RbacService rbacService;
     @Autowired
     private SettingService settingService;
 
@@ -49,11 +52,11 @@ public class SettingController extends PermitControllerBase {
         String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
         Setting info = null;
         if(id > 0) {
-            if(!hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
             info = settingService.info(id);
             if(null == info) return ApiUtil.echoResult(404, null, id);
         } else {
-            if(!hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
             info = new Setting();
         }
         info.setName(name);
@@ -61,7 +64,7 @@ public class SettingController extends PermitControllerBase {
         info.setContent(DPUtil.parseString(param.get("content")));
         info.setSort(sort);
         info.setDescription(description);
-        info = settingService.save(info, uid(request));
+        info = settingService.save(info, rbacService.uid(request));
         return ApiUtil.echoResult(null == info ? 500 : 0, null, info);
     }
 

@@ -6,10 +6,7 @@ import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.web.member.entity.Role;
 import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
-import com.iisquare.fs.web.member.service.MenuService;
-import com.iisquare.fs.web.member.service.RelationService;
-import com.iisquare.fs.web.member.service.ResourceService;
-import com.iisquare.fs.web.member.service.RoleService;
+import com.iisquare.fs.web.member.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,6 +20,8 @@ import java.util.*;
 @RequestMapping("/role")
 public class RoleController extends PermitControllerBase {
 
+    @Autowired
+    private RbacService rbacService;
     @Autowired
     private RoleService roleService;
     @Autowired
@@ -45,7 +44,7 @@ public class RoleController extends PermitControllerBase {
             switch (type) {
                 case "menu":
                 case "resource":
-                    if(!hasPermit(request, type)) return ApiUtil.echoResult(9403, null, null);
+                    if(!rbacService.hasPermit(request, type)) return ApiUtil.echoResult(9403, null, null);
                     Set<Integer> bids = new HashSet<>();
                     bids.addAll((List<Integer>) param.get("bids"));
                     bids = relationService.relationIds("role_" + type, id, bids);
@@ -88,18 +87,18 @@ public class RoleController extends PermitControllerBase {
         String description = DPUtil.parseString(param.get("description"));
         Role info = null;
         if(id > 0) {
-            if(!hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
             info = roleService.info(id);
             if(null == info) return ApiUtil.echoResult(404, null, id);
         } else {
-            if(!hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
             info = new Role();
         }
         info.setName(name);
         info.setSort(sort);
         info.setStatus(status);
         info.setDescription(description);
-        info = roleService.save(info, uid(request));
+        info = roleService.save(info, rbacService.uid(request));
         return ApiUtil.echoResult(null == info ? 500 : 0, null, info);
     }
 
@@ -112,7 +111,7 @@ public class RoleController extends PermitControllerBase {
         } else {
             ids = Arrays.asList(DPUtil.parseInt(param.get("ids")));
         }
-        boolean result = roleService.delete(ids, uid(request));
+        boolean result = roleService.delete(ids, rbacService.uid(request));
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }
 

@@ -8,10 +8,7 @@ import com.iisquare.fs.web.member.entity.User;
 import com.iisquare.fs.web.member.mvc.Configuration;
 import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
-import com.iisquare.fs.web.member.service.RelationService;
-import com.iisquare.fs.web.member.service.RoleService;
-import com.iisquare.fs.web.member.service.SettingService;
-import com.iisquare.fs.web.member.service.UserService;
+import com.iisquare.fs.web.member.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +22,8 @@ import java.util.*;
 @RequestMapping("/user")
 public class UserController extends PermitControllerBase {
 
+    @Autowired
+    private RbacService rbacService;
     @Autowired
     private UserService userService;
     @Autowired
@@ -53,11 +52,11 @@ public class UserController extends PermitControllerBase {
         String password = DPUtil.trim(DPUtil.parseString(param.get("password")));
         User info = null;
         if(id > 0) {
-            if(!hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
             info = userService.info(id);
             if(null == info) return ApiUtil.echoResult(404, null, id);
         } else {
-            if(!hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
             info = new User();
             String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
             if(DPUtil.empty(serial)) return ApiUtil.echoResult(1002, "账号不能为空", name);
@@ -88,7 +87,7 @@ public class UserController extends PermitControllerBase {
                 info.setLockedTime(DPUtil.dateTimeToMillis(lockedTime, configuration.getFormatDate()));
             }
         }
-        info = userService.save(info, uid(request));
+        info = userService.save(info, rbacService.uid(request));
         return ApiUtil.echoResult(null == info ? 500 : 0, null, info);
     }
 
@@ -101,7 +100,7 @@ public class UserController extends PermitControllerBase {
         } else {
             ids = Arrays.asList(DPUtil.parseInt(param.get("ids")));
         }
-        boolean result = userService.delete(ids, uid(request));
+        boolean result = userService.delete(ids, rbacService.uid(request));
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }
 
@@ -127,7 +126,7 @@ public class UserController extends PermitControllerBase {
         if(param.containsKey("bids")) {
             switch (type) {
                 case "role":
-                    if(!hasPermit(request, type)) return ApiUtil.echoResult(9403, null, null);
+                    if(!rbacService.hasPermit(request, type)) return ApiUtil.echoResult(9403, null, null);
                     Set<Integer> bids = new HashSet<>();
                     bids.addAll((List<Integer>) param.get("bids"));
                     bids = relationService.relationIds("user_" + type, id, bids);
@@ -149,7 +148,7 @@ public class UserController extends PermitControllerBase {
         if(DPUtil.empty(passwordOld)) return ApiUtil.echoResult(1001, "请输入原密码", null);
         if(DPUtil.empty(password)) return ApiUtil.echoResult(1002, "请输入新密码", null);
         if(!password.equals(passwordNew)) return ApiUtil.echoResult(1003, "两次密码输入不一致", null);
-        User info = userService.info(uid(request));
+        User info = userService.info(rbacService.uid(request));
         if(null == info) return ApiUtil.echoResult(1004, "用户未登录或登录超时", null);
         if(!info.getPassword().equals(userService.password(passwordOld, info.getSalt()))) {
             return ApiUtil.echoResult(1005, "原密码错误", null);
@@ -179,13 +178,13 @@ public class UserController extends PermitControllerBase {
             info.setLoginedTime(System.currentTimeMillis());
             info.setLoginedIp(ServletUtil.getRemoteAddr(request));
             userService.save(info, 0);
-            session = sessionService.currentInfo(request, DPUtil.buildMap("uid", info.getId()));
-            if(!hasPermit(request, request.getAttribute("module").toString(), null, null)) {
+            session = rbacService.currentInfo(request, DPUtil.buildMap("uid", info.getId()));
+            if(!rbacService.hasPermit(request, request.getAttribute("module").toString(), null, null)) {
                 logoutAction(request);
                 return ApiUtil.echoResult(403, null, null);
             }
         } else {
-            session = sessionService.currentInfo(request, null);
+            session = rbacService.currentInfo(request, null);
             info = userService.info(DPUtil.parseInt(session.get("uid")));
         }
         if(null != info) {
@@ -194,14 +193,14 @@ public class UserController extends PermitControllerBase {
         }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("info", info);
-        result.put("menu", sessionService.menu(request, DPUtil.parseInt(settingService.get("system", "manageMenuParentId"))));
-        result.put("resource", sessionService.resource(request));
+        result.put("menu", rbacService.menu(request, DPUtil.parseInt(settingService.get("admin", "menuParentId"))));
+        result.put("resource", rbacService.resource(request));
         return ApiUtil.echoResult(0, null, result);
     }
 
     @RequestMapping("/logout")
     public String logoutAction(HttpServletRequest request) {
-        sessionService.currentInfo(request, DPUtil.buildMap("uid", 0));
+        rbacService.currentInfo(request, DPUtil.buildMap("uid", 0));
         return ApiUtil.echoResult(0, null, null);
     }
 
