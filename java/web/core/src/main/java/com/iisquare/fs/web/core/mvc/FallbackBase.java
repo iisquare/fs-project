@@ -15,8 +15,14 @@ public abstract class FallbackBase implements RpcBase {
         return fallback();
     }
 
-    protected String fallback() {
-        return ApiUtil.echoResult(4500, "调用服务失败", null);
+    public String fallback() {
+        return ApiUtil.echoResult(4501, "调用服务失败", null);
+    }
+
+    public String fallback(Throwable cause) {
+        String message = getClass().getSimpleName();
+        String data = null == cause ? null : cause.getMessage();
+        return ApiUtil.echoResult(4502, message, data);
     }
 
 }

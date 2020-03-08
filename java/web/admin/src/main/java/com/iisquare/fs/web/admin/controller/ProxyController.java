@@ -4,9 +4,16 @@ import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.core.mvc.RpcBase;
 import com.iisquare.fs.web.core.rpc.*;
+import feign.Response;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,6 +31,19 @@ public class ProxyController {
     private QuartzRpc quartzRpc;
     @Autowired
     private XlabRpc xlabRpc;
+
+    @PostMapping("/login")
+    public String loginAction(@RequestBody Map<String, Object> param, HttpServletResponse response) throws IOException {
+        param.put("module", "admin");
+        Response result = memberRpc.login(param);
+        Map<String, Collection<String>> headers = result.headers();
+        if (result.status() == HttpStatus.OK.value() && headers.containsKey(HttpHeaders.SET_COOKIE)) {
+            for (String value : headers.get(HttpHeaders.SET_COOKIE)) {
+                response.setHeader(HttpHeaders.SET_COOKIE, value);
+            }
+        }
+        return IOUtils.toString(result.body().asInputStream());
+    }
 
     @PostMapping("/post")
     public String postAction(@RequestBody Map<?, ?> param) {
