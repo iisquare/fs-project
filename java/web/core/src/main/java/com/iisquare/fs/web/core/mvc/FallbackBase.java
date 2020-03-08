@@ -5,6 +5,7 @@ import com.iisquare.fs.base.core.util.ApiUtil;
 import java.util.Map;
 
 public abstract class FallbackBase implements RpcBase {
+
     @Override
     public String get(String uri, Map param) {
         return fallback();

@@ -2,9 +2,8 @@ package com.iisquare.fs.web.core.rpc;
 
 import com.iisquare.fs.web.core.mvc.RpcBase;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.stereotype.Service;
 
-@FeignClient(name = "${rpc.xlab.name}", url = "${rpc.xlab.rest}", fallback = XlabFallback.class)
+@FeignClient(name = "${rpc.xlab.name}", url = "${rpc.xlab.rest}", fallbackFactory = XlabFallback.class)
 public interface XlabRpc extends RpcBase {
 
 }
