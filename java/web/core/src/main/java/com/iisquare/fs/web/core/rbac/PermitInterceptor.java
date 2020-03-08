@@ -19,6 +19,7 @@ public class PermitInterceptor implements HandlerInterceptor {
     public static final String ATTRIBUTE_MODULE = "module";
     public static final String ATTRIBUTE_CONTROLLER = "controller";
     public static final String ATTRIBUTE_ACTION = "action";
+    public static final String ATTRIBUTE_TEMPLATE = "template";
     protected RbacServiceBase rbacService;
 
     public PermitInterceptor(RbacServiceBase rbacService) {
@@ -36,6 +37,9 @@ public class PermitInterceptor implements HandlerInterceptor {
         String module = names[names.length - 2];
         if (module.equalsIgnoreCase(PACKAGE_CONTROLLER)) {
             module = names[names.length - 3];
+            request.setAttribute(ATTRIBUTE_TEMPLATE, "");
+        } else {
+            request.setAttribute(ATTRIBUTE_TEMPLATE, module);
         }
         String controller = names[names.length - 1].split("\\$\\$")[0]; // Spring代理类名称会追加特殊标识
         controller = controller.replaceFirst(SUFFIX_CONTROLLER, "");

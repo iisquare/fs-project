@@ -20,11 +20,10 @@ public abstract class PermitControllerBase extends ControllerBase {
     }
 
     protected String displayTemplate(ModelMap model, HttpServletRequest request, String controller, String action) {
-        String module = request.getAttribute(PermitInterceptor.ATTRIBUTE_MODULE).toString();
-        if(DPUtil.empty(module)) return controller + "/" + action;
-        return module + "/" + controller + "/" + action;
+        String template = request.getAttribute(PermitInterceptor.ATTRIBUTE_TEMPLATE).toString();
+        if(DPUtil.empty(template)) return controller + "/" + action;
+        return template + "/" + controller + "/" + action;
     }
-
 
     protected String redirect(String url) throws Exception {
         return "redirect:" + url;
