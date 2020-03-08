@@ -11,13 +11,22 @@ public abstract class FallbackBase implements RpcBase {
         return fallback();
     }
 
+    public String get(String uri, Map param, Throwable cause) {
+        return fallback(cause);
+    }
+
     @Override
     public String post(String uri, Map param) {
         return fallback();
     }
 
+    public String post(String uri, Map param, Throwable cause) {
+        return fallback(cause);
+    }
+
     public String fallback() {
-        return ApiUtil.echoResult(4501, "调用服务失败", null);
+        String message = getClass().getSimpleName();
+        return ApiUtil.echoResult(4501, message, null);
     }
 
     public String fallback(Throwable cause) {
