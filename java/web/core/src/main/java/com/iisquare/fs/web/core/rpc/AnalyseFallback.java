@@ -4,6 +4,6 @@ import com.iisquare.fs.web.core.mvc.FallbackBase;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AnalyseFallback extends FallbackBase {
+public class AnalyseFallback extends FallbackBase implements AnalyseRpc {
 
 }

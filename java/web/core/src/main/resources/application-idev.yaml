@@ -19,6 +19,10 @@ rpc:
     name: app-xlab-service
     rest: http://127.0.0.1:7805
 
+feign:
+  hystrix:
+    enabled: true # Enable Fallback
+
 spring:
   http:
     encoding:

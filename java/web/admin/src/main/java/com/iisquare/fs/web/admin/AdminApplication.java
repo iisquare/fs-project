@@ -10,6 +10,7 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @ComponentScan(basePackages = {
         "com.iisquare.fs.base.core.*",
+        "com.iisquare.fs.web.core.*",
         "com.iisquare.fs.web.admin",
 })
 @EnableFeignClients(basePackages = {
