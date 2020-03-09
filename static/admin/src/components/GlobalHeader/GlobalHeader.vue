@@ -5,20 +5,11 @@
         v-if="visible"
         :class="[fixedHeader && 'ant-header-fixedHeader', sidebarOpened ? 'ant-header-side-opened' : 'ant-header-side-closed', ]"
         :style="{ padding: '0' }">
-        <div v-if="mode === 'sidemenu'" class="header">
+        <div class="header">
           <a-icon v-if="device==='mobile'" class="trigger" :type="collapsed ? 'menu-fold' : 'menu-unfold'" @click="toggle"/>
           <a-icon v-else class="trigger" :type="collapsed ? 'menu-unfold' : 'menu-fold'" @click="toggle"/>
+          <s-breadcrumb v-if="device!=='mobile'" />
           <user-menu></user-menu>
-        </div>
-        <div v-else :class="['top-nav-header-index', theme]">
-          <div class="header-index-wide">
-            <div class="header-index-left">
-              <logo class="top-nav-header" :show-title="device !== 'mobile'"/>
-              <s-menu v-if="device !== 'mobile'" mode="horizontal" :menu="menus" :theme="theme" />
-              <a-icon v-else class="trigger" :type="collapsed ? 'menu-fold' : 'menu-unfold'" @click="toggle" />
-            </div>
-            <user-menu class="header-index-right"></user-menu>
-          </div>
         </div>
       </a-layout-header>
     </div>
@@ -27,16 +18,16 @@
 
 <script>
 import UserMenu from '../tools/UserMenu'
-import SMenu from '../Menu/'
 import Logo from '../tools/Logo'
 import { mixin } from '@/utils/mixin'
+import Breadcrumb from '@/components/tools/Breadcrumb'
 
 export default {
   name: 'GlobalHeader',
   components: {
     UserMenu,
-    SMenu,
-    Logo
+    Logo,
+    's-breadcrumb': Breadcrumb
   },
   mixins: [mixin],
   props: {

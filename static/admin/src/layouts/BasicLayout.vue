@@ -41,7 +41,6 @@
 
       <!-- layout content -->
       <a-layout-content :style="{ height: '100%', margin: '24px 24px 0', paddingTop: fixedHeader ? '64px' : '0' }">
-        <multi-tab v-if="multiTab"></multi-tab>
         <transition name="page-transition">
           <route-view />
         </transition>
@@ -52,8 +51,6 @@
         <global-footer />
       </a-layout-footer>
 
-      <!-- Setting Drawer (show in development mode) -->
-      <setting-drawer v-if="!production"></setting-drawer>
     </a-layout>
   </a-layout>
 
@@ -69,7 +66,6 @@ import RouteView from './RouteView'
 import SideMenu from '@/components/Menu/SideMenu'
 import GlobalHeader from '@/components/GlobalHeader'
 import GlobalFooter from '@/components/GlobalFooter'
-import SettingDrawer from '@/components/SettingDrawer'
 import cloneDeep from 'lodash.clonedeep'
 
 function convertRoutes (nodes) {
@@ -108,8 +104,7 @@ export default {
     RouteView,
     SideMenu,
     GlobalHeader,
-    GlobalFooter,
-    SettingDrawer
+    GlobalFooter
   },
   data () {
     return {

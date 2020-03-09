@@ -42,4 +42,7 @@ export default {
 </script>
 
 <style scoped>
+.breadcrumb {
+  display: inline-block;
+}
 </style>

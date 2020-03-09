@@ -1,7 +1,6 @@
 <template>
   <div class="page-header">
     <div class="page-header-index-wide">
-      <s-breadcrumb />
       <div class="detail">
         <div class="main" v-if="!$route.meta.hiddenHeaderContent">
           <div class="row">
@@ -32,13 +31,8 @@
 </template>
 
 <script>
-import Breadcrumb from '@/components/tools/Breadcrumb'
-
 export default {
   name: 'PageHeader',
-  components: {
-    's-breadcrumb': Breadcrumb
-  },
   props: {
     title: {
       type: [String, Boolean],
@@ -67,10 +61,6 @@ export default {
   background: #fff;
   padding: 16px 32px 0;
   border-bottom: 1px solid #e8e8e8;
-
-  .breadcrumb {
-    margin-bottom: 16px;
-  }
 
   .detail {
     display: flex;
