@@ -73,7 +73,11 @@ public class PermitInterceptor implements HandlerInterceptor {
             name2boolean.put(rbacService.keyPermit(strs[0], strs[1], strs[2]), false);
         }
         if (rbacService.hasPermit(request, name2boolean)) return true;
-        throw new PermitException(PermitException.PERMIT_DENIED);
+        if (rbacService.uid(request) < 1) {
+            throw new PermitException(PermitException.REQUIRED_LOGIN);
+        } else {
+            throw new PermitException(PermitException.PERMIT_DENIED);
+        }
     }
 
 }

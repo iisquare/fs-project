@@ -11,7 +11,6 @@ import VueClipboard from 'vue-clipboard2'
 import MultiTab from '@/components/MultiTab'
 import PageLoading from '@/components/PageLoading'
 import PermissionHelper from '@/utils/helper/permission'
-import './directives/action'
 
 VueClipboard.config.autoSetContainer = true
 
