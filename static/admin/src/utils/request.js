@@ -1,9 +1,9 @@
 import Vue from 'vue'
 import axios from 'axios'
-import store from '@/store'
+import store from '@/core/store'
 import notification from 'ant-design-vue/es/notification'
 import { VueAxios } from './axios'
-import { ACCESS_TOKEN } from '@/store/mutation-types'
+import { ACCESS_TOKEN } from '@/core/store/mutation-types'
 
 // 创建 axios 实例
 const service = axios.create({
