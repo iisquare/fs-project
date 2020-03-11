@@ -18,11 +18,12 @@ const routes = [{
   component: layout.user,
   children: [{
     path: '/login',
+    name: '登录页面',
     component: () => import(/* webpackChunkName: 'main' */ '@/views/frame/page/login')
   }]
 }, {
   path: '/startup',
-  name: '工作面板',
+  name: '启动页面',
   component: () => import(/* webpackChunkName: 'main' */ '@/views/frame/page/startup')
 }, {
   path: '*', name: 'Others', redirect: '/404'
