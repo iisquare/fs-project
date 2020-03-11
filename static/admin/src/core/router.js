@@ -5,26 +5,25 @@ import DataUtil from '@/utils/data'
 
 Vue.use(Router)
 
+const layout = {
+  basic: () => import(/* webpackChunkName: 'main' */ '@/view/frame/layout/basic'),
+  blank: () => import(/* webpackChunkName: 'main' */ '@/view/frame/layout/blank'),
+  page: () => import(/* webpackChunkName: 'main' */ '@/view/frame/layout/page'),
+  route: () => import(/* webpackChunkName: 'main' */ '@/view/frame/layout/route'),
+  user: () => import(/* webpackChunkName: 'main' */ '@/view/frame/layout/user')
+}
+
 const routes = [{
+  path: '/',
+  component: layout.user,
+  children: [{
+    path: '/login',
+    component: import(/* webpackChunkName: 'main' */ '@/view/frame/page/login')
+  }]
+}, {
   path: '/startup',
   name: '工作面板',
-  component: () => import(/* webpackChunkName: 'main' */ '@/view/layout/page/startup')
-}, {
-  path: '/login',
-  name: '用户登录',
-  component: () => import(/* webpackChunkName: 'main' */ '@/view/layout/page/login')
-}, {
-  path: '/403',
-  name: 'Error403',
-  component: () => import(/* webpackChunkName: 'error' */ '@/view/layout/page/403')
-}, {
-  path: '/404',
-  name: 'Error404',
-  component: () => import(/* webpackChunkName: 'error' */ '@/view/layout/page/404')
-}, {
-  path: '/500',
-  name: 'Error500',
-  component: () => import(/* webpackChunkName: 'error' */ '@/view/layout/page/500')
+  component: () => import(/* webpackChunkName: 'main' */ '@/view/frame/page/startup')
 }, {
   path: '*', name: 'Others', redirect: '/404'
 }]
