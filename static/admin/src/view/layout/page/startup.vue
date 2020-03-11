@@ -46,7 +46,7 @@
           </div>
           <div class="shadow" id="shadowweight"></div>
           <div id="chain-circle"></div>
-          <div id="chain">{{ tip }}</div>
+          <div id="chain">{{ readyText }}</div>
           <div id="weight"></div>
         </div>
       </div>
@@ -58,19 +58,16 @@
 import DataUtil from '@/utils/data'
 
 export default {
-  data () {
-    return {
-      tip: '载入中'
-    }
-  },
   computed: {
     ready () {
       return this.$store.state.user.ready
+    },
+    readyText () {
+      return this.$store.state.user.readyText
     }
   },
   methods: {
     completed () {
-      this.tip = this.ready ? '载入成功' : '载入失败'
       let url = this.$router.currentRoute.query.redirect
       if (DataUtil.empty(url)) url = '/'
       this.$router.push(url)
@@ -95,6 +92,8 @@ export default {
   background-image: url(/bg.gif);
   width: 100%;
   height: 100%;
+  position: absolute;
+  overflow: hidden;
 }
 #level {
   width: 100%;
