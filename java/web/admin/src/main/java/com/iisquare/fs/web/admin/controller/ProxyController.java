@@ -2,7 +2,6 @@ package com.iisquare.fs.web.admin.controller;
 
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.iisquare.fs.base.web.util.ServletUtil;
 import com.iisquare.fs.web.core.mvc.RpcBase;
 import com.iisquare.fs.web.core.rpc.*;
 import feign.Response;
@@ -14,10 +13,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.HttpCookie;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -42,10 +39,7 @@ public class ProxyController {
         Map<String, Collection<String>> headers = result.headers();
         if (result.status() == HttpStatus.OK.value() && headers.containsKey(HttpHeaders.SET_COOKIE)) {
             for (String value : headers.get(HttpHeaders.SET_COOKIE)) {
-                List<HttpCookie> list = HttpCookie.parse(value);
-                for (HttpCookie cookie : list) {
-                    response.addCookie(ServletUtil.cookie(cookie));
-                }
+                response.addHeader(HttpHeaders.SET_COOKIE, value);
             }
         }
         return IOUtils.toString(result.body().asInputStream());
