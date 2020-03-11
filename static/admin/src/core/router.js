@@ -5,10 +5,21 @@ import DataUtil from '@/utils/data'
 
 Vue.use(Router)
 
+const layout = {
+  basic: () => import(/* webpackChunkName: 'main' */ '@/views/frame/layout/basic'),
+  blank: () => import(/* webpackChunkName: 'main' */ '@/views/frame/layout/blank'),
+  page: () => import(/* webpackChunkName: 'main' */ '@/views/frame/layout/page'),
+  route: () => import(/* webpackChunkName: 'main' */ '@/views/frame/layout/route'),
+  user: () => import(/* webpackChunkName: 'main' */ '@/views/frame/layout/user')
+}
+
 const routes = [{
-  path: '/login',
-  name: '用户登录',
-  component: import(/* webpackChunkName: 'main' */ '@/views/frame/page/login')
+  path: '/',
+  component: layout.user,
+  children: [{
+    path: '/login',
+    component: () => import(/* webpackChunkName: 'main' */ '@/views/frame/page/login')
+  }]
 }, {
   path: '/startup',
   name: '工作面板',
