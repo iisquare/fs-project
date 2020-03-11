@@ -88,8 +88,7 @@ export default {
 #main {
   margin: 0px;
   padding: 0px;
-  background: #196a73; /* Old browsers */
-  background-image: url(/bg.gif);
+  background: #f0f2f5 url(~@/assets/background.svg) no-repeat 50%;
   width: 100%;
   height: 100%;
   position: absolute;
