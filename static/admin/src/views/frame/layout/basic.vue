@@ -41,6 +41,7 @@
 
       <!-- layout content -->
       <a-layout-content :style="{ height: '100%', margin: '24px 24px 0', paddingTop: fixedHeader ? '64px' : '0' }">
+        <multi-tab v-if="multiTab"></multi-tab>
         <transition name="page-transition">
           <route-view />
         </transition>
@@ -51,6 +52,8 @@
         <global-footer />
       </a-layout-footer>
 
+      <!-- Setting Drawer (show in development mode) -->
+      <setting-drawer v-if="!production"></setting-drawer>
     </a-layout>
   </a-layout>
 
@@ -66,36 +69,8 @@ import RouteView from './route'
 import SideMenu from '@/components/Menu/SideMenu'
 import GlobalHeader from '@/components/GlobalHeader'
 import GlobalFooter from '@/components/GlobalFooter'
-import cloneDeep from 'lodash.clonedeep'
-
-function convertRoutes (nodes) {
-  if (!nodes) return null
-
-  nodes = cloneDeep(nodes)
-
-  let queue = Array.isArray(nodes) ? nodes.concat() : [nodes]
-
-  while (queue.length) {
-    const levelSize = queue.length
-
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()
-
-      if (!node.children || !node.children.length) continue
-
-      node.children.forEach(child => {
-        // 转化相对路径
-        if (child.path[0] !== '/') {
-          child.path = node.path.replace(/(\w*)[/]*$/, `$1/${child.path}`)
-        }
-      })
-
-      queue = queue.concat(node.children)
-    }
-  }
-
-  return nodes
-}
+import SettingDrawer from '@/components/SettingDrawer'
+import { convertRoutes } from '@/utils/routeConvert'
 
 export default {
   name: 'BasicLayout',
@@ -104,7 +79,8 @@ export default {
     RouteView,
     SideMenu,
     GlobalHeader,
-    GlobalFooter
+    GlobalFooter,
+    SettingDrawer
   },
   data () {
     return {

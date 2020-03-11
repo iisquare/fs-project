@@ -38,7 +38,7 @@
       </a-form-item>
 
       <a-form-item>
-        <a-checkbox v-decorator="['rememberMe']">自动登录</a-checkbox>
+        <a-checkbox v-decorator="['rememberMe', { valuePropName: 'checked' }]">自动登录</a-checkbox>
         <a-tooltip title="请联系管理员" class="forge-password" style="float: right;">
           <a-button type="link">忘记密码</a-button>
         </a-tooltip>

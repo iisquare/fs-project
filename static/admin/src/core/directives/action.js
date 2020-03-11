@@ -1,5 +1,5 @@
 import Vue from 'vue'
-import store from '@/store'
+import store from '@/core/store'
 
 /**
  * Action 权限指令
