@@ -70,7 +70,7 @@ export default {
     completed () {
       let url = this.$router.currentRoute.query.redirect
       if (DataUtil.empty(url)) url = '/'
-      this.$router.push(url)
+      this.$router.push(url).catch(err => err)
     }
   },
   watch: {
