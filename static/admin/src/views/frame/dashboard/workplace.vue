@@ -1,7 +1,7 @@
 <template>
   <page-view :avatar="avatar" :title="false">
     <div slot="headerContent">
-      <div class="title">{{ timeFix }}，{{ user.name }}<span class="welcome-text">，{{ welcome }}</span></div>
+      <div class="title">{{ timeFix }}，{{ user.name }}<span class="welcome-text">，欢迎光临</span></div>
       <div>前端工程师 | 蚂蚁金服 - 某某某事业群 - VUE平台</div>
     </div>
     <div slot="extra">
@@ -117,8 +117,6 @@ import PageView from '@/views/frame/layout/page'
 import HeadInfo from '@/components/tools/HeadInfo'
 import { Radar } from '@/components'
 
-import { getRoleList, getServiceList } from '@/api/manage'
-
 const DataSet = require('@antv/data-set')
 
 export default {
@@ -181,24 +179,12 @@ export default {
   },
   computed: {
     ...mapState({
-      nickname: (state) => state.user.nickname,
-      welcome: (state) => state.user.welcome
-    }),
-    userInfo () {
-      return this.$store.getters.userInfo
-    }
+      userInfo: (state) => state.user.data.info
+    })
   },
   created () {
     this.user = this.userInfo
     this.avatar = this.userInfo.avatar
-
-    getRoleList().then(res => {
-      // console.log('workplace -> call getRoleList()', res)
-    })
-
-    getServiceList().then(res => {
-      // console.log('workplace -> call getServiceList()', res)
-    })
   },
   mounted () {
     this.getProjects()
@@ -208,40 +194,35 @@ export default {
   },
   methods: {
     getProjects () {
-      this.$http.get('/list/search/projects')
-        .then(res => {
-          this.projects = res.result && res.result.data
-          this.loading = false
-        })
+      window.setTimeout(() => {
+        this.projects = []
+        this.loading = false
+      }, 1000)
     },
     getActivity () {
-      this.$http.get('/workplace/activity')
-        .then(res => {
-          this.activities = res.result
-        })
+      window.setTimeout(() => {
+        this.activities = []
+      }, 1000)
     },
     getTeams () {
-      this.$http.get('/workplace/teams')
-        .then(res => {
-          this.teams = res.result
-        })
+      window.setTimeout(() => {
+        this.teams = []
+        this.loading = false
+      }, 1000)
     },
     initRadar () {
       this.radarLoading = true
-
-      this.$http.get('/workplace/radar')
-        .then(res => {
-          const dv = new DataSet.View().source(res.result)
-          dv.transform({
-            type: 'fold',
-            fields: ['个人', '团队', '部门'],
-            key: 'user',
-            value: 'score'
-          })
-
-          this.radarData = dv.rows
-          this.radarLoading = false
+      window.setTimeout(() => {
+        const dv = new DataSet.View().source([])
+        dv.transform({
+          type: 'fold',
+          fields: ['个人', '团队', '部门'],
+          key: 'user',
+          value: 'score'
         })
+        this.radarData = []
+        this.radarLoading = false
+      }, 1000)
     }
   }
 }

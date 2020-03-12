@@ -33,6 +33,9 @@ const mutations = {
     state.readyText = ready ? '载入成功' : '载入失败'
   },
   data (state, data) {
+    if (!data.info.avatar) {
+      data.info.avatar = '/logo.png'
+    }
     state.data = data
   }
 }

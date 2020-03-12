@@ -76,7 +76,7 @@ export default {
     },
     updateMenu () {
       const routes = this.$route.matched.concat()
-      const { hidden } = this.$route.meta
+      const { hidden } = this.$route
       if (routes.length >= 3 && hidden) {
         routes.pop()
         this.selectedKeys = [routes[routes.length - 1].path]
@@ -101,25 +101,25 @@ export default {
       return null
     },
     renderMenuItem (menu) {
-      const target = menu.meta.target || null
+      const target = menu.target || null
       const CustomTag = target && 'a' || 'router-link'
       const props = { to: { name: menu.name } }
-      const attrs = { href: menu.path, target: menu.meta.target }
+      const attrs = { href: menu.path, target: menu.target }
 
       if (menu.children && menu.hideChildrenInMenu) {
         // 把有子菜单的 并且 父菜单是要隐藏子菜单的
         // 都给子菜单增加一个 hidden 属性
         // 用来给刷新页面时， selectedKeys 做控制用
         menu.children.forEach(item => {
-          item.meta = Object.assign(item.meta, { hidden: true })
+          item = Object.assign(item, { hidden: true })
         })
       }
 
       return (
         <Menu.Item {...{ key: menu.path }}>
           <CustomTag {...{ props, attrs }}>
-            {this.renderIcon(menu.meta.icon)}
-            <span>{menu.meta.title}</span>
+            {this.renderIcon(menu.icon)}
+            <span>{menu.name}</span>
           </CustomTag>
         </Menu.Item>
       )
@@ -132,8 +132,8 @@ export default {
       return (
         <Menu.SubMenu {...{ key: menu.path }}>
           <span slot="title">
-            {this.renderIcon(menu.meta.icon)}
-            <span>{menu.meta.title}</span>
+            {this.renderIcon(menu.icon)}
+            <span>{menu.name}</span>
           </span>
           {itemArr}
         </Menu.SubMenu>
