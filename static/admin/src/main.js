@@ -7,9 +7,6 @@ import App from './App.vue'
 import router from './core/router'
 import store from './core/store'
 import './core/directive'
-// mock
-// WARNING: `mockjs` NOT SUPPORT `IE` PLEASE DO NOT USE IN `production` ENV.
-import './mock'
 
 import bootstrap from './core/bootstrap'
 import './core/lazy_use'
