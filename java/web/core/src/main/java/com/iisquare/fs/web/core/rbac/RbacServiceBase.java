@@ -15,6 +15,8 @@ public abstract class RbacServiceBase extends ServiceBase {
     }
 
     public String keyPermit(String module, String controller, String action) {
+        if (null == controller) controller = "";
+        if (null == action) action = "";
         return module + ":" + controller + ":" + action;
     }
 
