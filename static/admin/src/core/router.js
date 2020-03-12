@@ -10,7 +10,8 @@ const layout = {
   blank: () => import(/* webpackChunkName: 'main' */ '@/views/frame/layout/blank'),
   page: () => import(/* webpackChunkName: 'main' */ '@/views/frame/layout/page'),
   route: () => import(/* webpackChunkName: 'main' */ '@/views/frame/layout/route'),
-  user: () => import(/* webpackChunkName: 'main' */ '@/views/frame/layout/user')
+  user: () => import(/* webpackChunkName: 'main' */ '@/views/frame/layout/user'),
+  default: () => import(/* webpackChunkName: 'main' */ '@/views/frame/page/default')
 }
 
 const page = {
@@ -45,6 +46,15 @@ const routes = [{
       path: '/dashboard/workplace',
       name: '工作台',
       component: () => import(/* webpackChunkName: 'dashboard' */ '@/views/frame/dashboard/workplace')
+    }]
+  }, {
+    path: '/member',
+    name: '用户中心',
+    component: layout.route,
+    children: [{
+      path: '/member/index/index',
+      name: '用户中心面板',
+      component: layout.default
     }]
   }]
 }, {

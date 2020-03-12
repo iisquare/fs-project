@@ -1,12 +1,12 @@
 <template>
   <div class="exception">
     <div class="imgBlock">
-      <div class="imgEle" :style="{backgroundImage: `url(${config[type].img})`}">
+      <div class="imgEle" :style="{backgroundImage: `url(${img})`}">
       </div>
     </div>
     <div class="content">
-      <h1>{{ config[type].title }}</h1>
-      <div class="desc">{{ config[type].desc }}</div>
+      <h3>{{ title }}</h3>
+      <div class="desc">{{ desc }}</div>
       <div class="actions">
         <a-button type="primary" @click="handleToHome">返回首页</a-button>
       </div>
@@ -15,25 +15,21 @@
 </template>
 
 <script>
-import types from './type'
-
 export default {
-  name: 'Exception',
-  props: {
-    type: {
-      type: String,
-      default: '404'
-    }
-  },
   data () {
     return {
-      config: types
+      title: '',
+      img: 'https://gw.alipayobjects.com/zos/rmsportal/KpnpchXsobRgLElEozzI.svg',
+      desc: '请在左侧菜单中，选择您要进行的操作'
     }
   },
   methods: {
     handleToHome () {
       this.$router.push('/')
     }
+  },
+  mounted () {
+    this.title = this.$route.name
   }
 }
 </script>

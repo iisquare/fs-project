@@ -1,12 +1,18 @@
 <template>
   <div class="user-wrapper">
     <div class="content-box">
-      <a href="https://pro.loacg.com/docs/getting-started" target="_blank">
-        <span class="action">
-          <a-icon type="question-circle-o"></a-icon>
-        </span>
-      </a>
-      <notice-icon class="action"/>
+      <a-popover placement="bottomRight">
+        <template slot="content">
+          <a-list itemLayout="horizontal" :grid="{ gutter: 5, column: 2 }" :dataSource="menus">
+            <a-list-item slot="renderItem" slot-scope="item" class="item-app">
+              <a-button :icon="item.icon" type="dashed" block>
+                <a :href="item.url" :target="item.target">{{ item.name }}</a>
+              </a-button>
+            </a-list-item>
+          </a-list>
+        </template>
+        <a-button icon="appstore" shape="circle"></a-button>
+      </a-popover>
       <a-dropdown>
         <span class="action ant-dropdown-link user-dropdown-menu">
           <a-avatar class="avatar" size="small" :src="userInfo.avatar"/>
@@ -43,17 +49,14 @@
 </template>
 
 <script>
-import NoticeIcon from '@/components/NoticeIcon'
 import { mapState } from 'vuex'
 import userService from '@/service/member/user'
 
 export default {
   name: 'UserMenu',
-  components: {
-    NoticeIcon
-  },
   computed: {
     ...mapState({
+      menus: (state) => state.user.data.menu,
       userInfo: (state) => state.user.data.info
     })
   },
@@ -76,3 +79,14 @@ export default {
   }
 }
 </script>
+
+<style lang="less" scoped>
+.item-app {
+  a {
+    color: rgba(0, 0, 0, 0.65);
+    display: inline-block;
+    font-size: 14px;
+    margin-left: 5px;
+  }
+}
+</style>
