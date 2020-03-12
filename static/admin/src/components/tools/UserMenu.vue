@@ -45,6 +45,7 @@
 <script>
 import NoticeIcon from '@/components/NoticeIcon'
 import { mapState } from 'vuex'
+import userService from '@/service/member/user'
 
 export default {
   name: 'UserMenu',
@@ -62,15 +63,10 @@ export default {
         title: '提示',
         content: '真的要注销登录吗 ?',
         onOk: () => {
-          return this.Logout({}).then(() => {
+          return userService.logout().then(() => {
             setTimeout(() => {
               window.location.reload()
             }, 16)
-          }).catch(err => {
-            this.$message.error({
-              title: '错误',
-              description: err.message
-            })
           })
         },
         onCancel () {
