@@ -23,42 +23,43 @@ const page = {
 
 const routes = [{
   path: '/startup',
-  name: '启动页面',
+  meta: { title: '启动页面' },
   component: () => import(/* webpackChunkName: 'main' */ '@/views/frame/page/startup')
 }, {
   path: '/user',
   component: layout.user,
   children: [{
     path: '/user/login',
-    name: '登录页面',
+    meta: { title: '登录页面' },
     component: () => import(/* webpackChunkName: 'main' */ '@/views/frame/page/login')
   }]
 }, {
+  name: '/',
   path: '/',
-  name: '首页',
+  meta: { title: '首页' },
   component: layout.basic,
   redirect: page.home,
   children: [{
     path: '/dashboard',
-    name: '仪表盘',
+    meta: { title: '仪表盘' },
     component: layout.route,
     children: [{
       path: '/dashboard/workplace',
-      name: '工作台',
+      meta: { title: '工作台' },
       component: () => import(/* webpackChunkName: 'dashboard' */ '@/views/frame/dashboard/workplace')
     }]
   }, {
     path: '/member',
-    name: '用户中心',
+    meta: { title: '用户中心' },
     component: layout.route,
     children: [{
       path: '/member/index/index',
-      name: '用户中心面板',
+      meta: { title: '工作面板' },
       component: layout.default
     }]
   }]
 }, {
-  path: '*', name: 'Others', redirect: '/404'
+  path: '*', redirect: '/404'
 }]
 
 const router = new Router({ routes })

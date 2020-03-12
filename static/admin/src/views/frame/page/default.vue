@@ -29,7 +29,7 @@ export default {
     }
   },
   mounted () {
-    this.title = this.$route.name
+    this.title = this.$route.meta.title
   }
 }
 </script>

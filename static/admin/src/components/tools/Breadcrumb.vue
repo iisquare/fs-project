@@ -4,8 +4,8 @@
       <router-link
         v-if="item.name != name && index != 1"
         :to="{ path: item.path === '' ? '/' : item.path }"
-      >{{ item.name }}</router-link>
-      <span v-else>{{ item.name }}</span>
+      >{{ item.meta.title }}</router-link>
+      <span v-else>{{ item.meta.title }}</span>
     </a-breadcrumb-item>
   </a-breadcrumb>
 </template>
