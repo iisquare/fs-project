@@ -2,17 +2,17 @@
   <div class="footer">
     <div class="links">
       <a
-        href="https://pro.loacg.com/"
+        href="https://pro.loacg.com/docs/getting-started"
         target="_blank"
-      >Pro 首页</a>
+      >开发文档</a>
       <a
         href="https://github.com/sendya/ant-design-pro-vue"
         target="_blank"
       >
         <a-icon type="github" />
       </a>
-      <a href="https://ant.design/">Ant Design</a>
-      <a href="https://vue.ant.design/">Vue Antd</a>
+      <a href="https://preview.pro.loacg.com/" target="_blank">预览</a>
+      <a href="https://www.antdv.com/docs/vue/introduce-cn/" target="_blank">Vue Antd</a>
     </div>
     <div class="copyright">
       Copyright

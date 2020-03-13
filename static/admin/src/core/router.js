@@ -38,7 +38,7 @@ const routes = [{
   children: [{
     path: '/user/login',
     meta: { title: '登录页面' },
-    component: () => import(/* webpackChunkName: 'main' */ '@/views/frame/page/login')
+    component: () => import(/* webpackChunkName: 'main' */ '@/views/frame/user/login')
   }]
 }, {
   name: '/',
@@ -47,6 +47,15 @@ const routes = [{
   component: layout.basic,
   redirect: page.home,
   children: [{
+    path: '/account',
+    meta: { title: '个人中心' },
+    component: () => import(/* webpackChunkName: 'main' */ '@/views/frame/account/left.inc'),
+    children: [{
+      path: '/account/profile',
+      meta: { title: '个人信息' },
+      component: () => import(/* webpackChunkName: 'main' */ '@/views/frame/account/profile')
+    }]
+  }, {
     path: '/dashboard',
     meta: { title: '仪表盘' },
     component: layout.route,
