@@ -54,6 +54,10 @@ const routes = [{
       path: '/account/profile',
       meta: { title: '个人信息' },
       component: () => import(/* webpackChunkName: 'main' */ '@/views/frame/account/profile')
+    }, {
+      path: '/account/password',
+      meta: { title: '修改密码' },
+      component: () => import(/* webpackChunkName: 'main' */ '@/views/frame/account/password')
     }]
   }, {
     path: '/dashboard',
