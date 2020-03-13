@@ -11,17 +11,24 @@ const layout = {
   page: () => import(/* webpackChunkName: 'main' */ '@/views/frame/layout/page'),
   route: () => import(/* webpackChunkName: 'main' */ '@/views/frame/layout/route'),
   user: () => import(/* webpackChunkName: 'main' */ '@/views/frame/layout/user'),
-  default: () => import(/* webpackChunkName: 'main' */ '@/views/frame/page/default')
+  default: () => import(/* webpackChunkName: 'main' */ '@/views/frame/page/default'),
+  e403: () => import(/* webpackChunkName: 'main' */ '@/views/frame/page/403'),
+  e404: () => import(/* webpackChunkName: 'main' */ '@/views/frame/page/404'),
+  e500: () => import(/* webpackChunkName: 'main' */ '@/views/frame/page/500')
 }
 
 const page = {
   root: '/',
+  e404: '/404',
   home: '/dashboard/workplace',
   login: '/user/login',
   startup: '/startup'
 }
 
 const routes = [{
+  path: page.e404,
+  component: layout.e404
+}, {
   path: '/startup',
   meta: { title: '启动页面' },
   component: () => import(/* webpackChunkName: 'main' */ '@/views/frame/page/startup')
@@ -49,6 +56,23 @@ const routes = [{
       component: () => import(/* webpackChunkName: 'dashboard' */ '@/views/frame/dashboard/workplace')
     }]
   }, {
+    path: '/exception',
+    meta: { title: '异常页面' },
+    component: layout.route,
+    children: [{
+      path: '/exception/403',
+      meta: { title: '403' },
+      component: layout.e403
+    }, {
+      path: '/exception/404',
+      meta: { title: '404' },
+      component: layout.e404
+    }, {
+      path: '/exception/500',
+      meta: { title: '500' },
+      component: layout.e500
+    }]
+  }, {
     path: '/member',
     meta: { title: '用户中心' },
     component: layout.route,
@@ -59,7 +83,7 @@ const routes = [{
     }]
   }]
 }, {
-  path: '*', redirect: '/404'
+  path: '*', redirect: page.e404
 }]
 
 const router = new Router({ routes })
@@ -67,7 +91,7 @@ const router = new Router({ routes })
 router.beforeEach((to, from, next) => {
   const user = store.state.user
   if (!user.ready) { // 用户状态未同步
-    if (to.path === page.startup) {
+    if (to.path === page.startup || to.path === page.e404) {
       next()
     } else {
       next({
@@ -76,7 +100,7 @@ router.beforeEach((to, from, next) => {
       })
     }
   } else if (DataUtil.empty(user.data) || DataUtil.empty(user.data.info)) { // 用户未登陆
-    if (to.path === page.login) {
+    if (to.path === page.login || to.path === page.e404) {
       next()
     } else {
       next({
