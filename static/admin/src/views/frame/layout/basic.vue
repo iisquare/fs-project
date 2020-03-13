@@ -52,6 +52,10 @@
         <global-footer />
       </a-layout-footer>
 
+      <a-back-top>
+        <a-icon type="up-circle" />
+      </a-back-top>
+
       <setting-drawer></setting-drawer>
 
     </a-layout>
