@@ -6,7 +6,6 @@
       @close="onClose"
       :closable="false"
       :visible="visible"
-      :handle="handle"
     >
       <div class="setting-drawer-index-content">
 
@@ -60,31 +59,6 @@
         <div :style="{ marginBottom: '24px' }">
           <h3 class="setting-drawer-index-title">导航模式</h3>
 
-          <div class="setting-drawer-index-blockChecbox">
-            <a-tooltip>
-              <template slot="title">
-                侧边栏导航
-              </template>
-              <div class="setting-drawer-index-item" @click="handleLayout('sidemenu')">
-                <img src="https://gw.alipayobjects.com/zos/rmsportal/JopDzEhOqwOjeNTXkoje.svg" alt="sidemenu">
-                <div class="setting-drawer-index-selectIcon" v-if="layoutMode === 'sidemenu'">
-                  <a-icon type="check"/>
-                </div>
-              </div>
-            </a-tooltip>
-
-            <a-tooltip>
-              <template slot="title">
-                顶部栏导航
-              </template>
-              <div class="setting-drawer-index-item" @click="handleLayout('topmenu')">
-                <img src="https://gw.alipayobjects.com/zos/rmsportal/KDNDBbriJhLwuqMoxcAr.svg" alt="topmenu">
-                <div class="setting-drawer-index-selectIcon" v-if="layoutMode !== 'sidemenu'">
-                  <a-icon type="check"/>
-                </div>
-              </div>
-            </a-tooltip>
-          </div>
           <div :style="{ marginTop: '24px' }">
             <a-list :split="false">
               <a-list-item>
@@ -137,33 +111,12 @@
                   <div slot="title">色弱模式</div>
                 </a-list-item-meta>
               </a-list-item>
-              <a-list-item>
-                <a-switch slot="actions" size="small" :defaultChecked="multiTab" @change="onMultiTab" />
-                <a-list-item-meta>
-                  <div slot="title">多页签模式</div>
-                </a-list-item-meta>
-              </a-list-item>
             </a-list>
           </div>
         </div>
-        <a-divider />
-        <div :style="{ marginBottom: '24px' }">
-          <a-button
-            @click="doCopy"
-            icon="copy"
-            block
-          >拷贝设置</a-button>
-          <a-alert type="warning" :style="{ marginTop: '24px' }">
-            <span slot="message">
-              配置栏只在开发环境用于预览，生产环境不会展现，请手动修改配置文件
-              <a href="https://github.com/sendya/ant-design-pro-vue/blob/master/src/config/defaultSettings.js" target="_blank">src/config/defaultSettings.js</a>
-            </span>
-          </a-alert>
-        </div>
       </div>
-      <div class="setting-drawer-index-handle" @click="toggle">
-        <a-icon type="setting" v-if="!visible"/>
-        <a-icon type="close" v-else/>
+      <div class="setting-drawer-index-handle" @click="toggle" slot="handle" v-if="visible">
+        <a-icon type="close" />
       </div>
     </a-drawer>
   </div>
@@ -175,6 +128,7 @@ import SettingItem from './SettingItem'
 import config from '@/config/defaultSettings'
 import { updateTheme, updateColorWeak, colorList } from './settingConfig'
 import { mixin, mixinDevice } from '@/utils/mixin'
+import { mapState, mapActions } from 'vuex'
 
 export default {
   components: {
@@ -184,10 +138,13 @@ export default {
   mixins: [mixin, mixinDevice],
   data () {
     return {
-      visible: false,
-      colorList,
-      handle: <div/>
+      colorList
     }
+  },
+  computed: {
+    ...mapState({
+      visible: state => state.app.settingPanelVisible
+    })
   },
   watch: {
 
@@ -199,14 +156,15 @@ export default {
     }
   },
   methods: {
+    ...mapActions(['toggleSettingPanel']),
     showDrawer () {
-      this.visible = true
+      this.toggleSettingPanel(true)
     },
     onClose () {
-      this.visible = false
+      this.toggleSettingPanel(false)
     },
     toggle () {
-      this.visible = !this.visible
+      this.toggleSettingPanel(!this.visible)
     },
     onColorWeak (checked) {
       this.$store.dispatch('ToggleWeak', checked)

@@ -51,6 +51,9 @@
       <a-layout-footer>
         <global-footer />
       </a-layout-footer>
+
+      <setting-drawer></setting-drawer>
+
     </a-layout>
   </a-layout>
 
@@ -60,12 +63,12 @@
 import { triggerWindowResizeEvent } from '@/utils/util'
 import { mapState, mapActions } from 'vuex'
 import { mixin, mixinDevice } from '@/utils/mixin'
-import config from '@/config/defaultSettings'
 
 import RouteView from './route'
 import SideMenu from '@/components/Menu/SideMenu'
 import GlobalHeader from '@/components/GlobalHeader'
 import GlobalFooter from '@/components/GlobalFooter'
+import SettingDrawer from '@/components/SettingDrawer'
 
 export default {
   name: 'BasicLayout',
@@ -74,11 +77,11 @@ export default {
     RouteView,
     SideMenu,
     GlobalHeader,
-    GlobalFooter
+    GlobalFooter,
+    SettingDrawer
   },
   data () {
     return {
-      production: config.production,
       collapsed: false
     }
   },

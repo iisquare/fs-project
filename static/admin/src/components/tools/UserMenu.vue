@@ -1,7 +1,10 @@
 <template>
   <div class="user-wrapper">
     <div class="content-box">
-      <a-popover placement="bottomRight">
+      <span class="action">
+        <a-icon type="layout" @click="handleSettingPanel" />
+      </span>
+      <a-popover placement="bottomRight" class="action">
         <template slot="content">
           <a-list itemLayout="horizontal" :grid="{ gutter: 5, column: 2 }" :dataSource="menus">
             <a-list-item slot="renderItem" slot-scope="item" class="item-app">
@@ -11,7 +14,7 @@
             </a-list-item>
           </a-list>
         </template>
-        <a-button icon="appstore" shape="circle"></a-button>
+        <a-icon type="appstore" />
       </a-popover>
       <a-dropdown>
         <span class="action ant-dropdown-link user-dropdown-menu">
@@ -45,7 +48,7 @@
 </template>
 
 <script>
-import { mapState } from 'vuex'
+import { mapState, mapActions } from 'vuex'
 import userService from '@/service/member/user'
 
 export default {
@@ -53,10 +56,15 @@ export default {
   computed: {
     ...mapState({
       menus: (state) => state.user.data.menu,
-      userInfo: (state) => state.user.data.info
+      userInfo: (state) => state.user.data.info,
+      settingPanelVisible: state => state.app.settingPanelVisible
     })
   },
   methods: {
+    ...mapActions([ 'toggleSettingPanel' ]),
+    handleSettingPanel () {
+      this.toggleSettingPanel(!this.visible)
+    },
     handleLogout () {
       this.$confirm({
         title: '提示',

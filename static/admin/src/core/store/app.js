@@ -14,6 +14,7 @@ import {
 
 const app = {
   state: {
+    settingPanelVisible: false,
     sidebar: true,
     device: 'desktop',
     theme: '',
@@ -27,6 +28,9 @@ const app = {
     multiTab: true
   },
   mutations: {
+    TOGGLE_SETTING_PANEL: (state, toggle) => {
+      state.settingPanelVisible = toggle
+    },
     SET_SIDEBAR_TYPE: (state, type) => {
       state.sidebar = type
       Vue.ls.set(SIDEBAR_TYPE, type)
@@ -77,6 +81,9 @@ const app = {
     }
   },
   actions: {
+    toggleSettingPanel ({ commit }, toggle) {
+      commit('TOGGLE_SETTING_PANEL', toggle)
+    },
     setSidebar ({ commit }, type) {
       commit('SET_SIDEBAR_TYPE', type)
     },
