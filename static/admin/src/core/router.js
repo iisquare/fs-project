@@ -97,7 +97,7 @@ router.beforeEach((to, from, next) => {
       next({
         path: page.startup,
         query: { redirect: to.fullPath }
-      })
+      }).catch(err => err)
     }
   } else if (DataUtil.empty(user.data) || DataUtil.empty(user.data.info)) { // 用户未登陆
     if (to.path === page.login || to.path === page.e404) {
@@ -106,7 +106,7 @@ router.beforeEach((to, from, next) => {
       next({
         path: page.login,
         query: { redirect: to.fullPath }
-      })
+      }).catch(err => err)
     }
   } else { // 用户已登陆
     if ([page.startup, page.login].indexOf(to.path) === -1) {
@@ -114,7 +114,7 @@ router.beforeEach((to, from, next) => {
     } else {
       let url = to.params.redirect
       if (DataUtil.empty(url)) url = page.root
-      next(url)
+      next(url).catch(err => err)
     }
   }
 })
