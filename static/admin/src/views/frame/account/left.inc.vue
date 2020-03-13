@@ -11,7 +11,7 @@
             @openChange="onOpenChange"
           >
             <a-menu-item key="/account/profile">
-              <router-link to="'/account/profile'">个人信息</router-link>
+              <router-link to="/account/profile">个人信息</router-link>
             </a-menu-item>
             <a-menu-item key="/account/password">
               <router-link to="/account/password">修改密码</router-link>
