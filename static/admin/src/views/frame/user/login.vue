@@ -61,7 +61,7 @@
 <script>
 import { timeFix } from '@/utils/util'
 import DataUtil from '@/utils/data'
-import userService from '@/service/member/user'
+import rbacService from '@/service/admin/rbac'
 
 export default {
   data () {
@@ -77,7 +77,7 @@ export default {
       this.loading = true
       this.form.validateFields({ force: true }, (err, values) => {
         if (!err) {
-          userService.login(values).then(result => {
+          rbacService.login(values).then(result => {
             if (result.code === 0) {
               this.$store.commit('user/data', result.data)
               let url = this.$router.currentRoute.query.redirect

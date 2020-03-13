@@ -1,21 +1,20 @@
 import base from '@/core/ServiceBase'
 
+const module = 'member'
+
 export default {
   get (url, tips = {}, config = {}) {
     return base.post('/proxy/get', {
-      app: 'admin',
+      app: module,
       uri: url,
       data: {}
     }, tips, config)
   },
-  post (url, data = null, tips = {}, config = {}) {
+  post (url, data = {}, tips = {}, config = {}) {
     return base.post('/proxy/post', {
-      app: 'admin',
+      app: module,
       uri: url,
-      data: {}
+      data: data
     }, tips, config)
-  },
-  login (data = {}, tips = {}, config = {}) {
-    return base.post('/proxy/login', data, tips, config)
   }
 }

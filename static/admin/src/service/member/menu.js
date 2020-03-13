@@ -1,4 +1,4 @@
-import base from '@/core/ProxyBase'
+import base from './base'
 
 export default {
   list (param, tips = {}) {

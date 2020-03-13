@@ -1,4 +1,4 @@
-import userService from '@/service/member/user'
+import rbacService from '@/service/admin/rbac'
 
 // initial state
 const state = {
@@ -15,7 +15,7 @@ const getters = {
 // actions
 const actions = {
   loadConfig ({ commit }) {
-    userService.login().then((response) => {
+    rbacService.login().then((response) => {
       if (response.code === 0) {
         commit('ready', true)
         commit('data', response.data)

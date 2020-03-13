@@ -47,7 +47,7 @@ export default {
       this.form.validateFields({ force: true }, (err, values) => {
         if (err || this.formLoading) return false
         this.formLoading = true
-        userService.password(this.form).then(response => {
+        userService.password(values).then(response => {
           if (response.code === 0) {
             this.$router.go(0)
           }
