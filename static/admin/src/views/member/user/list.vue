@@ -13,18 +13,18 @@
               <a-input v-model="filters.name" placeholder=""/>
             </a-form-item>
           </a-col>
+          <a-col :md="6" :sm="24">
+            <a-form-item label="状态">
+              <a-select v-model="filters.status" placeholder="请选择" :allowClear="true">
+                <a-select-option v-for="(value, key) in config.status" :key="key" :value="key">{{ value }}</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
           <template v-if="advanced">
-            <a-col :md="6" :sm="24">
-              <a-form-item label="状态">
-                <a-select v-model="filters.status" placeholder="请选择" :allowClear="true">
-                  <a-select-option v-for="(value, key) in config.status" :key="key" :label="value" :value="key"></a-select-option>
-                </a-select>
-              </a-form-item>
-            </a-col>
             <a-col :md="6" :sm="24">
               <a-form-item label="角色">
                 <a-select v-model="filters.roleIds" placeholder="请选择" :allowClear="true">
-                  <a-select-option v-for="item in config.roles" :key="item.id" :label="item.name" :value="item.id"></a-select-option>
+                  <a-select-option v-for="item in config.roles" :key="item.id" :value="item.id">{{ item.name }}</a-select-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -83,7 +83,7 @@
               </a-form-item>
             </a-col>
           </template>
-          <a-col :md="!advanced && 8 || 24" :sm="24">
+          <a-col :md="!advanced && 6 || 24" :sm="24">
             <span class="table-page-search-submitButtons" :style="advanced && { float: 'right', overflow: 'hidden' } || {} ">
               <a-button type="primary" @click="search">查询</a-button>
               <a-button style="margin-left: 8px" @click="reset('filters')">重置</a-button>
@@ -167,6 +167,15 @@ export default {
         this.loading = false
       })
     }
+  },
+  mounted () {
+    this.search()
+    userService.config().then((result) => {
+      this.config.ready = true
+      if (result.code === 0) {
+        Object.assign(this.config, result.data)
+      }
+    })
   }
 }
 </script>
