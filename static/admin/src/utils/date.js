@@ -1,5 +1,7 @@
+import moment from 'moment'
+
 const DateUtil = {
-  format (time, fmt = 'yyyy-MM-dd hh:mm:ss') {
+  format (time, fmt = 'yyyy-MM-dd HH:mm:ss') {
     if (!time) return ''
     const date = new Date(time)
     if (/(y+)/.test(fmt)) {
@@ -8,7 +10,7 @@ const DateUtil = {
     const o = {
       'M+': date.getMonth() + 1,
       'd+': date.getDate(),
-      'h+': date.getHours(),
+      'H+': date.getHours(),
       'm+': date.getMinutes(),
       's+': date.getSeconds()
     }
@@ -19,6 +21,16 @@ const DateUtil = {
       }
     }
     return fmt
+  },
+  dateMomentFormat () {
+    return 'YYYY-MM-DD HH:mm:ss'
+  },
+  timeMomentFormat () {
+    return 'HH:mm:ss'
+  },
+  timeMomentRange () {
+    const format = this.timeMomentFormat()
+    return [moment('00:00:00', format), moment('23:59:59', format)]
   }
 }
 export default DateUtil

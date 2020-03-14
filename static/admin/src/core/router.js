@@ -93,6 +93,10 @@ const routes = [{
       path: '/member/index/index',
       meta: { title: '工作面板' },
       component: layout.default
+    }, {
+      path: '/member/user/list',
+      meta: { title: '用户列表' },
+      component: () => import(/* webpackChunkName: 'member' */ '@/views/member/user/list')
     }]
   }]
 }, {
