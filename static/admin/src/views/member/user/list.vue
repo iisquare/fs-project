@@ -40,52 +40,76 @@
             </a-col>
             <a-col :md="12" :sm="24">
               <a-form-item label="创建时间">
-                <a-range-picker
-                  v-model="filters.createdTime"
-                  :showTime="showTime()"
+                <s-date-picker
+                  v-model="filters.createdTimeStart"
+                  :showTime="showTime(0)"
                   :format="dateFormat()"
-                  :placeholder="['开始时间', '结束时间']"
-                  @ok="dateChange('createdTime')"
+                  placeholder="开始时间"
+                />
+                <span> ~ </span>
+                <s-date-picker
+                  v-model="filters.createdTimeEnd"
+                  :showTime="showTime(1)"
+                  :format="dateFormat()"
+                  placeholder="结束时间"
                 />
               </a-form-item>
             </a-col>
             <a-col :md="12" :sm="24">
               <a-form-item label="修改时间">
-                <a-range-picker
-                  v-model="filters.updatedTime"
-                  :showTime="showTime()"
+                <s-date-picker
+                  v-model="filters.updatedTimeStart"
+                  :showTime="showTime(0)"
                   :format="dateFormat()"
-                  :placeholder="['开始时间', '结束时间']"
-                  @ok="dateChange('updatedTime')"
+                  placeholder="开始时间"
+                />
+                <span> ~ </span>
+                <s-date-picker
+                  v-model="filters.updatedTimeEnd"
+                  :showTime="showTime(1)"
+                  :format="dateFormat()"
+                  placeholder="结束时间"
                 />
               </a-form-item>
             </a-col>
             <a-col :md="12" :sm="24">
               <a-form-item label="登录时间">
-                <a-range-picker
-                  v-model="filters.loginedTime"
-                  :showTime="showTime()"
+                <s-date-picker
+                  v-model="filters.loginedTimeStart"
+                  :showTime="showTime(0)"
                   :format="dateFormat()"
-                  :placeholder="['开始时间', '结束时间']"
-                  @ok="dateChange('loginedTime')"
+                  placeholder="开始时间"
+                />
+                <span> ~ </span>
+                <s-date-picker
+                  v-model="filters.loginedTimeEnd"
+                  :showTime="showTime(1)"
+                  :format="dateFormat()"
+                  placeholder="结束时间"
                 />
               </a-form-item>
             </a-col>
             <a-col :md="12" :sm="24">
               <a-form-item label="锁定时间">
-                <a-range-picker
-                  v-model="filters.lockedTime"
-                  :showTime="showTime()"
+                <s-date-picker
+                  v-model="filters.lockedTimeStart"
+                  :showTime="showTime(0)"
                   :format="dateFormat()"
-                  :placeholder="['开始时间', '结束时间']"
-                  @ok="dateChange('lockedTime')"
+                  placeholder="开始时间"
+                />
+                <span> ~ </span>
+                <s-date-picker
+                  v-model="filters.lockedTimeEnd"
+                  :showTime="showTime(1)"
+                  :format="dateFormat()"
+                  placeholder="结束时间"
                 />
               </a-form-item>
             </a-col>
           </template>
           <a-col :md="!advanced && 6 || 24" :sm="24">
             <span class="table-page-search-submitButtons" :style="advanced && { float: 'right', overflow: 'hidden' } || {} ">
-              <a-button type="primary" @click="search">查询</a-button>
+              <a-button type="primary" @click="search" :loading="loading">查询</a-button>
               <a-button style="margin-left: 8px" @click="reset('filters')">重置</a-button>
               <a @click="toggleAdvanced" style="margin-left: 8px">
                 {{ advanced ? '收起' : '展开' }}
@@ -101,9 +125,12 @@
 
 <script>
 import DateUtil from '@/utils/date'
+import RouteUtil from '@/utils/route'
 import userService from '@/service/member/user'
+import SDatePicker from '@/components/DatePicker'
 
 export default {
+  components: { SDatePicker },
   data () {
     return {
       advanced: false,
@@ -123,41 +150,30 @@ export default {
     dateFormat () {
       return DateUtil.dateMomentFormat()
     },
-    showTime () {
-      return { format: DateUtil.timeMomentFormat(), defaultValue: DateUtil.timeMomentRange() }
+    showTime (indexRange) {
+      return { format: DateUtil.timeMomentFormat(), defaultValue: DateUtil.timeMomentRange()[indexRange] }
     },
     toggleAdvanced () {
       this.advanced = !this.advanced
     },
     defaultFilters () {
-      return {
+      return RouteUtil.query2filter(this, {
         page: 1,
-        pageSize: 15,
-        createdTime: [],
-        updatedTime: [],
-        loginedTime: [],
-        lockedTime: []
-      }
-    },
-    dateChange (field) {
-      if (this.filters[field]) {
-        this.filters[field + 'Start'] = DateUtil.format(new Date(this.filters[field][0]).getTime())
-        this.filters[field + 'End'] = DateUtil.format(new Date(this.filters[field][1]).getTime())
-      } else {
-        this.filters[field + 'Start'] = this.filters[field + 'End'] = undefined
-      }
+        pageSize: 15
+      })
     },
     reset (form) {
-      this.filters = this.defaultFilters()
       switch (form) {
         case 'filters' :
-          ['createdTime', 'updatedTime', 'loginedTime', 'lockedTime'].forEach((value) => {
-            this.dateChange(value)
-          })
+          this.filters = this.defaultFilters()
           break
       }
     },
     search () {
+      RouteUtil.filter2query(this, this.filters)
+      this.load()
+    },
+    load () {
       this.loading = true
       userService.list(this.filters).then((result) => {
         if (result.code === 0) {
@@ -169,7 +185,7 @@ export default {
     }
   },
   mounted () {
-    this.search()
+    this.load()
     userService.config().then((result) => {
       this.config.ready = true
       if (result.code === 0) {

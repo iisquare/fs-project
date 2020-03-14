@@ -9,7 +9,7 @@ spring:
 
 server:
   servlet:
-    timeout: 86400
     session:
+      maxInactiveInterval: 86400
       cookie:
         max-age: 2592000
