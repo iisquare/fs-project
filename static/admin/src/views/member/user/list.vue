@@ -130,6 +130,7 @@
         :dataSource="rows"
         :pagination="pagination"
         :loading="loading"
+        :rowSelection="rowSelection"
       >
       </a-table>
     </div>
@@ -147,7 +148,7 @@ export default {
   data () {
     return {
       advanced: false,
-      filters: this.defaultFilters(),
+      filters: {},
       columns: [
         { title: 'ID', dataIndex: 'id' },
         { title: '账号', dataIndex: 'serial' },
@@ -158,9 +159,18 @@ export default {
         { title: '登录时间', dataIndex: 'loginedTime' },
         { title: '锁定时间', dataIndex: 'lockedTime' }
       ],
+      rowSelection: {
+        change (page, pageSize) {
+          debugger
+          this.search()
+        },
+        showSizeChange (current, size) {
+          debugger
+          this.search()
+        }
+      },
       pagination: {},
       rows: [],
-      total: 0,
       loading: false,
       config: {
         ready: false,
@@ -193,23 +203,28 @@ export default {
           break
       }
     },
-    search () {
-      RouteUtil.filter2query(this, this.filters)
-      this.load()
-    },
-    load () {
+    search (filter2query = true) {
+      if (filter2query) {
+        this.filters.page = this.pagination.current
+        this.filters.pageSize = this.pagination.pageSize
+        RouteUtil.filter2query(this, this.filters, this.pagination)
+      }
       this.loading = true
       userService.list(this.filters).then((result) => {
+        RouteUtil.result(result, this.pagination)
         if (result.code === 0) {
-          this.total = result.data.total
           this.rows = result.data.rows
         }
         this.loading = false
       })
     }
   },
+  created () {
+    this.filters = this.defaultFilters()
+    RouteUtil.pagination(this.pagination, this.filters, this.search)
+  },
   mounted () {
-    this.load()
+    this.search(false)
     userService.config().then((result) => {
       this.config.ready = true
       if (result.code === 0) {

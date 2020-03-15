@@ -3,6 +3,22 @@ import { Base64 } from 'js-base64'
 
 const RouteUtil = {
   filterKey: 'filter',
+  pagination (pagination, filters, search) {
+    pagination.showQuickJumper = true
+    pagination.showSizeChanger = true
+    pagination.defaultCurrent = filters.page
+    pagination.defaultPageSize = filters.pageSize
+    pagination.pageSizeOptions = ['5', '10', '15', '20', '25', '30', '35', '45', '50', '60', '100']
+  },
+  result (result, pagination) {
+    if (result.code === 0) {
+      Object.assign(pagination, {
+        current: result.data.page,
+        pageSize: result.data.pageSize,
+        total: result.data.total
+      })
+    }
+  },
   encode (filter) {
     if (DataUtil.empty(filter)) return ''
     try {

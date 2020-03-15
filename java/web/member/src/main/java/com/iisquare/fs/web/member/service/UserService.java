@@ -4,6 +4,7 @@ import com.iisquare.fs.base.core.util.CodeUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ReflectUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
+import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.web.member.dao.RelationDao;
@@ -103,6 +104,8 @@ public class UserService extends ServiceBase {
         Map<String, Object> result = new LinkedHashMap<>();
         int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
+        Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "sort"));
+        if (null == sort) sort = Sort.by(Sort.Order.desc("sort"));
         Page<User> data = userDao.findAll(new Specification() {
             @Override
             public Predicate toPredicate(Root root, CriteriaQuery query, CriteriaBuilder cb) {
@@ -168,7 +171,7 @@ public class UserService extends ServiceBase {
                 }
                 return cb.and(predicates.toArray(new Predicate[predicates.size()]));
             }
-        }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"))));
+        }, PageRequest.of(page - 1, pageSize, sort));
         List<?> rows = this.filter(data.getContent());
         if(!DPUtil.empty(config.get("withUserInfo"))) {
             userService.fillInfo(rows, "createdUid", "updatedUid");

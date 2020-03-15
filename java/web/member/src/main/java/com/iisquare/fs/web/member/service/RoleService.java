@@ -2,6 +2,7 @@ package com.iisquare.fs.web.member.service;
 
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
+import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.web.member.dao.RoleDao;
@@ -64,6 +65,8 @@ public class RoleService extends ServiceBase {
         Map<String, Object> result = new LinkedHashMap<>();
         int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, -1, 500, 15);
+        Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "sort"));
+        if (null == sort) sort = Sort.by(Sort.Order.desc("sort"));
         Specification spec = new Specification() {
             @Override
             public Predicate toPredicate(Root root, CriteriaQuery query, CriteriaBuilder cb) {
@@ -87,7 +90,7 @@ public class RoleService extends ServiceBase {
                 rows = roleDao.findAll(spec);
                 break;
             default:
-                Page<?> data = roleDao.findAll(spec, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC,"sort"))));
+                Page<?> data = roleDao.findAll(spec, PageRequest.of(page - 1, pageSize, sort));
                 rows = data.getContent();
                 total = data.getTotalElements();
         }
