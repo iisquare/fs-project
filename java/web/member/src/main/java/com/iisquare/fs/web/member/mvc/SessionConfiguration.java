@@ -1,20 +1,25 @@
 package com.iisquare.fs.web.member.mvc;
 
-import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.session.data.redis.config.ConfigureRedisAction;
-import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
+import org.springframework.session.data.redis.config.annotation.web.http.RedisHttpSessionConfiguration;
+
+import javax.annotation.PostConstruct;
 
 @Configuration
-@EnableRedisHttpSession
-public class SessionConfiguration {
+public class SessionConfiguration extends RedisHttpSessionConfiguration {
 
-    /**
-     * fixed: JedisDataException: ERR Unsupported CONFIG parameter: notify-keyspace-events
-     */
-    @Bean
-    public static ConfigureRedisAction configureRedisAction() {
-        return ConfigureRedisAction.NO_OP;
+    @Value("${server.servlet.session.cookie.max-age}")
+    private int sessionTimeout;
+
+    @Override
+    @PostConstruct
+    public void init() {
+        super.init();
+        super.setMaxInactiveIntervalInSeconds(sessionTimeout);
+        // fixed: JedisDataException: ERR Unsupported CONFIG parameter: notify-keyspace-events
+        super.setConfigureRedisAction(ConfigureRedisAction.NO_OP);
     }
 
 }

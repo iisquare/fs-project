@@ -22,18 +22,23 @@
           </a-col>
           <template v-if="advanced">
             <a-col :md="6" :sm="24">
+              <a-form-item label="ID">
+                <a-input v-model="filters.id" placeholder=""/>
+              </a-form-item>
+            </a-col>
+            <a-col :md="12" :sm="24">
               <a-form-item label="角色">
-                <a-select v-model="filters.roleIds" placeholder="请选择" :allowClear="true">
+                <a-select v-model="filters.roleIds" mode="multiple" placeholder="请选择" :allowClear="true">
                   <a-select-option v-for="item in config.roles" :key="item.id" :value="item.id">{{ item.name }}</a-select-option>
                 </a-select>
               </a-form-item>
             </a-col>
-            <a-col :md="12" :sm="24">
+            <a-col :md="6" :sm="24">
               <a-form-item label="注册IP">
                 <a-input v-model="filters.createdIp" placeholder=""/>
               </a-form-item>
             </a-col>
-            <a-col :md="12" :sm="24">
+            <a-col :md="6" :sm="24">
               <a-form-item label="登录IP">
                 <a-input v-model="filters.loginedIp" placeholder=""/>
               </a-form-item>
@@ -119,6 +124,14 @@
           </a-col>
         </a-row>
       </a-form>
+      <a-table
+        :columns="columns"
+        :rowKey="record => record.id"
+        :dataSource="rows"
+        :pagination="pagination"
+        :loading="loading"
+      >
+      </a-table>
     </div>
   </a-card>
 </template>
@@ -135,6 +148,17 @@ export default {
     return {
       advanced: false,
       filters: this.defaultFilters(),
+      columns: [
+        { title: 'ID', dataIndex: 'id' },
+        { title: '账号', dataIndex: 'serial' },
+        { title: '名称', dataIndex: 'name' },
+        { title: '排序', dataIndex: 'sort' },
+        { title: '状态', dataIndex: 'statusText' },
+        { title: '登录IP', dataIndex: 'loginedIp' },
+        { title: '登录时间', dataIndex: 'loginedTime' },
+        { title: '锁定时间', dataIndex: 'lockedTime' }
+      ],
+      pagination: {},
       rows: [],
       total: 0,
       loading: false,

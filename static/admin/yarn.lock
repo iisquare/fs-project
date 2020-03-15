@@ -1975,10 +1975,10 @@ ansi-styles@^3.2.0, ansi-styles@^3.2.1:
   dependencies:
     color-convert "^1.9.0"
 
-ant-design-vue@1.5.0-alpha.1:
-  version "1.5.0-alpha.1"
-  resolved "https://registry.yarnpkg.com/ant-design-vue/-/ant-design-vue-1.5.0-alpha.1.tgz#b44c777923a1b800cb4ca4f67828696e81dab10a"
-  integrity sha512-tOi7V/VPOY9e5YPrnl93nvJLegafEkvwcKAGNKfQeHnx1LNb2jSfIXpafFE5NL7+Hcn+Ou/NL1FbuAPdISNbyw==
+ant-design-vue@1.5.0-beta.1:
+  version "1.5.0-beta.1"
+  resolved "https://registry.npm.taobao.org/ant-design-vue/download/ant-design-vue-1.5.0-beta.1.tgz#9396e1bb4435c9bc5dc224e2bd888a000144a8f9"
+  integrity sha1-k5bhu0Q1ybxdwiTivYiKAAFEqPk=
   dependencies:
     "@ant-design/icons" "^2.1.1"
     "@ant-design/icons-vue" "^2.0.0"
@@ -6626,6 +6626,11 @@ jest@^24.8.0:
   dependencies:
     import-local "^2.0.0"
     jest-cli "^24.9.0"
+
+js-base64@^2.5.2:
+  version "2.5.2"
+  resolved "https://registry.npm.taobao.org/js-base64/download/js-base64-2.5.2.tgz#313b6274dda718f714d00b3330bbae6e38e90209"
+  integrity sha1-MTtidN2nGPcU0AszMLuubjjpAgk=
 
 js-beautify@^1.6.12, js-beautify@^1.6.14:
   version "1.10.0"

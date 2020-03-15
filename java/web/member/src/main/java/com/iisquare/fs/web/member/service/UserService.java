@@ -107,6 +107,8 @@ public class UserService extends ServiceBase {
             @Override
             public Predicate toPredicate(Root root, CriteriaQuery query, CriteriaBuilder cb) {
                 List<Predicate> predicates = new ArrayList<>();
+                int id = DPUtil.parseInt(param.get("id"));
+                if(id > 0) predicates.add(cb.equal(root.get("id"), id));
                 int status = DPUtil.parseInt(param.get("status"));
                 if(!"".equals(DPUtil.parseString(param.get("status")))) {
                     predicates.add(cb.equal(root.get("status"), status));

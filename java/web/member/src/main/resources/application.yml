@@ -10,6 +10,5 @@ spring:
 server:
   servlet:
     session:
-      maxInactiveInterval: 86400
       cookie:
         max-age: 2592000
