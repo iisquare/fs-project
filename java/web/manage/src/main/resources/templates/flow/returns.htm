@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="'流程节点属性 - ' + ${page.title}"></title>
+    <link rel="stylesheet" type="text/css" th:href="@{{url}/plugins/jquery-easyui/themes/bootstrap/easyui.css(url=${staticUrl})}">
+    <link rel="stylesheet" type="text/css" th:href="@{{url}/plugins/jquery-easyui/themes/icon.css(url=${staticUrl})}">
+    <style type="text/css" th:inline="text">
+        .layout-north{height:28px;}
+        .layout-south{height:22px;padding: 2px;}
+        .layout-west{width:380px;}
+        .layout-center{background:#eee; position: relative;}
+    </style>
+</head>
+<body class="easyui-layout">
+<div class="layout-north" data-options="region:'north'">
+    <button class="easyui-linkbutton js-ctl-parse" data-options="iconCls:'icon-more',plain:true">解析</button>
+    <button class="easyui-linkbutton js-ctl-stringify" data-options="iconCls:'icon-reload',plain:true">生成</button>
+    <button class="easyui-linkbutton js-ctl-format" data-options="iconCls:'icon-filter',plain:true">格式化</button>
+    <button class="easyui-linkbutton js-ctl-unformat" data-options="iconCls:'icon-filter',plain:true">反格式化</button>
+</div>
+<div class="layout-south" data-options="region:'south'">状态信息：<span id="tips-status"></span></div>
+<div class="layout-west" data-options="region:'west',title:'JSON',split:true">
+    <input id="json" class="easyui-textbox" value="[]" data-options="multiline: true" style="height:100%;width:100%;">
+</div>
+<div class="layout-center" data-options="region:'center',title:'数据',content:''">
+    <table class="js-list-table"></table>
+    <div id="toolbar">
+        <button class="easyui-linkbutton js-ctl-add" data-options="iconCls:'icon-add',plain:true">新增</button>
+        <button class="easyui-linkbutton js-ctl-insert" data-options="iconCls:'icon-edit',plain:true">插入</button>
+        <button class="easyui-linkbutton js-ctl-up" data-options="iconCls:'icon-undo',plain:true">上移</button>
+        <button class="easyui-linkbutton js-ctl-down" data-options="iconCls:'icon-redo',plain:true">下移</button>
+        <button class="easyui-linkbutton js-ctl-remove" data-options="iconCls:'icon-remove',plain:true">删除</button>
+    </div>
+</div>
+<script th:src="@{{url}/js/jquery-1.12.4.js(url=${staticUrl})}"></script>
+<script th:src="@{{url}/plugins/jquery-easyui/jquery.easyui.min.js(url=${staticUrl})}"></script>
+<script th:src="@{{url}/js/manage.js(url=${staticUrl})}"></script>
+<script type="application/javascript" th:inline="javascript">
+    var infoTypeUrl = [[${manageUrl} + '/flow/infoType']]
+</script>
+<script type="application/javascript">
+
+    function reload(data) {
+        if(!data) data = [];
+        $('.js-list-table').datagrid('loadData', data);
+    };
+
+    $.extend($.fn.datagrid.methods, {
+        editCell: function(jq,param){
+            return jq.each(function(){
+                var opts = $(this).datagrid('options');
+                var fields = $(this).datagrid('getColumnFields',true).concat($(this).datagrid('getColumnFields'));
+                for(var i=0; i<fields.length; i++){
+                    var col = $(this).datagrid('getColumnOption', fields[i]);
+                    col.editor1 = col.editor;
+                    if (fields[i] != param.field){
+                        col.editor = null;
+                    }
+                }
+                $(this).datagrid('beginEdit', param.index);
+                for(var i=0; i<fields.length; i++){
+                    var col = $(this).datagrid('getColumnOption', fields[i]);
+                    col.editor = col.editor1;
+                }
+            });
+        }
+    });
+
+    var editIndex = undefined;
+    function endEditing(){
+        if (editIndex == undefined){return true}
+        if ($('.js-list-table').datagrid('validateRow', editIndex)){
+            $('.js-list-table').datagrid('endEdit', editIndex);
+            editIndex = undefined;
+            return true;
+        } else {
+            return false;
+        }
+    }
+    function cellEditing(index, field){
+        if (endEditing()){
+            $('.js-list-table').datagrid('selectRow', index).datagrid('editCell', {index:index,field:field});
+            editIndex = index;
+        }
+    }
+    $(document).keyup(function(event){
+        if(event.keyCode ==13){
+            endEditing();
+        }
+    });
+
+    $('.js-list-table').datagrid({
+        idField : 'id',
+        toolbar : '#toolbar',
+        rownumbers : true,
+        fitcolumns : true,
+        fit : true,
+        nowrap : true,
+        singleSelect : true,
+        checkOnSelect : false,
+        selectOnCheck : false,
+        columns:[ [
+            {field:'field', title:'field',editor:'text',width:100},
+            {field:'from', title:'from',editor:'text',width:100},
+            {field:'classname',title:'classname',editor: {
+                type:'combobox',
+                options:{
+                    valueField:'classname',
+                    textField:'name',
+                    method:'get',
+                    url:infoTypeUrl,
+                    required:true
+                }
+            },width:300},
+            {field:'description', title:'description',editor:'text',width:100},
+        ] ],
+        onDblClickCell : function (index,field,value) {
+            cellEditing(index, field);
+        }
+    });
+    $('.js-ctl-parse').on('click', function () {
+        var data = JSON.parse($('#json').val());
+        reload(data);
+    }).trigger('click');
+    $('.js-ctl-stringify').on('click', function () {
+        $('#json').textbox('setText', JSON.stringify($('.js-list-table').datagrid('getRows')));
+    });
+    $('.js-ctl-format').on('click', function () {
+        $('#json').textbox('setText', JSON.stringify(JSON.parse($('#json').val()), null, 4));
+    });
+    $('.js-ctl-unformat').on('click', function () {
+        $('#json').textbox('setText', JSON.stringify(JSON.parse($('#json').val())));
+    });
+    $('.js-ctl-add').on('click', function () {
+        $('.js-list-table').datagrid('appendRow', {});
+    });
+    $('.js-ctl-insert').on('click', function () {
+        var row = $('.js-list-table').datagrid('getSelected');
+        if(!row) {
+            $('.js-list-table').datagrid('appendRow', {});
+            return true;
+        }
+        var index = $('.js-list-table').datagrid('getRowIndex', row);
+        $('.js-list-table').datagrid('insertRow', {index: index, row: {}});
+    });
+    $('.js-ctl-up').on('click', function () {
+        var row = $('.js-list-table').datagrid('getSelected');
+        if(!row) return true;
+        var index = $('.js-list-table').datagrid('getRowIndex', row);
+        if(index < 1) return true;
+        $('.js-list-table').datagrid('deleteRow', index);
+        $('.js-list-table').datagrid('insertRow', {index: index - 1, row: row});
+        $('.js-list-table').datagrid('selectRow', index - 1);
+
+    });
+    $('.js-ctl-down').on('click', function () {
+        var row = $('.js-list-table').datagrid('getSelected');
+        if(!row) return true;
+        var index = $('.js-list-table').datagrid('getRowIndex', row);
+        $('.js-list-table').datagrid('deleteRow', index);
+        $('.js-list-table').datagrid('insertRow', {index: index + 1, row: row});
+        $('.js-list-table').datagrid('selectRow', index + 1);
+    });
+    $('.js-ctl-remove').on('click', function () {
+        var row = $('.js-list-table').datagrid('getSelected');
+        if(!row) return true;
+        var index = $('.js-list-table').datagrid('getRowIndex', row);
+        $('.js-list-table').datagrid('deleteRow', index);
+    });
+
+</script>
+</body>
+</html>

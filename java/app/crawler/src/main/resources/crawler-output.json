@@ -1,0 +1,50 @@
+{
+  "empty": {
+    "name": "空输出",
+    "classname": "com.iisquare.fs.app.crawler.output.EmptyOutput",
+    "property": []
+  },
+  "console": {
+    "name": "控制台",
+    "classname": "com.iisquare.fs.app.crawler.output.ConsoleOutput",
+    "property": []
+  },
+  "file": {
+    "name": "本地文件",
+    "classname": "com.iisquare.fs.app.crawler.output.FileOutput",
+    "property": [
+      {"name":"路径","key":"filename","value":"","group":"数据写入","editor":"text"}
+    ]
+  },
+  "jdbc": {
+    "name": "JDBC数据库",
+    "classname": "com.iisquare.fs.app.crawler.output.JDBCOutput",
+    "property": [
+      {"name":"驱动","key":"driver","value":"com.mysql.jdbc.Driver","group":"连接设置","editor":"text"},
+      {"name":"链接","key":"url","value":"jdbc:mysql://127.0.0.1:3306/mysql?characterEncoding=utf-8","group":"连接设置","editor":"text"},
+      {"name":"账号","key":"username","value":"root","group":"连接设置","editor":"text"},
+      {"name":"密码","key":"password","value":"root","group":"连接设置","editor":"text"},
+      {"name":"表名","key":"table","value":"","group":"数据写入","editor":"text"}
+    ]
+  },
+  "mongo": {
+    "name": "Mongo数据库",
+    "classname": "com.iisquare.fs.app.crawler.output.MongoOutput",
+    "property": [
+      {"name":"主机","key":"server","value":"127.0.0.1:27017","group":"连接设置","editor":"text"},
+      {"name":"账号","key":"username","value":"","group":"连接设置","editor":"text"},
+      {"name":"密码","key":"password","value":"","group":"连接设置","editor":"text"},
+      {"name":"认证库","key":"auth","value":"","group":"连接设置","editor":"text"},
+      {"name":"数据库","key":"database","value":"","group":"数据写入","editor":"text"},
+      {"name":"集合名","key":"collection","value":"","group":"数据写入","editor":"text"},
+      {"name":"索引","key":"unique","value":"","group":"数据写入","editor":"text"}
+    ]
+  },
+  "web-socket": {
+    "name": "WebSocket页面",
+    "classname": "com.iisquare.fs.app.crawler.output.WebSocketOutput",
+    "property": [
+      {"name":"链接","key":"url","value":"ws://127.0.0.1:8433/logger","group":"连接设置","editor":"text"}
+    ]
+  }
+}

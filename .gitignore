@@ -1,0 +1,17 @@
+/analytics/dest
+/demo/analytics-proxy/.project
+/demo/analytics-proxy/.gradle
+/demo/analytics-proxy/.settings
+/demo/analytics-proxy/.classpath
+/.idea
+/code/.classpath
+/code/.project
+/code/.gradle
+/code/.settings
+/code/bin
+/code/build
+/code/src/main/webapp/.idea
+/code/src/main/webapp/WEB-INF/logs
+.gradle
+/code/plugins/etl-core/lib
+.env

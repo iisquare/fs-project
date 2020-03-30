@@ -1,0 +1,16 @@
+version: '3.1'
+
+services:
+  zookeeper:
+    build: ./service/zookeeper
+    ports:
+      - "${ZOOKEEPER_CLIENT_PORT}:2181"
+  elasticsearch:
+    build: ./service/elasticsearch
+    ports:
+      - "${ELASTICSEARCH_HTTP_PORT}:9200"
+      - "${ELASTICSEARCH_CLIENT_PORT}:9300"
+  kibana:
+    build: ./service/kibana
+    ports:
+      - "${KIBANA_HTTP_PORT}:5601"

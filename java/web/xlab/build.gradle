@@ -1,0 +1,8 @@
+dependencies {
+    compile fileTree(dir:'libs', include:['*.jar'])
+    testCompile project(':web:test')
+    compile project(':base:swagger')
+    compile group: 'org.tensorflow', name: 'tensorflow', version: tensorflowVersion
+    compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+    compile group: 'org.apache.tika', name: 'tika-parsers', version: '1.21'
+}

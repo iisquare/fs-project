@@ -1,0 +1,8 @@
+spring:
+  profiles:
+    active: dev,idev
+  jpa:
+    show-sql: true
+    hibernate:
+      naming:
+        physical-strategy: com.iisquare.fs.web.flink.dsconfig.NamingStrategy

@@ -1,0 +1,59 @@
+
+buildscript {
+    ext {
+        springBootVersion = '2.2.1.RELEASE'
+        shadowVersion = '4.0.3'
+    }
+    repositories {
+        maven { url 'https://maven.aliyun.com/repository/central' }
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath("com.github.jengelman.gradle.plugins:shadow:${shadowVersion}")
+    }
+}
+
+subprojects {
+
+    apply plugin: 'java'
+    apply plugin: 'idea'
+
+    version = '0.0.1-SNAPSHOT'
+
+    sourceCompatibility = 1.8
+    [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+    repositories {
+        maven { url 'https://maven.aliyun.com/repository/central' }
+        mavenCentral()
+        jcenter()
+    }
+
+    // 定义版本号
+    ext {
+        lombokVersion = '1.18.12'
+        springBootVersion = '2.2.1.RELEASE'
+        springCloudVersion = '2.2.1.RELEASE'
+        flinkVersion = '1.7.2'
+        scalaVersion = '2.11'
+        hadoopVersion = '2.8.3'
+        swaggerVersion = '2.9.2'
+        tensorflowVersion = '1.15.0'
+        zookeeperVersion = '3.5.7'
+    }
+
+    dependencies {
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: lombokVersion
+        annotationProcessor group: 'org.projectlombok', name: 'lombok', version: lombokVersion
+        testCompileOnly group: 'org.projectlombok', name: 'lombok', version: lombokVersion
+        testAnnotationProcessor group: 'org.projectlombok', name: 'lombok', version: lombokVersion
+    }
+
+    task jars(type: Copy) {
+        from configurations.runtime
+        into 'build/opt' // 目标依赖位置
+    }
+
+}

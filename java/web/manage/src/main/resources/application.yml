@@ -1,0 +1,16 @@
+spring:
+  profiles:
+    active: dev
+
+server:
+  session:
+    servlet:
+      timeout: 86400
+      session:
+        cookie:
+          max-age: 2592000
+
+  thymeleaf:
+    mode: LEGACYHTML5
+    suffix: .htm
+    cache: false

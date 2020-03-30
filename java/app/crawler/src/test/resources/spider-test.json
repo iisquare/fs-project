@@ -1,0 +1,25 @@
+{
+  "name": "测试示例",
+  "templates": {
+    "list": {
+      "name": "小区列表",
+      "url": "https://{citycode}.test.iisquare.com/community/",
+      "parser": "jsoup{title:title(),-:body(){list:select(\".community-list-main\")[-:select(\".community-main-one a\"){name:text(),href:attr(\"href\")}],page:select(\".page .next\").attr(\"href\")}}",
+      "mapper": "return{output:context.data.list,fetch:{detail:context.data.list},iterate:\"https:\"+context.data.page};"
+    },
+    "detail": {
+      "name": "小区详情",
+      "url": "https:{href}",
+      "parser": "jsoup{title:title()}",
+      "output": "{\"type\": \"file\", \"property\": {\"filename\": \"out/detail.txt\"}}"
+    },
+    "403": {
+      "name": "访问限制",
+      "parser": "jsoup{verify: body().is(\"#verifyCode\")}",
+      "mapper": "return context.data.verify ? {iterate: \"retry\"} : {}"
+    }
+  },
+  "errors": ["403"],
+  "initTask": "list",
+  "initParams": [{"citycode": "bj", "cityname": "北京"}]
+}

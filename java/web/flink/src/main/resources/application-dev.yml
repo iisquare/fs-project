@@ -1,0 +1,9 @@
+server:
+  port: 7803
+
+fs:
+  flink:
+    kvConsulUrl: http://127.0.0.1:8500/v1/kv/config/application,dev/data
+    plugins:
+      path: ./web/flink/plugins
+      nfs: # plugins path for class loader
