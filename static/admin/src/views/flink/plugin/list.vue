@@ -10,13 +10,15 @@
               </a-form-model-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-model-item label="类型" prop="type">
-                <a-input v-model="filters.type" placeholder="" :allowClear="true" />
+              <a-form-model-item label="配置" prop="config">
+                <a-input v-model="filters.config" placeholder="" :allowClear="true" />
               </a-form-model-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-model-item label="内容" prop="content">
-                <a-input v-model="filters.content" placeholder="" :allowClear="true" />
+              <a-form-model-item label="状态" prop="status">
+                <a-select v-model="filters.status" placeholder="请选择" :allowClear="true">
+                  <a-select-option v-for="(value, key) in config.status" :key="key" :value="key">{{ value }}</a-select-option>
+                </a-select>
               </a-form-model-item>
             </a-col>
             <a-col :md="6" :sm="24">
@@ -45,18 +47,18 @@
         <div class="table-pagination-tools">
           <a-button icon="minus-circle" type="danger" @click="batchRemove" v-permit="'member:setting:delete'" :disabled="selection.selectedRows.length === 0">删除</a-button>
           <a-divider type="vertical" v-permit="'member:setting:add'" />
-          <a-button icon="plus-circle" type="primary" @click="add" v-permit="'member:setting:add'">新增</a-button>
+          <a-button icon="cloud-upload" type="primary" @click="add" v-permit="'member:setting:add'">上传</a-button>
         </div>
       </div>
     </a-card>
     <!--展示界面-->
     <a-modal :title="'信息查看 - ' + form.id" v-model="infoVisible" :footer="null">
-      <a-form-model :model="form" :loading="infoLoading" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
+      <a-form-model :model="form" :loading="infoLoading" :label-col="{ span: 5 }" :wrapper-col="{ span: 15 }">
         <a-form-model-item label="名称">{{ form.name }}</a-form-model-item>
-        <a-form-model-item label="类型">{{ form.type }}</a-form-model-item>
-        <a-form-model-item label="排序">{{ form.sort }}</a-form-model-item>
-        <a-form-model-item label="内容">{{ form.content }}</a-form-model-item>
+        <a-form-model-item label="版本">{{ form.version }}</a-form-model-item>
+        <a-form-model-item label="状态">{{ form.statusText }}</a-form-model-item>
         <a-form-model-item label="描述">{{ form.description }}</a-form-model-item>
+        <a-form-model-item label="配置"><a-textarea v-model="form.config"></a-textarea></a-form-model-item>
         <a-form-model-item label="创建者">{{ form.createdUidName }}</a-form-model-item>
         <a-form-model-item label="创建时间">{{ form.createdTime|date }}</a-form-model-item>
         <a-form-model-item label="修改者">{{ form.updatedUidName }}</a-form-model-item>
@@ -66,27 +68,21 @@
     <!--编辑界面-->
     <a-modal :title="'信息' + (form.id ? ('修改 - ' + form.id) : '添加')" v-model="formVisible" :confirmLoading="formLoading" :maskClosable="false" @ok="submit">
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
-        <a-form-model-item label="名称" prop="name">
-          <a-input v-model="form.name" auto-complete="off"></a-input>
+        <a-form-model-item label="名称" prop="name">{{ form.name }}</a-form-model-item>
+        <a-form-model-item label="版本" prop="type">{{ form.version }}</a-form-model-item>
+        <a-form-model-item label="状态" prop="status">
+          <a-select v-model="form.status" placeholder="请选择">
+            <a-select-option v-for="(value, key) in config.status" :key="key" :value="key">{{ value }}</a-select-option>
+          </a-select>
         </a-form-model-item>
-        <a-form-model-item label="类型" prop="type">
-          <a-input v-model="form.type" auto-complete="on"></a-input>
-        </a-form-model-item>
-        <a-form-model-item label="排序">
-          <a-input-number v-model="form.sort" :min="0" :max="200"></a-input-number>
-        </a-form-model-item>
-        <a-form-model-item label="内容">
-          <a-textarea v-model="form.content"></a-textarea>
-        </a-form-model-item>
-        <a-form-model-item label="描述">
-          <a-textarea v-model="form.description"></a-textarea>
-        </a-form-model-item>
+        <a-form-model-item label="描述">{{ form.description }}</a-form-model-item>
       </a-form-model>
     </a-modal>
   </section>
 </template>
 
 <script>
+import DateUtil from '@/utils/date'
 import RouteUtil from '@/utils/route'
 import pluginService from '@/service/flink/plugin'
 
@@ -97,15 +93,20 @@ export default {
       columns: [
         { title: 'ID', dataIndex: 'id' },
         { title: '名称', dataIndex: 'name' },
-        { title: '类型', dataIndex: 'type' },
-        { title: '描述', dataIndex: 'description' },
-        { title: '排序', dataIndex: 'sort' },
+        { title: '版本', dataIndex: 'version' },
+        { title: '状态', dataIndex: 'statusText' },
+        { title: '操作者', dataIndex: 'updatedUidName' },
+        { title: '操作时间', dataIndex: 'updatedTime', customRender: this.dateRender },
         { title: '操作', scopedSlots: { customRender: 'action' } }
       ],
       selection: RouteUtil.selection(),
       pagination: {},
       rows: [],
       loading: false,
+      config: {
+        ready: false,
+        status: []
+      },
       infoVisible: false,
       infoLoading: false,
       formVisible: false,
@@ -113,11 +114,14 @@ export default {
       form: {},
       rules: {
         name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
-        type: [{ required: true, message: '请输入类型', trigger: 'blur' }]
+        status: [{ required: true, message: '请选择状态', trigger: 'change' }]
       }
     }
   },
   methods: {
+    dateRender (text, record, index) {
+      return DateUtil.format(text)
+    },
     batchRemove () {
       this.$confirm(this.selection.confirm(() => {
         this.loading = true
@@ -165,7 +169,9 @@ export default {
       this.formVisible = true
     },
     edit (text, record) {
-      this.form = Object.assign({}, record)
+      this.form = Object.assign({}, record, {
+        status: record.status + ''
+      })
       this.formVisible = true
     },
     show (text, record) {
@@ -181,6 +187,12 @@ export default {
   },
   mounted () {
     this.search(false, true)
+    pluginService.config().then((result) => {
+      this.config.ready = true
+      if (result.code === 0) {
+        Object.assign(this.config, result.data)
+      }
+    })
   }
 }
 </script>

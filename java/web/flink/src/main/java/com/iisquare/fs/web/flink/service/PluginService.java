@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
+import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
@@ -82,15 +83,24 @@ public class PluginService extends ServiceBase {
         return list;
     }
 
-    public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) {
+    public Map<?, ?> search(Map<?, ?> param, Map<?, ?> args) {
         Map<String, Object> result = new LinkedHashMap<>();
         int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
+        Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "sort"));
+        if (null == sort) sort = Sort.by(Sort.Order.asc("name"));
         Page<?> data = pluginDao.findAll(new Specification() {
             @Override
             public Predicate toPredicate(Root root, CriteriaQuery query, CriteriaBuilder cb) {
                 List<Predicate> predicates = new ArrayList<>();
-                predicates.add(cb.notEqual(root.get("status"), -1));
+                int id = DPUtil.parseInt(param.get("id"));
+                if(id > 0) predicates.add(cb.equal(root.get("id"), id));
+                int status = DPUtil.parseInt(param.get("status"));
+                if(!"".equals(DPUtil.parseString(param.get("status")))) {
+                    predicates.add(cb.equal(root.get("status"), status));
+                } else {
+                    predicates.add(cb.notEqual(root.get("status"), -1));
+                }
                 String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
                 if(!DPUtil.empty(name)) {
                     predicates.add(cb.like(root.get("name"), "%" + name + "%"));
@@ -105,12 +115,12 @@ public class PluginService extends ServiceBase {
                 }
                 return cb.and(predicates.toArray(new Predicate[predicates.size()]));
             }
-        }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.ASC, "name"))));
+        }, PageRequest.of(page - 1, pageSize, sort));
         List<?> rows = data.getContent();
-        if(!DPUtil.empty(config.get("withUserInfo"))) {
+        if(!DPUtil.empty(args.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
         }
-        if(!DPUtil.empty(config.get("withStatusText"))) {
+        if(!DPUtil.empty(args.get("withStatusText"))) {
             ServiceUtil.fillProperties(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
         }
         result.put("page", page);

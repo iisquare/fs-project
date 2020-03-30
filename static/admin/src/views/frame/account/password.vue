@@ -1,20 +1,26 @@
 <template>
-  <a-form-model ref="form" :model="form" :rules="rules" @submit="handleSubmit">
-    <a-form-model-item label="账号" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">{{ userInfo.serial }}</a-form-model-item>
-    <a-form-model-item label="名称" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">{{ userInfo.name }}</a-form-model-item>
-    <a-form-model-item label="原密码" prop="passwordOld" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
+  <a-form-model
+    ref="form"
+    :model="form"
+    :rules="rules"
+    @submit="handleSubmit"
+    :label-col="{ span: 5 }"
+    :wrapper-col="{ span: 12 }">
+    <a-form-model-item label="账号">{{ userInfo.serial }}</a-form-model-item>
+    <a-form-model-item label="名称">{{ userInfo.name }}</a-form-model-item>
+    <a-form-model-item label="原密码" prop="passwordOld">
       <a-input-password
         placeholder="请输入当前登录密码"
         v-model="form.passwordOld"
       />
     </a-form-model-item>
-    <a-form-model-item label="新密码" prop="password" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
+    <a-form-model-item label="新密码" prop="password">
       <a-input-password
         placeholder="请输入新的登录密码"
         v-model="form.password"
       />
     </a-form-model-item>
-    <a-form-model-item label="确认密码" prop="passwordNew" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
+    <a-form-model-item label="确认密码" prop="passwordNew">
       <a-input-password
         placeholder="请确认新的登录密码"
         v-model="form.passwordNew"
