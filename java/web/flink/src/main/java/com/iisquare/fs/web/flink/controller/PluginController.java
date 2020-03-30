@@ -17,9 +17,6 @@ import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
-import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
-
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -58,13 +55,7 @@ public class PluginController extends PermitControllerBase {
 
     @PostMapping("/upload")
     @Permission("add")
-    public String uploadAction(HttpServletRequest request) {
-        MultipartHttpServletRequest multiRequest = new StandardMultipartHttpServletRequest(request);
-        Iterator iterator = multiRequest.getFileNames();
-        if(!iterator.hasNext()) {
-            return ApiUtil.echoResult(1002, "请选择上传文件", null);
-        }
-        MultipartFile file = multiRequest.getFile(iterator.next().toString());
+    public String uploadAction(HttpServletRequest request, @RequestPart("file") MultipartFile file) {
         if(null == file) {
             return ApiUtil.echoResult(1003, "获取文件句柄失败", null);
         }

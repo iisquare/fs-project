@@ -1,8 +1,3 @@
-/analytics/dest
-/demo/analytics-proxy/.project
-/demo/analytics-proxy/.gradle
-/demo/analytics-proxy/.settings
-/demo/analytics-proxy/.classpath
 /.idea
 /code/.classpath
 /code/.project
@@ -15,3 +10,4 @@
 .gradle
 /code/plugins/etl-core/lib
 .env
+/java/web/flink/plugins/*/

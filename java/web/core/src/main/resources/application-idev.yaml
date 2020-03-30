@@ -25,9 +25,11 @@ rpc:
 feign:
   hystrix:
     enabled: true # Enable Fallback
-ribbon:
-  ReadTimeout:  5000
-  ConnectTimeout:  1000
+  client:
+    config:
+      default:
+        connect-timeout: 10000
+        read-timeout: 20000
 
 spring:
   http:

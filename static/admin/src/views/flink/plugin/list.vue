@@ -107,7 +107,7 @@ export default {
         { title: '操作时间', dataIndex: 'updatedTime', customRender: this.dateRender },
         { title: '操作', scopedSlots: { customRender: 'action' } }
       ],
-      selection: RouteUtil.selection(),
+      selection: Object.assign({}, RouteUtil.selection(), { type: 'radio' }),
       pagination: {},
       rows: [],
       loading: false,
@@ -131,8 +131,25 @@ export default {
     }
   },
   methods: {
-    uploadChange (file, fileList, event) {
-      console.log(arguments)
+    uploadChange ({ file, fileList, event }) {
+      switch (file.status) {
+        case 'uploading':
+          this.upload.loading = true
+          break
+        case 'done':
+          this.upload.loading = false
+          const result = file.response
+          if (result.code === 0) {
+            this.$notification.success({ message: '状态：' + result.code, description: '消息:' + result.message })
+          } else {
+            this.$notification.warning({ message: '状态：' + result.code, description: '消息:' + result.message })
+          }
+          break
+        case 'error':
+          this.upload.loading = false
+          this.$notification.error({ message: '请求异常', description: `${file.name} file upload failed.` })
+          break
+      }
     },
     dateRender (text, record, index) {
       return DateUtil.format(text)

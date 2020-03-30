@@ -18,8 +18,8 @@ subprojects {
                     'description' : "${project.description}"
             ]
             def rootDir = project.rootDir.absolutePath
-            def inputFile = new File(rootDir + '/flink-plugins/' + project.name + '/config.json')
-            def outputFile = new File(rootDir + '/flink-plugins/' + project.name + '/build/libs/config.json')
+            def inputFile = new File(rootDir + '/flink/plugins/' + project.name + '/config.json')
+            def outputFile = new File(rootDir + '/flink/plugins/' + project.name + '/build/libs/config.json')
             def printWriter = outputFile.newPrintWriter('utf-8')
             inputFile.eachLine { line->
                 line = line.replaceAll(/\$\{(\w+)\}/, {data[it[1]]})
