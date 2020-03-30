@@ -47,7 +47,15 @@
         <div class="table-pagination-tools">
           <a-button icon="minus-circle" type="danger" @click="batchRemove" v-permit="'member:setting:delete'" :disabled="selection.selectedRows.length === 0">删除</a-button>
           <a-divider type="vertical" v-permit="'member:setting:add'" />
-          <a-button icon="cloud-upload" type="primary" @click="add" v-permit="'member:setting:add'">上传</a-button>
+          <a-upload
+            v-permit="'member:setting:add'"
+            :action="upload.action"
+            accept=".zip"
+            :withCredentials="true"
+            :showUploadList="false"
+            @change="uploadChange">
+            <a-button icon="cloud-upload" type="primary" :loading="upload.loading">上传</a-button>
+          </a-upload>
         </div>
       </div>
     </a-card>
@@ -115,10 +123,17 @@ export default {
       rules: {
         name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
         status: [{ required: true, message: '请选择状态', trigger: 'change' }]
+      },
+      upload: {
+        action: process.env.VUE_APP_API_BASE_URL + '/proxy/upload?app=flink&uri=/plugin/upload',
+        loading: false
       }
     }
   },
   methods: {
+    uploadChange (file, fileList, event) {
+      console.log(arguments)
+    },
     dateRender (text, record, index) {
       return DateUtil.format(text)
     },

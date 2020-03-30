@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -56,6 +57,16 @@ public class ProxyController {
     @PostMapping("/get")
     public String getAction(@RequestBody Map<?, ?> param) {
         return request(RequestMethod.GET, param);
+    }
+
+    @PostMapping("/upload")
+    public String uploadAction(@RequestParam String app, @RequestParam String uri, @RequestPart("file") MultipartFile file) {
+        RpcBase rpc;
+        switch (app) {
+            case "flink": rpc = flinkRpc; break;
+            default: return ApiUtil.echoResult(4031, "应用不存在", null);
+        }
+        return rpc.upload(uri, file);
     }
 
     private String request(RequestMethod method, Map<?, ?> param) {
