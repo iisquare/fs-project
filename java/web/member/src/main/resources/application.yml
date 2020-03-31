@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: fs-member-service
   profiles:
     active: dev,idev
   jpa:

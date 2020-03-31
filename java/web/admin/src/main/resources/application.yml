@@ -1,3 +1,5 @@
 spring:
+  application:
+    name: fs-admin-service
   profiles:
     active: dev,idev

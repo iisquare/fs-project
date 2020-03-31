@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: fs-flink-service
   profiles:
     active: dev,idev
   jpa:

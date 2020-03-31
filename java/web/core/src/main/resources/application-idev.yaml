@@ -4,23 +4,26 @@ fs:
 
 rpc:
   member:
-    name: app-member-service
+    name: fs-member-service
     rest: http://127.0.0.1:7801
   analyse:
-    name: app-analyse-service
+    name: fs-analyse-service
     rest: http://127.0.0.1:7802
   flink:
-    name: app-flink-service
+    name: fs-flink-service
     rest: http://127.0.0.1:7803
   quartz:
-    name: app-quartz-service
+    name: fs-quartz-service
     rest: http://127.0.0.1:7804
   xlab:
-    name: app-xlab-service
+    name: fs-xlab-service
     rest: http://127.0.0.1:7805
   spider:
-    name: app-spider-service
+    name: fs-spider-service
     rest: http://127.0.0.1:7806
+  admin:
+    name: fs-admin-service
+    rest: http://127.0.0.1:7808
 
 feign:
   hystrix:
@@ -28,8 +31,11 @@ feign:
   client:
     config:
       default:
-        connect-timeout: 10000
-        read-timeout: 20000
+        connectTimeout: 1000
+        readTimeout: 5000
+      fs-flink-service:
+        connectTimeout: 1000
+        readTimeout: 60000
 
 spring:
   http:

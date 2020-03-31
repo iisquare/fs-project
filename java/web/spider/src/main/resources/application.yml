@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: fs-spider-service
   profiles:
     active: dev,idev
   jpa:

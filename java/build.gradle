@@ -34,8 +34,8 @@ subprojects {
     // 定义版本号
     ext {
         lombokVersion = '1.18.12'
-        springBootVersion = '2.2.1.RELEASE'
-        springCloudVersion = '2.2.1.RELEASE'
+        springBootVersion = '2.2.2.RELEASE'
+        springCloudVersion = '2.2.2.RELEASE'
         flinkVersion = '1.7.2'
         scalaVersion = '2.11'
         hadoopVersion = '2.8.3'
