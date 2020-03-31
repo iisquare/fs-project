@@ -41,7 +41,7 @@ public abstract class FallbackBase implements RpcBase {
 
     public String fallback(Throwable cause) {
         String message = getClass().getSimpleName();
-        String data = null == cause ? null : cause.getMessage();
+        String data = null == cause ? null : cause.getClass().getSimpleName();
         return ApiUtil.echoResult(4502, message, data);
     }
 

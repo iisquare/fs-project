@@ -141,6 +141,7 @@ export default {
           const result = file.response
           if (result.code === 0) {
             this.$notification.success({ message: '状态：' + result.code, description: '消息:' + result.message })
+            this.search(false, true)
           } else {
             this.$notification.warning({ message: '状态：' + result.code, description: '消息:' + result.message })
           }
