@@ -98,8 +98,6 @@ public class FlowService extends ServiceBase {
         }
     }
 
-
-
     public ObjectNode parse(Flow info, String logId, Object ext) {
         if(null == info) return null;
         JsonNode flow = DPUtil.parseJSON(info.getContent());

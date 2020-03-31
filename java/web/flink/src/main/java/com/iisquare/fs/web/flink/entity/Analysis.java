@@ -15,7 +15,6 @@ import java.io.Serializable;
 @AllArgsConstructor
 @DynamicInsert
 @DynamicUpdate
-@Table(name = "etl_analysis")
 public class Analysis implements Serializable {
 
     @Id
@@ -25,6 +24,8 @@ public class Analysis implements Serializable {
     private String name;
     @Column
     private String type;
+    @Transient
+    private String typeText;
     @Column
     private String setting;
     @Column
@@ -49,5 +50,13 @@ public class Analysis implements Serializable {
     private Integer updatedUid;
     @Transient
     private String updatedUidName;
+    @Transient
+    private String cronName;
+    @Transient
+    private String cronGroup;
+    @Transient
+    private String cronExpression;
+    @Transient
+    private String cronParams;
 
 }

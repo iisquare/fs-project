@@ -15,7 +15,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @DynamicInsert
 @DynamicUpdate
-public class Flow implements Serializable {
+public class FlowNode implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,11 +23,27 @@ public class Flow implements Serializable {
     @Column
     private String name;
     @Column
-    private String type;
-    @Transient
-    private String typeText;
+    private String fullName;
     @Column
-    private String content;
+    private Integer parentId;
+    @Transient
+    private String parentIdName;
+    @Column
+    private String type; // 分类
+    @Column
+    private String plugin; // 从属插件
+    @Column
+    private String icon; // 图标
+    @Column
+    private String state; // 展开状态
+    @Column
+    private String classname; // 类名称
+    @Column
+    private Integer draggable; // 是否可拖拽
+    @Column
+    private String property; // 属性JSON配置
+    @Column
+    private String returns; // 返回值JSON配置
     @Column
     private Integer sort;
     @Column

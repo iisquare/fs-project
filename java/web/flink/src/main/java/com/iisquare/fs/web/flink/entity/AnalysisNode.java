@@ -15,7 +15,6 @@ import java.io.Serializable;
 @AllArgsConstructor
 @DynamicInsert
 @DynamicUpdate
-@Table(name = "etl_analysis_node")
 public class AnalysisNode implements Serializable {
 
     @Id
@@ -23,6 +22,8 @@ public class AnalysisNode implements Serializable {
     private Integer id;
     @Column
     private String name;
+    @Column
+    private String fullName;
     @Column
     private Integer parentId;
     @Transient

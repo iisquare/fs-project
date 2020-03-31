@@ -87,7 +87,7 @@ public class PluginService extends ServiceBase {
         Map<String, Object> result = new LinkedHashMap<>();
         int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
-        Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "sort"));
+        Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "name"));
         if (null == sort) sort = Sort.by(Sort.Order.asc("name"));
         Page<?> data = pluginDao.findAll(new Specification() {
             @Override

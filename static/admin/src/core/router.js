@@ -175,6 +175,10 @@ const routes = [{
       path: '/flink/plugin/list',
       meta: { title: '插件列表' },
       component: () => import(/* webpackChunkName: 'flink' */ '@/views/flink/plugin/list')
+    }, {
+      path: '/flink/flowNode/list',
+      meta: { title: '节点列表', parents: ['/flink/flow'] },
+      component: () => import(/* webpackChunkName: 'flink' */ '@/views/flink/flowNode/list')
     }]
   }]
 }, {
