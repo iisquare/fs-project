@@ -15,14 +15,14 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 @Service
-public class AnalysisService extends ServiceBase {
+public class AnalysisBackService extends ServiceBase {
 
     @Autowired
     private AnalysisDao analysisDao;
     @Autowired
     private AnalysisNodeDao analysisNodeDao;
     @Autowired
-    private FlowService flowService;
+    private FlowBackService flowService;
 
     public Analysis analysisInfo(Integer id) {
         if(null == id || id < 1) return null;

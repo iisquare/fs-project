@@ -11,11 +11,36 @@
  Target Server Version : 50729
  File Encoding         : 65001
 
- Date: 01/04/2020 11:02:38
+ Date: 01/04/2020 16:04:23
 */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for fs_flink_flow
+-- ----------------------------
+DROP TABLE IF EXISTS `fs_flink_flow`;
+CREATE TABLE `fs_flink_flow` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `name` varchar(255) NOT NULL DEFAULT '' COMMENT '流程图',
+  `type` varchar(32) NOT NULL DEFAULT '',
+  `content` text NOT NULL COMMENT '流程图内容',
+  `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序',
+  `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '状态',
+  `description` tinytext NOT NULL COMMENT '描述',
+  `created_uid` int(11) NOT NULL DEFAULT '0' COMMENT '创建者',
+  `created_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '创建时间',
+  `updated_uid` int(11) NOT NULL DEFAULT '0' COMMENT '修改者',
+  `updated_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '修改时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='流程图信息';
+
+-- ----------------------------
+-- Records of fs_flink_flow
+-- ----------------------------
+BEGIN;
+COMMIT;
 
 -- ----------------------------
 -- Table structure for fs_flink_flow_node
@@ -70,7 +95,7 @@ INSERT INTO `fs_flink_flow_node` VALUES (48, 'KafkaSink', '数据输出:KafkaSin
 INSERT INTO `fs_flink_flow_node` VALUES (49, 'JsonTransform', '数据计算:JsonTransform', 12, 'node', 'core', '', '', 'com.iisquare.fs.flink.plugins.core.node.JsonTransformNode', 1, '[\n      {\"name\":\"field\",\"key\":\"field\",\"value\":\"line\",\"group\":\"数据处理\",\"editor\":\"text\"}\n    ]', '', 0, 1, '', 1539326374778, 1, 1585708215494, 1);
 INSERT INTO `fs_flink_flow_node` VALUES (50, 'ElasticsearchSource', '数据读取:ElasticsearchSource', 1, 'node', 'core', '', '', 'com.iisquare.fs.flink.plugins.core.node.ElasticsearchSourceNode', 1, '[\n      {\"name\":\"cluster\",\"key\":\"cluster\",\"value\":\"elasticsearch\",\"group\":\"连接设置\",\"editor\":\"text\"},\n      {\"name\":\"servers\",\"key\":\"servers\",\"value\":\"127.0.0.1:9300\",\"group\":\"连接设置\",\"editor\":\"text\"},\n      {\"name\":\"collectionIndex\",\"key\":\"collectionIndex\",\"value\":\"\",\"group\":\"连接设置\",\"editor\":\"text\"},\n      {\"name\":\"collectionType\",\"key\":\"collectionType\",\"value\":\"\",\"group\":\"连接设置\",\"editor\":\"text\"},\n      {\"name\":\"query\",\"key\":\"query\",\"value\":\"\",\"group\":\"连接设置\",\"editor\":\"text\"}\n    ]', '', 0, 1, '', 1539573949940, 1, 1585708211159, 1);
 INSERT INTO `fs_flink_flow_node` VALUES (52, 'OLAP', 'OLAP', 0, 'olap', 'category', '', '', '', 0, '', '', 0, 1, '', 1544497019786, 1, 1585708207497, 1);
-INSERT INTO `fs_flink_flow_node` VALUES (53, 'Anchor', 'OLAP:Anchor', 52, 'transient', 'olap', '', '', 'com.iisquare.fs.flink.plugins.olap.node.AnchorNode', 1, '', '', 0, 1, '仓库标识', 1544497062515, 1, 1585710131857, 1);
+INSERT INTO `fs_flink_flow_node` VALUES (53, 'Anchor', 'OLAP:Anchor', 52, 'transient', 'olap', '', '', 'com.iisquare.fs.flink.plugins.olap.node.AnchorNode', 1, '', '', 0, 1, '仓库标识', 1544497062515, 1, 1585712587383, 1);
 COMMIT;
 
 -- ----------------------------
@@ -164,7 +189,7 @@ INSERT INTO `fs_member_menu` VALUES (35, '数据源列表', '后台管理:数据
 INSERT INTO `fs_member_menu` VALUES (36, '树形数据源', '后台管理:数据计算:模型管理:树形数据源', 33, '', '/flink/analysisNode/tree', '', 0, 1, '', 1585662108588, 1, 1585662108588, 1);
 INSERT INTO `fs_member_menu` VALUES (37, '辅助工具', '后台管理:数据计算:辅助工具', 26, 'rocket', '/flink/tool', '', 0, 1, '', 1585662611501, 1, 1585662611501, 1);
 INSERT INTO `fs_member_menu` VALUES (38, '属性编辑器', '后台管理:数据计算:辅助工具:属性编辑器', 37, '', '/flink/tool/property', '', 0, 1, '', 1585663056291, 1, 1585663056291, 1);
-INSERT INTO `fs_member_menu` VALUES (39, '字段编辑器', '后台管理:数据计算:辅助工具:字段编辑器', 37, '', '/flink/tool/field', '', 0, 1, '', 1585663079511, 1, 1585663079511, 1);
+INSERT INTO `fs_member_menu` VALUES (39, '字段编辑器', '后台管理:数据计算:辅助工具:字段编辑器', 37, '', '/flink/tool/field', '', 0, 1, '', 1585663079511, 1, 1585710923845, 1);
 COMMIT;
 
 -- ----------------------------
@@ -322,7 +347,7 @@ CREATE TABLE `fs_member_resource` (
   `updated_time` bigint(20) NOT NULL DEFAULT '0',
   `updated_uid` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=48 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of fs_member_resource
@@ -363,10 +388,18 @@ INSERT INTO `fs_member_resource` VALUES (32, '插件', '数据计算:插件', 31
 INSERT INTO `fs_member_resource` VALUES (33, '添加', '数据计算:插件:添加', 32, 'flink', 'plugin', 'add', 0, 1, '', 1585384138739, 1, 1585384138739, 1);
 INSERT INTO `fs_member_resource` VALUES (34, '修改', '数据计算:插件:修改', 32, 'flink', 'plugin', 'modify', 0, 1, '', 1585384152067, 1, 1585384152067, 1);
 INSERT INTO `fs_member_resource` VALUES (35, '删除', '数据计算:插件:删除', 32, 'flink', 'plugin', 'delete', 0, 1, '', 1585384168964, 1, 1585384168964, 1);
-INSERT INTO `fs_member_resource` VALUES (36, '流程节点', '数据计算:流程节点', 31, 'flink', 'flowNode', '', 0, 1, '', 1585669452789, 1, 1585669452789, 1);
+INSERT INTO `fs_member_resource` VALUES (36, '流程节点', '数据计算:流程节点', 31, 'flink', 'flowNode', '', 0, 1, '', 1585669452789, 1, 1585727887482, 1);
 INSERT INTO `fs_member_resource` VALUES (37, '添加', '数据计算:流程节点:添加', 36, 'flink', 'flowNode', 'add', 0, 1, '', 1585669473979, 1, 1585669473979, 1);
 INSERT INTO `fs_member_resource` VALUES (38, '修改', '数据计算:流程节点:修改', 36, 'flink', 'flowNode', 'modify', 0, 1, '', 1585669487729, 1, 1585669487729, 1);
 INSERT INTO `fs_member_resource` VALUES (39, '删除', '数据计算:流程节点:删除', 36, 'flink', 'flowNode', 'delete', 0, 1, '', 1585669499607, 1, 1585669499607, 1);
+INSERT INTO `fs_member_resource` VALUES (40, '流程', '数据计算:流程', 31, 'flink', 'flow', '', 0, 1, '', 1585727898953, 1, 1585727898953, 1);
+INSERT INTO `fs_member_resource` VALUES (41, '添加', '数据计算:流程:添加', 40, 'flink', 'flow', 'add', 0, 1, '', 1585727916428, 1, 1585727941798, 1);
+INSERT INTO `fs_member_resource` VALUES (42, '修改', '数据计算:流程:修改', 40, 'flink', 'flow', 'modify', 0, 1, '', 1585727959930, 1, 1585727959930, 1);
+INSERT INTO `fs_member_resource` VALUES (43, '删除', '数据计算:流程:删除', 40, 'flink', 'flow', 'delete', 0, 1, '', 1585727972170, 1, 1585727972170, 1);
+INSERT INTO `fs_member_resource` VALUES (44, '数据源', '数据计算:数据源', 31, 'flink', 'analysisNode', '', 0, 1, '', 1585728026816, 1, 1585728026816, 1);
+INSERT INTO `fs_member_resource` VALUES (45, '添加', '数据计算:数据源:添加', 44, 'flink', 'analysisNode', 'add', 0, 1, '', 1585728044121, 1, 1585728044121, 1);
+INSERT INTO `fs_member_resource` VALUES (46, '修改', '数据计算:数据源:修改', 44, 'flink', 'analysisNode', 'modify', 0, 1, '', 1585728057637, 1, 1585728057637, 1);
+INSERT INTO `fs_member_resource` VALUES (47, '删除', '数据计算:数据源:删除', 44, 'flink', 'analysisNode', 'delete', 0, 1, '', 1585728068696, 1, 1585728068696, 1);
 COMMIT;
 
 -- ----------------------------

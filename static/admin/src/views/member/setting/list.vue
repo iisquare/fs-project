@@ -42,7 +42,7 @@
             </a-button-group>
           </span>
         </a-table>
-        <div class="table-pagination-tools">
+        <div :class="rows.length > 0 ? 'table-pagination-tools' : 'table-pagination-tools-empty'">
           <a-button icon="minus-circle" type="danger" @click="batchRemove" v-permit="'member:setting:delete'" :disabled="selection.selectedRows.length === 0">删除</a-button>
           <a-divider type="vertical" v-permit="'member:setting:add'" />
           <a-button icon="plus-circle" type="primary" @click="add" v-permit="'member:setting:add'">新增</a-button>
