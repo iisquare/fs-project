@@ -82,12 +82,15 @@
         <a-form-model-item label="父级">[{{ form.parentId }}]{{ form.parentId > 0 ? form.parentIdName : '根节点' }}</a-form-model-item>
         <a-form-model-item label="名称">{{ form.name }}</a-form-model-item>
         <a-form-model-item label="全称">{{ form.fullName }}</a-form-model-item>
-        
-        <a-form-model-item label="名称">{{ form.name }}</a-form-model-item>
-        <a-form-model-item label="版本">{{ form.version }}</a-form-model-item>
+        <a-form-model-item label="类型">{{ form.type }}</a-form-model-item>
+        <a-form-model-item label="插件">{{ form.plugin }}</a-form-model-item>
+        <a-form-model-item label="图标"><a-icon v-if="form.icon" :type="form.icon" />{{ form.icon }}</a-form-model-item>
+        <a-form-model-item label="展开">{{ form.state }}</a-form-model-item>
+        <a-form-model-item label="类名">{{ form.classname }}</a-form-model-item>
+        <a-form-model-item label="拖拽">{{ form.draggable ? '是' : '否' }}</a-form-model-item>
+        <a-form-model-item label="排序">{{ form.sort }}</a-form-model-item>
         <a-form-model-item label="状态">{{ form.statusText }}</a-form-model-item>
         <a-form-model-item label="描述">{{ form.description }}</a-form-model-item>
-        <a-form-model-item label="配置"><a-textarea v-model="form.config"></a-textarea></a-form-model-item>
         <a-form-model-item label="创建者">{{ form.createdUidName }}</a-form-model-item>
         <a-form-model-item label="创建时间">{{ form.createdTime|date }}</a-form-model-item>
         <a-form-model-item label="修改者">{{ form.updatedUidName }}</a-form-model-item>
@@ -269,12 +272,14 @@ export default {
     },
     edit (text, record) {
       this.form = Object.assign({}, record, {
-        status: record.status + ''
+        status: record.status + '',
+        draggable: record.draggable === 1
       })
       this.formVisible = true
     },
     show (text, record) {
       this.form = Object.assign({}, record, {
+        draggable: record.draggable === 1,
         description: record.description ? record.description : '暂无'
       })
       this.infoVisible = true
