@@ -122,6 +122,10 @@ export default {
         for (let index = 2; index <= paths.length; index++) {
           openKeys.push(paths.slice(0, index).join('/'))
         }
+        const meta = this.$route.meta
+        if (meta && meta.parents) {
+          openKeys.push(...meta.parents)
+        }
       }
       this.collapsed ? (this.cachedOpenKeys = openKeys) : (this.openKeys = openKeys)
     }

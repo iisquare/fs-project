@@ -194,6 +194,7 @@ const routes = [{
 }]
 
 const router = new Router({ routes })
+// const router = new Router({ mode: 'history', routes })
 
 router.beforeEach((to, from, next) => {
   const user = store.state.user
