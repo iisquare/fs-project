@@ -48,7 +48,7 @@
       </a-layout-content>
 
       <!-- layout footer -->
-      <a-layout-footer>
+      <a-layout-footer v-if="!hiddenGlobalFooter">
         <global-footer />
       </a-layout-footer>
 
@@ -103,6 +103,10 @@ export default {
           return appIndex[paths[0]] ? menus[appIndex[paths[0]]].children : []
         }
         return []
+      },
+      hiddenGlobalFooter () {
+        const meta = this.$route.meta
+        return meta && meta.hiddenGlobalFooter
       }
     }),
     contentPaddingLeft () {

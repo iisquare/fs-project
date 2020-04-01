@@ -187,6 +187,10 @@ const routes = [{
       path: '/flink/flow/list',
       meta: { title: '流程列表' },
       component: () => import(/* webpackChunkName: 'flink' */ '@/views/flink/flow/list')
+    }, {
+      path: '/flink/flow/model',
+      meta: { title: '流程绘制', hiddenGlobalFooter: true },
+      component: () => import(/* webpackChunkName: 'flink' */ '@/views/flink/flow/model')
     }]
   }]
 }, {

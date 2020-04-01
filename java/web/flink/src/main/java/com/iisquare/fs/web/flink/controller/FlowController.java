@@ -10,10 +10,7 @@ import com.iisquare.fs.web.flink.entity.Flow;
 import com.iisquare.fs.web.flink.service.FlowService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
@@ -26,6 +23,13 @@ public class FlowController extends PermitControllerBase {
     private FlowService flowService;
     @Autowired
     private DefaultRbacService rbacService;
+
+    @RequestMapping("/info")
+    public String infoAction(@RequestBody Map<?, ?> param) {
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        Flow info = flowService.info(id);
+        return ApiUtil.echoResult(null == info ? 404 : 0, null, info);
+    }
 
     @RequestMapping("/list")
     @Permission("")

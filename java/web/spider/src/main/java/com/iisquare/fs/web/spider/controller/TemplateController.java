@@ -27,7 +27,6 @@ public class TemplateController extends PermitControllerBase {
     private TemplateService templateService;
 
     @GetMapping("/plain")
-    @ResponseBody
     public String plainAction(@RequestParam("id") Integer id) {
         JsonNode plain = templateService.plain(id);
         if (null == plain) return ApiUtil.echoResult(404, null, plain);
@@ -35,7 +34,6 @@ public class TemplateController extends PermitControllerBase {
     }
 
     @RequestMapping("/info")
-    @ResponseBody
     public String infoAction(@RequestBody Map<?, ?> param) {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
         Template info = templateService.info(id);

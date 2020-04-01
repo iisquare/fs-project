@@ -1,6 +1,9 @@
 import base from './base'
 
 export default {
+  info (param, tips = {}) {
+    return base.post('/flow/info', param, tips)
+  },
   list (param, tips = {}) {
     return base.post('/flow/list', param, tips)
   },
