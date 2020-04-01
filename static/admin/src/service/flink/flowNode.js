@@ -12,5 +12,8 @@ export default {
   },
   save (param, tips = {}) {
     return base.post('/flowNode/save', param, tips)
+  },
+  tree (param, tips = {}) {
+    return base.post('/flowNode/tree', param, tips)
   }
 }

@@ -87,39 +87,24 @@ public class FlowNodeService extends ServiceBase {
         return list;
     }
 
-    private ArrayNode tree(List<FlowNode> data, Integer parentId) {
-        ArrayNode list = DPUtil.arrayNode();
-        for (FlowNode item : data) {
-            if(!parentId.equals(item.getParentId())) continue;
-            ObjectNode node = DPUtil.objectNode();
-            node.put("id", item.getId());
-            node.put("text", item.getName());
-            node.put("iconCls", item.getIcon());
-            node.put("state", item.getState());
-            node.put("type", item.getType());
-            node.put("plugin", item.getPlugin());
-            node.put("classname", item.getClassname());
-            node.put("draggable", DPUtil.parseBoolean(item.getDraggable()));
-            node.put("description", item.getDescription());
-            node.replace("property", DPUtil.parseJSON(item.getProperty()));
-            node.replace("returns", DPUtil.parseJSON(item.getReturns()));
-            ArrayNode children = tree(data, item.getId());
-            if(children.size() > 0) node.replace("children", children);
-            list.add(node);
-        }
-        return list;
-    }
-
-    public ArrayNode tree() {
-        List<FlowNode> data = flowNodeDao.findAll(new Specification() {
-            @Override
-            public Predicate toPredicate(Root root, CriteriaQuery query, CriteriaBuilder cb) {
-                List<Predicate> predicates = new ArrayList<>();
+    public List<FlowNode> tree(Map<?, ?> param, Map<?, ?> args) {
+        List<FlowNode> data = flowNodeDao.findAll((Specification) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            int status = DPUtil.parseInt(param.get("status"));
+            if(!"".equals(DPUtil.parseString(param.get("status")))) {
+                predicates.add(cb.equal(root.get("status"), status));
+            } else {
                 predicates.add(cb.notEqual(root.get("status"), -1));
-                return cb.and(predicates.toArray(new Predicate[predicates.size()]));
             }
-        }, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort")));
-        return tree(data, 0);
+            return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+        }, Sort.by(Sort.Order.desc("sort")));
+        if(!DPUtil.empty(args.get("withUserInfo"))) {
+            rbacService.fillUserInfo(data, "createdUid", "updatedUid");
+        }
+        if(!DPUtil.empty(args.get("withStatusText"))) {
+            ServiceUtil.fillProperties(data, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+        }
+        return ServiceUtil.formatRelation(data, FlowNode.class, "parentId", 0, "id", "children");
     }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> args) {

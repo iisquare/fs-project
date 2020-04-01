@@ -31,7 +31,7 @@ public class MenuController extends PermitControllerBase {
     @RequestMapping("/tree")
     @Permission("")
     public String treeAction(@RequestBody Map<?, ?> param) {
-        return ApiUtil.echoResult(0, null, menuService.tree(DPUtil.buildMap(
+        return ApiUtil.echoResult(0, null, menuService.tree(param, DPUtil.buildMap(
                 "withUserInfo", true, "withStatusText", true
         )));
     }

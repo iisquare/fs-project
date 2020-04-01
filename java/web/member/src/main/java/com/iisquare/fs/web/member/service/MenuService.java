@@ -84,10 +84,15 @@ public class MenuService extends ServiceBase {
         return list;
     }
 
-    public List<Menu> tree(Map<?, ?> args) {
+    public List<Menu> tree(Map<?, ?> param, Map<?, ?> args) {
         List<Menu> data = menuDao.findAll((Specification) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.notEqual(root.get("status"), -1));
+            int status = DPUtil.parseInt(param.get("status"));
+            if(!"".equals(DPUtil.parseString(param.get("status")))) {
+                predicates.add(cb.equal(root.get("status"), status));
+            } else {
+                predicates.add(cb.notEqual(root.get("status"), -1));
+            }
             return cb.and(predicates.toArray(new Predicate[predicates.size()]));
         }, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort")));
         if(!DPUtil.empty(args.get("withUserInfo"))) {

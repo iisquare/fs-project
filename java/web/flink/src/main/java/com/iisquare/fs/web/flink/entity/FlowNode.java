@@ -6,6 +6,7 @@ import org.hibernate.annotations.DynamicUpdate;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.List;
 
 @Entity
 @Getter
@@ -28,6 +29,8 @@ public class FlowNode implements Serializable {
     private Integer parentId;
     @Transient
     private String parentIdName;
+    @Transient
+    private List<FlowNode> children;
     @Column
     private String type; // 分类
     @Column

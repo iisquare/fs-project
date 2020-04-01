@@ -29,10 +29,15 @@ public class ResourceService extends ServiceBase {
     @Autowired
     private UserService userService;
 
-    public List<Resource> tree(Map<?, ?> args) {
+    public List<Resource> tree(Map<?, ?> param, Map<?, ?> args) {
         List<Resource> data = resourceDao.findAll((Specification) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.notEqual(root.get("status"), -1));
+            int status = DPUtil.parseInt(param.get("status"));
+            if(!"".equals(DPUtil.parseString(param.get("status")))) {
+                predicates.add(cb.equal(root.get("status"), status));
+            } else {
+                predicates.add(cb.notEqual(root.get("status"), -1));
+            }
             return cb.and(predicates.toArray(new Predicate[predicates.size()]));
         }, Sort.by(Sort.Order.desc("sort")));
         if(!DPUtil.empty(args.get("withUserInfo"))) {

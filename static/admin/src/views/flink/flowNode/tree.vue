@@ -1,79 +1,39 @@
 <template>
   <section>
     <a-card :bordered="false">
+      <template slot="title">
+        <a-button @click="toggleRowKeys" :icon="expandedRowKeys.length === 0 ? 'menu-unfold' : 'menu-fold'"></a-button>
+        <a-divider type="vertical" v-permit="'flink:flowNode:delete'" />
+        <a-button icon="minus-circle" type="danger" @click="batchRemove" v-permit="'flink:flowNode:delete'" :disabled="selection.selectedRows.length === 0">删除</a-button>
+        <a-divider type="vertical" v-permit="'flink:flowNode:add'" />
+        <a-button icon="plus-circle" type="primary" @click="add(0)" v-permit="'flink:flowNode:add'">新增</a-button>
+      </template>
       <div class="table-page-search-wrapper">
-        <a-form-model ref="filters" :model="filters" layout="inline">
-          <a-row :gutter="48">
-            <a-col :md="6" :sm="24">
-              <a-form-model-item label="父级ID" prop="parentId">
-                <a-input v-model="filters.parentId" placeholder="" :allowClear="true" />
-              </a-form-model-item>
-            </a-col>
-            <a-col :md="6" :sm="24">
-              <a-form-model-item label="名称" prop="name">
-                <a-input v-model="filters.name" placeholder="" :allowClear="true" />
-              </a-form-model-item>
-            </a-col>
-            <a-col :md="6" :sm="24">
-              <a-form-model-item label="状态" prop="status">
-                <a-select v-model="filters.status" placeholder="请选择" :allowClear="true">
-                  <a-select-option v-for="(value, key) in config.status" :key="key" :value="key">{{ value }}</a-select-option>
-                </a-select>
-              </a-form-model-item>
-            </a-col>
-            <template v-if="advanced">
-              <a-col :md="6" :sm="24">
-                <a-form-model-item label="类型" prop="type">
-                  <a-input v-model="filters.type" placeholder="" :allowClear="true" />
-                </a-form-model-item>
-              </a-col>
-              <a-col :md="6" :sm="24">
-                <a-form-model-item label="插件" prop="plugin">
-                  <a-input v-model="filters.plugin" placeholder="" :allowClear="true" />
-                </a-form-model-item>
-              </a-col>
-              <a-col :md="12" :sm="24">
-                <a-form-model-item label="类名" prop="classname">
-                  <a-input v-model="filters.classname" placeholder="" :allowClear="true" />
-                </a-form-model-item>
-              </a-col>
-            </template>
-            <a-col :md="6" :sm="24">
-              <span class="table-page-search-submitButtons" :style="advanced && { float: 'right', overflow: 'hidden' } || {} ">
-                <a-button type="primary" @click="search(true, false)" :loading="loading">查询</a-button>
-                <a-button style="margin-left: 8px" @click="() => this.$refs.filters.resetFields()">重置</a-button>
-                <a @click="toggleAdvanced" style="margin-left: 8px">
-                  {{ advanced ? '收起' : '展开' }}
-                  <a-icon :type="advanced ? 'up' : 'down'"/>
-                </a>
-              </span>
-            </a-col>
-          </a-row>
-        </a-form-model>
         <a-table
           :columns="columns"
           :rowKey="record => record.id"
           :dataSource="rows"
-          :pagination="pagination"
+          :pagination="false"
           :loading="loading"
           :rowSelection="selection"
-          @change="tableChange"
           :bordered="true"
+          :expandedRowKeys="expandedRowKeys"
+          @expandedRowsChange="(expandedRows) => this.expandedRowKeys = expandedRows"
+          :scroll="{ x: true }"
         >
-          <span slot="parentId" slot-scope="text, record">[{{ record.parentId }}]{{ record.parentId > 0 ? record.parentIdName : '根节点' }}</span>
+          <span slot="name" slot-scope="text, record">{{ record.name }}/{{ record.parentId }}/{{ record.id }}</span>
+          <span slot="permit" slot-scope="text, record">{{ record.module }}/{{ record.controller }}/{{ record.action }}</span>
           <span slot="action" slot-scope="text, record">
-            <a-button-group>
-              <a-button type="link" size="small" v-permit="'flink:flowNode:'" @click="show(text, record)">查看</a-button>
-              <a-button v-permit="'flink:flowNode:modify'" type="link" size="small" @click="edit(text, record)">编辑</a-button>
-              <a-button v-permit="'flink:flowNode:modify'" type="link" size="small" @click="sublevel(text, record)">子级</a-button>
-            </a-button-group>
+            <a-dropdown>
+              <a-menu slot="overlay">
+                <a-menu-item v-permit="'flink:flowNode:'"><a-button :block="true" type="link" size="small" @click="show(text, record)">查看</a-button></a-menu-item>
+                <a-menu-item v-permit="'flink:flowNode:modify'"><a-button :block="true" type="link" size="small" @click="edit(text, record)">编辑</a-button></a-menu-item>
+                <a-menu-item v-permit="'flink:flowNode:add'"><a-button :block="true" type="link" size="small" @click="sublevel(text, record)">子级</a-button></a-menu-item>
+              </a-menu>
+              <a-button type="link" icon="tool"></a-button>
+            </a-dropdown>
           </span>
         </a-table>
-        <div class="table-pagination-tools">
-          <a-button icon="minus-circle" type="danger" @click="batchRemove" v-permit="'flink:flowNode:delete'" :disabled="selection.selectedRows.length === 0">删除</a-button>
-          <a-divider type="vertical" v-permit="'flink:flowNode:add'" />
-          <a-button icon="plus-circle" type="primary" @click="add(0)" v-permit="'flink:flowNode:add'">新增</a-button>
-        </div>
       </div>
     </a-card>
     <!--展示界面-->
@@ -150,28 +110,23 @@
 </template>
 
 <script>
-import DateUtil from '@/utils/date'
 import RouteUtil from '@/utils/route'
 import flowNodeService from '@/service/flink/flowNode'
 
 export default {
   data () {
     return {
-      advanced: false,
-      filters: {},
       columns: [
-        { title: 'ID', dataIndex: 'id' },
-        { title: '名称', dataIndex: 'name' },
+        { title: '名称', dataIndex: 'name', scopedSlots: { customRender: 'name' } },
         { title: '全称', dataIndex: 'fullName' },
-        { title: '父级', dataIndex: 'parentId', scopedSlots: { customRender: 'parentId' } },
         { title: '分类', dataIndex: 'type' },
         { title: '插件', dataIndex: 'plugin' },
         { title: '排序', dataIndex: 'sort' },
         { title: '状态', dataIndex: 'statusText' },
         { title: '操作', scopedSlots: { customRender: 'action' } }
       ],
+      expandedRowKeys: [],
       selection: RouteUtil.selection(),
-      pagination: {},
       rows: [],
       loading: false,
       config: {
@@ -190,37 +145,32 @@ export default {
     }
   },
   methods: {
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
+    toggleRowKeys () {
+      if (this.expandedRowKeys.length === 0) {
+        this.expandedRowKeys = RouteUtil.expandedRowKeys(this.rows)
+      } else {
+        this.expandedRowKeys = []
+      }
     },
     batchRemove () {
       this.$confirm(this.selection.confirm(() => {
         this.loading = true
         flowNodeService.delete(this.selection.selectedRowKeys, { success: true }).then((result) => {
           if (result.code === 0) {
-            this.search(false, true)
+            this.search()
           } else {
             this.loading = false
           }
         })
       }))
     },
-    tableChange (pagination, filters, sorter) {
-      this.pagination = RouteUtil.paginationChange(this.pagination, pagination)
-      this.search(true, true)
-    },
-    toggleAdvanced () {
-      this.advanced = !this.advanced
-    },
-    search (filter2query, pagination) {
+    search () {
       this.selection.clear()
-      Object.assign(this.filters, RouteUtil.paginationData(this.pagination, pagination))
-      filter2query && RouteUtil.filter2query(this, this.filters)
       this.loading = true
-      flowNodeService.list(this.filters).then((result) => {
-        this.pagination = Object.assign({}, this.pagination, RouteUtil.result(result))
+      flowNodeService.tree().then((result) => {
         if (result.code === 0) {
-          this.rows = result.data.rows
+          this.rows = result.data
+          this.expandedRowKeys = RouteUtil.expandedRowKeys(result.data)
         }
         this.loading = false
       })
@@ -232,7 +182,7 @@ export default {
         flowNodeService.save(this.form).then(result => {
           if (result.code === 0) {
             this.formVisible = false
-            this.search(false, true)
+            this.search()
           }
           this.formLoading = false
         })
@@ -260,12 +210,8 @@ export default {
       this.infoVisible = true
     }
   },
-  created () {
-    this.filters = RouteUtil.query2filter(this, { page: 1, pageSize: 5 })
-    this.pagination = Object.assign({}, RouteUtil.pagination(this.filters), this.pagination)
-  },
   mounted () {
-    this.search(false, true)
+    this.search()
     flowNodeService.config().then((result) => {
       this.config.ready = true
       if (result.code === 0) {

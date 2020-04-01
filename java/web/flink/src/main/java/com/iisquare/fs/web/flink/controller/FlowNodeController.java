@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -31,8 +30,10 @@ public class FlowNodeController extends PermitControllerBase {
 
     @RequestMapping("/tree")
     @Permission("")
-    public String treeAction(@RequestParam Map<?, ?> param) {
-        return DPUtil.stringify(flowNodeService.tree());
+    public String treeAction(@RequestBody Map<?, ?> param) {
+        return ApiUtil.echoResult(0, null, flowNodeService.tree(param, DPUtil.buildMap(
+                "withUserInfo", true, "withStatusText", true
+        )));
     }
 
     @RequestMapping("/list")
