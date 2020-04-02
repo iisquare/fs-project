@@ -30,7 +30,8 @@ public class FlowController extends AdminControllerBase {
     @RequestMapping("/draw")
     public String drawAction(@RequestParam Map<String, Object> param, ModelMap model, HttpServletRequest request) {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
-        model.put("id", id);
+        JsonNode info = RpcUtil.data(flinkRpc.post("/flow/info", DPUtil.buildMap("id", id)), true);
+        model.put("info", DPUtil.convertJSON(info, Map.class));
         return displayTemplate(model, request);
     }
 

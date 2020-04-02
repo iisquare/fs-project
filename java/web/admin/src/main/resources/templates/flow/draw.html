@@ -39,7 +39,6 @@
 <script th:src="@{{url}/js/main.js(url=${staticUrl})}"></script>
 <script type="application/javascript" th:inline="javascript">
 var adminUrl = [[${adminUrl}]];
-var saveUrl = [[${saveUrl}]];
 var info = {
     id: [[${info?.id?:""}]],
     content : [[${info?.content?:""}]]
@@ -327,12 +326,16 @@ jsPlumb.bind("ready", function() {
         }
         $tipsStatus.html('执行中...');
         $.ajax({
-            url : adminUrl + (saveUrl ? saveUrl : '/flow/save'),
+            url : adminUrl + '/proxy/post',
             contentType: "application/json",
             dataType: "json",
             data : JSON.stringify({
-                id : info.id,
-                content : JSON.stringify(data)
+                app: 'flink',
+                uri: '/flow/save',
+                data: {
+                    id : info.id,
+                    content : JSON.stringify(data)
+                }
             }),
             type : 'POST',
             success : function (result) {
