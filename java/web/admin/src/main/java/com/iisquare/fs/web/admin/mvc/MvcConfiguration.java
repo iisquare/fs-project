@@ -24,7 +24,7 @@ public class MvcConfiguration extends WebMvcConfiguration implements HandlerExce
     private DefaultRbacService rbacService;
 
     @Override
-    protected void addResourceHandlers(ResourceHandlerRegistry registry) {
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
         super.addResourceHandlers(registry);
         registry.addResourceHandler("/static/**").addResourceLocations("classpath:/static/", "classpath:/public/");
     }
