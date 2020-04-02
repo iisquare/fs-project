@@ -189,7 +189,7 @@ const routes = [{
       component: () => import(/* webpackChunkName: 'flink' */ '@/views/flink/flow/list')
     }, {
       path: '/flink/flow/model',
-      meta: { title: '流程绘制', hiddenGlobalFooter: true },
+      meta: { title: '流程绘制', hiddenGlobalFooter: true, withoutContentMargin: true },
       component: () => import(/* webpackChunkName: 'flink' */ '@/views/flink/flow/model')
     }]
   }]
