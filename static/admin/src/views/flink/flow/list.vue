@@ -39,7 +39,7 @@
             <a-button-group>
               <a-button type="link" size="small" v-permit="'flink:flow:'" @click="show(text, record)">查看</a-button>
               <a-button v-permit="'flink:flow:modify'" type="link" size="small" @click="edit(text, record)">编辑</a-button>
-              <a-button v-permit="'flink:flow:modify'" type="link" size="small" @click="model(text, record)">模型</a-button>
+              <a :href="serverUrl + '/flow/draw?id=' + record.id" target="_blank">模型</a>
             </a-button-group>
           </span>
         </a-table>
@@ -105,6 +105,7 @@ import flowService from '@/service/flink/flow'
 export default {
   data () {
     return {
+      serverUrl: process.env.VUE_APP_API_BASE_URL,
       advanced: false,
       filters: {},
       columns: [
@@ -135,9 +136,6 @@ export default {
     }
   },
   methods: {
-    model (id, row) {
-      this.$router.push('/flink/flow/model?id=' + row.id)
-    },
     dateRender (text, record, index) {
       return DateUtil.format(text)
     },

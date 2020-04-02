@@ -55,10 +55,10 @@ public class RoleController extends PermitControllerBase {
         } else {
             switch (type) {
                 case "menu":
-                    result.put("tree", menuService.tree(DPUtil.buildMap()));
+                    result.put("tree", menuService.tree(param, DPUtil.buildMap()));
                     break;
                 case "resource":
-                    result.put("tree", resourceService.tree(DPUtil.buildMap()));
+                    result.put("tree", resourceService.tree(param, DPUtil.buildMap()));
                     break;
                 default:
                     result.put("tree", new ArrayList<>());

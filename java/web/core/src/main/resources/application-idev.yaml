@@ -48,6 +48,10 @@ spring:
   http:
     encoding:
       charset: UTF-8
+  thymeleaf:
+    mode: LEGACYHTML5
+    suffix: .html
+    cache: false
   datasource:
     primary:
       url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false

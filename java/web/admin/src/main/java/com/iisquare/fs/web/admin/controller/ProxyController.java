@@ -2,6 +2,7 @@ package com.iisquare.fs.web.admin.controller;
 
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.web.mvc.ControllerBase;
 import com.iisquare.fs.web.core.mvc.RpcBase;
 import com.iisquare.fs.web.core.rpc.*;
 import feign.Response;
@@ -20,7 +21,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/proxy")
-public class ProxyController {
+public class ProxyController extends ControllerBase {
 
     @Autowired
     private AnalyseRpc analyseRpc;

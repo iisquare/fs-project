@@ -11,7 +11,7 @@
  Target Server Version : 50729
  File Encoding         : 65001
 
- Date: 02/04/2020 13:53:46
+ Date: 02/04/2020 15:52:34
 */
 
 SET NAMES utf8mb4;
@@ -185,8 +185,8 @@ INSERT INTO `fs_member_menu` VALUES (30, '流程列表', '后台管理:数据计
 INSERT INTO `fs_member_menu` VALUES (31, '节点列表', '后台管理:数据计算:流程管理:节点列表', 29, '', '/flink/flowNode/list', '', 0, 1, '', 1585661841784, 1, 1585661841784, 1);
 INSERT INTO `fs_member_menu` VALUES (32, '树形节点', '后台管理:数据计算:流程管理:树形节点', 29, '', '/flink/flowNode/tree', '', 0, 1, '', 1585661854477, 1, 1585661854477, 1);
 INSERT INTO `fs_member_menu` VALUES (37, '辅助工具', '后台管理:数据计算:辅助工具', 26, 'rocket', '/flink/tool', '', 0, 1, '', 1585662611501, 1, 1585662611501, 1);
-INSERT INTO `fs_member_menu` VALUES (38, '属性编辑器', '后台管理:数据计算:辅助工具:属性编辑器', 37, '', '/flink/tool/property', '', 0, 1, '', 1585663056291, 1, 1585663056291, 1);
-INSERT INTO `fs_member_menu` VALUES (39, '字段编辑器', '后台管理:数据计算:辅助工具:字段编辑器', 37, '', '/flink/tool/field', '', 0, 1, '', 1585663079511, 1, 1585710923845, 1);
+INSERT INTO `fs_member_menu` VALUES (38, '属性编辑器', '后台管理:数据计算:辅助工具:属性编辑器', 37, '', 'http://127.0.0.1:7808/flow/property', '_blank', 0, 1, '', 1585663056291, 1, 1585809944482, 1);
+INSERT INTO `fs_member_menu` VALUES (39, '字段编辑器', '后台管理:数据计算:辅助工具:字段编辑器', 37, '', 'http://127.0.0.1:7808/flow/field', '_blank', 0, 1, '', 1585663079511, 1, 1585810008042, 1);
 COMMIT;
 
 -- ----------------------------
