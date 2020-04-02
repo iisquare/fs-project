@@ -22,7 +22,7 @@ import java.util.*;
 @RequestMapping("/flink")
 @RestController
 @RefreshScope
-@Api(description = "流程图")
+@Api(description = "Flink作业")
 public class FlinkController {
 
     @Autowired
