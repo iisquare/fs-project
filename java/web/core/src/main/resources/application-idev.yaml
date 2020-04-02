@@ -12,9 +12,6 @@ rpc:
   flink:
     name: fs-flink-service
     rest: http://127.0.0.1:7803
-  quartz:
-    name: fs-quartz-service
-    rest: http://127.0.0.1:7804
   xlab:
     name: fs-xlab-service
     rest: http://127.0.0.1:7805
@@ -67,13 +64,6 @@ spring:
       test-on-borrow: false
       test-while-idle: true
       time-between-eviction-runs-millis: 18800
-    quartz:
-      url: jdbc:mysql://127.0.0.1:3306/quartz?characterEncoding=utf-8&useSSL=false
-      jdbc-url: jdbc:mysql://127.0.0.1:3306/quartz?characterEncoding=utf-8&useSSL=false
-      type: com.alibaba.druid.pool.DruidDataSource
-      username: root
-      password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
     member:
       table-prefix: fs_member_
       url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false

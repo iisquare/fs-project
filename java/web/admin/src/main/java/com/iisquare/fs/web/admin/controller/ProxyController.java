@@ -29,8 +29,6 @@ public class ProxyController {
     @Autowired
     private MemberRpc memberRpc;
     @Autowired
-    private QuartzRpc quartzRpc;
-    @Autowired
     private XlabRpc xlabRpc;
     @Autowired
     private SpiderRpc spiderRpc;
@@ -75,7 +73,6 @@ public class ProxyController {
             case "analyse": rpc = analyseRpc; break;
             case "flink": rpc = flinkRpc; break;
             case "member": rpc = memberRpc; break;
-            case "quartz": rpc = quartzRpc; break;
             case "xlab": rpc = xlabRpc; break;
             case "spider": rpc = spiderRpc; break;
             default: return ApiUtil.echoResult(4031, "应用不存在", null);

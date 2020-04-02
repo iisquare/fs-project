@@ -1,9 +1,0 @@
-server:
-  port: 7080
-
-custom:
-  date:
-    format: yyyy-MM-dd HH:mm:ss
-  flow:
-    plugins:
-      path: ./web/flink/plugins

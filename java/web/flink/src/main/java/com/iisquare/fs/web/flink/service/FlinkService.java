@@ -3,12 +3,10 @@ package com.iisquare.fs.web.flink.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.iisquare.fs.base.core.util.ApiUtil;
-import com.iisquare.fs.base.core.util.FileUtil;
+import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.HttpUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.base.web.util.ServiceUtil;
-import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.flink.dao.FlowDao;
 import com.iisquare.fs.web.flink.dao.FlowPluginDao;
 import com.iisquare.fs.web.flink.entity.Flow;
@@ -16,17 +14,13 @@ import com.iisquare.fs.web.flink.entity.FlowPlugin;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ResourceUtils;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
-import java.net.URL;
-import java.sql.*;
 import java.util.*;
 
 @Service
-public class FlowBackService extends ServiceBase {
+public class FlinkService extends ServiceBase {
 
     @Value("${fs.flink.kvConsulUrl}")
     private String kvConsulUrl;
@@ -174,117 +168,6 @@ public class FlowBackService extends ServiceBase {
         } catch (Exception exception3) {
         }
         return "";
-    }
-
-    public Map<String, Object> jdbc(Map<?, ?> param, Map<?, ?> config) {
-        ObjectNode node = DPUtil.objectNode();
-        node.put("kvConfigPrefix", DPUtil.trim(DPUtil.parseString(param.get("prefix"))));
-        node.put("driver", DPUtil.trim(DPUtil.parseString(param.get("driver"))));
-        node.put("url", DPUtil.trim(DPUtil.parseString(param.get("url"))));
-        node.put("username", DPUtil.trim(DPUtil.parseString(param.get("username"))));
-        node.put("password", DPUtil.trim(DPUtil.parseString(param.get("password"))));
-        node.put("sql", DPUtil.trim(DPUtil.parseString(param.get("sql"))));
-        ObjectNode jdbc = node.deepCopy();
-        JsonNode kvConfig = kvConfig();
-        kvReplace(kvConfig, jdbc);
-        try {
-            Class.forName(jdbc.get("driver").asText());
-        } catch (ClassNotFoundException e) {
-            return ApiUtil.result(1001, "驱动不存在", e.getMessage());
-        }
-        Connection connection;
-        try {
-            connection = DriverManager.getConnection(jdbc.get("url").asText(), jdbc.get("username").asText(), jdbc.get("password").asText());
-        } catch (SQLException e) {
-            return ApiUtil.result(1002, "获取连接失败", e.getMessage());
-        }
-        try {
-            Statement statement = connection.createStatement();
-            String sql = "select * from (" + jdbc.get("sql").asText() + ") t limit 1";
-            ResultSet rs = statement.executeQuery(sql);
-            ResultSetMetaData rsmd = rs.getMetaData();
-            int count = rsmd.getColumnCount();
-            ObjectNode result = DPUtil.objectNode();
-            ArrayNode property = result.putArray("property");
-            for (int i = 0; i < count; i++) {
-                ObjectNode item = DPUtil.objectNode();
-                item.put("field", rsmd.getColumnLabel(i + 1));
-                item.put("classname", rsmd.getColumnClassName(i + 1));
-                property.add(item);
-            }
-            String charset = DPUtil.trim(DPUtil.parseString(config.get("charset")));
-            if (!DPUtil.empty(charset)) {
-                ArrayNode content = result.putArray("content");
-                if (rs.next()) {
-                    for (int i = 0; i < rsmd.getColumnCount(); i++) {
-                        Map<String, Object> item = new LinkedHashMap<>();
-                        item.put("key", rsmd.getColumnName(i + 1));
-                        Object value = rs.getObject(rsmd.getColumnName(i + 1));
-                        item.put("value", value);
-                        if (null != value && value instanceof String) {
-                            String encoding = encoding(value.toString());
-                            item.put("encoding", encoding);
-                            if (!"".equals(encoding)) {
-                                try {
-                                    String target = new String(((String) value).getBytes(encoding), charset);
-                                    item.put("target", target);
-                                    item.put("charset", encoding(target));
-                                } catch (UnsupportedEncodingException e) {
-                                    item.put("error", e.getMessage());
-                                }
-                            }
-                        }
-                        content.add(DPUtil.convertJSON(item));
-                    }
-                }
-                rs.close();
-                return ApiUtil.result(0, null, result);
-            }
-            rs.close();
-            URL url = ResourceUtils.getURL("classpath:analysis-anchor.json");
-            ObjectNode content = (ObjectNode) DPUtil.parseJSON(FileUtil.getContent(url, false, "UTF-8"));
-            Iterator<JsonNode> elements = content.get("nodes").get("flowChartItem1").get("property").elements();
-            while (elements.hasNext()) {
-                ObjectNode item = (ObjectNode) elements.next();
-                switch (item.get("key").asText()) {
-                    case "returns":
-                        item.put("value", DPUtil.stringify(property));
-                        continue;
-                }
-            }
-            elements = content.get("nodes").get("flowChartItem2").get("property").elements();
-            while (elements.hasNext()) {
-                ObjectNode item = (ObjectNode) elements.next();
-                switch (item.get("key").asText()) {
-                    case "kvConfigPrefix":
-                        item.put("value", node.get("kvConfigPrefix").asText());
-                        continue;
-                    case "driver":
-                        item.put("value", node.get("driver").asText());
-                        continue;
-                    case "url":
-                        item.put("value", node.get("url").asText());
-                        continue;
-                    case "username":
-                        item.put("value", node.get("username").asText());
-                        continue;
-                    case "password":
-                        item.put("value", node.get("password").asText());
-                        continue;
-                    case "sql":
-                        item.put("value", node.get("sql").asText());
-                        continue;
-                }
-            }
-            result.replace("content", content);
-            return ApiUtil.result(0, null, result);
-        } catch (SQLException e) {
-            return ApiUtil.result(1003, "执行SQL失败", e.getMessage());
-        } catch (FileNotFoundException e) {
-            return ApiUtil.result(1004, "读取配置模板失败", e.getMessage());
-        } finally {
-            try {connection.close();} catch (SQLException e) {}
-        }
     }
 
 }

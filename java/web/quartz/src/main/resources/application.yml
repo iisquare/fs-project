@@ -1,5 +1,0 @@
-spring:
-  application:
-    name: fs-quartz-service
-  profiles:
-    active: dev, idev

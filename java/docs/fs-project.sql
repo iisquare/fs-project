@@ -11,7 +11,7 @@
  Target Server Version : 50729
  File Encoding         : 65001
 
- Date: 01/04/2020 16:04:23
+ Date: 02/04/2020 13:53:46
 */
 
 SET NAMES utf8mb4;
@@ -34,12 +34,13 @@ CREATE TABLE `fs_flink_flow` (
   `updated_uid` int(11) NOT NULL DEFAULT '0' COMMENT '修改者',
   `updated_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '修改时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='流程图信息';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COMMENT='流程图信息';
 
 -- ----------------------------
 -- Records of fs_flink_flow
 -- ----------------------------
 BEGIN;
+INSERT INTO `fs_flink_flow` VALUES (1, 'sample', 'batch', '', 0, 1, '', 1, 1585732945665, 1, 1585733007132);
 COMMIT;
 
 -- ----------------------------
@@ -183,10 +184,6 @@ INSERT INTO `fs_member_menu` VALUES (29, '流程管理', '后台管理:数据计
 INSERT INTO `fs_member_menu` VALUES (30, '流程列表', '后台管理:数据计算:流程管理:流程列表', 29, '', '/flink/flow/list', '', 0, 1, '', 1585661826570, 1, 1585661826570, 1);
 INSERT INTO `fs_member_menu` VALUES (31, '节点列表', '后台管理:数据计算:流程管理:节点列表', 29, '', '/flink/flowNode/list', '', 0, 1, '', 1585661841784, 1, 1585661841784, 1);
 INSERT INTO `fs_member_menu` VALUES (32, '树形节点', '后台管理:数据计算:流程管理:树形节点', 29, '', '/flink/flowNode/tree', '', 0, 1, '', 1585661854477, 1, 1585661854477, 1);
-INSERT INTO `fs_member_menu` VALUES (33, '模型管理', '后台管理:数据计算:模型管理', 26, 'code-sandbox', '/flink/analysis', '', 0, 1, '', 1585661952850, 1, 1585661952850, 1);
-INSERT INTO `fs_member_menu` VALUES (34, '模型列表', '后台管理:数据计算:模型管理:模型列表', 33, '', '/flink/analysis/list', '', 0, 1, '', 1585662032148, 1, 1585662090749, 1);
-INSERT INTO `fs_member_menu` VALUES (35, '数据源列表', '后台管理:数据计算:模型管理:数据源列表', 33, '', '/flink/analysisNode/list', '', 0, 1, '', 1585662078926, 1, 1585662078926, 1);
-INSERT INTO `fs_member_menu` VALUES (36, '树形数据源', '后台管理:数据计算:模型管理:树形数据源', 33, '', '/flink/analysisNode/tree', '', 0, 1, '', 1585662108588, 1, 1585662108588, 1);
 INSERT INTO `fs_member_menu` VALUES (37, '辅助工具', '后台管理:数据计算:辅助工具', 26, 'rocket', '/flink/tool', '', 0, 1, '', 1585662611501, 1, 1585662611501, 1);
 INSERT INTO `fs_member_menu` VALUES (38, '属性编辑器', '后台管理:数据计算:辅助工具:属性编辑器', 37, '', '/flink/tool/property', '', 0, 1, '', 1585663056291, 1, 1585663056291, 1);
 INSERT INTO `fs_member_menu` VALUES (39, '字段编辑器', '后台管理:数据计算:辅助工具:字段编辑器', 37, '', '/flink/tool/field', '', 0, 1, '', 1585663079511, 1, 1585710923845, 1);
@@ -396,10 +393,6 @@ INSERT INTO `fs_member_resource` VALUES (40, '流程', '数据计算:流程', 31
 INSERT INTO `fs_member_resource` VALUES (41, '添加', '数据计算:流程:添加', 40, 'flink', 'flow', 'add', 0, 1, '', 1585727916428, 1, 1585727941798, 1);
 INSERT INTO `fs_member_resource` VALUES (42, '修改', '数据计算:流程:修改', 40, 'flink', 'flow', 'modify', 0, 1, '', 1585727959930, 1, 1585727959930, 1);
 INSERT INTO `fs_member_resource` VALUES (43, '删除', '数据计算:流程:删除', 40, 'flink', 'flow', 'delete', 0, 1, '', 1585727972170, 1, 1585727972170, 1);
-INSERT INTO `fs_member_resource` VALUES (44, '数据源', '数据计算:数据源', 31, 'flink', 'analysisNode', '', 0, 1, '', 1585728026816, 1, 1585728026816, 1);
-INSERT INTO `fs_member_resource` VALUES (45, '添加', '数据计算:数据源:添加', 44, 'flink', 'analysisNode', 'add', 0, 1, '', 1585728044121, 1, 1585728044121, 1);
-INSERT INTO `fs_member_resource` VALUES (46, '修改', '数据计算:数据源:修改', 44, 'flink', 'analysisNode', 'modify', 0, 1, '', 1585728057637, 1, 1585728057637, 1);
-INSERT INTO `fs_member_resource` VALUES (47, '删除', '数据计算:数据源:删除', 44, 'flink', 'analysisNode', 'delete', 0, 1, '', 1585728068696, 1, 1585728068696, 1);
 COMMIT;
 
 -- ----------------------------
