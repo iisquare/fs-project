@@ -11,3 +11,4 @@
 /code/plugins/etl-core/lib
 .env
 /java/web/flink/plugins/*/
+python/.idea

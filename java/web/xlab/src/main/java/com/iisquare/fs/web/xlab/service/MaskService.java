@@ -301,12 +301,14 @@ public class MaskService extends ServiceBase {
             mask = mask(name.replaceFirst("position:", ""));
             if (null == mask) return null;
             mask = position(mask);
+        } else if (name.startsWith("file:")) {
+            mask = cvService.imdecode(name, Imgcodecs.IMREAD_UNCHANGED);
         } else {
             URL resource = getClass().getClassLoader().getResource("static/images/" + name);
             if (null == resource) return null;
             String logo = resource.getFile();
             if (OSUtil.getCurrentOS().equals(OSUtil.OSType.Windows)) logo = logo.substring(1);
-            mask = cvService.imdecode("file://" + logo, Imgcodecs.IMREAD_UNCHANGED);
+            mask = mask("file://" + logo);
         }
         maskMap.put(name, mask);
         return mask;

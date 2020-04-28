@@ -35,7 +35,7 @@ public class VideoTester {
     public WatermarkService watermarkService = new WatermarkService();
 
     public VideoTester() {
-        cvService.init("cloud-rest/xlab");
+        cvService.init(null);
         maskService.cvService = cvService;
     }
 
@@ -118,6 +118,16 @@ public class VideoTester {
             }
             capture.release();
         }
+    }
+
+    @Test
+    public void fullTest() {
+        String logo = "/Users/fqq/Documents/work/fs-project/static/resources/images/logo/logo_lingan.png";
+        String full = "/Users/fqq/Documents/work/did-mdn/facades/images/logo_lingan.png";
+        Mat mat = Mat.zeros(512, 512 * 10, CvType.CV_8UC4);
+        logo = "file://" + logo;
+        maskService.lingan(mat, logo, null);
+        Imgcodecs.imwrite(full, mat);
     }
 
     @Test
