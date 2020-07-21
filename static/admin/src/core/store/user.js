@@ -3,7 +3,7 @@ import rbacService from '@/service/admin/rbac'
 // initial state
 const state = {
   ready: null,
-  readyText: '载入中',
+  readyText: '载入中...',
   data: null,
   appIndex: {}
 }
@@ -35,7 +35,7 @@ const mutations = {
   },
   data (state, data) {
     if (data.info && !data.info.avatar) {
-      data.info.avatar = '/logo.png'
+      data.info.avatar = process.env.BASE_URL + 'logo.png'
     }
     for (const key in data.menu) {
       const value = data.menu[key]

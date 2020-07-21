@@ -82,9 +82,9 @@ public class ScheduleTester {
     @Test
     public void roadTest() throws Exception {
         System.setProperty("webdriver.chrome.driver", "D:\\openservices\\selenium\\chromedriver.exe");
-        XlabHelper.server = "http://127.0.0.1:8714";
+        XlabHelper.server = "http://127.0.0.1:7805";
         ObjectNode config = DPUtil.objectNode();
-        config.put("url", "https://callback.58.com/firewall/verifycode?serialId=5e177f888bc6f5f1617aba247d1e1710_b4b5ba0f4a3c4907a209bf15ddd3880a&code=22&sign=490c363aba0800827e5c011c01dc5c49&namespace=ershoufangphp&url=https%3A%2F%2Fbj.58.com%2Fershoufang%2F38593734305807x.shtml%3Ffrom%3D38-list-2%26iuType%3Dj_2");
+        config.put("url", "https://www.anjuke.com/captcha-verify/?callback=shield&from=antispam&namespace=anjuke_c_pc&serialID=b9d53a5e2c63ae33dd607a7f3c176404_86e197c9e569488cb694d65f0a319d0f&history=aHR0cHM6Ly94aW5jaGVuZGljaGFuMTEuYW5qdWtlLmNvbS9nb25nc2ktampyLTczNzY3OTAvP2Zyb209ZXNmX2xpc3Rfc2tmeWZkZ2w%3D");
         config.put("type", "road").put("site", "58");
         Assist assist = Assist.assist("verify", config);
         if (!assist.open()) {

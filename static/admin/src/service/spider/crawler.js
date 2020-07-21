@@ -54,6 +54,9 @@ const CrawlerService = {
   scheduleSubmit (param, tips = {}) {
     return this.post('/schedule/submit/', param, tips)
   },
+  scheduleExecute (param, tips = {}) {
+    return this.post('/schedule/execute/', param, tips)
+  },
   scheduleParser (param, tips = {}) {
     return this.post('/schedule/parser/', param, tips)
   },

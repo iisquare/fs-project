@@ -148,13 +148,10 @@ public class VerifyAssist extends Assist {
 
     private String road() throws InterruptedException {
         if (!"58".equals(site)) return "目标站点暂不支持";
-        WebElement btnSubmit;
         try {
-            btnSubmit = driver.findElement(By.id("btnSubmit"));
-        } catch (Exception e) {
-            return "未找到验证按钮" + e.getMessage();
-        }
-        btnSubmit.click();
+            WebElement btnSubmit = driver.findElement(By.id("btnSubmit"));
+            btnSubmit.click();
+        } catch (Exception e) {}
         Thread.sleep(500);
         WebElement canvas;
         try {

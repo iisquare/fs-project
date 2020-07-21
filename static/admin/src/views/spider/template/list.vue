@@ -37,14 +37,20 @@
           :bordered="true"
         >
           <span slot="action" slot-scope="text, record">
-            <a-dropdown>
+            <a-dropdown :disabled="!filters.state">
               <a-menu slot="overlay">
                 <a-menu-item><a-button type="link" size="small" @click="scheduleSubmit(text, record)">同步</a-button></a-menu-item>
-                <a-menu-item v-if="!record.history.scheduleId"><a-button type="link" size="small" @click="scheduleRun(text, record)">运行</a-button></a-menu-item>
+                <a-menu-item><a-button type="link" size="small" @click="scheduleRun(text, record)">运行</a-button></a-menu-item>
+                <a-menu-item v-if="record.history.scheduleId"><a-button type="link" size="small" @click="scheduleRemove(text, record)">删除</a-button></a-menu-item>
+              </a-menu>
+              <a-button type="link">作业</a-button>
+            </a-dropdown>
+            <a-dropdown :disabled="!filters.state || !record.history.scheduleId">
+              <a-menu slot="overlay">
                 <a-menu-item v-if="record.history.status === 'PAUSE'"><a-button type="link" size="small" @click="historyChange(text, record.history, 'start')">唤起</a-button></a-menu-item>
                 <a-menu-item v-if="record.history.status === 'RUNNING'"><a-button type="link" size="small" @click="historyChange(text, record.history, 'pause')">暂停</a-button></a-menu-item>
                 <a-menu-item v-if="record.history.status === 'PAUSE' || record.history.status === 'RUNNING'"><a-button type="link" size="small" @click="historyChange(text, record.history, 'stop')">停止</a-button></a-menu-item>
-                <a-menu-item v-if="record.history.scheduleId"><a-button type="link" size="small" @click="historyClear(text, record.history)">清空</a-button></a-menu-item>
+                <a-menu-item><a-button type="link" size="small" @click="historyClear(text, record.history)">清空</a-button></a-menu-item>
                 <a-menu-item v-if="record.history.status === 'STOP' || record.history.status === 'FINISHED'"><a-button type="link" size="small" @click="historyRemove(text, record.history)">移除</a-button></a-menu-item>
               </a-menu>
               <a-button type="link">调度</a-button>
@@ -121,7 +127,7 @@ export default {
         { title: '积压', dataIndex: 'history.channel' },
         { title: '触发时间', dataIndex: 'history.dispatch', customRender: this.dateRender },
         { title: '状态更新', dataIndex: 'history.version', customRender: this.dateRender },
-        { title: '操作', scopedSlots: { customRender: 'action' } }
+        { title: '操作', width: 213, scopedSlots: { customRender: 'action' } }
       ],
       selection: RouteUtil.selection(),
       pagination: {},
@@ -160,10 +166,15 @@ export default {
     },
     historyRemove (id, row) {
       this.loading = true
-      Promise.all([
-        crawlerService.scheduleRemove({ type: 'schedule', id: row.scheduleId }),
-        crawlerService.scheduleRemove({ type: 'history', id: row.scheduleId }, { success: true })
-      ]).then((result) => { this.search(false, true) })
+      crawlerService.scheduleRemove({ type: 'history', id: row.scheduleId }, { success: true }).then((result) => {
+        this.search(false, true)
+      })
+    },
+    scheduleRemove (id, row) {
+      this.loading = true
+      crawlerService.scheduleRemove({ type: 'schedule', id: row.scheduleId }, { success: true }).then((result) => {
+        this.search(false, true)
+      })
     },
     scheduleSubmit (id, row) {
       this.loading = true

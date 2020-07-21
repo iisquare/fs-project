@@ -1,6 +1,0 @@
-server:
-  port: 7805
-
-fs:
-  opencv:
-    libs: web/xlab

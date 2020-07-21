@@ -41,7 +41,7 @@ subprojects {
         hadoopVersion = '2.8.3'
         swaggerVersion = '2.9.2'
         tensorflowVersion = '1.15.0'
-        zookeeperVersion = '3.5.7'
+        zookeeperVersion = '3.4.10'
     }
 
     dependencies {

@@ -12,3 +12,6 @@
 .env
 /java/web/flink/plugins/*/
 python/.idea
+/java/web/admin/src/main/resources/static
+/java/web/xlab
+/java/web/admin/src/main/resources/templates/index/index.html

@@ -92,6 +92,10 @@ public class Worker implements Runnable {
             this.fallback(content, proxy, "RETRY_EXHAUST", exception);
             return;
         }
+        if (job.task.getUrl().startsWith("{")) {
+            tracer.info("retry", "Illegal url, ignored!", job, code, content, null, null, exception, null);
+            return;
+        }
         job.task.retry(job.scheduler);
         tracer.info("retry", null, job, code, content, null, null, exception, null);
         job.scheduler.schedule(job.task, false);

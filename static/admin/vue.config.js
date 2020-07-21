@@ -111,4 +111,12 @@ if (process.env.VUE_APP_PREVIEW === 'true') {
   vueConfig.configureWebpack.plugins.push(createThemeColorReplacerPlugin())
 }
 
+if (isProd) {
+  Object.assign(vueConfig, {
+    publicPath: process.env.BASE_URL,
+    outputDir: '../../java/web/admin/src/main/resources/static',
+    indexPath: '../templates/index/index.html'
+  })
+}
+
 module.exports = vueConfig

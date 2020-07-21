@@ -269,6 +269,7 @@ public class ScheduleService extends ServiceBase implements Closeable {
         if (null == history || !Arrays.asList(History.STATUS_PAUSE, History.STATUS_RUNNING).contains(history.getStatus())) {
             return ApiUtil.result(1003, "当前作业停止接收任务", history);
         }
+        if (null != parameters && parameters.isTextual()) parameters = DPUtil.parseJSON(parameters.asText());
         scheduler.schedule(schedule, templateKey, schedule.params(parameters), true);
         return ApiUtil.result(0, null, history);
     }
