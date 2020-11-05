@@ -1,4 +1,6 @@
-FROM elasticsearch:7.6.1
+ARG ELK_VERSION
+
+FROM elasticsearch:${ELK_VERSION}
 
 ENV discovery.type single-node
 

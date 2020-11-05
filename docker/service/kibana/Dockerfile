@@ -1,3 +1,5 @@
-FROM kibana:7.6.1
+ARG ELK_VERSION
+
+FROM kibana:${ELK_VERSION}
 
 EXPOSE 5601

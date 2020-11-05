@@ -1,4 +1,6 @@
-FROM zookeeper:3.5.7
+ARG ZOOKEEPER_VERSION
+
+FROM zookeeper:${ZOOKEEPER_VERSION}
 
 CMD ["zkServer.sh", "start-foreground"]
 

@@ -2,15 +2,71 @@ version: '3.1'
 
 services:
   zookeeper:
-    build: ./service/zookeeper
+    build:
+      context: ./service/zookeeper
+      args:
+        - ZOOKEEPER_VERSION=${ZOOKEEPER_VERSION}
     ports:
       - "${ZOOKEEPER_CLIENT_PORT}:2181"
   elasticsearch:
-    build: ./service/elasticsearch
+    build:
+      context: ./service/elasticsearch
+      args:
+        - ELK_VERSION=${ELK_VERSION}
     ports:
       - "${ELASTICSEARCH_HTTP_PORT}:9200"
       - "${ELASTICSEARCH_CLIENT_PORT}:9300"
   kibana:
-    build: ./service/kibana
+    build:
+      context: ./service/kibana
+      args:
+        - ELK_VERSION=${ELK_VERSION}
     ports:
       - "${KIBANA_HTTP_PORT}:5601"
+  kafka:
+    build:
+      context: ./service/kafka
+      args:
+        - SCALA_VERSION=${SCALA_VERSION}
+        - KAFKA_VERSION=${KAFKA_VERSION}
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:${ZOOKEEPER_CLIENT_PORT}
+    ports:
+      - "${KAFKA_LISTEN_PORT}:9092"
+  kafka-manager:
+    build:
+      context: ./service/kafka-manager
+      args:
+        - KAFKA_MANAGE_VERSION=${KAFKA_MANAGE_VERSION}
+    environment:
+      ZK_HOSTS: zookeeper:${ZOOKEEPER_CLIENT_PORT}
+    ports:
+      - "${KAFKA_MANAGER_PORT}:9000"
+  mysql:
+    build:
+      context: ./service/mysql
+      args:
+        - MYSQL_VERSION=${MYSQL_VERSION}
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:3306"
+  redis:
+    build:
+      context: ./service/redis
+      args:
+        - REDIS_VERSION=${REDIS_VERSION}
+    ports:
+      - "${REDIS_PORT}:6379"
+  rabbitmq:
+    build:
+      context: ./service/rabbitmq
+      args:
+        - RABBITMQ_VERSION=${RABBITMQ_VERSION}
+    environment:
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    ports:
+      - "${RABBITMQ_SERVER_PORT}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT}:15672"

@@ -1,0 +1,8 @@
+ARG SCALA_VERSION=2.11
+ARG KAFKA_VERSION=2.0.0
+
+FROM wurstmeister/kafka:${SCALA_VERSION}-${KAFKA_VERSION}
+
+CMD ["start-kafka.sh"]
+
+EXPOSE 9092
