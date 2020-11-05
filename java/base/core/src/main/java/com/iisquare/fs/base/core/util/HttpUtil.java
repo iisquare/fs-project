@@ -7,9 +7,30 @@ import java.net.URLEncoder;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class HttpUtil {
+
+    public static String cookie(String... cookies) {
+        Map<String, String> map = new LinkedHashMap<>();
+        for (String cookie : cookies) {
+            if (DPUtil.empty(cookie)) continue;
+            String[] items = DPUtil.explode(cookie, ";", " ", true);
+            for (String item : items) {
+                String[] kv = DPUtil.explode(item, "=", " ", true);
+                if (kv.length < 2) continue;
+                map.put(kv[0], DPUtil.implode("=", kv, 1, kv.length));
+            }
+        }
+        List<String> list = new ArrayList<>();
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            list.add(entry.getKey() + "=" + entry.getValue());
+        }
+        return DPUtil.implode("; ", list.toArray(new String[list.size()]), 0, list.size());
+    }
 
     public static String get(String url, Map<String, String> queryParas) {
         return get(url, queryParas, null);

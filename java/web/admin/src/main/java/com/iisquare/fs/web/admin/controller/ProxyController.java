@@ -33,6 +33,8 @@ public class ProxyController extends ControllerBase {
     private XlabRpc xlabRpc;
     @Autowired
     private SpiderRpc spiderRpc;
+    @Autowired
+    private FaceRpc faceRpc;
 
     @PostMapping("/login")
     public String loginAction(@RequestBody Map<String, Object> param, HttpServletResponse response) throws IOException {
@@ -76,6 +78,7 @@ public class ProxyController extends ControllerBase {
             case "member": rpc = memberRpc; break;
             case "xlab": rpc = xlabRpc; break;
             case "spider": rpc = spiderRpc; break;
+            case "face": rpc = faceRpc; break;
             default: return ApiUtil.echoResult(4031, "应用不存在", null);
         }
         String uri = DPUtil.parseString(param.get("uri"));

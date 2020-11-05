@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -358,16 +357,25 @@ public class DPUtil {
 
     public static String implode(String split, Object[] array) {
         if (null == array) return "";
+        return implode(split, array, 0, array.length);
+    }
+
+    public static String implode(String split, Object[] array, int start, int end) {
+        if (null == array) return "";
         int size = array.length;
         if (1 > size) return "";
+        size = Math.min(size, end);
+        start = Math.max(0, start);
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < size; i++) {
+        for (int i = start; i < size; i++) {
             Object value = array[i];
             if (null == value) continue;
             if (value instanceof Collection) {
-                sb.append(implode(split, collection2array(Object.class, (Collection<Object>) value)));
+                Object[] objects = collection2array(Object.class, (Collection<Object>) value);
+                sb.append(implode(split, objects, 0, objects.length));
             } else if (value instanceof Map) {
-                sb.append(implode(split, collection2array(Object.class, ((Map<Object, Object>) value).values())));
+                Object[] objects = collection2array(Object.class, ((Map<Object, Object>) value).values());
+                sb.append(implode(split, objects, 0, objects.length));
             } else {
                 sb.append(value);
             }
@@ -732,7 +740,7 @@ public class DPUtil {
         if (null == json) return null;
         try {
             return mapper.readTree(json);
-        } catch (IOException e) {
+        } catch (Exception e) {
             return null;
         }
     }

@@ -59,10 +59,10 @@ public class UserController extends PermitControllerBase {
             if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
             info = new User();
             String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
-            if(DPUtil.empty(serial)) return ApiUtil.echoResult(1002, "账号不能为空", name);
-            if(userService.existsBySerial(serial)) return ApiUtil.echoResult(2002, "账号已存在", name);
+            if(DPUtil.empty(serial)) return ApiUtil.echoResult(1002, "账号不能为空", serial);
+            if(userService.existsBySerial(serial)) return ApiUtil.echoResult(2002, "账号已存在", serial);
             info.setSerial(serial);
-            if(DPUtil.empty(password)) return ApiUtil.echoResult(1003, "密码不能为空", name);
+            if(DPUtil.empty(password)) return ApiUtil.echoResult(1003, "密码不能为空", password);
             info.setCreatedIp(ServletUtil.getRemoteAddr(request));
         }
         if(!DPUtil.empty(password)) {

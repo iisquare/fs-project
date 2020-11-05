@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
@@ -24,6 +25,14 @@ public interface CompositeDao extends org.springframework.data.jpa.repository.Jp
     @Modifying
     @Query(value = "update Composite set name=:after where name=:before")
     Integer modifyName(@Param("before") String before, @Param("after") String after);
+
+    /**
+     * 自定义删除语句
+     */
+    @Modifying
+    @Transactional
+    @Query("delete from Suggest where uid=:uid and timestamp<>:timestamp")
+    Integer deleteByUidAndTimestampNot(@Param("uid") Integer uid, @Param("timestamp") Long timestamp);
 
     /**
      * 自定义查询方法
