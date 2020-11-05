@@ -15,11 +15,11 @@ crawler:
     uri: "redis://127.0.0.1:6379/0"
     prefix: "crawler:"
   zookeeper:
-    host: 127.0.0.1:2181/crawler
+    host: node235:32181/crawler
     timeout: 2000
   tracer:
     type: elasticsearch
-    uri: "http://127.0.0.1:9200/crawler-trace-{date:yyyy-MM}/default"
+    uri: "http://10.208.0.66:9200/crawler-trace-{date:yyyy-MM}/default"
     level: trace
 
 webdriver:

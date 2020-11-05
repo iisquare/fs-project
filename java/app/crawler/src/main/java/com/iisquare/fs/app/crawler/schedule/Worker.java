@@ -50,10 +50,17 @@ public class Worker implements Runnable {
         fetcher.charset(job.template.getCharset());
         RequestConfig proxy = job.scheduler.getProxyFactory().config();
         if (null != proxy) fetcher.config(proxy);
-        fetcher.url(job.task.getUrl()).headers(job.template.getHeaders()).get();
+        Map<String, String> headers = job.token.headers(job.template.getHeaders());
+        fetcher.url(job.task.getUrl()).headers(headers).get();
         Exception lastException = fetcher.getLastException();
         int status = fetcher.getLastStatus();
         String content = fetcher.getLastResult();
+        if (job.schedule.isDealRequestHeader()) { // 记录请求Cookie信息，兼容302跳转
+            job.token.cookie(fetcher.getLastRequestHeaders());
+        }
+        if (job.schedule.isDealResponseHeader()) { // 记录响应Cookie信息
+            job.token.cookie(fetcher.getLastResponseHeaders());
+        }
         job.scheduler.returnFetcher(fetcher);
         tracer.debug("request", null, job, status, null, null, null, lastException, null);
         if (null != lastException) { // 请求异常

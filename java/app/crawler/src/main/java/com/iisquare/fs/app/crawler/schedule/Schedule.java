@@ -20,6 +20,8 @@ public class Schedule {
     private int maxPerNode; // 每个节点最大接收资源个数
     private long minHalt; // 最小停顿间隔
     private long maxHalt; // 最大停顿间隔
+    private boolean dealRequestHeader; // 是否处理请求头
+    private boolean dealResponseHeader; // 是否处理响应头
     private Map<String, Template> templates;
     private Map<Integer, List<Intercept>> intercepts;
     private String initTask;
@@ -35,6 +37,8 @@ public class Schedule {
         this.maxPerNode = schedule.at("/maxPerNode").asInt(0);
         this.minHalt = schedule.at("/minHalt").asLong(0);
         this.maxHalt = schedule.at("/maxHalt").asLong(0);
+        this.dealRequestHeader = schedule.at("/dealRequestHeader").asBoolean(false);
+        this.dealResponseHeader = schedule.at("/dealResponseHeader").asBoolean(false);
         this.templates = templates(schedule.at("/templates"));
         this.intercepts = intercepts(schedule.at("/intercepts"));
         this.initTask = schedule.at("/initTask").asText();

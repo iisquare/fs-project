@@ -148,51 +148,23 @@ public class RedisChannel implements Closeable, Runnable {
     }
 
     public long sizeToken(StatefulRedisConnection<String, String> connect) {
-        RedisFuture<Long> future = connect.async().zcard(keyToken());
-        Long result;
-        try {
-            result = timeout > 0 ? future.get(timeout, TimeUnit.MILLISECONDS) : future.get();
-        } catch (Exception e) {
-            logger.warn("failed to size token", e);
-            return -1;
-        }
-        return result;
+        Long result = connect.sync().zcard(keyToken());
+        return result == null ? -1 : result;
     }
 
     public long sizeTask(StatefulRedisConnection<String, String> connect, String scheduleId) {
-        RedisFuture<Long> future = connect.async().zcard(keyTask(scheduleId));
-        Long result;
-        try {
-            result = timeout > 0 ? future.get(timeout, TimeUnit.MILLISECONDS) : future.get();
-        } catch (Exception e) {
-            logger.warn("failed to size task", e);
-            return -1;
-        }
-        return result;
+        Long result = connect.sync().zcard(keyTask(scheduleId));
+        return result == null ? -1 : result;
     }
 
     private long clearToken(StatefulRedisConnection<String, String> connect) {
-        RedisFuture<Long> future = connect.async().del(keyToken());
-        Long result;
-        try {
-            result = timeout > 0 ? future.get(timeout, TimeUnit.MILLISECONDS) : future.get();
-        } catch (Exception e) {
-            logger.warn("failed to clear token", e);
-            return -1;
-        }
-        return result;
+        Long result = connect.sync().del(keyToken());
+        return result == null ? -1 : result;
     }
 
     private long clearTask(StatefulRedisConnection<String, String> connect, String scheduleId) {
-        RedisFuture<Long> future = connect.async().del(keyTask(scheduleId));
-        Long result;
-        try {
-            result = timeout > 0 ? future.get(timeout, TimeUnit.MILLISECONDS) : future.get();
-        } catch (Exception e) {
-            logger.warn("failed to clear task", e);
-            return -1;
-        }
-        return result;
+        Long result = connect.sync().del(keyTask(scheduleId));
+        return result == null ? -1 : result;
     }
 
     /**
@@ -200,15 +172,8 @@ public class RedisChannel implements Closeable, Runnable {
      */
     public JsonNode topToken(StatefulRedisConnection<String, String> connect) {
         String keyToken = keyToken();
-        RedisFuture<List<ScoredValue<String>>> future = connect.async().zrangeWithScores(keyToken, 0, 0);
-        List<ScoredValue<String>> list;
-        try {
-            list = timeout > 0 ? future.get(timeout, TimeUnit.MILLISECONDS) : future.get();
-        } catch (Exception e) {
-            logger.warn("failed to take token", e);
-            return null;
-        }
-        if (list.size() != 1) return null;
+        List<ScoredValue<String>> list = connect.sync().zrangeWithScores(keyToken, 0, 0);
+        if (null == list || list.size() != 1) return null;
         ScoredValue<String> item = list.get(0);
         ObjectNode result = DPUtil.objectNode();
         result.put("score", item.getScore());
@@ -221,7 +186,8 @@ public class RedisChannel implements Closeable, Runnable {
      */
     public Token takeToken(StatefulRedisConnection<String, String> connect) {
         String keyToken = keyToken();
-        RedisFuture<List<String>> future = connect.async().zrangebyscore(keyToken, Range.create(0, System.currentTimeMillis()), Limit.from(1));
+        RedisFuture<List<String>> future = connect.async().zrangebyscore(
+                keyToken, Range.create(0, System.currentTimeMillis()), Limit.from(1));
         List<String> list;
         try {
             list = timeout > 0 ? future.get(timeout, TimeUnit.MILLISECONDS) : future.get();
@@ -230,14 +196,8 @@ public class RedisChannel implements Closeable, Runnable {
             return null;
         }
         if (list.size() != 1) return null;
-        Long result;
-        try {
-            result = connect.async().zrem(keyToken, list.get(0)).get();
-        } catch (Exception e) {
-            logger.warn("failed to take task & remove confirm", e);
-            return null;
-        }
-        if (result != 1) return null;
+        Long result = connect.sync().zrem(keyToken, list.get(0));
+        if (null == result || result != 1) return null;
         return Token.decode(list.get(0));
     }
 
@@ -245,15 +205,8 @@ public class RedisChannel implements Closeable, Runnable {
      * 放置Token执行资质
      */
     private long putToken(StatefulRedisConnection<String, String> connect, Token token) {
-        RedisFuture<Long> future = connect.async().zadd(keyToken(), token.score(), Token.encode(token));
-        Long result;
-        try {
-            result = timeout > 0 ? future.get(timeout, TimeUnit.MILLISECONDS) : future.get();
-        } catch (Exception e) {
-            logger.warn("failed to put task", e);
-            return -1;
-        }
-        return result;
+        Long result = connect.sync().zadd(keyToken(), token.score(), Token.encode(token));
+        return null == result ? -1 : result;
     }
 
     /**
@@ -263,14 +216,9 @@ public class RedisChannel implements Closeable, Runnable {
         long time = System.currentTimeMillis();
         String keyConcurrent = keyConcurrent(group, time); // 限制并发数
         if (null == keyConcurrent) return true;
-        RedisFuture<Long> future = connect.async().incr(keyConcurrent);
-        Long result;
-        try {
-            result = timeout > 0 ? future.get(timeout, TimeUnit.MILLISECONDS) : future.get();
-        } catch (Exception e) {
-            logger.warn("failed to check concurrent", e);
-            return false;
-        }
+        Long result = connect.sync().incr(keyConcurrent);
+        if (null == result) return false;
+        connect.sync().pexpire(keyConcurrent, group.getInterval());
         if (result <= group.getConcurrent()) return true;
         long halt = (time / group.getInterval() + 1) * group.getInterval() - time; // 下一个并发解除点
         token.halt(halt);
@@ -282,15 +230,8 @@ public class RedisChannel implements Closeable, Runnable {
      */
     public JsonNode topTask(StatefulRedisConnection<String, String> connect, String scheduleId) {
         String keyTask = keyTask(scheduleId);
-        RedisFuture<List<ScoredValue<String>>> future = connect.async().zrangeWithScores(keyTask, 0, 0);
-        List<ScoredValue<String>> list;
-        try {
-            list = timeout > 0 ? future.get(timeout, TimeUnit.MILLISECONDS) : future.get();
-        } catch (Exception e) {
-            logger.warn("failed to take task", e);
-            return null;
-        }
-        if (list.size() != 1) return null;
+        List<ScoredValue<String>> list = connect.sync().zrangeWithScores(keyTask, 0, 0);
+        if (null == list || list.size() != 1) return null;
         ScoredValue<String> item = list.get(0);
         ObjectNode result = DPUtil.objectNode();
         result.put("score", item.getScore());
@@ -312,14 +253,8 @@ public class RedisChannel implements Closeable, Runnable {
             return null;
         }
         if (list.size() != 1) return null;
-        Long result;
-        try {
-            result = connect.async().zrem(keyTask, list.get(0)).get();
-        } catch (Exception e) {
-            logger.warn("failed to take task & remove confirm", e);
-            return null;
-        }
-        if (result != 1) return null;
+        Long result = connect.sync().zrem(keyTask, list.get(0));
+        if (null == result || result != 1) return null;
         return Task.decode(list.get(0));
     }
 
@@ -327,15 +262,8 @@ public class RedisChannel implements Closeable, Runnable {
      * 载入任务
      */
     private long putTask(StatefulRedisConnection<String, String> connect, Task task) {
-        RedisFuture<Long> future = connect.async().zadd(keyTask(task.getScheduleId()), task.score(), Task.encode(task));
-        Long result;
-        try {
-            result = timeout > 0 ? future.get(timeout, TimeUnit.MILLISECONDS) : future.get();
-        } catch (Exception e) {
-            logger.warn("failed to put task", e);
-            return -1;
-        }
-        return result;
+        Long result = connect.sync().zadd(keyTask(task.getScheduleId()), task.score(), Task.encode(task));
+        return null == result ? -1 : result;
     }
 
     @Override

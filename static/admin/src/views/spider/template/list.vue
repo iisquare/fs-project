@@ -20,9 +20,9 @@
               </a-form-model-item>
             </a-col>
             <a-col :md="8" :sm="24">
-              <a-button type="primary" @click="connect">{{ filters.state ? '断开' : '连接' }}</a-button>
-              <a-button type="primary" style="margin-left: 8px" @click="search(true, false)" :loading="loading">查询</a-button>
+              <a-button type="primary" @click="search(true, false)" :loading="loading">查询</a-button>
               <a-button style="margin-left: 8px" @click="() => this.$refs.filters.resetFields()">重置</a-button>
+              <a-button type="primary" style="margin-left: 8px" @click="connect">{{ filters.state ? '断开' : '连接' }}</a-button>
             </a-col>
           </a-row>
         </a-form-model>
@@ -110,6 +110,7 @@
 </template>
 
 <script>
+import DateUtil from '@/utils/date'
 import RouteUtil from '@/utils/route'
 import crawlerService from '@/service/spider/crawler'
 import templateService from '@/service/spider/template'
@@ -151,6 +152,9 @@ export default {
         this.crawlerURL = crawlerService.saveURL(this.crawlerURL)
       }
       this.search(true, true)
+    },
+    dateRender (text, record, index) {
+      return DateUtil.format(text)
     },
     historyClear (id, row) {
       this.loading = true

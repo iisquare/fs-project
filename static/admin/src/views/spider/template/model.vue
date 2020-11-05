@@ -48,6 +48,14 @@
         </a-row>
         <a-row class="form-row" :gutter="16">
           <a-col :md="24" :sm="24">
+            <a-form-model-item label="选项" :label-col="{ span: 2 }" :wrapper-col="{ span: 22 }">
+              <a-checkbox v-model="schedule.dealRequestHeader">处理请求头</a-checkbox>
+              <a-checkbox v-model="schedule.dealResponseHeader">处理响应头</a-checkbox>
+            </a-form-model-item>
+          </a-col>
+        </a-row>
+        <a-row class="form-row" :gutter="16">
+          <a-col :md="24" :sm="24">
             <a-form-model-item label="描述" :label-col="{ span: 2 }" :wrapper-col="{ span: 22 }">
               <a-textarea v-model="schedule.description"></a-textarea>
             </a-form-model-item>
@@ -96,7 +104,7 @@
                 </a-col>
                 <a-col :md="8" :sm="24">
                   <a-form-model-item label="优先级">
-                    <a-tooltip title="设置间隔后无效"><a-input-number v-model="record.priority" :min="0"></a-input-number></a-tooltip>
+                    <a-tooltip title="数小优先，设置间隔后无效"><a-input-number v-model="record.priority" :min="0"></a-input-number></a-tooltip>
                   </a-form-model-item>
                 </a-col>
               </a-row>
@@ -279,6 +287,8 @@ export default {
         maxPerNode: 0,
         minHalt: 0,
         maxHalt: 0,
+        dealRequestHeader: false,
+        dealResponseHeader: false,
         description: '',
         templates: [],
         intercepts: [],
@@ -371,6 +381,8 @@ export default {
             maxPerNode: data.maxPerNode,
             minHalt: data.minHalt,
             maxHalt: data.maxHalt,
+            dealRequestHeader: data.dealRequestHeader,
+            dealResponseHeader: data.dealResponseHeader,
             templates: data.templates,
             intercepts: data.intercepts,
             initTask: data.initTask,
@@ -399,6 +411,8 @@ export default {
           maxPerNode: this.schedule.maxPerNode,
           minHalt: this.schedule.minHalt,
           maxHalt: this.schedule.maxHalt,
+          dealRequestHeader: this.schedule.dealRequestHeader,
+          dealResponseHeader: this.schedule.dealResponseHeader,
           templates: this.schedule.templates,
           intercepts: this.schedule.intercepts,
           initTask: this.schedule.initTask,

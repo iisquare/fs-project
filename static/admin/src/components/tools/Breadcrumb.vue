@@ -5,6 +5,7 @@
         v-if="item.name != name && index != 1"
         :to="{ path: item.path === '' ? '/' : item.path }"
       >{{ item.meta.title }}</router-link>
+      <router-link v-else-if="item.meta.to" :to="item.meta.to">{{ item.meta.title }}</router-link>
       <span v-else>{{ item.meta.title }}</span>
     </a-breadcrumb-item>
   </a-breadcrumb>

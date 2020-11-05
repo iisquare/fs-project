@@ -50,7 +50,9 @@ import {
   notification,
   BackTop,
   Pagination,
-  Collapse
+  Collapse,
+  Empty,
+  Space
 } from 'ant-design-vue'
 // import VueCropper from 'vue-cropper'
 import SDatePicker from '@/components/DatePicker'
@@ -99,6 +101,8 @@ Vue.use(BackTop)
 Vue.use(Pagination)
 Vue.use(SDatePicker)
 Vue.use(Collapse)
+Vue.use(Empty)
+Vue.use(Space)
 
 Vue.prototype.$confirm = Modal.confirm
 Vue.prototype.$message = message

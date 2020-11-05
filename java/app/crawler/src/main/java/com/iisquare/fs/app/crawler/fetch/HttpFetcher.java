@@ -3,6 +3,7 @@ package com.iisquare.fs.app.crawler.fetch;
 import com.iisquare.fs.base.core.util.DPUtil;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.ProtocolException;
 import org.apache.http.client.RedirectStrategy;
@@ -36,6 +37,8 @@ public class HttpFetcher implements Closeable {
     private String lastResult;
     private String charset = DEFAULT_CHARSET;
     private Exception lastException;
+    private Header[] lastRequestHeaders;
+    private Header[] lastResponseHeaders;
     private RequestConfig config;
     private RequestConfig defaultConfig;
 
@@ -59,9 +62,7 @@ public class HttpFetcher implements Closeable {
     }
 
     public void reset() {
-        this.lastResult = null;
-        this.lastStatus = DEFAULT_STATUS;
-        this.lastException = null;
+        this.clear();
         this.url = null;
         this.headers = null;
         this.charset = DEFAULT_CHARSET;
@@ -69,8 +70,11 @@ public class HttpFetcher implements Closeable {
     }
 
     public HttpFetcher clear() {
+        this.lastResult = null;
         this.lastStatus = DEFAULT_STATUS;
         this.lastException = null;
+        this.lastRequestHeaders = null;
+        this.lastResponseHeaders = null;
         return this;
     }
 
@@ -118,6 +122,8 @@ public class HttpFetcher implements Closeable {
             return this;
         }
         this.lastStatus = response.getStatusLine().getStatusCode();
+        this.lastRequestHeaders = hg.getAllHeaders();
+        this.lastResponseHeaders = response.getAllHeaders();
         if (200 == this.lastStatus) {
             HttpEntity entity = response.getEntity();
             try {
