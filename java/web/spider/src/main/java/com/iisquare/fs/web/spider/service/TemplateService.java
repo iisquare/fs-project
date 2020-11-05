@@ -56,6 +56,8 @@ public class TemplateService extends ServiceBase {
         result.replace("maxPerNode", content.get("maxPerNode"));
         result.replace("minHalt", content.get("minHalt"));
         result.replace("maxHalt", content.get("maxHalt"));
+        result.replace("dealRequestHeader", content.get("dealRequestHeader"));
+        result.replace("dealResponseHeader", content.get("dealResponseHeader"));
         ObjectNode templates = result.putObject("templates");
         Iterator<JsonNode> iterator = content.get("templates").elements();
         while (iterator.hasNext()) {
