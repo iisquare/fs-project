@@ -87,7 +87,7 @@ public class FlinkService extends ServiceBase {
                 String kvConfigName = entry.getValue().asText();
                 if(!kvConfigName.startsWith("kvConfig:")) continue;
                 kvConfigName = kvConfigPrefix + "." + kvConfigName.replaceFirst("kvConfig:", "");
-                node.put(entry.getKey(), getSafeString(kvConfig, DPUtil.explode(kvConfigName, "\\.", " ", true)));
+                node.put(entry.getKey(), getSafeString(kvConfig, DPUtil.explode(kvConfigName, "\\.")));
             }
         }
     }

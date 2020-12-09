@@ -36,5 +36,9 @@ public class Composite implements Serializable {
     private Integer bid; // 主键
     @Column
     private String name; // 名称
+    @Column
+    private Long createdTime; // 创建时间
+    @Column
+    private Long updatedTime; // 更新时间
 
 }

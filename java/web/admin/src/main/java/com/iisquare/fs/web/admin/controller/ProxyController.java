@@ -35,6 +35,8 @@ public class ProxyController extends ControllerBase {
     private SpiderRpc spiderRpc;
     @Autowired
     private FaceRpc faceRpc;
+    @Autowired
+    private LuceneRpc luceneRpc;
 
     @PostMapping("/login")
     public String loginAction(@RequestBody Map<String, Object> param, HttpServletResponse response) throws IOException {
@@ -65,6 +67,7 @@ public class ProxyController extends ControllerBase {
         RpcBase rpc;
         switch (app) {
             case "flink": rpc = flinkRpc; break;
+            case "lucene": rpc = luceneRpc; break;
             default: return ApiUtil.echoResult(4031, "应用不存在", null);
         }
         return rpc.upload(uri, file);
@@ -79,6 +82,7 @@ public class ProxyController extends ControllerBase {
             case "xlab": rpc = xlabRpc; break;
             case "spider": rpc = spiderRpc; break;
             case "face": rpc = faceRpc; break;
+            case "lucene": rpc = luceneRpc; break;
             default: return ApiUtil.echoResult(4031, "应用不存在", null);
         }
         String uri = DPUtil.parseString(param.get("uri"));

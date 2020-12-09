@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.member.controller;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
@@ -38,7 +39,8 @@ public class UserController extends PermitControllerBase {
     @RequestMapping("/list")
     @Permission("")
     public String listAction(@RequestBody Map<?, ?> param) {
-        Map<?, ?> result = userService.search(param, DPUtil.buildMap("withUserInfo", true, "withStatusText", true, "withRoles", true));
+        ObjectNode result = userService.search(param,
+                DPUtil.buildMap("withUserInfo", true, "withStatusText", true, "withRoles", true));
         return ApiUtil.echoResult(0, null, result);
     }
 
@@ -73,7 +75,9 @@ public class UserController extends PermitControllerBase {
         }
         int sort = DPUtil.parseInt(param.get("sort"));
         int status = DPUtil.parseInt(param.get("status"));
-        if(!userService.status("default").containsKey(status)) return ApiUtil.echoResult(1002, "状态异常", status);
+        if(!userService.status("default").containsKey(status)) {
+            return ApiUtil.echoResult(1002, "状态异常", status);
+        }
         String description = DPUtil.parseString(param.get("description"));
         info.setName(name);
         info.setSort(sort);

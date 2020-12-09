@@ -3,6 +3,8 @@ package com.iisquare.fs.web.demo.dao;
 import com.iisquare.fs.web.demo.entity.Composite;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,7 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collection;
 import java.util.List;
 
-public interface CompositeDao extends org.springframework.data.jpa.repository.JpaRepository<Composite, Composite.IdClass>, org.springframework.data.jpa.repository.JpaSpecificationExecutor<Composite> {
+/**
+ * @see(https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
+ */
+public interface CompositeDao extends JpaRepository<Composite, Composite.IdClass>, JpaSpecificationExecutor<Composite> {
 
     /**
      * 自定义修改方法
@@ -51,5 +56,23 @@ public interface CompositeDao extends org.springframework.data.jpa.repository.Jp
     @Query(value = "select aid, bid, name from Composite where name = :name",
             countQuery = "select count(aid) from Composite where name = :name")
     Page<Object[]> findListByName(@Param("name") String name, Pageable pageable);
+
+    @Query("select t from Composite t where t.name = :name")
+    Composite findByName(@Param("name") String name);
+
+    @Query("from Composite where name <> :name")
+    Composite findByNameNot(@Param("name") String name);
+
+    @Query("from Composite where name in(:name)")
+    List<Composite> findAllByNameIn(@Param("name") Collection<String> name);
+
+    /**
+     * Upsert更新插入
+     */
+    @Modifying
+    @Query(value = "INSERT INTO t_composite (aid, bid, created_time, updated_time)" +
+            " VALUES (:#{#i.aid}, :#{#i.bid}, :#{#i.createdTime}, :#{#i.updatedTime})" +
+            " ON DUPLICATE KEY UPDATE updated_time=VALUES(updated_time)", nativeQuery = true)
+    Integer record(@Param("i") Composite i);
 
 }

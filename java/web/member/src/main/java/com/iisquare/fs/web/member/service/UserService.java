@@ -1,9 +1,11 @@
 package com.iisquare.fs.web.member.service;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.CodeUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ReflectUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
+import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.base.web.util.ServiceUtil;
@@ -21,10 +23,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
 import java.util.*;
 
 @Service
@@ -100,85 +98,23 @@ public class UserService extends ServiceBase {
         return list;
     }
 
-    public Map<?, ?> search(Map<?, ?> param, Map<?, ?> args) {
-        Map<String, Object> result = new LinkedHashMap<>();
+    public ObjectNode search(Map<?, ?> param, Map<?, ?> args) {
         int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "sort"));
         if (null == sort) sort = Sort.by(Sort.Order.desc("sort"));
-        Page<User> data = userDao.findAll(new Specification() {
-            @Override
-            public Predicate toPredicate(Root root, CriteriaQuery query, CriteriaBuilder cb) {
-                List<Predicate> predicates = new ArrayList<>();
-                int id = DPUtil.parseInt(param.get("id"));
-                if(id > 0) predicates.add(cb.equal(root.get("id"), id));
-                int status = DPUtil.parseInt(param.get("status"));
-                if(!"".equals(DPUtil.parseString(param.get("status")))) {
-                    predicates.add(cb.equal(root.get("status"), status));
-                }
-                String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-                if(!DPUtil.empty(name)) {
-                    predicates.add(cb.like(root.get("name"), "%" + name + "%"));
-                }
-                String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
-                if(!DPUtil.empty(serial)) {
-                    predicates.add(cb.equal(root.get("serial"), serial));
-                }
-                String createdIp = DPUtil.trim(DPUtil.parseString(param.get("createdIp")));
-                if(!DPUtil.empty(createdIp)) {
-                    predicates.add(cb.equal(root.get("createdIp"), createdIp));
-                }
-                String createdTimeStart = DPUtil.trim(DPUtil.parseString(param.get("createdTimeStart")));
-                if(!DPUtil.empty(createdTimeStart)) {
-                    predicates.add(cb.ge(root.get("createdTime"),
-                            DPUtil.dateTimeToMillis(createdTimeStart, configuration.getFormatDate())));
-                }
-                String createdTimeEnd = DPUtil.trim(DPUtil.parseString(param.get("createdTimeEnd")));
-                if(!DPUtil.empty(createdTimeEnd)) {
-                    predicates.add(cb.le(root.get("createdTime"),
-                            DPUtil.dateTimeToMillis(createdTimeEnd, configuration.getFormatDate()) + 999));
-                }
-                String updatedTimeStart = DPUtil.trim(DPUtil.parseString(param.get("updatedTimeStart")));
-                if(!DPUtil.empty(updatedTimeStart)) {
-                    predicates.add(cb.ge(root.get("updatedTime"),
-                            DPUtil.dateTimeToMillis(updatedTimeStart, configuration.getFormatDate())));
-                }
-                String updatedTimeEnd = DPUtil.trim(DPUtil.parseString(param.get("updatedTimeEnd")));
-                if(!DPUtil.empty(updatedTimeEnd)) {
-                    predicates.add(cb.le(root.get("updatedTime"),
-                            DPUtil.dateTimeToMillis(updatedTimeEnd, configuration.getFormatDate()) + 999));
-                }
-                String loginedIp = DPUtil.trim(DPUtil.parseString(param.get("loginedIp")));
-                if(!DPUtil.empty(loginedIp)) {
-                    predicates.add(cb.equal(root.get("loginedIp"), loginedIp));
-                }
-                String loginedTimeStart = DPUtil.trim(DPUtil.parseString(param.get("loginedTimeStart")));
-                if(!DPUtil.empty(loginedTimeStart)) {
-                    predicates.add(cb.ge(root.get("loginedTime"),
-                            DPUtil.dateTimeToMillis(loginedTimeStart, configuration.getFormatDate())));
-                }
-                String loginedTimeEnd = DPUtil.trim(DPUtil.parseString(param.get("loginedTimeEnd")));
-                if(!DPUtil.empty(loginedTimeEnd)) {
-                    predicates.add(cb.le(root.get("loginedTime"),
-                            DPUtil.dateTimeToMillis(loginedTimeEnd, configuration.getFormatDate()) + 999));
-                }
-                String lockedTimeStart = DPUtil.trim(DPUtil.parseString(param.get("lockedTimeStart")));
-                if(!DPUtil.empty(lockedTimeStart)) {
-                    predicates.add(cb.ge(root.get("lockedTime"),
-                            DPUtil.dateTimeToMillis(lockedTimeStart, configuration.getFormatDate())));
-                }
-                String lockedTimeEnd = DPUtil.trim(DPUtil.parseString(param.get("lockedTimeEnd")));
-                if(!DPUtil.empty(lockedTimeEnd)) {
-                    predicates.add(cb.le(root.get("lockedTime"),
-                            DPUtil.dateTimeToMillis(lockedTimeEnd, configuration.getFormatDate()) + 999));
-                }
-                List<Integer> roleIds = (List<Integer>) param.get("roleIds");
-                if(!DPUtil.empty(roleIds)) {
-                    predicates.add(root.get("id").in(ServiceUtil.getPropertyValues(
-                        relationDao.findAllByTypeAndBidIn("user_role", roleIds), Integer.class, "aid")));
-                }
-                return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+        Page<User> data = userDao.findAll((Specification<User>) (root, query, cb) -> {
+            SpecificationHelper helper = SpecificationHelper.newInstance(root, cb, param);
+            helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id");
+            helper.equalWithIntNotEmpty("status").like("name").equal("serial").equal("createdIp");
+            helper.betweenWithDate("createdTime").betweenWithDate("updatedTime").equal("loginedIp");
+            helper.betweenWithDate("loginedTime").betweenWithDate("lockedTime");
+            List<Integer> roleIds = helper.listInteger("roleIds");
+            if(null != roleIds && roleIds.size() > 0) {
+                helper.add(root.get("id").in(ServiceUtil.getPropertyValues(
+                    relationDao.findAllByTypeAndBidIn("user_role", roleIds), Integer.class, "aid")));
             }
+            return cb.and(helper.predicates());
         }, PageRequest.of(page - 1, pageSize, sort));
         List<?> rows = this.filter(data.getContent());
         if(!DPUtil.empty(args.get("withUserInfo"))) {
@@ -206,10 +142,8 @@ public class UserService extends ServiceBase {
                 roles.add(role);
             }
         }
-        result.put("page", page);
-        result.put("pageSize", pageSize);
-        result.put("total", data.getTotalElements());
-        result.put("rows", rows);
+        ObjectNode result = DPUtil.objectNode().put("page", page).put("pageSize", pageSize);
+        result.put("total", data.getTotalElements()).putPOJO("rows", rows);
         return result;
     }
 

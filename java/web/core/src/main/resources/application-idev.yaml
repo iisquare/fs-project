@@ -24,6 +24,9 @@ rpc:
   face:
     name: fs-face-service
     rest: http://127.0.0.1:7809
+  lucene:
+    name: fs-lucene-service
+    rest: http://127.0.0.1:7810
 
 feign:
   hystrix:
@@ -40,6 +43,9 @@ feign:
         connectTimeout: 1000
         readTimeout: 60000
       fs-face-service:
+        connectTimeout: 1000
+        readTimeout: 60000
+      fs-lucene-service:
         connectTimeout: 1000
         readTimeout: 60000
 
@@ -61,6 +67,14 @@ spring:
     mode: HTML
     suffix: .html
     cache: false
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 500
+          batch_versioned_data: true
+        order_inserts: true
+        order_updates: true
   datasource:
     primary:
       url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
@@ -127,6 +141,22 @@ spring:
       time-between-eviction-runs-millis: 18800
     face:
       table-prefix: fs_face_
+      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
+      type: com.alibaba.druid.pool.DruidDataSource
+      username: root
+      password: admin888
+      driver-class-name: com.mysql.jdbc.Driver
+      max-idle: 10
+      max-wait: 10000
+      min-idle: 5
+      initial-size: 5
+      validation-query: SELECT 1
+      test-on-borrow: false
+      test-while-idle: true
+      time-between-eviction-runs-millis: 18800
+    lucene:
+      table-prefix: fs_lucene_
       url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
       jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
       type: com.alibaba.druid.pool.DruidDataSource
