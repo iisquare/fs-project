@@ -355,6 +355,14 @@ public class DPUtil {
         return collection2array(String.class, list);
     }
 
+    public static String[] explode(String string, String splitRegex) {
+        return explode(string, splitRegex, " ", true);
+    }
+
+    public static String[] explode(String string) {
+        return explode(string, ",", " ", true);
+    }
+
     public static String implode(String split, Object[] array) {
         if (null == array) return "";
         return implode(split, array, 0, array.length);
@@ -733,6 +741,15 @@ public class DPUtil {
         return mapper.createArrayNode();
     }
 
+    public static ArrayNode arrayNode(ObjectNode nodes) {
+        ArrayNode array = arrayNode();
+        Iterator<JsonNode> iterator = nodes.elements();
+        while (iterator.hasNext()) {
+            array.add(iterator.next());
+        }
+        return array;
+    }
+
     /**
      * 解析JSON字符串
      */
@@ -745,10 +762,13 @@ public class DPUtil {
         }
     }
 
-    public static <T> T convertJSON(JsonNode json, Class<T> classType) {
-        return mapper.convertValue(json, classType);
+    public static <T> T convertJSON(Object obj, Class<T> classType) {
+        return mapper.convertValue(obj, classType);
     }
 
+    /**
+     * 默认为JsonNode以兼容数组和对象
+     */
     public static JsonNode convertJSON(Object obj) {
         return mapper.convertValue(obj, JsonNode.class);
     }

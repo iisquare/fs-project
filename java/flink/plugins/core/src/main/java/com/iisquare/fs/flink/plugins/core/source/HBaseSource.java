@@ -40,9 +40,9 @@ public class HBaseSource extends RichSourceFunction<Map<String, Object>> {
         Table table = table(tableName);
         if(null == table) return;
         List<List<String>> list = new ArrayList<>();
-        String[] familyArray = DPUtil.explode(fields, ",", " ", true);
+        String[] familyArray = DPUtil.explode(fields, ",");
         for (String familyItem : familyArray) {
-            String[] qualifierArray = DPUtil.explode(familyItem, ":", " ", true);
+            String[] qualifierArray = DPUtil.explode(familyItem, ":");
             if(qualifierArray.length > 1) {
                 list.add(Arrays.asList(qualifierArray[0], qualifierArray[1]));
             } else {

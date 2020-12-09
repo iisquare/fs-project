@@ -14,21 +14,21 @@
             <a-form-model-item label="关键词">
               <a-input v-model="form.inputKeyword" placeholder="关键词" />
             </a-form-model-item>
-            <a-form-model-item label="提取分析">
+            <a-form-model-item label="提取分词">
               <a-checkbox v-model="form.useSynonym">同义词</a-checkbox>
-              <a-checkbox v-model="form.useSmart">细粒度分词</a-checkbox>
+              <a-checkbox v-model="form.useSmart">智能分词</a-checkbox>
               <a-checkbox v-model="form.useArabic">合并数值</a-checkbox>
               <a-checkbox v-model="form.useEnglish">合并字母</a-checkbox>
             </a-form-model-item>
             <a-form-model-item label="Query查询">
               <a-checkbox v-model="form.useSynonymQuery">同义词</a-checkbox>
-              <a-checkbox v-model="form.useSmartQuery">细粒度分词</a-checkbox>
+              <a-checkbox v-model="form.useSmartQuery">智能分词</a-checkbox>
               <a-checkbox v-model="form.useArabicQuery">合并数值</a-checkbox>
               <a-checkbox v-model="form.useEnglishQuery">合并字母</a-checkbox>
             </a-form-model-item>
             <a-form-model-item label="Index索引">
               <a-checkbox v-model="form.useSynonymIndex">同义词</a-checkbox>
-              <a-checkbox v-model="form.useSmartIndex">细粒度分词</a-checkbox>
+              <a-checkbox v-model="form.useSmartIndex">智能分词</a-checkbox>
               <a-checkbox v-model="form.useArabicIndex">合并数值</a-checkbox>
               <a-checkbox v-model="form.useEnglishIndex">合并字母</a-checkbox>
             </a-form-model-item>
@@ -72,12 +72,13 @@ export default {
       },
       formLoading: false,
       form: {
+        useSmart: true,
         useArabic: true,
         useEnglish: true,
         useSynonymQuery: true,
+        useSmartQuery: true,
         useArabicQuery: true,
         useEnglishQuery: true,
-        useSmartIndex: true,
         useArabicIndex: true,
         useEnglishIndex: true,
         parserOperator: 'or',

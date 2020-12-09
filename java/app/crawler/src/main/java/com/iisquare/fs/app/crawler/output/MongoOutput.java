@@ -38,10 +38,10 @@ public class MongoOutput extends Output {
         collection = parameters.get("collection").asText();
         unique = parameters.get("unique").asText();
         credential = MongoCredential.createCredential(username, auth, password.toCharArray());
-        String[] servers = DPUtil.explode(server, ",", " ", true);
+        String[] servers = DPUtil.explode(server, ",");
         addresses = new ArrayList<>();
         for (String item : servers) {
-            String[] host = DPUtil.explode(item, ":", " ", true);
+            String[] host = DPUtil.explode(item, ":");
             int port = host.length > 1 ? DPUtil.parseInt(host[1]) : 27017;
             addresses.add(new ServerAddress(host[0], port));
         }

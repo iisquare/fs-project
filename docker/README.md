@@ -32,3 +32,8 @@ docker-compose down
 ```bash
 docker exec -it {container-id} /bin/bash
 ```
+- Start Policy
+```
+docker run --restart=always
+docker update --restart=always <CONTAINER ID>
+```

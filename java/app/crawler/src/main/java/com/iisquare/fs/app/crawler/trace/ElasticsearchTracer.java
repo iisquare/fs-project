@@ -20,7 +20,7 @@ public class ElasticsearchTracer extends Tracer {
         this.node = node;
         List<String> list = DPUtil.getMatcher("\\{.*?\\}", uri, true);
         for (String item : list) {
-            String[] explode = DPUtil.explode(item.substring(1, item.length() - 1), ":", " ", true);
+            String[] explode = DPUtil.explode(item.substring(1, item.length() - 1), ":");
             if (explode.length == 1) continue;
             switch (explode[0]) {
                 case "date":

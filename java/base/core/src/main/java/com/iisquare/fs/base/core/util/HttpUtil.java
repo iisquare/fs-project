@@ -14,13 +14,15 @@ import java.util.Map;
 
 public class HttpUtil {
 
+    private static final String DEFAULT_CHARSET = "UTF-8";
+
     public static String cookie(String... cookies) {
         Map<String, String> map = new LinkedHashMap<>();
         for (String cookie : cookies) {
             if (DPUtil.empty(cookie)) continue;
-            String[] items = DPUtil.explode(cookie, ";", " ", true);
+            String[] items = DPUtil.explode(cookie, ";");
             for (String item : items) {
-                String[] kv = DPUtil.explode(item, "=", " ", true);
+                String[] kv = DPUtil.explode(item, "=");
                 if (kv.length < 2) continue;
                 map.put(kv[0], DPUtil.implode("=", kv, 1, kv.length));
             }
@@ -32,15 +34,27 @@ public class HttpUtil {
         return DPUtil.implode("; ", list.toArray(new String[list.size()]), 0, list.size());
     }
 
+    public static String get(String url, Map<String, String> queryParas, String charset) {
+        return get(url, queryParas, null, charset);
+    }
+
     public static String get(String url, Map<String, String> queryParas) {
-        return get(url, queryParas, null);
+        return get(url, queryParas, null, DEFAULT_CHARSET);
+    }
+
+    public static String get(String url, String charset) {
+        return get(url, null, null, charset);
     }
 
     public static String get(String url) {
-        return get(url, null, null);
+        return get(url, null, null, DEFAULT_CHARSET);
     }
 
     public static String get(String url, Map<String, String> queryParas, Map<String, String> headers) {
+        return get(url, queryParas, headers, DEFAULT_CHARSET);
+    }
+
+    public static String get(String url, Map<String, String> queryParas, Map<String, String> headers, String charset) {
         HttpURLConnection conn = null;
         try {
             //获取HttpURLConnection连接并设置参数
@@ -48,7 +62,7 @@ public class HttpUtil {
             // 建立HttpURLConnection实际的连接
             conn.connect();
             //返回  定义BufferedReader输入流来读取URL的响应
-            return readResponseString(conn);
+            return readResponseString(conn, charset);
         } catch (Exception e) {
             return null;
         } finally {
@@ -58,11 +72,19 @@ public class HttpUtil {
         }
     }
 
+    public static String post(String url, String data, Map<String, String> headers, String charset) {
+        return post(url, null, data, headers, charset);
+    }
+
     public static String post(String url, String data, Map<String, String> headers) {
-        return post(url, null, data, headers);
+        return post(url, null, data, headers, DEFAULT_CHARSET);
     }
 
     public static String post(String url, Map<String, String> queryParas, String data, Map<String, String> headers) {
+        return post(url, queryParas, data, headers, DEFAULT_CHARSET);
+    }
+
+    public static String post(String url, Map<String, String> queryParas, String data, Map<String, String> headers, String charset) {
         HttpURLConnection conn = null;
         try {
             //获取HttpURLConnection连接并设置参数
@@ -72,13 +94,13 @@ public class HttpUtil {
             // 获取URLConnection对象对应的输出流
             OutputStream out = conn.getOutputStream();
             // 发送请求参数
-            out.write(data.getBytes("utf-8"));
+            out.write(data.getBytes(charset));
             // flush输出流的缓冲
             out.flush();
             //关闭输出流
             out.close();
             //返回  定义BufferedReader输入流来读取URL的响应
-            return readResponseString(conn);
+            return readResponseString(conn, charset);
         } catch (Exception e) {
             return null;
         } finally {
@@ -147,14 +169,14 @@ public class HttpUtil {
         return sb.toString();
     }
 
-    private static String readResponseString(HttpURLConnection conn) throws IOException {
+    private static String readResponseString(HttpURLConnection conn, String charset) throws IOException {
         StringBuilder sb = new StringBuilder();
         InputStream inputStream = null;
         try {
             //获取响应内容
             inputStream = conn.getInputStream();
             // 定义BufferedReader输入流来读取URL的响应
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "utf-8"));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset));
             String line;
             while ((line = reader.readLine()) != null) {
                 sb.append(line).append("\n");

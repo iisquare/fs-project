@@ -56,8 +56,8 @@ public class AnalysisNode extends Node {
         }
         for (Map.Entry<String, List<JsonNode>> entry : groupMap.entrySet()) {
             List<JsonNode> list = entry.getValue();
-            for (String sortStr : DPUtil.explode(DPUtil.trim(DPUtil.parseString(sort)), ",", " ", true)) {
-                String[] sortParams = DPUtil.explode(sortStr, " ", " ", true);
+            for (String sortStr : DPUtil.explode(DPUtil.trim(DPUtil.parseString(sort)))) {
+                String[] sortParams = DPUtil.explode(sortStr, " ");
                 String field = sortParams[0];
                 int dir = sortParams.length > 1 && sortParams[1].toLowerCase().equals("desc") ? -1 : 1;
                 Collections.sort(list, new Comparator<JsonNode>() {
@@ -337,7 +337,7 @@ public class AnalysisNode extends Node {
             LinkedHashMap<String, String> group = new LinkedHashMap<>();
             group.putAll(parent);
             String rowkey = DPUtil.trim(grade.get("rowkey").asText());
-            String[] columnNames = DPUtil.empty(rowkey) ? table.getSchema().getColumnNames() : DPUtil.explode(rowkey, ",", " ", true);
+            String[] columnNames = DPUtil.empty(rowkey) ? table.getSchema().getColumnNames() : DPUtil.explode(rowkey);
             group.putAll(DPUtil.buildMap(columnNames, columnNames, String.class, String.class));
             grade.replace("primaries", DPUtil.convertJSON(columnNames));
             ArrayList<String> columns = new ArrayList<>();

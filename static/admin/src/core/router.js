@@ -234,13 +234,13 @@ const routes = [{
       meta: { title: '索引示例' },
       component: () => import(/* webpackChunkName: 'lucene' */ '@/views/lucene/elasticsearch/demo')
     }, {
-      path: '/lucene/elasticsearch/dict',
-      meta: { title: '词典管理' },
-      component: () => import(/* webpackChunkName: 'lucene' */ '@/views/lucene/elasticsearch/dict')
-    }, {
       path: '/lucene/elasticsearch/reload',
       meta: { title: '服务重载' },
       component: () => import(/* webpackChunkName: 'lucene' */ '@/views/lucene/elasticsearch/reload')
+    }, {
+      path: '/lucene/dictionary/list',
+      meta: { title: '词库列表' },
+      component: () => import(/* webpackChunkName: 'lucene' */ '@/views/lucene/dictionary/list')
     }]
   }]
 }, {

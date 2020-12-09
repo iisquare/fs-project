@@ -166,7 +166,7 @@ public class ServletUtil {
         if(ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
         }
-        return DPUtil.explode(ip, ",", " ", true)[0];
+        return DPUtil.explode(ip, ",")[0];
     }
 
     /**

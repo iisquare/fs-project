@@ -31,41 +31,13 @@ const elasticsearchService = {
     return this.request(tips, Object.assign(config, { method: 'post', url, data }))
   },
   dictDemo (param, tips = {}) {
-    return this.post('/dict/demo/', param, tips)
+    return this.post('/demo', param, tips)
   },
   dictIndex (param, tips = {}) {
-    return this.post('/dict/index/', param, tips)
+    return this.post('/index', param, tips)
   },
   dictReload (param, tips = {}) {
-    return this.post('/dict/reload/', param, tips)
-  },
-  dictList (param, tips = {}) {
-    if (param.identity === '') {
-      delete param.identity
-    }
-    return this.post('/dict/list/', param, null).then(result => {
-      return {
-        code: result.status === 200 ? 0 : result.status,
-        message: 'wraper with service',
-        data: result.data
-      }
-    })
-  },
-  dictUpdate (param, tips = {}) {
-    return this.post('/dict/update/', param, tips)
-  },
-  dictDelete (param, tips = {}) {
-    return this.post('/dict/delete/', param, tips)
-  },
-  dictInsert (param, tips = {}) {
-    return this.post('/dict/insert/', param, tips)
-  },
-  dictSave (param, tips = {}) {
-    if (param.id) {
-      return this.dictUpdate(param, tips)
-    }
-    param = Object.assign({}, param, { texts: [param.text] })
-    return this.dictInsert(param, tips)
+    return this.post('/reload', param, tips)
   }
 }
 

@@ -33,7 +33,7 @@ public class ZooKeeperClient implements Closeable {
     private TreeCache watch;
 
     public ZooKeeperClient (String host, int timeout, String nodeId) {
-        String[] hosts = DPUtil.explode(host, "/", " ", true);
+        String[] hosts = DPUtil.explode(host, "/");
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder().connectString(hosts[0]);
         if (hosts.length > 1) builder.namespace(hosts[1]);
         builder.retryPolicy(new ExponentialBackoffRetry(1000, 3)).connectionTimeoutMs(1000).sessionTimeoutMs(timeout);

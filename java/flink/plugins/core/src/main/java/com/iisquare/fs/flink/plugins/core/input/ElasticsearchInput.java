@@ -83,8 +83,8 @@ public class ElasticsearchInput extends RichInputFormat<Map<String, Object>, Inp
                 .put("client.transport.sniff", true)
                 .build();
         client = new PreBuiltTransportClient(settings);
-        for (String host : DPUtil.explode(clusterNodes, ",", " ", true)) {
-            String address[] = DPUtil.explode(host, ":", " ", true);
+        for (String host : DPUtil.explode(clusterNodes, ",")) {
+            String address[] = DPUtil.explode(host, ":");
             InetAddress inetAddress = InetAddress.getByName(address[0]);
             int port = address.length > 1 ? DPUtil.parseInt(address[1]) : 9300;
             client.addTransportAddress(new InetSocketTransportAddress(inetAddress, port));

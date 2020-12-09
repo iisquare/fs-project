@@ -51,9 +51,9 @@
                 </a-form-model-item>
               </a-col>
               <a-col :md="12" :sm="24">
-                <a-form-model-item label="创建开始时间" prop="createdTimeStart">
+                <a-form-model-item label="创建开始时间" prop="createdTimeBegin">
                   <s-date-picker
-                    v-model="filters.createdTimeStart"
+                    v-model="filters.createdTimeBegin"
                     :showTime="showTime(0)"
                     :format="dateFormat()"
                     placeholder="开始时间"
@@ -71,9 +71,9 @@
                 </a-form-model-item>
               </a-col>
               <a-col :md="12" :sm="24">
-                <a-form-model-item label="修改开始时间" prop="updatedTimeStart">
+                <a-form-model-item label="修改开始时间" prop="updatedTimeBegin">
                   <s-date-picker
-                    v-model="filters.updatedTimeStart"
+                    v-model="filters.updatedTimeBegin"
                     :showTime="showTime(0)"
                     :format="dateFormat()"
                     placeholder="开始时间"
@@ -91,9 +91,9 @@
                 </a-form-model-item>
               </a-col>
               <a-col :md="12" :sm="24">
-                <a-form-model-item label="登录开始时间" prop="loginedTimeStart">
+                <a-form-model-item label="登录开始时间" prop="loginedTimeBegin">
                   <s-date-picker
-                    v-model="filters.loginedTimeStart"
+                    v-model="filters.loginedTimeBegin"
                     :showTime="showTime(0)"
                     :format="dateFormat()"
                     placeholder="开始时间"
@@ -111,9 +111,9 @@
                 </a-form-model-item>
               </a-col>
               <a-col :md="12" :sm="24">
-                <a-form-model-item label="锁定开始时间" prop="lockedTimeStart">
+                <a-form-model-item label="锁定开始时间" prop="lockedTimeBegin">
                   <s-date-picker
-                    v-model="filters.lockedTimeStart"
+                    v-model="filters.lockedTimeBegin"
                     :showTime="showTime(0)"
                     :format="dateFormat()"
                     placeholder="开始时间"

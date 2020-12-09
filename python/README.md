@@ -3,6 +3,24 @@
 - [显卡驱动](https://www.geforce.com/drivers)
 - [CUDA Toolkit and Compatible Driver Versions](https://docs.nvidia.com/deploy/cuda-compatibility/index.html)
 
+## Nvidia VGA
+| 型号 | 显存 | 位宽 | 频率 | 建议电源 | 电源接口 | 参考价 |
+| :----- | :----- | :----- | :----- | :----- | :----- | :----- |
+| GeForce RTX 3090 | 24GB GDDR6X | 384bit | 19500MHz | 750W | 8pin+8pin | 12K |
+| GeForce RTX 3080 | 10GB GDDR6X | 320bit | 19000MHz | 750W | 8pin+8pin | 5.5K |
+| GeForce RTX 3070 | 8GB GDDR6 | 256bit | 14000MHz | 650W | 8pin | 3.9K |
+| GeForce RTX 3060Ti | 8GB GDDR6 | 256bit | 14000MHz | 600W | 8pin | 3K |
+| GeForce RTX 2080Ti | 11GB GDDR6 | 352bit | 14000MHz | - | 8pin+8pin | 10K |
+| GeForce RTX 2080 SUPER | 8GB GDDR6 | 256bit | 15500MHz | 650W | 6pin+8pin | 8K |
+| GeForce RTX 2080 | 8GB GDDR6 | 256bit | 14000MHz | - | 6pin+8pin | 14K |
+| GeForce RTX 2070 SUPER | 8GB GDDR6 | 256bit | 14000MHz | 650W | 6pin+8pin | 3.2K |
+| GeForce RTX 2070 | 8GB GDDR6 | 256bit | 14000MHz | - | 8pin | 6.6K |
+| GeForce RTX 2060 SUPER | 8GB GDDR6 | 256bit | 14000MHz | 550W | 8pin | 4K |
+| GeForce GTX 1080Ti | 11GB GDDR5X | 352bit | 11000MHz | - | 6pin+8pin | 8.7K |
+| GeForce GTX 1080 | 8GB GDDR5X | 256bit | 10000MHz | - | 8pin | 4.9K |
+| GeForce GTX 1070Ti | 8GB GDDR5 | 256bit | 8000MHz | - | 8pin | - |
+
+
 ## Project
 | 名称 | 说明 | 备注 |
 | :----- | :----- | :----- |
