@@ -15,7 +15,7 @@ const CrawlerService = {
   },
   saveURL (url) {
     crawlerURL = url
-    $axios.baseURL = crawlerURL
+    $axios.defaults.baseURL = crawlerURL
     if (window.localStorage) {
       window.localStorage.setItem('crawlerURL', crawlerURL)
     }

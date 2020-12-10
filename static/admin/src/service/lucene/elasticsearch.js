@@ -15,7 +15,7 @@ const elasticsearchService = {
   },
   saveURL (url) {
     elasticsearchURL = url
-    $axios.baseURL = elasticsearchURL
+    $axios.defaults.baseURL = elasticsearchURL
     if (window.localStorage) {
       window.localStorage.setItem('elasticsearchURL', elasticsearchURL)
     }

@@ -1,6 +1,6 @@
 <template>
   <section>
-    <a-alert :message="tips.reload" type="warning" :closable="true" class="alert-tip" />
+    <a-alert :message="tips.reload" type="warning" show-icon :closable="true" class="alert-tip" />
     <a-card style="margin-bottom: 25px;" title="服务信息">
       <div class="table-page-search-wrapper">
         <a-form-model layout="inline">

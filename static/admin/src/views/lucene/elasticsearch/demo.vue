@@ -1,6 +1,6 @@
 <template>
   <section>
-    <a-alert :message="tips.search" type="info" :closable="true" class="alert-tip" />
+    <a-alert :message="tips.search" type="info" show-icon :closable="true" class="alert-tip" />
     <a-layout>
       <a-layout-sider theme="light" width="650">
         <a-card title="索引示例">

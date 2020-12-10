@@ -36,7 +36,7 @@ public class DictionaryController extends PermitControllerBase {
     public String plainAction(@RequestParam Map<String, Object> param, HttpServletResponse response) {
         String name = DPUtil.trim(DPUtil.parseString(param.get("catalogue")));
         name += "-" + DPUtil.trim(DPUtil.parseString(param.get("type")));
-        response.setContentType("text/plain");
+        response.setContentType("text/plain;charset=utf-8");
         response.setHeader("Content-Disposition", "attachment; filename=" + name + ".dict");
         return dictionaryService.plain(param);
     }

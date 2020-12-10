@@ -9,3 +9,4 @@
 - File > Settings > Plugins > Browse repositories > add lombok
 - Settings > Build > Compiler > Annotation Processors > Enable annotation processing
 - Settings > Build > Compiler > Build project automatically
+- Settings > Build > Build Tools > Gradle > Build and run using:IntelliJ IDEA
