@@ -2,15 +2,15 @@
 Navicat MySQL Data Transfer
 
 Source Server         : localhost_3306
-Source Server Version : 50505
+Source Server Version : 50716
 Source Host           : localhost:3306
 Source Database       : fs-project
 
 Target Server Type    : MYSQL
-Target Server Version : 50505
+Target Server Version : 50716
 File Encoding         : 65001
 
-Date: 2020-09-19 10:22:44
+Date: 2020-12-10 08:06:37
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -35,7 +35,7 @@ CREATE TABLE `fs_member_menu` (
   `updated_time` bigint(20) NOT NULL DEFAULT '0',
   `updated_uid` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=56 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=58 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of fs_member_menu
@@ -89,8 +89,10 @@ INSERT INTO `fs_member_menu` VALUES ('50', '人脸检测', '后台管理:人脸�
 INSERT INTO `fs_member_menu` VALUES ('51', '搜索引擎', '后台管理:搜索引擎', '1', 'search', '/lucene/index/index', '', '0', '1', '词典管理、索引示例、服务重载', '1600481187938', '1', '1600481496017', '1');
 INSERT INTO `fs_member_menu` VALUES ('52', 'Elasticsearch', '后台管理:搜索引擎:Elasticsearch', '51', 'deployment-unit', '/lucene/elasticsearch', '', '0', '1', '', '1600481694000', '1', '1600481730276', '1');
 INSERT INTO `fs_member_menu` VALUES ('53', '索引示例', '后台管理:搜索引擎:Elasticsearch:索引示例', '52', '', '/lucene/elasticsearch/demo', '', '0', '1', '', '1600481950656', '1', '1600481950656', '1');
-INSERT INTO `fs_member_menu` VALUES ('54', '词典管理', '后台管理:搜索引擎:Elasticsearch:词典管理', '52', '', '/lucene/elasticsearch/dict', '', '0', '1', '', '1600481985836', '1', '1600481985836', '1');
+INSERT INTO `fs_member_menu` VALUES ('54', '词典管理', '后台管理:搜索引擎:Elasticsearch:词典管理', '52', '', '/lucene/elasticsearch/dict', '', '0', '-1', '', '1600481985836', '1', '1607514726426', '1');
 INSERT INTO `fs_member_menu` VALUES ('55', '服务重载', '后台管理:搜索引擎:Elasticsearch:服务重载', '52', '', '/lucene/elasticsearch/reload', '', '0', '1', '', '1600482059381', '1', '1600482059381', '1');
+INSERT INTO `fs_member_menu` VALUES ('56', '词库管理', '后台管理:搜索引擎:词库管理', '51', 'gold', '/lucene/dictionary', '', '0', '1', '', '1607333548750', '1', '1607334213102', '1');
+INSERT INTO `fs_member_menu` VALUES ('57', '词库列表', '后台管理:搜索引擎:词库管理:词库列表', '56', '', '/lucene/dictionary/list', '', '0', '1', '', '1607333724524', '1', '1607333865742', '1');
 
 -- ----------------------------
 -- Table structure for fs_member_relation
@@ -158,6 +160,8 @@ INSERT INTO `fs_member_relation` VALUES ('role_menu_1_52', 'role_menu', '1', '52
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_53', 'role_menu', '1', '53');
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_54', 'role_menu', '1', '54');
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_55', 'role_menu', '1', '55');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_56', 'role_menu', '1', '56');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_57', 'role_menu', '1', '57');
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_6', 'role_menu', '1', '6');
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_7', 'role_menu', '1', '7');
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_8', 'role_menu', '1', '8');
@@ -224,7 +228,11 @@ INSERT INTO `fs_member_relation` VALUES ('role_resource_1_55', 'role_resource', 
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_56', 'role_resource', '1', '56');
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_57', 'role_resource', '1', '57');
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_58', 'role_resource', '1', '58');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_59', 'role_resource', '1', '59');
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_6', 'role_resource', '1', '6');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_60', 'role_resource', '1', '60');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_61', 'role_resource', '1', '61');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_62', 'role_resource', '1', '62');
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_7', 'role_resource', '1', '7');
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_8', 'role_resource', '1', '8');
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_9', 'role_resource', '1', '9');
@@ -261,7 +269,7 @@ CREATE TABLE `fs_member_resource` (
   `updated_time` bigint(20) NOT NULL DEFAULT '0',
   `updated_uid` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=58 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=63 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of fs_member_resource
@@ -323,6 +331,11 @@ INSERT INTO `fs_member_resource` VALUES ('54', '人像', '人脸识别:人像', 
 INSERT INTO `fs_member_resource` VALUES ('55', '添加', '人脸识别:人像:添加', '54', 'face', 'photo', 'add', '0', '1', '', '1598324413298', '1', '1598324413298', '1');
 INSERT INTO `fs_member_resource` VALUES ('56', '修改', '人脸识别:人像:修改', '54', 'face', 'photo', 'modify', '0', '1', '', '1598324427504', '1', '1598324427504', '1');
 INSERT INTO `fs_member_resource` VALUES ('57', '删除', '人脸识别:人像:删除', '54', 'face', 'photo', 'delete', '0', '1', '', '1598324443162', '1', '1598324443162', '1');
+INSERT INTO `fs_member_resource` VALUES ('58', '搜索引擎', '搜索引擎', '0', 'lucene', '', '', '0', '1', '', '1607333327044', '1', '1607333327044', '1');
+INSERT INTO `fs_member_resource` VALUES ('59', '词库', '搜索引擎:词库', '58', 'lucene', 'dictionary', '', '0', '1', '', '1607333381289', '1', '1607333426485', '1');
+INSERT INTO `fs_member_resource` VALUES ('60', '添加', '搜索引擎:词库:添加', '59', 'lucene', 'dictionary', 'add', '0', '1', '', '1607333455146', '1', '1607333455146', '1');
+INSERT INTO `fs_member_resource` VALUES ('61', '修改', '搜索引擎:词库:修改', '59', 'lucene', 'dictionary', 'modify', '0', '1', '', '1607333470362', '1', '1607333470362', '1');
+INSERT INTO `fs_member_resource` VALUES ('62', '删除', '搜索引擎:词库:删除', '59', 'lucene', 'dictionary', 'delete', '0', '1', '', '1607333488826', '1', '1607333488826', '1');
 
 -- ----------------------------
 -- Table structure for fs_member_role
@@ -401,11 +414,11 @@ CREATE TABLE `fs_member_user` (
 -- ----------------------------
 -- Records of fs_member_user
 -- ----------------------------
-INSERT INTO `fs_member_user` VALUES ('1', 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', '0', '1', '', '1528081552985', '127.0.0.1', '1', '1528081552985', '1', '1600480644382', '127.0.0.1', '0');
+INSERT INTO `fs_member_user` VALUES ('1', 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', '0', '1', '', '1528081552985', '127.0.0.1', '1', '1528081552985', '1', '1606802871468', '127.0.0.1', '0');
 INSERT INTO `fs_member_user` VALUES ('2', 'test', '测试123', '4b361be828611add84453a24f39772a5', '0905', '0', '1', '', '1528081567988', '127.0.0.1', '1', '1542958281919', '1', '1528267171953', '127.0.0.1', '0');
 INSERT INTO `fs_member_user` VALUES ('3', '111', '111', '', '', '6', '-1', '', '0', '', '0', '1584360531961', '1', '0', '', '0');
 INSERT INTO `fs_member_user` VALUES ('4', '222', '222', '', '', '0', '1', '', '0', '', '0', '0', '0', '0', '', '0');
-INSERT INTO `fs_member_user` VALUES ('5', '333', '333', '', '', '0', '1', '', '0', '', '0', '0', '0', '0', '', '0');
+INSERT INTO `fs_member_user` VALUES ('5', '333', '333', '', '', '0', '1', '', '0', '', '0', '1606803617105', '1', '0', '', '0');
 INSERT INTO `fs_member_user` VALUES ('6', '444', '444', '', '', '0', '1', '', '0', '', '0', '0', '0', '0', '', '0');
 INSERT INTO `fs_member_user` VALUES ('7', '555', '555', '', '', '0', '1', '', '0', '', '0', '0', '0', '0', '', '0');
 INSERT INTO `fs_member_user` VALUES ('8', '666', '666', '', '', '0', '1', '', '0', '', '0', '0', '0', '0', '', '0');
