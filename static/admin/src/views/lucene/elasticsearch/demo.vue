@@ -8,6 +8,9 @@
             :model="form"
             :label-col="{ span: 5 }"
             :wrapper-col="{ span: 16 }">
+            <a-form-model-item label="服务地址">
+              <a-input v-model="elasticsearchURL" placeholder="节点链接地址" :allowClear="true" />
+            </a-form-model-item>
             <a-form-model-item label="词典编号" :wrapper-col="{ span: 8 }">
               <a-input v-model="form.dictSerial" placeholder="词典编号" />
             </a-form-model-item>
@@ -70,6 +73,7 @@ export default {
       tips: {
         search: '提示：文档索引保存在临时内存中，执行完成后会立即释放。'
       },
+      elasticsearchURL: '',
       formLoading: false,
       form: {
         useSmart: true,
@@ -94,6 +98,11 @@ export default {
   },
   methods: {
     index () {
+      this.elasticsearchURL = elasticsearchService.saveURL(this.elasticsearchURL)
+      if (!this.elasticsearchURL) {
+        this.$message.warning('请确认连接服务地址')
+        return false
+      }
       if (this.formLoading) return false
       const param = {
         keyword: this.form.inputKeyword,
@@ -110,6 +119,11 @@ export default {
       })
     },
     demo () {
+      this.elasticsearchURL = elasticsearchService.saveURL(this.elasticsearchURL)
+      if (!this.elasticsearchURL) {
+        this.$message.warning('请确认连接服务地址')
+        return false
+      }
       if (this.formLoading) return false
       const param = {
         keyword: this.form.inputKeyword,
@@ -132,6 +146,9 @@ export default {
         this.formLoading = false
       })
     }
+  },
+  created () {
+    this.elasticsearchURL = elasticsearchService.baseURL()
   }
 }
 </script>

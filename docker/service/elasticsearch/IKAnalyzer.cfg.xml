@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+    <comment>IK Analyzer 扩展配置</comment>
+    <entry key="url">http://192.168.0.139:7810/dictionary/plain</entry>
+    <entry key="initSerials"></entry>
+</properties>

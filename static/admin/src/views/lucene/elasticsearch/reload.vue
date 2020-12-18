@@ -1,29 +1,16 @@
 <template>
   <section>
     <a-alert :message="tips.reload" type="warning" show-icon :closable="true" class="alert-tip" />
-    <a-card style="margin-bottom: 25px;" title="服务信息">
-      <div class="table-page-search-wrapper">
-        <a-form-model layout="inline">
-          <a-row :gutter="48" >
-            <a-col :md="18" :sm="24">
-              <a-form-model-item label="地址">
-                <a-input v-model="elasticsearchURL" placeholder="节点链接地址" :allowClear="true" />
-              </a-form-model-item>
-            </a-col>
-            <a-col :md="6" :sm="24">
-              <a-button type="primary" style="margin-left: 8px" @click="connect">{{ filters.state ? '断开' : '连接' }}</a-button>
-            </a-col>
-          </a-row>
-        </a-form-model>
-      </div>
-    </a-card>
     <a-layout>
       <a-layout-sider theme="light" width="650">
-        <a-card :bordered="false" title="参数配置">
+        <a-card :bordered="false" title="服务重载">
           <a-form-model
             :model="form"
             :label-col="{ span: 5 }"
             :wrapper-col="{ span: 16 }">
+            <a-form-model-item label="服务地址">
+              <a-input v-model="elasticsearchURL" placeholder="节点链接地址" :allowClear="true" />
+            </a-form-model-item>
             <a-form-model-item label="词典编号" :wrapper-col="{ span: 8 }">
               <a-input v-model="form.dictSerial" placeholder="词典编号" />
             </a-form-model-item>
@@ -67,9 +54,7 @@ export default {
         quantifier: '量词词典',
         stopword: '停用词词典'
       },
-      filters: {
-        state: false
-      },
+      filters: {},
       tips: {
         reload: '注意：重新载入词典可能影响正在建立索引的数据，请谨慎操作！'
       },
@@ -88,14 +73,9 @@ export default {
     }
   },
   methods: {
-    connect () {
-      this.filters.state = !this.filters.state
-      if (this.filters.state) {
-        this.elasticsearchURL = elasticsearchService.saveURL(this.elasticsearchURL)
-      }
-    },
     submit () {
-      if (!this.filters.state) {
+      this.elasticsearchURL = elasticsearchService.saveURL(this.elasticsearchURL)
+      if (!this.elasticsearchURL) {
         this.$message.warning('请确认连接服务地址')
         return false
       }

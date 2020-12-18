@@ -22,3 +22,4 @@ python/east/east_icdar2015_resnet_v1_50_rbox
 /python/insightface/model
 /docker/.env
 /docker/runtime
+/docker/service/elasticsearch/*.zip
