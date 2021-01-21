@@ -83,3 +83,38 @@ services:
       - "${RABBITMQ_MANAGEMENT_PORT}:15672"
     volumes:
       - ${DATA_DIR}/rabbitmq:/var/lib/rabbitmq/mnesia
+  ceph-monitor:
+    build:
+      context: ./service/ceph
+      args:
+        - CEPH_VERSION=${CEPH_VERSION}
+    entrypoint: ["/opt/ceph-container/bin/entrypoint.sh", "mon"]
+    environment:
+      NETWORK_AUTO_DETECT: 1
+    ports:
+      - "${CEPH_MONITOR_PORT}:6789"
+    volumes:
+      - ${DATA_DIR}/ceph/etc:/etc/ceph
+      - ${DATA_DIR}/ceph/lib:/var/lib/ceph
+  ceph-manager:
+    build:
+      context: ./service/ceph
+      args:
+        - CEPH_VERSION=${CEPH_VERSION}
+    entrypoint: ["/opt/ceph-container/bin/entrypoint.sh", "mgr"]
+    ports:
+      - "${CEPH_DASHBOARD_PORT}:16789"
+    volumes:
+      - ${DATA_DIR}/ceph/etc:/etc/ceph
+      - ${DATA_DIR}/ceph/lib:/var/lib/ceph
+  ceph-storage:
+    build:
+      context: ./service/ceph
+      args:
+        - CEPH_VERSION=${CEPH_VERSION}
+    entrypoint: ["/opt/ceph-container/bin/entrypoint.sh", "osd_directory"]
+    privileged: true
+    volumes:
+      - ${DATA_DIR}/ceph/etc:/etc/ceph
+      - ${DATA_DIR}/ceph/lib:/var/lib/ceph
+      - ${DATA_DIR}/ceph/files:/var/lib/ceph/osd
