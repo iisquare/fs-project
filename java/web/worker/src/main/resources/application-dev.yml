@@ -1,0 +1,8 @@
+server:
+  port: 7813
+
+fs:
+  worker:
+    zookeeper:
+      host: 127.0.0.1:2181/worker
+      timeout: 2000
