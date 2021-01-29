@@ -164,29 +164,37 @@ const routes = [{
       component: () => import(/* webpackChunkName: 'spider' */ '@/views/spider/template/model')
     }]
   }, {
-    path: '/flink',
+    path: '/spark',
     meta: { title: '数据计算' },
     component: layout.route,
     children: [{
-      path: '/flink/index/index',
+      path: '/spark/index/index',
       meta: { title: '工作面板' },
       component: layout.default
     }, {
-      path: '/flink/plugin/list',
+      path: '/spark/plugin/list',
       meta: { title: '插件列表' },
-      component: () => import(/* webpackChunkName: 'flink' */ '@/views/flink/plugin/list')
+      component: () => import(/* webpackChunkName: 'spark' */ '@/views/spark/plugin/list')
     }, {
-      path: '/flink/flowNode/list',
-      meta: { title: '流程节点列表', parents: ['/flink/flow'] },
-      component: () => import(/* webpackChunkName: 'flink' */ '@/views/flink/flowNode/list')
+      path: '/spark/node/list',
+      meta: { title: '流程节点列表', parents: ['/spark/flow'] },
+      component: () => import(/* webpackChunkName: 'spark' */ '@/views/spark/node/list')
     }, {
-      path: '/flink/flowNode/tree',
-      meta: { title: '树形流程节点', parents: ['/flink/flow'] },
-      component: () => import(/* webpackChunkName: 'flink' */ '@/views/flink/flowNode/tree')
+      path: '/spark/node/tree',
+      meta: { title: '树形流程节点', parents: ['/spark/flow'] },
+      component: () => import(/* webpackChunkName: 'spark' */ '@/views/spark/node/tree')
     }, {
-      path: '/flink/flow/list',
+      path: '/spark/flow/list',
       meta: { title: '流程列表' },
-      component: () => import(/* webpackChunkName: 'flink' */ '@/views/flink/flow/list')
+      component: () => import(/* webpackChunkName: 'spark' */ '@/views/spark/flow/list')
+    }, {
+      path: '/spark/tool/property',
+      meta: { title: '属性编辑器' },
+      component: () => import(/* webpackChunkName: 'spark' */ '@/views/spark/tool/property')
+    }, {
+      path: '/spark/tool/field',
+      meta: { title: '字段编辑器' },
+      component: () => import(/* webpackChunkName: 'spark' */ '@/views/spark/tool/field')
     }]
   }, {
     path: '/face',
@@ -241,6 +249,19 @@ const routes = [{
       path: '/lucene/dictionary/list',
       meta: { title: '词库列表' },
       component: () => import(/* webpackChunkName: 'lucene' */ '@/views/lucene/dictionary/list')
+    }]
+  }, {
+    path: '/server',
+    meta: { title: '服务管理' },
+    component: layout.route,
+    children: [{
+      path: '/server/index/index',
+      meta: { title: '工作面板' },
+      component: layout.default
+    }, {
+      path: '/server/rabbit/dashboard',
+      meta: { title: '消息队列' },
+      component: () => import(/* webpackChunkName: 'server' */ '@/views/server/rabbit/dashboard')
     }]
   }]
 }, {

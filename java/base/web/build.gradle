@@ -4,5 +4,5 @@ dependencies {
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-actuator', version: springBootVersion
     compile group: 'org.springframework.cloud', name: 'spring-cloud-starter-openfeign', version: springCloudVersion
     // fixed:Incomplete output stream, version dependencied on cloud openfeign
-    compile group: 'io.github.openfeign', name: 'feign-httpclient', version: '10.7.4'
+    compile group: 'io.github.openfeign', name: 'feign-httpclient', version: feignVersion
 }

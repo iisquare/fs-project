@@ -5,7 +5,7 @@ buildscript {
         shadowVersion = '4.0.3'
     }
     repositories {
-        maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
         mavenCentral()
         jcenter()
     }
@@ -26,7 +26,7 @@ subprojects {
     [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
     repositories {
-        maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
         mavenCentral()
         jcenter()
     }
@@ -34,14 +34,23 @@ subprojects {
     // 定义版本号
     ext {
         lombokVersion = '1.18.12'
-        springBootVersion = '2.2.2.RELEASE'
-        springCloudVersion = '2.2.2.RELEASE'
-        flinkVersion = '1.7.2'
-        scalaVersion = '2.11'
-        hadoopVersion = '2.8.3'
+        cliVersion = '1.4'
+        nettyVersion = '4.1.36.Final'
+        lang3Version = '3.9'
+        pool2Version = '2.6.2'
+        springBootVersion = '2.3.2.RELEASE'
+        springCloudVersion = '2.2.6.RELEASE'
+        feignVersion = '10.10.1' // based on cloud version
+        scalaVersion = '2.12'
+        sparkVersion = '2.4.7'
+        hadoopVersion = '2.7.7'
         swaggerVersion = '2.9.2'
         tensorflowVersion = '1.12.0'
-        zookeeperVersion = '3.4.10'
+        zookeeperVersion = '3.5.8'
+        curatorVersion = '4.3.0' // with zookeeper compatibility
+        mongodbVersion = '3.8.0'
+        mysqlVersion = '5.1.48'
+        rabbitmqVersion = '5.10.0'
     }
 
     dependencies {
