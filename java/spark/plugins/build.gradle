@@ -1,0 +1,8 @@
+subprojects {
+    archivesBaseName = rootProject.name + '-spark-plugins-' + name
+
+    dependencies {
+        compile project(':spark:flow')
+    }
+
+}

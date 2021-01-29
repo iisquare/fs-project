@@ -1,5 +1,0 @@
-description = 'OLAP'
-
-dependencies {
-    compile project(':flink:plugins:core')
-}

@@ -1,0 +1,32 @@
+
+dependencies {
+    compile (project(':base:core')) {
+        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
+    }
+    compile group: 'org.apache.spark', name: 'spark-core_' + scalaVersion, version: sparkVersion
+    compile group: 'org.apache.spark', name: 'spark-sql_' + scalaVersion, version: sparkVersion
+
+//    compile group: 'org.mongodb', name: 'mongo-java-driver', version: '3.12.7'
+    compile group: 'org.mongodb.spark', name: 'mongo-spark-connector_' + scalaVersion, version: '2.4.2'
+}
+
+configurations {
+    compile.exclude group: 'javax.validation', module: 'validation-api'
+    compile.exclude group: 'jakarta.validation', module: 'jakarta.validation-api'
+    compile.exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    compile.exclude group: 'ch.qos.logback', module: 'logback-classic'
+    compile.exclude group: 'com.google.code.gson', module: 'gson'
+}
+
+jars.doLast { // 移除与运行程序冲突的依赖
+    FileTree tree = fileTree(dir: 'build/opt')
+    tree.each {File file ->
+        if(file.getName().startsWith(rootProject.name + '-base-core-')){
+            delete file
+        } else if(file.getName().startsWith("log4j-")) {
+            delete file
+        } else if(file.getName().startsWith("slf4j-")) {
+            delete file
+        }
+    }
+}

@@ -1,0 +1,16 @@
+apply plugin: 'org.springframework.boot'
+
+dependencies {
+    compile project(':web:core')
+    compile project(':spark:core')
+    compile project(':base:jpa')
+    compile project(':base:swagger')
+}
+
+bootJar {
+    enabled = true
+}
+
+jar {
+    enabled = true
+}

@@ -1,6 +1,0 @@
-dependencies {
-    testCompile group: 'org.apache.flink', name: 'flink-runtime-web_' + scalaVersion, version: flinkVersion
-    testCompile project(':flink:plugins:core')
-    testCompile project(':flink:plugins:mlib')
-    testCompile project(':flink:plugins:olap')
-}

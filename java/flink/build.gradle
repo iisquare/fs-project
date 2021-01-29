@@ -1,3 +1,0 @@
-subprojects {
-    archivesBaseName = rootProject.name + '-flink-' + name
-}

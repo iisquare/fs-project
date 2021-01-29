@@ -1,0 +1,20 @@
+dependencies {
+    compile project(':spark:core')
+}
+
+jar {
+    manifest {
+        attributes(
+                "Manifest-Version": 1.0,
+//            "Main-Class": ""
+        )
+    }
+//    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    from {
+        fileTree(dir: '../../base/core/build/libs', include: ['*.jar']).collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+}
+
+jar.dependsOn project(':base:core').getTasks().getByName('jar')
