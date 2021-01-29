@@ -33,12 +33,13 @@ public class PermitInterceptor implements HandlerInterceptor {
         if(!(method.getBean() instanceof PermitControllerBase)) return true;
         PermitControllerBase instance = (PermitControllerBase) method.getBean();
         String[] names = DPUtil.explode(instance.getClass().getName(), "\\.", null, false);
-        if(names.length < 3) throw new PermitException(PermitException.NO_PACKAGE);
+        if(names.length < 5) throw new PermitException(PermitException.NO_PACKAGE);
         String module = names[names.length - 2];
-        if (module.equalsIgnoreCase(PACKAGE_CONTROLLER)) {
+        if (module.equalsIgnoreCase(PACKAGE_CONTROLLER)) { // like *.xxx.controller
             module = names[names.length - 3];
+            if ("web".equals(module)) module = names[names.length - 4]; // like *.xxx.web.controller
             request.setAttribute(ATTRIBUTE_TEMPLATE, "");
-        } else {
+        } else { // like *.controller.xxx
             request.setAttribute(ATTRIBUTE_TEMPLATE, module);
         }
         String controller = names[names.length - 1].split("\\$\\$")[0]; // Spring代理类名称会追加特殊标识

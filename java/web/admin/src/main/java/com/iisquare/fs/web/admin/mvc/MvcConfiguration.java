@@ -45,14 +45,4 @@ public class MvcConfiguration extends WebMvcConfiguration implements HandlerExce
         return null;
     }
 
-    @Override
-    protected void addCorsMappings(CorsRegistry registry) {
-        super.addCorsMappings(registry);
-        registry.addMapping("/**")
-            .allowedOrigins("*")
-            .allowCredentials(true)
-            .allowedMethods("GET", "POST", "DELETE", "PUT")
-            .maxAge(3600);
-    }
-
 }
