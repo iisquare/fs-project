@@ -21,7 +21,7 @@
       <a-list-item slot="renderItem" slot-scope="item" v-if="item.url !== '/'">
         <a-card :hoverable="true">
           <a-card-meta>
-            <a slot="title">{{ item.name }}</a>
+            <router-link slot="title" :to="item.url" :target="item.target">{{ item.name }}</router-link>
             <a-avatar class="card-avatar" slot="avatar" :icon="item.icon" size="large"/>
             <div class="meta-content" slot="description">{{ item.description }}</div>
           </a-card-meta>

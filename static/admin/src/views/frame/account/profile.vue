@@ -1,5 +1,5 @@
 <template>
-  <a-form-model :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
+  <a-form-model :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
     <a-form-model-item label="账号">{{ form.serial }}</a-form-model-item>
     <a-form-model-item label="名称">{{ form.name }}</a-form-model-item>
     <a-form-model-item label="描述">{{ form.description ? form.description : "暂无" }}</a-form-model-item>

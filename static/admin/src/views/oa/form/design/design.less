@@ -1,0 +1,36 @@
+.fs-form {
+  width: 100%;
+  height: 100%;
+  .fs-form-flex {
+    .ant-form-item {
+      display: flex;
+    }
+  }
+  .fs-widget-container {
+    width: 100%;
+    height: 100%;
+    .fs-form-item {
+      width: 100%;
+      border-radius: 3px;
+      > .ant-form-item {
+        margin: 0px;
+      }
+    }
+    .ant-col {
+      padding: 5px 3px;
+      > .fs-widget-section > .fs-widget-container {
+        min-height: 64px;
+        border-radius: 3px;
+        border: 1px dashed #ccc;
+      }
+    }
+    .ant-alert-warning {
+      border: 1px dashed white;
+    }
+    .ant-radio-wrapper, .ant-checkbox-wrapper {
+      line-height: 32px;
+      margin-left: 0px;
+      margin-right: 8px;
+    }
+  }
+}

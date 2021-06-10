@@ -96,6 +96,9 @@ const RouteUtil = {
     }
     return filter
   },
+  hasFilter (obj) {
+    return !DataUtil.empty(obj.$route.query[this.filterKey])
+  },
   query2filter (obj, filters) {
     return Object.assign({}, filters, this.decode(obj.$route.query[this.filterKey]))
   },

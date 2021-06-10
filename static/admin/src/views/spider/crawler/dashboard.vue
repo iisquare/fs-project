@@ -216,7 +216,7 @@
     </a-modal>
     <!--作业执行-->
     <a-modal title="作业执行" v-model="scheduleExecuteVisible" :confirmLoading="scheduleLoading" :maskClosable="false" @ok="scheduleExecute">
-      <a-form-model :model="task" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
+      <a-form-model :model="task" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
         <a-form-model-item label="作业">
           <a-input v-model="task.scheduleId" auto-complete="on"></a-input>
         </a-form-model-item>
@@ -230,7 +230,7 @@
     </a-modal>
     <!--分组限制-->
     <a-modal title="分组限制" v-model="groupVisible" :confirmLoading="groupLoading" :maskClosable="false" @ok="groupSubmit">
-      <a-form-model :model="group" ref="group" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
+      <a-form-model :model="group" ref="group" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
         <a-form-model-item label="名称">
           <a-input v-model="group.name" auto-complete="on"></a-input>
         </a-form-model-item>
@@ -250,7 +250,7 @@
     </a-modal>
     <!--请求代理-->
     <a-modal title="请求代理" v-model="proxyVisible" :confirmLoading="proxyLoading" :maskClosable="false" @ok="proxySubmit">
-      <a-form-model :model="proxy" ref="proxy" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
+      <a-form-model :model="proxy" ref="proxy" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
         <a-form-model-item label="名称">
           <a-input v-model="proxy.name" auto-complete="on"></a-input>
         </a-form-model-item>

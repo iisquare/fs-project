@@ -1,4 +1,4 @@
-ARG KAFKA_MANAGE_VERSION=latest
+ARG KAFKA_MANAGE_VERSION
 
 FROM kafkamanager/kafka-manager:${KAFKA_MANAGE_VERSION}
 

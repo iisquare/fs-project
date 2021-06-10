@@ -93,10 +93,17 @@ public class ReflectUtil {
      * @return 类的完整名称
      */
     private static List<String> getClassNameByJar(String jarPath, boolean childPackage) {
-        List<String> myClassName = new ArrayList<String>();
+        List<String> myClassName = new ArrayList<>();
         String[] jarInfo = jarPath.split("!");
         String jarFilePath = jarInfo[0].substring(jarInfo[0].indexOf("/"));
-        String packagePath = jarInfo[1].substring(1);
+        String packagePath;
+        String packagePrefix = "";
+        if (jarInfo.length == 2) {
+            packagePath = jarInfo[1].substring(1);
+        } else {
+            packagePrefix = jarInfo[1].substring(1) + "/";
+            packagePath = jarPath.substring(jarInfo[0].length() + 2).replace("!", "");
+        }
         try {
             JarFile jarFile = new JarFile(jarFilePath);
             Enumeration<JarEntry> entrys = jarFile.entries();
@@ -107,7 +114,7 @@ public class ReflectUtil {
                     if (childPackage) {
                         if (entryName.startsWith(packagePath)) {
                             entryName = entryName.replace("/", ".").substring(0, entryName.lastIndexOf("."));
-                            myClassName.add(entryName);
+                            myClassName.add(entryName.substring(packagePrefix.length()));
                         }
                     } else {
                         int index = entryName.lastIndexOf("/");
@@ -119,7 +126,7 @@ public class ReflectUtil {
                         }
                         if (myPackagePath.equals(packagePath)) {
                             entryName = entryName.replace("/", ".").substring(0, entryName.lastIndexOf("."));
-                            myClassName.add(entryName);
+                            myClassName.add(entryName.substring(packagePrefix.length()));
                         }
                     }
                 }
@@ -198,6 +205,10 @@ public class ReflectUtil {
      * @return
      */
     public static Object getPropertyValue(Object object, String property) {
+        if (object instanceof Map) {
+            Map map = (Map) object;
+            return map.get(property);
+        }
         Class<?> instance = object.getClass();
         try {
             property = property.substring(0, 1).toUpperCase() + property.substring(1);
@@ -218,6 +229,11 @@ public class ReflectUtil {
      * @return
      */
     public static Object setPropertyValue(Object object, String property, Class<?>[] parameterTypes, Object[] args) {
+        if (object instanceof Map) {
+            if (args.length != 1) return null;
+            Map map = (Map) object;
+            return map.put(property, args[0]);
+        }
         Class<?> instance = object.getClass();
         try {
             property = property.substring(0, 1).toUpperCase() + property.substring(1);

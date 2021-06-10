@@ -7,11 +7,11 @@ import org.springframework.data.domain.Sort;
 import java.util.*;
 
 public class JPAUtil {
-    public static final Map<String, Sort.Direction> ORDER_DIRECTION = new LinkedHashMap<>();
-    static {
-        ORDER_DIRECTION.put("asc", Sort.Direction.ASC);
-        ORDER_DIRECTION.put("desc", Sort.Direction.DESC);
-    }
+
+    public static final Map<String, Sort.Direction> ORDER_DIRECTION = new LinkedHashMap(){{
+        put("asc", Sort.Direction.ASC);
+        put("desc", Sort.Direction.DESC);
+    }};
 
     public static <T> T findById(DaoBase dao, Object id, Class<T> classType) {
         Optional<T> info = dao.findById(id);
@@ -20,7 +20,7 @@ public class JPAUtil {
 
     public static Sort sort(String sort, Collection<String> fields) {
         if (DPUtil.empty(sort)) return null;
-        List<Sort.Order> oders = new ArrayList<>();
+        List<Sort.Order> orders = new ArrayList<>();
         String[] sorts = DPUtil.explode(sort);
         for (String item : sorts) {
             String[] explode = DPUtil.explode(item, "\\.");
@@ -28,9 +28,9 @@ public class JPAUtil {
             if (!fields.contains(order)) continue;
             String direction = explode.length > 1 ? explode[1].toLowerCase() : null;
             if (!ORDER_DIRECTION.containsKey(direction)) direction = null;
-            oders.add(new Sort.Order(null == direction ? Sort.DEFAULT_DIRECTION : ORDER_DIRECTION.get(direction), order));
+            orders.add(new Sort.Order(null == direction ? Sort.DEFAULT_DIRECTION : ORDER_DIRECTION.get(direction), order));
         }
-        if (oders.size() < 1) return null;
-        return Sort.by(oders);
+        if (orders.size() < 1) return null;
+        return Sort.by(orders);
     }
 }

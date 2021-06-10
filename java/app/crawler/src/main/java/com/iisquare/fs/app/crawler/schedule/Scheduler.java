@@ -41,7 +41,7 @@ public class Scheduler implements Closeable, Runnable {
     private ScriptEngineManager scriptEngineManager;
     private ZooKeeperClient zookeeper;
     private RedisChannel channel;
-    private boolean isRunning = false;
+    private volatile boolean isRunning = false;
     private long emptyAwaitTime = 30000; // 阻塞获取Token最大等待时间
     private long emptySleepInterval = 300; // 拉取Token失败后的循环等待间隔
     private int doneCheckThreshold = 10; // 作业完成确认次数，为零时不自动切换完成状态

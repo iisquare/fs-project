@@ -14,6 +14,7 @@ public class BeanNameGenerator extends AnnotationBeanNameGenerator {
          */
         String classname = definition.getBeanClassName();
         if(classname.startsWith("com.iisquare.fs.")) return classname;
+        if(classname.startsWith("org.flowable.")) return classname;
         return super.generateBeanName(definition, registry);
     }
 

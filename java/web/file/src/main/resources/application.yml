@@ -7,4 +7,4 @@ spring:
     show-sql: true
     hibernate:
       naming:
-        physical-strategy: com.iisquare.fs.web.face.dsconfig.NamingStrategy
+        physical-strategy: com.iisquare.fs.web.file.dsconfig.NamingStrategy

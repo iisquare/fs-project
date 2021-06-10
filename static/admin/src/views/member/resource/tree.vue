@@ -38,7 +38,7 @@
     </a-card>
     <!--展示界面-->
     <a-modal :title="'信息查看 - ' + form.id" v-model="infoVisible" :footer="null">
-      <a-form-model :model="form" :loading="infoLoading" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
+      <a-form-model :model="form" :loading="infoLoading" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
         <a-form-model-item label="父级">{{ form.parentId }}</a-form-model-item>
         <a-form-model-item label="名称">{{ form.name }}</a-form-model-item>
         <a-form-model-item label="全称">{{ form.fullName }}</a-form-model-item>
@@ -56,7 +56,7 @@
     </a-modal>
     <!--编辑界面-->
     <a-modal :title="'信息' + (form.id ? ('修改 - ' + form.id) : '添加')" v-model="formVisible" :confirmLoading="formLoading" :maskClosable="false" @ok="submit">
-      <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
+      <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
         <a-form-model-item label="父级" prop="parentId">
           <a-input v-model="form.parentId" auto-complete="off"></a-input>
         </a-form-model-item>

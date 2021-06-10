@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: fs-dag-service
+  profiles:
+    active: dev,idev
+  jpa:
+    show-sql: true
+    hibernate:
+      naming:
+        physical-strategy: com.iisquare.fs.dag.web.dsconfig.NamingStrategy

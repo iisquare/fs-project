@@ -26,7 +26,7 @@ public class ProxyController extends ControllerBase {
     @Autowired
     private AnalyseRpc analyseRpc;
     @Autowired
-    private FlinkRpc flinkRpc;
+    private DagRpc dagRpc;
     @Autowired
     private MemberRpc memberRpc;
     @Autowired
@@ -38,11 +38,15 @@ public class ProxyController extends ControllerBase {
     @Autowired
     private LuceneRpc luceneRpc;
     @Autowired
-    private SparkRpc sparkRpc;
-    @Autowired
     private FileRpc fileRpc;
     @Autowired
     private WorkerRpc workerRpc;
+    @Autowired
+    private BIRpc biRpc;
+    @Autowired
+    private OARpc oaRpc;
+    @Autowired
+    private CMSRpc cmsRpc;
 
     @PostMapping("/login")
     public String loginAction(@RequestBody Map<String, Object> param, HttpServletResponse response) throws IOException {
@@ -72,9 +76,8 @@ public class ProxyController extends ControllerBase {
     public String uploadAction(@RequestParam String app, @RequestParam String uri, @RequestPart("file") MultipartFile file) {
         RpcBase rpc;
         switch (app) {
-            case "flink": rpc = flinkRpc; break;
+            case "dag": rpc = dagRpc; break;
             case "lucene": rpc = luceneRpc; break;
-            case "spark": rpc = sparkRpc; break;
             case "file": rpc = fileRpc; break;
             default: return ApiUtil.echoResult(4031, "应用不存在", null);
         }
@@ -85,15 +88,17 @@ public class ProxyController extends ControllerBase {
         RpcBase rpc;
         switch (DPUtil.parseString(param.get("app"))) {
             case "analyse": rpc = analyseRpc; break;
-            case "flink": rpc = flinkRpc; break;
+            case "dag": rpc = dagRpc; break;
             case "member": rpc = memberRpc; break;
             case "xlab": rpc = xlabRpc; break;
             case "spider": rpc = spiderRpc; break;
             case "face": rpc = faceRpc; break;
             case "lucene": rpc = luceneRpc; break;
-            case "spark": rpc = sparkRpc; break;
             case "file": rpc = fileRpc; break;
             case "worker": rpc = workerRpc; break;
+            case "bi": rpc = biRpc; break;
+            case "oa": rpc = oaRpc; break;
+            case "cms": rpc = cmsRpc; break;
             default: return ApiUtil.echoResult(4031, "应用不存在", null);
         }
         String uri = DPUtil.parseString(param.get("uri"));

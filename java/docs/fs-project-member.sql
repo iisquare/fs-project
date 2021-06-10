@@ -10,10 +10,52 @@ Target Server Type    : MYSQL
 Target Server Version : 50716
 File Encoding         : 65001
 
-Date: 2021-01-29 08:09:38
+Date: 2021-06-03 16:43:12
 */
 
 SET FOREIGN_KEY_CHECKS=0;
+
+-- ----------------------------
+-- Table structure for fs_member_dictionary
+-- ----------------------------
+DROP TABLE IF EXISTS `fs_member_dictionary`;
+CREATE TABLE `fs_member_dictionary` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(32) NOT NULL DEFAULT '',
+  `full_name` varchar(255) NOT NULL DEFAULT '',
+  `parent_id` int(11) NOT NULL DEFAULT '0',
+  `content` varchar(255) NOT NULL DEFAULT '',
+  `sort` tinyint(4) NOT NULL DEFAULT '0',
+  `status` tinyint(4) NOT NULL DEFAULT '0',
+  `description` text NOT NULL,
+  `created_time` bigint(20) NOT NULL DEFAULT '0',
+  `created_uid` int(11) NOT NULL DEFAULT '0',
+  `updated_time` bigint(20) NOT NULL DEFAULT '0',
+  `updated_uid` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_content` (`content`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Records of fs_member_dictionary
+-- ----------------------------
+INSERT INTO `fs_member_dictionary` VALUES ('1', '性别', '性别', '0', 'gender', '0', '1', '', '1619512547886', '1', '1619512547886', '1');
+INSERT INTO `fs_member_dictionary` VALUES ('2', '男', '性别:男', '1', 'man', '0', '1', '', '1619512558937', '1', '1619512558937', '1');
+INSERT INTO `fs_member_dictionary` VALUES ('3', '女', '性别:女', '1', 'woman', '0', '1', '', '1619512570735', '1', '1619512570735', '1');
+INSERT INTO `fs_member_dictionary` VALUES ('4', '级联', '级联', '0', 'cascade', '0', '1', '', '1619512827457', '1', '1619512827457', '1');
+INSERT INTO `fs_member_dictionary` VALUES ('5', '一级-1', '级联:一级-1', '4', 'level-1', '0', '1', '', '1619512855045', '1', '1619512855045', '1');
+INSERT INTO `fs_member_dictionary` VALUES ('6', '一级-2', '级联:一级-2', '4', 'level-2', '0', '1', '', '1619512872071', '1', '1619512872071', '1');
+INSERT INTO `fs_member_dictionary` VALUES ('7', '一级-3', '级联:一级-3', '4', 'level-3', '0', '1', '', '1619512893508', '1', '1619512961411', '1');
+INSERT INTO `fs_member_dictionary` VALUES ('8', '二级-1-1', '级联:一级-1:二级-1-1', '5', 'level-1-1', '0', '1', '', '1619512990888', '1', '1619512990888', '1');
+INSERT INTO `fs_member_dictionary` VALUES ('9', '二级-3-1', '级联:一级-3:二级-3-1', '7', 'level-3-1', '0', '1', '', '1619513015148', '1', '1619513015148', '1');
+INSERT INTO `fs_member_dictionary` VALUES ('10', '二级-3-2', '级联:一级-3:二级-3-2', '7', 'level-3-2', '0', '1', '', '1619513023627', '1', '1619513023627', '1');
+INSERT INTO `fs_member_dictionary` VALUES ('11', '岗位职责', '岗位职责', '0', 'job-responsibility', '0', '1', '', '1622184066092', '1', '1622184996022', '1');
+INSERT INTO `fs_member_dictionary` VALUES ('12', '董事长', '岗位职责:董事长', '11', 'chairman', '0', '1', '', '1622184121813', '1', '1622184121813', '1');
+INSERT INTO `fs_member_dictionary` VALUES ('13', '总经理', '岗位职责:总经理', '11', 'president', '0', '1', '', '1622184318304', '1', '1622184318304', '1');
+INSERT INTO `fs_member_dictionary` VALUES ('14', '副总经理', '岗位职责:副总经理', '11', 'deputy-president', '0', '1', '', '1622184347379', '1', '1622184452278', '1');
+INSERT INTO `fs_member_dictionary` VALUES ('15', '主管', '岗位职责:主管', '11', 'executive', '0', '1', '', '1622184431053', '1', '1622184431053', '1');
+INSERT INTO `fs_member_dictionary` VALUES ('16', '职员', '岗位职责:职员', '11', 'staff', '0', '1', '', '1622184489471', '1', '1622184489471', '1');
 
 -- ----------------------------
 -- Table structure for fs_member_menu
@@ -35,7 +77,7 @@ CREATE TABLE `fs_member_menu` (
   `updated_time` bigint(20) NOT NULL DEFAULT '0',
   `updated_uid` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=77 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of fs_member_menu
@@ -65,16 +107,16 @@ INSERT INTO `fs_member_menu` VALUES ('22', '模板管理', '后台管理:网页�
 INSERT INTO `fs_member_menu` VALUES ('23', '模板列表', '后台管理:网页爬虫:模板管理:模板列表', '22', '', '/spider/template/list', '', '0', '1', '', '1585195284371', '1', '1585195284371', '1');
 INSERT INTO `fs_member_menu` VALUES ('24', '节点管理', '后台管理:网页爬虫:节点管理', '21', 'cloud-server', '/spider/crawler', '', '0', '1', '', '1585195333832', '1', '1585195333832', '1');
 INSERT INTO `fs_member_menu` VALUES ('25', '节点面板', '后台管理:网页爬虫:节点管理:节点面板', '24', '', '/spider/crawler/dashboard', '', '0', '1', '', '1585195373342', '1', '1585195373342', '1');
-INSERT INTO `fs_member_menu` VALUES ('26', '数据计算', '后台管理:数据计算', '1', 'cluster', '/spark/index/index', '', '0', '1', 'Spark插件、计算流程、离线分析', '1585384043533', '1', '1585384305065', '1');
-INSERT INTO `fs_member_menu` VALUES ('27', '插件管理', '后台管理:数据计算:插件管理', '26', 'dropbox', '/spark/plugin', '', '0', '1', '', '1585384219002', '1', '1585384219002', '1');
-INSERT INTO `fs_member_menu` VALUES ('28', '插件列表', '后台管理:数据计算:插件管理:插件列表', '27', '', '/spark/plugin/list', '', '0', '1', '', '1585384240550', '1', '1585384240550', '1');
-INSERT INTO `fs_member_menu` VALUES ('29', '流程管理', '后台管理:数据计算:流程管理', '26', 'deployment-unit', '/spark/flow', '', '0', '1', '', '1585661766299', '1', '1585661985644', '1');
-INSERT INTO `fs_member_menu` VALUES ('30', '流程列表', '后台管理:数据计算:流程管理:流程列表', '29', '', '/spark/flow/list', '', '0', '1', '', '1585661826570', '1', '1585661826570', '1');
-INSERT INTO `fs_member_menu` VALUES ('31', '节点列表', '后台管理:数据计算:流程管理:节点列表', '29', '', '/spark/node/list', '', '0', '1', '', '1585661841784', '1', '1585661841784', '1');
-INSERT INTO `fs_member_menu` VALUES ('32', '树形节点', '后台管理:数据计算:流程管理:树形节点', '29', '', '/spark/node/tree', '', '0', '1', '', '1585661854477', '1', '1585661854477', '1');
-INSERT INTO `fs_member_menu` VALUES ('37', '辅助工具', '后台管理:数据计算:辅助工具', '26', 'rocket', '/spark/tool', '', '0', '1', '', '1585662611501', '1', '1610410293382', '1');
-INSERT INTO `fs_member_menu` VALUES ('38', '属性编辑器', '后台管理:数据计算:辅助工具:属性编辑器', '37', '', '/spark/tool/property', '', '0', '1', '', '1585663056291', '1', '1610410337234', '1');
-INSERT INTO `fs_member_menu` VALUES ('39', '字段编辑器', '后台管理:数据计算:辅助工具:字段编辑器', '37', '', '/spark/tool/field', '', '0', '1', '', '1585663079511', '1', '1610410326558', '1');
+INSERT INTO `fs_member_menu` VALUES ('26', '数据计算', '后台管理:数据计算', '1', 'cluster', '/dag/index/index', '', '0', '1', '计算流程、离线分析、插件管理', '1585384043533', '1', '1585384305065', '1');
+INSERT INTO `fs_member_menu` VALUES ('27', '插件管理', '后台管理:数据计算:插件管理', '26', 'dropbox', '/dag/plugin', '', '0', '1', '', '1585384219002', '1', '1585384219002', '1');
+INSERT INTO `fs_member_menu` VALUES ('28', '插件列表', '后台管理:数据计算:插件管理:插件列表', '27', '', '/dag/plugin/list', '', '0', '1', '', '1585384240550', '1', '1585384240550', '1');
+INSERT INTO `fs_member_menu` VALUES ('29', '流程管理', '后台管理:数据计算:流程管理', '26', 'deployment-unit', '/dag/flow', '', '0', '1', '', '1585661766299', '1', '1585661985644', '1');
+INSERT INTO `fs_member_menu` VALUES ('30', '流程列表', '后台管理:数据计算:流程管理:流程列表', '29', '', '/dag/flow/list', '', '0', '1', '', '1585661826570', '1', '1585661826570', '1');
+INSERT INTO `fs_member_menu` VALUES ('31', '节点列表', '后台管理:数据计算:流程管理:节点列表', '29', '', '/dag/node/list', '', '0', '1', '', '1585661841784', '1', '1585661841784', '1');
+INSERT INTO `fs_member_menu` VALUES ('32', '树形节点', '后台管理:数据计算:流程管理:树形节点', '29', '', '/dag/node/tree', '', '0', '1', '', '1585661854477', '1', '1585661854477', '1');
+INSERT INTO `fs_member_menu` VALUES ('37', '辅助工具', '后台管理:数据计算:辅助工具', '26', 'rocket', '/dag/tool', '', '0', '1', '', '1585662611501', '1', '1610410293382', '1');
+INSERT INTO `fs_member_menu` VALUES ('38', '属性编辑器', '后台管理:数据计算:辅助工具:属性编辑器', '37', '', '/#/dag/tool/property', '_blank', '0', '1', '', '1585663056291', '1', '1615876211145', '1');
+INSERT INTO `fs_member_menu` VALUES ('39', '字段编辑器', '后台管理:数据计算:辅助工具:字段编辑器', '37', '', '/#/dag/tool/field', '_blank', '0', '1', '', '1585663079511', '1', '1615876222955', '1');
 INSERT INTO `fs_member_menu` VALUES ('40', '人脸识别', '后台管理:人脸识别', '1', 'smile', '/face/index/index', '', '0', '1', '人脸检测、人脸识别、检索对比', '1597297964946', '1', '1597298791858', '1');
 INSERT INTO `fs_member_menu` VALUES ('41', '分组管理', '后台管理:人脸识别:分组管理', '40', 'team', '/face/group', '', '0', '1', '', '1597297984692', '1', '1598260929886', '1');
 INSERT INTO `fs_member_menu` VALUES ('42', '人员管理', '后台管理:人脸识别:人员管理', '40', 'user', '/face/user', '', '0', '1', '', '1597298848332', '1', '1598260938414', '1');
@@ -96,6 +138,22 @@ INSERT INTO `fs_member_menu` VALUES ('57', '词库列表', '后台管理:搜索�
 INSERT INTO `fs_member_menu` VALUES ('58', '服务管理', '后台管理:服务管理', '1', 'box-plot', '/server/index/index', '', '0', '1', '管理项目基础服务', '1611814694744', '1', '1611814694744', '1');
 INSERT INTO `fs_member_menu` VALUES ('59', '消息队列', '后台管理:服务管理:消息队列', '58', 'hourglass', '/server/rabbit', '', '0', '1', '', '1611814821145', '1', '1611814821145', '1');
 INSERT INTO `fs_member_menu` VALUES ('60', '控制面板', '后台管理:服务管理:消息队列:控制面板', '59', '', '/server/rabbit/dashboard', '', '0', '1', '', '1611814876795', '1', '1611814876795', '1');
+INSERT INTO `fs_member_menu` VALUES ('61', '在线办公', '后台管理:在线办公', '1', 'snippets', '/oa/index/index', '', '0', '1', '表单设计、工作流程、代码生成', '1618451824790', '1', '1618451924910', '1');
+INSERT INTO `fs_member_menu` VALUES ('62', '表单管理', '后台管理:在线办公:表单管理', '61', 'file-protect', '/oa/form', '', '30', '1', '', '1618451979842', '1', '1622708492969', '1');
+INSERT INTO `fs_member_menu` VALUES ('63', '表单模型', '后台管理:在线办公:表单管理:表单模型', '62', '', '/oa/form/frame', '', '0', '1', '', '1618452012679', '1', '1618452012679', '1');
+INSERT INTO `fs_member_menu` VALUES ('64', '托管数据', '后台管理:在线办公:表单管理:托管数据', '62', '', '/oa/form/data', '', '0', '1', '', '1618452012679', '1', '1618452012679', '1');
+INSERT INTO `fs_member_menu` VALUES ('65', '校验规则', '后台管理:在线办公:表单管理:校验规则', '62', '', '/oa/form/regular', '', '0', '1', '', '1618452012679', '1', '1618452012679', '1');
+INSERT INTO `fs_member_menu` VALUES ('66', '字典管理', '后台管理:用户中心:字典管理', '5', 'book', '/member/dictionary', '', '0', '1', '', '1619510811715', '1', '1619510811715', '1');
+INSERT INTO `fs_member_menu` VALUES ('67', '字典列表', '后台管理:用户中心:字典管理:字典列表', '66', '', '/member/dictionary/list', '', '0', '1', '', '1619510988399', '1', '1619510988399', '1');
+INSERT INTO `fs_member_menu` VALUES ('68', '树形字典', '后台管理:用户中心:字典管理:树形字典', '66', '', '/member/dictionary/tree', '', '0', '1', '', '1619511018156', '1', '1619511018156', '1');
+INSERT INTO `fs_member_menu` VALUES ('69', '演示实例', '后台管理:演示实例', '1', 'alert', '/demo/index/index', '', '0', '1', '基础组件、功能演示、示例代码', '1620998687126', '1', '1620998687126', '1');
+INSERT INTO `fs_member_menu` VALUES ('70', '数据表格', '后台管理:演示实例:数据表格', '69', 'table', '/demo/table', '', '0', '1', '', '1620998817281', '1', '1620998817281', '1');
+INSERT INTO `fs_member_menu` VALUES ('71', '合并单元格', '后台管理:演示实例:数据表格:合并单元格', '70', '', '/demo/table/merge', '', '0', '1', '', '1620998844844', '1', '1620998844844', '1');
+INSERT INTO `fs_member_menu` VALUES ('72', '工作流程', '后台管理:在线办公:工作流程', '61', 'branches', '/oa/workflow', '', '20', '1', '', '1618451979842', '1', '1622708507924', '1');
+INSERT INTO `fs_member_menu` VALUES ('73', '流程模型', '后台管理:在线办公:工作流程:流程模型', '72', '', '/oa/workflow/list', '', '0', '1', '', '1618452012679', '1', '1618452012679', '1');
+INSERT INTO `fs_member_menu` VALUES ('74', '流程部署', '后台管理:在线办公:工作流程:流程部署', '72', '', '/oa/workflow/deployment', '', '0', '1', '', '1622703834598', '1', '1622703834598', '1');
+INSERT INTO `fs_member_menu` VALUES ('75', '流程审批', '后台管理:在线办公:流程审批', '61', 'solution', '/oa/approve', '', '50', '1', '', '1622708586117', '1', '1622709216210', '1');
+INSERT INTO `fs_member_menu` VALUES ('76', '新建单据', '后台管理:在线办公:流程审批:新建单据', '75', '', '/oa/approve/workflow', '', '0', '1', '', '1622708678092', '1', '1622709225897', '1');
 
 -- ----------------------------
 -- Table structure for fs_member_relation
@@ -169,7 +227,23 @@ INSERT INTO `fs_member_relation` VALUES ('role_menu_1_58', 'role_menu', '1', '58
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_59', 'role_menu', '1', '59');
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_6', 'role_menu', '1', '6');
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_60', 'role_menu', '1', '60');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_61', 'role_menu', '1', '61');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_62', 'role_menu', '1', '62');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_63', 'role_menu', '1', '63');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_64', 'role_menu', '1', '64');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_65', 'role_menu', '1', '65');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_66', 'role_menu', '1', '66');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_67', 'role_menu', '1', '67');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_68', 'role_menu', '1', '68');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_69', 'role_menu', '1', '69');
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_7', 'role_menu', '1', '7');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_70', 'role_menu', '1', '70');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_71', 'role_menu', '1', '71');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_72', 'role_menu', '1', '72');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_73', 'role_menu', '1', '73');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_74', 'role_menu', '1', '74');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_75', 'role_menu', '1', '75');
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_76', 'role_menu', '1', '76');
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_8', 'role_menu', '1', '8');
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_9', 'role_menu', '1', '9');
 INSERT INTO `fs_member_relation` VALUES ('role_menu_2_1', 'role_menu', '2', '1');
@@ -239,8 +313,34 @@ INSERT INTO `fs_member_relation` VALUES ('role_resource_1_6', 'role_resource', '
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_60', 'role_resource', '1', '60');
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_61', 'role_resource', '1', '61');
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_62', 'role_resource', '1', '62');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_63', 'role_resource', '1', '63');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_64', 'role_resource', '1', '64');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_65', 'role_resource', '1', '65');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_66', 'role_resource', '1', '66');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_67', 'role_resource', '1', '67');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_68', 'role_resource', '1', '68');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_69', 'role_resource', '1', '69');
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_7', 'role_resource', '1', '7');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_70', 'role_resource', '1', '70');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_71', 'role_resource', '1', '71');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_72', 'role_resource', '1', '72');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_73', 'role_resource', '1', '73');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_74', 'role_resource', '1', '74');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_75', 'role_resource', '1', '75');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_76', 'role_resource', '1', '76');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_77', 'role_resource', '1', '77');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_78', 'role_resource', '1', '78');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_79', 'role_resource', '1', '79');
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_8', 'role_resource', '1', '8');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_80', 'role_resource', '1', '80');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_81', 'role_resource', '1', '81');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_82', 'role_resource', '1', '82');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_83', 'role_resource', '1', '83');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_84', 'role_resource', '1', '84');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_85', 'role_resource', '1', '85');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_86', 'role_resource', '1', '86');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_87', 'role_resource', '1', '87');
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_88', 'role_resource', '1', '88');
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_9', 'role_resource', '1', '9');
 INSERT INTO `fs_member_relation` VALUES ('role_resource_2_1', 'role_resource', '2', '1');
 INSERT INTO `fs_member_relation` VALUES ('role_resource_2_2', 'role_resource', '2', '2');
@@ -275,7 +375,7 @@ CREATE TABLE `fs_member_resource` (
   `updated_time` bigint(20) NOT NULL DEFAULT '0',
   `updated_uid` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=63 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=89 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of fs_member_resource
@@ -310,19 +410,19 @@ INSERT INTO `fs_member_resource` VALUES ('27', '模板', '网页爬虫:模板', 
 INSERT INTO `fs_member_resource` VALUES ('28', '删除', '网页爬虫:模板:删除', '27', 'spider', 'template', 'delete', '0', '1', '', '1585195509597', '1', '1585195533509', '1');
 INSERT INTO `fs_member_resource` VALUES ('29', '修改', '网页爬虫:模板:修改', '27', 'spider', 'template', 'modify', '0', '1', '', '1585195523181', '1', '1585195523181', '1');
 INSERT INTO `fs_member_resource` VALUES ('30', '添加', '网页爬虫:模板:添加', '27', 'spider', 'template', 'add', '0', '1', '', '1585216567413', '1', '1585216567413', '1');
-INSERT INTO `fs_member_resource` VALUES ('31', '数据计算', '数据计算', '0', 'spark', '', '', '0', '1', '', '1585384071227', '1', '1585384071227', '1');
-INSERT INTO `fs_member_resource` VALUES ('32', '插件', '数据计算:插件', '31', 'spark', 'plugin', '', '0', '1', '', '1585384104596', '1', '1585384120688', '1');
-INSERT INTO `fs_member_resource` VALUES ('33', '添加', '数据计算:插件:添加', '32', 'spark', 'plugin', 'add', '0', '1', '', '1585384138739', '1', '1585384138739', '1');
-INSERT INTO `fs_member_resource` VALUES ('34', '修改', '数据计算:插件:修改', '32', 'spark', 'plugin', 'modify', '0', '1', '', '1585384152067', '1', '1585384152067', '1');
-INSERT INTO `fs_member_resource` VALUES ('35', '删除', '数据计算:插件:删除', '32', 'spark', 'plugin', 'delete', '0', '1', '', '1585384168964', '1', '1585384168964', '1');
-INSERT INTO `fs_member_resource` VALUES ('36', '流程节点', '数据计算:流程节点', '31', 'spark', 'node', '', '0', '1', '', '1585669452789', '1', '1585727887482', '1');
-INSERT INTO `fs_member_resource` VALUES ('37', '添加', '数据计算:流程节点:添加', '36', 'spark', 'node', 'add', '0', '1', '', '1585669473979', '1', '1585669473979', '1');
-INSERT INTO `fs_member_resource` VALUES ('38', '修改', '数据计算:流程节点:修改', '36', 'spark', 'node', 'modify', '0', '1', '', '1585669487729', '1', '1585669487729', '1');
-INSERT INTO `fs_member_resource` VALUES ('39', '删除', '数据计算:流程节点:删除', '36', 'spark', 'node', 'delete', '0', '1', '', '1585669499607', '1', '1585669499607', '1');
-INSERT INTO `fs_member_resource` VALUES ('40', '流程', '数据计算:流程', '31', 'spark', 'flow', '', '0', '1', '', '1585727898953', '1', '1585727898953', '1');
-INSERT INTO `fs_member_resource` VALUES ('41', '添加', '数据计算:流程:添加', '40', 'spark', 'flow', 'add', '0', '1', '', '1585727916428', '1', '1585727941798', '1');
-INSERT INTO `fs_member_resource` VALUES ('42', '修改', '数据计算:流程:修改', '40', 'spark', 'flow', 'modify', '0', '1', '', '1585727959930', '1', '1585727959930', '1');
-INSERT INTO `fs_member_resource` VALUES ('43', '删除', '数据计算:流程:删除', '40', 'spark', 'flow', 'delete', '0', '1', '', '1585727972170', '1', '1585727972170', '1');
+INSERT INTO `fs_member_resource` VALUES ('31', '数据计算', '数据计算', '0', 'dag', '', '', '0', '1', '', '1585384071227', '1', '1585384071227', '1');
+INSERT INTO `fs_member_resource` VALUES ('32', '插件', '数据计算:插件', '31', 'dag', 'plugin', '', '0', '1', '', '1585384104596', '1', '1585384120688', '1');
+INSERT INTO `fs_member_resource` VALUES ('33', '添加', '数据计算:插件:添加', '32', 'dag', 'plugin', 'add', '0', '1', '', '1585384138739', '1', '1585384138739', '1');
+INSERT INTO `fs_member_resource` VALUES ('34', '修改', '数据计算:插件:修改', '32', 'dag', 'plugin', 'modify', '0', '1', '', '1585384152067', '1', '1585384152067', '1');
+INSERT INTO `fs_member_resource` VALUES ('35', '删除', '数据计算:插件:删除', '32', 'dag', 'plugin', 'delete', '0', '1', '', '1585384168964', '1', '1585384168964', '1');
+INSERT INTO `fs_member_resource` VALUES ('36', '流程节点', '数据计算:流程节点', '31', 'dag', 'node', '', '0', '1', '', '1585669452789', '1', '1585727887482', '1');
+INSERT INTO `fs_member_resource` VALUES ('37', '添加', '数据计算:流程节点:添加', '36', 'dag', 'node', 'add', '0', '1', '', '1585669473979', '1', '1585669473979', '1');
+INSERT INTO `fs_member_resource` VALUES ('38', '修改', '数据计算:流程节点:修改', '36', 'dag', 'node', 'modify', '0', '1', '', '1585669487729', '1', '1585669487729', '1');
+INSERT INTO `fs_member_resource` VALUES ('39', '删除', '数据计算:流程节点:删除', '36', 'dag', 'node', 'delete', '0', '1', '', '1585669499607', '1', '1585669499607', '1');
+INSERT INTO `fs_member_resource` VALUES ('40', '流程', '数据计算:流程', '31', 'dag', 'flow', '', '0', '1', '', '1585727898953', '1', '1585727898953', '1');
+INSERT INTO `fs_member_resource` VALUES ('41', '添加', '数据计算:流程:添加', '40', 'dag', 'flow', 'add', '0', '1', '', '1585727916428', '1', '1585727941798', '1');
+INSERT INTO `fs_member_resource` VALUES ('42', '修改', '数据计算:流程:修改', '40', 'dag', 'flow', 'modify', '0', '1', '', '1585727959930', '1', '1585727959930', '1');
+INSERT INTO `fs_member_resource` VALUES ('43', '删除', '数据计算:流程:删除', '40', 'dag', 'flow', 'delete', '0', '1', '', '1585727972170', '1', '1585727972170', '1');
 INSERT INTO `fs_member_resource` VALUES ('44', '人脸识别', '人脸识别', '0', 'face', '', '', '0', '1', '', '1597299393466', '1', '1597299393466', '1');
 INSERT INTO `fs_member_resource` VALUES ('45', '分组', '人脸识别:分组', '44', 'face', 'group', '', '0', '1', '', '1597299426164', '1', '1597299426164', '1');
 INSERT INTO `fs_member_resource` VALUES ('46', '人员', '人脸识别:人员', '44', 'face', 'user', '', '0', '1', '', '1597299441594', '1', '1597299441594', '1');
@@ -342,6 +442,32 @@ INSERT INTO `fs_member_resource` VALUES ('59', '词库', '搜索引擎:词库', 
 INSERT INTO `fs_member_resource` VALUES ('60', '添加', '搜索引擎:词库:添加', '59', 'lucene', 'dictionary', 'add', '0', '1', '', '1607333455146', '1', '1607333455146', '1');
 INSERT INTO `fs_member_resource` VALUES ('61', '修改', '搜索引擎:词库:修改', '59', 'lucene', 'dictionary', 'modify', '0', '1', '', '1607333470362', '1', '1607333470362', '1');
 INSERT INTO `fs_member_resource` VALUES ('62', '删除', '搜索引擎:词库:删除', '59', 'lucene', 'dictionary', 'delete', '0', '1', '', '1607333488826', '1', '1607333488826', '1');
+INSERT INTO `fs_member_resource` VALUES ('63', '在线办公', '在线办公', '0', 'oa', '', '', '0', '1', '', '1618446294833', '1', '1618446294833', '1');
+INSERT INTO `fs_member_resource` VALUES ('64', '表单模型', '在线办公:表单模型', '63', 'oa', 'formFrame', '', '0', '1', '', '1618446338026', '1', '1618446338026', '1');
+INSERT INTO `fs_member_resource` VALUES ('65', '添加', '在线办公:表单模型:添加', '64', 'oa', 'formFrame', 'add', '0', '1', '', '1618446365063', '1', '1618446365063', '1');
+INSERT INTO `fs_member_resource` VALUES ('66', '修改', '在线办公:表单模型:修改', '64', 'oa', 'formFrame', 'modify', '0', '1', '', '1618446377800', '1', '1618446377800', '1');
+INSERT INTO `fs_member_resource` VALUES ('67', '删除', '在线办公:表单模型:删除', '64', 'oa', 'formFrame', 'delete', '0', '1', '', '1618446390411', '1', '1618446390411', '1');
+INSERT INTO `fs_member_resource` VALUES ('68', '表单数据', '在线办公:表单数据', '63', 'oa', 'formData', '', '0', '1', '', '1618446338026', '1', '1618446338026', '1');
+INSERT INTO `fs_member_resource` VALUES ('69', '添加', '在线办公:表单数据:添加', '68', 'oa', 'formData', 'add', '0', '1', '', '1618446365063', '1', '1618446365063', '1');
+INSERT INTO `fs_member_resource` VALUES ('70', '修改', '在线办公:表单数据:修改', '68', 'oa', 'formData', 'modify', '0', '1', '', '1618446377800', '1', '1618446377800', '1');
+INSERT INTO `fs_member_resource` VALUES ('71', '删除', '在线办公:表单数据:删除', '68', 'oa', 'formData', 'delete', '0', '1', '', '1618446390411', '1', '1618446390411', '1');
+INSERT INTO `fs_member_resource` VALUES ('72', '校验规则', '在线办公:校验规则', '63', 'oa', 'formRegular', '', '0', '1', '', '1618446338026', '1', '1618446338026', '1');
+INSERT INTO `fs_member_resource` VALUES ('73', '添加', '在线办公:校验规则:添加', '72', 'oa', 'formRegular', 'add', '0', '1', '', '1618446365063', '1', '1618446365063', '1');
+INSERT INTO `fs_member_resource` VALUES ('74', '修改', '在线办公:校验规则:修改', '72', 'oa', 'formRegular', 'modify', '0', '1', '', '1618446377800', '1', '1618446377800', '1');
+INSERT INTO `fs_member_resource` VALUES ('75', '删除', '在线办公:校验规则:删除', '72', 'oa', 'formRegular', 'delete', '0', '1', '', '1618446390411', '1', '1618446390411', '1');
+INSERT INTO `fs_member_resource` VALUES ('76', '字典', '用户中心:字典', '2', 'member', 'dictionary', '', '0', '1', '', '1528081696180', '1', '1619512081161', '1');
+INSERT INTO `fs_member_resource` VALUES ('77', '添加', '用户中心:字典:添加', '76', 'member', 'dictionary', 'add', '0', '1', '', '1528081911866', '1', '1584590115052', '1');
+INSERT INTO `fs_member_resource` VALUES ('78', '修改', '用户中心:字典:修改', '76', 'member', 'dictionary', 'modify', '0', '1', '', '1528081955009', '1', '1584590127509', '1');
+INSERT INTO `fs_member_resource` VALUES ('79', '删除', '用户中心:字典:删除', '76', 'member', 'dictionary', 'delete', '0', '1', '', '1528081985121', '1', '1584590135133', '1');
+INSERT INTO `fs_member_resource` VALUES ('80', '工作流程', '在线办公:工作流程', '63', 'oa', 'workflow', '', '0', '1', '', '1618446338026', '1', '1618446338026', '1');
+INSERT INTO `fs_member_resource` VALUES ('81', '添加', '在线办公:工作流程:添加', '80', 'oa', 'workflow', 'add', '0', '1', '', '1618446365063', '1', '1618446365063', '1');
+INSERT INTO `fs_member_resource` VALUES ('82', '修改', '在线办公:工作流程:修改', '80', 'oa', 'workflow', 'modify', '0', '1', '', '1618446377800', '1', '1618446377800', '1');
+INSERT INTO `fs_member_resource` VALUES ('83', '删除', '在线办公:工作流程:删除', '80', 'oa', 'workflow', 'delete', '0', '1', '', '1618446390411', '1', '1618446390411', '1');
+INSERT INTO `fs_member_resource` VALUES ('84', '发布', '在线办公:工作流程:发布', '80', 'oa', 'workflow', 'publish', '0', '1', '', '1622633473668', '1', '1622633473668', '1');
+INSERT INTO `fs_member_resource` VALUES ('85', '检索部署', '在线办公:工作流程:检索部署', '80', 'oa', 'workflow', 'searchDeployment', '0', '1', '', '1622703892647', '1', '1622703990430', '1');
+INSERT INTO `fs_member_resource` VALUES ('86', '删除部署', '在线办公:工作流程:删除部署', '80', 'oa', 'workflow', 'deleteDeployment', '0', '1', '', '1622703934998', '1', '1622703973335', '1');
+INSERT INTO `fs_member_resource` VALUES ('87', '流程审批', '在线办公:流程审批', '63', 'oa', 'approve', '', '0', '1', '', '1622708972781', '1', '1622708972781', '1');
+INSERT INTO `fs_member_resource` VALUES ('88', '新建单据', '在线办公:流程审批:新建单据', '87', 'oa', 'approve', 'workflow', '0', '1', '', '1622709172273', '1', '1622709172273', '1');
 
 -- ----------------------------
 -- Table structure for fs_member_role
@@ -413,14 +539,14 @@ CREATE TABLE `fs_member_user` (
   `logined_ip` varchar(16) NOT NULL DEFAULT '',
   `locked_time` bigint(20) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
-  KEY `unq_serial` (`serial`),
-  KEY `unq_name` (`name`)
+  KEY `unq_serial` (`serial`) USING BTREE,
+  KEY `unq_name` (`name`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of fs_member_user
 -- ----------------------------
-INSERT INTO `fs_member_user` VALUES ('1', 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', '0', '1', '', '1528081552985', '127.0.0.1', '1', '1528081552985', '1', '1611812584629', '127.0.0.1', '0');
+INSERT INTO `fs_member_user` VALUES ('1', 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', '0', '1', '', '1528081552985', '127.0.0.1', '1', '1528081552985', '1', '1620283353410', '127.0.0.1', '0');
 INSERT INTO `fs_member_user` VALUES ('2', 'test', '测试123', '4b361be828611add84453a24f39772a5', '0905', '0', '1', '', '1528081567988', '127.0.0.1', '1', '1542958281919', '1', '1528267171953', '127.0.0.1', '0');
 INSERT INTO `fs_member_user` VALUES ('3', '111', '111', '', '', '6', '-1', '', '0', '', '0', '1584360531961', '1', '0', '', '0');
 INSERT INTO `fs_member_user` VALUES ('4', '222', '222', '', '', '0', '1', '', '0', '', '0', '0', '0', '0', '', '0');

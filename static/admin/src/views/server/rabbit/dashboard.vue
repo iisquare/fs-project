@@ -108,7 +108,7 @@
       </div>
     </a-card>
     <a-modal title="任务编辑" v-model="taskVisible" :confirmLoading="taskLoading" :maskClosable="false" @ok="taskSubmit">
-      <a-form-model :model="task" ref="task" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
+      <a-form-model :model="task" ref="task" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
         <a-form-model-item label="队列名称">
           <a-input v-model="task.queueName" auto-complete="on"></a-input>
         </a-form-model-item>

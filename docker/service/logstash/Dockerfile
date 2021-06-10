@@ -1,0 +1,3 @@
+ARG ELK_VERSION
+
+FROM logstash:${ELK_VERSION}

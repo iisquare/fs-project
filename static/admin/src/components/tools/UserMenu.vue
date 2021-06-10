@@ -2,19 +2,6 @@
   <div class="user-wrapper">
     <div class="content-box">
       <span class="action"><a-icon type="layout" @click="handleSettingPanel" /></span>
-      <a-popover placement="bottomRight">
-        <template slot="content">
-          <a-list itemLayout="horizontal" :dataSource="menus">
-            <a-list-item slot="renderItem" slot-scope="item">
-              <a-list-item-meta :description="item.description">
-                <router-link slot="title" :to="item.url" :target="item.target">{{ item.name }}</router-link>
-                <a-avatar slot="avatar" :icon="item.icon" />
-              </a-list-item-meta>
-            </a-list-item>
-          </a-list>
-        </template>
-        <span class="action"><a-icon type="appstore" /></span>
-      </a-popover>
       <a-dropdown>
         <span class="action ant-dropdown-link user-dropdown-menu">
           <a-avatar class="avatar" size="small" icon="insurance"/>

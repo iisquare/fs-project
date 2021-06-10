@@ -38,8 +38,26 @@ docker run -it --entrypoint /bin/bash name:version
 docker run --restart=always
 docker update --restart=always <CONTAINER ID>
 ```
+- Info
+```
+docker inspect [OPTIONS] {NAME|ID}
+```
+
+## Best Practice
+- network
+```
+bridge，桥接网络，以桥接模式连接到宿主机，默认方式；
+host，宿主网络，即与宿主机共用网络；
+none，表示无网络，容器将无法联网。
+```
+- privileged
+```
+true，container内的root拥有真正的root权限。
+false，container内的root只是外部的一个普通用户权限。
+```
 
 ## 参考连接
 - [Compose file version 3 reference](https://docs.docker.com/compose/compose-file/compose-file-v3/)
 - [为容器设置启动时要执行的命令和参数](https://kubernetes.io/zh/docs/tasks/inject-data-application/define-command-argument-container/)
 - [docker-compose建立容器之间的连接关系](https://www.jianshu.com/p/1e80c2866a9d)
+- [Docker run reference VOLUME (shared filesystems)](https://docs.docker.com/engine/reference/run/#volume-shared-filesystems)

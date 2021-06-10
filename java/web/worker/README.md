@@ -7,4 +7,6 @@
 - 通过动态监听消费消息队列，实现消费者数量动态控制，避免使用注解。
 
 ## 参考
+- [RabbitMQ Tutorials](https://www.rabbitmq.com/getstarted.html)
+- [Spring AMQP](https://docs.spring.io/spring-amqp/docs/current/reference/html/)
 - [RabbitMq动态添加监听](https://my.oschina.net/pentakill/blog/4748966)

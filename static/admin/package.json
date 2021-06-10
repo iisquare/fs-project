@@ -13,11 +13,13 @@
   },
   "dependencies": {
     "@antv/data-set": "^0.10.2",
-    "ant-design-vue": "1.7.2",
+    "ant-design-vue": "1.7.3",
     "axios": "^0.19.0",
+    "bpmn-js": "8.6.1",
     "core-js": "^3.1.2",
     "enquire.js": "^2.1.6",
     "js-base64": "^2.5.2",
+    "jsplumb": "^2.15.5",
     "lodash.clonedeep": "^4.5.0",
     "lodash.get": "^4.4.2",
     "lodash.pick": "^4.4.0",
@@ -33,6 +35,7 @@
     "vue-quill-editor": "^3.0.6",
     "vue-router": "^3.1.2",
     "vue-svg-component-runtime": "^1.0.1",
+    "vuedraggable": "^2.24.3",
     "vuex": "^3.1.1",
     "wangeditor": "^3.1.1"
   },

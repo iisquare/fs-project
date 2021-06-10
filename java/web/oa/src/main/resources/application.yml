@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: fs-oa-service
+  profiles:
+    active: dev,idev
+  jpa:
+    show-sql: true
+    hibernate:
+      naming:
+        physical-strategy: com.iisquare.fs.web.oa.dsconfig.NamingStrategy

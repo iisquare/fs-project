@@ -1,0 +1,26 @@
+{
+  "name": "Flowable",
+  "uri": "http://flowable.org/bpmn",
+  "prefix": "flowable",
+  "xml": {
+    "tagAlias": "lowerCase"
+  },
+  "associations": [],
+  "types": [
+    {
+      "name": "Authority",
+      "isAbstract": true,
+      "extends": ["bpmn:ExtensionElements"],
+      "properties": [
+        {
+          "name": "authority",
+          "type": "Expression",
+          "xml": {
+            "serialize": "xsi:type"
+          }
+        }
+      ]
+    }
+  ],
+  "emumerations": []
+}

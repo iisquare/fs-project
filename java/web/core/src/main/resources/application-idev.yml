@@ -9,8 +9,8 @@ rpc:
   analyse:
     name: fs-analyse-service
     rest: http://127.0.0.1:7802
-  flink:
-    name: fs-flink-service
+  dag:
+    name: fs-dag-service
     rest: http://127.0.0.1:7803
   xlab:
     name: fs-xlab-service
@@ -27,15 +27,21 @@ rpc:
   lucene:
     name: fs-lucene-service
     rest: http://127.0.0.1:7810
-  spark:
-    name: fs-spark-service
-    rest: http://127.0.0.1:7811
   file:
     name: fs-file-service
     rest: http://127.0.0.1:7812
   worker:
     name: fs-worker-service
     rest: http://127.0.0.1:7813
+  bi:
+    name: fs-bi-service
+    rest: http://127.0.0.1:7815
+  oa:
+    name: fs-oa-service
+    rest: http://127.0.0.1:7816
+  cms:
+    name: fs-cms-service
+    rest: http://127.0.0.1:7817
 
 feign:
   hystrix:
@@ -44,8 +50,8 @@ feign:
     config:
       default:
         connectTimeout: 1000
-        readTimeout: 5000
-      fs-flink-service:
+        readTimeout: 15000
+      fs-dag-service:
         connectTimeout: 1000
         readTimeout: 60000
       fs-xlab-service:
@@ -55,9 +61,6 @@ feign:
         connectTimeout: 1000
         readTimeout: 60000
       fs-lucene-service:
-        connectTimeout: 1000
-        readTimeout: 60000
-      fs-spark-service:
         connectTimeout: 1000
         readTimeout: 60000
 
@@ -70,6 +73,12 @@ hystrix:
         isolation:
           thread:
             timeoutInMilliseconds: 5000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
 
 server:
   servlet:
@@ -111,10 +120,19 @@ spring:
       simple:
         acknowledge-mode: manual
         default-requeue-rejected: false
+  mongodb:
+    hosts: 127.0.0.1:27017
+    database: admin
+    username: root
+    password: admin888
+  elasticsearch:
+    cluster-name: docker-cluster
+    cluster-nodes: 127.0.0.1:9200
+
   datasource:
     primary:
-      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
-      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
+      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
@@ -129,8 +147,8 @@ spring:
       time-between-eviction-runs-millis: 18800
     member:
       table-prefix: fs_member_
-      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
-      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
+      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
@@ -145,8 +163,8 @@ spring:
       time-between-eviction-runs-millis: 18800
     spider:
       table-prefix: fs_spider_
-      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
-      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
+      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
@@ -159,10 +177,10 @@ spring:
       test-on-borrow: false
       test-while-idle: true
       time-between-eviction-runs-millis: 18800
-    flink:
-      table-prefix: fs_flink_
-      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
-      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
+    dag:
+      table-prefix: fs_dag_
+      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
@@ -177,8 +195,8 @@ spring:
       time-between-eviction-runs-millis: 18800
     face:
       table-prefix: fs_face_
-      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
-      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
+      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
@@ -193,24 +211,8 @@ spring:
       time-between-eviction-runs-millis: 18800
     lucene:
       table-prefix: fs_lucene_
-      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
-      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
-      type: com.alibaba.druid.pool.DruidDataSource
-      username: root
-      password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
-    spark:
-      table-prefix: fs_spark_
-      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
-      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
+      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
@@ -225,8 +227,71 @@ spring:
       time-between-eviction-runs-millis: 18800
     file:
       table-prefix: fs_file_
-      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
-      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false
+      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      type: com.alibaba.druid.pool.DruidDataSource
+      username: root
+      password: admin888
+      driver-class-name: com.mysql.jdbc.Driver
+      max-idle: 10
+      max-wait: 10000
+      min-idle: 5
+      initial-size: 5
+      validation-query: SELECT 1
+      test-on-borrow: false
+      test-while-idle: true
+      time-between-eviction-runs-millis: 18800
+    bi:
+      table-prefix: fs_bi_
+      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      type: com.alibaba.druid.pool.DruidDataSource
+      username: root
+      password: admin888
+      driver-class-name: com.mysql.jdbc.Driver
+      max-idle: 10
+      max-wait: 10000
+      min-idle: 5
+      initial-size: 5
+      validation-query: SELECT 1
+      test-on-borrow: false
+      test-while-idle: true
+      time-between-eviction-runs-millis: 18800
+    oa:
+      table-prefix: fs_oa_
+      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      type: com.alibaba.druid.pool.DruidDataSource
+      username: root
+      password: admin888
+      driver-class-name: com.mysql.jdbc.Driver
+      max-idle: 10
+      max-wait: 10000
+      min-idle: 5
+      initial-size: 5
+      validation-query: SELECT 1
+      test-on-borrow: false
+      test-while-idle: true
+      time-between-eviction-runs-millis: 18800
+    cms:
+      table-prefix: fs_cms_
+      url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      type: com.alibaba.druid.pool.DruidDataSource
+      username: root
+      password: admin888
+      driver-class-name: com.mysql.jdbc.Driver
+      max-idle: 10
+      max-wait: 10000
+      min-idle: 5
+      initial-size: 5
+      validation-query: SELECT 1
+      test-on-borrow: false
+      test-while-idle: true
+      time-between-eviction-runs-millis: 18800
+    workflow:
+      url: jdbc:mysql://127.0.0.1:3306/fs-workflow?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs-workflow?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888

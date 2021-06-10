@@ -1,4 +1,5 @@
 
 dependencies {
     compile project(':base:web')
+    compile group: 'io.micrometer', name: 'micrometer-registry-prometheus', version: '1.6.3'
 }

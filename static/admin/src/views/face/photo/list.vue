@@ -62,7 +62,7 @@
     </a-card>
     <!--展示界面-->
     <a-modal :title="'信息查看 - ' + form.id" v-model="infoVisible" :footer="null">
-      <a-form-model :model="form" :loading="infoLoading" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
+      <a-form-model :model="form" :loading="infoLoading" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
         <a-form-model-item label="人员ID">{{ form.userIdInfo ? form.userIdInfo.id : '' }}</a-form-model-item>
         <a-form-model-item label="人员标识">{{ form.userIdInfo ? form.userIdInfo.serial : '' }}</a-form-model-item>
         <a-form-model-item label="人员名称">{{ form.userIdInfo ? form.userIdInfo.name : '' }}</a-form-model-item>
@@ -85,7 +85,7 @@
     </a-modal>
     <!--编辑界面-->
     <a-modal :title="'信息' + (form.id ? ('修改 - ' + form.id) : '添加')" v-model="formVisible" :confirmLoading="formLoading" :maskClosable="false" @ok="submit">
-      <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
+      <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
         <a-form-model-item label="人员" prop="userId">
           <a-input v-model="form.userId" auto-complete="off" placeholder="所属人员ID"></a-input>
         </a-form-model-item>

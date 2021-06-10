@@ -28,10 +28,9 @@
       :collapsible="true"
     ></side-menu>
 
-    <a-layout :class="[layoutMode, `content-width-${contentWidth}`]" :style="{ paddingLeft: contentPaddingLeft, minHeight: '100vh' }">
+    <a-layout :class="['sidemenu']" :style="{ paddingLeft: contentPaddingLeft, minHeight: '100vh' }">
       <!-- layout header -->
       <global-header
-        :mode="layoutMode"
         :menus="menus"
         :theme="navTheme"
         :collapsed="collapsed"
@@ -40,7 +39,7 @@
       />
 
       <!-- layout content -->
-      <a-layout-content :style="{ height: '100%', margin: withoutContentMargin ? '0' : '24px 24px 0', paddingTop: fixedHeader ? '64px' : '0' }">
+      <a-layout-content :style="{ height: '100%', margin: withoutContentMargin ? '0' : '24px 24px 0', paddingTop: '64px' }">
         <multi-tab v-if="multiTab"></multi-tab>
         <transition name="page-transition">
           <route-view />
@@ -114,7 +113,7 @@ export default {
       }
     }),
     contentPaddingLeft () {
-      if (!this.fixSidebar || this.isMobile()) {
+      if (this.isMobile()) {
         return '0'
       }
       if (this.sidebarOpened) {

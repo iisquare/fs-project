@@ -1,7 +1,7 @@
 
 buildscript {
     ext {
-        springBootVersion = '2.2.2.RELEASE'
+        springBootVersion = '2.3.2.RELEASE'
         shadowVersion = '4.0.3'
     }
     repositories {
@@ -48,9 +48,11 @@ subprojects {
         tensorflowVersion = '1.12.0'
         zookeeperVersion = '3.5.8'
         curatorVersion = '4.3.0' // with zookeeper compatibility
-        mongodbVersion = '3.8.0'
+        mongodbVersion = '3.12.8'
         mysqlVersion = '5.1.48'
         rabbitmqVersion = '5.10.0'
+        elasticVersion = '7.9.3'
+        flowableVersion = '6.6.0'
     }
 
     dependencies {

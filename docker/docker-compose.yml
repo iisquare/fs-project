@@ -7,7 +7,7 @@ services:
       args:
         - ZOOKEEPER_VERSION=${ZOOKEEPER_VERSION}
     ports:
-      - "${ZOOKEEPER_CLIENT_PORT}:2181"
+      - "${BIND_ADDRESS}${BIND_COLON}${ZOOKEEPER_CLIENT_PORT}:2181"
     volumes:
       - ${DATA_DIR}/zookeeper/data:/data
       - ${DATA_DIR}/zookeeper/logs:/datalog
@@ -17,8 +17,8 @@ services:
       args:
         - ELK_VERSION=${ELK_VERSION}
     ports:
-      - "${ELASTICSEARCH_HTTP_PORT}:9200"
-      - "${ELASTICSEARCH_CLIENT_PORT}:9300"
+      - "${BIND_ADDRESS}${BIND_COLON}${ELASTICSEARCH_HTTP_PORT}:9200"
+      - "${BIND_ADDRESS}${BIND_COLON}${ELASTICSEARCH_CLIENT_PORT}:9300"
     volumes:
       - ${DATA_DIR}/elasticsearch:/usr/share/elasticsearch/data
       - ./service/elasticsearch/IKAnalyzer.cfg.xml:/usr/share/elasticsearch/plugins/analysis-ik-online/IKAnalyzer.cfg.xml
@@ -29,7 +29,7 @@ services:
       args:
         - ELK_VERSION=${ELK_VERSION}
     ports:
-      - "${KIBANA_HTTP_PORT}:5601"
+      - "${BIND_ADDRESS}${BIND_COLON}${KIBANA_HTTP_PORT}:5601"
   kafka:
     build:
       context: ./service/kafka
@@ -37,18 +37,23 @@ services:
         - SCALA_VERSION=${SCALA_VERSION}
         - KAFKA_VERSION=${KAFKA_VERSION}
     environment:
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:${ZOOKEEPER_CLIENT_PORT}
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181/kafka
+      KAFKA_LISTENERS: "PLAINTEXT://:9092"
+      KAFKA_LOG_DIRS: /kafka/kafka-logs
     ports:
-      - "${KAFKA_LISTEN_PORT}:9092"
+      - "${BIND_ADDRESS}${BIND_COLON}${KAFKA_LISTEN_PORT}:9092"
+    volumes:
+      - ${DATA_DIR}/kafka/data:/kafka
+      - ${DATA_DIR}/kafka/logs:/opt/kafka/logs
   kafka-manager:
     build:
       context: ./service/kafka-manager
       args:
         - KAFKA_MANAGE_VERSION=${KAFKA_MANAGE_VERSION}
     environment:
-      ZK_HOSTS: zookeeper:${ZOOKEEPER_CLIENT_PORT}
+      ZK_HOSTS: zookeeper:2181
     ports:
-      - "${KAFKA_MANAGER_PORT}:9000"
+      - "${BIND_ADDRESS}${BIND_COLON}${KAFKA_MANAGER_PORT}:9000"
   mysql:
     build:
       context: ./service/mysql
@@ -57,16 +62,28 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
-      - "${MYSQL_PORT}:3306"
+      - "${BIND_ADDRESS}${BIND_COLON}${MYSQL_PORT}:3306"
     volumes:
       - ${DATA_DIR}/mysql:/var/lib/mysql
+  mongo:
+    build:
+      context: ./service/mongo
+      args:
+        - MONGO_VERSION=${MONGO_VERSION}
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    ports:
+      - "${BIND_ADDRESS}${BIND_COLON}${MONGO_PORT}:27017"
+    volumes:
+      - ${DATA_DIR}/mongo:/data/db
   redis:
     build:
       context: ./service/redis
       args:
         - REDIS_VERSION=${REDIS_VERSION}
     ports:
-      - "${REDIS_PORT}:6379"
+      - "${BIND_ADDRESS}${BIND_COLON}${REDIS_PORT}:6379"
     volumes:
       - ${DATA_DIR}/redis:/data
   rabbitmq:
@@ -79,8 +96,8 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     ports:
-      - "${RABBITMQ_SERVER_PORT}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT}:15672"
+      - "${BIND_ADDRESS}${BIND_COLON}${RABBITMQ_SERVER_PORT}:5672"
+      - "${BIND_ADDRESS}${BIND_COLON}${RABBITMQ_MANAGEMENT_PORT}:15672"
     volumes:
       - ${DATA_DIR}/rabbitmq:/var/lib/rabbitmq/mnesia
   ceph-monitor:
@@ -92,7 +109,7 @@ services:
     environment:
       NETWORK_AUTO_DETECT: 1
     ports:
-      - "${CEPH_MONITOR_PORT}:6789"
+      - "${BIND_ADDRESS}${BIND_COLON}${CEPH_MONITOR_PORT}:6789"
     volumes:
       - ${DATA_DIR}/ceph/etc:/etc/ceph
       - ${DATA_DIR}/ceph/lib:/var/lib/ceph
@@ -103,7 +120,7 @@ services:
         - CEPH_VERSION=${CEPH_VERSION}
     entrypoint: ["/opt/ceph-container/bin/entrypoint.sh", "mgr"]
     ports:
-      - "${CEPH_DASHBOARD_PORT}:16789"
+      - "${BIND_ADDRESS}${BIND_COLON}${CEPH_DASHBOARD_PORT}:16789"
     volumes:
       - ${DATA_DIR}/ceph/etc:/etc/ceph
       - ${DATA_DIR}/ceph/lib:/var/lib/ceph
@@ -118,3 +135,74 @@ services:
       - ${DATA_DIR}/ceph/etc:/etc/ceph
       - ${DATA_DIR}/ceph/lib:/var/lib/ceph
       - ${DATA_DIR}/ceph/files:/var/lib/ceph/osd
+  ceph-metadata:
+    build:
+      context: ./service/ceph
+      args:
+        - CEPH_VERSION=${CEPH_VERSION}
+    entrypoint: ["/opt/ceph-container/bin/entrypoint.sh", "mds"]
+    environment:
+      CEPHFS_CREATE: 1
+    volumes:
+      - ${DATA_DIR}/ceph/etc:/etc/ceph
+      - ${DATA_DIR}/ceph/lib:/var/lib/ceph
+  filebeat:
+    build:
+      context: ./service/filebeat
+      args:
+        - ELK_VERSION=${ELK_VERSION}
+    command: ["-environment", "container", "-strict.perms=false"]
+    volumes:
+      - ./service/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ${DATA_DIR}/filebeat/data:/usr/share/filebeat/data
+      - ${DATA_DIR}/filebeat/logs:/usr/share/filebeat/logs
+      - ${FILEBEAT_NGINX_ACCESS}:/data/fs-logs/nginx/access.log
+      - ${FILEBEAT_MYSQL_SLOW_QUERY}:/data/fs-logs/mysql/slow-query.log
+  logstash:
+    build:
+      context: ./service/logstash
+      args:
+        - ELK_VERSION=${ELK_VERSION}
+    volumes:
+      - ./service/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./service/logstash/pipeline:/usr/share/logstash/pipeline
+  prometheus:
+    build:
+      context: ./service/prometheus
+      args:
+        - PROMETHEUS_VERSION=${PROMETHEUS_VERSION}
+    ports:
+      - "${BIND_ADDRESS}${BIND_COLON}${PROMETHEUS_PORT}:9090"
+    volumes:
+      - ./service/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ${DATA_DIR}/prometheus/tsdb:/prometheus
+  grafana:
+    build:
+      context: ./service/grafana
+      args:
+        - GRAFANA_VERSION=${GRAFANA_VERSION}
+    ports:
+      - "${BIND_ADDRESS}${BIND_COLON}${GRAFANA_PORT}:3000"
+    volumes:
+      - ${DATA_DIR}/grafana/data:/var/lib/grafana
+      - ${DATA_DIR}/grafana/logs:/var/log/grafana
+  prometheus-node:
+    network_mode: host
+    build:
+      context: ./service/prometheus/exporter/node
+      args:
+        - PROMETHEUS_NODE_VERSION=${PROMETHEUS_NODE_VERSION}
+  prometheus-redis:
+    build:
+      context: ./service/prometheus/exporter/redis
+      args:
+        - PROMETHEUS_REDIS_VERSION=${PROMETHEUS_REDIS_VERSION}
+    environment:
+      REDIS_ADDR: redis://redis:6379
+  prometheus-mysql:
+    build:
+      context: ./service/prometheus/exporter/mysql
+      args:
+        - PROMETHEUS_MYSQL_VERSION=${PROMETHEUS_MYSQL_VERSION}
+    environment:
+      DATA_SOURCE_NAME: ${PROMETHEUS_MYSQL_URL}

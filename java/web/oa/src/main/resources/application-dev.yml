@@ -1,0 +1,9 @@
+server:
+  port: 7816
+
+flowable:
+  # 关闭异步，不关闭历史数据的插入就是异步的，会在同一个事物里面，无法回滚
+  async-executor-activate: false
+  # 关闭自动部署流程定义
+  check-process-definitions: false
+  databaseSchemaUpdate: true
