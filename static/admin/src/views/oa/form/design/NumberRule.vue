@@ -9,22 +9,29 @@
       <a-form-model-item label="最大值"><a-input-number v-model="value.max" :min="0" /></a-form-model-item>
       <a-form-model-item label="最大提示"><a-input v-model="value.maxTooltip" auto-complete="on" /></a-form-model-item>
     </a-form-model>
-    <regular v-model="value.regulars" :config="config" v-if="value.regulars" />
+    <regular v-model="value.regulars" :config="config" :activeItem="activeItem" v-if="value.regulars" />
   </section>
 </template>
 
 <script>
-import Regular from './Regular'
-
 export default {
   name: 'NumberRule',
-  components: { Regular },
+  components: { Regular: () => import('./Regular') },
   props: {
     value: { type: Object, required: true },
-    config: { type: Object, required: true }
+    config: { type: Object, required: true },
+    activeItem: { type: Object, required: true }
   },
   data () {
     return {}
+  },
+  watch: {
+    'activeItem.id': {
+      handler () {
+        this.$emit('input', this.formatted(this.value))
+      },
+      immediate: true
+    }
   },
   methods: {
     formatted (obj) {
@@ -41,9 +48,6 @@ export default {
       const result = Object.assign({}, obj, rules)
       return result
     }
-  },
-  mounted () {
-    this.$emit('input', this.formatted(this.value))
   }
 }
 </script>

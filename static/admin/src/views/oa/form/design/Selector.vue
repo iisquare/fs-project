@@ -57,11 +57,20 @@ export default {
   name: 'Selector',
   components: { draggable },
   props: {
-    value: { type: Object, required: true }
+    value: { type: Object, required: true },
+    activeItem: { type: Object, required: true }
   },
   data () {
     return {
       dictionaries: []
+    }
+  },
+  watch: {
+    'activeItem.id': {
+      handler () {
+        this.$emit('input', this.formatted(this.value))
+      },
+      immediate: true
     }
   },
   methods: {
@@ -105,7 +114,6 @@ export default {
   },
   mounted () {
     this.loadDictionary()
-    this.$emit('input', this.formatted(this.value))
   }
 }
 </script>

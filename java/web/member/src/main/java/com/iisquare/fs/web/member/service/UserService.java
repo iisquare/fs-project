@@ -172,6 +172,19 @@ public class UserService extends ServiceBase {
         return ServiceUtil.indexObjectList(list, Integer.class, "id");
     }
 
+    public ObjectNode infos(List<Integer> ids) {
+        ObjectNode result = DPUtil.objectNode();
+        if (null == ids || ids.size() < 1) return result;
+        List<User> list = userDao.findAllById(ids);
+        for (User item : list) {
+            if (1 != item.getStatus()) continue;
+            ObjectNode node = result.putObject(String.valueOf(item.getId()));
+            node.put("id", item.getId());
+            node.put("name", item.getName());
+        }
+        return result;
+    }
+
     public <T> List<T> fillInfo(List<T> list, String ...properties) {
         if(null == list || list.size() < 1 || properties.length < 1) return list;
         Set<Integer> ids = new HashSet<>();

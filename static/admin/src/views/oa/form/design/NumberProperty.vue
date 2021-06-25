@@ -11,21 +11,20 @@
     </a-tab-pane>
     <a-tab-pane key="rule" tab="校验规则">
       <a-form-model :model="value" labelAlign="left" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-        <number-rule v-model="value.options" :config="config" />
+        <number-rule v-model="value.options" :config="config" :activeItem="activeItem" />
       </a-form-model>
     </a-tab-pane>
   </a-tabs>
 </template>
 
 <script>
-import NumberRule from './NumberRule'
-
 export default {
   name: 'NumberProperty',
-  components: { NumberRule },
+  components: { NumberRule: () => import('./NumberRule') },
   props: {
     value: { type: Object, required: true },
-    config: { type: Object, required: true }
+    config: { type: Object, required: true },
+    activeItem: { type: Object, required: true }
   },
   data () {
     return {}
@@ -33,6 +32,14 @@ export default {
   computed: {
     defaults () {
       return this.config.widgetDefaults(this.value.type)
+    }
+  },
+  watch: {
+    'activeItem.id': {
+      handler () {
+        this.$emit('input', this.formatted(this.value))
+      },
+      immediate: true
     }
   },
   methods: {
@@ -46,9 +53,6 @@ export default {
       const result = Object.assign({}, obj, { options: Object.assign({}, obj.options, options) })
       return result
     }
-  },
-  mounted () {
-    this.$emit('input', this.formatted(this.value))
   }
 }
 </script>

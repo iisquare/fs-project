@@ -52,7 +52,7 @@ public class FormController extends PermitControllerBase {
         if (null == frame) return ApiUtil.echoResult(1001, "所属表单异常", frameId);
         JsonNode form = DPUtil.convertJSON(param.get("form"));
         if (null == form || !form.isObject()) return ApiUtil.echoResult(1002, "表单数据异常", form);
-        Map<String, Object> result = formService.validate(frame.at("/widgets"), form, null);
+        Map<String, Object> result = formService.validate(frame.at("/widgets"), form, null, null, null);
         if (0 != (int) result.get("code")) return ApiUtil.echoResult(result);
         ObjectNode data = (ObjectNode) result.get("data");
         data = formService.save(frame, data, rbacService.uid(request));

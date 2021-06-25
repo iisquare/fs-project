@@ -41,8 +41,9 @@ public class ApproveController extends PermitControllerBase {
     @Permission("workflow")
     public String formAction(@RequestBody Map<String, Object> param) {
         Integer workflowId = ValidateUtil.filterInteger(param.get("workflowId"), true, 1, null, 0);
-        Workflow info = workflowService.info(workflowId, true, true, false, true);
-        return ApiUtil.echoResult(null == info ? 404 : 0, null, info);
+        Workflow workflow = workflowService.info(workflowId, true, true, false, true);
+        Map<String, Object> result = approveService.form(workflow);
+        return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/submit")
@@ -51,7 +52,7 @@ public class ApproveController extends PermitControllerBase {
         Integer workflowId = ValidateUtil.filterInteger(param.get("workflowId"), true, 1, null, 0);
         Workflow workflow = workflowService.info(workflowId, true, true, true, true);
         JsonNode form = DPUtil.convertJSON(param.get("form"));
-        Map<String, Object> result = approveService.start(workflow, form, rbacService.uid(request));
+        Map<String, Object> result = approveService.start(workflow, form, rbacService.currentInfo(request));
         return ApiUtil.echoResult(result);
     }
 

@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.member.service;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
@@ -7,6 +8,7 @@ import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.web.member.dao.RoleDao;
 import com.iisquare.fs.web.member.entity.Role;
+import com.iisquare.fs.web.member.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -42,6 +44,19 @@ public class RoleService extends ServiceBase {
                 return null;
         }
         return status;
+    }
+
+    public ObjectNode infos(List<Integer> ids) {
+        ObjectNode result = DPUtil.objectNode();
+        if (null == ids || ids.size() < 1) return result;
+        List<Role> list = roleDao.findAllById(ids);
+        for (Role item : list) {
+            if (1 != item.getStatus()) continue;
+            ObjectNode node = result.putObject(String.valueOf(item.getId()));
+            node.put("id", item.getId());
+            node.put("name", item.getName());
+        }
+        return result;
     }
 
     public Role info(Integer id) {

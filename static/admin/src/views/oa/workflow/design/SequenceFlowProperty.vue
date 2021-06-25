@@ -51,7 +51,7 @@ export default {
       const result = {
         id: obj.id,
         name: obj.name,
-        documentation: obj.documentation
+        documentation: this.bpmn.createDocumentation(obj.documentation)
       }
       if (this.conditionable) {
         result.conditionExpression = this.bpmn.moddle.create('bpmn:FormalExpression', { body: `<![CDATA[${obj.conditionExpression}]]>` })
@@ -64,7 +64,7 @@ export default {
       const result = {
         id: obj.id,
         name: obj.name || '',
-        documentation: obj.documentation || '',
+        documentation: this.bpmn.parseDocumentation(element),
         conditionExpression: this.conditionable ? this.bpmn.parseCDATA(obj.conditionExpression?.body) : ''
       }
       return result

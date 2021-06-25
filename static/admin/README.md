@@ -31,11 +31,25 @@ yarn upgrade –latest [package]
 yarn remove <package...>
 ```
 
+- 跨域请求
+```
+# 将API接口地址设置为本地路径
+VUE_APP_API_BASE_URL=./
+# 配置代理托管远程接口调用
+proxy: {
+  '/proxy': {
+    target: 'http://ip:port',
+    ws: false,
+    changeOrigin: true
+  }
+}
+```
+
 ## 注意事项
 
 ### 表单在1.5.0-rc.3版本正式发布FormModel相关文档，项目统一采用v-model双向绑定方式进行开发。
 
-### 表格的分页暂不支持深度监听，只能全能影响分页数据，[issue](https://github.com/vueComponent/ant-design-vue/issues/70)。
+### 表格的分页暂不支持深度监听，只能重置影响分页数据，[issue](https://github.com/vueComponent/ant-design-vue/issues/70)。
 
 ### 排序可通过config接口获取排序项，通过下拉菜单方式进行选择。
 
@@ -56,6 +70,19 @@ provide: function provide() {
 ### 深度嵌套的子组件，访问父组件的部分内容，可采用[Provide / Inject](https://v3.cn.vuejs.org/guide/component-provide-inject.html)方法。
 
 ### antdv关闭时销毁Modal里的子元素，设置destroyOnClose=true即可。
+
+### 组件循环引用
+
+- 异步导入（推荐）
+```
+components: { ComponentName: () => import('path for component') }
+```
+- 生命周期方法
+```
+beforeCreate () {
+  this.$options.components.ComponentName = require('path for component').default
+}
+```
 
 ## 浏览器兼容
 

@@ -47,7 +47,7 @@
     </a-card>
     <!--展示界面-->
     <a-modal :title="'信息查看 - ' + form._id" v-model="infoVisible" :destroyOnClose="true" :footer="null">
-      <fs-view v-model="form" :frame="frame" :config="config" />
+      <fs-form v-model="form" :frame="frame" :config="config" :authority="authority.view" />
     </a-modal>
     <!--编辑界面-->
     <a-modal
@@ -58,7 +58,7 @@
       @ok="submit"
       :destroyOnClose="true"
       width="818px">
-      <fs-form v-model="form" ref="form" :frame="frame" :config="config" />
+      <fs-form v-model="form" ref="form" :frame="frame" :config="config" :authority="authority.edit" />
       <template slot="footer">
         <a-button key="back" @click="() => formVisible = false">取消</a-button>
         <a-button key="submit" type="primary" :loading="formLoading" @click="submit(false)">确定</a-button>
@@ -77,10 +77,9 @@ import ListSorter from './design/ListSorter'
 import ListViewer from './design/ListViewer'
 import config from './design/config'
 import FsForm from './design/FsForm'
-import FsView from './design/FsView'
 
 export default {
-  components: { ListFilter, ListSorter, ListViewer, FsForm, FsView },
+  components: { ListFilter, ListSorter, ListViewer, FsForm },
   data () {
     return {
       config,
@@ -100,7 +99,8 @@ export default {
         id: 0,
         name: '未就绪'
       },
-      fields: { filter: [], sorter: [], viewer: [] }
+      fields: { filter: [], sorter: [], viewer: [] },
+      authority: { fields: [], view: {}, edit: {} }
     }
   },
   computed: {
@@ -186,7 +186,7 @@ export default {
       this.formVisible = true
     },
     show (text, record, index) {
-      this.form = record
+      this.form = this.formRows[index]
       this.infoVisible = true
     },
     load () {
@@ -214,6 +214,11 @@ export default {
           this.filters.column = this.config.exhibition.mergeColumnItem(
             this.fields.viewer, this.config.exhibition.parseColumnSorted(this.frame.options.column))
         }
+        this.authority.fields = this.config.exhibition.authorityFields(this.frame.widgets)
+        this.authority.view = this.config.exhibition.authority(this.authority.fields, {}, { viewable: true })
+        this.authority.edit = this.config.exhibition.authority(this.authority.fields, {}, Object.fromEntries(new Map(
+          Object.entries(this.config.exhibition.authorityDefaults).map(item => [item[0], true])
+        )))
         this.search(false, true)
       })
     }

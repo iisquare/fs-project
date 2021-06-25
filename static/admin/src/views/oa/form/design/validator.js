@@ -58,6 +58,21 @@ const validator = {
   prettySwitch (options, value) {
     return value ? (options.txtChecked || '开') : (options.txtUnChecked || '关')
   },
+  prettyWidget (widget, value) {
+    const options = widget.options
+    switch (widget.type) {
+      case 'radio':
+        return this.prettySelector(options.items, value, 'default')
+      case 'checkbox':
+        return this.prettySelector(options.items, value, 'multiple')
+      case 'select':
+        return this.prettySelector(options.items, value, options.mode)
+      case 'switch':
+        return this.prettySwitch(options, value)
+      default:
+        return value
+    }
+  },
   pretty (widgets, rows) {
     const result = []
     if (rows.length < 1) return result
@@ -65,25 +80,9 @@ const validator = {
     for (const row of rows) {
       const data = {}
       for (const key in row) {
-        let value = row[key]
         const widget = fields[key]
         if (!widget) continue
-        const options = widget.options
-        switch (widget.type) {
-          case 'radio':
-            value = this.prettySelector(options.items, value, 'default')
-            break
-          case 'checkbox':
-            value = this.prettySelector(options.items, value, 'multiple')
-            break
-          case 'select':
-            value = this.prettySelector(options.items, value, options.mode)
-            break
-          case 'switch':
-            value = this.prettySwitch(options, value)
-            break
-        }
-        data[key] = value
+        data[key] = this.prettyWidget(widget, row[key])
       }
       result.push(data)
     }
@@ -166,7 +165,7 @@ const validator = {
     })
     return result
   },
-  generate (widgets) {
+  generate (widgets, authority) {
     const result = {}
     widgets.forEach(widget => {
       const options = widget.options
@@ -263,7 +262,7 @@ const validator = {
         default:
           return
       }
-      result[options.field] = rules
+      result[options.field] = authority[widget.id]?.editable ? rules : []
     })
     return result
   }

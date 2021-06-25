@@ -30,7 +30,8 @@ export default {
   components: { draggable },
   props: {
     value: { type: Object, required: true },
-    config: { type: Object, required: true }
+    config: { type: Object, required: true },
+    activeItem: { type: Object, required: true }
   },
   data () {
     return {
@@ -47,6 +48,14 @@ export default {
       return this.config.widgetDefaults(this.value.type)
     }
   },
+  watch: {
+    'activeItem.id': {
+      handler () {
+        this.$emit('input', this.formatted(this.value))
+      },
+      immediate: true
+    }
+  },
   methods: {
     addItem () {
       this.value.options.items.push(this.config.generateGridItem())
@@ -61,9 +70,6 @@ export default {
       const result = Object.assign({}, obj, { options: Object.assign({}, obj.options, options) })
       return result
     }
-  },
-  mounted () {
-    this.$emit('input', this.formatted(this.value))
   }
 }
 </script>

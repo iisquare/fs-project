@@ -11,26 +11,24 @@
           </a-radio-group>
         </a-form-model-item>
       </a-form-model>
-      <selector v-model="value.options" />
+      <selector v-model="value.options" :activeItem="activeItem" />
     </a-tab-pane>
     <a-tab-pane key="rule" tab="校验规则">
       <a-form-model :model="value" labelAlign="left" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-        <checkbox-rule v-model="value.options" :config="config" />
+        <checkbox-rule v-model="value.options" :config="config" :activeItem="activeItem" />
       </a-form-model>
     </a-tab-pane>
   </a-tabs>
 </template>
 
 <script>
-import Selector from './Selector'
-import CheckboxRule from './CheckboxRule'
-
 export default {
   name: 'CheckboxProperty',
-  components: { Selector, CheckboxRule },
+  components: { Selector: () => import('./Selector'), CheckboxRule: () => import('./CheckboxRule') },
   props: {
     value: { type: Object, required: true },
-    config: { type: Object, required: true }
+    config: { type: Object, required: true },
+    activeItem: { type: Object, required: true }
   },
   data () {
     return {
@@ -40,6 +38,14 @@ export default {
   computed: {
     defaults () {
       return this.config.widgetDefaults(this.value.type)
+    }
+  },
+  watch: {
+    'activeItem.id': {
+      handler () {
+        this.$emit('input', this.formatted(this.value))
+      },
+      immediate: true
     }
   },
   methods: {
@@ -53,9 +59,6 @@ export default {
       const result = Object.assign({}, obj, { options: Object.assign({}, obj.options, options) })
       return result
     }
-  },
-  mounted () {
-    this.$emit('input', this.formatted(this.value))
   }
 }
 </script>

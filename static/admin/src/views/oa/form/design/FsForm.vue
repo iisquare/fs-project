@@ -5,21 +5,20 @@
       :model="value"
       :rules="rules"
       v-bind="formLayout">
-      <fs-form-item v-model="value" :config="config" :widgets="frame.widgets" />
+      <fs-form-item v-model="value" :config="config" :widgets="frame.widgets" :authority="authority" />
     </a-form-model>
   </section>
 </template>
 
 <script>
-import FsFormItem from './FsFormItem'
-
 export default {
   name: 'FsForm',
-  components: { FsFormItem },
+  components: { FsFormItem: () => import('./FsFormItem') },
   props: {
     value: { type: Object, required: true },
     config: { type: Object, required: true },
-    frame: { type: Object, required: true }
+    frame: { type: Object, required: true },
+    authority: { type: Object, required: true }
   },
   data () {
     return {
@@ -28,7 +27,7 @@ export default {
   },
   computed: {
     formLayout () { return this.config.exhibition.formLayout(this.frame) },
-    rules () { return this.config.validator.generate(this.frame.widgets) }
+    rules () { return this.config.validator.generate(this.frame.widgets, this.authority) }
   },
   methods: {
     validate (callback) {

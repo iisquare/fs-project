@@ -7,10 +7,8 @@
         <a-form-model-item label="名称"><a-input v-model="form.name" auto-complete="on" /></a-form-model-item>
         <a-form-model-item label="描述"><a-textarea v-model="form.documentation" /></a-form-model-item>
         <a-divider>任务指派</a-divider>
-        <a-form-model-item label="指派"><a-textarea v-model="form.candidateGroups" /></a-form-model-item>
         <user-task-candidate v-model="form.candidateGroups" :bpmn="bpmn" :element="element" :workflow="value" />
         <a-divider>表单权限</a-divider>
-        <a-form-model-item label="权限"><a-textarea v-model="form.authority" /></a-form-model-item>
         <user-task-authority v-model="form.authority" :bpmn="bpmn" :element="element" :workflow="value" />
       </a-form-model>
     </a-tab-pane>
@@ -69,7 +67,7 @@ export default {
       const result = {
         id: obj.id,
         name: obj.name,
-        documentation: obj.documentation,
+        documentation: this.bpmn.createDocumentation(obj.documentation),
         'flowable:candidateGroups': obj.candidateGroups
       }
 
@@ -105,7 +103,7 @@ export default {
       const result = {
         id: obj.id,
         name: obj.name || '',
-        documentation: obj.documentation || '',
+        documentation: this.bpmn.parseDocumentation(element),
         candidateGroups: attrs['flowable:candidateGroups'] || '',
         authority: this.bpmn.parseCDATA(obj.extensionElements?.authority?.body)
       }

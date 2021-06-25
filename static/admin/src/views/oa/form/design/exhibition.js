@@ -17,9 +17,66 @@ const exhibition = {
     }
     return result
   },
+  authorityDefaults: {
+    viewable: false, // 可查看
+    editable: false, // 可编辑
+    variable: false, // 作为流程变量
+    addable: false, // 子表单可添加新纪录
+    removable: false, // 子表单可删除已有记录
+    changeable: false // 子表单可编辑已有记录
+  },
+  authority (fields, refer, defaults) {
+    const result = {}
+    if (!Array.isArray(fields)) return result
+    if (!refer) refer = {}
+    defaults = Object.assign({}, this.authorityDefaults, defaults || {})
+    fields.forEach(widget => {
+      const id = widget.id
+      const item = {
+        viewable: refer[id] ? refer[id].viewable : defaults.viewable,
+        editable: refer[id] ? refer[id].editable : defaults.editable,
+        variable: refer[id] ? refer[id].variable : defaults.variable
+      }
+      if (widget.type === 'subform') {
+        Object.assign(item, {
+          addable: refer[id] ? refer[id].addable : defaults.addable,
+          removable: refer[id] ? refer[id].removable : defaults.removable,
+          changeable: refer[id] ? refer[id].changeable : defaults.changeable
+        })
+        Object.assign(result, this.authority(widget.children, refer, defaults))
+      }
+      result[id] = item
+    })
+    return result
+  },
+  authorityFields (widgets, expandedRowKeys = []) {
+    const result = []
+    if (!Array.isArray(widgets)) return result
+    widgets.forEach(widget => {
+      if (widget.type === 'grid') {
+        widget.options.items.forEach(item => {
+          result.push(...this.authorityFields(item.widgets, expandedRowKeys))
+        })
+        return
+      }
+      const field = widget.options.field
+      const label = widget.label
+      const wc = this.config.widgetByType(widget.type)
+      if (widget.type === 'subform') {
+        if (!widget.options.formInfo) return
+        expandedRowKeys.push(widget.id)
+        const children = this.authorityFields(widget.options.formInfo.widgets, expandedRowKeys)
+        result.push(Object.assign({}, widget, { id: widget.id, field, label, editable: wc.editable, children }))
+        return
+      }
+      if (!wc.editable) return
+      result.push(Object.assign({}, widget, { id: widget.id, field, label, editable: wc.editable }))
+    })
+    return result
+  },
   operateFields (widgets, useField, withChildren, prefixField = '', prefixLabel = '') {
     const result = []
-    if (!Array.isArray(widgets)) return widgets
+    if (!Array.isArray(widgets)) return result
     widgets.forEach(widget => {
       if (Object.keys(widget).indexOf(useField) === -1) {
         if (!this.config.widgetByType(widget.type)[useField]) return

@@ -1,5 +1,25 @@
 # OA模块
 
+## 交互设计
+
+### 表单权限
+
+- 表单布局设计对全部用户可见。
+- 拥有“可见”权限时展示为用户录入内容。
+- 拥有“可编辑”权限时可对数据进行修改。
+- 无“可见”和“可编辑”时，不展示任何（含默认值）内容。
+- 当子表单无“可编辑”权限时，不可增删改子表单内的任何记录。
+
+### 节点描述
+
+- BPMN中支持添加多个描述，本项目中合并为单个。
+```
+<startEvent id="Event_0ozyigz" name="">
+  <documentation>doc1</documentation>
+  <documentation>doc2</documentation>
+</startEvent>
+```
+
 ## BPMN
 
 - UserTask

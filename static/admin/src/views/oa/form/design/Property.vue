@@ -13,7 +13,7 @@ export default {
     const _this = this
     const component = this.activeItem ? this.config.widgetByType(this.value.type).property : this.config.form.property
     return h(component, {
-      props: { value: this.value, config: this.config },
+      props: { value: this.value, config: this.config, activeItem: this.activeItem },
       on: {
         input (val) {
           _this.$emit('input', val)

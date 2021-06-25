@@ -41,7 +41,8 @@ export default {
   name: 'FormProperty',
   props: {
     value: { type: Object, required: true },
-    config: { type: Object, required: true }
+    config: { type: Object, required: true },
+    activeItem: { type: Object, default: null }
   },
   data () {
     return {

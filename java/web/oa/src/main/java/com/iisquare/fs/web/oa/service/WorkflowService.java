@@ -115,10 +115,13 @@ public class WorkflowService extends ServiceBase {
         Workflow info = info(id, false, false, false, false);
         if (null == info) return ApiUtil.result(1404, "流程信息不存在", id);
         String publishKey = deploymentKey(info);
+        String xml = info.getContent();
+        xml = xml.replaceAll("&lt;!\\[CDATA\\[", "<![CDATA[");
+        xml = xml.replaceAll("\\]\\]&gt;", "]]>");
         Deployment deployment;
         try {
             deployment = repositoryService.createDeployment().key(publishKey)
-                    .name(info.getName()).addString(publishKey + BPMN_SUFFIX, info.getContent()).deploy();
+                    .name(info.getName()).addString(publishKey + BPMN_SUFFIX, xml).deploy();
         } catch (Exception e) {
             return ApiUtil.result(1501, "流程部署异常", e.getMessage());
         }

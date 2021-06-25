@@ -30,7 +30,8 @@ export default {
   components: { draggable },
   props: {
     value: { type: Array, required: true },
-    config: { type: Object, required: true }
+    config: { type: Object, required: true },
+    activeItem: { type: Object, required: true }
   },
   data () {
     return {

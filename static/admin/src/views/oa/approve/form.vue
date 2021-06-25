@@ -1,6 +1,12 @@
 <template>
   <a-card :body-style="{padding: '24px 32px'}" :bordered="false">
-    <fs-form v-model="form" ref="form" :frame="workflow.formInfo" :config="config" v-if="workflow.formInfo"/>
+    <fs-form
+      v-model="form"
+      ref="form"
+      :frame="workflow.formInfo"
+      :authority="workflow.authority"
+      :config="config"
+      v-if="workflow.formInfo"/>
     <a-empty v-else />
     <div class="fs-footer-action">
       <a-space>
@@ -14,12 +20,11 @@
 
 <script>
 import config from '../form/design/config'
-import FsForm from './design/FsForm'
-import FsView from './design/FsView'
+import FsForm from '../form/design/FsForm'
 import approveService from '@/service/oa/approve'
 
 export default {
-  components: { FsForm, FsView },
+  components: { FsForm },
   data () {
     return {
       config,

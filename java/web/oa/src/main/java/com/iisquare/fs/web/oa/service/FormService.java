@@ -7,7 +7,6 @@ import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.HttpUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
-import com.iisquare.fs.base.mongodb.MongoCore;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.core.rpc.MemberRpc;
 import com.iisquare.fs.web.oa.dao.FormFrameDao;
@@ -18,10 +17,7 @@ import com.iisquare.fs.web.oa.storage.FormStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class FormService extends ServiceBase {
@@ -249,7 +245,7 @@ public class FormService extends ServiceBase {
         String minTooltip = options.at("/minTooltip").asText();
         if (minLength > 0 && DPUtil.empty(minTooltip)) minTooltip = "至少选择" + minLength + "项";
         String maxTooltip = options.at("/minTooltip").asText();
-        if (maxLength > 0 && DPUtil.empty(maxTooltip)) maxTooltip = "最多选择" + minLength + "项";
+        if (maxLength > 0 && DPUtil.empty(maxTooltip)) maxTooltip = "最多选择" + maxLength + "项";
         if ("default".equals(mode)) {
             String valueString = value.asText();
             if (minLength > 0 && (DPUtil.empty(valueString) || !items.has(valueString))) {
@@ -267,6 +263,12 @@ public class FormService extends ServiceBase {
                 Map<String, Object> result = validateRegular(node, iterator.next().asText(), regulars);
                 if (0 != (int) result.get("code")) return result;
             }
+            if (minLength > 0 && value.size() < minLength) {
+                return ApiUtil.result(80502, message(node, minTooltip), node);
+            }
+            if (maxLength > 0 && value.size() > maxLength) {
+                return ApiUtil.result(80503, message(node, maxTooltip), node);
+            }
             return ApiUtil.result(0, null, value);
         }
         if ("combobox".equals(mode)) {
@@ -277,20 +279,53 @@ public class FormService extends ServiceBase {
         return ApiUtil.result(0, null, value);
     }
 
+    public Map<String, Object> validateSubform(JsonNode node, ArrayNode value) {
+        JsonNode options = node.at("/options");
+        if (!options.at("/ruleEnabled").asBoolean(false)) {
+            return ApiUtil.result(0, null, value);
+        }
+        int minLength = options.at("/minLength").asInt(0);
+        if (minLength > 0 && value.size() < minLength) {
+            String tooltip = options.at("/minTooltip").asText();
+            if (DPUtil.empty(tooltip)) tooltip = "至少填写" + minLength + "条";
+            return ApiUtil.result(80602, message(node, tooltip), node);
+        }
+        int maxLength = options.at("/maxLength").asInt(0);
+        if (maxLength > 0 && value.size() > maxLength) {
+            String tooltip = options.at("/maxTooltip").asText();
+            if (DPUtil.empty(tooltip)) tooltip = "最多填写" + maxLength + "条";
+            return ApiUtil.result(80603, message(node, tooltip), node);
+        }
+        return ApiUtil.result(0, null, value);
+    }
+
+    public boolean authority(JsonNode authority, JsonNode widget, String permission) {
+        if (null == authority) return true; // 未启用权限校验
+        if (!authority.isObject()) return false; // 权限配置异常
+        if (null == widget || !widget.isObject()) return false; // 组件配置异常
+        return authority.at("/" + widget.at("/id").asText("") + "/" + permission).asBoolean(false);
+    }
+
     /**
-     * 校验异常时，data字段为node节点信息
+     * 校验异常时，返回值data为node节点信息
+     * @param widgets 表单组件
+     * @param form 表单数据
+     * @param authority 表单权限
+     * @param origin 原数据，引用修改
+     * @param regulars 校验规则
+     * @return 校验结果
      */
-    public Map<String, Object> validate(JsonNode widgets, JsonNode form, JsonNode regulars) {
+    public Map<String, Object> validate(JsonNode widgets, JsonNode form, JsonNode authority, ObjectNode origin, JsonNode regulars) {
         if (null == widgets || !widgets.isArray()) {
             return ApiUtil.result(7001, "表单配置异常", widgets);
         }
         if (null == form || !form.isObject()) {
             return ApiUtil.result(8001, "表单数据异常", form);
         }
+        if (null == origin || !origin.isObject()) origin = DPUtil.objectNode();
         if (null == regulars) regulars = formRegularService.all();
-        ObjectNode data = DPUtil.objectNode(); // 数据结果
-        if (form.has(MongoCore.FIELD_ID)) { // 保留主键
-            data.replace(MongoCore.FIELD_ID, form.get(MongoCore.FIELD_ID));
+        if (!origin.has(FormStorage.FIELD_ID) && form.has(FormStorage.FIELD_ID)) { // 保留主键
+            origin.replace(FormStorage.FIELD_ID, form.get(FormStorage.FIELD_ID));
         }
         Iterator<JsonNode> iterator = widgets.iterator();
         while (iterator.hasNext()) {
@@ -303,69 +338,87 @@ public class FormService extends ServiceBase {
                 if (null == items || !items.isArray()) continue;
                 Iterator<JsonNode> it = items.iterator();
                 while (it.hasNext()) {
-                    Map<String, Object> result = validate(it.next().at("/widgets"), form, regulars);
+                    Map<String, Object> result = validate(it.next().at("/widgets"), form, authority, origin, regulars);
                     if (0 != (int) result.get("code")) return result;
-                    data.setAll((ObjectNode) result.get("data"));
                 }
                 continue;
             }
             String field = DPUtil.trim(options.at("/field").asText());
             if (DPUtil.empty(field)) continue; // 忽略无字段数据
+            if (!authority(authority, node, "editable")) continue; // 忽略无权限字段
             if ("subform".equals(type)) { // 子表单
                 JsonNode formInfo = options.at("/formInfo");
                 if (null == formInfo || !formInfo.isObject()) {
                     return ApiUtil.result(7002, "子表单配置异常", node);
                 }
-                JsonNode subforms = form.get(field);
+                JsonNode subforms = form.at("/" + field);
                 if (!subforms.isArray()) {
                     return ApiUtil.result(8002, "子表单数据异常", node);
                 }
-                ArrayNode array = data.putArray(field);
+                ArrayNode array = (origin.has(field) && origin.get(field).isArray()) ? (ArrayNode) origin.get(field) : origin.putArray(field);
+                Map<String, Integer> map = DPUtil.arrayIndex(array, FormStorage.FIELD_ID);
                 Iterator<JsonNode> it = subforms.iterator();
                 while (it.hasNext()) {
-                    Map<String, Object> result = validate(formInfo.at("/widgets"), it.next(), regulars);
-                    if (0 != (int) result.get("code")) return result;
-                    array.add((ObjectNode) result.get("data"));
+                    JsonNode subform = it.next();
+                    String id = subform.at("/" + FormStorage.FIELD_ID).asText();
+                    if (DPUtil.empty(id)) return ApiUtil.result(8003, "子表单数据标识异常", node);
+                    Map<String, Object> result = null;
+                    if (map.containsKey(id)) { // 原纪录已存在
+                        if (authority(authority, node, "changeable")) { // 允许修改记录
+                            result = validate(formInfo.at("/widgets"), subform, authority, (ObjectNode) array.get(map.get(id)), regulars);
+                        }
+                        map.remove(id);
+                    } else { // 新记录
+                        if (authority(authority, node, "addable")) {
+                            result = validate(formInfo.at("/widgets"), subform, authority, array.addObject(), regulars);
+                        }
+                    }
+                    if (null != result && 0 != (int) result.get("code")) return result;
                 }
+                if (map.size() > 0 && authority(authority, node, "removable")) {
+                    DPUtil.arrayRemove(array, new ArrayList<>(map.values())); // 移除表单中不存在的原数据
+                }
+                Map<String, Object> result = validateSubform(node, array);
+                if (0 != (int) result.get("code")) return result;
                 continue;
             }
             if (Arrays.asList("text", "textarea", "password").contains(type)) {
                 Map<String, Object> result = validateString(node, form.at("/" + field).asText(), regulars);
                 if (0 != (int) result.get("code")) return result;
-                data.put(field, (String) result.get("data"));
+                origin.put(field, (String) result.get("data"));
                 continue;
             }
             if ("number".equals(type)) {
                 Map<String, Object> result = validateNumber(node, form.at("/" + field).asDouble(), regulars);
                 if (0 != (int) result.get("code")) return result;
-                data.put(field, (Double) result.get("data"));
+                origin.put(field, (Double) result.get("data"));
                 continue;
             }
             if ("radio".equals(type)) {
                 Map<String, Object> result = validateRadio(node, form.at("/" + field).asText(), regulars);
                 if (0 != (int) result.get("code")) return result;
-                data.put(field, (String) result.get("data"));
+                origin.put(field, (String) result.get("data"));
                 continue;
             }
             if ("checkbox".equals(type)) {
                 Map<String, Object> result = validateCheckbox(node, form.at("/" + field), regulars);
                 if (0 != (int) result.get("code")) return result;
-                data.replace(field, (JsonNode) result.get("data"));
+                origin.replace(field, (JsonNode) result.get("data"));
                 continue;
             }
             if ("select".equals(type)) {
                 Map<String, Object> result = validateSelector(node, form.at("/" + field), regulars);
                 if (0 != (int) result.get("code")) return result;
-                data.replace(field, (JsonNode) result.get("data"));
+                origin.replace(field, (JsonNode) result.get("data"));
                 continue;
             }
             if ("switch".equals(type)) {
-                data.put(field, form.at("/" + field).asBoolean(false));
+                origin.put(field, form.at("/" + field).asBoolean(false));
                 continue;
             }
-            data.replace(field, form.get(field));
+            origin.replace(field, form.get(field));
         }
-        return ApiUtil.result(0, null, data);
+        return ApiUtil.result(0, null, origin);
     }
 
     public JsonNode findRemoteResult (JsonNode options, JsonNode result) {

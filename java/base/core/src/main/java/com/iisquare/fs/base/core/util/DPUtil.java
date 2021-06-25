@@ -754,6 +754,38 @@ public class DPUtil {
         return array;
     }
 
+    public static ObjectNode array2object(ArrayNode array, String field) {
+        ObjectNode nodes = DPUtil.objectNode();
+        Iterator<JsonNode> iterator = array.iterator();
+        while (iterator.hasNext()) {
+            JsonNode node = iterator.next();
+            String key = node.at("/" + field).asText("");
+            nodes.replace(key, node);
+        }
+        return nodes;
+    }
+
+    public static Map<String, Integer> arrayIndex(ArrayNode array, String field) {
+        Map<String, Integer> map = new LinkedHashMap<>();
+        int index = 0;
+        Iterator<JsonNode> iterator = array.iterator();
+        while (iterator.hasNext()) {
+            JsonNode node = iterator.next();
+            String key = node.at("/" + field).asText("");
+            map.put(key, index++);
+        }
+        return map;
+    }
+
+    public static int arrayRemove(ArrayNode array, List<Integer> indexes) {
+        Collections.sort(indexes, Collections.reverseOrder());
+        int total = 0;
+        for (Integer index : indexes) {
+            if (array.has(index)) array.remove(index);
+        }
+        return total;
+    }
+
     /**
      * 解析JSON字符串
      */

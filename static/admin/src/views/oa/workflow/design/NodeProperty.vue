@@ -33,20 +33,28 @@ export default {
     },
     form: {
       handler (obj) {
-        if (obj.id) {
-          this.bpmn.modeling.updateProperties(this.element, obj)
-        }
+        this.updateProperties(obj)
       },
       deep: true
     }
   },
   methods: {
+    updateProperties (obj) {
+      if (!obj.id) return false
+      const result = {
+        id: obj.id,
+        name: obj.name,
+        documentation: this.bpmn.createDocumentation(obj.documentation)
+      }
+      this.bpmn.modeling.updateProperties(this.element, result)
+      return true
+    },
     formatted (element) {
       const obj = element.businessObject
       const result = {
         id: obj.id,
         name: obj.name || '',
-        documentation: obj.documentation || ''
+        documentation: this.bpmn.parseDocumentation(element)
       }
       return result
     }

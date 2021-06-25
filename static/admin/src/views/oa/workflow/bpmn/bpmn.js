@@ -23,16 +23,20 @@ class BPMN {
 
   parseCDATA (data) {
     if (!data) return ''
-    data = data.replace(/<!\[CDATA\[(.+)\]\]>/, '$1')
-    data = data.replace(/&lt;!\[CDATA\[(.+)\]\]&gt;/, '$1')
+    data = data.replace(/^<!\[CDATA\[/, '').replace(/\]\]>$/, '')
+    data = data.replace(/^&lt;!\[CDATA\[/, '').replace(/(.+)\]\]&gt;$/, '')
     return data
   }
 
-  expressBoolean (value) {
-    const type = Object.prototype.toString.call(value)
-    if (type === '[object Boolean]') return value
-    if (type === '[object Boolean]') return value === 'true'
-    return false
+  createDocumentation (documentation) {
+    if (!documentation) return []
+    return [this.moddle.create('bpmn:Documentation', { text: documentation })]
+  }
+
+  parseDocumentation (element) {
+    const obj = element.businessObject
+    if (!('documentation' in obj)) return ''
+    return obj.documentation.map(item => item.text).join(',')
   }
 
   /**

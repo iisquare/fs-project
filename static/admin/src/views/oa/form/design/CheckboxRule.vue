@@ -15,10 +15,19 @@ export default {
   name: 'CheckboxRule',
   props: {
     value: { type: Object, required: true },
-    config: { type: Object, required: true }
+    config: { type: Object, required: true },
+    activeItem: { type: Object, required: true }
   },
   data () {
     return {}
+  },
+  watch: {
+    'activeItem.id': {
+      handler () {
+        this.$emit('input', this.formatted(this.value))
+      },
+      immediate: true
+    }
   },
   methods: {
     formatted (obj) {
@@ -32,9 +41,6 @@ export default {
       const result = Object.assign({}, obj, rules)
       return result
     }
-  },
-  mounted () {
-    this.$emit('input', this.formatted(this.value))
   }
 }
 </script>
