@@ -1,5 +1,7 @@
 package com.iisquare.fs.web.member.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.CodeUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
@@ -8,7 +10,6 @@ import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.web.member.dao.RelationDao;
 import com.iisquare.fs.web.member.dao.RoleDao;
 import com.iisquare.fs.web.member.dao.UserDao;
@@ -77,6 +78,26 @@ public class UserService extends ServiceBase {
         return info.isPresent() ? info.get() : null;
     }
 
+    public ObjectNode identity(Integer id) {
+        ObjectNode result = DPUtil.objectNode();
+        User info = info(id);
+        if (null == info) return result;
+        result.put("id", info.getId());
+        result.put("name", info.getName());
+        result.put("status", info.getStatus());
+        ObjectNode roles = result.putObject("roles");
+        Set<Integer> roleIds = DPUtil.values(relationDao.findAllByTypeAndAid("user_role", info.getId()), Integer.class, "bid");
+        if (roleIds.size() > 0) {
+            for (Role item : roleDao.findAllById(roleIds)) {
+                if (1 != item.getStatus()) continue;
+                ObjectNode role = roles.putObject(String.valueOf(item.getId()));
+                role.put("id", item.getId());
+                role.put("name", item.getName());
+            }
+        }
+        return result;
+    }
+
     public User save(User info, int uid) {
         long time = System.currentTimeMillis();
         if(uid > 0) {
@@ -111,7 +132,7 @@ public class UserService extends ServiceBase {
             helper.betweenWithDate("loginedTime").betweenWithDate("lockedTime");
             List<Integer> roleIds = helper.listInteger("roleIds");
             if(null != roleIds && roleIds.size() > 0) {
-                helper.add(root.get("id").in(ServiceUtil.getPropertyValues(
+                helper.add(root.get("id").in(DPUtil.values(
                     relationDao.findAllByTypeAndBidIn("user_role", roleIds), Integer.class, "aid")));
             }
             return cb.and(helper.predicates());
@@ -121,14 +142,14 @@ public class UserService extends ServiceBase {
             userService.fillInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
-            ServiceUtil.fillProperties(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+            DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
         }
         if(!DPUtil.empty(args.get("withRoles")) && rows.size() > 0) {
-            Map<Integer, User> rowsMap = ServiceUtil.indexObjectList(rows, Integer.class, User.class, "id");
+            Map<Integer, User> rowsMap = DPUtil.list2map(rows, Integer.class, User.class, "id");
             Set<Integer> ids = rowsMap.keySet();
             List<Relation> relations = relationDao.findAllByTypeAndAidIn("user_role", ids);
-            Set<Integer> roleIds = ServiceUtil.getPropertyValues(relations, Integer.class, "bid");
-            Map<Integer, Role> roleMap = ServiceUtil.indexObjectList(roleDao.findAllById(roleIds), Integer.class, Role.class, "id");
+            Set<Integer> roleIds = DPUtil.values(relations, Integer.class, "bid");
+            Map<Integer, Role> roleMap = DPUtil.list2map(roleDao.findAllById(roleIds), Integer.class, Role.class, "id");
             for (Relation relation : relations) {
                 User item = rowsMap.get(relation.getAid());
                 if(null == item) continue;
@@ -169,7 +190,7 @@ public class UserService extends ServiceBase {
     public Map<Integer, User> infoByIds(List<Integer> ids) {
         if (null == ids || ids.size() < 1) return new HashMap<>();
         List<User> list = userDao.findAllById(ids);
-        return ServiceUtil.indexObjectList(list, Integer.class, "id");
+        return DPUtil.list2map(list, Integer.class, "id");
     }
 
     public ObjectNode infos(List<Integer> ids) {
@@ -212,4 +233,21 @@ public class UserService extends ServiceBase {
         return list;
     }
 
+    public ArrayNode fillInfo(ArrayNode array, String[] properties) {
+        if(null == array || array.size() < 1 || properties.length < 1) return array;
+        Set<Integer> ids = DPUtil.values(array, Integer.class, properties);
+        if(ids.size() < 1) return array;
+        Map<Integer, User> userInfos = DPUtil.list2map(userDao.findAllById(ids), Integer.class, "id");
+        if(userInfos.size() < 1) return array;
+        Iterator<JsonNode> iterator = array.iterator();
+        while (iterator.hasNext()) {
+            ObjectNode node = (ObjectNode) iterator.next();
+            for (String property : properties) {
+                User user = userInfos.get(node.at("/" + property).asText(""));
+                if(null == user) continue;
+                node.put(property + "Name", user.getName());
+            }
+        }
+        return array;
+    }
 }

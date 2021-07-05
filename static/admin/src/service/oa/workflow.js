@@ -24,5 +24,26 @@ export default {
   },
   deleteDeployment (param, tips = {}) {
     return base.post('/workflow/deleteDeployment', param, tips)
+  },
+  searchHistory (param, tips = {}) {
+    return base.post('/workflow/searchHistory', param, tips)
+  },
+  process (param, tips = {}) {
+    return base.post('/workflow/process', param, tips)
+  },
+  deleteProcessInstance (param, tips = {}) {
+    return base.post('/workflow/deleteProcessInstance', param, tips)
+  },
+  deleteHistoricProcessInstance (param, tips = {}) {
+    return base.post('/workflow/deleteHistoricProcessInstance', param, tips)
+  },
+  activateProcessInstance (param, tips = {}) {
+    return base.post('/workflow/activateProcessInstance', param, tips)
+  },
+  suspendProcessInstance (param, tips = {}) {
+    return base.post('/workflow/suspendProcessInstance', param, tips)
+  },
+  reject (param, tips = {}) {
+    return base.post('/workflow/reject', param, tips)
   }
 }

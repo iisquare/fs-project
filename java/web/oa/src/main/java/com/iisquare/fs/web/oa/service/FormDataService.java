@@ -49,7 +49,7 @@ public class FormDataService extends ServiceBase {
         if (null == sort) sort = Sorts.descending(MongoCore.FIELD_ID);
         FilterHelper helper = FilterHelper.newInstance(param).dateFormat(configuration.getFormatDate());
         helper.equalWithObjectId(MongoCore.FIELD_ID).equalWithIntNotEmpty("frameId");
-        helper.equal("bpmInstance").equal("bpmStatus").equal("bpmTask");
+        helper.equal("bpmWorkflowId").equal("bpmInstanceId").equal("bpmStartUserId");
         helper.betweenWithDate("createdTime").betweenWithDate("updatedTime");
         helper.equalWithIntNotEmpty("createdUid").equalWithIntNotEmpty("updatedUid");
         Bson filter = helper.filter();
@@ -69,8 +69,9 @@ public class FormDataService extends ServiceBase {
     }
 
     public List<Document> format(List<Document> rows) {
-        List<String> fields = Arrays.asList(MongoCore.FIELD_ID, "frameId",
-                "bpmInstance", "bpmStatus", "bpmTask", "bpmIdentity",
+        List<String> fields = Arrays.asList(
+                MongoCore.FIELD_ID, "frameId",
+                "bpmWorkflowId", "bpmInstanceId", "bpmStartUserId",
                 "createdTime", "createdUid", "updatedTime", "updatedUid");
         List<Document> result = new ArrayList<>();
         for (Document row : rows) {

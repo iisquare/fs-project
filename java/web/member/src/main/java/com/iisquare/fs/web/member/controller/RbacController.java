@@ -85,4 +85,10 @@ public class RbacController {
         return ApiUtil.echoResult(0, null, result);
     }
 
+    @PostMapping("/identity")
+    public String identityAction(@RequestBody Map<String, Object> param, HttpServletRequest request) {
+        ObjectNode identity = userService.identity(rbacService.uid(request));
+        return ApiUtil.echoResult(0, null, identity);
+    }
+
 }

@@ -158,13 +158,15 @@ export default Object.assign(config, {
   }, {
     type: 'number', label: '更新时间', icon: 'reserved', filterable: true, viewable: true, sortable: true, editable: false, options: { field: 'updatedTime', value: '' }
   }, {
-    type: 'text', label: '流程实例', icon: 'reserved', filterable: false, viewable: true, sortable: false, editable: false, options: { field: 'bpmInstance', value: '' }
+    type: 'text', label: '流程模型标识', icon: 'reserved', filterable: false, viewable: true, sortable: false, editable: false, options: { field: 'bpmWorkflowId', value: '' }
   }, {
-    type: 'text', label: '流程状态', icon: 'reserved', filterable: true, viewable: true, sortable: false, editable: false, options: { field: 'bpmStatus', value: '' }
+    type: 'text', label: '流程模型名称', icon: 'reserved', filterable: false, viewable: true, sortable: false, editable: false, options: { field: 'bpmWorkflowName', value: '' }
   }, {
-    type: 'text', label: '当前节点', icon: 'reserved', filterable: true, viewable: true, sortable: false, editable: false, options: { field: 'bpmTask', value: '' }
+    type: 'text', label: '流程实例标识', icon: 'reserved', filterable: true, viewable: true, sortable: false, editable: false, options: { field: 'bpmInstanceId', value: '' }
   }, {
-    type: 'text', label: '当前负责人', icon: 'reserved', filterable: false, viewable: true, sortable: false, editable: false, options: { field: 'bpmIdentity', value: '' }
+    type: 'text', label: '发起人标识', icon: 'reserved', filterable: false, viewable: true, sortable: false, editable: false, options: { field: 'bpmStartUserId', value: '' }
+  }, {
+    type: 'text', label: '发起人名称', icon: 'reserved', filterable: false, viewable: true, sortable: false, editable: false, options: { field: 'bpmStartUserName', value: '' }
   }],
   idField: { type: 'text', label: '主键', icon: 'reserved', filterable: true, viewable: true, sortable: true, editable: false, options: { field: '_id', value: '' } },
   devices: [{

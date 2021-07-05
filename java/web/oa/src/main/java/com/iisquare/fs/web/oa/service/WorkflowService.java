@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.oa.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
@@ -8,14 +9,24 @@ import com.iisquare.fs.base.core.util.ReflectUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.oa.dao.WorkflowDao;
 import com.iisquare.fs.web.oa.entity.Workflow;
+import org.flowable.engine.HistoryService;
+import org.flowable.engine.ManagementService;
 import org.flowable.engine.RepositoryService;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.history.HistoricActivityInstance;
+import org.flowable.engine.history.HistoricProcessInstance;
+import org.flowable.engine.history.HistoricProcessInstanceQuery;
 import org.flowable.engine.repository.Deployment;
 import org.flowable.engine.repository.DeploymentQuery;
+import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.engine.runtime.ProcessInstance;
+import org.flowable.engine.runtime.ProcessInstanceQuery;
+import org.flowable.engine.task.Comment;
+import org.flowable.task.api.Task;
+import org.flowable.task.api.history.HistoricTaskInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -37,7 +48,20 @@ public class WorkflowService extends ServiceBase {
     private FormService formService;
     @Autowired
     private RepositoryService repositoryService;
+    @Autowired
+    private HistoryService historyService;
+    @Autowired
+    private RuntimeService runtimeService;
+    @Autowired
+    private ManagementService managementService; // 引擎管理服务，和具体业务无关，管理引擎。
+
     public static final String BPMN_SUFFIX = ".bpmn20.xml";
+
+    public ObjectNode state() {
+        ObjectNode state = DPUtil.objectNode();
+        state.replace("tableCount", DPUtil.convertJSON(managementService.getTableCount()));
+        return state;
+    }
 
     public String deploymentKey(Workflow info) {
         return "fs-" + info.getId();
@@ -47,41 +71,24 @@ public class WorkflowService extends ServiceBase {
         repositoryService.deleteDeployment(id, cascade);
     }
 
-    public ObjectNode deployment2node(Deployment deployment) {
-        if (null == deployment) return null;
-        ObjectNode node = DPUtil.objectNode();
-        node.put("parentDeploymentId", deployment.getParentDeploymentId());
-        node.put("category", deployment.getCategory());
-        node.put("derivedFrom", deployment.getDerivedFrom());
-        node.put("derivedFromRoot", deployment.getDerivedFromRoot());
-        node.put("engineVersion", deployment.getEngineVersion());
-        node.put("id", deployment.getId());
-        node.put("key", deployment.getKey());
-        node.put("name", deployment.getName());
-        node.put("tenantId", deployment.getTenantId());
-        node.put("deploymentTime", deployment.getDeploymentTime().getTime());
-        return node;
+    public ArrayNode comment2node(List<Comment> list) {
+        ArrayNode result = DPUtil.arrayNode();
+        for (Comment comment : list) {
+            result.add(comment2node(comment));
+        }
+        return result;
     }
 
-    public ObjectNode processInstance2node(ProcessInstance instance) {
-        if (null == instance) return null;
+    public ObjectNode comment2node(Comment comment) {
         ObjectNode node = DPUtil.objectNode();
-        node.put("processDefinitionId", instance.getProcessDefinitionId());
-        node.put("processDefinitionName", instance.getProcessDefinitionName());
-        node.put("processDefinitionKey", instance.getProcessDefinitionKey());
-        node.put("processDefinitionVersion", instance.getProcessDefinitionVersion());
-        node.put("deploymentId", instance.getDeploymentId());
-        node.put("businessKey", instance.getBusinessKey());
-        node.put("isSuspended", instance.isSuspended());
-        node.put("tenantId", instance.getTenantId());
-        node.put("name", instance.getName());
-        node.put("description", instance.getDescription());
-        node.put("localizedName", instance.getLocalizedName());
-        node.put("localizedDescription", instance.getLocalizedDescription());
-        node.put("startTime", instance.getStartTime().getTime());
-        node.put("startUserId", instance.getStartUserId());
-        node.put("callbackId", instance.getCallbackId());
-        node.put("callbackType", instance.getCallbackType());
+        if (null == comment) return node;
+        node.put("fullMessage", comment.getFullMessage());
+        node.put("id", comment.getId());
+        node.put("processInstanceId", comment.getProcessInstanceId());
+        node.put("taskId", comment.getTaskId());
+        node.put("time", comment.getTime().getTime());
+        node.put("type", comment.getType());
+        node.put("userId", comment.getUserId());
         return node;
     }
 
@@ -91,6 +98,311 @@ public class WorkflowService extends ServiceBase {
             result.add(deployment2node(deployment));
         }
         return result;
+    }
+
+    public ObjectNode deployment2node(Deployment deployment) {
+        ObjectNode node = DPUtil.objectNode();
+        if (null == deployment) return node;
+        node.put("category", deployment.getCategory());
+        node.put("deploymentTime", deployment.getDeploymentTime().getTime());
+        node.put("derivedFrom", deployment.getDerivedFrom());
+        node.put("derivedFromRoot", deployment.getDerivedFromRoot());
+        node.put("engineVersion", deployment.getEngineVersion());
+        node.put("id", deployment.getId());
+        node.put("key", deployment.getKey());
+        node.put("name", deployment.getName());
+        node.put("parentDeploymentId", deployment.getParentDeploymentId());
+        node.put("tenantId", deployment.getTenantId());
+        return node;
+    }
+
+    public ArrayNode processDefinition2node(List<ProcessDefinition> list) {
+        ArrayNode result = DPUtil.arrayNode();
+        for (ProcessDefinition definition : list) {
+            result.add(processDefinition2node(definition));
+        }
+        return result;
+    }
+
+    public ObjectNode processDefinition2node(ProcessDefinition definition) {
+        ObjectNode node = DPUtil.objectNode();
+        if (null == definition) return node;
+        node.put("category", definition.getCategory());
+        node.put("deploymentId", definition.getDeploymentId());
+        node.put("derivedFrom", definition.getDerivedFrom());
+        node.put("derivedFromRoot", definition.getDerivedFromRoot());
+        node.put("derivedVersion", definition.getDerivedVersion());
+        node.put("description", definition.getDescription());
+        node.put("diagramResourceName", definition.getDiagramResourceName());
+        node.put("engineVersion", definition.getEngineVersion());
+        node.put("id", definition.getId());
+        node.put("key", definition.getKey());
+        node.put("name", definition.getName());
+        node.put("resourceName", definition.getResourceName());
+        node.put("tenantId", definition.getTenantId());
+        node.put("version", definition.getVersion());
+        return node;
+    }
+
+    public ArrayNode processInstance2node(List<ProcessInstance> list) {
+        ArrayNode result = DPUtil.arrayNode();
+        for (ProcessInstance instance : list) {
+            result.add(processInstance2node(instance));
+        }
+        return result;
+    }
+
+    public ObjectNode processInstance2node(ProcessInstance instance) {
+        ObjectNode node = DPUtil.objectNode();
+        if (null == instance) return node;
+        node.put("activityId", instance.getActivityId());
+        node.put("businessKey", instance.getBusinessKey());
+        node.put("callbackId", instance.getCallbackId());
+        node.put("callbackType", instance.getCallbackType());
+        node.put("deploymentId", instance.getDeploymentId());
+        node.put("description", instance.getDescription());
+        node.put("id", instance.getId());
+        node.put("isSuspended", instance.isSuspended());
+        node.put("localizedDescription", instance.getLocalizedDescription());
+        node.put("localizedName", instance.getLocalizedName());
+        node.put("name", instance.getName());
+        node.put("parentId", instance.getParentId());
+        node.put("processDefinitionId", instance.getProcessDefinitionId());
+        node.put("processDefinitionKey", instance.getProcessDefinitionKey());
+        node.put("processDefinitionName", instance.getProcessDefinitionName());
+        node.put("processDefinitionVersion", instance.getProcessDefinitionVersion());
+        node.put("processInstanceId", instance.getProcessInstanceId());
+        node.put("propagatedStageInstanceId", instance.getPropagatedStageInstanceId());
+        node.put("referenceId", instance.getReferenceId());
+        node.put("referenceType", instance.getReferenceType());
+        node.put("rootProcessInstanceId", instance.getRootProcessInstanceId());
+        node.put("startTime", instance.getStartTime().getTime());
+        node.put("startUserId", instance.getStartUserId());
+        node.put("superExecutionId", instance.getSuperExecutionId());
+        node.put("tenantId", instance.getTenantId());
+        return node;
+    }
+
+    public ArrayNode historicProcessInstance2node(List<HistoricProcessInstance> list) {
+        ArrayNode result = DPUtil.arrayNode();
+        for (HistoricProcessInstance instance : list) {
+            result.add(historicProcessInstance2node(instance));
+        }
+        return result;
+    }
+
+    public ObjectNode historicProcessInstance2node(HistoricProcessInstance instance) {
+        ObjectNode node = DPUtil.objectNode();
+        if (null == instance) return node;
+        node.put("callbackId", instance.getCallbackId());
+        node.put("callbackType", instance.getCallbackType());
+        node.put("deleteReason", instance.getDeleteReason());
+        node.put("deploymentId", instance.getDeploymentId());
+        node.put("description", instance.getDescription());
+        node.put("durationInMillis", instance.getDurationInMillis());
+        node.put("endActivityId", instance.getEndActivityId());
+        node.put("endTime", null == instance.getEndTime() ? null : instance.getEndTime().getTime());
+        node.put("id", instance.getId());
+        node.put("name", instance.getName());
+        node.put("processDefinitionId", instance.getProcessDefinitionId());
+        node.put("processDefinitionKey", instance.getProcessDefinitionKey());
+        node.put("processDefinitionName", instance.getProcessDefinitionName());
+        node.put("processDefinitionVersion", instance.getProcessDefinitionVersion());
+        node.put("referenceId", instance.getReferenceId());
+        node.put("referenceType", instance.getReferenceType());
+        node.put("startActivityId", instance.getStartActivityId());
+        node.put("startTime", null == instance.getStartTime() ? null : instance.getStartTime().getTime());
+        node.put("startUserId", instance.getStartUserId());
+        node.put("superProcessInstanceId", instance.getSuperProcessInstanceId());
+        node.put("tenantId", instance.getTenantId());
+        node.put("businessKey", instance.getBusinessKey());
+        return node;
+    }
+
+    public ArrayNode historicActivityInstance2node(List<HistoricActivityInstance> list) {
+        ArrayNode result = DPUtil.arrayNode();
+        for (HistoricActivityInstance instance : list) {
+            result.add(historicActivityInstance2node(instance));
+        }
+        return result;
+    }
+
+    public ObjectNode historicActivityInstance2node(HistoricActivityInstance instance) {
+        ObjectNode node = DPUtil.objectNode();
+        if (null == instance) return node;
+        node.put("activityId", instance.getActivityId());
+        node.put("activityName", instance.getActivityName());
+        node.put("activityType", instance.getActivityType());
+        node.put("assignee", instance.getAssignee());
+        node.put("calledProcessInstanceId", instance.getCalledProcessInstanceId());
+        node.put("deleteReason", instance.getDeleteReason());
+        node.put("durationInMillis", instance.getDurationInMillis());
+        node.put("endTime", null == instance.getEndTime() ? null : instance.getEndTime().getTime());
+        node.put("executionId", instance.getExecutionId());
+        node.put("id", instance.getId());
+        node.put("processDefinitionId", instance.getProcessDefinitionId());
+        node.put("processInstanceId", instance.getProcessInstanceId());
+        node.put("startTime", null == instance.getStartTime() ? null : instance.getStartTime().getTime());
+        node.put("taskId", instance.getTaskId());
+        node.put("tenantId", instance.getTenantId());
+        node.put("time", null == instance.getTime() ? null : instance.getTime().getTime());
+        node.put("transactionOrder", instance.getTransactionOrder());
+        return node;
+    }
+
+    public ArrayNode historicTaskInstance2node(List<HistoricTaskInstance> list) {
+        ArrayNode result = DPUtil.arrayNode();
+        for (HistoricTaskInstance instance : list) {
+            result.add(historicTaskInstance2node(instance));
+        }
+        return result;
+    }
+
+    public ObjectNode historicTaskInstance2node(HistoricTaskInstance instance) {
+        ObjectNode node = DPUtil.objectNode();
+        if (null == instance) return node;
+        node.put("assignee", instance.getAssignee());
+        node.put("category", instance.getCategory());
+        node.put("claimTime", instance.getClaimTime() == null ? null : instance.getClaimTime().getTime());
+        node.put("createTime", instance.getCreateTime().getTime());
+        node.put("deleteReason", instance.getDeleteReason());
+        node.put("description", instance.getDescription());
+        node.put("dueDate", instance.getDueDate() == null ? null : instance.getDueDate().getTime());
+        node.put("durationInMillis", instance.getDurationInMillis());
+        node.put("endTime", null == instance.getEndTime() ? null : instance.getEndTime().getTime());
+        node.put("executionId", instance.getExecutionId());
+        node.put("formKey", instance.getFormKey());
+        node.put("id", instance.getId());
+        node.put("name", instance.getName());
+        node.put("owner", instance.getOwner());
+        node.put("parentTaskId", instance.getParentTaskId());
+        node.put("priority", instance.getPriority());
+        node.put("processDefinitionId", instance.getProcessDefinitionId());
+        node.put("processInstanceId", instance.getProcessInstanceId());
+        node.put("propagatedStageInstanceId", instance.getPropagatedStageInstanceId());
+        node.put("scopeDefinitionId", instance.getScopeDefinitionId());
+        node.put("scopeId", instance.getScopeId());
+        node.put("scopeType", instance.getScopeType());
+        node.put("subScopeId", instance.getSubScopeId());
+        node.put("taskDefinitionId", instance.getTaskDefinitionId());
+        node.put("taskDefinitionKey", instance.getTaskDefinitionKey());
+        node.put("tenantId", instance.getTenantId());
+        node.put("time", instance.getTime() == null ? null : instance.getTime().getTime());
+        node.put("workTimeInMillis", instance.getWorkTimeInMillis());
+        return node;
+    }
+
+    public ArrayNode task2node(List<Task> list) {
+        ArrayNode result = DPUtil.arrayNode();
+        for (Task task : list) {
+            result.add(task2node(task));
+        }
+        return result;
+    }
+
+    public ObjectNode task2node(Task task) {
+        ObjectNode node = DPUtil.objectNode();
+        if (null == task) return node;
+        node.put("assignee", task.getAssignee());
+        node.put("category", task.getCategory());
+        node.put("claimTime", null == task.getClaimTime() ? null : task.getClaimTime().getTime());
+        node.put("createTime", null == task.getCreateTime() ? null : task.getCreateTime().getTime());
+        node.put("delegationState", null == task.getDelegationState() ? null : task.getDelegationState().name());
+        node.put("description", task.getDescription());
+        node.put("dueDate", null == task.getDueDate() ? null : task.getDueDate().getTime());
+        node.put("executionId", task.getExecutionId());
+        node.put("formKey", task.getFormKey());
+        node.put("id", task.getId());
+        node.put("name", task.getName());
+        node.put("owner", task.getOwner());
+        node.put("parentTaskId", task.getParentTaskId());
+        node.put("priority", task.getPriority());
+        node.put("processDefinitionId", task.getProcessDefinitionId());
+        node.put("processInstanceId", task.getProcessInstanceId());
+        node.put("propagatedStageInstanceId", task.getPropagatedStageInstanceId());
+        node.put("scopeDefinitionId", task.getScopeDefinitionId());
+        node.put("scopeId", task.getScopeId());
+        node.put("scopeType", task.getScopeType());
+        node.put("subScopeId", task.getSubScopeId());
+        node.put("taskDefinitionId", task.getTaskDefinitionId());
+        node.put("taskDefinitionKey", task.getTaskDefinitionKey());
+        node.put("tenantId", task.getTenantId());
+        return node;
+    }
+
+    public ArrayNode fillDeployment(ArrayNode array) {
+        if (null == array || array.size() < 1) return array;
+        Set<String> processDefinitionIds = DPUtil.values(array, String.class, "processDefinitionId");
+        List<ProcessDefinition> definitions = repositoryService.createProcessDefinitionQuery().processDefinitionIds(processDefinitionIds).list();
+        Map<String, String> processDefinitionId2deploymentId = new LinkedHashMap<>();
+        for (ProcessDefinition definition : definitions) {
+            processDefinitionId2deploymentId.put(definition.getId(), definition.getDeploymentId());
+        }
+        Map<String, Deployment> deployments = DPUtil.list2map(
+                repositoryService.createDeploymentQuery().deploymentIds(new ArrayList<>(processDefinitionId2deploymentId.values())).list(),
+                String.class, "id");
+        Iterator<JsonNode> iterator = array.iterator();
+        while (iterator.hasNext()) {
+            ObjectNode node = (ObjectNode) iterator.next();
+            node.replace("deploymentInfo", deployment2node(
+                    deployments.get(processDefinitionId2deploymentId.get(node.get("processDefinitionId").asText()))));
+        }
+        return array;
+    }
+
+    public Map<String, Object> searchHistory(Map<?, ?> param, Map<?, ?> config) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
+        int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
+        HistoricProcessInstanceQuery query = historyService.createHistoricProcessInstanceQuery().orderByProcessInstanceStartTime().desc();
+        String deploymentId = DPUtil.trim(DPUtil.parseString(param.get("deploymentId")));
+        if(!DPUtil.empty(deploymentId)) {
+            query.deploymentId(deploymentId);
+        }
+        String submitter = DPUtil.trim(DPUtil.parseString(param.get("submitter")));
+        if(!DPUtil.empty(submitter)) {
+            query.variableValueEquals("submitter", submitter);
+        }
+        String involvedUserId = DPUtil.trim(DPUtil.parseString(param.get("involvedUserId")));
+        if(!DPUtil.empty(involvedUserId)) {
+            query.involvedUser(involvedUserId);
+        }
+        String finishStatus = DPUtil.trim(DPUtil.parseString(param.get("finishStatus")));
+        switch (finishStatus) {
+            case "finished":
+                query.finished();
+                break;
+            case "unfinished":
+                query.unfinished();
+                break;
+        }
+        String deleteStatus = DPUtil.trim(DPUtil.parseString(param.get("deleteStatus")));
+        switch (deleteStatus) {
+            case "deleted":
+                query.deleted();
+                break;
+            case "notDeleted":
+                query.notDeleted();
+                break;
+        }
+        long count = query.count();
+        ArrayNode rows = historicProcessInstance2node(count > 0 ? query.listPage((page - 1) * pageSize, pageSize) : new ArrayList<>());
+        if(!DPUtil.empty(config.get("withUserInfo"))) {
+            rbacService.fillUserInfo(rows, "startUserId");
+        }
+        result.put("page", page);
+        result.put("pageSize", pageSize);
+        result.put("total", count);
+        result.put("rows", fillProcessInstanceWithHistory(fillDeployment(rows)));
+        return result;
+    }
+
+    public ArrayNode fillProcessInstanceWithHistory(ArrayNode array) {
+        Set<String> ids = DPUtil.values(array, String.class, "id");
+        if (ids.size() < 1) return array;
+        ProcessInstanceQuery query = runtimeService.createProcessInstanceQuery().processInstanceIds(ids);
+        ObjectNode instances = DPUtil.array2object(processInstance2node(query.list()), "id");
+        return DPUtil.fillValues(array, true, new String[]{"id"}, new String[]{"processInstanceInfo"}, instances);
     }
 
     public Map<?, ?> searchDeployment(Map<?, ?> param, Map<?, ?> config) {
@@ -162,7 +474,7 @@ public class WorkflowService extends ServiceBase {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid", "deploymentUid");
         }
         if(!DPUtil.empty(config.get("withStatusText"))) {
-            ServiceUtil.fillProperties(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+            DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
         }
         if(!DPUtil.empty(config.get("withDeploymentInfo"))) fillDeployment(rows);
         result.put("page", page);
@@ -197,6 +509,20 @@ public class WorkflowService extends ServiceBase {
             default:
                 return null;
         }
+        return status;
+    }
+
+    public Map<?, ?> finishStatus(String level) {
+        Map<String, String> status = new LinkedHashMap<>();
+        status.put("finished", "已结束");
+        status.put("unfinished", "未结束");
+        return status;
+    }
+
+    public Map<?, ?> deleteStatus(String level) {
+        Map<String, String> status = new LinkedHashMap<>();
+        status.put("deleted", "已删除");
+        status.put("notDeleted", "未删除");
         return status;
     }
 
@@ -242,9 +568,9 @@ public class WorkflowService extends ServiceBase {
 
     public List<?> fillInfo(List<?> list, String ...properties) {
         if(null == list || list.size() < 1 || properties.length < 1) return list;
-        Set<Integer> ids = ServiceUtil.getPropertyValues(list, Integer.class, properties);
+        Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
         if(ids.size() < 1) return list;
-        Map<Integer, Workflow> map = ServiceUtil.indexObjectList(workflowDao.findAllById(ids), Integer.class, Workflow.class, "id");
+        Map<Integer, Workflow> map = DPUtil.list2map(workflowDao.findAllById(ids), Integer.class, Workflow.class, "id");
         if(map.size() < 1) return list;
         for (Object item : list) {
             for (String property : properties) {
@@ -259,10 +585,10 @@ public class WorkflowService extends ServiceBase {
     public List<Workflow> fillDeployment(List<Workflow> list) {
         if(null == list || list.size() < 1) return list;
         String[] properties = new String[]{"deploymentId"};
-        Set<String> ids = ServiceUtil.getPropertyValues(list, String.class, properties);
+        Set<String> ids = DPUtil.values(list, String.class, properties);
         if(ids.size() < 1) return list;
         List<Deployment> deployments = repositoryService.createDeploymentQuery().deploymentIds(new ArrayList<>(ids)).list();
-        Map<String, Deployment> map = ServiceUtil.indexObjectList(deployments, String.class, Deployment.class, "id");
+        Map<String, Deployment> map = DPUtil.list2map(deployments, String.class, Deployment.class, "id");
         if(map.size() < 1) return list;
         for (Workflow item : list) {
             Deployment deployment = map.get(item.getDeploymentId());
@@ -270,6 +596,44 @@ public class WorkflowService extends ServiceBase {
             item.setDeploymentInfo(deployment2node(deployment));
         }
         return list;
+    }
+
+    public Map<String, Object> toggleProcessInstance(String processInstanceId, boolean active) {
+        if (DPUtil.empty(processInstanceId)) return ApiUtil.result(1001, "参数异常", processInstanceId);
+        ProcessInstance instance = runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult();
+        if (null == instance || instance.isEnded()) return ApiUtil.result(1002, "流程实例不可用", processInstanceId);
+        if (active) {
+            if (!instance.isSuspended()) return ApiUtil.result(1101, "流程实例已激活", processInstance2node(instance));
+            runtimeService.activateProcessInstanceById(processInstanceId);
+        } else {
+            if (instance.isSuspended()) return ApiUtil.result(1102, "流程实例已暂停", processInstance2node(instance));
+            runtimeService.suspendProcessInstanceById(processInstanceId);
+        }
+        return ApiUtil.result(0, null, processInstance2node(instance));
+    }
+
+    /**
+     * 撤销流程实例（通过deleteReason is null判断流程是否被删除）
+     */
+    public Map<String, Object> deleteProcessInstance(String processInstanceId, String deleteReason) {
+        if (DPUtil.empty(processInstanceId)) return ApiUtil.result(1001, "参数异常", processInstanceId);
+        ProcessInstance instance = runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult();
+        if (null == instance || instance.isEnded()) return ApiUtil.result(1002, "流程实例不可用", processInstanceId);
+        if (DPUtil.empty(deleteReason)) return ApiUtil.result(1003, "请填写撤销原因", processInstanceId);
+        runtimeService.deleteProcessInstance(processInstanceId, deleteReason);
+        return ApiUtil.result(0, "撤销成功", processInstance2node(instance));
+    }
+
+    /**
+     * 删除流程实例
+     */
+    public Map<String, Object> deleteHistoricProcessInstance(String processInstanceId) {
+        if (DPUtil.empty(processInstanceId)) return ApiUtil.result(1001, "参数异常", processInstanceId);
+        HistoricProcessInstance instance = historyService.createHistoricProcessInstanceQuery().processInstanceId(processInstanceId).singleResult();
+        if (null == instance) return ApiUtil.result(1002, "流程实例不可用", processInstanceId);
+        if (null == instance.getEndTime()) return ApiUtil.result(1003, "流程运行中，暂不可删除", historicProcessInstance2node(instance));
+        historyService.deleteHistoricProcessInstance(instance.getId());
+        return ApiUtil.result(0, String.format("流程[%s]删除成功", instance.getId()), historicProcessInstance2node(instance));
     }
 
 }

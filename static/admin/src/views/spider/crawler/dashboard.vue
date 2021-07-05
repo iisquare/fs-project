@@ -192,7 +192,7 @@
     </a-card>
     <!--作业编辑-->
     <a-modal title="作业编辑" v-model="scheduleVisible" :confirmLoading="scheduleLoading" :maskClosable="false" :width="640">
-      <a-textarea v-model="scheduleJSON" :autoSize="{ minRows: 8, maxRows: 21 }"></a-textarea>
+      <a-textarea v-model="scheduleJSON" :autoSize="{ minRows: 8, maxRows: 21 }" />
       <a-form-model layout="inline" slot="footer">
         <a-form-model-item>
           <a-input v-model="templateId" placeholder="模板主键"></a-input>
@@ -224,7 +224,7 @@
           <a-input v-model="task.templateKey" auto-complete="on"></a-input>
         </a-form-model-item>
         <a-form-model-item label="参数">
-          <a-textarea v-model="task.parameters" placeholder="JSON数组字符串"></a-textarea>
+          <a-textarea v-model="task.parameters" placeholder="JSON数组字符串" />
         </a-form-model-item>
       </a-form-model>
     </a-modal>

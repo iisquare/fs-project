@@ -52,7 +52,7 @@
                 </a-select>
               </a-form-model-item>
               <a-form-model-item label="描述">
-                <a-textarea v-model="row.description" placeholder="description"></a-textarea>
+                <a-textarea v-model="row.description" placeholder="description" />
               </a-form-model-item>
             </a-form-model>
           </a-tab-pane>

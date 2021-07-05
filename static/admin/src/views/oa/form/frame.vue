@@ -5,18 +5,6 @@
         <a-form-model ref="filters" :model="filters" layout="inline">
           <a-row :gutter="48">
             <a-col :md="6" :sm="24">
-              <a-form-model-item label="物理表" prop="physicalTable">
-                <a-input v-model="filters.physicalTable" placeholder="" :allowClear="true" />
-              </a-form-model-item>
-            </a-col>
-            <a-col :md="6" :sm="24">
-              <a-form-model-item label="工作流" prop="bpmId">
-                <a-input v-model="filters.bpmId" placeholder="" :allowClear="true" />
-              </a-form-model-item>
-            </a-col>
-          </a-row>
-          <a-row :gutter="48">
-            <a-col :md="6" :sm="24">
               <a-form-model-item label="名称" prop="name">
                 <a-input v-model="filters.name" placeholder="" :allowClear="true" />
               </a-form-model-item>
@@ -70,8 +58,6 @@
     <a-modal :title="'信息查看 - ' + form.id" v-model="infoVisible" :footer="null">
       <a-form-model :model="form" :loading="infoLoading" :label-col="{ span: 5 }" :wrapper-col="{ span: 15 }">
         <a-form-model-item label="名称">{{ form.name }}</a-form-model-item>
-        <a-form-model-item label="物理表">{{ form.physicalTable }}</a-form-model-item>
-        <a-form-model-item label="工作流">{{ form.bpmId }}</a-form-model-item>
         <a-form-model-item label="排序">{{ form.sort }}</a-form-model-item>
         <a-form-model-item label="状态">{{ form.statusText }}</a-form-model-item>
         <a-form-model-item label="描述">{{ form.description }}</a-form-model-item>
@@ -90,12 +76,6 @@
         <a-form-model-item label="名称" prop="name">
           <a-input v-model="form.name" auto-complete="off"></a-input>
         </a-form-model-item>
-        <a-form-model-item label="物理表" prop="physicalTable">
-          <a-input v-model="form.physicalTable" auto-complete="on"></a-input>
-        </a-form-model-item>
-        <a-form-model-item label="工作流" prop="bpmId">
-          <a-input v-model="form.bpmId" auto-complete="on"></a-input>
-        </a-form-model-item>
         <a-form-model-item label="排序">
           <a-input-number v-model="form.sort" :min="0" :max="200"></a-input-number>
         </a-form-model-item>
@@ -105,10 +85,13 @@
           </a-select>
         </a-form-model-item>
         <a-form-model-item label="描述">
-          <a-textarea v-model="form.description"></a-textarea>
+          <a-textarea v-model="form.description" />
+        </a-form-model-item>
+        <a-form-model-item label="存储">
+          <a-textarea v-model="form.storage" />
         </a-form-model-item>
         <a-form-model-item label="内容">
-          <a-textarea v-model="form.content"></a-textarea>
+          <a-textarea v-model="form.content" />
         </a-form-model-item>
       </a-form-model>
     </a-modal>
@@ -128,11 +111,9 @@ export default {
       columns: [
         { title: 'ID', dataIndex: 'id' },
         { title: '名称', dataIndex: 'name' },
-        { title: '物理表', dataIndex: 'physicalTable' },
-        { title: '工作流', dataIndex: 'bpmId' },
         { title: '排序', dataIndex: 'sort' },
         { title: '状态', dataIndex: 'statusText' },
-        { title: '操作', scopedSlots: { customRender: 'action' } }
+        { title: '操作', scopedSlots: { customRender: 'action' }, width: 210 }
       ],
       selection: RouteUtil.selection(),
       pagination: {},

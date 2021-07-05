@@ -57,7 +57,7 @@
         <a-row class="form-row" :gutter="16">
           <a-col :md="24" :sm="24">
             <a-form-model-item label="描述" :label-col="{ span: 2 }" :wrapper-col="{ span: 22 }">
-              <a-textarea v-model="schedule.description"></a-textarea>
+              <a-textarea v-model="schedule.description" />
             </a-form-model-item>
           </a-col>
         </a-row>
@@ -73,7 +73,7 @@
         <a-row class="form-row" :gutter="16">
           <a-col :md="24" :sm="24">
             <a-form-model-item label="初始参数" :label-col="{ span: 2 }" :wrapper-col="{ span: 22 }">
-              <a-textarea v-model="schedule.initParams" placeholder="JSON数组字符串"></a-textarea>
+              <a-textarea v-model="schedule.initParams" placeholder="JSON数组字符串" />
             </a-form-model-item>
           </a-col>
         </a-row>
@@ -111,7 +111,7 @@
               <a-row class="form-row" :gutter="16">
                 <a-col :md="24" :sm="24">
                   <a-form-model-item label="描述" :label-col="{ span: 2 }" :wrapper-col="{ span: 22 }">
-                    <a-textarea v-model="record.description"></a-textarea>
+                    <a-textarea v-model="record.description" />
                   </a-form-model-item>
                 </a-col>
               </a-row>
@@ -157,21 +157,21 @@
               <a-row class="form-row" :gutter="16">
                 <a-col :md="24" :sm="24">
                   <a-form-model-item label="请求头部" :label-col="{ span: 2 }" :wrapper-col="{ span: 22 }">
-                    <a-textarea v-model="record.headers" placeholder="JSON键值对字符串"></a-textarea>
+                    <a-textarea v-model="record.headers" placeholder="JSON键值对字符串" />
                   </a-form-model-item>
                 </a-col>
               </a-row>
               <a-row class="form-row" :gutter="16">
                 <a-col :md="24" :sm="24">
                   <a-form-model-item label="解析器" :label-col="{ span: 2 }" :wrapper-col="{ span: 22 }">
-                    <a-textarea v-model="record.parser"></a-textarea>
+                    <a-textarea v-model="record.parser" />
                   </a-form-model-item>
                 </a-col>
               </a-row>
               <a-row class="form-row" :gutter="16">
                 <a-col :md="24" :sm="24">
                   <a-form-model-item label="映射器" :label-col="{ span: 2 }" :wrapper-col="{ span: 22 }">
-                    <a-textarea v-model="record.mapper" placeholder="JSON键值对字符串"></a-textarea>
+                    <a-textarea v-model="record.mapper" placeholder="JSON键值对字符串" />
                   </a-form-model-item>
                 </a-col>
               </a-row>
@@ -185,7 +185,7 @@
               <a-row class="form-row" :gutter="16">
                 <a-col :md="24" :sm="24">
                   <a-form-model-item label="输出配置" :label-col="{ span: 2 }" :wrapper-col="{ span: 22 }">
-                    <a-textarea v-model="record.outputProperty" placeholder="JSON键值对字符串"></a-textarea>
+                    <a-textarea v-model="record.outputProperty" placeholder="JSON键值对字符串" />
                   </a-form-model-item>
                 </a-col>
               </a-row>
@@ -220,28 +220,28 @@
             <a-row class="form-row" :gutter="16">
               <a-col :md="24" :sm="24">
                 <a-form-model-item label="描述" :label-col="{ span: 2 }" :wrapper-col="{ span: 22 }">
-                  <a-textarea v-model="record.description"></a-textarea>
+                  <a-textarea v-model="record.description" />
                 </a-form-model-item>
               </a-col>
             </a-row>
             <a-row class="form-row" :gutter="16">
               <a-col :md="24" :sm="24">
                 <a-form-model-item label="解析器" :label-col="{ span: 2 }" :wrapper-col="{ span: 22 }">
-                  <a-textarea v-model="record.parser"></a-textarea>
+                  <a-textarea v-model="record.parser" />
                 </a-form-model-item>
               </a-col>
             </a-row>
             <a-row class="form-row" :gutter="16">
               <a-col :md="24" :sm="24">
                 <a-form-model-item label="辅助器" :label-col="{ span: 2 }" :wrapper-col="{ span: 22 }">
-                  <a-textarea v-model="record.assistor"></a-textarea>
+                  <a-textarea v-model="record.assistor" />
                 </a-form-model-item>
               </a-col>
             </a-row>
             <a-row class="form-row" :gutter="16">
               <a-col :md="24" :sm="24">
                 <a-form-model-item label="映射器" :label-col="{ span: 2 }" :wrapper-col="{ span: 22 }">
-                  <a-textarea v-model="record.mapper" placeholder="JSON键值对字符串"></a-textarea>
+                  <a-textarea v-model="record.mapper" placeholder="JSON键值对字符串" />
                 </a-form-model-item>
               </a-col>
             </a-row>
@@ -255,7 +255,7 @@
             <a-row class="form-row" :gutter="16">
               <a-col :md="24" :sm="24">
                 <a-form-model-item label="输出配置" :label-col="{ span: 2 }" :wrapper-col="{ span: 22 }">
-                  <a-textarea v-model="record.outputProperty" placeholder="JSON键值对字符串"></a-textarea>
+                  <a-textarea v-model="record.outputProperty" placeholder="JSON键值对字符串" />
                 </a-form-model-item>
               </a-col>
             </a-row>

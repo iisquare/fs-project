@@ -10,18 +10,18 @@
               </a-form-model-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-model-item label="流程实例" prop="bpmInstance">
-                <a-input v-model="filters.bpmInstance" placeholder="" :allowClear="true" />
+              <a-form-model-item label="流程模型" prop="bpmWorkflowId">
+                <a-input v-model="filters.bpmWorkflowId" placeholder="" :allowClear="true" />
               </a-form-model-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-model-item label="流程状态" prop="bpmStatus">
-                <a-input v-model="filters.bpmStatus" placeholder="" :allowClear="true" />
+              <a-form-model-item label="流程实例" prop="bpmInstanceId">
+                <a-input v-model="filters.bpmInstanceId" placeholder="" :allowClear="true" />
               </a-form-model-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-model-item label="流程节点" prop="bpmTask">
-                <a-input v-model="filters.bpmTask" placeholder="" :allowClear="true" />
+              <a-form-model-item label="发起人" prop="bpmStartUserId">
+                <a-input v-model="filters.bpmStartUserId" placeholder="" :allowClear="true" />
               </a-form-model-item>
             </a-col>
           </a-row>
@@ -124,10 +124,9 @@
     <a-modal :title="'信息查看 - ' + form._id" v-model="infoVisible" :footer="null">
       <a-form-model :model="form" :loading="infoLoading" :label-col="{ span: 5 }" :wrapper-col="{ span: 15 }">
         <a-form-model-item label="所属表单">{{ form.frameId }} - {{ form.frameIdName }}</a-form-model-item>
-        <a-form-model-item label="流程实例">{{ form.bpmInstance }}</a-form-model-item>
-        <a-form-model-item label="流程状态">{{ form.bpmStatus }}</a-form-model-item>
-        <a-form-model-item label="流程节点">{{ form.bpmTask }}</a-form-model-item>
-        <a-form-model-item label="负责人">{{ form.bpmIdentity }}</a-form-model-item>
+        <a-form-model-item label="流程模型">{{ form.bpmWorkflowId }}</a-form-model-item>
+        <a-form-model-item label="流程实例">{{ form.bpmInstanceId }}</a-form-model-item>
+        <a-form-model-item label="发起人">{{ form.bpmStartUserId }}</a-form-model-item>
         <a-form-model-item label="数据内容"><a-textarea v-model="form.content" /></a-form-model-item>
         <a-form-model-item label="创建者">{{ form.createdUidName }}</a-form-model-item>
         <a-form-model-item label="创建时间">{{ form.createdTime|date }}</a-form-model-item>
@@ -147,20 +146,17 @@
         <a-form-model-item label="所属表单" prop="frameId">
           <a-input v-model="form.frameId" auto-complete="off"></a-input>
         </a-form-model-item>
-        <a-form-model-item label="流程实例" prop="bpmInstance">
-          <a-input v-model="form.bpmInstance" auto-complete="on"></a-input>
+        <a-form-model-item label="流程模型" prop="bpmWorkflowId">
+          <a-input v-model="form.bpmWorkflowId" auto-complete="on"></a-input>
         </a-form-model-item>
-        <a-form-model-item label="流程状态" prop="bpmStatus">
-          <a-input v-model="form.bpmStatus" auto-complete="on"></a-input>
+        <a-form-model-item label="流程实例" prop="bpmInstanceId">
+          <a-input v-model="form.bpmInstanceId" auto-complete="on"></a-input>
         </a-form-model-item>
-        <a-form-model-item label="流程节点" prop="bpmTask">
-          <a-input v-model="form.bpmTask" auto-complete="on"></a-input>
-        </a-form-model-item>
-        <a-form-model-item label="负责人" prop="bpmIdentity">
-          <a-input v-model="form.bpmIdentity" auto-complete="on"></a-input>
+        <a-form-model-item label="发起人" prop="bpmStartUserId">
+          <a-input v-model="form.bpmStartUserId" auto-complete="on"></a-input>
         </a-form-model-item>
         <a-form-model-item label="内容">
-          <a-textarea v-model="form.content"></a-textarea>
+          <a-textarea v-model="form.content" />
         </a-form-model-item>
       </a-form-model>
     </a-modal>
@@ -180,11 +176,10 @@ export default {
       columns: [
         { title: 'ID', dataIndex: '_id' },
         { title: '所属表单', scopedSlots: { customRender: 'frame' } },
-        { title: '流程实例', dataIndex: 'bpmInstance' },
-        { title: '流程状态', dataIndex: 'bpmStatus' },
-        { title: '流程节点', dataIndex: 'bpmTask' },
-        { title: '流程负责人', dataIndex: 'bpmIdentity' },
-        { title: '操作', scopedSlots: { customRender: 'action' } }
+        { title: '流程模型', dataIndex: 'bpmWorkflowId' },
+        { title: '流程实例', dataIndex: 'bpmInstanceId' },
+        { title: '发起人', dataIndex: 'bpmStartUserId' },
+        { title: '操作', scopedSlots: { customRender: 'action' }, width: 120 }
       ],
       selection: RouteUtil.selection(),
       pagination: {},

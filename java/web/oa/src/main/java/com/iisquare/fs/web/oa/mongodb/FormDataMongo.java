@@ -17,10 +17,9 @@ public class FormDataMongo extends MongoBase {
     public Document filtration(Document document) {
         FiltrationHelper helper = FiltrationHelper.newInstance(document).id();
         helper.useInteger("frameId", 0); // 所属表单
-        helper.useString("bpmInstance", ""); // 流程实例
-        helper.useString("bpmStatus", ""); // 流程状态
-        helper.useString("bpmTask", ""); // 流程当前节点
-        helper.useString("bpmIdentity", ""); // 流程当前负责人
+        helper.useString("bpmWorkflowId", ""); // 流程模型
+        helper.useString("bpmInstanceId", ""); // 流程实例
+        helper.useString("bpmStartUserId", ""); // 流程发起人
         helper.useLong("createdTime", 0L);
         helper.useInteger("createdUid", 0);
         helper.useLong("updatedTime", 0L);

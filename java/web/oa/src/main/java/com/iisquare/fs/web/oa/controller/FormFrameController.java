@@ -51,9 +51,10 @@ public class FormFrameController extends PermitControllerBase {
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
         int sort = DPUtil.parseInt(param.get("sort"));
         int status = DPUtil.parseInt(param.get("status"));
-        String description = DPUtil.parseString(param.get("description"));
+        String storage = DPUtil.parseString(param.get("storage"));
         String content = DPUtil.parseString(param.get("content"));
-        FormFrame info = null;
+        String description = DPUtil.parseString(param.get("description"));
+        FormFrame info;
         if(id > 0) {
             if(!rbacService.hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
             info = formFrameService.info(id);
@@ -67,6 +68,8 @@ public class FormFrameController extends PermitControllerBase {
                 if(!formFrameService.status("default").containsKey(status)) return ApiUtil.echoResult(1002, "状态异常", status);
                 info.setStatus(status);
             }
+            if(param.containsKey("storage")) info.setStorage(storage);
+            if(param.containsKey("content")) info.setContent(content);
             if(param.containsKey("description")) info.setDescription(description);
         } else {
             if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
@@ -76,11 +79,10 @@ public class FormFrameController extends PermitControllerBase {
             info.setSort(sort);
             if(!formFrameService.status("default").containsKey(status)) return ApiUtil.echoResult(1002, "状态异常", status);
             info.setStatus(status);
+            info.setStorage(storage);
+            info.setContent(content);
             info.setDescription(description);
         }
-        info.setContent(content);
-        info.setPhysicalTable(DPUtil.trim(DPUtil.parseString(param.get("physicalTable"))));
-        info.setBpmId(DPUtil.trim(DPUtil.parseString(param.get("bpmId"))));
         info = formFrameService.save(info, rbacService.uid(request));
         return ApiUtil.echoResult(null == info ? 500 : 0, null, info);
     }

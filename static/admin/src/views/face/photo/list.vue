@@ -70,12 +70,12 @@
         <a-form-model-item label="排序">{{ form.sort }}</a-form-model-item>
         <a-form-model-item label="封面">{{ form.cover ? '是' : '否' }}</a-form-model-item>
         <a-form-model-item label="状态">{{ form.statusText }}</a-form-model-item>
-        <a-form-model-item label="人像"><a-textarea v-model="form.base64"></a-textarea></a-form-model-item>
-        <a-form-model-item label="面部"><a-textarea v-model="form.face"></a-textarea></a-form-model-item>
-        <a-form-model-item label="矩形区域"><a-textarea v-model="form.box"></a-textarea></a-form-model-item>
-        <a-form-model-item label="方形区域"><a-textarea v-model="form.square"></a-textarea></a-form-model-item>
-        <a-form-model-item label="关键点"><a-textarea v-model="form.landmark"></a-textarea></a-form-model-item>
-        <a-form-model-item label="特征值"><a-textarea v-model="form.eigenvalue"></a-textarea></a-form-model-item>
+        <a-form-model-item label="人像"><a-textarea v-model="form.base64" /></a-form-model-item>
+        <a-form-model-item label="面部"><a-textarea v-model="form.face" /></a-form-model-item>
+        <a-form-model-item label="矩形区域"><a-textarea v-model="form.box" /></a-form-model-item>
+        <a-form-model-item label="方形区域"><a-textarea v-model="form.square" /></a-form-model-item>
+        <a-form-model-item label="关键点"><a-textarea v-model="form.landmark" /></a-form-model-item>
+        <a-form-model-item label="特征值"><a-textarea v-model="form.eigenvalue" /></a-form-model-item>
         <a-form-model-item label="描述">{{ form.description }}</a-form-model-item>
         <a-form-model-item label="创建者">{{ form.createdUidName }}</a-form-model-item>
         <a-form-model-item label="创建时间">{{ form.createdTime|date }}</a-form-model-item>
@@ -104,7 +104,7 @@
           </a-select>
         </a-form-model-item>
         <a-form-model-item label="人像" prop="base64">
-          <a-textarea v-model="form.base64" placeholder="图像Base64编码，可通过选择文件生成"></a-textarea>
+          <a-textarea v-model="form.base64" placeholder="图像Base64编码，可通过选择文件生成" />
         </a-form-model-item>
         <a-form-model-item label="上传">
           <a-upload
@@ -116,7 +116,7 @@
           </a-upload>
         </a-form-model-item>
         <a-form-model-item label="描述">
-          <a-textarea v-model="form.description"></a-textarea>
+          <a-textarea v-model="form.description" />
         </a-form-model-item>
       </a-form-model>
     </a-modal>

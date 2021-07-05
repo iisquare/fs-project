@@ -51,13 +51,12 @@ public class FormDataController extends PermitControllerBase {
         String id = DPUtil.trim(DPUtil.parseString(param.get(MongoCore.FIELD_ID)));
         Integer frameId = ValidateUtil.filterInteger(param.get("frameId"), true, 1, null, 0);
         if(frameId < 1) return ApiUtil.echoResult(1001, "所属表单参数异常", frameId);
-        String bpmInstance = DPUtil.trim(DPUtil.parseString(param.get("bpmInstance")));
-        String bpmStatus = DPUtil.trim(DPUtil.parseString(param.get("bpmStatus")));
-        String bpmTask = DPUtil.trim(DPUtil.parseString(param.get("bpmTask")));
-        String bpmIdentity = DPUtil.trim(DPUtil.parseString(param.get("bpmIdentity")));
+        String bpmWorkflowId = DPUtil.trim(DPUtil.parseString(param.get("bpmWorkflowId")));
+        String bpmInstanceId = DPUtil.trim(DPUtil.parseString(param.get("bpmInstanceId")));
+        String bpmStartUserId = DPUtil.trim(DPUtil.parseString(param.get("bpmStartUserId")));
         Document document = Document.parse(DPUtil.stringify(param.get("content")));
-        document.append("frameId", frameId).append("bpmInstance", bpmInstance);
-        document.append("bpmStatus", bpmStatus).append("bpmTask", bpmTask).append("bpmIdentity", bpmIdentity);
+        document.append("frameId", frameId).append("bpmWorkflowId", bpmWorkflowId);
+        document.append("bpmInstanceId", bpmInstanceId).append("bpmStartUserId", bpmStartUserId);
         if(DPUtil.empty(id)) {
             if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
             document.remove(MongoCore.FIELD_ID);

@@ -6,7 +6,6 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.spark.web.dao.PluginDao;
 import com.iisquare.fs.spark.web.entity.Plugin;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
@@ -61,7 +60,7 @@ public class PluginService extends ServiceBase {
     public Map<String, Plugin> infoMap(Collection<String> names) {
         if(DPUtil.empty(names)) return new LinkedHashMap<>();
         List<Plugin> list = pluginDao.findAllByStatusAndNameIn(1, names);
-        return ServiceUtil.indexObjectList(list, String.class, Plugin.class, "name");
+        return DPUtil.list2map(list, String.class, Plugin.class, "name");
     }
 
     public Plugin save(Plugin info, int uid) {
@@ -127,7 +126,7 @@ public class PluginService extends ServiceBase {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
-            ServiceUtil.fillProperties(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+            DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
         }
         result.put("page", page);
         result.put("pageSize", pageSize);

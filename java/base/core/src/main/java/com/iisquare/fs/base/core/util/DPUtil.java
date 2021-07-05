@@ -765,7 +765,7 @@ public class DPUtil {
         return nodes;
     }
 
-    public static Map<String, Integer> arrayIndex(ArrayNode array, String field) {
+    public static Map<String, Integer> indexes(ArrayNode array, String field) {
         Map<String, Integer> map = new LinkedHashMap<>();
         int index = 0;
         Iterator<JsonNode> iterator = array.iterator();
@@ -777,13 +777,104 @@ public class DPUtil {
         return map;
     }
 
-    public static int arrayRemove(ArrayNode array, List<Integer> indexes) {
+    public static int remove(ArrayNode array, List<Integer> indexes) {
         Collections.sort(indexes, Collections.reverseOrder());
         int total = 0;
         for (Integer index : indexes) {
             if (array.has(index)) array.remove(index);
         }
         return total;
+    }
+
+    public static <T> List<T> formatRelation(List<?> data, Class<T> requiredType, String parentKey, Object parentValue, String idKey, String childrenKey) {
+        List<T> list = new ArrayList<>();
+        for (Object item : data) {
+            if (!parentValue.equals(ReflectUtil.getPropertyValue(item, parentKey))) continue;
+            list.add((T) item);
+            List<T> children = formatRelation(data, requiredType, parentKey, ReflectUtil.getPropertyValue(item, idKey), idKey, childrenKey);
+            if (children.size() < 1) continue;
+            ReflectUtil.setPropertyValue(item, childrenKey, new Class[]{List.class}, new Object[]{children});
+        }
+        return list;
+    }
+
+    public static <T> List<T> fillValues(List<T> list, String[] froms, String[] tos, Map<?, ?>... maps) {
+        if (null == list) return null;
+        for (Object item : list) {
+            for (int i = 0; i < froms.length; i++) {
+                ReflectUtil.setPropertyValue(item, tos[i], null, new Object[]{
+                        maps[i].get(ReflectUtil.getPropertyValue(item, froms[i]))
+                });
+            }
+        }
+        return list;
+    }
+
+    /**
+     * 获取对应字段的值列表
+     */
+    public static <T> Set<T> values(List<?> list, Class<T> tClass, String... properties) {
+        Set<T> valueList = new HashSet<>();
+        for (Object object : list) {
+            for (String property : properties) {
+                Object value = ReflectUtil.getPropertyValue(object, property);
+                if (null == value) continue;
+                valueList.add((T) value);
+            }
+        }
+        return valueList;
+    }
+
+    public static <T> Set<T> values(ArrayNode array, Class<T> tClass, String... properties) {
+        Set<T> valueList = new HashSet<>();
+        Iterator<JsonNode> iterator = array.iterator();
+        while (iterator.hasNext()) {
+            JsonNode node = iterator.next();
+            for (String property : properties) {
+                if (!node.has(property)) continue;
+                T value = DPUtil.convertJSON(node.get(property), tClass);
+                if (null == value) continue;
+                valueList.add(value);
+            }
+        }
+        return valueList;
+    }
+
+    public static ArrayNode fillValues(ArrayNode array, String[] froms, String[] tos, JsonNode... nodes) {
+        return fillValues(array, false, froms, tos, nodes);
+    }
+
+    public static ArrayNode fillValues(ArrayNode array, boolean withEmptyObject, String[] froms, String[] tos, JsonNode... nodes) {
+        if (null == array) return null;
+        Iterator<JsonNode> iterator = array.iterator();
+        while (iterator.hasNext()) {
+            ObjectNode item = (ObjectNode) iterator.next();
+            for (int i = 0; i < froms.length; i++) {
+                JsonNode node = nodes[i].at("/" + item.at("/" + froms[i]).asText());
+                if (withEmptyObject && !node.isObject()) node = DPUtil.objectNode();
+                item.replace(tos[i], node);
+            }
+        }
+        return array;
+    }
+
+    /**
+     * 将List数据格式化为以对应字段值为下标的Map
+     */
+    public static <K, V> Map<K, V> list2map(List<?> list, Class<K> kType, Class<V> vType, String property) {
+        Map<K, V> map = new LinkedHashMap<>();
+        for (Object item : list) {
+            map.put((K) ReflectUtil.getPropertyValue(item, property), (V) item);
+        }
+        return map;
+    }
+
+    public static <K, V> Map<K, V> list2map(List<V> list, Class<K> kType, String property) {
+        Map<K, V> map = new LinkedHashMap<>();
+        for (V item : list) {
+            map.put((K) ReflectUtil.getPropertyValue(item, property), item);
+        }
+        return map;
     }
 
     /**

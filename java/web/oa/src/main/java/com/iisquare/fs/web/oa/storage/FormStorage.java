@@ -15,4 +15,6 @@ public abstract class FormStorage {
 
     public abstract long delete(ObjectNode frame, List<String> ids, int uid);
 
+    public abstract ObjectNode info(ObjectNode frame, String id);
+
 }

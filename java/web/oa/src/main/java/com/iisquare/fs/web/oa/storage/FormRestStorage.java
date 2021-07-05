@@ -24,4 +24,9 @@ public class FormRestStorage extends FormStorage {
         return 0;
     }
 
+    @Override
+    public ObjectNode info(ObjectNode frame, String id) {
+        return null;
+    }
+
 }

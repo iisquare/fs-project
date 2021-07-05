@@ -5,7 +5,6 @@ import com.iisquare.fs.base.core.util.ReflectUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.web.member.dao.MenuDao;
 import com.iisquare.fs.web.member.entity.Menu;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,9 +69,9 @@ public class MenuService extends ServiceBase {
 
     public List<?> fillInfo(List<?> list, String ...properties) {
         if(null == list || list.size() < 1 || properties.length < 1) return list;
-        Set<Integer> ids = ServiceUtil.getPropertyValues(list, Integer.class, properties);
+        Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
         if(ids.size() < 1) return list;
-        Map<Integer, Menu> map = ServiceUtil.indexObjectList(menuDao.findAllById(ids), Integer.class, Menu.class, "id");
+        Map<Integer, Menu> map = DPUtil.list2map(menuDao.findAllById(ids), Integer.class, Menu.class, "id");
         if(map.size() < 1) return list;
         for (Object item : list) {
             for (String property : properties) {
@@ -94,14 +93,14 @@ public class MenuService extends ServiceBase {
                 predicates.add(cb.notEqual(root.get("status"), -1));
             }
             return cb.and(predicates.toArray(new Predicate[predicates.size()]));
-        }, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort")));
+        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.asc("id")));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(data, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
-            ServiceUtil.fillProperties(data, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+            DPUtil.fillValues(data, new String[]{"status"}, new String[]{"statusText"}, status("full"));
         }
-        return ServiceUtil.formatRelation(data, Menu.class, "parentId", 0, "id", "children");
+        return DPUtil.formatRelation(data, Menu.class, "parentId", 0, "id", "children");
     }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> args) {
@@ -142,7 +141,7 @@ public class MenuService extends ServiceBase {
             userService.fillInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
-            ServiceUtil.fillProperties(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+            DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
         }
         if(!DPUtil.empty(args.get("withParentInfo"))) {
             this.fillInfo(rows, "parentId");

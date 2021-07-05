@@ -119,7 +119,7 @@
           <a-input v-model="form.source" auto-complete="on"></a-input>
         </a-form-model-item>
         <a-form-model-item label="词条">
-          <a-textarea v-model="form.content" placeholder="批量添加采用换行符分割"></a-textarea>
+          <a-textarea v-model="form.content" placeholder="批量添加采用换行符分割" />
         </a-form-model-item>
       </a-form-model>
     </a-modal>

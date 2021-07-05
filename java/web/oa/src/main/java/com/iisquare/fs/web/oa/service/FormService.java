@@ -11,9 +11,7 @@ import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.core.rpc.MemberRpc;
 import com.iisquare.fs.web.oa.dao.FormFrameDao;
 import com.iisquare.fs.web.oa.entity.FormFrame;
-import com.iisquare.fs.web.oa.storage.FormJDBCStorage;
-import com.iisquare.fs.web.oa.storage.FormMongoStorage;
-import com.iisquare.fs.web.oa.storage.FormStorage;
+import com.iisquare.fs.web.oa.storage.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,10 +30,22 @@ public class FormService extends ServiceBase {
     private FormJDBCStorage jdbcStorage;
     @Autowired
     private FormMongoStorage mongoStorage;
+    @Autowired
+    private FormRestStorage restStorage;
+    @Autowired
+    private FormEmptyStorage emptyStorage;
+    @Autowired
+    private FormDefaultStorage defaultStorage;
 
     public FormStorage storage(ObjectNode frame) {
-        String physicalTable = frame.get("physicalTable").asText();
-        return DPUtil.empty(physicalTable) ? mongoStorage : jdbcStorage;
+        JsonNode storage = frame.at("/storage");
+        switch (storage.at("/type").asText("")) {
+            case "jdbc": return jdbcStorage;
+            case "mongo": return mongoStorage;
+            case "rest": return restStorage;
+            case "empty": return emptyStorage;
+            default: return defaultStorage;
+        }
     }
 
     public Map<String, Object> search(ObjectNode frame, Map<String, Object> param, Map<String, Object> config) {
@@ -48,6 +58,10 @@ public class FormService extends ServiceBase {
 
     public long delete(ObjectNode frame, List<String> ids, int uid) {
         return storage(frame).delete(frame, ids, uid);
+    }
+
+    public ObjectNode info(ObjectNode frame, String id) {
+        return storage(frame).info(frame, id);
     }
 
     public ObjectNode fields(JsonNode widgets, boolean reduceSubform) {
@@ -356,7 +370,7 @@ public class FormService extends ServiceBase {
                     return ApiUtil.result(8002, "子表单数据异常", node);
                 }
                 ArrayNode array = (origin.has(field) && origin.get(field).isArray()) ? (ArrayNode) origin.get(field) : origin.putArray(field);
-                Map<String, Integer> map = DPUtil.arrayIndex(array, FormStorage.FIELD_ID);
+                Map<String, Integer> map = DPUtil.indexes(array, FormStorage.FIELD_ID);
                 Iterator<JsonNode> it = subforms.iterator();
                 while (it.hasNext()) {
                     JsonNode subform = it.next();
@@ -376,7 +390,7 @@ public class FormService extends ServiceBase {
                     if (null != result && 0 != (int) result.get("code")) return result;
                 }
                 if (map.size() > 0 && authority(authority, node, "removable")) {
-                    DPUtil.arrayRemove(array, new ArrayList<>(map.values())); // 移除表单中不存在的原数据
+                    DPUtil.remove(array, new ArrayList<>(map.values())); // 移除表单中不存在的原数据
                 }
                 Map<String, Object> result = validateSubform(node, array);
                 if (0 != (int) result.get("code")) return result;
@@ -419,6 +433,60 @@ public class FormService extends ServiceBase {
             origin.replace(field, form.get(field));
         }
         return ApiUtil.result(0, null, origin);
+    }
+
+    /**
+     * 根据权限过滤表单内容
+     * @param widgets 表单组件
+     * @param form 表单数据
+     * @param authority 权限配置
+     * @param permission 权限字段
+     * @param keepId 保留ID字段
+     * @return 过滤结果
+     */
+    public ObjectNode filtration(JsonNode widgets, JsonNode form, JsonNode authority, String permission, boolean keepId) {
+        ObjectNode data = DPUtil.objectNode();
+        if (null == widgets || !widgets.isArray()) return data;
+        if (null == form || !form.isObject()) return data;
+        if (keepId && form.has(FormStorage.FIELD_ID)) { // 保留主键
+            data.replace(FormStorage.FIELD_ID, form.get(FormStorage.FIELD_ID));
+        }
+        Iterator<JsonNode> iterator = widgets.iterator();
+        while (iterator.hasNext()) {
+            JsonNode node = iterator.next();
+            ObjectNode options = (ObjectNode) node.at("/options");
+            String type = node.at("/type").asText();
+            if (Arrays.asList("txt", "html", "divider").contains(type)) continue; // 忽略非数据字段
+            if ("grid".equals(type)) { // 栅格布局
+                JsonNode items = node.at("/options/items");
+                if (null == items || !items.isArray()) continue;
+                Iterator<JsonNode> it = items.iterator();
+                while (it.hasNext()) {
+                    data.setAll(filtration(it.next().at("/widgets"), form, authority, permission, keepId));
+                }
+                continue;
+            }
+            String field = DPUtil.trim(options.at("/field").asText());
+            if (DPUtil.empty(field)) continue; // 忽略无字段数据
+            if (!authority(authority, node, permission)) continue; // 忽略无权限字段
+            if ("subform".equals(type)) { // 子表单
+                JsonNode formInfo = options.at("/formInfo");
+                if (null == formInfo || !formInfo.isObject()) continue;
+                JsonNode subforms = form.at("/" + field);
+                if (!subforms.isArray()) continue;
+                ArrayNode array = data.putArray(field);
+                Iterator<JsonNode> it = subforms.iterator();
+                while (it.hasNext()) {
+                    JsonNode subform = it.next();
+                    String id = subform.at("/" + FormStorage.FIELD_ID).asText();
+                    if (DPUtil.empty(id)) continue; // 忽略无标识数据
+                    array.add(filtration(formInfo.at("/widgets"), subform, authority, permission, keepId));
+                }
+                continue;
+            }
+            if (form.has(field)) data.replace(field, form.get(field));
+        }
+        return data;
     }
 
     public JsonNode findRemoteResult (JsonNode options, JsonNode result) {
@@ -518,8 +586,9 @@ public class FormService extends ServiceBase {
         ObjectNode node = DPUtil.objectNode();
         node.put("id", frame.getId()).put("name", frame.getName());
         if (withDetail) {
-            node.put("bpmId", frame.getBpmId());
-            node.put("physicalTable", frame.getPhysicalTable());
+            JsonNode storage = DPUtil.parseJSON(frame.getStorage());
+            if (null == storage || !storage.isObject()) storage = DPUtil.objectNode();
+            node.replace("storage", storage);
         }
         JsonNode content = DPUtil.parseJSON(frame.getContent());
         if (null == content || !content.isObject()) content = DPUtil.objectNode();

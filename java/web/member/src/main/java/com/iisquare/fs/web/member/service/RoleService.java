@@ -5,10 +5,8 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.web.member.dao.RoleDao;
 import com.iisquare.fs.web.member.entity.Role;
-import com.iisquare.fs.web.member.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -120,7 +118,7 @@ public class RoleService extends ServiceBase {
             userService.fillInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
-            ServiceUtil.fillProperties(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+            DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
         }
         result.put("page", page);
         result.put("pageSize", pageSize);

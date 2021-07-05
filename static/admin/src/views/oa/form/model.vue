@@ -50,7 +50,7 @@
       <span>{{ tips }}</span>
     </div>
     <a-modal title="JSON信息" v-model="jsonVisible" :maskClosable="true">
-      <a-textarea v-model="jsonText" rows="12"></a-textarea>
+      <a-textarea v-model="jsonText" rows="12" />
     </a-modal>
   </div>
 </template>

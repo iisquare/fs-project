@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.oa.dao.FormRegularDao;
 import com.iisquare.fs.web.oa.entity.FormRegular;
@@ -75,7 +74,7 @@ public class FormRegularService extends ServiceBase {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(config.get("withStatusText"))) {
-            ServiceUtil.fillProperties(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+            DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
         }
         result.put("page", page);
         result.put("pageSize", pageSize);

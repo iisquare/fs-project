@@ -3,7 +3,6 @@ package com.iisquare.fs.dag.web.service;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.dag.web.dao.FlowDao;
 import com.iisquare.fs.dag.web.entity.Flow;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
@@ -53,10 +52,10 @@ public class FlowService extends ServiceBase {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(config.get("withStatusText"))) {
-            ServiceUtil.fillProperties(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+            DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
         }
         if(!DPUtil.empty(config.get("withTypeText"))) {
-            ServiceUtil.fillProperties(rows, new String[]{"type"}, new String[]{"typeText"}, types());
+            DPUtil.fillValues(rows, new String[]{"type"}, new String[]{"typeText"}, types());
         }
         result.put("page", page);
         result.put("pageSize", pageSize);

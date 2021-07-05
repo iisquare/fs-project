@@ -1,6 +1,7 @@
 package com.iisquare.fs.web.core.rbac;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ReflectUtil;
@@ -16,6 +17,8 @@ public abstract class RbacServiceBase extends ServiceBase {
     }
 
     public abstract <T> List<T> fillUserInfo(List<T> list, String ...properties);
+
+    public abstract ArrayNode fillUserInfo(ArrayNode array, String ...properties);
 
     public String keyPermit(String module, String controller, String action) {
         if (null == controller) controller = "";

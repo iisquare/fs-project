@@ -46,7 +46,7 @@ public abstract class MongoBase {
     }
 
     public Document one(String id) {
-        MongoCursor<Document> cursor = collection().find(Filters.eq(MongoCore.FIELD_ID, id)).limit(1).cursor();
+        MongoCursor<Document> cursor = collection().find(Filters.eq(MongoCore.FIELD_ID, new ObjectId(id))).limit(1).cursor();
         return cursor.hasNext() ? MongoUtil.id2string(cursor.next()) : null;
     }
 

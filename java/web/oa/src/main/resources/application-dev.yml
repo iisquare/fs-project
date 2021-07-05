@@ -7,3 +7,8 @@ flowable:
   # 关闭自动部署流程定义
   check-process-definitions: false
   databaseSchemaUpdate: true
+
+logging:
+  level:
+    org:
+      flowable: debug

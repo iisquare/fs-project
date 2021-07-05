@@ -5,7 +5,6 @@ import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.lucene.dao.DictionaryDao;
 import com.iisquare.fs.web.lucene.entity.Dictionary;
@@ -117,7 +116,7 @@ public class DictionaryService extends ServiceBase {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(config.get("withTypeText"))) {
-            ServiceUtil.fillProperties(rows, new String[]{"type"}, new String[]{"typeText"}, type());
+            DPUtil.fillValues(rows, new String[]{"type"}, new String[]{"typeText"}, type());
         }
         result.put("page", page);
         result.put("pageSize", pageSize);

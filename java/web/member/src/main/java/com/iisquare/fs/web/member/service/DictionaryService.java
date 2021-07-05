@@ -7,7 +7,6 @@ import com.iisquare.fs.base.core.util.ReflectUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.web.member.dao.DictionaryDao;
 import com.iisquare.fs.web.member.entity.Dictionary;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,9 +71,9 @@ public class DictionaryService extends ServiceBase {
 
     public List<?> fillInfo(List<?> list, String ...properties) {
         if(null == list || list.size() < 1 || properties.length < 1) return list;
-        Set<Integer> ids = ServiceUtil.getPropertyValues(list, Integer.class, properties);
+        Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
         if(ids.size() < 1) return list;
-        Map<Integer, Dictionary> map = ServiceUtil.indexObjectList(dictionaryDao.findAllById(ids), Integer.class, Dictionary.class, "id");
+        Map<Integer, Dictionary> map = DPUtil.list2map(dictionaryDao.findAllById(ids), Integer.class, Dictionary.class, "id");
         if(map.size() < 1) return list;
         for (Object item : list) {
             for (String property : properties) {
@@ -139,9 +138,9 @@ public class DictionaryService extends ServiceBase {
             userService.fillInfo(data, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
-            ServiceUtil.fillProperties(data, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+            DPUtil.fillValues(data, new String[]{"status"}, new String[]{"statusText"}, status("full"));
         }
-        return ServiceUtil.formatRelation(data, Dictionary.class, "parentId", 0, "id", "children");
+        return DPUtil.formatRelation(data, Dictionary.class, "parentId", 0, "id", "children");
     }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> args) {
@@ -186,7 +185,7 @@ public class DictionaryService extends ServiceBase {
             userService.fillInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
-            ServiceUtil.fillProperties(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+            DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
         }
         if(!DPUtil.empty(args.get("withParentInfo"))) {
             this.fillInfo(rows, "parentId");

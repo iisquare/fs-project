@@ -94,10 +94,10 @@
           </a-select>
         </a-form-model-item>
         <a-form-model-item label="描述">
-          <a-textarea v-model="form.description"></a-textarea>
+          <a-textarea v-model="form.description" />
         </a-form-model-item>
         <a-form-model-item label="内容">
-          <a-textarea v-model="form.content"></a-textarea>
+          <a-textarea v-model="form.content" />
         </a-form-model-item>
       </a-form-model>
     </a-modal>
@@ -121,7 +121,7 @@ export default {
         { title: '排序', dataIndex: 'sort' },
         { title: '状态', dataIndex: 'statusText' },
         { title: '发布时间', dataIndex: 'deploymentInfo.deploymentTime', customRender: this.dateRender },
-        { title: '操作', scopedSlots: { customRender: 'action' } }
+        { title: '操作', scopedSlots: { customRender: 'action' }, width: 210 }
       ],
       selection: RouteUtil.selection(),
       pagination: {},

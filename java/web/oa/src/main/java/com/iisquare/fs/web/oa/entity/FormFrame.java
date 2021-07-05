@@ -22,11 +22,9 @@ public class FormFrame {
     @Column
     private String name;
     @Column
+    private String storage; // 数据存储
+    @Column
     private String content; // 表单定义
-    @Column
-    private String physicalTable; // TODO:多storage支持
-    @Column
-    private String bpmId; // TODO:工作流1-n表单
     @Column
     private Integer sort;
     @Column

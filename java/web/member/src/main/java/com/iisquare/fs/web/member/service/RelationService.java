@@ -1,7 +1,7 @@
 package com.iisquare.fs.web.member.service;
 
+import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.web.member.dao.RelationDao;
 import com.iisquare.fs.web.member.entity.Relation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +20,7 @@ public class RelationService extends ServiceBase {
     public Set<Integer> relationIds(String type, Integer aid, Set<Integer> bids) {
         List<Relation> list = relationDao.findAllByTypeAndAid(type, aid);
         if(null == bids) {
-            return ServiceUtil.getPropertyValues(list, Integer.class, "bid");
+            return DPUtil.values(list, Integer.class, "bid");
         } else {
             relationDao.deleteAll(list);
             list = new ArrayList<>();

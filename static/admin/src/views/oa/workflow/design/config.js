@@ -37,11 +37,34 @@ const createParticipant = (widget, bpmn, event, options) => {
 }
 
 export default Object.assign(config, {
+  duration (durationInMillis) {
+    const time = {
+      second: 1000,
+      minute: 60 * 1000,
+      hour: 60 * 60 * 1000,
+      day: 24 * 60 * 60 * 1000
+    }
+    const day = Math.floor(durationInMillis / time.day)
+    const hour = Math.floor(durationInMillis % time.day / time.hour)
+    const minute = Math.floor(durationInMillis % time.hour / time.minute)
+    const second = Math.floor(durationInMillis % time.minute / time.second)
+    return `${day}天${hour}时${minute}分${second}秒`
+  },
+  audit (comments, taskId) {
+    comments = comments[taskId] || []
+    let local = false
+    const messages = []
+    comments.forEach(comment => {
+      local = local || comment.audit.local
+      if (comment.audit.message) messages.push(comment.audit.message)
+    })
+    return { audit: { local, message: messages.join(',') } }
+  },
   canvas: {
     options: emptyOptions, property: () => import('./CanvasProperty')
   },
   elements: {
-    'bpmn:StartEvent': { options: emptyOptions, property: () => import('./StartEventProperty') },
+    'bpmn:StartEvent': { options: emptyOptions, property: () => import('./NodeProperty') },
     'bpmn:EndEvent': { options: emptyOptions, property: () => import('./NodeProperty') },
     'bpmn:UserTask': { options: emptyOptions, property: () => import('./UserTaskProperty') },
     'bpmn:ExclusiveGateway': { options: emptyOptions, property: () => import('./NodeProperty') },

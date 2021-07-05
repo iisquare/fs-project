@@ -76,10 +76,10 @@
           <a-input-number v-model="form.sort" :min="0" :max="200"></a-input-number>
         </a-form-model-item>
         <a-form-model-item label="内容">
-          <a-textarea v-model="form.content"></a-textarea>
+          <a-textarea v-model="form.content" />
         </a-form-model-item>
         <a-form-model-item label="描述">
-          <a-textarea v-model="form.description"></a-textarea>
+          <a-textarea v-model="form.description" />
         </a-form-model-item>
       </a-form-model>
     </a-modal>

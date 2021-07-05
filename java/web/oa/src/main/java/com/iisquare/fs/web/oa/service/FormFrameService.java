@@ -4,7 +4,6 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ReflectUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.oa.dao.FormFrameDao;
 import com.iisquare.fs.web.oa.entity.FormFrame;
@@ -49,14 +48,6 @@ public class FormFrameService extends ServiceBase {
                 if(!DPUtil.empty(name)) {
                     predicates.add(cb.like(root.get("name"), "%" + name + "%"));
                 }
-                String physicalTable = DPUtil.trim(DPUtil.parseString(param.get("physicalTable")));
-                if(!DPUtil.empty(physicalTable)) {
-                    predicates.add(cb.equal(root.get("physicalTable"), physicalTable));
-                }
-                String bpmId = DPUtil.trim(DPUtil.parseString(param.get("bpmId")));
-                if(!DPUtil.empty(bpmId)) {
-                    predicates.add(cb.equal(root.get("bpmId"), bpmId));
-                }
                 return cb.and(predicates.toArray(new Predicate[predicates.size()]));
             }
         }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"))));
@@ -65,7 +56,7 @@ public class FormFrameService extends ServiceBase {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(config.get("withStatusText"))) {
-            ServiceUtil.fillProperties(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+            DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
         }
         result.put("page", page);
         result.put("pageSize", pageSize);
@@ -122,9 +113,9 @@ public class FormFrameService extends ServiceBase {
 
     public List<?> fillInfo(List<?> list, String ...properties) {
         if(null == list || list.size() < 1 || properties.length < 1) return list;
-        Set<Integer> ids = ServiceUtil.getPropertyValues(list, Integer.class, properties);
+        Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
         if(ids.size() < 1) return list;
-        Map<Integer, FormFrame> map = ServiceUtil.indexObjectList(formFrameDao.findAllById(ids), Integer.class, FormFrame.class, "id");
+        Map<Integer, FormFrame> map = DPUtil.list2map(formFrameDao.findAllById(ids), Integer.class, FormFrame.class, "id");
         if(map.size() < 1) return list;
         for (Object item : list) {
             for (String property : properties) {

@@ -43,6 +43,10 @@ export const layouts = [{
     meta: { title: '流程部署' },
     component: () => import(/* webpackChunkName: 'oa' */ '@/views/oa/workflow/deployment')
   }, {
+    path: '/oa/workflow/history',
+    meta: { title: '流程管理' },
+    component: () => import(/* webpackChunkName: 'oa' */ '@/views/oa/workflow/history')
+  }, {
     path: '/oa/approve/workflow',
     meta: { title: '流程单据' },
     component: () => import(/* webpackChunkName: 'oa' */ '@/views/oa/approve/workflow')
@@ -50,6 +54,26 @@ export const layouts = [{
     path: '/oa/approve/form',
     meta: { title: '单据填报' },
     component: () => import(/* webpackChunkName: 'oa' */ '@/views/oa/approve/form')
+  }, {
+    path: '/oa/approve/candidate',
+    meta: { title: '待签任务' },
+    component: () => import(/* webpackChunkName: 'oa' */ '@/views/oa/approve/candidate')
+  }, {
+    path: '/oa/approve/assignee',
+    meta: { title: '待办任务' },
+    component: () => import(/* webpackChunkName: 'oa' */ '@/views/oa/approve/assignee')
+  }, {
+    path: '/oa/approve/transact',
+    meta: { title: '任务办理' },
+    component: () => import(/* webpackChunkName: 'oa' */ '@/views/oa/approve/transact')
+  }, {
+    path: '/oa/approve/history',
+    meta: { title: '历史任务' },
+    component: () => import(/* webpackChunkName: 'oa' */ '@/views/oa/approve/history')
+  }, {
+    path: '/oa/approve/process',
+    meta: { title: '流程详情' },
+    component: () => import(/* webpackChunkName: 'oa' */ '@/views/oa/approve/process')
   }]
 }]
 

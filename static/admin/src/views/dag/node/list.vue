@@ -128,10 +128,10 @@
           <a-checkbox v-model="form.draggable">允许拖拽</a-checkbox>
         </a-form-model-item>
         <a-form-model-item label="属性" prop="property">
-          <a-textarea v-model="form.property"></a-textarea>
+          <a-textarea v-model="form.property" />
         </a-form-model-item>
         <a-form-model-item label="返回值" prop="returns">
-          <a-textarea v-model="form.returns"></a-textarea>
+          <a-textarea v-model="form.returns" />
         </a-form-model-item>
         <a-form-model-item label="排序">
           <a-input-number v-model="form.sort" :min="0" :max="200"></a-input-number>
@@ -142,7 +142,7 @@
           </a-select>
         </a-form-model-item>
         <a-form-model-item label="描述">
-          <a-textarea v-model="form.description"></a-textarea>
+          <a-textarea v-model="form.description" />
         </a-form-model-item>
       </a-form-model>
     </a-modal>

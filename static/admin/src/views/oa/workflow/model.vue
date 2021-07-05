@@ -160,7 +160,7 @@ export default {
     }
   },
   mounted () {
-    this.bpmn = new BPMN(this.$refs.canvas, config)
+    this.bpmn = new BPMN(this.$refs.canvas, config, true)
     this.bpmn.modeler._container.addEventListener('mouseenter', event => {
       if (this.activeToolbar !== null) {
         this.activeToolbar.callback(this.activeToolbar, this.bpmn, event)
