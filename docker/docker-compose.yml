@@ -47,7 +47,7 @@ services:
       - ${DATA_DIR}/kafka/logs:/opt/kafka/logs
   kafka-manager:
     build:
-      context: ./service/kafka-manager
+      context: ./service/kafka/manager
       args:
         - KAFKA_MANAGE_VERSION=${KAFKA_MANAGE_VERSION}
     environment:
@@ -65,6 +65,7 @@ services:
       - "${BIND_ADDRESS}${BIND_COLON}${MYSQL_PORT}:3306"
     volumes:
       - ${DATA_DIR}/mysql:/var/lib/mysql
+      # - ./service/mysql/mysql.cnf:/etc/mysql/conf.d/mysql.cnf:ro
   mongo:
     build:
       context: ./service/mongo
@@ -206,3 +207,32 @@ services:
         - PROMETHEUS_MYSQL_VERSION=${PROMETHEUS_MYSQL_VERSION}
     environment:
       DATA_SOURCE_NAME: ${PROMETHEUS_MYSQL_URL}
+  canal-admin:
+    build:
+      context: ./service/canal/admin
+      args:
+        - CANAL_VERSION=${CANAL_VERSION}
+    environment:
+      canal.adminUser: ${CANAL_USERNAME}
+      canal.adminPasswd: ${CANAL_PASSWORD}
+      spring.datasource.address: ${CANAL_ADMIN_DS_ADDRESS}
+      spring.datasource.database: ${CANAL_ADMIN_DS_DATABASE}
+      spring.datasource.username: ${CANAL_ADMIN_DS_USERNAME}
+      spring.datasource.password: ${CANAL_ADMIN_DS_PASSWORD}
+    ports:
+      - "${BIND_ADDRESS}${BIND_COLON}${CANAL_ADMIN_PORT}:8089"
+    volumes:
+      - ${DATA_DIR}/canal-admin/logs:/home/admin/canal-admin/logs
+  canal-server:
+    build:
+      context: ./service/canal/server
+      args:
+        - CANAL_VERSION=${CANAL_VERSION}
+    environment:
+      canal.admin.manager: canal-admin:8089
+      canal.admin.port: 11110
+      canal.admin.user: ${CANAL_USERNAME}
+      canal.admin.passwd: ${CANAL_PASSWORD_HASH}
+      canal.admin.register.cluster: fs-project
+    volumes:
+      - ${DATA_DIR}/canal-server/logs:/home/admin/canal-server/logs

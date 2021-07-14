@@ -1,11 +1,11 @@
-package com.iisquare.fs.web.worker.controller;
+package com.iisquare.fs.base.worker.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
-import com.iisquare.fs.web.worker.service.ContainerService;
+import com.iisquare.fs.base.worker.service.ContainerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

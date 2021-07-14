@@ -55,6 +55,41 @@ none，表示无网络，容器将无法联网。
 true，container内的root拥有真正的root权限。
 false，container内的root只是外部的一个普通用户权限。
 ```
+- [run older base images](https://github.com/microsoft/WSL/issues/4694)
+```
+%userprofile%\.wslconfig
+
+[wsl2]
+kernelCommandLine = vsyscall=emulate
+```
+- volumes short syntax
+```
+[SOURCE:]TARGET[:MODE]
+ro for read-only
+rw for read-write (default)
+```
+
+## 注意事项
+
+### 数据目录请务放置在共享目录下。
+- WSL挂载的宿主机目录无法修改权限。
+- 可将环境变量DATA_DIR=/data/runtime改为非宿主机目录。
+```
+mkdir /data/runtime
+chmod 777 /data/runtime
+```
+- 可将数据目录软连接到非共享目录。
+```
+# 创建软连接
+mkdir /data/mongo
+ln -s /data/mongo ./runtime/mongo
+# 查看软连接
+ls -lh ./runtime/mongo
+# 修改软连接
+ln –snf /data/mongo ./runtime/mongo
+# 删除软连接
+rm -rf ./runtime/mongo
+```
 
 ## 参考连接
 - [Compose file version 3 reference](https://docs.docker.com/compose/compose-file/compose-file-v3/)

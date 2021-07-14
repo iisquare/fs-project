@@ -1,4 +1,4 @@
-package com.iisquare.fs.web.worker.service;
+package com.iisquare.fs.base.worker.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -8,8 +8,8 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.base.web.util.SpringUtil;
-import com.iisquare.fs.web.worker.core.Container;
-import com.iisquare.fs.web.worker.core.HandlerBase;
+import com.iisquare.fs.base.worker.core.Container;
+import com.iisquare.fs.base.worker.core.HandlerBase;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,4 +1,4 @@
-package com.iisquare.fs.web.worker.core;
+package com.iisquare.fs.base.worker.core;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.iisquare.fs.base.core.util.DPUtil;

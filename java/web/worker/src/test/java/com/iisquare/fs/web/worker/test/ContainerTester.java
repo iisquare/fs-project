@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.HttpUtil;
 import com.iisquare.fs.web.worker.rabbit.TestHandler;
-import com.iisquare.fs.web.worker.service.TaskService;
+import com.iisquare.fs.base.worker.service.TaskService;
 import com.iisquare.fs.web.worker.service.TestService;
 import org.junit.Test;
 

@@ -1,12 +1,5 @@
 
 dependencies {
-    compile project(':web:core')
+    compile project(':base:worker')
     testCompile project(':web:test')
-    compile (group: 'org.apache.curator', name: 'curator-recipes', version: curatorVersion) { // ZooKeeper
-        exclude group: 'org.apache.zookeeper', module: 'zookeeper'
-    }
-    compile (group: 'org.apache.zookeeper', name: 'zookeeper', version: zookeeperVersion) {
-        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-    }
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-amqp', version: springBootVersion
 }

@@ -15,7 +15,7 @@ crawler:
     uri: "redis://127.0.0.1:6379/0"
     prefix: "crawler:"
   zookeeper:
-    host: node235:32181/crawler
+    host: node235:32181/fs-crawler
     timeout: 2000
   tracer:
     type: elasticsearch

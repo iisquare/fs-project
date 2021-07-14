@@ -15,8 +15,11 @@ class BPMN {
         moddleExtensions: { flowable: FlowableExtension }
       })
       this.palette = this.modeler.get('paletteProvider')
+      this.copyPaste = this.modeler.get('copyPaste')
+      this.clipboard = this.modeler.get('clipboard')
       this.contextPad = this.modeler.get('contextPadProvider')
       this.bpmnFactory = this.modeler.get('bpmnFactory')
+      this.commandStack = this.modeler.get('commandStack')
     } else {
       this.modeler = new BpmnJSViewer({
         container,
@@ -28,6 +31,22 @@ class BPMN {
     this.moddle = this.modeler.get('moddle')
     this.modeling = this.modeler.get('modeling')
     this.elementRegistry = this.modeler.get('elementRegistry')
+    // 功能性变量
+    this._elementCopied = null
+  }
+
+  copy (element) {
+    if (!element) return false
+    this.copyPaste.copy(element)
+    this._elementCopied = this.clipboard.get()
+    return true
+  }
+
+  paste () {
+    if (!this._elementCopied) return false
+    this.clipboard.set(this._elementCopied)
+    this.copyPaste.paste({ point: { x: 0, y: 0 } })
+    return true
   }
 
   colorful (historicActivityInstances) {

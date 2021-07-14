@@ -1,6 +1,6 @@
 package com.iisquare.fs.web.worker.rabbit;
 
-import com.iisquare.fs.web.worker.core.HandlerBase;
+import com.iisquare.fs.base.worker.core.HandlerBase;
 import com.iisquare.fs.web.worker.mvc.Configuration;
 import com.rabbitmq.client.Channel;
 import org.springframework.amqp.core.Message;

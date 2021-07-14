@@ -1,4 +1,4 @@
-package com.iisquare.fs.web.worker.core;
+package com.iisquare.fs.base.worker.core;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;

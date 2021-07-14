@@ -5,32 +5,35 @@
         <a-sub-menu title="文件">
           <a-menu-item :disabled="loading" @click="load"><a-icon type="sync" /><span>重新载入</span></a-menu-item>
           <a-menu-item :disabled="loading" @click="save"><a-icon type="save" /><span>保存模型</span></a-menu-item>
-          <a-menu-item><a-icon type="folder-open" /><span>导入模型</span></a-menu-item>
+          <a-menu-item>
+            <a-upload name="file" :multiple="false" accept=".xml" :beforeUpload="handleImport">
+              <a-icon type="folder-open" /><span>导入模型</span>
+            </a-upload>
+          </a-menu-item>
           <a-menu-item @click="bpmnImportXML()"><a-icon type="plus-circle" /><span>新建模型</span></a-menu-item>
           <a-menu-divider />
-          <a-menu-item><a-icon type="download" /><span>导出为XML</span></a-menu-item>
-          <a-menu-item><a-icon type="picture" /><span>导出为SVG</span></a-menu-item>
+          <a-menu-item @click="download('XML')"><a-icon type="download" /><span>导出为XML</span></a-menu-item>
+          <a-menu-item @click="download('SVG')"><a-icon type="picture" /><span>导出为SVG</span></a-menu-item>
         </a-sub-menu>
         <a-sub-menu title="编辑">
-          <a-menu-item><a-icon type="undo" /><span>撤销</span></a-menu-item>
-          <a-menu-item><a-icon type="redo" /><span>重做</span></a-menu-item>
+          <a-menu-item @click="runCommand('undo')"><a-icon type="undo" /><span>撤销</span></a-menu-item>
+          <a-menu-item @click="runCommand('redo')"><a-icon type="redo" /><span>重做</span></a-menu-item>
           <a-menu-divider />
-          <a-menu-item><a-icon type="scissor" /><span>剪切</span></a-menu-item>
-          <a-menu-item><a-icon type="copy" /><span>复制</span></a-menu-item>
-          <a-menu-item><a-icon type="snippets" /><span>粘贴</span></a-menu-item>
+          <a-menu-item :disabled="!canCommand('cut')" @click="runCommand('cut')"><a-icon type="scissor" /><span>剪切</span></a-menu-item>
+          <a-menu-item :disabled="!canCommand('copy')" @click="runCommand('copy')"><a-icon type="copy" /><span>复制</span></a-menu-item>
+          <a-menu-item :disabled="!canCommand('paste')" @click="runCommand('paste')"><a-icon type="snippets" /><span>粘贴</span></a-menu-item>
           <a-menu-divider />
-          <a-menu-item><a-icon type="delete" /><span>删除</span></a-menu-item>
+          <a-menu-item :disabled="!canCommand('delete')" @click="runCommand('delete')"><a-icon type="delete" /><span>删除</span></a-menu-item>
         </a-sub-menu>
         <a-sub-menu title="视图">
-          <a-menu-item><a-icon type="zoom-in" /><span>放大</span></a-menu-item>
-          <a-menu-item><a-icon type="zoom-out" /><span>缩小</span></a-menu-item>
-          <a-menu-item><a-icon type="fullscreen-exit" /><span>重置缩放</span></a-menu-item>
-          <a-menu-item><a-icon type="fullscreen" /><span>适应屏幕</span></a-menu-item>
+          <a-menu-item @click="zoom('in')"><a-icon type="zoom-in" /><span>放大</span></a-menu-item>
+          <a-menu-item @click="zoom('out')"><a-icon type="zoom-out" /><span>缩小</span></a-menu-item>
+          <a-menu-item @click="zoom()"><a-icon type="fullscreen-exit" /><span>自动适应</span></a-menu-item>
         </a-sub-menu>
         <a-sub-menu title="排列">
-          <a-menu-item><a-icon :component="icons.actionAlignVertical" /><span>垂直对齐</span></a-menu-item>
-          <a-menu-item><a-icon :component="icons.actionAlignHorizontal" /><span>水平对齐</span></a-menu-item>
-          <a-menu-item><a-icon :component="icons.actionSameSize" /><span>相同大小</span></a-menu-item>
+          <a-menu-item disabled><a-icon :component="icons.actionAlignVertical" /><span>垂直对齐</span></a-menu-item>
+          <a-menu-item disabled><a-icon :component="icons.actionAlignHorizontal" /><span>水平对齐</span></a-menu-item>
+          <a-menu-item disabled><a-icon :component="icons.actionSameSize" /><span>相同大小</span></a-menu-item>
         </a-sub-menu>
       </a-menu>
     </div>
@@ -99,6 +102,7 @@ export default {
       activeElement: null,
       activeToolbar: null,
       bpmn: null,
+      bpmnZoom: 1.0,
       info: {
         id: 0,
         name: ''
@@ -106,6 +110,80 @@ export default {
     }
   },
   methods: {
+    zoom (type) {
+      switch (type) {
+        case 'in': // 放大
+          this.bpmn.canvas.zoom(this.bpmn.canvas.zoom() + 0.1)
+          break
+        case 'out': // 缩小
+        this.bpmn.canvas.zoom(this.bpmn.canvas.zoom() - 0.1)
+          break
+        default: // 自适应
+          this.bpmn.canvas.zoom('fit-viewport')
+      }
+    },
+    canCommand (cmd) {
+      switch (cmd) {
+        case 'cut':
+        case 'copy':
+        case 'delete':
+          return this.activeElement !== null
+        case 'paste':
+          return this.bpmn && this.bpmn._elementCopied !== null
+        default:
+          return false
+      }
+    },
+    runCommand (cmd) {
+      this.tips = `执行${cmd}指令`
+      try {
+        switch (cmd) {
+          case 'undo':
+          case 'redo':
+            this.bpmn.commandStack[cmd]()
+            break
+          case 'cut':
+            this.bpmn.copy(this.activeElement)
+            if (this.activeElement) {
+              this.bpmn.modeling.removeElements([ this.activeElement ])
+            }
+            break
+          case 'copy':
+            this.bpmn.copy(this.activeElement)
+            break
+          case 'paste':
+            this.bpmn.paste()
+            break
+          case 'delete':
+            if (this.activeElement) {
+              this.bpmn.modeling.removeElements([ this.activeElement ])
+            }
+            break
+        }
+      } catch (e) {
+        this.tips = `执行${cmd}指令异常：${e.message}`
+      }
+    },
+    download (type) {
+      this.tips = `导出${type}文件`
+      const options = { format: true }
+      this.bpmn.modeler[type === 'XML' ? 'saveXML' : 'saveSVG'](options).then(bpmn => {
+        const url = window.URL.createObjectURL(new Blob([type === 'XML' ? bpmn.xml : bpmn.svg], { type: type === 'XML' ? 'application/xml' : 'image/svg+xml' }))
+        const dom = document.createElement('a')
+        dom.href = url
+        dom.download = this.info.name + (type === 'XML' ? '.bpmn20.xml' : '')
+        dom.click()
+        window.URL.revokeObjectURL(url)
+      }).catch(err => {
+        this.$error({ title: '数据获取异常', content: err.message })
+      })
+    },
+    handleImport (file) {
+      const reader = new FileReader()
+      reader.onload = () => this.bpmnImportXML(reader.result)
+      reader.readAsText(file)
+      return false
+    },
     onWidgetDragStart (widget, event) {
       widget.callback(widget, this.bpmn, event)
     },
@@ -123,7 +201,7 @@ export default {
         if (processId && this.bpmn.modeler._definitions && this.bpmn.modeler._definitions.rootElements.length > 0) {
           this.bpmn.modeler._definitions.rootElements[0].id = processId
         }
-        this.bpmn.canvas.zoom('fit-viewport')
+        this.zoom()
       } catch (e) {
         this.$error({ title: '解析XML异常', content: e.message })
       } finally {

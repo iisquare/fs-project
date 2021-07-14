@@ -11,6 +11,7 @@ import org.springframework.context.annotation.ComponentScan;
 @ComponentScan(basePackages = {
         "com.iisquare.fs.base.core.*",
         "com.iisquare.fs.web.core.*",
+        "com.iisquare.fs.base.worker.*",
         "com.iisquare.fs.web.worker",
 })
 @EnableFeignClients(basePackages = {

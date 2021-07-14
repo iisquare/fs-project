@@ -9,6 +9,7 @@ include 'base:web'
 include 'base:redis'
 include 'base:elasticsearch'
 include 'base:mongodb'
+include 'base:worker'
 
 include 'dag:core'
 include 'dag:web'

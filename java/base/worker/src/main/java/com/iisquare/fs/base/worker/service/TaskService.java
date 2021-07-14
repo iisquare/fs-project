@@ -1,4 +1,4 @@
-package com.iisquare.fs.web.worker.service;
+package com.iisquare.fs.base.worker.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -7,9 +7,9 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
 import com.iisquare.fs.base.core.util.HttpUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.web.worker.core.Task;
-import com.iisquare.fs.web.worker.core.WatchListener;
-import com.iisquare.fs.web.worker.core.ZooKeeperClient;
+import com.iisquare.fs.base.worker.core.Task;
+import com.iisquare.fs.base.worker.core.WatchListener;
+import com.iisquare.fs.base.worker.core.ZooKeeperClient;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;

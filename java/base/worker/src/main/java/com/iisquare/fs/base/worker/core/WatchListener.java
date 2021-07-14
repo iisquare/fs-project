@@ -1,6 +1,6 @@
-package com.iisquare.fs.web.worker.core;
+package com.iisquare.fs.base.worker.core;
 
-import com.iisquare.fs.web.worker.service.TaskService;
+import com.iisquare.fs.base.worker.service.TaskService;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
