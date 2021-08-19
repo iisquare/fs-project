@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<fs th:fragment="meta(assets, cms, title)" th:remove="tag">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=4, minimum-scale=1, user-scalable=no"/>
+    <title>[[${title}]] - [[${cms.siteName}]]</title>
+    <meta name="keywords" th:attr="content=${cms.keywords}"/>
+    <meta name="description" th:attr="content=${cms.description}"/>
+    <link rel="shortcut icon" th:href="${assets.res('/favicon.ico')}" type="image/x-icon">
+    <link rel="stylesheet" th:href="${assets.css('/cms-web/main.css')}" type="text/css" media="all"/>
+</fs>
+</head>
+<body>
+<div id="fs-header" th:fragment="header">
+    <nav class="navigation">
+        <figure class="logo">IISquare.com</figure>
+        <figure class="menu">
+            <ul>
+                <li><a href="">菜单一</a></li>
+                <li><a href="">菜单二</a></li>
+                <li><a href="">菜单三</a></li>
+            </ul>
+        </figure>
+    </nav>
+</div>
+<fs th:fragment="script(assets)" th:remove="tag">
+    <script type="text/javascript" th:src="${assets.res('/plugins/jQuery/jquery-3.6.0.min.js')}"></script>
+    <script type="text/javascript" th:src="${assets.js('/cms-web/main.js')}"></script>
+</fs>
+</body>
+</html>

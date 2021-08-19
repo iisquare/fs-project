@@ -54,7 +54,7 @@ export default {
       columns: [
         { title: 'ID', dataIndex: 'id' },
         { title: '名称', dataIndex: 'name' },
-        { title: '发布时间', dataIndex: 'deploymentInfo.deploymentTime', customRender: this.dateRender, width: 170 },
+        { title: '发布时间', dataIndex: 'deploymentInfo.deploymentTime', customRender: DateUtil.dateRender, width: 170 },
         { title: '操作', scopedSlots: { customRender: 'action' }, width: 80 }
       ],
       pagination: {},
@@ -63,9 +63,6 @@ export default {
     }
   },
   methods: {
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
-    },
     tableChange (pagination, filters, sorter) {
       this.pagination = RouteUtil.paginationChange(this.pagination, pagination)
       this.search(true, true)

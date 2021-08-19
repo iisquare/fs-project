@@ -68,7 +68,7 @@ public class MongoOutput extends Output {
             Iterator<Map.Entry<String, JsonNode>> fields = iterator.next().fields();
             while (fields.hasNext()) {
                 Map.Entry<String, JsonNode> entry = fields.next();
-                document.put(entry.getKey(), DPUtil.convertJSON(entry.getValue(), Object.class));
+                document.put(entry.getKey(), DPUtil.toJSON(entry.getValue(), Object.class));
             }
             if (document.size() > 0) documents.add(document);
         }

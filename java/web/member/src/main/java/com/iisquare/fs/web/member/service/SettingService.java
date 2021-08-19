@@ -2,17 +2,21 @@ package com.iisquare.fs.web.member.service;
 
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
+import com.iisquare.fs.base.jpa.helper.SQLHelper;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.member.dao.SettingDao;
 import com.iisquare.fs.web.member.entity.Setting;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
@@ -26,12 +30,50 @@ public class SettingService extends ServiceBase {
     private SettingDao settingDao;
     @Autowired
     private UserService userService;
+    @Autowired
+    private EntityManager entityManager;
+    @Value("${spring.datasource.member.table-prefix}")
+    private String tablePrefix;
 
     public boolean set(String type, String key, String value) {
         Setting info = settingDao.findFirstByTypeAndName(type, key);
         if(null == info) return false;
         info.setContent(value);
         return null != save(info, 0);
+    }
+
+    @Transactional
+    public int set(String type, Map<String, String> data) {
+        if (data.size() < 1) return 0;
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (Map.Entry<String, String> entry : data.entrySet()) {
+            list.add(new LinkedHashMap<String, Object>(){{
+                put("type", type);
+                put("name", entry.getKey());
+                put("content", entry.getValue());
+                put("description", "系统更新");
+            }});
+        }
+        return SQLHelper.build(entityManager, tablePrefix + "setting").batchInsert(list, true, "content").intValue();
+    }
+
+    public Map<String, String> get(String type, List<String> include, List<String> exclude) {
+        List<Setting> list = settingDao.findAll((Specification<Setting>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("type"), type));
+            if (null != include && include.size() > 0) {
+                predicates.add(root.get("name").in(DPUtil.toArray(String.class, include)));
+            }
+            if (null != exclude && exclude.size() > 0) {
+                predicates.add(cb.not(root.get("name").in(DPUtil.toArray(String.class, exclude))));
+            }
+            return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+        });
+        Map<String, String> result = new LinkedHashMap<>();
+        for (Setting setting : list) {
+            result.put(setting.getName(), setting.getContent());
+        }
+        return result;
     }
 
     public String get(String type, String key) {

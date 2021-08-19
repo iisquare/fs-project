@@ -126,8 +126,8 @@ export default {
         { title: '分组', dataIndex: 'type' },
         { title: '状态', dataIndex: 'history.status' },
         { title: '积压', dataIndex: 'history.channel' },
-        { title: '触发时间', dataIndex: 'history.dispatch', customRender: this.dateRender },
-        { title: '状态更新', dataIndex: 'history.version', customRender: this.dateRender },
+        { title: '触发时间', dataIndex: 'history.dispatch', customRender: DateUtil.dateRender },
+        { title: '状态更新', dataIndex: 'history.version', customRender: DateUtil.dateRender },
         { title: '操作', width: 213, scopedSlots: { customRender: 'action' } }
       ],
       selection: RouteUtil.selection(),
@@ -152,9 +152,6 @@ export default {
         this.crawlerURL = crawlerService.saveURL(this.crawlerURL)
       }
       this.search(true, true)
-    },
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
     },
     historyClear (id, row) {
       this.loading = true

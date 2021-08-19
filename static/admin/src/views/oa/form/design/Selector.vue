@@ -50,7 +50,7 @@
 
 <script>
 import draggable from 'vuedraggable'
-import DataUtil from '@/utils/data'
+import UIUtil from '@/utils/ui'
 import dictionaryService from '@/service/member/dictionary'
 
 export default {
@@ -105,7 +105,7 @@ export default {
       this.value.items.splice(index, 1)
     },
     loadDictionary () {
-      DataUtil.cache(null, () => dictionaryService.available({ formatArray: true }), 0).then(result => {
+      UIUtil.cache(null, () => dictionaryService.available({ formatArray: true }), 0).then(result => {
         if (result.code === 0) {
           this.dictionaries = result.data
         }

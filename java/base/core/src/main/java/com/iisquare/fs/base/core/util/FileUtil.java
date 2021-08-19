@@ -1,16 +1,25 @@
 package com.iisquare.fs.base.core.util;
 
+import org.apache.commons.codec.binary.Hex;
+
 import java.io.*;
 import java.net.URL;
+import java.util.Arrays;
 
 /**
  * 文件处理操作类
  */
 public class FileUtil {
 
+    public static String digest(InputStream stream, int size) throws IOException {
+        byte[] bytes = new byte[size];
+        int length = stream.read(bytes);
+        return Hex.encodeHexString(Arrays.copyOf(bytes, length));
+    }
+
     public static boolean mkdirs(String filePath) {
         File file = new File(filePath);
-        if (file.exists()) return true;
+        if (file.exists()) return file.isDirectory();
         return file.mkdirs();
     }
 
@@ -33,13 +42,11 @@ public class FileUtil {
         return delete(new File(filePath), reduce);
     }
 
-    /**
-     * 获取文件内容,默认编码
-     *
-     * @param filePath 文件路径
-     */
     public static String getContent(String filePath) {
-        File file = new File(filePath);
+        return getContent(new File(filePath));
+    }
+
+    public static String getContent(File file) {
         if (!file.exists()) return null;
         if (!file.isFile()) return null;
         if (!file.canRead()) return null;
@@ -55,10 +62,6 @@ public class FileUtil {
             close(inputStream);
         }
         return new String(fileContent);
-    }
-
-    public static String getContent(String filePath, String encoding) {
-        return getContent(filePath, false, encoding);
     }
 
     public static String getContent(URL url, boolean bDislodgeLine, String encoding) {
@@ -77,7 +80,6 @@ public class FileUtil {
                 sb.append(text);
                 if (!bDislodgeLine) sb.append("\n");
             }
-            int length = sb.length();
             output = sb.toString();
         } catch (IOException ioException) {
             return null;
@@ -87,17 +89,12 @@ public class FileUtil {
         return output;
     }
 
-    /**
-     * 获取文件内容
-     *
-     * @param filePath      文件路径
-     * @param bDislodgeLine 是否去除换行
-     * @param encoding      文档编码
-     * @return 文件不存在或读取异常时返回null
-     */
     public static String getContent(String filePath, boolean bDislodgeLine, String encoding) {
+        return getContent(new File(filePath), bDislodgeLine, encoding);
+    }
+
+    public static String getContent(File file, boolean bDislodgeLine, String encoding) {
         if (null == encoding) return null;
-        File file = new File(filePath);
         if (!file.exists()) return null;
         if (!file.isFile()) return null;
         if (!file.canRead()) return null;
@@ -140,28 +137,10 @@ public class FileUtil {
         }
     }
 
-    /**
-     * 将指定内容写入到对应文件，不存在则创建
-     *
-     * @param filePath 文件路径
-     * @param content  文件内容
-     * @param encoding 文档编码
-     * @return
-     */
     public static boolean putContent(String filePath, String content, String encoding) {
         return putContent(filePath, content, true, false, encoding);
     }
 
-    /**
-     * 将指定内容写入到对应文件
-     *
-     * @param filePath 文件路径
-     * @param content  文件内容
-     * @param bCreate  不存在时是否创建
-     * @param bAppend  是否采用追加形式
-     * @param encoding 文档编码
-     * @return
-     */
     public static boolean putContent(String filePath, String content, boolean bCreate, boolean bAppend, String encoding) {
         if (null == encoding) return false;
         File file = new File(filePath);

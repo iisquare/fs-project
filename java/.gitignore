@@ -3,8 +3,10 @@
 /**/build
 /**/out
 /gradlew
+/gradle/
 /gradlew.bat
+
 /web/xlab/libs/x64/
 /web/xlab/libs/x86/
 /web/xlab/libs/*.jar
-/gradle/
+/web/file/uploads

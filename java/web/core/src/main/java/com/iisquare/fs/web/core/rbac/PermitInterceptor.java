@@ -1,11 +1,13 @@
 package com.iisquare.fs.web.core.rbac;
 
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.web.core.mvc.FeignInterceptor;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,6 +32,7 @@ public class PermitInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         if(!(handler instanceof HandlerMethod)) return true;
         HandlerMethod method = (HandlerMethod) handler;
+        if (!FeignInterceptor.hashPermit(request, response, method)) return false;
         if(!(method.getBean() instanceof PermitControllerBase)) return true;
         PermitControllerBase instance = (PermitControllerBase) method.getBean();
         String[] names = DPUtil.explode(instance.getClass().getName(), "\\.", null, false);
@@ -37,7 +40,7 @@ public class PermitInterceptor implements HandlerInterceptor {
         String module = names[names.length - 2];
         if (module.equalsIgnoreCase(PACKAGE_CONTROLLER)) { // like *.xxx.controller
             module = names[names.length - 3];
-            if ("web".equals(module)) module = names[names.length - 4]; // like *.xxx.web.controller
+            if (Arrays.asList("web", "wap").contains(module)) module = names[names.length - 4]; // like *.xxx.web.controller
             request.setAttribute(ATTRIBUTE_TEMPLATE, "");
         } else { // like *.controller.xxx
             request.setAttribute(ATTRIBUTE_TEMPLATE, module);

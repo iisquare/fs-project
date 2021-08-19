@@ -96,9 +96,9 @@ export default {
         { title: '节点名称', dataIndex: 'name' },
         { title: '处理人', dataIndex: 'assigneeName' },
         { title: '审批备注', dataIndex: 'audit.message' },
-        { title: '创建时间', dataIndex: 'createTime', customRender: this.dateRender, width: 170 },
-        { title: '签收时间', dataIndex: 'claimTime', customRender: this.dateRender, width: 170 },
-        { title: '结束时间', dataIndex: 'endTime', customRender: this.dateRender, width: 170 },
+        { title: '创建时间', dataIndex: 'createTime', customRender: DateUtil.dateRender, width: 170 },
+        { title: '签收时间', dataIndex: 'claimTime', customRender: DateUtil.dateRender, width: 170 },
+        { title: '结束时间', dataIndex: 'endTime', customRender: DateUtil.dateRender, width: 170 },
         { title: '工作时间', dataIndex: 'workTimeInMillis', customRender: this.duration, width: 170 },
         { title: '持续时间', dataIndex: 'durationInMillis', customRender: this.duration, width: 170 }
       ]
@@ -115,9 +115,6 @@ export default {
   methods: {
     duration (text, record, index) {
       return this.workflowConfig.duration(text)
-    },
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
     },
     async repaint (workflow) {
       try {

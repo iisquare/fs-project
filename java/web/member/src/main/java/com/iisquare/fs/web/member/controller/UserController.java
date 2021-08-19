@@ -88,7 +88,7 @@ public class UserController extends PermitControllerBase {
             if(DPUtil.empty(lockedTime)) {
                 info.setLockedTime(0L);
             } else {
-                info.setLockedTime(DPUtil.dateTimeToMillis(lockedTime, configuration.getFormatDate()));
+                info.setLockedTime(DPUtil.dateTime2millis(lockedTime, configuration.getFormatDate()));
             }
         }
         info = userService.save(info, rbacService.uid(request));
@@ -112,7 +112,7 @@ public class UserController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", userService.status("full"));
-        model.put("defaultPassword", settingService.get("member", "default-password"));
+        model.put("defaultPassword", settingService.get("member", "defaultPassword"));
         Map<?, ?> searchResult = roleService.search(new LinkedHashMap<>(), DPUtil.buildMap("withStatusText", true));
         model.put("roles", searchResult.get("rows"));
         return ApiUtil.echoResult(0, null, model);
@@ -198,7 +198,7 @@ public class UserController extends PermitControllerBase {
         }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("info", info);
-        result.put("menu", rbacService.menu(request, DPUtil.parseInt(settingService.get(module, "menu-parent-id"))));
+        result.put("menu", rbacService.menu(request, DPUtil.parseInt(settingService.get(module, "menuParentId"))));
         result.put("resource", rbacService.resource(request));
         return ApiUtil.echoResult(0, null, result);
     }

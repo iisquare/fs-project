@@ -50,7 +50,7 @@ public class ServletUtil {
     public static Map<String, Object> parseParameterMap(Map<String, String[]> parameterMap) {
         Map<String, Object> map = new LinkedHashMap<String, Object>();
         for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
-            List<String> keys = DPUtil.getMatcher(regexParameterMapKey, entry.getKey(), true);
+            List<String> keys = DPUtil.matcher(regexParameterMapKey, entry.getKey(), true);
             generateParameterMap(map, keys, entry.getValue(), 0, keys.size());
         }
         return map;
@@ -206,7 +206,7 @@ public class ServletUtil {
         String requestUrl = request.getRequestURL().toString();
         if(bWithQuery) {
             String queryString = request.getQueryString();
-            if(null != queryString) requestUrl = DPUtil.stringConcat(requestUrl, "?", queryString);
+            if(null != queryString) requestUrl = requestUrl + "?" + queryString;
         }
         if(!bWithWebUrl) requestUrl = requestUrl.substring(getWebUrl(request, true).length());
         return requestUrl;

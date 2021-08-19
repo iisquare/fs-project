@@ -66,6 +66,9 @@
     <!--编辑界面-->
     <a-modal :title="'信息' + (form.id ? ('修改 - ' + form.id) : '添加')" v-model="formVisible" :confirmLoading="formLoading" :maskClosable="false" @ok="submit">
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
+        <a-form-model-item label="主键" prop="id">
+          <a-input v-model="form.id" auto-complete="off"></a-input>
+        </a-form-model-item>
         <a-form-model-item label="名称" prop="name">
           <a-input v-model="form.name" auto-complete="off"></a-input>
         </a-form-model-item>
@@ -100,7 +103,7 @@ export default {
         { title: '类型', dataIndex: 'type' },
         { title: '描述', dataIndex: 'description' },
         { title: '排序', dataIndex: 'sort' },
-        { title: '操作', scopedSlots: { customRender: 'action' } }
+        { title: '操作', width: 120, scopedSlots: { customRender: 'action' } }
       ],
       selection: RouteUtil.selection(),
       pagination: {},

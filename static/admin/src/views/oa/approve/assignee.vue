@@ -85,8 +85,8 @@ export default {
         { title: '发起人', dataIndex: 'processInstanceInfo.startUserIdName' },
         { title: '节点名称', dataIndex: 'name' },
         { title: '业务编号', dataIndex: 'processInstanceInfo.businessKey' },
-        { title: '创建时间', dataIndex: 'createTime', customRender: this.dateRender, width: 170 },
-        { title: '签收时间', dataIndex: 'claimTime', customRender: this.dateRender, width: 170 },
+        { title: '创建时间', dataIndex: 'createTime', customRender: DateUtil.dateRender, width: 170 },
+        { title: '签收时间', dataIndex: 'claimTime', customRender: DateUtil.dateRender, width: 170 },
         { title: '操作', scopedSlots: { customRender: 'action' }, width: 80 }
       ],
       pagination: {},

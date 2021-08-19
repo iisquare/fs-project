@@ -346,7 +346,7 @@ export default {
 }
 </script>
 
-<style lang="less">
+<style lang="less" scoped>
 .fs-layout-box {
   width: 100%;
   height: 100%;
@@ -364,18 +364,18 @@ export default {
       height: 100%;
       display: inline-block;
       border-right: solid 1px #cbcccc;
-      .ant-tabs {
+      & /deep/ .ant-tabs {
         height: 100%;
       }
-      .ant-tabs-bar {
+      & /deep/ .ant-tabs-bar {
         margin: 0px;
       }
-      .ant-tabs-content {
+      & /deep/ .ant-tabs-content {
         height: calc(100% - 44px);
         overflow: auto;
         padding: 3px 5px 3px 5px;
       }
-      .ant-tree-iconEle {
+      & /deep/ .ant-tree-iconEle {
         margin-top: -2px;
       }
     }
@@ -405,17 +405,17 @@ export default {
       width: 350px;
       display: inline-block;
       border-left: solid 1px #cbcccc;
-      .ant-tabs {
+      & /deep/ .ant-tabs {
         height: 100%;
       }
-      .ant-tabs-bar {
+      & /deep/ .ant-tabs-bar {
         margin: 0px;
       }
-      .ant-tabs-content {
+      & /deep/ .ant-tabs-content {
         height: calc(100% - 44px);
         overflow-y: scroll;
       }
-      .ant-form-item {
+      & /deep/ .ant-form-item {
         margin-bottom: 10px;
         padding-bottom: 10px;
       }

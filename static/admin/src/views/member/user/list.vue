@@ -54,8 +54,8 @@
                 <a-form-model-item label="创建开始时间" prop="createdTimeBegin">
                   <s-date-picker
                     v-model="filters.createdTimeBegin"
-                    :showTime="showTime(0)"
-                    :format="dateFormat()"
+                    :showTime="DateUtil.showTime(0)"
+                    :format="DateUtil.dateFormat()"
                     placeholder="开始时间"
                   />
                 </a-form-model-item>
@@ -64,8 +64,8 @@
                 <a-form-model-item label="创建结束时间" prop="createdTimeEnd">
                   <s-date-picker
                     v-model="filters.createdTimeEnd"
-                    :showTime="showTime(1)"
-                    :format="dateFormat()"
+                    :showTime="DateUtil.showTime(1)"
+                    :format="DateUtil.dateFormat()"
                     placeholder="结束时间"
                   />
                 </a-form-model-item>
@@ -74,8 +74,8 @@
                 <a-form-model-item label="修改开始时间" prop="updatedTimeBegin">
                   <s-date-picker
                     v-model="filters.updatedTimeBegin"
-                    :showTime="showTime(0)"
-                    :format="dateFormat()"
+                    :showTime="DateUtil.showTime(0)"
+                    :format="DateUtil.dateFormat()"
                     placeholder="开始时间"
                   />
                 </a-form-model-item>
@@ -84,8 +84,8 @@
                 <a-form-model-item label="修改结束时间" prop="updatedTimeEnd">
                   <s-date-picker
                     v-model="filters.updatedTimeEnd"
-                    :showTime="showTime(1)"
-                    :format="dateFormat()"
+                    :showTime="DateUtil.showTime(1)"
+                    :format="DateUtil.dateFormat()"
                     placeholder="结束时间"
                   />
                 </a-form-model-item>
@@ -94,8 +94,8 @@
                 <a-form-model-item label="登录开始时间" prop="loginedTimeBegin">
                   <s-date-picker
                     v-model="filters.loginedTimeBegin"
-                    :showTime="showTime(0)"
-                    :format="dateFormat()"
+                    :showTime="DateUtil.showTime(0)"
+                    :format="DateUtil.dateFormat()"
                     placeholder="开始时间"
                   />
                 </a-form-model-item>
@@ -104,8 +104,8 @@
                 <a-form-model-item label="登录结束时间" prop="loginedTimeEnd">
                   <s-date-picker
                     v-model="filters.loginedTimeEnd"
-                    :showTime="showTime(1)"
-                    :format="dateFormat()"
+                    :showTime="DateUtil.showTime(1)"
+                    :format="DateUtil.dateFormat()"
                     placeholder="结束时间"
                   />
                 </a-form-model-item>
@@ -114,8 +114,8 @@
                 <a-form-model-item label="锁定开始时间" prop="lockedTimeBegin">
                   <s-date-picker
                     v-model="filters.lockedTimeBegin"
-                    :showTime="showTime(0)"
-                    :format="dateFormat()"
+                    :showTime="DateUtil.showTime(0)"
+                    :format="DateUtil.dateFormat()"
                     placeholder="开始时间"
                   />
                 </a-form-model-item>
@@ -124,8 +124,8 @@
                 <a-form-model-item label="锁定结束时间" prop="lockedTimeEnd">
                   <s-date-picker
                     v-model="filters.lockedTimeEnd"
-                    :showTime="showTime(1)"
-                    :format="dateFormat()"
+                    :showTime="DateUtil.showTime(1)"
+                    :format="DateUtil.dateFormat()"
                     placeholder="结束时间"
                   />
                 </a-form-model-item>
@@ -210,7 +210,7 @@
           </a-select>
         </a-form-model-item>
         <a-form-model-item label="锁定">
-          <s-date-picker v-model="form.lockedTime" :format="dateFormat()" placeholder="选择日期时间"></s-date-picker>
+          <s-date-picker v-model="form.lockedTime" :format="DateUtil.dateFormat()" placeholder="选择日期时间"></s-date-picker>
         </a-form-model-item>
         <a-form-model-item label="描述">
           <a-textarea v-model="form.description" />
@@ -241,6 +241,7 @@ import userService from '@/service/member/user'
 export default {
   data () {
     return {
+      DateUtil,
       advanced: false,
       filters: {},
       columns: [
@@ -250,7 +251,7 @@ export default {
         { title: '排序', dataIndex: 'sort' },
         { title: '状态', dataIndex: 'statusText' },
         { title: '角色', dataIndex: 'roles', scopedSlots: { customRender: 'roles' } },
-        { title: '锁定时间', dataIndex: 'lockedTime', customRender: this.dateRender },
+        { title: '锁定时间', dataIndex: 'lockedTime', customRender: DateUtil.dateRender },
         { title: '操作', scopedSlots: { customRender: 'action' } }
       ],
       selection: RouteUtil.selection(),
@@ -303,18 +304,9 @@ export default {
         })
       }))
     },
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
-    },
     tableChange (pagination, filters, sorter) {
       this.pagination = RouteUtil.paginationChange(this.pagination, pagination)
       this.search(true, true)
-    },
-    dateFormat () {
-      return DateUtil.dateMomentFormat()
-    },
-    showTime (indexRange) {
-      return { format: DateUtil.timeMomentFormat(), defaultValue: DateUtil.timeMomentRange()[indexRange] }
     },
     toggleAdvanced () {
       this.advanced = !this.advanced

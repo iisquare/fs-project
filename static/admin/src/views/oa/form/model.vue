@@ -181,7 +181,7 @@ export default {
 }
 </script>
 
-<style lang="less">
+<style lang="less" scoped>
 .fs-layout-box {
   width: 100%;
   height: 100%;
@@ -200,7 +200,7 @@ export default {
       display: inline-block;
       border-right: solid 1px #cbcccc;
       overflow-y: auto;
-      .ant-collapse-header {
+      & /deep/ .ant-collapse-header {
         padding: 6px 6px 6px 35px;
       }
       ul {
@@ -265,7 +265,7 @@ export default {
       .fs-layout-main {
         height: calc(100% - 44px);
         background: #fafafa;
-        .ant-form {
+        & /deep/ .ant-form {
           width: 100%;
           height: 100%;
         }
@@ -275,7 +275,7 @@ export default {
           background: white;
           margin: 0 auto;
           .fs-form-flex {
-            .ant-form-item {
+            & /deep/ .ant-form-item {
               display: flex;
             }
           }
@@ -303,18 +303,18 @@ export default {
       width: 350px;
       display: inline-block;
       border-left: solid 1px #cbcccc;
-      .ant-tabs {
+      & /deep/ .ant-tabs {
         height: 100%;
       }
-      .ant-tabs-bar {
+      & /deep/ .ant-tabs-bar {
         margin: 0px;
       }
-      .ant-tabs-content {
+      & /deep/ .ant-tabs-content {
         height: calc(100% - 44px);
         overflow-y: scroll;
         padding: 10px 15px 10px 15px;
       }
-      .ant-form-item {
+      & /deep/ .ant-form-item {
         margin-bottom: 0px;
         padding: 5px 0px;
       }

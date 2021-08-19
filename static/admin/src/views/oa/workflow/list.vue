@@ -120,7 +120,7 @@ export default {
         { title: '表单', dataIndex: 'formId' },
         { title: '排序', dataIndex: 'sort' },
         { title: '状态', dataIndex: 'statusText' },
-        { title: '发布时间', dataIndex: 'deploymentInfo.deploymentTime', customRender: this.dateRender },
+        { title: '发布时间', dataIndex: 'deploymentInfo.deploymentTime', customRender: DateUtil.dateRender },
         { title: '操作', scopedSlots: { customRender: 'action' }, width: 210 }
       ],
       selection: RouteUtil.selection(),
@@ -143,9 +143,6 @@ export default {
     }
   },
   methods: {
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
-    },
     batchRemove () {
       this.$confirm(this.selection.confirm(() => {
         this.loading = true

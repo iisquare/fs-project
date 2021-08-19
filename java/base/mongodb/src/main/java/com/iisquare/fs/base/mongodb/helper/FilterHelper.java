@@ -95,7 +95,7 @@ public class FilterHelper {
     public FilterHelper geWithDate(String key, String field) {
         String value = DPUtil.trim(DPUtil.parseString(param.get(key)));
         if(!DPUtil.empty(value)) {
-            filters.add(Filters.gte(field, DPUtil.dateTimeToMillis(value, dateFormat)));
+            filters.add(Filters.gte(field, DPUtil.dateTime2millis(value, dateFormat)));
         }
         return this;
     }
@@ -103,7 +103,7 @@ public class FilterHelper {
     public FilterHelper leWithDate(String key, String field) {
         String value = DPUtil.trim(DPUtil.parseString(param.get(key)));
         if(!DPUtil.empty(value)) {
-            filters.add(Filters.lte(field, DPUtil.dateTimeToMillis(value, dateFormat) + 999));
+            filters.add(Filters.lte(field, DPUtil.dateTime2millis(value, dateFormat) + 999));
         }
         return this;
     }
@@ -115,7 +115,7 @@ public class FilterHelper {
     public FilterHelper betweenWithDate(String key, String field) {
         String value = DPUtil.trim(DPUtil.parseString(param.get(key)));
         if(!DPUtil.empty(value)) {
-            filters.add(Filters.lte(field, DPUtil.dateTimeToMillis(value, dateFormat) + 999));
+            filters.add(Filters.lte(field, DPUtil.dateTime2millis(value, dateFormat) + 999));
         }
         return geWithDate(key + "Begin", key).leWithDate(key + "End", key);
     }

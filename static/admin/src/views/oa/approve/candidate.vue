@@ -68,7 +68,7 @@ export default {
         { title: '发起人', dataIndex: 'processInstanceInfo.startUserIdName' },
         { title: '节点名称', dataIndex: 'name' },
         { title: '业务编号', dataIndex: 'processInstanceInfo.businessKey' },
-        { title: '创建时间', dataIndex: 'createTime', customRender: this.dateRender, width: 170 },
+        { title: '创建时间', dataIndex: 'createTime', customRender: DateUtil.dateRender, width: 170 },
         { title: '操作', scopedSlots: { customRender: 'action' }, width: 80 }
       ],
       pagination: {},
@@ -77,9 +77,6 @@ export default {
     }
   },
   methods: {
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
-    },
     tableChange (pagination, filters, sorter) {
       this.pagination = RouteUtil.paginationChange(this.pagination, pagination)
       this.search(true, true)

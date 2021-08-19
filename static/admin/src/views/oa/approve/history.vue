@@ -75,8 +75,8 @@ export default {
         { title: '流程名称', dataIndex: 'deploymentInfo.name' },
         { title: '发起人', dataIndex: 'startUserIdName' },
         { title: '业务编号', dataIndex: 'businessKey' },
-        { title: '创建时间', dataIndex: 'startTime', customRender: this.dateRender, width: 170 },
-        { title: '结束时间', dataIndex: 'endTime', customRender: this.dateRender, width: 170 },
+        { title: '创建时间', dataIndex: 'startTime', customRender: DateUtil.dateRender, width: 170 },
+        { title: '结束时间', dataIndex: 'endTime', customRender: DateUtil.dateRender, width: 170 },
         { title: '操作', scopedSlots: { customRender: 'action' }, width: 80 }
       ],
       pagination: {},
@@ -89,9 +89,6 @@ export default {
     }
   },
   methods: {
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
-    },
     tableChange (pagination, filters, sorter) {
       this.pagination = RouteUtil.paginationChange(this.pagination, pagination)
       this.search(true, true)

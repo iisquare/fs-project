@@ -201,7 +201,7 @@ export default {
 }
 </script>
 
-<style lang="less">
+<style lang="less" scoped>
 .fs-layout-box {
   height: 100vh;
   display: flex;
@@ -243,18 +243,18 @@ export default {
       width: 260px;
       flex-grow: 0;
       border-left: solid 1px #cbcccc;
-      .ant-tabs {
+      & /deep/ .ant-tabs {
         height: 100%;
       }
-      .ant-tabs-bar {
+      & /deep/ .ant-tabs-bar {
         margin: 0px;
       }
-      .ant-tabs-content {
+      & /deep/ .ant-tabs-content {
         height: calc(100% - 44px);
         overflow-y: scroll;
         padding: 10px 15px 10px 15px;
       }
-      .ant-form-item {
+      & /deep/ .ant-form-item {
         border-bottom: solid 1px #ececec;
         margin-bottom: 10px;
         padding-bottom: 10px;

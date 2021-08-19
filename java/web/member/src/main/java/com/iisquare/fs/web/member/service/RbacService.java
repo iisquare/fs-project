@@ -35,6 +35,8 @@ public class RbacService extends RbacServiceBase {
     private RelationDao relationDao;
     @Autowired
     private UserService userService;
+    @Autowired
+    private SettingService settingService;
 
     @Override
     public <T> List<T> fillUserInfo(List<T> list, String... properties) {
@@ -50,7 +52,7 @@ public class RbacService extends RbacServiceBase {
     public JsonNode currentInfo(HttpServletRequest request) {
         JsonNode info = (JsonNode) request.getAttribute(PermitInterceptor.ATTRIBUTE_USER);
         if (null != info) return info;
-        info = DPUtil.convertJSON(currentInfo(request, null));
+        info = DPUtil.toJSON(currentInfo(request, null));
         request.setAttribute(PermitInterceptor.ATTRIBUTE_USER, info);
         return info;
     }
@@ -71,7 +73,17 @@ public class RbacService extends RbacServiceBase {
 
     @Override
     public JsonNode menu(HttpServletRequest request, Integer parentId) {
-        return DPUtil.convertJSON(loadMenu(request, parentId));
+        return DPUtil.toJSON(loadMenu(request, parentId));
+    }
+
+    @Override
+    public Map<String, String> setting(String type, List<String> include, List<String> exclude) {
+        return settingService.get(type, include, exclude);
+    }
+
+    @Override
+    public int setting(String type, Map<String, String> data) {
+        return settingService.set(type, data);
     }
 
     public Map<String, Object> currentInfo(HttpServletRequest request, Map<?, ?> info) {

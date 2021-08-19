@@ -110,7 +110,7 @@
 </template>
 
 <script>
-import rbacService from '@/service/member/rbac'
+import workflowService from '@/service/oa/workflow'
 import userService from '@/service/member/user'
 import roleService from '@/service/member/role'
 
@@ -187,7 +187,7 @@ export default {
               break
           }
         })
-        rbacService.infos(args).then(result => {
+        workflowService.candidateInfos(args).then(result => {
           if (volatile !== this.volatile) return false
           if (result.code !== 0) {
             return this.$message.warning('载入候选人信息失败！')
@@ -285,16 +285,16 @@ export default {
 }
 </script>
 
-<style lang="less">
+<style lang="less" scoped>
 .fs-candidate-tags {
   cursor: pointer;
   min-height: 100px;
   border: 1px solid #e8e8e8;
   padding: 10px 10px 30px 10px;
-  .ant-btn {
+  & /deep/ .ant-btn {
     margin: 20px 0px 0px 60px;
   }
-  .ant-tag {
+  & /deep/ .ant-tag {
     margin-bottom: 8px;
     padding-right: 10px;
   }
@@ -324,7 +324,7 @@ export default {
 .fs-candidate-card {
   margin-top: 10px;
   border: 1px solid #e8e8e8;
-  .ant-tabs-bar {
+  & /deep/ .ant-tabs-bar {
     margin-bottom: 0px;
   }
   .fs-card-layout {

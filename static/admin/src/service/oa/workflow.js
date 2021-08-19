@@ -45,5 +45,8 @@ export default {
   },
   reject (param, tips = {}) {
     return base.post('/workflow/reject', param, tips)
+  },
+  candidateInfos (param, tips = {}) {
+    return base.post('/workflow/candidateInfos', param, tips)
   }
 }

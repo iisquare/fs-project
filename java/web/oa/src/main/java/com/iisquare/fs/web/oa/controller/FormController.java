@@ -50,7 +50,7 @@ public class FormController extends PermitControllerBase {
         Integer frameId = ValidateUtil.filterInteger(param.get("frameId"), true, 1, null, 0);
         ObjectNode frame = formService.frame(frameId, DPUtil.objectNode(), true, true);
         if (null == frame) return ApiUtil.echoResult(1001, "所属表单异常", frameId);
-        JsonNode form = DPUtil.convertJSON(param.get("form"));
+        JsonNode form = DPUtil.toJSON(param.get("form"));
         if (null == form || !form.isObject()) return ApiUtil.echoResult(1002, "表单数据异常", form);
         Map<String, Object> result = formService.validate(frame.at("/widgets"), form, null, null, null);
         if (0 != (int) result.get("code")) return ApiUtil.echoResult(result);

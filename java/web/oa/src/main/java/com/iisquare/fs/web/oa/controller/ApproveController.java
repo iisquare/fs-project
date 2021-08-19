@@ -48,8 +48,8 @@ public class ApproveController extends PermitControllerBase {
     @Permission("workflow")
     public String submitAction(@RequestBody Map<String, Object> param, HttpServletRequest request) {
         Integer workflowId = ValidateUtil.filterInteger(param.get("workflowId"), true, 1, null, 0);
-        JsonNode form = DPUtil.convertJSON(param.get("form"));
-        JsonNode audit = DPUtil.convertJSON(param.get("audit"));
+        JsonNode form = DPUtil.toJSON(param.get("form"));
+        JsonNode audit = DPUtil.toJSON(param.get("audit"));
         boolean modeComplete = DPUtil.parseBoolean(param.get("modeComplete"));
         Map<String, Object> result = approveService.start(workflowId, form, audit, rbacService.currentInfo(request), modeComplete);
         return ApiUtil.echoResult(result);
@@ -99,8 +99,8 @@ public class ApproveController extends PermitControllerBase {
     @Permission("workflow")
     public String completeAction(@RequestBody Map<String, Object> param, HttpServletRequest request) {
         String taskId = DPUtil.trim(DPUtil.parseString(param.get("taskId")));
-        JsonNode form = DPUtil.convertJSON(param.get("form"));
-        JsonNode audit = DPUtil.convertJSON(param.get("audit"));
+        JsonNode form = DPUtil.toJSON(param.get("form"));
+        JsonNode audit = DPUtil.toJSON(param.get("audit"));
         boolean modeComplete = DPUtil.parseBoolean(param.get("modeComplete"));
         boolean modeReject = DPUtil.parseBoolean(param.get("modeReject"));
         Map<String, Object> result = approveService.complete(taskId, form, audit, rbacService.currentInfo(request), modeComplete, modeReject);

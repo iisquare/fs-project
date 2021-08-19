@@ -170,9 +170,9 @@ public class ValidateUtil {
 	public static String filterDateTime(String object, boolean bTrim, String format, String defaultValue) {
 		if(null == object) return defaultValue;
 		if(bTrim) object = DPUtil.trim(object);
-		long millis = DPUtil.dateTimeToMillis(object, format);
+		long millis = DPUtil.dateTime2millis(object, format);
 		if(-1 == millis) return defaultValue;
-		return DPUtil.millisToDateTime(millis, format);
+		return DPUtil.millis2dateTime(millis, format);
 	}
 	
 	/**

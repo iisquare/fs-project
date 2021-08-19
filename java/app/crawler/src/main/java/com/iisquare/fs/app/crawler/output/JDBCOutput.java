@@ -48,7 +48,7 @@ public class JDBCOutput extends Output {
             Iterator<Map.Entry<String, JsonNode>> fields = iterator.next().fields();
             while (fields.hasNext()) {
                 Map.Entry<String, JsonNode> entry = fields.next();
-                map.put("`" + entry.getKey() + "`", DPUtil.convertJSON(entry.getValue(), Object.class));
+                map.put("`" + entry.getKey() + "`", DPUtil.toJSON(entry.getValue(), Object.class));
             }
             helper.insert(map, true);
             if (helper.getLastException() != null) {

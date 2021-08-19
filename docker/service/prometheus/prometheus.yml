@@ -20,4 +20,4 @@ scrape_configs:
   - job_name: fs-project
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ["192.168.0.240:7808"]
+      - targets: ["192.168.0.146:7808"]

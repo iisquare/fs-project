@@ -99,7 +99,6 @@
 </template>
 
 <script>
-import DateUtil from '@/utils/date'
 import RouteUtil from '@/utils/route'
 import formFrameService from '@/service/oa/formFrame'
 
@@ -135,9 +134,6 @@ export default {
     }
   },
   methods: {
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
-    },
     batchRemove () {
       this.$confirm(this.selection.confirm(() => {
         this.loading = true

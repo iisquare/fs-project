@@ -48,12 +48,12 @@
                 <a-button type="danger" @click="unique" :loading="loading" v-permit="'lucene:dictionary:delete'">去重</a-button>
                 <a-upload
                   v-permit="'lucene:dictionary:add'"
-                  :action="upload.action"
+                  :action="proxyService.uploadAction({ app: 'Lucene', uri: '/dictionary/scel' })"
                   accept=".scel"
                   :withCredentials="true"
                   :showUploadList="false"
                   @change="uploadChange">
-                  <a-button icon="cloud-upload" :loading="upload.loading">细胞词库</a-button>
+                  <a-button icon="cloud-upload" :loading="uploading">细胞词库</a-button>
                 </a-upload>
               </a-space>
             </a-col>
@@ -129,10 +129,12 @@
 <script>
 import RouteUtil from '@/utils/route'
 import dictionaryService from '@/service/lucene/dictionary'
+import proxyService from '@/service/admin/proxy'
 
 export default {
   data () {
     return {
+      proxyService,
       tips: {
         synonym: '提示：基础词条为单个字或连续的词；同义词格式为“词一,词二,词三=>词一,词二,词三”，其中每个词项必须是分词词库中已存在的词条。'
       },
@@ -165,25 +167,20 @@ export default {
         source: [{ required: true, message: '请输入词条来源', trigger: 'blur' }],
         content: [{ required: true, message: '请输入词条内容', trigger: 'blur' }]
       },
-      upload: {
-        action: process.env.VUE_APP_API_BASE_URL + '/proxy/upload?app=lucene&uri=/dictionary/scel',
-        loading: false
-      }
+      uploading: false
     }
   },
   methods: {
     download () {
-      const param = Object.keys(this.filters).map(key => key + '=' + encodeURIComponent(this.filters[key]))
-      const url = process.env.VUE_APP_API_BASE_URL + '/lucene/plain?' + param.join('&')
-      window.open(url)
+      window.open(proxyService.blank('Lucene', '/dictionary/plain', this.filters))
     },
     uploadChange ({ file, fileList, event }) {
       switch (file.status) {
         case 'uploading':
-          this.upload.loading = true
+          this.uploading = true
           break
         case 'done':
-          this.upload.loading = false
+          this.uploading = false
           const result = file.response
           if (result.code === 0) {
             this.$notification.success({ message: '状态：' + result.code, description: '消息:' + result.message })
@@ -197,7 +194,7 @@ export default {
           }
           break
         case 'error':
-          this.upload.loading = false
+          this.uploading = false
           this.$notification.error({ message: '请求异常', description: `${file.name} file upload failed.` })
           break
       }

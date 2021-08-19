@@ -44,8 +44,8 @@
                 <a-form-model-item label="创建开始时间" prop="createdTimeBegin">
                   <s-date-picker
                     v-model="filters.createdTimeBegin"
-                    :showTime="showTime(0)"
-                    :format="dateFormat()"
+                    :showTime="DateUtil.showTime(0)"
+                    :format="DateUtil.dateFormat()"
                     placeholder="开始时间"
                   />
                 </a-form-model-item>
@@ -54,8 +54,8 @@
                 <a-form-model-item label="创建结束时间" prop="createdTimeEnd">
                   <s-date-picker
                     v-model="filters.createdTimeEnd"
-                    :showTime="showTime(1)"
-                    :format="dateFormat()"
+                    :showTime="DateUtil.showTime(1)"
+                    :format="DateUtil.dateFormat()"
                     placeholder="结束时间"
                   />
                 </a-form-model-item>
@@ -64,8 +64,8 @@
                 <a-form-model-item label="修改开始时间" prop="updatedTimeBegin">
                   <s-date-picker
                     v-model="filters.updatedTimeBegin"
-                    :showTime="showTime(0)"
-                    :format="dateFormat()"
+                    :showTime="DateUtil.showTime(0)"
+                    :format="DateUtil.dateFormat()"
                     placeholder="开始时间"
                   />
                 </a-form-model-item>
@@ -74,8 +74,8 @@
                 <a-form-model-item label="修改结束时间" prop="updatedTimeEnd">
                   <s-date-picker
                     v-model="filters.updatedTimeEnd"
-                    :showTime="showTime(1)"
-                    :format="dateFormat()"
+                    :showTime="DateUtil.showTime(1)"
+                    :format="DateUtil.dateFormat()"
                     placeholder="结束时间"
                   />
                 </a-form-model-item>
@@ -182,6 +182,7 @@ import userService from '@/service/face/user'
 export default {
   data () {
     return {
+      DateUtil,
       advanced: false,
       filters: {},
       columns: [
@@ -243,18 +244,9 @@ export default {
         })
       }))
     },
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
-    },
     tableChange (pagination, filters, sorter) {
       this.pagination = RouteUtil.paginationChange(this.pagination, pagination)
       this.search(true, true)
-    },
-    dateFormat () {
-      return DateUtil.dateMomentFormat()
-    },
-    showTime (indexRange) {
-      return { format: DateUtil.timeMomentFormat(), defaultValue: DateUtil.timeMomentRange()[indexRange] }
     },
     toggleAdvanced () {
       this.advanced = !this.advanced

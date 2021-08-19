@@ -46,6 +46,7 @@ public abstract class ElasticsearchBase {
     protected Logger logger = LoggerFactory.getLogger(this.getClass());
     public static final String FIELD_ID = "_id";
     public static final int STATE_FAILED = -1;
+    private ThreadLocal<Integer> version = new ThreadLocal<>();
 
     @Autowired
     private RestHighLevelClient client;
@@ -54,8 +55,23 @@ public abstract class ElasticsearchBase {
     protected int shards = 3;
     protected int replicas = 2;
 
+    public boolean resolveVersion(Integer version) {
+        this.version.set(version);
+        return null != version;
+    }
+
+    public void rejectVersion() {
+        this.version.remove();
+    }
+
+    public String collection() {
+        Integer version = this.version.get();
+        if (null == version) return collection;
+        return collection + "_v" + version;
+    }
+
     public SearchHits search(SearchSourceBuilder builder) {
-        SearchRequest request = new SearchRequest(collection);
+        SearchRequest request = new SearchRequest(collection());
         request.source(builder);
         try {
             SearchResponse response = client.search(request, options());
@@ -67,7 +83,7 @@ public abstract class ElasticsearchBase {
     }
 
     public boolean update(ObjectNode source, boolean shouldUpsertDoc) {
-        UpdateRequest request = new UpdateRequest(collection, id(source));
+        UpdateRequest request = new UpdateRequest(collection(), id(source));
         request.docAsUpsert(shouldUpsertDoc);
         String json = DPUtil.stringify(source);
         request.doc(json, XContentType.JSON);
@@ -86,7 +102,7 @@ public abstract class ElasticsearchBase {
     public abstract String id(ObjectNode source);
 
     public long delete(String id) {
-        DeleteRequest request = new DeleteRequest(collection, id);
+        DeleteRequest request = new DeleteRequest(collection(), id);
         try {
             DeleteResponse response = client.delete(request, options());
             DocWriteResponse.Result result = response.getResult();
@@ -99,7 +115,7 @@ public abstract class ElasticsearchBase {
 
     public long delete(String... ids) {
         if (ids.length < 1) return 0;
-        DeleteByQueryRequest request = new DeleteByQueryRequest(collection);
+        DeleteByQueryRequest request = new DeleteByQueryRequest(collection());
         request.setQuery(QueryBuilders.termsQuery(FIELD_ID, ids));
         try {
             BulkByScrollResponse response = client.deleteByQuery(request, options());
@@ -112,6 +128,7 @@ public abstract class ElasticsearchBase {
 
     public ObjectNode all(String... ids) {
         MultiGetRequest request = new MultiGetRequest();
+        String collection = collection();
         for (String id : ids) {
             request.add(collection, id);
         }
@@ -133,7 +150,7 @@ public abstract class ElasticsearchBase {
     }
 
     public JsonNode one(String id) {
-        GetRequest request = new GetRequest(collection, id);
+        GetRequest request = new GetRequest(collection(), id);
         try {
             GetResponse response = client.get(request, options());
             String string = response.getSourceAsString();
@@ -145,6 +162,7 @@ public abstract class ElasticsearchBase {
     }
 
     public List<String> add(ArrayNode sources) {
+        String collection = collection();
         BulkRequest request = new BulkRequest();
         Iterator<JsonNode> iterator = sources.iterator();
         while (iterator.hasNext()) {
@@ -170,7 +188,7 @@ public abstract class ElasticsearchBase {
     }
 
     public String add(ObjectNode source) {
-        IndexRequest request = new IndexRequest(collection);
+        IndexRequest request = new IndexRequest(collection());
         String id = id(source);
         if (null != id) request.id(id);
         String json = DPUtil.stringify(source);
@@ -191,20 +209,16 @@ public abstract class ElasticsearchBase {
     public String alias(int fromVersion, int toVersion) {
         IndicesAliasesRequest request = new IndicesAliasesRequest();
         request.addAliasAction(
-                IndicesAliasesRequest.AliasActions.remove().index(collection(fromVersion)).alias(collection)
+                IndicesAliasesRequest.AliasActions.remove().index(collection + "_v" + fromVersion).alias(collection)
         );
         request.addAliasAction(
-                IndicesAliasesRequest.AliasActions.add().index(collection(toVersion)).alias(collection)
+                IndicesAliasesRequest.AliasActions.add().index(collection + "_v" + toVersion).alias(collection)
         );
         return toXContent(request);
     }
 
-    protected String collection(int version) {
-        return collection + "_v" + version;
-    }
-
-    public String indicesCreate(int version, boolean withAlias) {
-        CreateIndexRequest request = new CreateIndexRequest(collection(version));
+    public String indicesCreate(boolean withAlias) {
+        CreateIndexRequest request = new CreateIndexRequest(collection());
         request.settings(Settings.builder()
                 .put("index.number_of_shards", shards)
                 .put("index.number_of_replicas", replicas)
@@ -212,7 +226,7 @@ public abstract class ElasticsearchBase {
                 .putList("index.store.preload", "*")
         );
         if (withAlias) request.alias(new Alias(collection));
-        request.mapping(DPUtil.convertJSON(mapping(), Map.class));
+        request.mapping(DPUtil.toJSON(mapping(), Map.class));
         return toXContent(request);
     }
 

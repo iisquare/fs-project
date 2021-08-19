@@ -104,7 +104,7 @@ export default {
         { title: '版本', dataIndex: 'version' },
         { title: '状态', dataIndex: 'statusText' },
         { title: '操作者', dataIndex: 'updatedUidName' },
-        { title: '操作时间', dataIndex: 'updatedTime', customRender: this.dateRender },
+        { title: '操作时间', dataIndex: 'updatedTime', customRender: DateUtil.dateRender },
         { title: '操作', scopedSlots: { customRender: 'action' } }
       ],
       selection: RouteUtil.selection({ type: 'radio' }),
@@ -151,9 +151,6 @@ export default {
           this.$notification.error({ message: '请求异常', description: `${file.name} file upload failed.` })
           break
       }
-    },
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
     },
     batchRemove () {
       this.$confirm(this.selection.confirm(() => {

@@ -8,14 +8,8 @@ import com.iisquare.fs.app.crawler.parse.Parser;
 import com.iisquare.fs.app.crawler.schedule.*;
 import com.iisquare.fs.app.crawler.web.ControllerBase;
 import com.iisquare.fs.app.crawler.web.service.ScheduleService;
-import com.iisquare.fs.app.crawler.output.Output;
-import com.iisquare.fs.app.crawler.parse.Parser;
-import com.iisquare.fs.app.crawler.schedule.*;
-import com.iisquare.fs.app.crawler.web.ControllerBase;
-import com.iisquare.fs.app.crawler.web.service.ScheduleService;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.iisquare.fs.app.crawler.schedule.*;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -62,7 +56,7 @@ public class ScheduleController extends ControllerBase {
         Map<String, Schedule> schedules = scheduleService.schedules();
         for (Map.Entry<String, Schedule> entry : schedules.entrySet()) {
             Schedule schedule = entry.getValue();
-            ObjectNode item = (ObjectNode) DPUtil.convertJSON(schedule);
+            ObjectNode item = (ObjectNode) DPUtil.toJSON(schedule);
             ArrayNode intercepts = DPUtil.arrayNode();
             for (Map.Entry<Integer, List<Intercept>> interceptEntry : schedule.getIntercepts().entrySet()) {
                 for (Intercept intercept : interceptEntry.getValue()) {

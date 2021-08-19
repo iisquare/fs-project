@@ -25,7 +25,7 @@ public class DefaultRbacService extends RbacServiceBase {
     }
 
     /**
-     * 批量获取鉴权信息，防止网络抖动导致单次访问的多次RPC调用结果不一致
+     * 批量获取鉴权信息，防止网络抖动导致单次请求的多次RPC调用结果不一致
      */
     public JsonNode pack(HttpServletRequest request, String key) {
         if (null != key) {
@@ -101,6 +101,20 @@ public class DefaultRbacService extends RbacServiceBase {
     @Override
     public JsonNode menu(HttpServletRequest request, Integer parentId) {
         return post("menu", DPUtil.buildMap("parentId", parentId), false);
+    }
+
+    @Override
+    public Map<String, String> setting(String type, List<String> include, List<String> exclude) {
+        JsonNode result = post("setting", DPUtil.buildMap("type", type, "include", include, "exclude", exclude), true);
+        if (null == result) return null;
+        return DPUtil.toJSON(result, Map.class);
+    }
+
+    @Override
+    public int setting(String type, Map<String, String> data) {
+        JsonNode result = post("setting", DPUtil.buildMap("type", type, "data", data, "alter", true), true);
+        if (null == result) return -1;
+        return result.asInt(-1);
     }
 
 }

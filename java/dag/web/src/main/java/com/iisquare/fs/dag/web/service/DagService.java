@@ -45,7 +45,7 @@ public class DagService extends ServiceBase {
         if (null == content) return null;
         switch (kvConfigType) {
             case "json":
-                return DPUtil.convertJSON(content);
+                return DPUtil.toJSON(content);
             default:
                 return null;
         }

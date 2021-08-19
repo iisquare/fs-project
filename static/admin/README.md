@@ -83,6 +83,23 @@ beforeCreate () {
   this.$options.components.ComponentName = require('path for component').default
 }
 ```
+### 覆盖基础组件样式
+- 避免使用全局样式，防止污染组件外的空间。
+- 优先使用组件本身提供的类选择器参数或样式回调函数。
+```
+如：Table.rowClassName
+```
+- 使用/deep/或者>>>深度作用选择器，[Scoped CSS](https://vue-loader.vuejs.org/zh/guide/scoped-css.html)。
+```
+// >>>：只作用于css
+// /deep/：可作用于css/less/scss
+.fs-demo {
+  & /deep/ .ant-card-body {
+    padding: 0px;
+    height: calc(100% - 64px);
+  }
+}
+```
 
 ## 浏览器兼容
 

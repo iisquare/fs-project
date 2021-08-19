@@ -17,11 +17,11 @@ public class Notice {
     public long time;
 
     public static String encode(Notice notice) {
-        return DPUtil.stringify(DPUtil.convertJSON(notice));
+        return DPUtil.stringify(DPUtil.toJSON(notice));
     }
 
     public static Notice decode(String notice) {
-        return DPUtil.convertJSON(DPUtil.parseJSON(notice), Notice.class);
+        return DPUtil.toJSON(DPUtil.parseJSON(notice), Notice.class);
     }
 
     public static Notice empty() {

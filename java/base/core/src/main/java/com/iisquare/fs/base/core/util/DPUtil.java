@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -22,6 +23,20 @@ public class DPUtil {
     public static final String regexDouble = "^-?\\d+(\\.\\d+)*";
     public static final String regexSafeImplode = "^[\\w_]+$";
     public static final ObjectMapper mapper = new ObjectMapper();
+
+
+    /**
+     * 获取随机整数字符串，最长为16位
+     */
+    public static String random(int length) {
+        if (length > 16) length = 16;
+        String str = Math.random() + "";
+        return str.substring(str.length() - length);
+    }
+
+    public static int random(int min, int max) {
+        return (int) (min + Math.floor(Math.random() * (max - min + 1)));
+    }
 
     public static boolean empty(Object object) {
         if (null == object) return true;
@@ -51,79 +66,13 @@ public class DPUtil {
     }
 
     /**
-     * 获取随机整数字符串，最长为16位
-     */
-    public static String random(int length) {
-        if (length > 16) length = 16;
-        String str = Math.random() + "";
-        return str.substring(str.length() - length);
-    }
-
-    public static int random(int min, int max) {
-        return (int) (min + Math.floor(Math.random() * (max - min + 1)));
-    }
-
-    /**
-     * 毫秒转换为格式化日期
-     */
-    public static String millisToDateTime(long millis, String format) {
-        if (empty(millis)) return null;
-        SimpleDateFormat dateFormat = new SimpleDateFormat(format);
-        return dateFormat.format(new Date(millis));
-    }
-
-    /**
-     * 格式化日期转换为毫秒
-     */
-    public static long dateTimeToMillis(Object dateTime, String format) {
-        SimpleDateFormat dateFormat = new SimpleDateFormat(format);
-        try {
-            return dateFormat.parse(parseString(dateTime)).getTime();
-        } catch (ParseException e) {
-            return -1;
-        }
-    }
-
-    /**
-     * 格式化日期转换为毫秒
-     *
-     * @param dateTime    日期
-     * @param format      日期格式
-     * @param defaultDays 默认值，距当前时间天数
-     * @return 毫秒时间戳
-     */
-    public static long dateTimeToMillis(Object dateTime, String format, int defaultDays) {
-        SimpleDateFormat dateFormat = new SimpleDateFormat(format);
-        try {
-            return dateFormat.parse(parseString(dateTime)).getTime();
-        } catch (ParseException e) {
-            format = "yyyy-MM-dd";
-            return dateTimeToMillis(getCurrentDateTime(format), format) + 86400000L * defaultDays;
-        }
-    }
-
-    /**
-     * 获取当前日期
-     */
-    public static String getCurrentDateTime(String format) {
-        return millisToDateTime(System.currentTimeMillis(), format);
-    }
-
-    /**
-     * 获取当前秒数
-     */
-    public static int getCurrentSeconds() {
-        return (int) System.currentTimeMillis() / 1000;
-    }
-
-    /**
      * 转换为int类型
      */
     public static int parseInt(Object object) {
         if (null == object) return 0;
         String str = object.toString();
         if ("".equals(str)) return 0;
-        str = getFirstMatcher(regexLong, str);
+        str = firstMatcher(regexLong, str);
         if (null == str) return 0;
         return Integer.parseInt(str);
     }
@@ -183,7 +132,7 @@ public class DPUtil {
         if (null == object) return 0L;
         String str = object.toString();
         if ("".equals(str)) return 0L;
-        str = getFirstMatcher(regexLong, str);
+        str = firstMatcher(regexLong, str);
         if (null == str) return 0L;
         return Long.parseLong(str);
     }
@@ -195,7 +144,7 @@ public class DPUtil {
         if (null == object) return 0.0;
         String str = object.toString();
         if ("".equals(str)) return 0.0;
-        str = getFirstMatcher(regexDouble, str);
+        str = firstMatcher(regexDouble, str);
         if (null == str) return 0.0;
         return Double.parseDouble(str);
     }
@@ -207,7 +156,7 @@ public class DPUtil {
         if (null == object) return 0.0f;
         String str = object.toString();
         if ("".equals(str)) return 0.0f;
-        str = getFirstMatcher(regexDouble, str);
+        str = firstMatcher(regexDouble, str);
         if (null == str) return 0.0f;
         return Float.parseFloat(str);
     }
@@ -233,6 +182,61 @@ public class DPUtil {
     }
 
     /**
+     * 毫秒转换为格式化日期
+     */
+    public static String millis2dateTime(long millis, String format) {
+        if (empty(millis)) return null;
+        SimpleDateFormat dateFormat = new SimpleDateFormat(format);
+        return dateFormat.format(new Date(millis));
+    }
+
+    /**
+     * 格式化日期转换为毫秒
+     */
+    public static long dateTime2millis(Object dateTime, String format) {
+        if (DPUtil.empty(dateTime)) return 0;
+        SimpleDateFormat dateFormat = new SimpleDateFormat(format);
+        try {
+            return dateFormat.parse(parseString(dateTime)).getTime();
+        } catch (ParseException e) {
+            return -1;
+        }
+    }
+
+    /**
+     * 格式化日期转换为毫秒
+     *
+     * @param dateTime    日期
+     * @param format      日期格式
+     * @param defaultDays 默认值，距当前时间天数
+     * @return 毫秒时间戳
+     */
+    public static long dateTime2millis(Object dateTime, String format, int defaultDays) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(format);
+        try {
+            return dateFormat.parse(parseString(dateTime)).getTime();
+        } catch (ParseException e) {
+            format = "yyyy-MM-dd";
+            return dateTime2millis(dateTime(format), format) + 86400000L * defaultDays;
+        }
+    }
+
+    /**
+     * 获取当前日期
+     */
+    public static String dateTime(String format) {
+        return millis2dateTime(System.currentTimeMillis(), format);
+    }
+
+    /**
+     * 获取当前秒数
+     */
+    public static int seconds() {
+        return (int) System.currentTimeMillis() / 1000;
+    }
+
+
+    /**
      * 获取正则匹配字符串
      *
      * @param regex  正则表达式
@@ -240,7 +244,7 @@ public class DPUtil {
      * @param bGroup 将捕获组作为结果返回
      * @return
      */
-    public static List<String> getMatcher(String regex, String str, boolean bGroup) {
+    public static List<String> matcher(String regex, String str, boolean bGroup) {
         List<String> list = new ArrayList<String>();
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
@@ -260,7 +264,7 @@ public class DPUtil {
     /**
      * 获取第一个匹配的字符串
      */
-    public static String getFirstMatcher(String regex, String str) {
+    public static String firstMatcher(String regex, String str) {
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
         while (matcher.find()) {
@@ -356,7 +360,7 @@ public class DPUtil {
                 list.add(str);
             }
         }
-        return collection2array(String.class, list);
+        return toArray(String.class, list);
     }
 
     public static String[] explode(String string, String splitRegex) {
@@ -383,10 +387,10 @@ public class DPUtil {
             Object value = array[i];
             if (null == value) continue;
             if (value instanceof Collection) {
-                Object[] objects = collection2array(Object.class, (Collection<Object>) value);
+                Object[] objects = toArray(Object.class, (Collection<Object>) value);
                 sb.append(implode(split, objects, 0, objects.length));
             } else if (value instanceof Map) {
-                Object[] objects = collection2array(Object.class, ((Map<Object, Object>) value).values());
+                Object[] objects = toArray(Object.class, ((Map<Object, Object>) value).values());
                 sb.append(implode(split, objects, 0, objects.length));
             } else {
                 sb.append(value);
@@ -408,9 +412,9 @@ public class DPUtil {
             if (bEmpty && empty(str)) continue;
             if (bSafe && null == ValidateUtil.filterRegex(regexSafeImplode, str, bTrim, 0, null, null)) continue;
             if (bDuplicate && list.contains(str)) continue;
-            list.add(null == wrap ? str : DPUtil.stringConcat(wrap, str, wrap));
+            list.add(null == wrap ? str : (wrap + str + wrap));
         }
-        return collection2array(String.class, list);
+        return toArray(String.class, list);
     }
 
     public static <T> ArrayList<T> array2list(T[] array) {
@@ -418,7 +422,7 @@ public class DPUtil {
         return new ArrayList<>(Arrays.asList(array));
     }
 
-    public static <T> T[] collection2array(Class<T> classType, Collection<T> collection) {
+    public static <T> T[] toArray(Class<T> classType, Collection<T> collection) {
         if (null == collection) array(classType, 0);
         return collection.toArray(array(classType, collection.size()));
     }
@@ -430,7 +434,7 @@ public class DPUtil {
     /**
      * 将String数组转换为Integer数组
      */
-    public static Integer[] arrayToIntegerArray(Object[] array) {
+    public static Integer[] integerArray(Object[] array) {
         Integer[] intArray = new Integer[array.length];
         for (int i = 0; i < array.length; i++) {
             intArray[i] = DPUtil.parseInt(array[i]);
@@ -441,7 +445,7 @@ public class DPUtil {
     /**
      * 将List转换为Set
      */
-    public static <T> Set<T> listToSet(List<T> list) {
+    public static <T> Set<T> list2set(List<T> list) {
         Set<T> set = new LinkedHashSet<>(0);
         set.addAll(list);
         return set;
@@ -450,7 +454,7 @@ public class DPUtil {
     /**
      * 将Set转换为List
      */
-    public static <T> List<T> setToList(Set<T> set) {
+    public static <T> List<T> set2list(Set<T> set) {
         List<T> list = new ArrayList<T>(0);
         list.addAll(set);
         return list;
@@ -524,22 +528,9 @@ public class DPUtil {
     }
 
     /**
-     * 判断元素是否包含在集合中
-     */
-    public static boolean isItemExist(Collection<?> collection, Object item) {
-        if (null == collection) return false;
-        Iterator<?> iterator = collection.iterator();
-        while (iterator.hasNext()) {
-            Object object = iterator.next();
-            if (DPUtil.equals(item, object)) return true;
-        }
-        return false;
-    }
-
-    /**
      * 安全获取数组中对应下标的值
      */
-    public static Object getByIndex(Object[] array, int index) {
+    public static Object byIndex(Object[] array, int index) {
         if (isIndexExist(array, index)) return array[index];
         return null;
     }
@@ -547,7 +538,7 @@ public class DPUtil {
     /**
      * 安全获取集合中对应下标的值
      */
-    public static Object getByIndex(Collection<?> collection, int index) {
+    public static Object byIndex(Collection<?> collection, int index) {
         if (isIndexExist(collection, index)) {
             Iterator<?> iterator = collection.iterator();
             for (int i = 0; i < index; i++) {
@@ -567,7 +558,7 @@ public class DPUtil {
             if (null == array) continue;
             list.addAll(Arrays.asList(array));
         }
-        return collection2array(classType, list);
+        return toArray(classType, list);
     }
 
     public static <T> T[] push(Class<T> classType, T[] array, T item) {
@@ -612,57 +603,21 @@ public class DPUtil {
     }
 
     /**
-     * 将多个对象连接为字符串
-     */
-    public static String stringConcat(Object... objects) {
-        StringBuilder sb = new StringBuilder();
-        for (Object object : objects) {
-            if (null != object) sb.append(object);
-        }
-        return sb.toString();
-    }
-
-    /**
-     * 根据字节宽度截取字符串
-     *
-     * @param targetString 目标字符串
-     * @param byteIndex    截取位置
-     * @param suffix       如目标字符串被窃取，则用该字符串作为后缀
-     * @param encoding     字符编码，若为null则默认采用UTF-8格式
-     */
-    public static String subStringWithByte(String targetString, int byteIndex, String suffix, String encoding) {
-        if (null == targetString) return "";
-        if (null == encoding) encoding = "UTF-8";
-        try {
-            if (targetString.getBytes(encoding).length <= byteIndex) return targetString;
-            String temp = targetString;
-            int length = targetString.length();
-            for (int i = 0; i < length; i++) {
-                if (temp.getBytes(encoding).length <= byteIndex) break;
-                temp = temp.substring(0, temp.length() - 1);
-            }
-            return null == suffix ? temp : DPUtil.stringConcat(temp, suffix);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    /**
      * 安全截取字符串，正向从下标0开始，逆向从-1开始
      */
-    public static String subString(String str, int start) {
+    public static String substring(String str, int start) {
         if (null == str) return "";
         int length = str.length();
         if (start < 0) start += length; // 转换开始下标到正向位置
         if (start < 0) start = 0; // 处理开始下标正向最小范围溢出
         if (start > length - 1) return ""; // 处理开始下标正向最大范围溢出
-        return new String(str.substring(start));
+        return str.substring(start);
     }
 
     /**
      * 安全截取字符串，正向从下标0开始，逆向从-1开始
      */
-    public static String subString(String str, int start, int size) {
+    public static String substring(String str, int start, int size) {
         if (null == str) return "";
         int length = str.length();
         if (start < 0) start += length; // 转换开始下标到正向位置
@@ -677,16 +632,39 @@ public class DPUtil {
         if (end < 0) return ""; // 处理结束下标正向最小范围溢出
         if (end > length) end = length; // 处理结束下标正向最大范围溢出
         /* beginIndex - 起始索引（包括），endIndex - 结束索引（不包括） */
-        return new String(str.substring(start, end));
+        return str.substring(start, end);
     }
 
     /**
      * 获取初始化填充数组
      */
-    public static Object[] getFillArray(int length, Object object) {
+    public static Object[] fillArray(int length, Object object) {
         Object[] array = new Object[length];
         Arrays.fill(array, object);
         return array;
+    }
+
+    /**
+     * 截取List
+     *
+     * @param list   待截取List
+     * @param start  开始位置
+     * @param length 截取长度
+     * @return 截取List
+     */
+    public static List<Object> sublist(List<?> list, int start, int length) {
+        List<Object> subList = new ArrayList<>();
+        if (list.isEmpty()) {
+            return subList;
+        }
+        int count = 0;
+        int end = start + length;
+        for (Object item : list) {
+            if (count++ >= start && count <= end) {
+                subList.add(item);
+            }
+        }
+        return subList;
     }
 
     /**
@@ -786,6 +764,16 @@ public class DPUtil {
         return total;
     }
 
+    public static List<String> fields(JsonNode json) {
+        List<String> list = new ArrayList<>();
+        if (null == json || !json.isObject()) return list;
+        Iterator<Map.Entry<String, JsonNode>> iterator = json.fields();
+        while (iterator.hasNext()) {
+            list.add(iterator.next().getKey());
+        }
+        return list;
+    }
+
     public static <T> List<T> formatRelation(List<?> data, Class<T> requiredType, String parentKey, Object parentValue, String idKey, String childrenKey) {
         List<T> list = new ArrayList<>();
         for (Object item : data) {
@@ -832,7 +820,7 @@ public class DPUtil {
             JsonNode node = iterator.next();
             for (String property : properties) {
                 if (!node.has(property)) continue;
-                T value = DPUtil.convertJSON(node.get(property), tClass);
+                T value = DPUtil.toJSON(node.get(property), tClass);
                 if (null == value) continue;
                 valueList.add(value);
             }
@@ -889,37 +877,15 @@ public class DPUtil {
         }
     }
 
-    public static <T> T convertJSON(Object obj, Class<T> classType) {
+    public static <T> T toJSON(Object obj, Class<T> classType) {
         return mapper.convertValue(obj, classType);
     }
 
     /**
      * 默认为JsonNode以兼容数组和对象
      */
-    public static JsonNode convertJSON(Object obj) {
+    public static JsonNode toJSON(Object obj) {
         return mapper.convertValue(obj, JsonNode.class);
     }
 
-    /**
-     * 截取List
-     *
-     * @param list   待截取List
-     * @param start  开始位置
-     * @param length 截取长度
-     * @return 截取List
-     */
-    public static List<Object> subList(List<?> list, int start, int length) {
-        List<Object> subList = new ArrayList<>();
-        if (list.isEmpty()) {
-            return subList;
-        }
-        int count = 0;
-        int end = start + length;
-        for (Object item : list) {
-            if (count++ >= start && count <= end) {
-                subList.add(item);
-            }
-        }
-        return subList;
-    }
 }

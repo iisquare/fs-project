@@ -23,11 +23,11 @@ public class History {
     private int limit; // schedule.maxPerNode
 
     public static String encode(History history) {
-        return DPUtil.stringify(DPUtil.convertJSON(history));
+        return DPUtil.stringify(DPUtil.toJSON(history));
     }
 
     public static History decode(String history) {
-        return DPUtil.convertJSON(DPUtil.parseJSON(history), History.class);
+        return DPUtil.toJSON(DPUtil.parseJSON(history), History.class);
     }
 
     public static History record(Schedule schedule) {

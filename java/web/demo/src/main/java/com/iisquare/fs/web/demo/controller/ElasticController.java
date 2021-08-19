@@ -24,9 +24,11 @@ public class ElasticController extends ControllerBase {
      */
     @GetMapping("/indicesCreate")
     public String indicesCreateAction(@RequestParam Map<String, Object> param) {
-        int version = DPUtil.parseInt(param.get("version"));
+        testES.resolveVersion(DPUtil.parseInt(param.get("version")));
         boolean withAlias = !DPUtil.empty(param.get("withAlias"));
-        return testES.indicesCreate(version, withAlias);
+        String result = testES.indicesCreate(withAlias);
+        testES.rejectVersion();
+        return result;
     }
 
     /**

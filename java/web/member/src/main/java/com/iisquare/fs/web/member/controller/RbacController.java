@@ -5,6 +5,7 @@ import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.web.core.rbac.PermitInterceptor;
+import com.iisquare.fs.web.core.rbac.RpcControllerBase;
 import com.iisquare.fs.web.member.service.RbacService;
 import com.iisquare.fs.web.member.service.RoleService;
 import com.iisquare.fs.web.member.service.UserService;
@@ -20,7 +21,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/rbac")
-public class RbacController {
+public class RbacController extends RpcControllerBase {
 
     @Autowired
     private RbacService rbacService;
@@ -89,6 +90,19 @@ public class RbacController {
     public String identityAction(@RequestBody Map<String, Object> param, HttpServletRequest request) {
         ObjectNode identity = userService.identity(rbacService.uid(request));
         return ApiUtil.echoResult(0, null, identity);
+    }
+
+    @PostMapping("/setting")
+    public String settingAction(@RequestBody Map<String, Object> param, HttpServletRequest request) {
+        String type = DPUtil.parseString(param.get("type"));
+        if (DPUtil.empty(param.get("alter"))) {
+            List<String> include = (List<String>) param.get("include");
+            List<String> exclude = (List<String>) param.get("exclude");
+            return ApiUtil.echoResult(0, null, rbacService.setting(type, include, exclude));
+        } else {
+            Map<String, String> data = (Map<String, String>) param.get("data");
+            return ApiUtil.echoResult(0, null, rbacService.setting(type, data));
+        }
     }
 
 }

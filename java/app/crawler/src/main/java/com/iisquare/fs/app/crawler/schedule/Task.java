@@ -50,11 +50,11 @@ public class Task {
     }
 
     public static String encode(Task task) {
-        return DPUtil.stringify(DPUtil.convertJSON(task));
+        return DPUtil.stringify(DPUtil.toJSON(task));
     }
 
     public static Task decode(String task) {
-        return DPUtil.convertJSON(DPUtil.parseJSON(task), Task.class);
+        return DPUtil.toJSON(DPUtil.parseJSON(task), Task.class);
     }
 
     public Schedule schedule(Scheduler scheduler) {

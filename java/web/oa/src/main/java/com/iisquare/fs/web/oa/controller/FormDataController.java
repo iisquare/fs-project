@@ -30,6 +30,7 @@ public class FormDataController extends PermitControllerBase {
     private DefaultRbacService rbacService;
 
     @RequestMapping("/info")
+    @Permission("")
     public String infoAction(@RequestBody Map<?, ?> param) {
         String id = DPUtil.trim(DPUtil.parseString(param.get(MongoCore.FIELD_ID)));
         Document info = formDataService.info(id);

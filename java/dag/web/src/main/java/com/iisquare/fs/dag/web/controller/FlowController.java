@@ -30,6 +30,7 @@ public class FlowController extends PermitControllerBase {
     private DefaultRbacService rbacService;
 
     @RequestMapping("/info")
+    @Permission("")
     public String infoAction(@RequestBody Map<?, ?> param) {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
         Flow info = flowService.info(id);

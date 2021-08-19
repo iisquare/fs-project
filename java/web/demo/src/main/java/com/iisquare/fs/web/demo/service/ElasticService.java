@@ -75,7 +75,7 @@ public class ElasticService extends ServiceBase {
             node.put("content", DPUtil.parseString(item.get("content")));
             Object highlight = item.get("highlight");
             if (null != highlight) {
-                node.replace("highlight", DPUtil.convertJSON(highlight));
+                node.replace("highlight", DPUtil.toJSON(highlight));
             }
             result.replace(id, node);
         }

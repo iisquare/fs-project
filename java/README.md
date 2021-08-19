@@ -10,6 +10,7 @@
 - Settings > Build > Compiler > Annotation Processors > Enable annotation processing
 - Settings > Build > Compiler > Build project automatically
 - Settings > Build > Build Tools > Gradle > Build and run using:IntelliJ IDEA
+- Run/Debug Configurations > Running Application Update Policies > * > Update classes and resources
 
 ## 参考
 - [Gradle Build Language Reference](https://docs.gradle.org/current/dsl/index.html)

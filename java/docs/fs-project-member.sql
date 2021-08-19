@@ -3,15 +3,15 @@
 
  Source Server         : yoyo_3306
  Source Server Type    : MySQL
- Source Server Version : 50716
+ Source Server Version : 80021
  Source Host           : 192.168.0.146:13306
  Source Schema         : fs-project
 
  Target Server Type    : MySQL
- Target Server Version : 50716
+ Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 01/07/2021 14:52:43
+ Date: 13/08/2021 16:26:45
 */
 
 SET NAMES utf8mb4;
@@ -22,18 +22,18 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------
 DROP TABLE IF EXISTS `fs_member_dictionary`;
 CREATE TABLE `fs_member_dictionary`  (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `full_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `parent_id` int(11) NOT NULL DEFAULT 0,
+  `parent_id` int NOT NULL DEFAULT 0,
   `content` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `sort` tinyint(4) NOT NULL DEFAULT 0,
-  `status` tinyint(4) NOT NULL DEFAULT 0,
+  `sort` tinyint NOT NULL DEFAULT 0,
+  `status` tinyint NOT NULL DEFAULT 0,
   `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `created_time` bigint(20) NOT NULL DEFAULT 0,
-  `created_uid` int(11) NOT NULL DEFAULT 0,
-  `updated_time` bigint(20) NOT NULL DEFAULT 0,
-  `updated_uid` int(11) NOT NULL DEFAULT 0,
+  `created_time` bigint NOT NULL DEFAULT 0,
+  `created_uid` int NOT NULL DEFAULT 0,
+  `updated_time` bigint NOT NULL DEFAULT 0,
+  `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_content`(`content`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
@@ -52,34 +52,42 @@ INSERT INTO `fs_member_dictionary` VALUES (7, '一级-3', '级联:一级-3', 4, 
 INSERT INTO `fs_member_dictionary` VALUES (8, '二级-1-1', '级联:一级-1:二级-1-1', 5, 'level-1-1', 0, 1, '', 1619512990888, 1, 1619512990888, 1);
 INSERT INTO `fs_member_dictionary` VALUES (9, '二级-3-1', '级联:一级-3:二级-3-1', 7, 'level-3-1', 0, 1, '', 1619513015148, 1, 1619513015148, 1);
 INSERT INTO `fs_member_dictionary` VALUES (10, '二级-3-2', '级联:一级-3:二级-3-2', 7, 'level-3-2', 0, 1, '', 1619513023627, 1, 1619513023627, 1);
-INSERT INTO `fs_member_dictionary` VALUES (11, '岗位职责', '岗位职责', 0, 'job-responsibility', 0, 1, '', 1622184066092, 1, 1622184996022, 1);
+INSERT INTO `fs_member_dictionary` VALUES (11, '岗位职责', '岗位职责', 0, 'job-responsibility', 0, 1, '', 1622184066092, 1, 1628835455782, 1);
 INSERT INTO `fs_member_dictionary` VALUES (12, '董事长', '岗位职责:董事长', 11, 'chairman', 0, 1, '', 1622184121813, 1, 1622184121813, 1);
 INSERT INTO `fs_member_dictionary` VALUES (13, '总经理', '岗位职责:总经理', 11, 'president', 0, 1, '', 1622184318304, 1, 1622184318304, 1);
-INSERT INTO `fs_member_dictionary` VALUES (14, '副总经理', '岗位职责:副总经理', 11, 'deputy-president', 0, 1, '', 1622184347379, 1, 1622184452278, 1);
+INSERT INTO `fs_member_dictionary` VALUES (14, '副总经理', '岗位职责:副总经理', 11, 'deputy-president', 0, 1, '', 1622184347379, 1, 1628835465073, 1);
 INSERT INTO `fs_member_dictionary` VALUES (15, '主管', '岗位职责:主管', 11, 'executive', 0, 1, '', 1622184431053, 1, 1622184431053, 1);
 INSERT INTO `fs_member_dictionary` VALUES (16, '职员', '岗位职责:职员', 11, 'staff', 0, 1, '', 1622184489471, 1, 1622184489471, 1);
+INSERT INTO `fs_member_dictionary` VALUES (17, '审核标签', '审核标签', 0, 'audit-tag', 0, 1, '', 1628835395109, 1, 1628835477591, 1);
+INSERT INTO `fs_member_dictionary` VALUES (18, '广告', '审核标签:广告', 17, 'advertise', 99, 1, '', 1628835501325, 1, 1628836122775, 1);
+INSERT INTO `fs_member_dictionary` VALUES (19, '敏感词', '审核标签:敏感词', 17, 'sensitive', 19, 1, '', 1628835532602, 1, 1628836061905, 1);
+INSERT INTO `fs_member_dictionary` VALUES (20, '色情', '审核标签:色情', 17, 'porn', 98, 1, '', 1628835543698, 1, 1628836135493, 1);
+INSERT INTO `fs_member_dictionary` VALUES (21, '暴力', '审核标签:暴力', 17, 'violence', 97, 1, '', 1628835577084, 1, 1628836149133, 1);
+INSERT INTO `fs_member_dictionary` VALUES (22, '违法', '审核标签:违法', 17, 'illegal', 22, 1, '', 1628835588090, 1, 1628836033275, 1);
+INSERT INTO `fs_member_dictionary` VALUES (23, '辱骂', '审核标签:辱骂', 17, 'abuse', 23, 1, '', 1628835601620, 1, 1628836014104, 1);
+INSERT INTO `fs_member_dictionary` VALUES (24, '其他', '审核标签:其他', 17, 'other', 4, 1, '', 1628835614279, 1, 1628836162399, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_menu
 -- ----------------------------
 DROP TABLE IF EXISTS `fs_member_menu`;
 CREATE TABLE `fs_member_menu`  (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `full_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `parent_id` int(11) NOT NULL DEFAULT 0,
+  `parent_id` int NOT NULL DEFAULT 0,
   `icon` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `target` varchar(8) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `sort` tinyint(4) NOT NULL DEFAULT 0,
-  `status` tinyint(4) NOT NULL DEFAULT 0,
+  `sort` tinyint NOT NULL DEFAULT 0,
+  `status` tinyint NOT NULL DEFAULT 0,
   `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `created_time` bigint(20) NOT NULL DEFAULT 0,
-  `created_uid` int(11) NOT NULL DEFAULT 0,
-  `updated_time` bigint(20) NOT NULL DEFAULT 0,
-  `updated_uid` int(11) NOT NULL DEFAULT 0,
+  `created_time` bigint NOT NULL DEFAULT 0,
+  `created_uid` int NOT NULL DEFAULT 0,
+  `updated_time` bigint NOT NULL DEFAULT 0,
+  `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 81 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 99 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_menu
@@ -160,6 +168,24 @@ INSERT INTO `fs_member_menu` VALUES (77, '待签任务', '后台管理:在线办
 INSERT INTO `fs_member_menu` VALUES (78, '待办任务', '后台管理:在线办公:流程审批:待办任务', 75, '', '/oa/approve/assignee', '', 0, 1, '', 1624852957141, 1, 1624852957141, 1);
 INSERT INTO `fs_member_menu` VALUES (79, '历史任务', '后台管理:在线办公:流程审批:历史任务', 75, '', '/oa/approve/history', '', 0, 1, '', 1624869272153, 1, 1624869272153, 1);
 INSERT INTO `fs_member_menu` VALUES (80, '流程管理', '后台管理:在线办公:工作流程:流程管理', 72, '', '/oa/workflow/history', '', 0, 1, '', 1624973275460, 1, 1624973275460, 1);
+INSERT INTO `fs_member_menu` VALUES (81, '内容管理', '后台管理:内容管理', 1, 'solution', '/cms/index/index', '', 0, 1, 'CMS内容管理系统', 1627262640332, 1, 1627262740224, 1);
+INSERT INTO `fs_member_menu` VALUES (82, '系统设置', '后台管理:内容管理:系统设置', 81, 'setting', '/cms/setting', '', 0, 1, '', 1627262811964, 1, 1627285193931, 1);
+INSERT INTO `fs_member_menu` VALUES (83, '基础信息', '后台管理:内容管理:系统设置:基础信息', 82, '', '/cms/setting/profile', '', 0, 1, '', 1627262893812, 1, 1627285199014, 1);
+INSERT INTO `fs_member_menu` VALUES (84, '导航菜单', '后台管理:内容管理:系统设置:导航菜单', 82, '', '/cms/setting/menu', '', 0, 1, '', 1627263054790, 1, 1627285202965, 1);
+INSERT INTO `fs_member_menu` VALUES (85, '友情链接', '后台管理:内容管理:系统设置:友情链接', 82, '', '/cms/setting/link', '', 0, 1, '', 1627263117475, 1, 1627285206628, 1);
+INSERT INTO `fs_member_menu` VALUES (86, '通知公告', '后台管理:内容管理:系统设置:通知公告', 82, '', '/cms/setting/notice', '', 0, 1, '', 1627263143731, 1, 1627285209571, 1);
+INSERT INTO `fs_member_menu` VALUES (87, '首页轮播', '后台管理:内容管理:系统设置:首页轮播', 82, '', '/cms/setting/carousel', '', 0, 1, '', 1627263318494, 1, 1627285212587, 1);
+INSERT INTO `fs_member_menu` VALUES (88, '内容维护', '后台管理:内容管理:内容维护', 81, 'global', '/cms/site', '', 0, 1, '', 1627285310300, 1, 1627285429530, 1);
+INSERT INTO `fs_member_menu` VALUES (89, '栏目管理', '后台管理:内容管理:内容维护:栏目管理', 88, '', '/cms/site/catalog', '', 0, 1, '', 1627285552334, 1, 1627285552334, 1);
+INSERT INTO `fs_member_menu` VALUES (90, '文章管理', '后台管理:内容管理:内容维护:文章管理', 88, '', '/cms/site/article', '', 0, 1, '', 1627285573517, 1, 1627285573517, 1);
+INSERT INTO `fs_member_menu` VALUES (91, '评论管理', '后台管理:内容管理:内容维护:评论管理', 88, '', '/cms/site/comment', '', 0, 1, '', 1627285597402, 1, 1627285597402, 1);
+INSERT INTO `fs_member_menu` VALUES (92, '留言反馈', '后台管理:内容管理:内容维护:留言反馈', 88, '', '/cms/site/feedback', '', 0, 1, '', 1627285644951, 1, 1627285644951, 1);
+INSERT INTO `fs_member_menu` VALUES (93, '发布文章', '后台管理:内容管理:内容维护:发布文章', 88, '', '/cms/site/editor', '', 100, 1, '', 1627286496327, 1, 1628843173856, 1);
+INSERT INTO `fs_member_menu` VALUES (94, '标签管理', '后台管理:内容管理:内容维护:标签管理', 88, '', '/cms/site/tag', '', 0, 1, '', 1627286834091, 1, 1627286834091, 1);
+INSERT INTO `fs_member_menu` VALUES (95, '引用管理', '后台管理:内容管理:内容维护:引用管理', 88, '', '/cms/site/cite', '', 0, 1, '', 1627377188353, 1, 1627377188353, 1);
+INSERT INTO `fs_member_menu` VALUES (96, '文件存储', '后台管理:文件存储', 1, 'hdd', '/file/index/index', '', 0, 1, '文件存储、图库图床、对象存储', 1627548117479, 1, 1627548117479, 1);
+INSERT INTO `fs_member_menu` VALUES (97, '存档管理', '后台管理:文件存储:存档管理', 96, 'file', '/file/archive', '', 0, 1, '', 1627548162634, 1, 1627548162634, 1);
+INSERT INTO `fs_member_menu` VALUES (98, '文件列表', '后台管理:文件存储:存档管理:文件列表', 97, '', '/file/archive/list', '', 0, 1, '', 1627548198271, 1, 1627548198271, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_relation
@@ -168,8 +194,8 @@ DROP TABLE IF EXISTS `fs_member_relation`;
 CREATE TABLE `fs_member_relation`  (
   `id` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `type` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `aid` int(11) NOT NULL DEFAULT 0,
-  `bid` int(11) NOT NULL DEFAULT 0,
+  `aid` int NOT NULL DEFAULT 0,
+  `bid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
@@ -255,7 +281,25 @@ INSERT INTO `fs_member_relation` VALUES ('role_menu_1_78', 'role_menu', 1, 78);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_79', 'role_menu', 1, 79);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_8', 'role_menu', 1, 8);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_80', 'role_menu', 1, 80);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_81', 'role_menu', 1, 81);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_82', 'role_menu', 1, 82);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_83', 'role_menu', 1, 83);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_84', 'role_menu', 1, 84);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_85', 'role_menu', 1, 85);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_86', 'role_menu', 1, 86);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_87', 'role_menu', 1, 87);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_88', 'role_menu', 1, 88);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_89', 'role_menu', 1, 89);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_9', 'role_menu', 1, 9);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_90', 'role_menu', 1, 90);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_91', 'role_menu', 1, 91);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_92', 'role_menu', 1, 92);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_93', 'role_menu', 1, 93);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_94', 'role_menu', 1, 94);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_95', 'role_menu', 1, 95);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_96', 'role_menu', 1, 96);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_97', 'role_menu', 1, 97);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_98', 'role_menu', 1, 98);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_2_1', 'role_menu', 2, 1);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_2_2', 'role_menu', 2, 2);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_2_3', 'role_menu', 2, 3);
@@ -266,8 +310,36 @@ INSERT INTO `fs_member_relation` VALUES ('role_menu_3_9', 'role_menu', 3, 9);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_4_16', 'role_menu', 4, 16);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_1', 'role_resource', 1, 1);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_10', 'role_resource', 1, 10);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_100', 'role_resource', 1, 100);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_101', 'role_resource', 1, 101);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_102', 'role_resource', 1, 102);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_103', 'role_resource', 1, 103);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_104', 'role_resource', 1, 104);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_105', 'role_resource', 1, 105);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_106', 'role_resource', 1, 106);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_107', 'role_resource', 1, 107);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_108', 'role_resource', 1, 108);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_109', 'role_resource', 1, 109);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_11', 'role_resource', 1, 11);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_110', 'role_resource', 1, 110);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_111', 'role_resource', 1, 111);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_112', 'role_resource', 1, 112);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_113', 'role_resource', 1, 113);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_114', 'role_resource', 1, 114);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_115', 'role_resource', 1, 115);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_116', 'role_resource', 1, 116);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_117', 'role_resource', 1, 117);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_118', 'role_resource', 1, 118);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_119', 'role_resource', 1, 119);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_12', 'role_resource', 1, 12);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_120', 'role_resource', 1, 120);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_121', 'role_resource', 1, 121);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_122', 'role_resource', 1, 122);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_123', 'role_resource', 1, 123);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_124', 'role_resource', 1, 124);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_125', 'role_resource', 1, 125);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_126', 'role_resource', 1, 126);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_127', 'role_resource', 1, 127);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_13', 'role_resource', 1, 13);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_14', 'role_resource', 1, 14);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_15', 'role_resource', 1, 15);
@@ -359,6 +431,10 @@ INSERT INTO `fs_member_relation` VALUES ('role_resource_1_92', 'role_resource', 
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_93', 'role_resource', 1, 93);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_94', 'role_resource', 1, 94);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_95', 'role_resource', 1, 95);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_96', 'role_resource', 1, 96);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_97', 'role_resource', 1, 97);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_98', 'role_resource', 1, 98);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_99', 'role_resource', 1, 99);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_2_1', 'role_resource', 2, 1);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_2_2', 'role_resource', 2, 2);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_2_3', 'role_resource', 2, 3);
@@ -377,22 +453,22 @@ INSERT INTO `fs_member_relation` VALUES ('user_role_2_2', 'user_role', 2, 2);
 -- ----------------------------
 DROP TABLE IF EXISTS `fs_member_resource`;
 CREATE TABLE `fs_member_resource`  (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `full_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `parent_id` int(11) NOT NULL DEFAULT 0,
+  `parent_id` int NOT NULL DEFAULT 0,
   `module` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `controller` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `action` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `sort` tinyint(4) NOT NULL DEFAULT 0,
-  `status` tinyint(4) NOT NULL DEFAULT 0,
+  `sort` tinyint NOT NULL DEFAULT 0,
+  `status` tinyint NOT NULL DEFAULT 0,
   `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `created_time` bigint(20) NOT NULL DEFAULT 0,
-  `created_uid` int(11) NOT NULL DEFAULT 0,
-  `updated_time` bigint(20) NOT NULL DEFAULT 0,
-  `updated_uid` int(11) NOT NULL DEFAULT 0,
+  `created_time` bigint NOT NULL DEFAULT 0,
+  `created_uid` int NOT NULL DEFAULT 0,
+  `updated_time` bigint NOT NULL DEFAULT 0,
+  `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 96 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 117 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_resource
@@ -492,21 +568,53 @@ INSERT INTO `fs_member_resource` VALUES (92, '删除流程', '在线办公:工�
 INSERT INTO `fs_member_resource` VALUES (93, '挂起流程', '在线办公:工作流程:挂起流程', 80, 'oa', 'workflow', 'suspendProcessInstance', 0, 1, '', 1625040566076, 1, 1625040566076, 1);
 INSERT INTO `fs_member_resource` VALUES (94, '激活流程', '在线办公:工作流程:激活流程', 80, 'oa', 'workflow', 'activateProcessInstance', 0, 1, '', 1625040586330, 1, 1625040586330, 1);
 INSERT INTO `fs_member_resource` VALUES (95, '驳回流程', '在线办公:工作流程:驳回流程', 80, 'oa', 'workflow', 'reject', 0, 1, '', 1625122337903, 1, 1625122337903, 1);
+INSERT INTO `fs_member_resource` VALUES (96, '内容管理', '内容管理', 0, 'cms', '', '', 0, 1, '', 1627462111659, 1, 1627462111659, 1);
+INSERT INTO `fs_member_resource` VALUES (97, '配置', '内容管理:配置', 96, 'cms', 'setting', '', 0, 1, '', 1627462153168, 1, 1627462300400, 1);
+INSERT INTO `fs_member_resource` VALUES (98, '载入', '内容管理:配置:载入', 97, 'cms', 'setting', 'load', 0, 1, '', 1627462649215, 1, 1627462649215, 1);
+INSERT INTO `fs_member_resource` VALUES (99, '更改', '内容管理:配置:更改', 97, 'cms', 'setting', 'change', 0, 1, '', 1627462669393, 1, 1627462669393, 1);
+INSERT INTO `fs_member_resource` VALUES (100, '文件存储', '文件存储', 0, 'file', '', '', 0, 1, '', 1627547763814, 1, 1627547763814, 1);
+INSERT INTO `fs_member_resource` VALUES (101, '存档', '文件存储:存档', 100, 'file', 'archive', '', 0, 1, '', 1627547824301, 1, 1627547824301, 1);
+INSERT INTO `fs_member_resource` VALUES (102, '更改', '文件存储:存档:更改', 101, 'file', 'archive', 'save', 0, 1, '', 1627547864010, 1, 1627547864010, 1);
+INSERT INTO `fs_member_resource` VALUES (103, '删除', '文件存储:存档:删除', 101, 'file', 'archive', 'delete', 0, 1, '', 1627547881301, 1, 1627547881301, 1);
+INSERT INTO `fs_member_resource` VALUES (104, '上传', '文件存储:存档:上传', 101, 'file', 'archive', 'upload', 0, 1, '', 1628069668474, 1, 1628069668474, 1);
+INSERT INTO `fs_member_resource` VALUES (105, '下载', '文件存储:存档:下载', 101, 'file', 'archive', 'download', 0, 1, '', 1628069685308, 1, 1628069685308, 1);
+INSERT INTO `fs_member_resource` VALUES (106, '栏目', '内容管理:栏目', 96, 'cms', 'catalog', '', 0, 1, '', 1628496213702, 1, 1628497159085, 1);
+INSERT INTO `fs_member_resource` VALUES (107, '添加', '内容管理:栏目:添加', 106, 'cms', 'catalog', 'add', 0, 1, '', 1628496242603, 1, 1628497164867, 1);
+INSERT INTO `fs_member_resource` VALUES (108, '修改', '内容管理:栏目:修改', 106, 'cms', 'catalog', 'modify', 0, 1, '', 1628496253964, 1, 1628497170688, 1);
+INSERT INTO `fs_member_resource` VALUES (109, '删除', '内容管理:栏目:删除', 106, 'cms', 'catalog', 'delete', 0, 1, '', 1628496265504, 1, 1628497177984, 1);
+INSERT INTO `fs_member_resource` VALUES (110, '文章', '内容管理:文章', 96, 'cms', 'article', '', 0, 1, '', 1628649304363, 1, 1628649304363, 1);
+INSERT INTO `fs_member_resource` VALUES (111, '添加', '内容管理:文章:添加', 110, 'cms', 'article', 'add', 0, 1, '', 1628649318326, 1, 1628649318326, 1);
+INSERT INTO `fs_member_resource` VALUES (112, '修改', '内容管理:文章:修改', 110, 'cms', 'article', 'modify', 0, 1, '', 1628649333630, 1, 1628649333630, 1);
+INSERT INTO `fs_member_resource` VALUES (113, '删除', '内容管理:文章:删除', 110, 'cms', 'article', 'delete', 0, 1, '', 1628649349958, 1, 1628649349958, 1);
+INSERT INTO `fs_member_resource` VALUES (114, '评论', '内容管理:评论', 96, 'cms', 'comment', '', 0, 1, '', 1628760363465, 1, 1628760363465, 1);
+INSERT INTO `fs_member_resource` VALUES (115, '审核', '内容管理:评论:审核', 114, 'cms', 'comment', 'audit', 0, 1, '', 1628760381768, 1, 1628760381768, 1);
+INSERT INTO `fs_member_resource` VALUES (116, '删除', '内容管理:评论:删除', 114, 'cms', 'comment', 'delete', 0, 1, '', 1628760391045, 1, 1628760391045, 1);
+INSERT INTO `fs_member_resource` VALUES (117, '反馈', '内容管理:反馈', 96, 'cms', 'feedback', '', 0, 1, '', 1628838812386, 1, 1628838812386, 1);
+INSERT INTO `fs_member_resource` VALUES (118, '审核', '内容管理:反馈:审核', 117, 'cms', 'feedback', 'audit', 0, 1, '', 1628838828851, 1, 1628838828851, 1);
+INSERT INTO `fs_member_resource` VALUES (119, '删除', '内容管理:反馈:删除', 117, 'cms', 'feedback', 'delete', 0, 1, '', 1628838840154, 1, 1628838840154, 1);
+INSERT INTO `fs_member_resource` VALUES (120, '标签', '内容管理:标签', 96, 'cms', 'tag', '', 0, 1, '', 1628841563164, 1, 1628841563164, 1);
+INSERT INTO `fs_member_resource` VALUES (121, '引用', '内容管理:引用', 96, 'cms', 'cite', '', 0, 1, '', 1628841573794, 1, 1628841593925, 1);
+INSERT INTO `fs_member_resource` VALUES (122, '添加', '内容管理:标签:添加', 120, 'cms', 'tag', 'add', 0, 1, '', 1628841604527, 1, 1628841604527, 1);
+INSERT INTO `fs_member_resource` VALUES (123, '修改', '内容管理:标签:修改', 120, 'cms', 'tag', 'modify', 0, 1, '', 1628841615952, 1, 1628842280445, 1);
+INSERT INTO `fs_member_resource` VALUES (124, '删除', '内容管理:标签:删除', 120, 'cms', 'tag', 'delete', 0, 1, '', 1628841629948, 1, 1628841629948, 1);
+INSERT INTO `fs_member_resource` VALUES (125, '添加', '内容管理:引用:添加', 121, 'cms', 'cite', 'add', 0, 1, '', 1628841639288, 1, 1628841639288, 1);
+INSERT INTO `fs_member_resource` VALUES (126, '修改', '内容管理:引用:修改', 121, 'cms', 'cite', 'modify', 0, 1, '', 1628841651912, 1, 1628841651912, 1);
+INSERT INTO `fs_member_resource` VALUES (127, '删除', '内容管理:引用:删除', 121, 'cms', 'cite', 'delete', 0, 1, '', 1628841661763, 1, 1628841661763, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_role
 -- ----------------------------
 DROP TABLE IF EXISTS `fs_member_role`;
 CREATE TABLE `fs_member_role`  (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `sort` tinyint(4) NOT NULL DEFAULT 0,
-  `status` tinyint(4) NOT NULL DEFAULT 0,
+  `sort` tinyint NOT NULL DEFAULT 0,
+  `status` tinyint NOT NULL DEFAULT 0,
   `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `created_time` bigint(20) NOT NULL DEFAULT 0,
-  `created_uid` int(11) NOT NULL DEFAULT 0,
-  `updated_time` bigint(20) NOT NULL DEFAULT 0,
-  `updated_uid` int(11) NOT NULL DEFAULT 0,
+  `created_time` bigint NOT NULL DEFAULT 0,
+  `created_uid` int NOT NULL DEFAULT 0,
+  `updated_time` bigint NOT NULL DEFAULT 0,
+  `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
@@ -523,54 +631,63 @@ INSERT INTO `fs_member_role` VALUES (4, 'aaaxx', 0, 2, '', 1584515454033, 1, 158
 -- ----------------------------
 DROP TABLE IF EXISTS `fs_member_setting`;
 CREATE TABLE `fs_member_setting`  (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `type` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `sort` tinyint(4) NOT NULL DEFAULT 0,
+  `sort` tinyint NOT NULL DEFAULT 0,
   `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `updated_time` bigint(20) NOT NULL DEFAULT 0,
-  `updated_uid` int(11) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+  `updated_time` bigint NOT NULL DEFAULT 0,
+  `updated_uid` int NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uniq_type_name`(`type`, `name`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 42 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_setting
 -- ----------------------------
-INSERT INTO `fs_member_setting` VALUES (1, 'default-password', 'member', 'password', 1, '默认登录密码', 1584530675522, 1);
-INSERT INTO `fs_member_setting` VALUES (3, 'menu-parent-id', 'admin', '1', 1, '管理后台菜单根节点ID', 1532401344424, 1);
-INSERT INTO `fs_member_setting` VALUES (4, 'test', 'test', 'aaa', 0, '', 1596167128860, 1);
+INSERT INTO `fs_member_setting` VALUES (1, 'defaultPassword', 'member', 'password', 1, '默认登录密码', 1627009079201, 1);
+INSERT INTO `fs_member_setting` VALUES (3, 'menuParentId', 'admin', '1', 1, '管理后台菜单根节点ID', 1627009055076, 1);
+INSERT INTO `fs_member_setting` VALUES (4, 'siteName', 'cms', 'IISquare.com', 0, '站点名称', 1627354687313, 1);
+INSERT INTO `fs_member_setting` VALUES (5, 'keywords', 'cms', 'fs-project,iisquare,iisquare.com,开源,免费', 0, '关键词', 1627354693783, 1);
+INSERT INTO `fs_member_setting` VALUES (6, 'description', 'cms', 'fs-project Copyright by IISquare.com', 0, '站点描述', 1627354700189, 1);
+INSERT INTO `fs_member_setting` VALUES (7, 'commentDisabled', 'cms', 'false', 0, '禁用评论', 1627354707526, 1);
+INSERT INTO `fs_member_setting` VALUES (8, 'homeTitle', 'cms', '个人博客', 0, '首页标题', 1627354713093, 1);
+INSERT INTO `fs_member_setting` VALUES (29, 'menu', 'cms', '[{\"name\":\"首页\",\"title\":\"\",\"href\":\"/\",\"target\":\"\",\"disabled\":false,\"children\":[]},{\"name\":\"栏目一\",\"title\":\"\",\"href\":\"\",\"target\":\"\",\"disabled\":false,\"children\":[{\"name\":\"子栏目一\",\"title\":\"\",\"href\":\"\",\"target\":\"\",\"disabled\":false,\"children\":[]},{\"name\":\"子栏目二\",\"title\":\"\",\"href\":\"\",\"target\":\"\",\"disabled\":false,\"children\":[{\"name\":\"孙栏目一\",\"title\":\"\",\"href\":\"\",\"target\":\"\",\"disabled\":false,\"children\":[]},{\"name\":\"孙栏目二\",\"title\":\"\",\"href\":\"\",\"target\":\"\",\"disabled\":false,\"children\":[]}]},{\"name\":\"子栏目三\",\"title\":\"\",\"href\":\"\",\"target\":\"\",\"disabled\":false,\"children\":[]}]},{\"name\":\"栏目二\",\"title\":\"\",\"href\":\"\",\"target\":\"\",\"disabled\":false,\"children\":[]},{\"name\":\"栏目三\",\"title\":\"\",\"href\":\"\",\"target\":\"\",\"disabled\":false,\"children\":[]}]', 0, '导航菜单', 1627461740399, 1);
+INSERT INTO `fs_member_setting` VALUES (39, 'link', 'cms', '[]', 0, '友情链接', 1628123781321, 1);
+INSERT INTO `fs_member_setting` VALUES (40, 'notice', 'cms', '[]', 0, '通知公告', 1628123790033, 1);
+INSERT INTO `fs_member_setting` VALUES (41, 'carousel', 'cms', '[]', 0, '首页轮播图', 1628123760775, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_user
 -- ----------------------------
 DROP TABLE IF EXISTS `fs_member_user`;
 CREATE TABLE `fs_member_user`  (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `serial` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `password` char(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `salt` char(4) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `sort` tinyint(4) NOT NULL DEFAULT 0,
-  `status` tinyint(4) NOT NULL DEFAULT 0,
+  `sort` tinyint NOT NULL DEFAULT 0,
+  `status` tinyint NOT NULL DEFAULT 0,
   `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `created_time` bigint(20) NOT NULL DEFAULT 0,
+  `created_time` bigint NOT NULL DEFAULT 0,
   `created_ip` varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `created_uid` int(11) NOT NULL DEFAULT 0,
-  `updated_time` bigint(20) NOT NULL DEFAULT 0,
-  `updated_uid` int(11) NOT NULL DEFAULT 0,
-  `logined_time` bigint(20) NOT NULL DEFAULT 0,
+  `created_uid` int NOT NULL DEFAULT 0,
+  `updated_time` bigint NOT NULL DEFAULT 0,
+  `updated_uid` int NOT NULL DEFAULT 0,
+  `logined_time` bigint NOT NULL DEFAULT 0,
   `logined_ip` varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `locked_time` bigint(20) NOT NULL DEFAULT 0,
+  `locked_time` bigint NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `unq_serial`(`serial`) USING BTREE,
-  INDEX `unq_name`(`name`) USING BTREE
+  UNIQUE INDEX `unq_serial`(`serial`) USING BTREE,
+  INDEX `idx_name`(`name`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_user
 -- ----------------------------
-INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1623918956443, '127.0.0.1', 0);
+INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1628760326166, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (2, 'test', '测试123', '4b361be828611add84453a24f39772a5', '0905', 0, 1, '', 1528081567988, '127.0.0.1', 1, 1542958281919, 1, 1528267171953, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (3, '111', '111', '', '', 6, -1, '', 0, '', 0, 1584360531961, 1, 0, '', 0);
 INSERT INTO `fs_member_user` VALUES (4, '222', '222', '', '', 0, 1, '', 0, '', 0, 0, 0, 0, '', 0);

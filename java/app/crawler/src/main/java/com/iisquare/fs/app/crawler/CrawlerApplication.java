@@ -37,15 +37,15 @@ public class CrawlerApplication {
             filepath = commandLine.getOptionValue("conf");
         }
         Yaml yaml = new Yaml();
-        ObjectNode config = (ObjectNode) DPUtil.convertJSON(yaml.load(new FileInputStream(new File(filepath))));
+        ObjectNode config = (ObjectNode) DPUtil.toJSON(yaml.load(new FileInputStream(new File(filepath))));
         if(config.has("kvConsulUrl")) {
             String content = HttpUtil.get(config.get("kvConsulUrl").asText());
             if (null == content) {
                 throw new FileNotFoundException("can not get config from kvConsulUrl");
             }
-            JsonNode kv = DPUtil.convertJSON(yaml.load(content));
+            JsonNode kv = DPUtil.toJSON(yaml.load(content));
             String kvContent = new String(Base64.getDecoder().decode(kv.get(0).get("Value").asText()), "UTF-8");
-            config.setAll((ObjectNode) DPUtil.convertJSON(yaml.load(kvContent)));
+            config.setAll((ObjectNode) DPUtil.toJSON(yaml.load(kvContent)));
         }
         return config;
     }

@@ -69,7 +69,6 @@
 </template>
 
 <script>
-import DateUtil from '@/utils/date'
 import RouteUtil from '@/utils/route'
 import formService from '@/service/oa/form'
 import ListFilter from './design/ListFilter'
@@ -111,15 +110,6 @@ export default {
     }
   },
   methods: {
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
-    },
-    dateFormat () {
-      return DateUtil.dateMomentFormat()
-    },
-    showTime (indexRange) {
-      return { format: DateUtil.timeMomentFormat(), defaultValue: DateUtil.timeMomentRange()[indexRange] }
-    },
     batchRemove () {
       this.$confirm(this.selection.confirm(() => {
         this.loading = true

@@ -75,7 +75,7 @@ export default {
         { title: 'ID', dataIndex: 'id' },
         { title: '标识', dataIndex: 'key' },
         { title: '名称', dataIndex: 'name' },
-        { title: '部署时间', dataIndex: 'deploymentTime', customRender: this.dateRender, width: 170 },
+        { title: '部署时间', dataIndex: 'deploymentTime', customRender: DateUtil.dateRender, width: 170 },
         { title: '操作', scopedSlots: { customRender: 'action' }, width: 200 }
       ],
       pagination: {},
@@ -87,9 +87,6 @@ export default {
     }
   },
   methods: {
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
-    },
     remove (text, record, cascade) {
       const _this = this
       this.$confirm({

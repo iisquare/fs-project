@@ -34,11 +34,11 @@ public class Token {
     private String cookie; // 运行时Cookie信息
 
     public static String encode(Token token) {
-        return DPUtil.stringify(DPUtil.convertJSON(token));
+        return DPUtil.stringify(DPUtil.toJSON(token));
     }
 
     public static Token decode(String token) {
-        return DPUtil.convertJSON(DPUtil.parseJSON(token), Token.class);
+        return DPUtil.toJSON(DPUtil.parseJSON(token), Token.class);
     }
 
     public Token cookie(Header... headers) {

@@ -3,6 +3,8 @@ package com.iisquare.fs.base.core.util;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
@@ -212,7 +214,7 @@ public class ReflectUtil {
         Class<?> instance = object.getClass();
         try {
             property = property.substring(0, 1).toUpperCase() + property.substring(1);
-            Method method = instance.getMethod(DPUtil.stringConcat("get", property));
+            Method method = instance.getMethod("get" + property);
             return method.invoke(object);
         } catch (Exception e) {
             return null;
@@ -244,10 +246,24 @@ public class ReflectUtil {
                     parameterTypes[i] = args[i].getClass();
                 }
             }
-            Method method = instance.getMethod(DPUtil.stringConcat("set", property), parameterTypes);
+            Method method = instance.getMethod("set" + property, parameterTypes);
             return method.invoke(object, args);
         } catch (Exception e) {
             return null;
         }
     }
+
+    /**
+     * 获取泛型类型
+     * 直接获取时获取不到，类型被虚拟机擦除了，利用子类实现父类的泛型是可以的。
+     */
+    public static Type[] types(Object object) {
+        if (null == object) return null;
+        Type type = object.getClass().getGenericSuperclass();
+        if (!(type instanceof ParameterizedType)) return null;
+        ParameterizedType parameterized = (ParameterizedType) type;
+        Type[] types = parameterized.getActualTypeArguments();
+        return types;
+    }
+
 }

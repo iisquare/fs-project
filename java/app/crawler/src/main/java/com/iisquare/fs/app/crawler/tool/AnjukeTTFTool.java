@@ -3,7 +3,6 @@ package com.iisquare.fs.app.crawler.tool;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.app.crawler.helper.XlabHelper;
-import com.iisquare.fs.app.crawler.helper.XlabHelper;
 import com.iisquare.fs.base.core.util.DPUtil;
 
 import java.util.HashMap;
@@ -32,7 +31,7 @@ public class AnjukeTTFTool {
             ObjectNode data = DPUtil.objectNode().put("type", "anjuke").put("ttf", base64);
             JsonNode json = XlabHelper.ttfExtract(DPUtil.parseString(data));
             if (null == json || 0 != json.get("code").asInt()) return false;
-            dict = DPUtil.convertJSON(json.get("data"), Map.class);
+            dict = DPUtil.toJSON(json.get("data"), Map.class);
             if (null == dict) return false;
             dicts.put(base64, dict);
         }

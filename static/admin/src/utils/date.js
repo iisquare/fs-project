@@ -33,4 +33,17 @@ const DateUtil = {
     return [moment('00:00:00', format), moment('23:59:59', format)]
   }
 }
+
+Object.assign(DateUtil, { // 拓展UI组件，this指针可能会被修改
+  dateRender (text, record, index) {
+    return DateUtil.format(text)
+  },
+  showTime (indexRange) {
+    return { format: DateUtil.timeMomentFormat(), defaultValue: DateUtil.timeMomentRange()[indexRange] }
+  },
+  dateFormat () {
+    return DateUtil.dateMomentFormat()
+  }
+})
+
 export default DateUtil

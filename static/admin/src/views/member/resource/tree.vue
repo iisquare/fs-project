@@ -151,7 +151,7 @@ export default {
       resourceService.tree().then((result) => {
         if (result.code === 0) {
           this.rows = result.data
-          this.expandedRowKeys = RouteUtil.expandedRowKeys(result.data)
+          this.expandedRowKeys = RouteUtil.expandedRowKeys(result.data, 1)
         }
         this.loading = false
       })
@@ -170,7 +170,8 @@ export default {
       })
     },
     sublevel (text, record) {
-      this.add(record.id)
+      this.form = { parentId: record.id, module: record.module, controller: record.controller, action: record.action }
+      this.formVisible = true
     },
     add (parentId = 0) {
       this.form = { parentId }

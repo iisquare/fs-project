@@ -7,6 +7,7 @@ import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
+import com.iisquare.fs.web.core.rpc.MemberRpc;
 import com.iisquare.fs.web.oa.entity.Workflow;
 import com.iisquare.fs.web.oa.service.ApproveService;
 import com.iisquare.fs.web.oa.service.WorkflowService;
@@ -31,6 +32,8 @@ public class WorkflowController extends PermitControllerBase {
     private DefaultRbacService rbacService;
     @Autowired
     private ApproveService approveService;
+    @Autowired
+    private MemberRpc memberRpc;
 
     @RequestMapping("/process")
     @Permission
@@ -51,6 +54,7 @@ public class WorkflowController extends PermitControllerBase {
     }
 
     @RequestMapping("/info")
+    @Permission("")
     public String infoAction(@RequestBody Map<?, ?> param) {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
         boolean withDeployment = !DPUtil.empty(param.get("withDeployment"));
@@ -177,6 +181,12 @@ public class WorkflowController extends PermitControllerBase {
         info.setContent(content);
         info = workflowService.save(info, rbacService.uid(request));
         return ApiUtil.echoResult(null == info ? 500 : 0, null, info);
+    }
+
+    @RequestMapping("/candidateInfos")
+    @Permission("modify")
+    public String candidateInfosAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
+        return memberRpc.post("/rbac/infos", param);
     }
 
     @RequestMapping("/delete")

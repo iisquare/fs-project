@@ -8,6 +8,10 @@ export default {
     return permission[value]
   },
   login (data = {}, tips = {}, config = {}) {
-    return base.post('/proxy/login', data, tips, config)
+    return base.post('/proxy/postResponse', {
+      app: 'Member',
+      uri: '/user/login',
+      data: Object.assign({}, data, { module: 'admin' })
+    }, tips, config)
   }
 }

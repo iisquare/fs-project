@@ -1,17 +1,19 @@
 import DataUtil from './data'
-import { Base64 } from 'js-base64'
+import CodeUtil from './code'
 
 const RouteUtil = {
   filterKey: 'filter',
-  expandedRowKeys (tree, key = 'id', children = 'children') {
+  expandedRowKeys (tree, deep = -1, key = 'id', children = 'children') {
     const result = [];
-    (function walk (data) {
+    (function walk (data, level) {
       if (!data) return
       data.forEach(element => {
         result.push(element[key])
-        walk(element[children])
+        if (deep !== -1 && level < deep) {
+          walk(element[children], level + 1)
+        }
       })
-    })(tree)
+    })(tree, 1)
     return result
   },
   filterOption (input, option) {
@@ -80,7 +82,7 @@ const RouteUtil = {
     if (DataUtil.empty(filter)) return ''
     try {
       filter = JSON.stringify(filter)
-      filter = Base64.encode(filter)
+      filter = CodeUtil.encodeBase64(filter)
     } catch (e) {
       filter = ''
     }
@@ -89,7 +91,7 @@ const RouteUtil = {
   decode (filter) {
     if (DataUtil.empty(filter)) return {}
     try {
-      filter = Base64.decode(filter)
+      filter = CodeUtil.decodeBase64(filter)
       filter = JSON.parse(filter)
     } catch (e) {
       filter = {}

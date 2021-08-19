@@ -19,11 +19,11 @@ public class Proxy {
     private int socketTimeout;
 
     public static String encode(Proxy proxy) {
-        return DPUtil.stringify(DPUtil.convertJSON(proxy));
+        return DPUtil.stringify(DPUtil.toJSON(proxy));
     }
 
     public static Proxy decode(String proxy) {
-        return DPUtil.convertJSON(DPUtil.parseJSON(proxy), Proxy.class);
+        return DPUtil.toJSON(DPUtil.parseJSON(proxy), Proxy.class);
     }
 
 

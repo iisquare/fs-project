@@ -16,11 +16,11 @@ public class Group {
     private int concurrent; // 并发数量，通过Redis.incr(ttl)进行限流
 
     public static String encode(Group group) {
-        return DPUtil.stringify(DPUtil.convertJSON(group));
+        return DPUtil.stringify(DPUtil.toJSON(group));
     }
 
     public static Group decode(String group) {
-        return DPUtil.convertJSON(DPUtil.parseJSON(group), Group.class);
+        return DPUtil.toJSON(DPUtil.parseJSON(group), Group.class);
     }
 
 }

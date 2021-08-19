@@ -22,7 +22,7 @@
 
 <script>
 import draggable from 'vuedraggable'
-import DataUtil from '@/utils/data'
+import UIUtil from '@/utils/ui'
 import formRegularService from '@/service/oa/formRegular'
 
 export default {
@@ -49,7 +49,7 @@ export default {
       this.value.splice(index, 1)
     },
     loadRegulars () {
-      DataUtil.cache(null, () => formRegularService.all(), 0).then(result => {
+      UIUtil.cache(null, () => formRegularService.all(), 0).then(result => {
         if (result.code === 0) {
           this.regulars = result.data
         }

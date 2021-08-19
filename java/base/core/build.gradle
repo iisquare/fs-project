@@ -1,3 +1,5 @@
 dependencies {
+    testCompile project(':base:test')
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.2'
+    compile group: 'commons-codec', name: 'commons-codec', version: '1.15'
 }

@@ -343,8 +343,8 @@ export default {
       histories: [],
       historyColumns: [
         { title: '作业', dataIndex: 'scheduleId' },
-        { title: '触发', dataIndex: 'dispatch', customRender: this.dateRender },
-        { title: '更新', dataIndex: 'version', customRender: this.dateRender },
+        { title: '触发', dataIndex: 'dispatch', customRender: DateUtil.dateRender },
+        { title: '更新', dataIndex: 'version', customRender: DateUtil.dateRender },
         { title: '状态', dataIndex: 'status' },
         { title: '线程资源', dataIndex: 'token' },
         { title: '每节点数', dataIndex: 'limit' },
@@ -531,9 +531,6 @@ export default {
     topDate (text, record, index) {
       if (!record || typeof record.score === 'undefined') return '-'
       return DateUtil.format(record.score)
-    },
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
     },
     connect () {
       this.filters.state = !this.filters.state

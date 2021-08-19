@@ -1,18 +1,16 @@
 import base from '@/core/ServiceBase'
 
-const module = 'spider'
-
 export default {
   get (url, data = {}, tips = {}, config = {}) {
     return base.post('/proxy/get', {
-      app: module,
+      app: 'Spider',
       uri: url,
       data: data
     }, tips, config)
   },
   post (url, data = {}, tips = {}, config = {}) {
     return base.post('/proxy/post', {
-      app: module,
+      app: 'Spider',
       uri: url,
       data: data
     }, tips, config)

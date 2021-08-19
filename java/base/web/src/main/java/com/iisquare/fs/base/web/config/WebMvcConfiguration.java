@@ -16,8 +16,8 @@ import java.util.List;
  */
 public abstract class WebMvcConfiguration extends WebMvcConfigurationSupport {
 
-    @Value("${spring.http.encoding.charset}")
-    public static String charset = "UTF-8";
+    @Value("${server.servlet.encoding.charset}")
+    protected String charset;
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {

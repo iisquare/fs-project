@@ -21,7 +21,7 @@ public class RoleService extends ServiceBase {
 
     public SecondRole info(String prefix, Integer id) {
         SQLHelper helper = SQLHelper.build(secondEntityManager, prefix + "_role");
-        helper.where("id=:id", "id", id);
+        helper.builder().where("id=:id", "id", id);
         return helper.one(SecondRole.class);
     }
 

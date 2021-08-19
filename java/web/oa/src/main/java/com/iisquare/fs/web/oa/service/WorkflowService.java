@@ -59,7 +59,7 @@ public class WorkflowService extends ServiceBase {
 
     public ObjectNode state() {
         ObjectNode state = DPUtil.objectNode();
-        state.replace("tableCount", DPUtil.convertJSON(managementService.getTableCount()));
+        state.replace("tableCount", DPUtil.toJSON(managementService.getTableCount()));
         return state;
     }
 

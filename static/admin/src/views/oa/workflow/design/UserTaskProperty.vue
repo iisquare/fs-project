@@ -16,7 +16,7 @@
       <a-form-model :model="form" labelAlign="left" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
         <a-form-model-item label="启用会签"><a-switch v-model="form.loopCharacteristics" /></a-form-model-item>
         <a-form-model-item label="顺序执行"><a-checkbox v-model="form.isSequential" /></a-form-model-item>
-        <a-form-model-item label="循环基数"><a-input-number v-model="form.loopCardinality" placeholder="Loop Cardinality" style="width: 150px" /></a-form-model-item>
+        <a-form-model-item label="循环基数"><a-input v-model="form.loopCardinality" placeholder="Loop Cardinality" auto-complete="on" /></a-form-model-item>
         <a-form-model-item label="集合变量"><a-input v-model="form.collection" placeholder="Collection" auto-complete="on" /></a-form-model-item>
         <a-form-model-item label="元素变量"><a-input v-model="form.elementVariable" placeholder="Element Variable" auto-complete="on" /></a-form-model-item>
         <a-form-model-item label="完成条件">
@@ -95,14 +95,28 @@ export default {
         if (obj.loopCharacteristics) {
           let multiInstanceLoopCharacteristics = this.element.businessObject.loopCharacteristics
           if (!multiInstanceLoopCharacteristics) multiInstanceLoopCharacteristics = this.bpmn.moddle.create('bpmn:MultiInstanceLoopCharacteristics')
-          Object.assign(multiInstanceLoopCharacteristics.$attrs, {
-            isSequential: !!obj.isSequential,
-            loopCardinality: (Number.isInteger(obj.loopCardinality) ? obj.loopCardinality : 1) + '',
-            'flowable:collection': obj.collection || '',
-            'flowable:elementVariable': obj.elementVariable || ''
-          })
-          const completionCondition = this.bpmn.moddle.create('bpmn:Expression', { body: obj.completionCondition || '' })
-          multiInstanceLoopCharacteristics.completionCondition = completionCondition
+          multiInstanceLoopCharacteristics.$attrs['isSequential'] = !!obj.isSequential
+          if (obj.collection) {
+            multiInstanceLoopCharacteristics.$attrs['flowable:collection'] = obj.collection
+          } else {
+            multiInstanceLoopCharacteristics.$attrs['flowable:collection'] = null
+          }
+          if (obj.elementVariable) {
+            multiInstanceLoopCharacteristics.$attrs['flowable:elementVariable'] = obj.elementVariable
+          } else {
+            multiInstanceLoopCharacteristics.$attrs['flowable:elementVariable'] = null
+          }
+          if (obj.loopCardinality) {
+            multiInstanceLoopCharacteristics.loopCardinality = this.bpmn.moddle.create('bpmn:Expression', { body: obj.loopCardinality })
+          } else {
+            multiInstanceLoopCharacteristics.loopCardinality = null
+          }
+          if (obj.completionCondition) {
+            const completionCondition = this.bpmn.moddle.create('bpmn:Expression', { body: obj.completionCondition })
+            multiInstanceLoopCharacteristics.completionCondition = completionCondition
+          } else {
+            multiInstanceLoopCharacteristics.completionCondition = null
+          }
           result.loopCharacteristics = multiInstanceLoopCharacteristics
         } else {
           delete this.element.businessObject.loopCharacteristics
@@ -130,22 +144,16 @@ export default {
         result.loopCharacteristics = true
         const loop = multiInstanceLoopCharacteristics.$attrs
         if (Object.keys(loop).indexOf('isSequential') === -1) {
-          Object.assign(result, {
-            isSequential: !!multiInstanceLoopCharacteristics.isSequential,
-            loopCardinality: Number.parseInt(multiInstanceLoopCharacteristics.loopCardinality)
-          })
+          Object.assign(result, { isSequential: !!multiInstanceLoopCharacteristics.isSequential })
         } else {
-          Object.assign(result, {
-            isSequential: !!loop.isSequential,
-            loopCardinality: Number.parseInt(loop.loopCardinality)
-          })
+          Object.assign(result, { isSequential: !!loop.isSequential })
         }
         Object.assign(result, {
           collection: loop['flowable:collection'] || '',
           elementVariable: loop['flowable:elementVariable'] || '',
+          loopCardinality: multiInstanceLoopCharacteristics.loopCardinality?.body ?? '',
           completionCondition: multiInstanceLoopCharacteristics.completionCondition?.body ?? ''
         })
-        if (!Number.isInteger(result.loopCardinality)) result.loopCardinality = 1
       } else {
         result.loopCharacteristics = false
       }

@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: fs-cms-web
+  profiles:
+    active: dev,idev

@@ -37,6 +37,7 @@
               <span class="table-page-search-submitButtons" :style="advanced && { float: 'right', overflow: 'hidden' } || {} ">
                 <a-button type="primary" @click="search(true, false)" :loading="loading">查询</a-button>
                 <a-button style="margin-left: 8px" @click="() => this.$refs.filters.resetFields()">重置</a-button>
+                <a-button style="margin-left: 8px" @click="editTest">校验</a-button>
               </span>
             </a-col>
           </a-row>
@@ -131,7 +132,6 @@
 </template>
 
 <script>
-import DateUtil from '@/utils/date'
 import RouteUtil from '@/utils/route'
 import formRegularService from '@/service/oa/formRegular'
 
@@ -173,9 +173,6 @@ export default {
     }
   },
   methods: {
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
-    },
     batchRemove () {
       this.$confirm(this.selection.confirm(() => {
         this.loading = true
@@ -238,7 +235,7 @@ export default {
       this.infoVisible = true
     },
     editTest (text, record) {
-      this.test.regex = record.regex
+      this.test.regex = record?.regex ?? ''
       this.test.result = ''
       this.testVisible = true
     },

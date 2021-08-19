@@ -128,8 +128,8 @@ export default {
         { title: '发起人', dataIndex: 'startUserIdName' },
         { title: '业务编号', dataIndex: 'businessKey' },
         { title: '状态', scopedSlots: { customRender: 'status' }, width: 65, align: 'center' },
-        { title: '创建时间', dataIndex: 'startTime', customRender: this.dateRender, width: 170 },
-        { title: '结束时间', dataIndex: 'endTime', customRender: this.dateRender, width: 170 },
+        { title: '创建时间', dataIndex: 'startTime', customRender: DateUtil.dateRender, width: 170 },
+        { title: '结束时间', dataIndex: 'endTime', customRender: DateUtil.dateRender, width: 170 },
         { title: '操作', scopedSlots: { customRender: 'action' }, width: 110 }
       ],
       pagination: {},
@@ -224,9 +224,6 @@ export default {
           })
         }
       })
-    },
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
     },
     tableChange (pagination, filters, sorter) {
       this.pagination = RouteUtil.paginationChange(this.pagination, pagination)

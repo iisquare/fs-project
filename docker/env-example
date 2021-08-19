@@ -1,4 +1,4 @@
-DATA_DIR=./runtime
+DATA_DIR=/data/runtime
 
 BIND_COLON=:
 BIND_ADDRESS=127.0.0.1

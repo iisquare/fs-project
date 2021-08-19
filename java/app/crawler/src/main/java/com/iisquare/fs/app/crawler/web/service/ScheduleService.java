@@ -9,15 +9,8 @@ import com.iisquare.fs.app.crawler.node.ZooKeeperClient;
 import com.iisquare.fs.app.crawler.schedule.*;
 import com.iisquare.fs.app.crawler.web.Configuration;
 import com.iisquare.fs.app.crawler.web.ServiceBase;
-import com.iisquare.fs.app.crawler.channel.RedisChannel;
-import com.iisquare.fs.app.crawler.fetch.HttpFetcher;
-import com.iisquare.fs.app.crawler.node.ZooKeeperClient;
-import com.iisquare.fs.app.crawler.schedule.*;
-import com.iisquare.fs.app.crawler.web.Configuration;
-import com.iisquare.fs.app.crawler.web.ServiceBase;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.iisquare.fs.app.crawler.schedule.*;
 import io.lettuce.core.api.StatefulRedisConnection;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -69,7 +62,7 @@ public class ScheduleService extends ServiceBase implements Closeable {
         StatefulRedisConnection<String, String> connect = channel.borrowConnection();
         for (Map.Entry<String, History> entry : map.entrySet()) {
             String key = entry.getKey();
-            ObjectNode item = (ObjectNode) DPUtil.convertJSON(entry.getValue());
+            ObjectNode item = (ObjectNode) DPUtil.toJSON(entry.getValue());
             item.put("channel", channel.sizeTask(connect, key));
             item.replace("top", channel.topTask(connect, key));
             data.add(item);

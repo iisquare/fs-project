@@ -24,11 +24,11 @@ public class Task {
     private String status; // 任务状态
 
     public static String encode(Task item) {
-        return DPUtil.stringify(DPUtil.convertJSON(item));
+        return DPUtil.stringify(DPUtil.toJSON(item));
     }
 
     public static Task decode(String item) {
-        return DPUtil.convertJSON(DPUtil.parseJSON(item), Task.class);
+        return DPUtil.toJSON(DPUtil.parseJSON(item), Task.class);
     }
 
     public static Task create(String queueName, String handlerName, int prefetchCount, int consumerCount) {

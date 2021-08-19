@@ -42,6 +42,7 @@ public class DictionaryController extends PermitControllerBase {
     }
 
     @RequestMapping("/info")
+    @Permission("")
     public String infoAction(@RequestBody Map<?, ?> param) {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
         Dictionary info = dictionaryService.info(id);

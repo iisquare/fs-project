@@ -17,16 +17,16 @@
 </template>
 
 <script>
-import DataUtil from '@/utils/data'
+import UIUtil from '@/utils/ui'
 
 export default {
   data () {
     return {
       columns: [
         { title: 'ID', dataIndex: 'id' },
-        { title: 'L-0', dataIndex: 'level_0', customRender: (text, row, index) => DataUtil.tableSpanRender(this.table, index, 0) },
-        { title: 'L-1', dataIndex: 'level_1', customRender: (text, row, index) => DataUtil.tableSpanRender(this.table, index, 1) },
-        { title: 'L-2', dataIndex: 'level_2', customRender: (text, row, index) => DataUtil.tableSpanRender(this.table, index, 2) },
+        { title: 'L-0', dataIndex: 'level_0', customRender: (text, row, index) => UIUtil.tableSpanRender(this.table, index, 0) },
+        { title: 'L-1', dataIndex: 'level_1', customRender: (text, row, index) => UIUtil.tableSpanRender(this.table, index, 1) },
+        { title: 'L-2', dataIndex: 'level_2', customRender: (text, row, index) => UIUtil.tableSpanRender(this.table, index, 2) },
         { title: 'Name', dataIndex: 'name' }
       ],
       rows: [
@@ -54,8 +54,8 @@ export default {
   methods: {
   },
   mounted () {
-    this.table = DataUtil.tableMatrix(DataUtil.tableTree(this.rows, ''), 3)
-    DataUtil.tablePretty(this.table)
+    this.table = UIUtil.tableMatrix(UIUtil.tableTree(this.rows, ''), 3)
+    UIUtil.tablePretty(this.table)
   }
 }
 </script>

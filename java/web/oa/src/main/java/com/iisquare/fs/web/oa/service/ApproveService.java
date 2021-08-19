@@ -166,7 +166,7 @@ public class ApproveService extends ServiceBase {
         // 执行申报节点
         taskService.setAssignee(task.getId(), submitter);
         if (modeComplete) { // 提交申报记录
-            Map<String, Object> taskVariables = DPUtil.convertJSON(variables, Map.class);
+            Map<String, Object> taskVariables = DPUtil.toJSON(variables, Map.class);
             taskService.complete(task.getId(), taskVariables, true); // 局部变量
             List<Task> activeTasks = taskService.createTaskQuery().processInstanceId(task.getProcessInstanceId()).active().list();
             for (Task activeTask : activeTasks) { // 记录任务来源
@@ -202,7 +202,7 @@ public class ApproveService extends ServiceBase {
         int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
         TaskQuery query = taskService.createTaskQuery()
-                .taskCandidateGroupIn(DPUtil.convertJSON(identity.get("candidate"), List.class))
+                .taskCandidateGroupIn(DPUtil.toJSON(identity.get("candidate"), List.class))
                 .orderByTaskPriority().desc().orderByTaskCreateTime().asc();
         String deploymentId = DPUtil.trim(DPUtil.parseString(param.get("deploymentId")));
         if(!DPUtil.empty(deploymentId)) {
@@ -542,7 +542,7 @@ public class ApproveService extends ServiceBase {
         if (modeComplete) {
             taskService.setVariable(task.getId(),"auditTaskId", task.getId()); // 全局变量，最后审批节点（非最新活动节点）
             ObjectNode taskVariables = formService.filtration(frame.at("/widgets"), origin, authority, "variable", false);
-            taskService.complete(task.getId(), DPUtil.convertJSON(taskVariables, Map.class), true);
+            taskService.complete(task.getId(), DPUtil.toJSON(taskVariables, Map.class), true);
             List<Task> activeTasks = taskService.createTaskQuery().processInstanceId(task.getProcessInstanceId()).active().list();
             for (Task activeTask : activeTasks) { // 记录任务来源
                 taskService.setVariableLocal(activeTask.getId(), "auditTaskId", task.getId());

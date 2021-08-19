@@ -160,7 +160,7 @@ export default {
         { title: '节点分布', align: 'center', dataIndex: 'nodeCount', scopedSlots: { customRender: 'nodes' } },
         { title: '预加载数量', align: 'center', dataIndex: 'prefetchCount' },
         { title: '工作者数量', align: 'center', dataIndex: 'consumerCount' },
-        { title: '发版日期', dataIndex: 'version', customRender: this.dateRender },
+        { title: '发版日期', dataIndex: 'version', customRender: DateUtil.dateRender },
         { title: '处理类名称', dataIndex: 'handlerName', ellipsis: true },
         { title: '操作', width: 170, scopedSlots: { customRender: 'action' } }
       ],
@@ -169,9 +169,6 @@ export default {
     }
   },
   methods: {
-    dateRender (text, record, index) {
-      return DateUtil.format(text)
-    },
     tabChange () {
       if (!this.filters.state) return
       RouteUtil.filter2query(this, this.filters)

@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: fs-member-web
+  profiles:
+    active: dev,idev

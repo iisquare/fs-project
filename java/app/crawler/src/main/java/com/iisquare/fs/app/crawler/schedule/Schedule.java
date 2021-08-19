@@ -46,11 +46,11 @@ public class Schedule {
     }
 
     public static String encode(Schedule schedule) {
-        return DPUtil.stringify(DPUtil.convertJSON(schedule));
+        return DPUtil.stringify(DPUtil.toJSON(schedule));
     }
 
     public static Schedule decode(String schedule) {
-        return DPUtil.convertJSON(DPUtil.parseJSON(schedule), Schedule.class);
+        return DPUtil.toJSON(DPUtil.parseJSON(schedule), Schedule.class);
     }
 
     public long halt() {

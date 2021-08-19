@@ -218,7 +218,7 @@ public class SQLHelper implements Closeable {
     private void bindPendingParams() throws SQLException {
         String sql = this.sql;
         List<Object> list = new ArrayList<>();
-        List<String> params = DPUtil.getMatcher(PARAM_REGEX, sql, false); // 获取全部命名参数
+        List<String> params = DPUtil.matcher(PARAM_REGEX, sql, false); // 获取全部命名参数
         int size = params.size();
         for (int index = 0; index < size; index++) {
             String key = params.get(index);
@@ -227,7 +227,7 @@ public class SQLHelper implements Closeable {
                 list.add("");
             } else if(value.getClass().isArray()) { // 数组
                 Object[] values = (Object[]) value;
-                sql = sql.replaceFirst(key, DPUtil.implode(", ", DPUtil.getFillArray(values.length, "?")));
+                sql = sql.replaceFirst(key, DPUtil.implode(", ", DPUtil.fillArray(values.length, "?")));
                 for (Object item : values) {
                     list.add(item);
                 }
@@ -440,7 +440,7 @@ public class SQLHelper implements Closeable {
         for (String field : fields) {
             list.add(field + " = VALUES(" + field + ")");
         }
-        return " ON DUPLICATE KEY UPDATE " + DPUtil.implode(", ", DPUtil.collection2array(String.class, list));
+        return " ON DUPLICATE KEY UPDATE " + DPUtil.implode(", ", DPUtil.toArray(String.class, list));
     }
 
     /**
@@ -469,8 +469,8 @@ public class SQLHelper implements Closeable {
         }
         StringBuilder sb = new StringBuilder();
         sb.append("INSERT INTO ").append(tableName);
-        sb.append(" (").append(DPUtil.implode(", ", DPUtil.collection2array(String.class, data.keySet()))).append(")");
-        sb.append(" VALUES (").append(DPUtil.implode(", ", DPUtil.collection2array(String.class, params.keySet()))).append(")");
+        sb.append(" (").append(DPUtil.implode(", ", DPUtil.toArray(String.class, data.keySet()))).append(")");
+        sb.append(" VALUES (").append(DPUtil.implode(", ", DPUtil.toArray(String.class, params.keySet()))).append(")");
         if(needUpdate) sb.append(duplicateUpdate(data.keySet()));
         sql = sb.toString();
         bindValues(params);
@@ -502,12 +502,12 @@ public class SQLHelper implements Closeable {
                 }
                 list.add(value);
             }
-            values.add("(" + DPUtil.implode(", ", DPUtil.collection2array(Object.class, list)) + ")");
+            values.add("(" + DPUtil.implode(", ", DPUtil.toArray(Object.class, list)) + ")");
         }
         StringBuilder sb = new StringBuilder();
         sb.append("INSERT INTO ").append(tableName);
-        sb.append(" (").append(DPUtil.implode(", ", DPUtil.collection2array(String.class, keys))).append(")");
-        sb.append(" VALUES ").append(DPUtil.implode(", ", DPUtil.collection2array(String.class, values)));
+        sb.append(" (").append(DPUtil.implode(", ", DPUtil.toArray(String.class, keys))).append(")");
+        sb.append(" VALUES ").append(DPUtil.implode(", ", DPUtil.toArray(String.class, values)));
         if(needUpdate) sb.append(duplicateUpdate(keys));
         sql = sb.toString().replaceAll("\\:", "");
         if(null != executeUpdate(retry)) {
@@ -530,7 +530,7 @@ public class SQLHelper implements Closeable {
         }
         StringBuilder sb = new StringBuilder();
         sb.append("UPDATE ").append(tableName);
-        sb.append(" SET ").append(DPUtil.implode(", ", DPUtil.collection2array(String.class, list)));
+        sb.append(" SET ").append(DPUtil.implode(", ", DPUtil.toArray(String.class, list)));
         if(null != where) sb.append(" WHERE ").append(where);
         sql = sb.toString();
         bindValues(params);

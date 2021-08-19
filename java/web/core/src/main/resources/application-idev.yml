@@ -1,6 +1,16 @@
 fs:
+  rpc:
+    secret: fs-project
   format:
     date: yyyy-MM-dd HH:mm:ss
+  site:
+    urls:
+      file: //127.0.0.1:7812
+      static: //127.0.0.1/fs-project-vip/static/resources
+  app:
+    file:
+      dir: web/file/uploads
+      secret: fs-project
 
 rpc:
   member:
@@ -86,11 +96,16 @@ server:
       charset: UTF-8
 
 spring:
+  servlet:
+    multipart:
+      maxFileSize: 128MB
+      maxRequestSize: 128MB
   thymeleaf:
     mode: HTML
     suffix: .html
     cache: false
   jpa:
+    open-in-view: false
     properties:
       hibernate:
         jdbc:

@@ -1,0 +1,26 @@
+{
+  "bbs-wap/main": {
+    "css": "bbs-wap/main.css",
+    "js": "bbs-wap/main.js"
+  },
+  "bbs-web/main": {
+    "css": "bbs-web/main.css",
+    "js": "bbs-web/main.js"
+  },
+  "cms-wap/main": {
+    "css": "cms-wap/main.css",
+    "js": "cms-wap/main.js"
+  },
+  "cms-web/main": {
+    "css": "cms-web/main.css",
+    "js": "cms-web/main.js"
+  },
+  "member-wap/main": {
+    "css": "member-wap/main.css",
+    "js": "member-wap/main.js"
+  },
+  "member-web/main": {
+    "css": "member-web/main.css",
+    "js": "member-web/main.js"
+  }
+}
