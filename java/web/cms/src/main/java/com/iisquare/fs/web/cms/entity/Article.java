@@ -48,8 +48,6 @@ public class Article implements Serializable {
     @Column
     private String content; // 文章内容
     @Column
-    private String html; // 展示效果
-    @Column
     private Integer countView; // 浏览量
     @Column
     private Integer countApprove; // 赞成数

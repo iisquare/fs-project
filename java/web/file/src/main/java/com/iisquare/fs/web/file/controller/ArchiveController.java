@@ -3,6 +3,7 @@ package com.iisquare.fs.web.file.controller;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
@@ -101,6 +102,11 @@ public class ArchiveController extends PermitControllerBase {
         if (0 != (int) result.get("code")) return ApiUtil.echoResult(result);
         ObjectNode data = DPUtil.toJSON(result.get("data"), ObjectNode.class);
         data.put("fileUrl", fileUrl);
+        int expire = ValidateUtil.filterInteger(param.get("expire"), true, 1000, null, 0);
+        if (expire > 0) {
+            String uri = ossService.uri(archive.getId(), archive.getSuffix(), expire, null);
+            data.put("fileUri", uri);
+        }
         return ApiUtil.echoResult(0, "上传成功", data);
     }
 

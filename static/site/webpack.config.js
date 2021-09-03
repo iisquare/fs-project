@@ -1,6 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const dotenv = require('dotenv')
+const webpack = require('webpack')
 const AssetsPlugin = require('assets-webpack-plugin')
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
@@ -27,6 +28,15 @@ module.exports = (env, args) => {
       })
     })
     return entry
+  })()
+
+  const params = (function () {
+    const params = {}
+    for (const key in process.env) {
+      if (!key.startsWith('FS_')) continue
+      params[key] = JSON.stringify(process.env[key])
+    }
+    return params
   })()
 
   console.log('*** config variables:')
@@ -64,20 +74,21 @@ module.exports = (env, args) => {
             cacheDirectory: true
           }
         }
-    }]
+      }]
     },
     plugins: [
       new CleanWebpackPlugin(), // 清理目标目录
       new AssetsPlugin({ // 生成Hash对应关系文件
         path: assetsPath,
         filename: 'assets.json',
-        update: false, // 非覆盖式更新
+        update: true,
         prettyPrint: true,
         removeFullPathAutoPrefix: true
       }),
       new MiniCssExtractPlugin({ // 生成CSS文件
         filename: isProd ? '[name].[chunkhash].css' : '[name].css'
-      })
+      }),
+      new webpack.DefinePlugin({ 'process.env': params })
     ]
   }, isProd ? {
     output: {

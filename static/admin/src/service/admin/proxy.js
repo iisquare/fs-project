@@ -10,6 +10,10 @@ export default {
     const url = this.baseUrl + '/proxy/getResponse?' + param.join('&')
     return url
   },
+  ueditorAction (arg = {}) {
+    const param = Object.keys(arg).map(key => key + '=' + encodeURIComponent(arg[key]))
+    return ADMIN_URL + '/file/ueditor' + (param.length > 0 ? '?' : '') + param.join('&')
+  },
   uploadAction (arg = {}) {
     const param = Object.keys(arg).map(key => key + '=' + encodeURIComponent(arg[key]))
     return ADMIN_URL + '/proxy/upload' + (param.length > 0 ? '?' : '') + param.join('&')

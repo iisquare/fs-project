@@ -1,4 +1,7 @@
 {
+  "analyse/analyse": {
+    "js": "analyse/analyse.js"
+  },
   "bbs-wap/main": {
     "css": "bbs-wap/main.css",
     "js": "bbs-wap/main.js"

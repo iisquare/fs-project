@@ -57,26 +57,29 @@ public class Assets {
         return siteConfiguration.getUrls();
     }
 
+    public String asset(String uri) {
+        String asset = uri, search = "";
+        int index = uri.indexOf("?");
+        if (-1 != index) {
+            asset = uri.substring(0, index);
+            search = uri.substring(index);
+        }
+        if (!assets.has(asset)) return uri;
+        return assets.get(asset).asText() + search;
+    }
+
     /**
      * 获取编译打包的CSS路径
      */
     public String css(String uri) {
-        if (assets.has(uri)) {
-            return staticUrl + assets.get(uri).asText();
-        } else {
-            return staticUrl + uri;
-        }
+        return staticUrl + asset(uri);
     }
 
     /**
      * 获取编译打包的JS路径
      */
     public String js(String uri) {
-        if (assets.has(uri)) {
-            return staticUrl + assets.get(uri).asText();
-        } else {
-            return staticUrl + uri;
-        }
+        return staticUrl + asset(uri);
     }
 
     /**

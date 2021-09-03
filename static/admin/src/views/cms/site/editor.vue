@@ -123,6 +123,24 @@
               </a-form-model-item>
             </a-col>
           </a-row>
+          <a-row :gutter="16">
+            <a-col :md="24" :sm="24">
+              <a-form-model-item label="内容" prop="content">
+                <template v-if="form.format === 'html'">
+                  <u-editor v-model="form.content" />
+                </template>
+                <template v-else-if="form.format === 'markdown'">
+                  <tui-editor v-model="form.content" />
+                </template>
+                <template v-else-if="form.format === 'text'">
+                  <code-editor v-model="form.content" />
+                </template>
+                <template v-else>
+                  <a-textarea v-model="form.content" rows="16" />
+                </template>
+              </a-form-model-item>
+            </a-col>
+          </a-row>
         </a-collapse-panel>
       </a-collapse>
       <a-form-model-item :wrapperCol="{ span: 24 }" style="text-align: center;">
@@ -139,7 +157,12 @@ import DateUtil from '@/utils/date'
 import articleService from '@/service/cms/article'
 
 export default {
-  components: { FsInputImage: () => import('@/components/Upload/InputImage.vue') },
+  components: {
+    FsInputImage: () => import('@/components/Upload/InputImage'),
+    UEditor: () => import('@/components/Editor/UEditor'),
+    TuiEditor: () => import('@/components/Editor/TuiEditor'),
+    CodeEditor: () => import('@/components/Editor/CodeEditor')
+  },
   data () {
     return {
       UIUtil,

@@ -5,11 +5,44 @@ import org.apache.commons.codec.binary.Hex;
 import java.io.*;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Base64;
 
 /**
  * 文件处理操作类
  */
 public class FileUtil {
+
+    public static String toBase64(File file) {
+        InputStream in = null;
+        try {
+            in = new FileInputStream(file);
+            byte[] bytes = new byte[(int) file.length()];
+            in.read(bytes);
+            return Base64.getEncoder().encodeToString(bytes);
+        } catch (Exception e) {
+            return null;
+        } finally {
+            close(in);
+        }
+    }
+
+    public static File fromBase64(String base64) {
+        File file;
+        BufferedOutputStream bos = null;
+        FileOutputStream fos = null;
+        try {
+            byte[] bytes = Base64.getDecoder().decode(base64);
+            file = File.createTempFile("fs-", ".base64");
+            fos = new FileOutputStream(file);
+            bos = new BufferedOutputStream(fos);
+            bos.write(bytes);
+            return file;
+        } catch (Exception e) {
+            return null;
+        } finally {
+            close(fos, bos);
+        }
+    }
 
     public static String digest(InputStream stream, int size) throws IOException {
         byte[] bytes = new byte[size];

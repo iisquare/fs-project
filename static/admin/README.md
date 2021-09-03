@@ -100,6 +100,15 @@ beforeCreate () {
   }
 }
 ```
+### 局部页面引入外部CDN资源
+```
+beforeCreate () {
+  Object.assign(this.$options.components, {
+    'ui-css': this.$assets.components.css,
+    'ui-js': this.$assets.components.js
+  })
+},
+```
 
 ## 浏览器兼容
 

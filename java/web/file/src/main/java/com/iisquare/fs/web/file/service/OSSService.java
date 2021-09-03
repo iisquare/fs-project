@@ -360,6 +360,7 @@ public class OSSService extends ServiceBase {
      * 获取文件URI
      */
     public String uri(String id, String suffix, int expire, Long time) {
+        if (null == time) time = System.currentTimeMillis();
         String token = encode(id, expire, time);
         return String.format("/file/%s%s?time=%d&expire=%d&token=%s", id, suffix, time, expire, token);
     }

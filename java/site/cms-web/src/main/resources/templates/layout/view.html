@@ -25,8 +25,9 @@
     </nav>
 </div>
 <fs th:fragment="script(assets)" th:remove="tag">
-    <script type="text/javascript" th:src="${assets.res('/plugins/jQuery/jquery-3.6.0.min.js')}"></script>
+    <script type="text/javascript" th:src="${assets.res('/plugins/jquery/jquery-3.6.0.min.js')}"></script>
     <script type="text/javascript" th:src="${assets.js('/cms-web/main.js')}"></script>
+    <script type="text/javascript" th:src="${assets.js('/analyse/analyse.js?id=fs-cms-web')}"></script>
 </fs>
 </body>
 </html>

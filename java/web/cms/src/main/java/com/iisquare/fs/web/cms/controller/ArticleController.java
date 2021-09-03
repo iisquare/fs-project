@@ -88,7 +88,6 @@ public class ArticleController extends PermitControllerBase {
         info.setPassword(DPUtil.trim(DPUtil.parseString(param.get("password"))));
         info.setFormat(DPUtil.trim(DPUtil.parseString(param.get("format"))));
         info.setContent(DPUtil.trim(DPUtil.parseString(param.get("content"))));
-        info.setHtml(DPUtil.trim(DPUtil.parseString(param.get("html"))));
         info.setPublishTime(DPUtil.dateTime2millis(param.get("publishTime"), configuration.getFormatDate()));
         info.setSort(DPUtil.parseInt(param.get("sort")));
         info.setStatus(status);

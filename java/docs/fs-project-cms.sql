@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 13/08/2021 15:31:52
+ Date: 23/08/2021 10:43:40
 */
 
 SET NAMES utf8mb4;
@@ -35,7 +35,6 @@ CREATE TABLE `fs_cms_article`  (
   `password` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `format` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `content` mediumtext CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
-  `html` longtext CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
   `count_view` int NOT NULL DEFAULT 0,
   `count_approve` int NOT NULL DEFAULT 0,
   `count_oppose` int NOT NULL DEFAULT 0,
@@ -50,7 +49,7 @@ CREATE TABLE `fs_cms_article`  (
   `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_catalog_id`(`catalog_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for fs_cms_catalog

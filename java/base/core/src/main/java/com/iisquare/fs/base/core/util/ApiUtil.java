@@ -5,6 +5,10 @@ import java.util.Map;
 
 public class ApiUtil {
 
+    public static final String FIELD_CODE = "code";
+    public static final String FIELD_MSG = "message";
+    public static final String FIELD_DATA = "data";
+
     public static String echoResult(int code, String message, Object data) {
         return echoResult(result(code, message, data));
     }
@@ -34,9 +38,9 @@ public class ApiUtil {
             }
         }
         Map<String, Object> map = new LinkedHashMap<>();
-        map.put("code", code);
-        map.put("message", message);
-        map.put("data", data);
+        map.put(FIELD_CODE, code);
+        map.put(FIELD_MSG, message);
+        map.put(FIELD_DATA, data);
         return map;
     }
 

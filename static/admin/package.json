@@ -13,9 +13,13 @@
   },
   "dependencies": {
     "@antv/data-set": "^0.10.2",
+    "@toast-ui/editor": "^3.0.3",
+    "@toast-ui/editor-plugin-code-syntax-highlight": "^3.0.0",
+    "@toast-ui/editor-plugin-table-merged-cell": "^3.0.0",
     "ant-design-vue": "1.7.3",
     "axios": "^0.19.0",
     "bpmn-js": "8.6.1",
+    "codemirror": "^5.62.3",
     "core-js": "^3.1.2",
     "enquire.js": "^2.1.6",
     "js-base64": "^2.5.2",
