@@ -58,7 +58,7 @@ public class Token {
             }
         }
         if (cookies.size() < 2) return this;
-        this.cookie = HttpUtil.cookie(cookies.toArray(new String[cookies.size()]));
+        this.cookie = HttpUtil.cookie(cookies.toArray(new String[0]));
         return this;
     }
 

@@ -5,7 +5,7 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.elasticsearch.util.ElasticsearchUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.web.demo.elasticsearch.TestES;
+import com.iisquare.fs.web.demo.elasticsearch.DemoTestES;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -23,7 +23,7 @@ import java.util.Map;
 public class ElasticService extends ServiceBase {
 
     @Autowired
-    private TestES testES;
+    private DemoTestES testES;
 
     public static final Map<String, String> highlights = new LinkedHashMap() {{
         put("name", "name");

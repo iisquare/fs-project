@@ -103,7 +103,7 @@ public class TagService extends ServiceBase {
                 if(!DPUtil.empty(title)) {
                     predicates.add(cb.like(root.get("title"), "%" + title + "%"));
                 }
-                return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+                return cb.and(predicates.toArray(new Predicate[0]));
             }
         };
         List<?> rows = null;

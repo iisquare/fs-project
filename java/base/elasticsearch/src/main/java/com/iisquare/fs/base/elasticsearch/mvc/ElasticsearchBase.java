@@ -23,9 +23,12 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.common.Strings;
+import org.elasticsearch.client.indices.PutIndexTemplateRequest;
+import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.*;
+import org.elasticsearch.common.xcontent.ToXContent;
+import org.elasticsearch.common.xcontent.XContentHelper;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
@@ -36,10 +39,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public abstract class ElasticsearchBase {
 
@@ -52,8 +52,8 @@ public abstract class ElasticsearchBase {
     private RestHighLevelClient client;
 
     protected String collection = "fs_not_exist";
-    protected int shards = 3;
-    protected int replicas = 2;
+    protected int shards = 1;
+    protected int replicas = 0;
 
     public boolean resolveVersion(Integer version) {
         this.version.set(version);
@@ -77,7 +77,7 @@ public abstract class ElasticsearchBase {
             SearchResponse response = client.search(request, options());
             return response.getHits();
         } catch (IOException e) {
-            logger.warn("search failed:" + toXContent(builder), e);
+            logger.warn("search failed:" + toXContent(builder, false), e);
             return null;
         }
     }
@@ -206,6 +206,10 @@ public abstract class ElasticsearchBase {
         return RequestOptions.DEFAULT;
     }
 
+    /**
+     * POST /_aliases
+     * @see(https://www.elastic.co/guide/en/elasticsearch/reference/7.9/indices-aliases.html)
+     */
     public String alias(int fromVersion, int toVersion) {
         IndicesAliasesRequest request = new IndicesAliasesRequest();
         request.addAliasAction(
@@ -214,28 +218,46 @@ public abstract class ElasticsearchBase {
         request.addAliasAction(
                 IndicesAliasesRequest.AliasActions.add().index(collection + "_v" + toVersion).alias(collection)
         );
-        return toXContent(request);
+        return toXContent(request, false);
     }
 
-    public String indicesCreate(boolean withAlias) {
+    /**
+     * PUT /index_name
+     * @see(https://www.elastic.co/guide/en/elasticsearch/reference/7.9/indices-put-mapping.html)
+     */
+    public String create(boolean withAlias) {
         CreateIndexRequest request = new CreateIndexRequest(collection());
-        request.settings(Settings.builder()
+        request.settings(setting());
+        if (withAlias) request.alias(new Alias(collection));
+        request.mapping(DPUtil.toJSON(mapping(), Map.class));
+        return toXContent(request, false);
+    }
+
+    public Settings.Builder setting() {
+        return Settings.builder()
                 .put("index.number_of_shards", shards)
                 .put("index.number_of_replicas", replicas)
                 .put("index.store.type", "mmapfs")
-                .putList("index.store.preload", "*")
-        );
-        if (withAlias) request.alias(new Alias(collection));
-        request.mapping(DPUtil.toJSON(mapping(), Map.class));
-        return toXContent(request);
+                .putList("index.store.preload", "*");
     }
 
-    private String toXContent(ToXContentObject request) {
+    /**
+     * PUT /_template/template_name
+     * @see(https://www.elastic.co/guide/en/elasticsearch/reference/7.9/index-templates.html)
+     */
+    public String template(boolean withAlias) {
+        PutIndexTemplateRequest request = new PutIndexTemplateRequest(collection);
+        request.patterns(Arrays.asList(collection + "_*"));
+        request.settings(setting());
+        if (withAlias) request.alias(new Alias(collection));
+        request.mapping(DPUtil.toJSON(mapping(), Map.class));
+        return toXContent(request, false);
+    }
+
+    private String toXContent(ToXContent content, boolean humanReadable) {
         try {
-            XContentBuilder builder = XContentFactory.jsonBuilder();
-            ToXContent.Params params = ToXContent.EMPTY_PARAMS;
-            request.toXContent(builder, params);
-            return Strings.toString(builder);
+            BytesReference reference = XContentHelper.toXContent(content, XContentType.JSON, humanReadable);
+            return reference.utf8ToString();
         } catch (IOException e) {
             return ExceptionUtils.getStackTrace(e);
         }

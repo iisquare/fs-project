@@ -60,7 +60,7 @@ public class MongoUtil {
             }
         }
         if (orders.size() < 1) return null;
-        return Sorts.orderBy(orders.toArray(new Bson[orders.size()]));
+        return Sorts.orderBy(orders.toArray(new Bson[0]));
     }
 
     public static Bson sort(String sort, Collection<String> fields) {
@@ -82,7 +82,7 @@ public class MongoUtil {
             }
         }
         if (orders.size() < 1) return null;
-        return Sorts.orderBy(orders.toArray(new Bson[orders.size()]));
+        return Sorts.orderBy(orders.toArray(new Bson[0]));
     }
 
 }

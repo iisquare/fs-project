@@ -14,7 +14,7 @@
               <a-form-model-item label="发起人">{{ workflow.processInstanceInfo.startUserName }}</a-form-model-item>
             </a-col>
             <a-col :md="12" :sm="24">
-              <a-form-model-item label="开始时间">{{ dateRender(workflow.processInstanceInfo.startTime) }}</a-form-model-item>
+              <a-form-model-item label="开始时间">{{ DateUtil.dateRender(workflow.processInstanceInfo.startTime) }}</a-form-model-item>
             </a-col>
             <a-col :md="24" :sm="24">
               <a-form-model-item label="单据描述">{{ workflow.description }}</a-form-model-item>
@@ -78,6 +78,7 @@ export default {
   components: { FsForm, ApproveFormAudit: () => import('./FormAudit') },
   data () {
     return {
+      DateUtil,
       formConfig,
       workflowConfig,
       loading: false,

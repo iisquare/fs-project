@@ -17,10 +17,10 @@
               <a-form-model-item label="持续时间">{{ workflowConfig.duration(workflow.historicProcessInstanceInfo.durationInMillis) }}</a-form-model-item>
             </a-col>
             <a-col :md="12" :sm="24">
-              <a-form-model-item label="开始时间">{{ dateRender(workflow.historicProcessInstanceInfo.startTime) }}</a-form-model-item>
+              <a-form-model-item label="开始时间">{{ DateUtil.dateRender(workflow.historicProcessInstanceInfo.startTime) }}</a-form-model-item>
             </a-col>
             <a-col :md="12" :sm="24">
-              <a-form-model-item label="结束时间">{{ dateRender(workflow.historicProcessInstanceInfo.endTime) }}</a-form-model-item>
+              <a-form-model-item label="结束时间">{{ DateUtil.dateRender(workflow.historicProcessInstanceInfo.endTime) }}</a-form-model-item>
             </a-col>
             <a-col :md="24" :sm="24">
               <a-form-model-item label="流程状态"><approve-process-status :historic="workflow.historicProcessInstanceInfo" :runtime="workflow.processInstanceInfo" /></a-form-model-item>
@@ -80,6 +80,7 @@ export default {
   components: { FsForm, ApproveProcessStatus: () => import('./ProcessStatus') },
   data () {
     return {
+      DateUtil,
       formConfig,
       workflowConfig,
       loading: false,

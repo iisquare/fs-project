@@ -17,12 +17,17 @@ import 'codemirror/addon/dialog/dialog.css'
 import 'codemirror/addon/search/searchcursor.js'
 import 'codemirror/addon/search/search.js'
 
+import 'codemirror/mode/javascript/javascript'
+import 'codemirror/mode/sql/sql'
+
 export default {
   name: 'CodeEditor',
   props: {
     value: { type: String, default: '' },
     mode: { type: String, default: 'null' },
-    height: { type: Number, default: 500 }
+    height: { type: Number, default: 500 },
+    theme: { type: String, default: 'ayu-dark' },
+    lineNumbers: { type: Boolean, default: true }
   },
   data () {
     return {
@@ -40,10 +45,13 @@ export default {
       this.editor = CodeMirror(this.$refs.editor, {
         value: this.value,
         mode: this.mode,
-        theme: 'ayu-dark',
-        lineNumbers: true
+        theme: this.theme,
+        lineNumbers: this.lineNumbers
       })
       this.editor.setSize('auto', this.height + 'px')
+      this.editor.on('change', () => {
+        this.$emit('input', this.getContent())
+      })
     }
   },
   mounted () {

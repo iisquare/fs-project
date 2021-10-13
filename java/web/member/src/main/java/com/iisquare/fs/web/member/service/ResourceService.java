@@ -29,7 +29,7 @@ public class ResourceService extends ServiceBase {
     private UserService userService;
 
     public List<Resource> tree(Map<?, ?> param, Map<?, ?> args) {
-        List<Resource> data = resourceDao.findAll((Specification) (root, query, cb) -> {
+        List<Resource> data = resourceDao.findAll((Specification<Resource>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             int status = DPUtil.parseInt(param.get("status"));
             if(!"".equals(DPUtil.parseString(param.get("status")))) {
@@ -37,7 +37,7 @@ public class ResourceService extends ServiceBase {
             } else {
                 predicates.add(cb.notEqual(root.get("status"), -1));
             }
-            return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+            return cb.and(predicates.toArray(new Predicate[0]));
         }, Sort.by(Sort.Order.desc("sort")));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(data, "createdUid", "updatedUid");
@@ -133,7 +133,7 @@ public class ResourceService extends ServiceBase {
                 if(!"".equals(DPUtil.parseString(param.get("parentId")))) {
                     predicates.add(cb.equal(root.get("parentId"), parentId));
                 }
-                return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+                return cb.and(predicates.toArray(new Predicate[0]));
             }
         }, PageRequest.of(page - 1, pageSize, sort));
         List<?> rows = data.getContent();

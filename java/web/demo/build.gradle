@@ -1,4 +1,5 @@
 dependencies {
+    compile project(':web:core')
     compile project(':base:jpa')
     compile project(':base:mongodb')
     compile project(':base:elasticsearch')

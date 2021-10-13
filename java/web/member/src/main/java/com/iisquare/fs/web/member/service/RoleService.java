@@ -80,26 +80,23 @@ public class RoleService extends ServiceBase {
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, -1, 500, 15);
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "sort"));
         if (null == sort) sort = Sort.by(Sort.Order.desc("sort"));
-        Specification spec = new Specification() {
-            @Override
-            public Predicate toPredicate(Root root, CriteriaQuery query, CriteriaBuilder cb) {
-                List<Predicate> predicates = new ArrayList<>();
-                int id = DPUtil.parseInt(param.get("id"));
-                if(id > 0) predicates.add(cb.equal(root.get("id"), id));
-                int status = DPUtil.parseInt(param.get("status"));
-                if(!"".equals(DPUtil.parseString(param.get("status")))) {
-                    predicates.add(cb.equal(root.get("status"), status));
-                } else {
-                    predicates.add(cb.notEqual(root.get("status"), -1));
-                }
-                String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-                if(!DPUtil.empty(name)) {
-                    predicates.add(cb.like(root.get("name"), "%" + name + "%"));
-                }
-                return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+        Specification<Role> spec = (Specification<Role>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            int id = DPUtil.parseInt(param.get("id"));
+            if(id > 0) predicates.add(cb.equal(root.get("id"), id));
+            int status = DPUtil.parseInt(param.get("status"));
+            if(!"".equals(DPUtil.parseString(param.get("status")))) {
+                predicates.add(cb.equal(root.get("status"), status));
+            } else {
+                predicates.add(cb.notEqual(root.get("status"), -1));
             }
+            String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+            if(!DPUtil.empty(name)) {
+                predicates.add(cb.like(root.get("name"), "%" + name + "%"));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
         };
-        List<?> rows = null;
+        List<Role> rows = null;
         long total = 0;
         switch (pageSize) {
             case 0:
@@ -110,7 +107,7 @@ public class RoleService extends ServiceBase {
                 rows = roleDao.findAll(spec);
                 break;
             default:
-                Page<?> data = roleDao.findAll(spec, PageRequest.of(page - 1, pageSize, sort));
+                Page<Role> data = roleDao.findAll(spec, PageRequest.of(page - 1, pageSize, sort));
                 rows = data.getContent();
                 total = data.getTotalElements();
         }

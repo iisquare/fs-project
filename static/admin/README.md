@@ -122,3 +122,4 @@ Modern browsers and IE10.
 
 - [iconfont](https://www.iconfont.cn/)
 - [vue-draggable](http://www.itxst.com/vue-draggable/tutorial.html)
+- [jsPlumb Toolkit](https://docs.jsplumbtoolkit.com/toolkit/2.x/)

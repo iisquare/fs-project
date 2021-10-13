@@ -92,7 +92,7 @@
       <a-form-model ref="form" :model="form" :rules="formRules" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
         <a-form-model-item label="流程名称">{{ form.deploymentInfo.name }}</a-form-model-item>
         <a-form-model-item label="业务编号">{{ form.businessKey }}</a-form-model-item>
-        <a-form-model-item label="创建时间">{{ dateRender(form.startTime, form) }}</a-form-model-item>
+        <a-form-model-item label="创建时间">{{ DateUtil.dateRender(form.startTime, form) }}</a-form-model-item>
         <a-form-model-item label="发起人">{{ form.startUserIdName }}</a-form-model-item>
         <a-form-model-item label="驳回选项" v-if="reasonAction === 'reject'">
           <a-checkbox v-model="form.local">仅局部节点可见</a-checkbox>
@@ -118,6 +118,7 @@ export default {
   },
   data () {
     return {
+      DateUtil,
       userService,
       workflowService,
       advanced: false,

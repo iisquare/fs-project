@@ -1,0 +1,4 @@
+dependencies {
+    compile project(':base:core')
+    compile group: 'org.yaml', name: 'snakeyaml', version: '1.29'
+}

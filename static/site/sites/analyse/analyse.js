@@ -30,7 +30,7 @@
       random : function (min = 1, max = 999999) {
           return Math.floor(Math.random() * (max - min + 1) + min);
       },
-      extend : function () {
+      extend : function () { // 浅拷贝
           if(arguments.length < 1) return {};
           var obj = arguments[0];
           if(!obj instanceof Object) return {};
@@ -77,7 +77,7 @@
           if(params.path) result.push(['domain', params.path].join('='));
           document.cookie = result.join('; ');
       },
-      plainURLSearchParams (params) {
+      kvURLSearchParams (params) {
           const result = {}
           params.forEach((value, key) => {
             result[key] = value
@@ -145,6 +145,7 @@
           data.rs = _params.rs; // 请求开始时间
           data.ui = _params.uuid; // 用户标识
           data.su = document.referrer; // 访问来源
+          data.hs = _params.hashQuery; // 请求Hash参数
           if(window.screen) { // 屏幕信息
               data.ds = window.screen.width + 'x' + window.screen.height;
               data.cl = window.screen.colorDepth;
@@ -175,7 +176,7 @@
       }
 
       this.send = function (type, action = null, params = {}) {
-          log({tp : type, ac : action , ps : params});
+          log({tp : type, ac : action , ps : new URLSearchParams(buildQuery(params)).toString()});
       }
 
       this.config = function (key, value) {
@@ -186,8 +187,6 @@
   };
   // 解析当前链接
   var urlResult = new URL(window.location.href);
-  var pageParams = new URLSearchParams(AnalyseUtil.trim(urlResult.hash, '#'));
-  pageParams = AnalyseUtil.plainURLSearchParams(pageParams);
   Analyse.defaults = {
       id: '', // 网站标识
       version: '0.0.1', // 版本号
@@ -198,6 +197,7 @@
       cookieUseRoot: true, // 步长是否种植到根域名下
       cookieStep: 'step', // 步长的键名称
       cookieUUID: 'uuid', // 用户唯一标识
+      hashQuery: urlResult.hash.startsWith('#') ? urlResult.hash.substring(1) : urlResult.hash, // 页面Hash参数
   };
   // 获取配置参数
   var params = {};
@@ -205,15 +205,15 @@
   for (let i in document.scripts) {
       var url = document.scripts[i].src;
       if(!scriptRegExp.test(url)) continue;
-      params = AnalyseUtil.plainURLSearchParams(new URL(url).searchParams);
+      params = AnalyseUtil.kvURLSearchParams(new URL(url).searchParams);
       break;
   }
   // 实例化统计对象
   var $fa = new Analyse(params);
   // 触发统计
-  $fa.send('page', 'init', pageParams);
+  $fa.send('page', 'init', {});
   window.addEventListener('beforeunload', function () {
-      $fa.send('page', 'destroy', pageParams);
+      $fa.send('page', 'destroy', {});
   });
   window.FA = $fa;
 })();

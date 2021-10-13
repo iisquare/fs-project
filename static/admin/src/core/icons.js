@@ -52,6 +52,11 @@ import actionHand from '@/assets/icons/action/action-hand.svg?inline'
 import actionLasso from '@/assets/icons/action/action-lasso.svg?inline'
 import actionConnection from '@/assets/icons/action/action-connection.svg?inline'
 import actionSpace from '@/assets/icons/action/action-space.svg?inline'
+import dagConfig from '@/assets/icons/dag/dag-config.svg?inline'
+import dagScript from '@/assets/icons/dag/dag-script.svg?inline'
+import dagSink from '@/assets/icons/dag/dag-sink.svg?inline'
+import dagSource from '@/assets/icons/dag/dag-source.svg?inline'
+import dagTransform from '@/assets/icons/dag/dag-transform.svg?inline'
 
 // const context = require.context('../assets/icons', false, /\.svg$/)
 // const icons = Object.fromEntries(context.keys().map(key => {
@@ -108,5 +113,10 @@ export default {
     actionHand,
     actionLasso,
     actionConnection,
-    actionSpace
+    actionSpace,
+    dagConfig,
+    dagScript,
+    dagSink,
+    dagSource,
+    dagTransform
 }

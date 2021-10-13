@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
 <fs th:fragment="meta(assets, cms, title)" th:remove="tag">
-    <meta charset="UTF-8">
+    <meta charset="utf-8" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
     <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=4, minimum-scale=1, user-scalable=no"/>
     <title>[[${title}]] - [[${cms.siteName}]]</title>
     <meta name="keywords" th:attr="content=${cms.keywords}"/>

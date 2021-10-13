@@ -1,0 +1,43 @@
+dependencies {
+    compile project(':base:dag')
+    testCompile project(':base:test')
+    compile group: 'org.apache.spark', name: 'spark-core_' + scalaVersion, version: sparkVersion
+    compile group: 'org.apache.spark', name: 'spark-streaming_' + scalaVersion, version: sparkVersion
+    compile group: 'org.apache.spark', name: 'spark-sql_' + scalaVersion, version: sparkVersion
+}
+
+jar {
+    manifest {
+        attributes(
+            "Manifest-Version": 1.0,
+//            "Main-Class": ""
+        )
+    }
+//    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    from {
+        fileTree(dir: '../../base/core/build/libs', include: ['*.jar']).collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    from {
+        fileTree(dir: '../../base/dag/build/libs', include: ['*.jar']).collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+}
+
+jar.dependsOn project(':base:core').getTasks().getByName('jar')
+jar.dependsOn project(':base:dag').getTasks().getByName('jar')
+
+jars.doLast { // 移除与运行程序冲突的依赖
+    FileTree tree = fileTree(dir: 'build/opt')
+    tree.each {File file ->
+        if(file.getName().startsWith(rootProject.name + '-base-')){
+            delete file
+        } else if(file.getName().startsWith("log4j-")) {
+            delete file
+        } else if(file.getName().startsWith("slf4j-")) {
+            delete file
+        }
+    }
+}

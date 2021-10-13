@@ -1,9 +1,0 @@
-server:
-  port: 7803
-
-fs:
-  dag:
-    k8sUrl: https://192.168.2.77:6443
-    kvConfigUrl: # json file path for key value config
-    appDir: ./dag/app
-    appUrl: # plugins path for class loader

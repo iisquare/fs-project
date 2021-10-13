@@ -34,7 +34,7 @@ public class CatalogService extends ServiceBase {
     private DefaultRbacService rbacService;
 
     public List<Catalog> tree(Map<?, ?> param, Map<?, ?> args) {
-        List<Catalog> data = catalogDao.findAll((Specification) (root, query, cb) -> {
+        List<Catalog> data = catalogDao.findAll((Specification<Catalog>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             int status = DPUtil.parseInt(param.get("status"));
             if(!"".equals(DPUtil.parseString(param.get("status")))) {
@@ -42,7 +42,7 @@ public class CatalogService extends ServiceBase {
             } else {
                 predicates.add(cb.notEqual(root.get("status"), -1));
             }
-            return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+            return cb.and(predicates.toArray(new Predicate[0]));
         }, Sort.by(Sort.Order.desc("sort")));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             rbacService.fillUserInfo(data, "createdUid", "updatedUid");
@@ -132,7 +132,7 @@ public class CatalogService extends ServiceBase {
                 if(!"".equals(DPUtil.parseString(param.get("parentId")))) {
                     predicates.add(cb.equal(root.get("parentId"), parentId));
                 }
-                return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+                return cb.and(predicates.toArray(new Predicate[0]));
             }
         }, PageRequest.of(page - 1, pageSize, sort));
         List<?> rows = data.getContent();

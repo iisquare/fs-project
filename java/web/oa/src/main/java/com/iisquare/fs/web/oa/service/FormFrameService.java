@@ -48,7 +48,7 @@ public class FormFrameService extends ServiceBase {
                 if(!DPUtil.empty(name)) {
                     predicates.add(cb.like(root.get("name"), "%" + name + "%"));
                 }
-                return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+                return cb.and(predicates.toArray(new Predicate[0]));
             }
         }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"))));
         List<?> rows = data.getContent();

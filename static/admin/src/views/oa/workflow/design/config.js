@@ -4,7 +4,7 @@ const config = {
   uuid () { return new Date().getTime() + ('' + Math.random()).slice(-6) }
 }
 
-const emptyOptions = () => {
+const EmptyOptions = () => {
   return {}
 }
 
@@ -61,18 +61,18 @@ export default Object.assign(config, {
     return { audit: { local, message: messages.join(',') } }
   },
   canvas: {
-    options: emptyOptions, property: () => import('./CanvasProperty')
+    options: EmptyOptions, property: () => import('./CanvasProperty')
   },
   elements: {
-    'bpmn:StartEvent': { options: emptyOptions, property: () => import('./NodeProperty') },
-    'bpmn:EndEvent': { options: emptyOptions, property: () => import('./NodeProperty') },
-    'bpmn:UserTask': { options: emptyOptions, property: () => import('./UserTaskProperty') },
-    'bpmn:ExclusiveGateway': { options: emptyOptions, property: () => import('./NodeProperty') },
-    'bpmn:ParallelGateway': { options: emptyOptions, property: () => import('./NodeProperty') },
-    'bpmn:InclusiveGateway': { options: emptyOptions, property: () => import('./NodeProperty') },
-    'bpmn:Participant': { options: emptyOptions, property: () => import('./NodeProperty') },
-    'bpmn:Group': { options: emptyOptions, property: () => import('./NodeProperty') },
-    'bpmn:SequenceFlow': { options: emptyOptions, property: () => import('./SequenceFlowProperty') }
+    'bpmn:StartEvent': { options: EmptyOptions, property: () => import('./NodeProperty') },
+    'bpmn:EndEvent': { options: EmptyOptions, property: () => import('./NodeProperty') },
+    'bpmn:UserTask': { options: EmptyOptions, property: () => import('./UserTaskProperty') },
+    'bpmn:ExclusiveGateway': { options: EmptyOptions, property: () => import('./NodeProperty') },
+    'bpmn:ParallelGateway': { options: EmptyOptions, property: () => import('./NodeProperty') },
+    'bpmn:InclusiveGateway': { options: EmptyOptions, property: () => import('./NodeProperty') },
+    'bpmn:Participant': { options: EmptyOptions, property: () => import('./NodeProperty') },
+    'bpmn:Group': { options: EmptyOptions, property: () => import('./NodeProperty') },
+    'bpmn:SequenceFlow': { options: EmptyOptions, property: () => import('./SequenceFlowProperty') }
   },
   widgets: [{
     name: '事件',

@@ -32,7 +32,7 @@ public class FormRegularService extends ServiceBase {
         List<FormRegular> all = formRegularDao.findAll((Specification<FormRegular>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("status"), 1));
-            return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+            return cb.and(predicates.toArray(new Predicate[0]));
         }, Sort.by(Sort.Order.desc("sort")));
         ObjectNode result = DPUtil.objectNode();
         for (FormRegular regular : all) {
@@ -66,7 +66,7 @@ public class FormRegularService extends ServiceBase {
                 if(!DPUtil.empty(tooltip)) {
                     predicates.add(cb.like(root.get("tooltip"), "%" + tooltip + "%"));
                 }
-                return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+                return cb.and(predicates.toArray(new Predicate[0]));
             }
         }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"))));
         List<?> rows = data.getContent();

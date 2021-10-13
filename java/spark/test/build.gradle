@@ -1,5 +1,0 @@
-dependencies {
-    compile project(':base:test')
-    testCompile project(':spark:plugins:core')
-    testCompile project(':spark:plugins:template')
-}

@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: fs-shop-web
+  profiles:
+    active: dev,idev

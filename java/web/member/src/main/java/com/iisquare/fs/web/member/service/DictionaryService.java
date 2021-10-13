@@ -132,7 +132,7 @@ public class DictionaryService extends ServiceBase {
             } else {
                 predicates.add(cb.notEqual(root.get("status"), -1));
             }
-            return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+            return cb.and(predicates.toArray(new Predicate[0]));
         }, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort")));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(data, "createdUid", "updatedUid");
@@ -177,7 +177,7 @@ public class DictionaryService extends ServiceBase {
                 if(!DPUtil.empty(content)) {
                     predicates.add(cb.equal(root.get("content"), content));
                 }
-                return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+                return cb.and(predicates.toArray(new Predicate[0]));
             }
         }, PageRequest.of(page - 1, pageSize, sort));
         List<?> rows = data.getContent();

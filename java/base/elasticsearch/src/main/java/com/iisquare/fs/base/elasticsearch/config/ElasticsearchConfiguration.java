@@ -21,10 +21,8 @@ import java.util.List;
 @Configuration
 public class ElasticsearchConfiguration implements DisposableBean {
 
-    @Value("${spring.elasticsearch.cluster-name}")
-    private String clusterName;
-    @Value("${spring.elasticsearch.cluster-nodes}")
-    private String clusterNodes;
+    @Value("${spring.elasticsearch.nodes}")
+    private String nodes;
     @Value("${spring.elasticsearch.rest.username:}")
     private String username;
     @Value("${spring.elasticsearch.rest.password:}")
@@ -46,15 +44,15 @@ public class ElasticsearchConfiguration implements DisposableBean {
 
     @Bean
     public RestHighLevelClient afterPropertiesSet() throws Exception {
-        List<HttpHost> nodes = new ArrayList<>();
-        for (String target : DPUtil.explode(clusterNodes, ",", " ", true)) {
+        List<HttpHost> hosts = new ArrayList<>();
+        for (String target : DPUtil.explode(nodes, ",", " ", true)) {
             String[] strings = DPUtil.explode(target, ":", " ", true);
             String host = strings.length > 0 ? strings[0] : "localhost";
             int port = strings.length > 1 ? DPUtil.parseInt(strings[1]) : 9200;
-            nodes.add(new HttpHost(host, port, "http"));
+            hosts.add(new HttpHost(host, port, "http"));
         }
-        if (nodes.size() < 1) nodes.add(new HttpHost("localhost", 9200, "http"));
-        RestClientBuilder builder = RestClient.builder(nodes.toArray(new HttpHost[nodes.size()]));
+        if (hosts.size() < 1) hosts.add(new HttpHost("localhost", 9200, "http"));
+        RestClientBuilder builder = RestClient.builder(hosts.toArray(new HttpHost[0]));
         builder.setHttpClientConfigCallback(httpClientBuilder -> {
             httpClientBuilder.setMaxConnTotal(maxConnTotal);
             httpClientBuilder.setMaxConnPerRoute(maxConnPerRoute);

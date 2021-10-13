@@ -101,7 +101,7 @@ public class FormDataService extends ServiceBase {
 
     public long delete(List<String> ids, int uid) {
         if(null == ids || ids.size() < 1) return 0;
-        return formDataMongo.delete(ids.toArray(new String[ids.size()]));
+        return formDataMongo.delete(ids.toArray(new String[0]));
     }
 
 }

@@ -31,7 +31,7 @@ public class HttpUtil {
         for (Map.Entry<String, String> entry : map.entrySet()) {
             list.add(entry.getKey() + "=" + entry.getValue());
         }
-        return DPUtil.implode("; ", list.toArray(new String[list.size()]), 0, list.size());
+        return DPUtil.implode("; ", list.toArray(new String[0]), 0, list.size());
     }
 
     public static String get(String url, Map<String, String> queryParas, String charset) {

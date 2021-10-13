@@ -1,6 +1,0 @@
-
-dependencies {
-    compile project(':base:jpa')
-    compile project(':web:core')
-    compile project(':base:swagger')
-}

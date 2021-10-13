@@ -1,3 +1,16 @@
 spring:
+  application:
+    name: fs-demo-service
   profiles:
-    active: dev
+    active: dev,idev
+  jpa:
+    show-sql: true
+    hibernate:
+      naming:
+        physical-strategy: com.iisquare.fs.web.demo.dsconfig.NamingStrategy
+
+server:
+  servlet:
+    session:
+      cookie:
+        max-age: 2592000

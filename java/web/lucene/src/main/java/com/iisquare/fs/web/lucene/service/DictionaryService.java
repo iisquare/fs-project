@@ -51,7 +51,7 @@ public class DictionaryService extends ServiceBase {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("catalogue"), DPUtil.parseString(param.get("catalogue"))));
             predicates.add(cb.equal(root.get("type"), DPUtil.parseString(param.get("type"))));
-            return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+            return cb.and(predicates.toArray(new Predicate[0]));
         });
         StringBuilder builder = new StringBuilder();
         for (Dictionary dictionary : list) {

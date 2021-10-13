@@ -1,6 +1,0 @@
-dependencies {
-    testCompile project(':base:test')
-    compile project(':spark:plugins:core')
-
-    compile group: 'commons-cli', name: 'commons-cli', version: cliVersion
-}

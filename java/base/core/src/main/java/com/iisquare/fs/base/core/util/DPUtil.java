@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -424,7 +423,7 @@ public class DPUtil {
 
     public static <T> T[] toArray(Class<T> classType, Collection<T> collection) {
         if (null == collection) array(classType, 0);
-        return collection.toArray(array(classType, collection.size()));
+        return collection.toArray(array(classType, 0));
     }
 
     public static <T> T[] array(Class<T> classType, int length) {
@@ -886,6 +885,38 @@ public class DPUtil {
      */
     public static JsonNode toJSON(Object obj) {
         return mapper.convertValue(obj, JsonNode.class);
+    }
+
+    public static JsonNode value(JsonNode json, String path) {
+        String[] paths = DPUtil.explode(path, "\\.",null, false);
+        return value(json, new LinkedList<>(Arrays.asList(paths)));
+    }
+
+    public static JsonNode value(JsonNode json, LinkedList<String> paths) {
+        if (null == json) return toJSON(null);
+        if (json.isNull() || paths.size() < 1) return json;
+        return value(json.at("/" + paths.poll()), paths);
+    }
+
+    public static boolean value(JsonNode json, String path, JsonNode value) {
+        String[] paths = DPUtil.explode(path, "\\.",null, false);
+        return value(json, new LinkedList<>(Arrays.asList(paths)), value);
+    }
+
+    public static boolean value(JsonNode json, LinkedList<String> paths, JsonNode value) {
+        if (null == json || json.isNull() || paths.size() < 1) return false;
+        String field = paths.poll();
+        JsonNode node = json.at("/" + field);
+        if (paths.size() > 0) return value(node, paths, value);
+        if (json.isObject()) {
+            ((ObjectNode) json).replace(field, value);
+            return true;
+        }
+        if (json.isArray()) {
+            if (!field.matches("\\d+")) return false;
+            ((ArrayNode) json).set(Integer.valueOf(field), value);
+        }
+        return false;
     }
 
 }

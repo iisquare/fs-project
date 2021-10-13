@@ -25,65 +25,65 @@ const config = {
 validator.config = config
 exhibition.config = config
 
-const textOptions = () => {
+const TextOptions = () => {
   return { field: '', value: '', placeholder: '' }
 }
 
-const textareaOptions = () => {
+const TextareaOptions = () => {
   return { field: '', value: '', placeholder: '' }
 }
 
-const passwordOptions = () => {
+const PasswordOptions = () => {
   return { field: '', value: '', placeholder: '' }
 }
 
-const numberOptions = () => {
+const NumberOptions = () => {
   return { field: '', value: 0, placeholder: '' }
 }
 
-const radioOptions = () => {
+const RadioOptions = () => {
   return { field: '', value: '', items: [], display: 'inline' }
 }
 
-const checkboxOptions = () => {
+const CheckboxOptions = () => {
   return { field: '', value: '', items: [], display: 'inline' }
 }
 
-const switchOptions = () => {
+const SwitchOptions = () => {
   return { field: '', value: false, txtChecked: '', txtUnChecked: '' }
 }
 
-const selectOptions = () => {
+const SelectOptions = () => {
   return { field: '', value: '', mode: 'default', items: [], allowClear: false }
 }
 
-const txtOptions = () => {
+const TxtOptions = () => {
   return { txt: '' }
 }
 
-const htmlOptions = () => {
+const HtmlOptions = () => {
   return { html: '' }
 }
 
-const subformOptions = () => {
+const SubFormOptions = () => {
   return { formId: '', column: '' }
 }
 
-const gridOptions = () => {
+const GridOptions = () => {
   return { items: [ config.generateGridItem(), config.generateGridItem() ] }
 }
 
-const dividerOptions = () => {
+const DividerOptions = () => {
   return { dashed: false, orientation: 'left', type: 'horizontal' }
 }
 
-const formOptions = () => {
+const FormOptions = () => {
   return { align: 'left', labelType: 'grid', labelWidth: 100, labelSpan: 5, pageSize: 0, column: '', sort: '' }
 }
 
 export default Object.assign(config, {
   form: {
-    options: formOptions, property: () => import('./FormProperty')
+    options: FormOptions, property: () => import('./FormProperty')
   },
   selectorItemMap (items) {
     const result = {}
@@ -112,37 +112,37 @@ export default Object.assign(config, {
   widgets: [{
     name: '基础字段',
     children: [{
-      type: 'text', label: '单行文本', icon: 'formInput', filterable: true, viewable: true, sortable: true, editable: true, options: textOptions, property: () => import('./TextProperty')
+      type: 'text', label: '单行文本', icon: 'formInput', filterable: true, viewable: true, sortable: true, editable: true, options: TextOptions, property: () => import('./TextProperty')
     }, {
-      type: 'textarea', label: '多行文本', icon: 'formTextarea', filterable: true, viewable: true, sortable: false, editable: true, options: textareaOptions, property: () => import('./TextareaProperty')
+      type: 'textarea', label: '多行文本', icon: 'formTextarea', filterable: true, viewable: true, sortable: false, editable: true, options: TextareaOptions, property: () => import('./TextareaProperty')
     }, {
-      type: 'password', label: '密码', icon: 'formPassword', filterable: true, viewable: true, sortable: true, editable: true, options: passwordOptions, property: () => import('./PasswordProperty')
+      type: 'password', label: '密码', icon: 'formPassword', filterable: true, viewable: true, sortable: true, editable: true, options: PasswordOptions, property: () => import('./PasswordProperty')
     }, {
-      type: 'number', label: '数值', icon: 'formNumber', filterable: true, viewable: true, sortable: true, editable: true, options: numberOptions, property: () => import('./NumberProperty')
+      type: 'number', label: '数值', icon: 'formNumber', filterable: true, viewable: true, sortable: true, editable: true, options: NumberOptions, property: () => import('./NumberProperty')
     }, {
-      type: 'radio', label: '单选', icon: 'formRadio', filterable: true, viewable: true, sortable: true, editable: true, options: radioOptions, property: () => import('./RadioProperty')
+      type: 'radio', label: '单选', icon: 'formRadio', filterable: true, viewable: true, sortable: true, editable: true, options: RadioOptions, property: () => import('./RadioProperty')
     }, {
-      type: 'checkbox', label: '多选', icon: 'formCheckbox', filterable: true, viewable: true, sortable: true, editable: true, options: checkboxOptions, property: () => import('./CheckboxProperty')
+      type: 'checkbox', label: '多选', icon: 'formCheckbox', filterable: true, viewable: true, sortable: true, editable: true, options: CheckboxOptions, property: () => import('./CheckboxProperty')
     }, {
-      type: 'switch', label: '开关', icon: 'formSwitch', filterable: true, viewable: true, sortable: true, editable: true, options: switchOptions, property: () => import('./SwitchProperty')
+      type: 'switch', label: '开关', icon: 'formSwitch', filterable: true, viewable: true, sortable: true, editable: true, options: SwitchOptions, property: () => import('./SwitchProperty')
     }, {
-      type: 'select', label: '选择器', icon: 'formSelect', filterable: true, viewable: true, sortable: true, editable: true, options: selectOptions, property: () => import('./SelectProperty')
+      type: 'select', label: '选择器', icon: 'formSelect', filterable: true, viewable: true, sortable: true, editable: true, options: SelectOptions, property: () => import('./SelectProperty')
     }, {
-      type: 'txt', label: '文本', icon: 'formTxt', filterable: false, viewable: false, sortable: false, editable: false, options: txtOptions, property: () => import('./TxtProperty')
+      type: 'txt', label: '文本', icon: 'formTxt', filterable: false, viewable: false, sortable: false, editable: false, options: TxtOptions, property: () => import('./TxtProperty')
     }, {
-      type: 'html', label: 'HTML', icon: 'formHtml', filterable: false, viewable: false, sortable: false, editable: false, options: htmlOptions, property: () => import('./HtmlProperty')
+      type: 'html', label: 'HTML', icon: 'formHtml', filterable: false, viewable: false, sortable: false, editable: false, options: HtmlOptions, property: () => import('./HtmlProperty')
     }]
   }, {
     name: '高级字段',
     children: [{
-      type: 'subform', label: '子表单', icon: 'formWrite', filterable: false, viewable: false, sortable: false, editable: true, options: subformOptions, property: () => import('./SubformProperty')
+      type: 'subform', label: '子表单', icon: 'formWrite', filterable: false, viewable: false, sortable: false, editable: true, options: SubFormOptions, property: () => import('./SubformProperty')
     }]
   }, {
     name: '布局字段',
     children: [{
-      type: 'grid', label: '栅格布局', icon: 'formRow', filterable: true, viewable: true, sortable: true, editable: false, options: gridOptions, property: () => import('./GridProperty')
+      type: 'grid', label: '栅格布局', icon: 'formRow', filterable: true, viewable: true, sortable: true, editable: false, options: GridOptions, property: () => import('./GridProperty')
     }, {
-      type: 'divider', label: '分割线', icon: 'formDivider', filterable: false, viewable: false, sortable: false, editable: false, options: dividerOptions, property: () => import('./DividerProperty')
+      type: 'divider', label: '分割线', icon: 'formDivider', filterable: false, viewable: false, sortable: false, editable: false, options: DividerOptions, property: () => import('./DividerProperty')
     }]
   }],
   reservedFields: [{

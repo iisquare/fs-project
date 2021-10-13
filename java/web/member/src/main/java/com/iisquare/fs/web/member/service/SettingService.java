@@ -67,7 +67,7 @@ public class SettingService extends ServiceBase {
             if (null != exclude && exclude.size() > 0) {
                 predicates.add(cb.not(root.get("name").in(DPUtil.toArray(String.class, exclude))));
             }
-            return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+            return cb.and(predicates.toArray(new Predicate[0]));
         });
         Map<String, String> result = new LinkedHashMap<>();
         for (Setting setting : list) {
@@ -121,7 +121,7 @@ public class SettingService extends ServiceBase {
                 if(!DPUtil.empty(content)) {
                     predicates.add(cb.like(root.get("content"), "%" + content + "%"));
                 }
-                return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+                return cb.and(predicates.toArray(new Predicate[0]));
             }
         }, PageRequest.of(page - 1, pageSize, sort));
         List<?> rows = data.getContent();

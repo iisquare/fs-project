@@ -328,7 +328,6 @@ export default {
         white-space: nowrap;
         margin: 1%;
         color: #333;
-        border: 1px solid #f4f6fc;
         cursor: move;
         background: #f4f6fc;
         border: 1px solid #f4f6fc;

@@ -1,5 +1,5 @@
 spring:
   application:
-    name: fs-bbs-wap
+    name: fs-cms-service
   profiles:
     active: dev,idev

@@ -108,7 +108,7 @@ public class RbacService extends RbacServiceBase {
                 List<Predicate> predicates = new ArrayList<>();
                 predicates.add(cb.equal(root.get("status"), 1));
                 predicates.add(root.get("id").in(bids));
-                return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+                return cb.and(predicates.toArray(new Predicate[0]));
             }
         });
         for (Resource item : data) {
@@ -128,7 +128,7 @@ public class RbacService extends RbacServiceBase {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("status"), 1));
             predicates.add(root.get("id").in(bids));
-            return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+            return cb.and(predicates.toArray(new Predicate[0]));
         }, Sort.by(Sort.Order.desc("sort"), Sort.Order.asc("id")));
         return DPUtil.formatRelation(data, Menu.class, "parentId", parentId, "id", "children");
     }

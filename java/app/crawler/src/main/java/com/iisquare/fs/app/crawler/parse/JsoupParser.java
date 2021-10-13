@@ -104,8 +104,8 @@ public class JsoupParser extends Parser {
                     throw new Exception("parameter's type " + type + " not supported");
             }
         }
-        Method method = dom.getClass().getMethod(expression.get("name").asText(), classes.toArray(new Class[classes.size()]));
-        dom = method.invoke(dom, params.toArray(new Object[params.size()]));
+        Method method = dom.getClass().getMethod(expression.get("name").asText(), classes.toArray(new Class[0]));
+        dom = method.invoke(dom, params.toArray(new Object[0]));
         if (expression.has("pipeline")) return invoke(dom, expression.get("pipeline"));
         if (expression.has("subject")) return extract(dom, expression.get("subject"));
         return dom;

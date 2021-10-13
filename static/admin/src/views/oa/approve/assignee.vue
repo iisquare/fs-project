@@ -53,7 +53,7 @@
         <a-form-model-item label="流程名称">{{ form.deploymentInfo.name }}</a-form-model-item>
         <a-form-model-item label="节点名称">{{ form.name }}</a-form-model-item>
         <a-form-model-item label="业务编号">{{ form.processInstanceInfo.businessKey }}</a-form-model-item>
-        <a-form-model-item label="创建时间">{{ dateRender(form.createTime, form) }}</a-form-model-item>
+        <a-form-model-item label="创建时间">{{ DateUtil.dateRender(form.createTime, form) }}</a-form-model-item>
         <a-form-model-item label="撤销原因" prop="reason">
           <a-textarea v-model="form.reason" />
         </a-form-model-item>
@@ -75,6 +75,7 @@ export default {
   },
   data () {
     return {
+      DateUtil,
       userService,
       workflowService,
       advanced: false,

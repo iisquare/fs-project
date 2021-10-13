@@ -137,7 +137,7 @@ public class TemplateService extends ServiceBase {
                 if(!DPUtil.empty(content)) {
                     predicates.add(cb.like(root.get("content"), "%" + content + "%"));
                 }
-                return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+                return cb.and(predicates.toArray(new Predicate[0]));
             }
         }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"))));
         List<?> rows = data.getContent();

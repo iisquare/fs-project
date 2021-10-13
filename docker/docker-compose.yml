@@ -49,7 +49,7 @@ services:
         - KAFKA_VERSION=${KAFKA_VERSION}
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181/kafka
-      KAFKA_LISTENERS: "PLAINTEXT://:9092"
+      KAFKA_LISTENERS: "PLAINTEXT://kafka:9092"
       KAFKA_LOG_DIRS: /kafka/kafka-logs
     ports:
       - "${BIND_ADDRESS}${BIND_COLON}${KAFKA_LISTEN_PORT}:9092"

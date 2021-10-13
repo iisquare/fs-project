@@ -467,7 +467,7 @@ public class WorkflowService extends ServiceBase {
             if(!"".equals(DPUtil.parseString(param.get("formId")))) {
                 predicates.add(cb.equal(root.get("formId"), formId));
             }
-            return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+            return cb.and(predicates.toArray(new Predicate[0]));
         }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"))));
         List<Workflow> rows = data.getContent();
         if(!DPUtil.empty(config.get("withUserInfo"))) {

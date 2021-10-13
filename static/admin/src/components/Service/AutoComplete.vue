@@ -22,9 +22,11 @@ export default {
     placeholder: { type: String, default: '' },
     allowClear: { type: Boolean, default: true },
     pageSize: { type: Number, default: 5 },
+    exceptIds: { type: [String, Array], default: undefined }, // 排除记录
     fieldKey: { type: String, default: 'id' }, // 唯一标识
     fieldValue: { type: String, default: 'id' }, // 字段值
-    fieldLabel: { type: String, default: 'name' } // 字段标签
+    fieldLabel: { type: String, default: 'name' }, // 字段标签
+    fieldExcept: { type: String, default: 'exceptIds' } // 排除记录字段
   },
   data () {
     return {
@@ -35,7 +37,11 @@ export default {
   methods: {
     handleSearch (content) {
       this.loading = true
-      this.search({ name: content, pageSize: this.pageSize }).then((result) => {
+      let exceptIds = ''
+      if (this.exceptIds) {
+        exceptIds = Array.isArray(this.exceptIds) ? this.exceptIds.join(',') : this.exceptIds
+      }
+      this.search({ name: content, exceptIds, pageSize: this.pageSize }).then((result) => {
         if (result.code === 0) {
           this.rows = result.data.rows
         }

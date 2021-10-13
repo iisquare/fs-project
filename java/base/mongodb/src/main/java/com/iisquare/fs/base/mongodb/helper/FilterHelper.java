@@ -29,7 +29,7 @@ public class FilterHelper {
 
     public Bson filter() {
         if (filters.size() < 1) return null;
-        return Filters.and(filters.toArray(new Bson[filters.size()]));
+        return Filters.and(filters.toArray(new Bson[0]));
     }
 
     public FilterHelper like(String key) {

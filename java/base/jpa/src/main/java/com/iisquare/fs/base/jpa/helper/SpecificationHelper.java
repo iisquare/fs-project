@@ -36,7 +36,7 @@ public class SpecificationHelper<T> {
     }
 
     public Predicate[] predicates() {
-        return predicates.toArray(new Predicate[predicates.size()]);
+        return predicates.toArray(new Predicate[0]);
     }
 
     public SpecificationHelper like(String key) {
@@ -231,7 +231,7 @@ public class SpecificationHelper<T> {
             predicates.add(builder.gt(expression, 0));
         }
         if (predicates.size() > 0) {
-            this.predicates.add(builder.or(predicates.toArray(new Predicate[predicates.size()])));
+            this.predicates.add(builder.or(predicates.toArray(new Predicate[0])));
         }
         return this;
     }
