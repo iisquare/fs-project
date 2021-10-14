@@ -13,6 +13,12 @@
         <a-form-model-item label="用户"><a-input v-model="value.options.username" placeholder="username" /></a-form-model-item>
         <a-form-model-item label="密码"><a-input v-model="value.options.password" placeholder="password" /></a-form-model-item>
         <a-form-model-item label="循环实例"><a-checkbox v-model="value.options.iterable">循环配置，读取多个数据库实例</a-checkbox></a-form-model-item>
+        <div class="fs-property-title">优化参数</div>
+        <a-form-model-item label="分区字段"><a-input v-model="value.options.partitionColumn" placeholder="numeric, date, timestamp" /></a-form-model-item>
+        <a-form-model-item label="分区下限"><a-input v-model="value.options.lowerBound" placeholder="数值类型，跨度起始值" /></a-form-model-item>
+        <a-form-model-item label="分区上限"><a-input v-model="value.options.upperBound" placeholder="数值类型，跨度结束值" /></a-form-model-item>
+        <a-form-model-item label="分区数量"><a-input-number v-model="value.options.numPartitions" /></a-form-model-item>
+        <a-form-model-item label="分批大小"><a-input-number v-model="value.options.fetchSize" placeholder="fetch size per round trip" /></a-form-model-item>
         <div class="fs-property-title">SQL查询</div>
         <code-editor v-model="value.options.sql" mode="sql" :height="230" />
       </a-form-model>
@@ -60,6 +66,11 @@ export default {
         username: obj.options.username || this.defaults.username,
         password: obj.options.password || this.defaults.password,
         iterable: !!obj.options.iterable,
+        partitionColumn: obj.options.partitionColumn || this.defaults.partitionColumn,
+        lowerBound: obj.options.lowerBound || this.defaults.lowerBound,
+        upperBound: obj.options.upperBound || this.defaults.upperBound,
+        numPartitions: Number.Integer(obj.options.numPartitions) ? obj.options.numPartitions : this.defaults.numPartitions,
+        fetchSize: Number.Integer(obj.options.fetchSize) ? obj.options.fetchSize : this.defaults.fetchSize,
         sql: obj.options.sql || this.defaults.sql
       }
       const result = Object.assign({}, obj, { options: Object.assign({}, obj.options, options) })

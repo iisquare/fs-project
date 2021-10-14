@@ -4,9 +4,9 @@
       <a-form-model :model="value" labelAlign="left" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
         <slice-basic :value="value" @input="value => $emit('input', value)" :config="config" :activeItem="activeItem" />
         <div class="fs-property-title">参数配置</div>
-        <a-form-model-item label="合并方式">
-          <a-select v-model="value.options.combine" placeholder="请选择字段合并方式" :allowClear="true">
-            <a-select-option :value="item.value" v-for="item in combines" :key="item.value">{{ item.label }}</a-select-option>
+        <a-form-model-item label="处理方式">
+          <a-select v-model="value.options.mode" placeholder="请选择字段处理方式" :allowClear="true">
+            <a-select-option :value="item.value" v-for="item in modes" :key="item.value">{{ item.label }}</a-select-option>
           </a-select>
         </a-form-model-item>
         <a-divider>字段映射</a-divider>
@@ -36,6 +36,7 @@
           </a-form-model-item>
           <a-form-model-item label="字段类型" prop="engine">
             <a-select v-model="form.clsType" placeholder="请选择字段类型">
+              <a-select-option value="">保持默认类型，不做程序转换</a-select-option>
               <a-select-option v-for="(item, key) in dagConfig.clsTypes" :key="key" :value="item.value">{{ item.value }} - {{ item.label }}</a-select-option>
             </a-select>
           </a-form-model-item>
@@ -61,13 +62,12 @@ export default {
   data () {
     return {
       dagConfig: { clsTypes: [] },
-      combines: [{
-        value: 'KEEP_SOURCE', label: '保留引用字段'
-      }, {
-        value: 'REMOVE_SOURCE', label: '删除引用字段'
-      }, {
-        value: 'ONLY_TARGET', label: '仅保留目标字段'
-      }],
+      modes: [
+        { value: 'KEEP_SOURCE', label: '生成目标字段，保留引用字段' }, // 不处理引用字段，标字段与引用字段一致时直接覆盖
+        { value: 'REMOVE_SOURCE', label: '生成目标字段，移除引用字段' }, // 若目标字段与引用字段不一致，则移除引用字段
+        { value: 'ONLY_TARGET', label: '保留目标字段，移除其他字段' }, // 仅保留目标字段，移除全部非目标字段
+        { value: 'REMOVE_TARGET', label: '移除目标字段，保留其他字段' } // 仅移除目标字段，不做其他处理
+      ],
       sortTable: new SortTable([], { columnWidth: 25 }),
       columns: [
         { title: '目标', dataIndex: 'target', ellipsis: 'auto' },
@@ -87,6 +87,7 @@ export default {
   watch: {
     'activeItem.id': {
       handler () {
+        this.sortTable.reset(this.value.options.items)
         this.$emit('input', this.formatted(this.value))
       },
       immediate: true
@@ -95,14 +96,14 @@ export default {
   methods: {
     formatted (obj) {
       const options = {
-        combine: obj.options.combine || this.defaults.combine,
+        mode: obj.options.mode || this.defaults.mode,
         items: Array.isArray(obj.options.items) ? obj.options.items : obj.defaults.items
       }
       const result = Object.assign({}, obj, { options: Object.assign({}, obj.options, options) })
       return result
     },
     rowItem () {
-      return { target: '', source: '', clsType: undefined }
+      return { target: '', source: '', clsType: '' }
     },
     rowAdd () {
       this.rowEdit(this.sortTable.add(this.rowItem()))

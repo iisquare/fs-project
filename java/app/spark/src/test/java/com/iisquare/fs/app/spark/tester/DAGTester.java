@@ -23,7 +23,7 @@ public class DAGTester {
 
     @Test
     public void diagramTest() throws Exception {
-        String url = "http://127.0.0.1:7815/dag/diagram?id=3";
+        String url = "http://127.0.0.1:7815/dag/diagram?id=8";
         SparkApplication.main(url);
     }
 

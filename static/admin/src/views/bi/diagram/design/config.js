@@ -76,7 +76,7 @@ const DateFormatTransformOptions = () => {
 }
 
 const ConvertTransformOptions = () => {
-  return { combine: 'KEEP_SOURCE', items: [] }
+  return { mode: 'KEEP_SOURCE', items: [] }
 }
 
 const ScriptTransformOptions = () => {
@@ -96,15 +96,31 @@ const KafkaSourceOptions = () => {
 }
 
 const JDBCSourceOptions = () => {
-  return { driver: 'MySQL', url: 'jdbc:mysql://127.0.0.1:3306/db_name?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true', username: 'root', password: '', iterable: false, sql: 'select * from ' }
+  return {
+    driver: 'com.mysql.jdbc.Driver',
+    url: 'jdbc:mysql://127.0.0.1:3306/db_name?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true',
+    username: 'root',
+    password: '',
+    iterable: false,
+    partitionColumn: '',
+    lowerBound: '',
+    upperBound: '',
+    numPartitions: 0,
+    fetchSize: 0,
+    sql: 'select * from '
+  }
 }
 
 const ConsoleSinkOptions = () => {
-  return { echoConfig: false, mode: 'line' }
+  return { echoConfig: false, mode: '' }
 }
 
 const ElasticsearchSinkOptions = () => {
   return { servers: '127.0.0.1:9200', username: '', password: '', collection: '', batchSize: 1, flushInterval: -1, idField: '_id', tableField: '_table' }
+}
+
+const MongoSinkOptions = () => {
+  return { hosts: '127.0.0.1:27017', database: 'admin', username: '', password: '', collection: '', batchSize: 0, replaceDocument: true, forceInsert: false }
 }
 
 export default Object.assign(config, {
@@ -177,11 +193,11 @@ export default Object.assign(config, {
     }, {
       type: 'JDBCSource', label: 'JDBC', title: 'JDBC输入', icon: 'dagSource', options: JDBCSourceOptions, property: () => import('./JDBCSourceProperty')
     }), Object.assign({
-      supports: [[ENGINE_SPARK, MODEL_BATCH]]
+      supports: []
     }, {
       type: 'MongoSource', label: 'Mongo', title: 'Mongo输入', icon: 'dagSource', options: DefaultOptions, property: () => import('./DefaultProperty')
     }), Object.assign({
-      supports: [[ENGINE_SPARK, MODEL_BATCH]]
+      supports: []
     }, {
       type: 'FileSource', label: 'File', title: '文件输入', icon: 'dagSource', options: FileSourceOptions, property: () => import('./FileSourceProperty')
     }), Object.assign({
@@ -189,34 +205,34 @@ export default Object.assign(config, {
     }, {
       type: 'KafkaSource', label: 'Kafka', title: 'Kafka输入', icon: 'dagSource', options: KafkaSourceOptions, property: () => import('./KafkaSourceProperty')
     }), Object.assign({
-      supports: [[ENGINE_SPARK, MODEL_BATCH]]
+      supports: []
     }, {
       type: 'HBaseSource', label: 'HBase', title: 'HBase输入', icon: 'dagSource', options: DefaultOptions, property: () => import('./DefaultProperty')
     }), Object.assign({
-      supports: [[ENGINE_SPARK, MODEL_BATCH]]
+      supports: []
     }, {
       type: 'ElasticsearchSource', label: 'Elasticsearch', title: '搜索引擎输入', icon: 'dagSource', options: ElasticsearchSourceOptions, property: () => import('./ElasticsearchSourceProperty')
     })]
   }, {
     name: '数据处理',
     children: [Object.assign({
-      supports: [[ENGINE_SPARK, MODEL_BATCH]]
+      supports: []
     }, {
       type: 'JSONParseTransform', label: 'JSONParse', title: 'JSON格式化', icon: 'dagTransform', options: JSONParseTransformOptions, property: () => import('./JSONParseTransformProperty')
     }), Object.assign({
-      supports: [[ENGINE_SPARK, MODEL_BATCH]]
+      supports: []
     }, {
       type: 'JSONStringifyTransform', label: 'JSONStringify', title: 'JSON序列化', icon: 'dagTransform', options: JSONStringifyTransformOptions, property: () => import('./JSONStringifyTransformProperty')
     }), Object.assign({
-      supports: [[ENGINE_SPARK, MODEL_BATCH]]
+      supports: []
     }, {
       type: 'UnionTransform', label: 'Union', title: '数据合并', icon: 'dagTransform', options: DefaultOptions, property: () => import('./DefaultProperty')
     }), Object.assign({
-      supports: [[ENGINE_SPARK, MODEL_BATCH]]
+      supports: []
     }, {
       type: 'SQLTransform', label: 'SQL', title: 'SQL查询', icon: 'dagTransform', options: SQLTransformOptions, property: () => import('./SQLTransformProperty')
     }), Object.assign({
-      supports: [[ENGINE_SPARK, MODEL_BATCH]]
+      supports: []
     }, {
       type: 'RegularTransform', label: 'Regular', title: '正则匹配', icon: 'dagTransform', options: RegularTransformOptions, property: () => import('./RegularTransformProperty')
     }), Object.assign({
@@ -224,11 +240,11 @@ export default Object.assign(config, {
     }, {
       type: 'ConvertTransform', label: 'Convert', title: '字段转换', icon: 'dagTransform', options: ConvertTransformOptions, property: () => import('./ConvertTransformProperty')
     }), Object.assign({
-      supports: [[ENGINE_SPARK, MODEL_BATCH]]
+      supports: []
     }, {
       type: 'DateParseTransform', label: 'DateParse', title: '日期解析', icon: 'dagTransform', options: DateParseTransformOptions, property: () => import('./DateParseTransformProperty')
     }), Object.assign({
-      supports: [[ENGINE_SPARK, MODEL_BATCH]]
+      supports: []
     }, {
       type: 'DateFormatTransform', label: 'DateFormat', title: '日期格式化', icon: 'dagTransform', options: DateFormatTransformOptions, property: () => import('./DateFormatTransformProperty')
     }), Object.assign({
@@ -243,23 +259,23 @@ export default Object.assign(config, {
     }, {
       type: 'ConsoleSink', label: 'Console', title: 'Console输出', icon: 'dagSink', options: ConsoleSinkOptions, property: () => import('./ConsoleSinkProperty')
     }), Object.assign({
-      supports: [[ENGINE_SPARK, MODEL_BATCH]]
+      supports: []
     }, {
       type: 'JDBCSink', label: 'JDBC', title: 'JDBC输出', icon: 'dagSink', options: DefaultOptions, property: () => import('./DefaultProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, MODEL_BATCH]]
     }, {
-      type: 'MongoSink', label: 'Mongo', title: 'Mongo输出', icon: 'dagSink', options: DefaultOptions, property: () => import('./DefaultProperty')
+      type: 'MongoSink', label: 'Mongo', title: 'Mongo输出', icon: 'dagSink', options: MongoSinkOptions, property: () => import('./MongoSinkProperty')
     }), Object.assign({
-      supports: [[ENGINE_SPARK, MODEL_BATCH]]
+      supports: []
     }, {
       type: 'KafkaSink', label: 'Kafka', title: 'Kafka输出', icon: 'dagSink', options: DefaultOptions, property: () => import('./DefaultProperty')
     }), Object.assign({
-      supports: [[ENGINE_SPARK, MODEL_BATCH]]
+      supports: []
     }, {
       type: 'HBaseSink', label: 'HBase', title: 'HBase输出', icon: 'dagSink', options: DefaultOptions, property: () => import('./DefaultProperty')
     }), Object.assign({
-      supports: [[ENGINE_SPARK, MODEL_BATCH], [ENGINE_FLINK, MODEL_STREAM]]
+      supports: [[ENGINE_FLINK, MODEL_STREAM]]
     }, {
       type: 'ElasticsearchSink', label: 'Elasticsearch', title: 'Elasticsearch输出', icon: 'dagSink', options: ElasticsearchSinkOptions, property: () => import('./ElasticsearchSinkProperty')
     })]

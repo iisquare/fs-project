@@ -4,6 +4,8 @@ dependencies {
     compile group: 'org.apache.spark', name: 'spark-core_' + scalaVersion, version: sparkVersion
     compile group: 'org.apache.spark', name: 'spark-streaming_' + scalaVersion, version: sparkVersion
     compile group: 'org.apache.spark', name: 'spark-sql_' + scalaVersion, version: sparkVersion
+
+    compile group: 'org.mongodb.spark', name: 'mongo-spark-connector_' + scalaVersion, version: '3.0.1'
 }
 
 jar {

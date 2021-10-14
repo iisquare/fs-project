@@ -1,8 +1,12 @@
 package com.iisquare.fs.base.dag;
 
+import com.iisquare.fs.base.core.util.DPUtil;
+
 import java.util.*;
 
 public class DAGCore {
+
+    public static final String TYPE_FIELD = "cls";
 
     public static Map<String, Map<String, Object>> clsTypes = new LinkedHashMap(){{
         for (Class cls : Arrays.asList(
@@ -18,19 +22,18 @@ public class DAGCore {
         )) {
             String name = cls.getSimpleName();
             put(name, new LinkedHashMap(){{
-                put("cls", cls);
+                put(TYPE_FIELD, cls);
                 put("name", name);
                 put("classname", cls.getName());
             }});
         }
         for (Class cls : Arrays.asList(
                 java.sql.Date.class,
-                java.sql.Time.class,
                 java.sql.Timestamp.class
         )) {
             String name = "SQL" + cls.getSimpleName();
             put(name, new LinkedHashMap(){{
-                put("cls", cls);
+                put(TYPE_FIELD, cls);
                 put("name", name);
                 put("classname", cls.getName());
             }});
@@ -180,6 +183,40 @@ public class DAGCore {
 
     public static Locale locale(String locale) {
         return (Locale) locales.get(locale).get("locale");
+    }
+
+    public static Class type(String type) {
+        if (!clsTypes.containsKey(type)) return null;
+        return (Class) clsTypes.get(type).get(TYPE_FIELD);
+    }
+
+    public static <T> T convert(Class<T> classType, Object value) {
+        if (null == value) return null;
+        if (Integer.class.equals(classType)) {
+            return (T) DPUtil.parseInt(value, null);
+        }
+        if (Double.class.equals(classType)) {
+            return (T) DPUtil.parseDouble(value, null);
+        }
+        if (Boolean.class.equals(classType)) {
+            return (T) Boolean.valueOf(DPUtil.parseBoolean(value));
+        }
+        if (Byte.class.equals(classType)) {
+            return (T) Byte.valueOf(DPUtil.parseString(value));
+        }
+        if (Float.class.equals(classType)) {
+            return (T) DPUtil.parseFloat(value, null);
+        }
+        if (Long.class.equals(classType)) {
+            return (T) DPUtil.parseLong(value, null);
+        }
+        if (Short.class.equals(classType)) {
+            return (T) Short.valueOf((short) DPUtil.parseLong(value));
+        }
+        if (String.class.equals(classType)) {
+            return (T) DPUtil.parseString(value);
+        }
+        return (T) value;
     }
 
 }

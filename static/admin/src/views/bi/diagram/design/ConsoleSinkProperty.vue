@@ -29,6 +29,7 @@ export default {
   data () {
     return {
       modes: [
+        { label: '自适应打印输出模式', value: '' },
         { label: '输出为JSON字符串', value: 'json' },
         { label: '输出为键值对字符串', value: 'map' },
         { label: '输出为逗号分隔文本', value: 'line' }

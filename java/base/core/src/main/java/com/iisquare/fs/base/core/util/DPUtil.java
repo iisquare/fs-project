@@ -68,11 +68,16 @@ public class DPUtil {
      * 转换为int类型
      */
     public static int parseInt(Object object) {
-        if (null == object) return 0;
+        Integer result = parseInt(object, null);
+        return null == result ? 0 : result;
+    }
+
+    public static Integer parseInt(Object object, Integer defaultValue) {
+        if (null == object) return defaultValue;
         String str = object.toString();
-        if ("".equals(str)) return 0;
+        if ("".equals(str)) return defaultValue;
         str = firstMatcher(regexLong, str);
-        if (null == str) return 0;
+        if (null == str) return defaultValue;
         return Integer.parseInt(str);
     }
 
@@ -128,11 +133,16 @@ public class DPUtil {
      * 转换为long类型
      */
     public static long parseLong(Object object) {
-        if (null == object) return 0L;
+        Long result = parseLong(object, null);
+        return null == result ? 0L : result;
+    }
+
+    public static Long parseLong(Object object, Long defaultValue) {
+        if (null == object) return defaultValue;
         String str = object.toString();
-        if ("".equals(str)) return 0L;
+        if ("".equals(str)) return defaultValue;
         str = firstMatcher(regexLong, str);
-        if (null == str) return 0L;
+        if (null == str) return defaultValue;
         return Long.parseLong(str);
     }
 
@@ -140,11 +150,16 @@ public class DPUtil {
      * 转换为double类型
      */
     public static double parseDouble(Object object) {
-        if (null == object) return 0.0;
+        Double result = parseDouble(object, null);
+        return null == result ? 0.0 : result;
+    }
+
+    public static Double parseDouble(Object object, Double defaultValue) {
+        if (null == object) return defaultValue;
         String str = object.toString();
-        if ("".equals(str)) return 0.0;
+        if ("".equals(str)) return defaultValue;
         str = firstMatcher(regexDouble, str);
-        if (null == str) return 0.0;
+        if (null == str) return defaultValue;
         return Double.parseDouble(str);
     }
 
@@ -152,11 +167,16 @@ public class DPUtil {
      * 转换为float类型
      */
     public static float parseFloat(Object object) {
-        if (null == object) return 0.0f;
+        Float result = parseFloat(object, null);
+        return null == result ? 0.0f : result;
+    }
+
+    public static Float parseFloat(Object object, Float defaultValue) {
+        if (null == object) return defaultValue;
         String str = object.toString();
-        if ("".equals(str)) return 0.0f;
+        if ("".equals(str)) return defaultValue;
         str = firstMatcher(regexDouble, str);
-        if (null == str) return 0.0f;
+        if (null == str) return defaultValue;
         return Float.parseFloat(str);
     }
 
