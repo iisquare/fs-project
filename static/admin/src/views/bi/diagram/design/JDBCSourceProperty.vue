@@ -20,7 +20,7 @@
         <a-form-model-item label="分区数量"><a-input-number v-model="value.options.numPartitions" /></a-form-model-item>
         <a-form-model-item label="分批大小"><a-input-number v-model="value.options.fetchSize" placeholder="fetch size per round trip" /></a-form-model-item>
         <div class="fs-property-title">SQL查询</div>
-        <code-editor v-model="value.options.sql" mode="sql" :height="230" />
+        <code-editor ref="sql" v-model="value.options.sql" mode="sql" :height="230" />
       </a-form-model>
     </a-tab-pane>
   </a-tabs>
@@ -54,6 +54,7 @@ export default {
     'activeItem.id': {
       handler () {
         this.$emit('input', this.formatted(this.value))
+        this.$refs.sql && this.$refs.sql.setContent(this.value.options.sql)
       },
       immediate: true
     }
@@ -69,8 +70,8 @@ export default {
         partitionColumn: obj.options.partitionColumn || this.defaults.partitionColumn,
         lowerBound: obj.options.lowerBound || this.defaults.lowerBound,
         upperBound: obj.options.upperBound || this.defaults.upperBound,
-        numPartitions: Number.Integer(obj.options.numPartitions) ? obj.options.numPartitions : this.defaults.numPartitions,
-        fetchSize: Number.Integer(obj.options.fetchSize) ? obj.options.fetchSize : this.defaults.fetchSize,
+        numPartitions: Number.isInteger(obj.options.numPartitions) ? obj.options.numPartitions : this.defaults.numPartitions,
+        fetchSize: Number.isInteger(obj.options.fetchSize) ? obj.options.fetchSize : this.defaults.fetchSize,
         sql: obj.options.sql || this.defaults.sql
       }
       const result = Object.assign({}, obj, { options: Object.assign({}, obj.options, options) })

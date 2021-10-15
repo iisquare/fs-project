@@ -228,7 +228,7 @@ export default Object.assign(config, {
     }, {
       type: 'UnionTransform', label: 'Union', title: '数据合并', icon: 'dagTransform', options: DefaultOptions, property: () => import('./DefaultProperty')
     }), Object.assign({
-      supports: []
+      supports: [[ENGINE_SPARK, MODEL_BATCH]]
     }, {
       type: 'SQLTransform', label: 'SQL', title: 'SQL查询', icon: 'dagTransform', options: SQLTransformOptions, property: () => import('./SQLTransformProperty')
     }), Object.assign({

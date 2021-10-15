@@ -52,7 +52,7 @@ export default {
         username: obj.options.username || this.defaults.username,
         password: obj.options.password || this.defaults.password,
         collection: obj.options.collection || this.defaults.collection,
-        batchSize: Number.Integer(obj.options.batchSize) ? obj.options.batchSize : this.defaults.batchSize,
+        batchSize: Number.isInteger(obj.options.batchSize) ? obj.options.batchSize : this.defaults.batchSize,
         replaceDocument: !!obj.options.replaceDocument,
         forceInsert: !!obj.options.forceInsert
       }

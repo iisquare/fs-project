@@ -27,7 +27,8 @@ export default {
     mode: { type: String, default: 'null' },
     height: { type: Number, default: 500 },
     theme: { type: String, default: 'ayu-dark' },
-    lineNumbers: { type: Boolean, default: true }
+    lineNumbers: { type: Boolean, default: true },
+    lineWrapping: { type: Boolean, default: true }
   },
   data () {
     return {
@@ -46,7 +47,8 @@ export default {
         value: this.value,
         mode: this.mode,
         theme: this.theme,
-        lineNumbers: this.lineNumbers
+        lineNumbers: this.lineNumbers,
+        lineWrapping: this.lineWrapping
       })
       this.editor.setSize('auto', this.height + 'px')
       this.editor.on('change', () => {

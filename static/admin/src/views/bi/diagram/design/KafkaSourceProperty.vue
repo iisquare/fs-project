@@ -63,7 +63,7 @@ export default {
         offset: obj.options.offset || this.defaults.offset,
         group: obj.options.group || this.defaults.group,
         topic: obj.options.topic || this.defaults.topic,
-        commitInterval: Number.Integer(obj.options.commitInterval) ? obj.options.commitInterval : this.defaults.commitInterval
+        commitInterval: Number.isInteger(obj.options.commitInterval) ? obj.options.commitInterval : this.defaults.commitInterval
       }
       const result = Object.assign({}, obj, { options: Object.assign({}, obj.options, options) })
       return result

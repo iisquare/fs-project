@@ -32,4 +32,14 @@ public abstract class DAGNode {
         return (T) this.result;
     }
 
+    public String alias() {
+        if (this instanceof DAGSource) {
+            return ((DAGSource) this).getAlias();
+        }
+        if (this instanceof DAGTransform) {
+            return ((DAGTransform) this).getAlias();
+        }
+        return null;
+    }
+
 }

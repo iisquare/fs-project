@@ -4,7 +4,7 @@
       <a-form-model :model="value" labelAlign="left" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
         <slice-basic :value="value" @input="value => $emit('input', value)" :config="config" :activeItem="activeItem" />
         <div class="fs-property-title">SQL查询</div>
-        <code-editor v-model="value.options.sql" mode="sql" :height="230" />
+        <code-editor ref="sql" v-model="value.options.sql" mode="sql" :height="230" />
       </a-form-model>
     </a-tab-pane>
   </a-tabs>
@@ -34,6 +34,7 @@ export default {
     'activeItem.id': {
       handler () {
         this.$emit('input', this.formatted(this.value))
+        this.$refs.sql && this.$refs.sql.setContent(this.value.options.sql)
       },
       immediate: true
     }

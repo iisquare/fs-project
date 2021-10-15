@@ -10,7 +10,7 @@
         <a-form-model-item label="认证密码"><a-input v-model="value.options.password" placeholder="仅在配置认证用户时有效" /></a-form-model-item>
         <a-form-model-item label="索引名称"><a-input v-model="value.options.collection" placeholder="index name" /></a-form-model-item>
         <div class="fs-property-title">查询条件</div>
-        <code-editor v-model="value.options.query" mode="javascript" :height="230" />
+        <code-editor ref="query" v-model="value.options.query" mode="javascript" :height="230" />
       </a-form-model>
     </a-tab-pane>
   </a-tabs>
@@ -40,6 +40,7 @@ export default {
     'activeItem.id': {
       handler () {
         this.$emit('input', this.formatted(this.value))
+        this.$refs.query && this.$refs.query.setContent(this.value.options.query)
       },
       immediate: true
     }

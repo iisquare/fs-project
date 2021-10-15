@@ -53,8 +53,8 @@ export default {
         username: obj.options.username || this.defaults.username,
         password: obj.options.password || this.defaults.password,
         collection: obj.options.collection || this.defaults.collection,
-        batchSize: Number.Integer(obj.options.batchSize) ? obj.options.batchSize : this.defaults.batchSize,
-        flushInterval: Number.Integer(obj.options.flushInterval) ? obj.options.flushInterval : this.defaults.flushInterval,
+        batchSize: Number.isInteger(obj.options.batchSize) ? obj.options.batchSize : this.defaults.batchSize,
+        flushInterval: Number.isInteger(obj.options.flushInterval) ? obj.options.flushInterval : this.defaults.flushInterval,
         idField: obj.options.idField || this.defaults.idField,
         tableField: obj.options.tableField || this.defaults.tableField
       }
