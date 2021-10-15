@@ -4,6 +4,7 @@ const MODEL_BATCH = 'batch'
 const MODEL_STREAM = 'stream'
 
 const config = {
+  diagram: { id: 0, name: '', engine: '', model: '' },
   uuid () { return new Date().getTime() + ('' + Math.random()).slice(-6) }
 }
 

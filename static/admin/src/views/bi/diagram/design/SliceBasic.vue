@@ -6,8 +6,8 @@
     <a-form-model-item label="名称"><a-input v-model="value.name" auto-complete="on" /></a-form-model-item>
     <a-form-model-item label="备注"><a-textarea v-model="value.description" /></a-form-model-item>
     <div class="fs-property-title" v-if="hasAlias || hasPrefix">配置中心</div>
-    <a-form-model-item label="别名" v-if="hasAlias"><a-input v-model="value.alias" auto-complete="on" /></a-form-model-item>
-    <a-form-model-item label="前缀" v-if="hasPrefix"><a-input v-model="value.kvConfigPrefix" auto-complete="on" placeholder="定位配置项" /></a-form-model-item>
+    <a-form-model-item label="别名" v-if="hasAlias"><a-input v-model="value.alias" auto-complete="on" :placeholder="'dag_' + config.diagram.id + '_' + value.id" /></a-form-model-item>
+    <a-form-model-item label="前缀" v-if="hasPrefix"><a-input v-model="value.kvConfigPrefix" auto-complete="on" placeholder="定位配置项，替换{变量}参数" /></a-form-model-item>
   </section>
 </template>
 

@@ -182,6 +182,7 @@ export default {
           model: result.data.model
         }
         Object.assign(this.diagram, diagram)
+        Object.assign(this.config.diagram, diagram)
         try {
           if (result.data.content) {
             const data = JSON.parse(result.data.content)
