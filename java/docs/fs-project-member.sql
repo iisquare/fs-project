@@ -1,17 +1,17 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : yoyo_3306
+ Source Server         : localhost_3306
  Source Server Type    : MySQL
  Source Server Version : 80021
- Source Host           : 192.168.0.146:13306
- Source Schema         : fs-project
+ Source Host           : localhost:3306
+ Source Schema         : fs_project
 
  Target Server Type    : MySQL
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 17/09/2021 08:23:34
+ Date: 15/10/2021 08:48:53
 */
 
 SET NAMES utf8mb4;
@@ -118,15 +118,15 @@ INSERT INTO `fs_member_menu` VALUES (23, '模板列表', '后台管理:网页爬
 INSERT INTO `fs_member_menu` VALUES (24, '节点管理', '后台管理:网页爬虫:节点管理', 21, 'cloud-server', '/spider/crawler', '', 0, 1, '', 1585195333832, 1, 1585195333832, 1);
 INSERT INTO `fs_member_menu` VALUES (25, '节点面板', '后台管理:网页爬虫:节点管理:节点面板', 24, '', '/spider/crawler/dashboard', '', 0, 1, '', 1585195373342, 1, 1585195373342, 1);
 INSERT INTO `fs_member_menu` VALUES (26, '商业智能', '后台管理:商业智能', 1, 'cluster', '/bi/index/index', '', 0, 1, '数据分子、规则引擎、智能报表', 1585384043533, 1, 1631754366305, 1);
-INSERT INTO `fs_member_menu` VALUES (27, '数据加工', '后台管理:商业智能:数据加工', 26, 'dropbox', '/bi/diagram', '', 0, 1, '', 1585384219002, 1, 1631754406152, 1);
+INSERT INTO `fs_member_menu` VALUES (27, '数据加工', '后台管理:商业智能:数据加工', 26, 'apartment', '/bi/diagram', '', 0, 1, '', 1585384219002, 1, 1634258659883, 1);
 INSERT INTO `fs_member_menu` VALUES (28, '规则列表', '后台管理:商业智能:数据加工:规则列表', 27, '', '/bi/diagram/list', '', 0, 1, '', 1585384240550, 1, 1631754429331, 1);
-INSERT INTO `fs_member_menu` VALUES (29, '流程管理', '后台管理:数据计算:流程管理', 26, 'deployment-unit', '/dag/flow', '', 0, 1, '', 1585661766299, 1, 1585661985644, 1);
-INSERT INTO `fs_member_menu` VALUES (30, '流程列表', '后台管理:数据计算:流程管理:流程列表', 29, '', '/dag/flow/list', '', 0, 1, '', 1585661826570, 1, 1585661826570, 1);
-INSERT INTO `fs_member_menu` VALUES (31, '节点列表', '后台管理:数据计算:流程管理:节点列表', 29, '', '/dag/node/list', '', 0, 1, '', 1585661841784, 1, 1585661841784, 1);
-INSERT INTO `fs_member_menu` VALUES (32, '树形节点', '后台管理:数据计算:流程管理:树形节点', 29, '', '/dag/node/tree', '', 0, 1, '', 1585661854477, 1, 1585661854477, 1);
-INSERT INTO `fs_member_menu` VALUES (37, '辅助工具', '后台管理:数据计算:辅助工具', 26, 'rocket', '/dag/tool', '', 0, 1, '', 1585662611501, 1, 1610410293382, 1);
-INSERT INTO `fs_member_menu` VALUES (38, '属性编辑器', '后台管理:数据计算:辅助工具:属性编辑器', 37, '', '/dag/tool/property', '', 0, 1, '', 1585663056291, 1, 1615876211145, 1);
-INSERT INTO `fs_member_menu` VALUES (39, '字段编辑器', '后台管理:数据计算:辅助工具:字段编辑器', 37, '', '/dag/tool/field', '', 0, 1, '', 1585663079511, 1, 1615876222955, 1);
+INSERT INTO `fs_member_menu` VALUES (29, '数据管理', '后台管理:商业智能:数据管理', 26, 'dropbox', '/bi/data', '', 0, 1, '', 1585661766299, 1, 1634258058714, 1);
+INSERT INTO `fs_member_menu` VALUES (30, '数据源', '后台管理:商业智能:数据管理:数据源', 29, '', '/bi/data/source', '', 0, 1, '', 1585661826570, 1, 1634258102486, 1);
+INSERT INTO `fs_member_menu` VALUES (31, '数据集', '后台管理:商业智能:数据管理:数据集', 29, '', '/bi/data/dataset', '', 0, 1, '', 1585661841784, 1, 1634258119688, 1);
+INSERT INTO `fs_member_menu` VALUES (32, '数据矩阵', '后台管理:商业智能:智能报表:数据矩阵', 37, '', '/bi/report/matrix', '', 0, 1, '', 1585661854477, 1, 1634258546289, 1);
+INSERT INTO `fs_member_menu` VALUES (37, '智能报表', '后台管理:商业智能:智能报表', 26, 'radar-chart', '/bi/report', '', 0, 1, '', 1585662611501, 1, 1634258458541, 1);
+INSERT INTO `fs_member_menu` VALUES (38, '数据报表', '后台管理:商业智能:智能报表:数据报表', 37, '', '/bi/report/chart', '', 0, 1, '', 1585663056291, 1, 1634258568834, 1);
+INSERT INTO `fs_member_menu` VALUES (39, '数据大屏', '后台管理:商业智能:智能报表:数据大屏', 37, '', '/bi/report/dashboard', '', 0, 1, '', 1585663079511, 1, 1634258605522, 1);
 INSERT INTO `fs_member_menu` VALUES (40, '人脸识别', '后台管理:人脸识别', 1, 'smile', '/face/index/index', '', 0, 1, '人脸检测、人脸识别、检索对比', 1597297964946, 1, 1597298791858, 1);
 INSERT INTO `fs_member_menu` VALUES (41, '分组管理', '后台管理:人脸识别:分组管理', 40, 'team', '/face/group', '', 0, 1, '', 1597297984692, 1, 1598260929886, 1);
 INSERT INTO `fs_member_menu` VALUES (42, '人员管理', '后台管理:人脸识别:人员管理', 40, 'user', '/face/user', '', 0, 1, '', 1597298848332, 1, 1598260938414, 1);
@@ -687,7 +687,7 @@ CREATE TABLE `fs_member_user`  (
 -- ----------------------------
 -- Records of fs_member_user
 -- ----------------------------
-INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1631169364529, '127.0.0.1', 0);
+INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1633767697171, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (2, 'test', '测试123', '4b361be828611add84453a24f39772a5', '0905', 0, 1, '', 1528081567988, '127.0.0.1', 1, 1542958281919, 1, 1528267171953, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (3, '111', '111', '', '', 6, -1, '', 0, '', 0, 1584360531961, 1, 0, '', 0);
 INSERT INTO `fs_member_user` VALUES (4, '222', '222', '', '', 0, 1, '', 0, '', 0, 1629363081609, 1, 0, '', 1630054276000);

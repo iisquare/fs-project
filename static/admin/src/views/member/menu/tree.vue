@@ -154,7 +154,9 @@ export default {
       menuService.tree().then((result) => {
         if (result.code === 0) {
           this.rows = result.data
-          this.expandedRowKeys = RouteUtil.expandedRowKeys(result.data)
+          if (this.expandedRowKeys.length === 0) {
+            this.expandedRowKeys = RouteUtil.expandedRowKeys(result.data)
+          }
         }
         this.loading = false
       })
