@@ -4,12 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
 @Setter
 @Getter
-public abstract class DAGNode {
+public abstract class DAGNode implements Serializable {
 
     protected String id;
     protected DAGRunner runner;

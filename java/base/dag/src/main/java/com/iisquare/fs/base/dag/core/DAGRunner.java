@@ -2,9 +2,10 @@ package com.iisquare.fs.base.dag.core;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import java.io.Serializable;
 import java.util.*;
 
-public abstract class DAGRunner {
+public abstract class DAGRunner implements Serializable {
 
     protected JsonNode diagram;
     protected Map<String, Class<DAGNode>> nodes;
