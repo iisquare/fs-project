@@ -52,7 +52,7 @@ subprojects {
         mongodbVersion = '3.12.8'
         mysqlVersion = '5.1.48'
         rabbitmqVersion = '5.10.0'
-        elasticVersion = '7.9.3'
+        elasticVersion = '7.15.1'
         flowableVersion = '6.6.0'
     }
 

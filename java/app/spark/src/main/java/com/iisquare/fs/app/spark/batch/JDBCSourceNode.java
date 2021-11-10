@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.app.spark.core.SparkRunner;
 import com.iisquare.fs.app.spark.util.SparkUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.dag.DAGCore;
 import com.iisquare.fs.base.dag.source.AbstractJDBCSource;
 import com.iisquare.fs.base.dag.util.DAGUtil;
 import org.apache.spark.sql.Dataset;
@@ -31,7 +32,7 @@ public class JDBCSourceNode extends AbstractJDBCSource {
             Map<String, String> cfg = new LinkedHashMap<>();
             cfg.put("url", options.at("/url").asText());
             cfg.put("query", options.at("/sql").asText());
-            cfg.put("driver", options.at("/driver").asText());
+            cfg.put("driver", DAGCore.jdbcDriver(options.at("/driver").asText()));
             cfg.put("user", options.at("/username").asText());
             cfg.put("password", options.at("/password").asText());
             String partitionColumn = options.at("/partitionColumn").asText();

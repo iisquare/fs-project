@@ -21,3 +21,13 @@ nvm alias default vx.x.x
 ```
 nvm uninstall x.x.x
 ```
+
+## 依赖管理
+```
+yarn add [package]@[version] # dependencies
+yarn add -D [package]@[version] # devDependencies
+yarn add --dev [package]@[version] # devDependencies
+yarn upgrade [package]@[version]
+yarn upgrade –latest [package]
+yarn remove <package...>
+```

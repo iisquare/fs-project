@@ -6,12 +6,12 @@
           <a-row :gutter="48">
             <a-col :md="6" :sm="24">
               <a-form-model-item label="发起人" prop="submitter">
-                <service-auto-complete :search="userService.list" v-model="filters.submitter" :label.sync="filters.submitterName" />
+                <service-auto-complete :search="userService.list" v-model="filters.submitter" />
               </a-form-model-item>
             </a-col>
             <a-col :md="6" :sm="24">
               <a-form-model-item label="流程名称" prop="deploymentId">
-                <service-auto-complete :search="workflowService.list" v-model="filters.deploymentId" :label.sync="filters.deploymentName" fieldValue="deploymentId" />
+                <service-auto-complete :search="workflowService.list" v-model="filters.deploymentId" />
               </a-form-model-item>
             </a-col>
             <a-col :md="6" :sm="24">

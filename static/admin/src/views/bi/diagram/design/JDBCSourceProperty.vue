@@ -6,7 +6,7 @@
         <div class="fs-property-title">参数配置</div>
         <a-form-model-item label="驱动">
           <a-select v-model="value.options.driver" placeholder="请选择连接驱动" :allowClear="true">
-            <a-select-option :value="item.value" v-for="item in drivers" :key="item.value">{{ item.label }}</a-select-option>
+            <a-select-option :value="item.value" v-for="item in dagConfig.jdbcDrivers" :key="item.value">{{ item.label }}</a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item label="链接"><a-textarea v-model="value.options.url" placeholder="url" /></a-form-model-item>
@@ -27,6 +27,9 @@
 </template>
 
 <script>
+import UIUtil from '@/utils/ui'
+import dagService from '@/service/bi/dag'
+
 export default {
   name: 'JDBCSourceProperty',
   components: {
@@ -40,9 +43,7 @@ export default {
   },
   data () {
     return {
-      drivers: [
-        { label: 'MySQL', value: 'com.mysql.jdbc.Driver' }
-      ]
+      dagConfig: { jdbcDrivers: [] }
     }
   },
   computed: {
@@ -76,7 +77,17 @@ export default {
       }
       const result = Object.assign({}, obj, { options: Object.assign({}, obj.options, options) })
       return result
+    },
+    loadDAGConfig () {
+      UIUtil.cache(null, () => dagService.config(), 0).then(result => {
+        if (result.code === 0) {
+          this.dagConfig = result.data
+        }
+      })
     }
+  },
+  mounted () {
+    this.loadDAGConfig()
   }
 }
 </script>

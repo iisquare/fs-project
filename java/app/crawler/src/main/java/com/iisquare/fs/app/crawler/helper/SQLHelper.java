@@ -227,7 +227,7 @@ public class SQLHelper implements Closeable {
                 list.add("");
             } else if(value.getClass().isArray()) { // 数组
                 Object[] values = (Object[]) value;
-                sql = sql.replaceFirst(key, DPUtil.implode(", ", DPUtil.fillArray(values.length, "?")));
+                sql = sql.replaceFirst(key, DPUtil.implode(", ", DPUtil.fillArray("?", values.length)));
                 for (Object item : values) {
                     list.add(item);
                 }

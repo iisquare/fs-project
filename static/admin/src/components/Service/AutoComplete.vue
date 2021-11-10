@@ -1,14 +1,15 @@
 <template>
   <a-select
     show-search
-    :value="label"
+    :value="value"
     :placeholder="placeholder"
     :show-arrow="false"
     :allowClear="allowClear"
+    optionFilterProp="label"
     @search="handleSearch"
     @change="handleChange"
   >
-    <a-select-option v-for="item in rows" :key="item[fieldKey]" :record="item">{{ item[fieldLabel] }}</a-select-option>
+    <a-select-option v-for="item in rows" :key="item[fieldKey]" :record="item" :label="item[fieldLabel]">{{ item[fieldLabel] }}</a-select-option>
   </a-select>
 </template>
 
@@ -18,7 +19,6 @@ export default {
   props: {
     search: { type: Function, required: true },
     value: { type: [Number, String], default: undefined },
-    label: { type: String, default: undefined },
     placeholder: { type: String, default: '' },
     allowClear: { type: Boolean, default: true },
     pageSize: { type: Number, default: 5 },
@@ -35,13 +35,16 @@ export default {
     }
   },
   methods: {
-    handleSearch (content) {
-      this.loading = true
+    handleSearch (content = '') {
       let exceptIds = ''
       if (this.exceptIds) {
         exceptIds = Array.isArray(this.exceptIds) ? this.exceptIds.join(',') : this.exceptIds
       }
-      this.search({ name: content, exceptIds, pageSize: this.pageSize }).then((result) => {
+      const param = { [this.fieldValue]: '', [this.fieldLabel]: content, [this.fieldExcept]: exceptIds, pageSize: this.pageSize }
+      if (!param[this.fieldLabel]) param[this.fieldValue] = this.value
+      if (!param[this.fieldValue] && !param[this.fieldLabel]) return false
+      this.loading = true
+      this.search(param).then((result) => {
         if (result.code === 0) {
           this.rows = result.data.rows
         }
@@ -50,11 +53,13 @@ export default {
     },
     handleChange (value, option) {
       this.$emit('input', option ? option.data.attrs.record[this.fieldValue] : undefined)
-      this.$emit('update:label', option ? option.data.attrs.record[this.fieldLabel] : undefined)
+    },
+    trigger () {
+      this.$nextTick(() => { this.handleSearch() })
     }
   },
   mounted () {
-    this.handleSearch(this.label)
+    this.handleSearch()
   }
 }
 </script>

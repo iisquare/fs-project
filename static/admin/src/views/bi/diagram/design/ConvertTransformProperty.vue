@@ -28,13 +28,13 @@
       </a-form-model>
       <a-modal title="字段映射" v-model="formVisible" :footer="null">
         <a-form-model ref="form" :model="form" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
-          <a-form-model-item label="目标字段" prop="name">
+          <a-form-model-item label="目标字段" prop="target">
             <a-input v-model="form.target" auto-complete="on"></a-input>
           </a-form-model-item>
-          <a-form-model-item label="引用字段" prop="name">
+          <a-form-model-item label="引用字段" prop="source">
             <a-input v-model="form.source" placeholder="为空时默认与目标字段名称一致"></a-input>
           </a-form-model-item>
-          <a-form-model-item label="字段类型" prop="engine">
+          <a-form-model-item label="字段类型" prop="clsType">
             <a-select v-model="form.clsType" placeholder="请选择字段类型">
               <a-select-option value="">保持默认类型，不做程序转换</a-select-option>
               <a-select-option v-for="(item, key) in dagConfig.clsTypes" :key="key" :value="item.value">{{ item.value }} - {{ item.label }}</a-select-option>

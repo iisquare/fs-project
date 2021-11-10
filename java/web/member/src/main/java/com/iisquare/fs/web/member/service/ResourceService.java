@@ -6,6 +6,7 @@ import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.member.dao.ResourceDao;
+import com.iisquare.fs.web.member.entity.Dictionary;
 import com.iisquare.fs.web.member.entity.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -87,20 +88,11 @@ public class ResourceService extends ServiceBase {
         return resourceDao.save(info);
     }
 
-    public List<?> fillInfo(List<?> list, String ...properties) {
-        if(null == list || list.size() < 1 || properties.length < 1) return list;
+    public <T> List<T> fillInfo(List<T> list, String ...properties) {
         Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
         if(ids.size() < 1) return list;
-        Map<Integer, Resource> map = DPUtil.list2map(resourceDao.findAllById(ids), Integer.class, Resource.class, "id");
-        if(map.size() < 1) return list;
-        for (Object item : list) {
-            for (String property : properties) {
-                Resource info = map.get(ReflectUtil.getPropertyValue(item, property));
-                if(null == info) continue;
-                ReflectUtil.setPropertyValue(item, property + "Name", null, new Object[]{info.getName()});
-            }
-        }
-        return list;
+        Map<Integer, Resource> data = DPUtil.list2map(resourceDao.findAllById(ids), Integer.class, "id");
+        return DPUtil.fillValues(list, properties, "Name", DPUtil.values(data, String.class, "name"));
     }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> args) {

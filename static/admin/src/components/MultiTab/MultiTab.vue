@@ -128,7 +128,7 @@ export default {
       }
     },
     activeKey: function (newPathKey) {
-      this.$router.push({ path: newPathKey })
+      this.$router.push({ path: newPathKey }).catch(() => {})
     }
   },
   render () {

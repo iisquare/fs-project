@@ -27,6 +27,7 @@ public class DAGController extends PermitControllerBase {
         model.put("clsTypes", DAGCore.simple(DAGCore.clsTypes, "classname"));
         model.put("timezones", DAGCore.simple(DAGCore.timezones, "name"));
         model.put("locales", DAGCore.simple(DAGCore.locales, "name"));
+        model.put("jdbcDrivers", DAGCore.simple(DAGCore.jdbcDrivers, "name"));
         return ApiUtil.echoResult(0, null, model);
     }
 

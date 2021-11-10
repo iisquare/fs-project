@@ -86,20 +86,11 @@ public class CatalogService extends ServiceBase {
         return catalogDao.save(info);
     }
 
-    public List<?> fillInfo(List<?> list, String ...properties) {
-        if(null == list || list.size() < 1 || properties.length < 1) return list;
+    public <T> List<T> fillInfo(List<T> list, String ...properties) {
         Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
         if(ids.size() < 1) return list;
-        Map<Integer, Catalog> map = DPUtil.list2map(catalogDao.findAllById(ids), Integer.class, Catalog.class, "id");
-        if(map.size() < 1) return list;
-        for (Object item : list) {
-            for (String property : properties) {
-                Catalog info = map.get(ReflectUtil.getPropertyValue(item, property));
-                if(null == info) continue;
-                ReflectUtil.setPropertyValue(item, property + "Name", null, new Object[]{info.getName()});
-            }
-        }
-        return list;
+        Map<Integer, Catalog> data = DPUtil.list2map(catalogDao.findAllById(ids), Integer.class, "id");
+        return DPUtil.fillValues(list, properties, "Name", DPUtil.values(data, String.class, "name"));
     }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> args) {

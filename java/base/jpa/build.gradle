@@ -1,5 +1,6 @@
 dependencies {
     compile project(':base:web')
+    testCompile project(':base:test')
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: springBootVersion
     compile group: 'com.alibaba', name: 'druid', version: '1.1.21'
     compile group: 'mysql', name: 'mysql-connector-java', version: mysqlVersion

@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 15/10/2021 08:48:53
+ Date: 19/10/2021 11:43:24
 */
 
 SET NAMES utf8mb4;
@@ -508,14 +508,14 @@ INSERT INTO `fs_member_resource` VALUES (32, '数据加工', '商业智能:数�
 INSERT INTO `fs_member_resource` VALUES (33, '添加', '商业智能:数据加工:添加', 32, 'bi', 'diagram', 'add', 0, 1, '', 1585384138739, 1, 1631754508516, 1);
 INSERT INTO `fs_member_resource` VALUES (34, '修改', '商业智能:数据加工:修改', 32, 'bi', 'diagram', 'modify', 0, 1, '', 1585384152067, 1, 1631754517030, 1);
 INSERT INTO `fs_member_resource` VALUES (35, '删除', '商业智能:数据加工:删除', 32, 'bi', 'diagram', 'delete', 0, 1, '', 1585384168964, 1, 1631754529772, 1);
-INSERT INTO `fs_member_resource` VALUES (36, '流程节点', '数据计算:流程节点', 31, 'dag', 'node', '', 0, 1, '', 1585669452789, 1, 1585727887482, 1);
-INSERT INTO `fs_member_resource` VALUES (37, '添加', '数据计算:流程节点:添加', 36, 'dag', 'node', 'add', 0, 1, '', 1585669473979, 1, 1585669473979, 1);
-INSERT INTO `fs_member_resource` VALUES (38, '修改', '数据计算:流程节点:修改', 36, 'dag', 'node', 'modify', 0, 1, '', 1585669487729, 1, 1585669487729, 1);
-INSERT INTO `fs_member_resource` VALUES (39, '删除', '数据计算:流程节点:删除', 36, 'dag', 'node', 'delete', 0, 1, '', 1585669499607, 1, 1585669499607, 1);
-INSERT INTO `fs_member_resource` VALUES (40, '流程', '数据计算:流程', 31, 'dag', 'flow', '', 0, 1, '', 1585727898953, 1, 1585727898953, 1);
-INSERT INTO `fs_member_resource` VALUES (41, '添加', '数据计算:流程:添加', 40, 'dag', 'flow', 'add', 0, 1, '', 1585727916428, 1, 1585727941798, 1);
-INSERT INTO `fs_member_resource` VALUES (42, '修改', '数据计算:流程:修改', 40, 'dag', 'flow', 'modify', 0, 1, '', 1585727959930, 1, 1585727959930, 1);
-INSERT INTO `fs_member_resource` VALUES (43, '删除', '数据计算:流程:删除', 40, 'dag', 'flow', 'delete', 0, 1, '', 1585727972170, 1, 1585727972170, 1);
+INSERT INTO `fs_member_resource` VALUES (36, '数据源', '商业智能:数据源', 31, 'bi', 'source', '', 0, 1, '', 1585669452789, 1, 1634614816541, 1);
+INSERT INTO `fs_member_resource` VALUES (37, '添加', '商业智能:数据源:添加', 36, 'bi', 'source', 'add', 0, 1, '', 1585669473979, 1, 1634614829860, 1);
+INSERT INTO `fs_member_resource` VALUES (38, '修改', '商业智能:数据源:修改', 36, 'bi', 'source', 'modify', 0, 1, '', 1585669487729, 1, 1634614838196, 1);
+INSERT INTO `fs_member_resource` VALUES (39, '删除', '商业智能:数据源:删除', 36, 'bi', 'source', 'delete', 0, 1, '', 1585669499607, 1, 1634614850447, 1);
+INSERT INTO `fs_member_resource` VALUES (40, '数据集', '商业智能:数据集', 31, 'bi', 'dataset', '', 0, 1, '', 1585727898953, 1, 1634614884425, 1);
+INSERT INTO `fs_member_resource` VALUES (41, '添加', '商业智能:数据集:添加', 40, 'bi', 'dataset', 'add', 0, 1, '', 1585727916428, 1, 1634614892519, 1);
+INSERT INTO `fs_member_resource` VALUES (42, '修改', '商业智能:数据集:修改', 40, 'bi', 'dataset', 'modify', 0, 1, '', 1585727959930, 1, 1634614899268, 1);
+INSERT INTO `fs_member_resource` VALUES (43, '删除', '商业智能:数据集:删除', 40, 'bi', 'dataset', 'delete', 0, 1, '', 1585727972170, 1, 1634614913436, 1);
 INSERT INTO `fs_member_resource` VALUES (44, '人脸识别', '人脸识别', 0, 'face', '', '', 0, 1, '', 1597299393466, 1, 1597299393466, 1);
 INSERT INTO `fs_member_resource` VALUES (45, '分组', '人脸识别:分组', 44, 'face', 'group', '', 0, 1, '', 1597299426164, 1, 1597299426164, 1);
 INSERT INTO `fs_member_resource` VALUES (46, '人员', '人脸识别:人员', 44, 'face', 'user', '', 0, 1, '', 1597299441594, 1, 1597299441594, 1);

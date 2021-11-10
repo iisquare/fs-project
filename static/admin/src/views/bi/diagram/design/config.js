@@ -4,6 +4,10 @@ const MODEL_BATCH = 'batch'
 const MODEL_STREAM = 'stream'
 
 const config = {
+  ENGINE_SPARK,
+  ENGINE_FLINK,
+  MODEL_BATCH,
+  MODEL_STREAM,
   diagram: { id: 0, name: '', engine: '', model: '' },
   uuid () { return new Date().getTime() + ('' + Math.random()).slice(-6) }
 }
@@ -84,6 +88,10 @@ const ScriptTransformOptions = () => {
   return { jarURI: '', pkgClass: '' }
 }
 
+const AnchorTransformOptions = () => {
+  return { convertible: false, items: [] }
+}
+
 const ElasticsearchSourceOptions = () => {
   return { cluster: 'elasticsearch', servers: '127.0.0.1:9200', username: '', password: '', collection: '', query: '{}' }
 }
@@ -117,7 +125,7 @@ const ConsoleSinkOptions = () => {
 }
 
 const ElasticsearchSinkOptions = () => {
-  return { servers: '127.0.0.1:9200', username: '', password: '', collection: '', batchSize: 1, flushInterval: -1, idField: '_id', tableField: '_table' }
+  return { servers: '127.0.0.1:9200', username: '', password: '', collection: '', batchSize: 1, flushInterval: -1, idField: '_id', tableField: '_table', mode: 'index' }
 }
 
 const MongoSinkOptions = () => {
@@ -252,6 +260,10 @@ export default Object.assign(config, {
       supports: [[ENGINE_SPARK, MODEL_BATCH, ENGINE_FLINK, MODEL_STREAM]]
     }, {
       type: 'ScriptTransform', label: 'Script', title: '逻辑脚本', icon: 'dagScript', options: ScriptTransformOptions, property: () => import('./ScriptTransformProperty')
+    }), Object.assign({
+      supports: [[ENGINE_SPARK, MODEL_BATCH]]
+    }, {
+      type: 'AnchorTransform', label: 'Anchor', title: '数据锚点', icon: 'dagAnchor', options: AnchorTransformOptions, property: () => import('./AnchorTransformProperty')
     })]
   }, {
     name: '数据输出',
@@ -276,7 +288,7 @@ export default Object.assign(config, {
     }, {
       type: 'HBaseSink', label: 'HBase', title: 'HBase输出', icon: 'dagSink', options: DefaultOptions, property: () => import('./DefaultProperty')
     }), Object.assign({
-      supports: [[ENGINE_FLINK, MODEL_STREAM]]
+      supports: [[ENGINE_FLINK, MODEL_STREAM], [ENGINE_SPARK, MODEL_BATCH]]
     }, {
       type: 'ElasticsearchSink', label: 'Elasticsearch', title: 'Elasticsearch输出', icon: 'dagSink', options: ElasticsearchSinkOptions, property: () => import('./ElasticsearchSinkProperty')
     })]

@@ -21,16 +21,6 @@ yarn run build
 yarn run lint
 ```
 
-- 依赖管理
-```
-yarn add [package]@[version] # dependencies
-yarn add -D [package]@[version] # devDependencies
-yarn add --dev [package]@[version] # devDependencies
-yarn upgrade [package]@[version]
-yarn upgrade –latest [package]
-yarn remove <package...>
-```
-
 - 跨域请求
 ```
 # 将API接口地址设置为本地路径

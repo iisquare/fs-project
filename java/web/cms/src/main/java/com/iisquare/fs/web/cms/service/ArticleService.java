@@ -88,22 +88,6 @@ public class ArticleService extends ServiceBase {
         return articleDao.save(info);
     }
 
-    public List<?> fillInfo(List<?> list, String ...properties) {
-        if(null == list || list.size() < 1 || properties.length < 1) return list;
-        Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
-        if(ids.size() < 1) return list;
-        Map<Integer, Article> map = DPUtil.list2map(articleDao.findAllById(ids), Integer.class, Article.class, "id");
-        if(map.size() < 1) return list;
-        for (Object item : list) {
-            for (String property : properties) {
-                Article info = map.get(ReflectUtil.getPropertyValue(item, property));
-                if(null == info) continue;
-                ReflectUtil.setPropertyValue(item, property + "Title", null, new Object[]{info.getTitle()});
-            }
-        }
-        return list;
-    }
-
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> args) {
         Map<String, Object> result = new LinkedHashMap<>();
         int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);

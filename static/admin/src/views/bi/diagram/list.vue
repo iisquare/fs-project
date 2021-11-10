@@ -127,7 +127,7 @@ export default {
         { title: '处理模式', dataIndex: 'modelText' },
         { title: '排序', dataIndex: 'sort' },
         { title: '状态', dataIndex: 'statusText' },
-        { title: '操作', scopedSlots: { customRender: 'action' } }
+        { title: '操作', scopedSlots: { customRender: 'action' }, width: 180 }
       ],
       selection: RouteUtil.selection(),
       pagination: {},

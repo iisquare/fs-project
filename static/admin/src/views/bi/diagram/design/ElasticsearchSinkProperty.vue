@@ -9,11 +9,18 @@
         <a-form-model-item label="认证密码"><a-input v-model="value.options.password" placeholder="仅在配置认证用户时有效" /></a-form-model-item>
         <a-form-model-item label="索引名称"><a-input v-model="value.options.collection" placeholder="index name" /></a-form-model-item>
         <a-form-model-item label="分批大小"><a-input-number v-model="value.options.batchSize" placeholder="-1禁用" /></a-form-model-item>
-        <a-form-model-item label="刷新间隔">
+        <a-form-model-item label="刷新间隔" v-if="config.diagram.engine === config.ENGINE_FLINK">
           <a-space><a-input-number v-model="value.options.flushInterval" placeholder="-1禁用" /><span>ms</span></a-space>
         </a-form-model-item>
         <a-form-model-item label="主键字段"><a-input v-model="value.options.idField" placeholder="主键字段名称" /></a-form-model-item>
-        <a-form-model-item label="索引字段"><a-input v-model="value.options.tableField" placeholder="索引字段名称，用于索引拆分" /></a-form-model-item>
+        <a-form-model-item label="索引字段" v-if="config.diagram.engine === config.ENGINE_FLINK">
+          <a-input v-model="value.options.tableField" placeholder="索引字段名称，用于索引拆分" />
+        </a-form-model-item>
+        <a-form-model-item label="输出模式">
+          <a-select v-model="value.options.mode" placeholder="请选择输出模式" :allowClear="true">
+            <a-select-option :value="item.value" v-for="item in modes" :key="item.value">{{ item.label }}</a-select-option>
+          </a-select>
+        </a-form-model-item>
       </a-form-model>
     </a-tab-pane>
   </a-tabs>
@@ -31,7 +38,14 @@ export default {
     activeItem: { type: Object, required: true }
   },
   data () {
-    return {}
+    return {
+      modes: [
+        { label: 'index - 添新替旧', value: 'index' },
+        { label: 'create - 添新，若存在抛异常', value: 'create' },
+        { label: 'update - 更旧，若不存在抛异常', value: 'update' },
+        { label: 'upsert - 添新合旧', value: 'upsert' }
+      ]
+    }
   },
   computed: {
     defaults () {

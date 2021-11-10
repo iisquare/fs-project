@@ -566,22 +566,6 @@ public class WorkflowService extends ServiceBase {
         return true;
     }
 
-    public List<?> fillInfo(List<?> list, String ...properties) {
-        if(null == list || list.size() < 1 || properties.length < 1) return list;
-        Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
-        if(ids.size() < 1) return list;
-        Map<Integer, Workflow> map = DPUtil.list2map(workflowDao.findAllById(ids), Integer.class, Workflow.class, "id");
-        if(map.size() < 1) return list;
-        for (Object item : list) {
-            for (String property : properties) {
-                Workflow info = map.get(ReflectUtil.getPropertyValue(item, property));
-                if(null == info) continue;
-                ReflectUtil.setPropertyValue(item, property + "Name", null, new Object[]{info.getName()});
-            }
-        }
-        return list;
-    }
-
     public List<Workflow> fillDeployment(List<Workflow> list) {
         if(null == list || list.size() < 1) return list;
         String[] properties = new String[]{"deploymentId"};

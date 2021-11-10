@@ -28,3 +28,5 @@
 /python/mtcnn/data
 /python/spider/files
 /python/insightface/model
+/java/web/xlab/*.jpg
+/java/web/xlab/*.ttf

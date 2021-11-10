@@ -657,8 +657,8 @@ public class DPUtil {
     /**
      * 获取初始化填充数组
      */
-    public static Object[] fillArray(int length, Object object) {
-        Object[] array = new Object[length];
+    public static <T> T[] fillArray(T object, int length) {
+        T[] array = (T[]) DPUtil.array(object.getClass(), length);
         Arrays.fill(array, object);
         return array;
     }
@@ -724,6 +724,14 @@ public class DPUtil {
             map.put((K) kvs[i], (V) kvs[i + 1]);
         }
         return map;
+    }
+
+    public static String[] suffix(String[] array, String suffix) {
+        String[] result = new String[array.length];
+        for (int i = 0; i < array.length; i++) {
+            result[i] = array[i] + suffix;
+        }
+        return result;
     }
 
     public static String stringify(Object object) {
@@ -805,6 +813,10 @@ public class DPUtil {
         return list;
     }
 
+    public static <T> List<T> fillValues(List<T> list, String[] properties, String suffix, Map<?, ?> map) {
+        return fillValues(list, properties, suffix(properties, suffix), fillArray(map, properties.length));
+    }
+
     public static <T> List<T> fillValues(List<T> list, String[] froms, String[] tos, Map<?, ?>... maps) {
         if (null == list) return null;
         for (Object item : list) {
@@ -820,8 +832,9 @@ public class DPUtil {
     /**
      * 获取对应字段的值列表
      */
-    public static <T> Set<T> values(List<?> list, Class<T> tClass, String... properties) {
+    public static <T> Set<T> values(Collection<?> list, Class<T> tClass, String... properties) {
         Set<T> valueList = new HashSet<>();
+        if (null == list || list.size() < 1 || properties.length < 1) return valueList;
         for (Object object : list) {
             for (String property : properties) {
                 Object value = ReflectUtil.getPropertyValue(object, property);
@@ -830,6 +843,18 @@ public class DPUtil {
             }
         }
         return valueList;
+    }
+
+    /**
+     * 获取键值对映射
+     */
+    public static <K, V> Map<K, V> values(Map<K, ?> map, Class<V> tClass, String property) {
+        Map<K, V> result = new LinkedHashMap<>();
+        for (Map.Entry<K, ?> entry : map.entrySet()) {
+            Object value = ReflectUtil.getPropertyValue(entry.getValue(), property);
+            result.put(entry.getKey(), (V) value);
+        }
+        return result;
     }
 
     public static <T> Set<T> values(ArrayNode array, Class<T> tClass, String... properties) {

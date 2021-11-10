@@ -11,13 +11,24 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchSinkFunction;
 import org.apache.flink.streaming.connectors.elasticsearch.RequestIndexer;
 import org.apache.flink.streaming.connectors.elasticsearch7.ElasticsearchSink;
+import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.client.Requests;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class ElasticsearchSinkNode extends AbstractElasticsearchSink implements ElasticsearchSinkFunction<JsonNode> {
 
+    public static final Map<String, DocWriteRequest.OpType> modes = new LinkedHashMap(){{
+        put("index", DocWriteRequest.OpType.INDEX);
+        put("create", DocWriteRequest.OpType.CREATE);
+        put("update", DocWriteRequest.OpType.fromId((byte) -1));
+        put("upsert", DocWriteRequest.OpType.fromId((byte) -1));
+    }};
+
     String collection, idField, tableField;
+    DocWriteRequest.OpType mode;
+    ElasticsearchSink<JsonNode> sink;
 
     @Override
     public boolean configure(JsonNode... configs) {
@@ -25,11 +36,7 @@ public class ElasticsearchSinkNode extends AbstractElasticsearchSink implements 
         collection = options.at("/collection").asText();
         idField = options.at("/idField").asText();
         tableField = options.at("/tableField").asText();
-        return true;
-    }
-
-    @Override
-    public Object process() {
+        mode = modes.getOrDefault(options.at("/mode").asText(), DocWriteRequest.OpType.INDEX);
         ElasticsearchSink.Builder<JsonNode> builder = new ElasticsearchSink.Builder<>(
                 ElasticUtil.hosts(options.at("/servers").asText()), this);
         builder.setRestClientFactory(ElasticUtil.client(
@@ -37,7 +44,13 @@ public class ElasticsearchSinkNode extends AbstractElasticsearchSink implements 
         int batchSize = options.at("/batchSize").asInt();
         builder.setBulkFlushMaxActions(batchSize > 0 ? batchSize : -1);
         builder.setBulkFlushInterval(Math.max(-1, options.at("/flushInterval").asInt()));
-        FlinkUtil.union(DataStream.class, sources).addSink(builder.build());
+        sink= builder.build();
+        return true;
+    }
+
+    @Override
+    public Object process() {
+        FlinkUtil.union(DataStream.class, sources).addSink(sink);
         return null;
     }
 
@@ -53,6 +66,6 @@ public class ElasticsearchSinkNode extends AbstractElasticsearchSink implements 
             id = element.get(idField).asText();
             ((ObjectNode) element).remove(idField);
         }
-        indexer.add(Requests.indexRequest().index(collection).id(id).source(DPUtil.toJSON(element, Map.class)));
+        indexer.add(Requests.indexRequest().opType(mode).index(collection).id(id).source(DPUtil.toJSON(element, Map.class)));
     }
 }

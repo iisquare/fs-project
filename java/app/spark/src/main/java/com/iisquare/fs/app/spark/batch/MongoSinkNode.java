@@ -1,5 +1,6 @@
 package com.iisquare.fs.app.spark.batch;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.app.spark.util.SparkUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.sink.AbstractMongoSink;
@@ -16,10 +17,11 @@ import java.util.Map;
 public class MongoSinkNode extends AbstractMongoSink {
 
     public static final String OUTPUT_PREFIX = "spark.mongodb.output.";
+    WriteConfig config;
 
     @Override
-    public Object process() {
-        Dataset dataset = SparkUtil.union(Dataset.class, sources);
+    public boolean configure(JsonNode... configs) {
+        if (!super.configure(configs)) return false;
         Map<String, String> config = new LinkedHashMap<>();
         String uri = "mongodb://";
         String username = options.at("/username").asText();
@@ -34,7 +36,14 @@ public class MongoSinkNode extends AbstractMongoSink {
         if (batchSize > 0) config.put(OUTPUT_PREFIX + "maxBatchSize", String.valueOf(batchSize));
         config.put(OUTPUT_PREFIX + "replaceDocument", options.at("/replaceDocument").asText("true"));
         config.put(OUTPUT_PREFIX + "forceInsert", options.at("/forceInsert").asText("false"));
-        MongoSpark.save(dataset, WriteConfig.create(config));
+        this.config = WriteConfig.create(config);
+        return true;
+    }
+
+    @Override
+    public Object process() {
+        Dataset dataset = SparkUtil.union(Dataset.class, sources);
+        MongoSpark.save(dataset, config);
         return null;
     }
 }

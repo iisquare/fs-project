@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.CodeUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.iisquare.fs.base.core.util.ReflectUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
@@ -207,47 +206,17 @@ public class UserService extends ServiceBase {
     }
 
     public <T> List<T> fillInfo(List<T> list, String ...properties) {
-        if(null == list || list.size() < 1 || properties.length < 1) return list;
-        Set<Integer> ids = new HashSet<>();
-        for (Object item : list) {
-            for (String property : properties) {
-                int id = DPUtil.parseInt(ReflectUtil.getPropertyValue(item, property));
-                if(id < 1) continue;
-                ids.add(DPUtil.parseInt(id));
-            }
-        }
+        Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
         if(ids.size() < 1) return list;
-        List<User> users = userDao.findAllById(ids);
-        Map<Integer, User> map = new HashMap<>();
-        for (User item : users) {
-            map.put(item.getId(), item);
-        }
-        if(users.size() < 1) return list;
-        for (Object item : list) {
-            for (String property : properties) {
-                User user = map.get(ReflectUtil.getPropertyValue(item, property));
-                if(null == user) continue;
-                ReflectUtil.setPropertyValue(item, property + "Name", new Class[]{String.class}, new Object[]{user.getName()});
-            }
-        }
-        return list;
+        Map<Integer, User> data = DPUtil.list2map(userDao.findAllById(ids), Integer.class, "id");
+        return DPUtil.fillValues(list, properties, "Name", DPUtil.values(data, String.class, "name"));
     }
 
     public ArrayNode fillInfo(ArrayNode array, String[] properties) {
-        if(null == array || array.size() < 1 || properties.length < 1) return array;
         Set<Integer> ids = DPUtil.values(array, Integer.class, properties);
         if(ids.size() < 1) return array;
-        Map<Integer, User> userInfos = DPUtil.list2map(userDao.findAllById(ids), Integer.class, "id");
-        if(userInfos.size() < 1) return array;
-        Iterator<JsonNode> iterator = array.iterator();
-        while (iterator.hasNext()) {
-            ObjectNode node = (ObjectNode) iterator.next();
-            for (String property : properties) {
-                User user = userInfos.get(node.at("/" + property).asText(""));
-                if(null == user) continue;
-                node.put(property + "Name", user.getName());
-            }
-        }
-        return array;
+        Map<Integer, User> data = DPUtil.list2map(userDao.findAllById(ids), Integer.class, "id");
+        JsonNode reflect = DPUtil.toJSON(DPUtil.values(data, String.class, "name"));
+        return DPUtil.fillValues(array, properties, DPUtil.suffix(properties, "Name"), reflect);
     }
 }

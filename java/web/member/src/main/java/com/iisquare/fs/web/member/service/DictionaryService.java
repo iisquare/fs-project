@@ -69,20 +69,11 @@ public class DictionaryService extends ServiceBase {
         return dictionaryDao.save(info);
     }
 
-    public List<?> fillInfo(List<?> list, String ...properties) {
-        if(null == list || list.size() < 1 || properties.length < 1) return list;
+    public <T> List<T> fillInfo(List<T> list, String ...properties) {
         Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
         if(ids.size() < 1) return list;
-        Map<Integer, Dictionary> map = DPUtil.list2map(dictionaryDao.findAllById(ids), Integer.class, Dictionary.class, "id");
-        if(map.size() < 1) return list;
-        for (Object item : list) {
-            for (String property : properties) {
-                Dictionary info = map.get(ReflectUtil.getPropertyValue(item, property));
-                if(null == info) continue;
-                ReflectUtil.setPropertyValue(item, property + "Name", null, new Object[]{info.getName()});
-            }
-        }
-        return list;
+        Map<Integer, Dictionary> data = DPUtil.list2map(dictionaryDao.findAllById(ids), Integer.class, "id");
+        return DPUtil.fillValues(list, properties, "Name", DPUtil.values(data, String.class, "name"));
     }
 
     public ObjectNode available(boolean withChildren) {

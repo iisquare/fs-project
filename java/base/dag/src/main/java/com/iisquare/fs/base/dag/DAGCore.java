@@ -166,6 +166,13 @@ public class DAGCore {
         }});
     }};
 
+    public static Map<String, Map<String, Object>> jdbcDrivers = new LinkedHashMap(){{
+        put("MySQL", new LinkedHashMap(){{
+            put("name", "MySQL");
+            put("driver", "com.mysql.jdbc.Driver");
+        }});
+    }};
+
     public static List<Map<String, Object>> simple(Map<String, Map<String, Object>> map, String label) {
         List<Map<String, Object>> list = new ArrayList<>();
         for (Map.Entry<String, Map<String, Object>> entry : map.entrySet()) {
@@ -188,6 +195,11 @@ public class DAGCore {
     public static Class type(String type) {
         if (!clsTypes.containsKey(type)) return null;
         return (Class) clsTypes.get(type).get(TYPE_FIELD);
+    }
+
+    public static String jdbcDriver(String driver) {
+        if (!jdbcDrivers.containsKey(driver)) return driver;
+        return (String) jdbcDrivers.get(driver).get("driver");
     }
 
     public static <T> T convert(Class<T> classType, Object value) {
