@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 19/10/2021 11:43:24
+ Date: 10/11/2021 19:23:42
 */
 
 SET NAMES utf8mb4;
@@ -37,7 +37,7 @@ CREATE TABLE `fs_member_dictionary`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_content`(`content`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_dictionary
@@ -340,6 +340,7 @@ INSERT INTO `fs_member_relation` VALUES ('role_resource_1_124', 'role_resource',
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_125', 'role_resource', 1, 125);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_126', 'role_resource', 1, 126);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_127', 'role_resource', 1, 127);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_128', 'role_resource', 1, 128);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_13', 'role_resource', 1, 13);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_14', 'role_resource', 1, 14);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_15', 'role_resource', 1, 15);
@@ -600,6 +601,7 @@ INSERT INTO `fs_member_resource` VALUES (124, '删除', '内容管理:标签:删
 INSERT INTO `fs_member_resource` VALUES (125, '添加', '内容管理:引用:添加', 121, 'cms', 'cite', 'add', 0, 1, '', 1628841639288, 1, 1628841639288, 1);
 INSERT INTO `fs_member_resource` VALUES (126, '修改', '内容管理:引用:修改', 121, 'cms', 'cite', 'modify', 0, 1, '', 1628841651912, 1, 1628841651912, 1);
 INSERT INTO `fs_member_resource` VALUES (127, '删除', '内容管理:引用:删除', 121, 'cms', 'cite', 'delete', 0, 1, '', 1628841661763, 1, 1628841661763, 1);
+INSERT INTO `fs_member_resource` VALUES (128, '结构', '商业智能:数据源:结构', 36, 'bi', 'source', 'schema', 0, 1, '', 1636543399133, 1, 1636543399133, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_role
@@ -616,7 +618,7 @@ CREATE TABLE `fs_member_role`  (
   `updated_time` bigint NOT NULL DEFAULT 0,
   `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_role
@@ -687,7 +689,7 @@ CREATE TABLE `fs_member_user`  (
 -- ----------------------------
 -- Records of fs_member_user
 -- ----------------------------
-INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1633767697171, '127.0.0.1', 0);
+INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1636420197403, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (2, 'test', '测试123', '4b361be828611add84453a24f39772a5', '0905', 0, 1, '', 1528081567988, '127.0.0.1', 1, 1542958281919, 1, 1528267171953, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (3, '111', '111', '', '', 6, -1, '', 0, '', 0, 1584360531961, 1, 0, '', 0);
 INSERT INTO `fs_member_user` VALUES (4, '222', '222', '', '', 0, 1, '', 0, '', 0, 1629363081609, 1, 0, '', 1630054276000);

@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 05/11/2021 09:16:00
+ Date: 10/11/2021 16:11:20
 */
 
 SET NAMES utf8mb4;
@@ -39,7 +39,7 @@ CREATE TABLE `fs_bi_dataset`  (
 -- ----------------------------
 -- Records of fs_bi_dataset
 -- ----------------------------
-INSERT INTO `fs_bi_dataset` VALUES (1, 'MySQL测试', '', '{}', 0, 1, 'sa', 1, 1634781824646, 1, 1635323239757);
+INSERT INTO `fs_bi_dataset` VALUES (1, 'MySQL测试', '', '{}', 0, 1, 'sa', 1, 1634781824646, 1, 1636440862032);
 INSERT INTO `fs_bi_dataset` VALUES (2, 'Mongo测试', '', '{}', 0, 1, '', 1, 1634781928370, 1, 1635323252448);
 
 -- ----------------------------
@@ -62,12 +62,12 @@ CREATE TABLE `fs_bi_diagram`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_engine`(`engine`) USING BTREE,
   INDEX `idx_model`(`model`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程图信息' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程图信息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_bi_diagram
 -- ----------------------------
-INSERT INTO `fs_bi_diagram` VALUES (2, 'Spark-离线批处理测试', 'spark', 'batch', '{\"canvas\":{\"width\":500,\"height\":500,\"top\":154.5},\"items\":[{\"id\":\"item_1\",\"name\":\"JDBC_1\",\"icon\":\"dagSource\",\"x\":94,\"y\":130,\"index\":1,\"type\":\"JDBCSource\",\"description\":\"JDBC输入\",\"options\":{\"driver\":\"com.mysql.jdbc.Driver\",\"url\":\"jdbc:mysql://localhost:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true\",\"username\":\"root\",\"password\":\"admin888\",\"iterable\":false,\"partitionColumn\":\"\",\"lowerBound\":\"\",\"upperBound\":\"\",\"numPartitions\":0,\"fetchSize\":0,\"sql\":\"select * from fs_member_user limit 3\"},\"alias\":\"user\",\"kvConfigPrefix\":\"\"},{\"id\":\"item_9\",\"name\":\"Anchor_9\",\"icon\":\"dagAnchor\",\"x\":181,\"y\":303,\"index\":9,\"type\":\"AnchorTransform\",\"description\":\"数据锚点\",\"options\":{\"convertible\":false,\"items\":[],\"mode\":false},\"alias\":\"\",\"kvConfigPrefix\":\"\"}],\"relations\":[{\"sourceId\":\"item_1\",\"targetId\":\"item_9\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"}]}', 7, 1, '', 1, 1631674988145, 1, 1634611373963);
+INSERT INTO `fs_bi_diagram` VALUES (2, 'Spark-离线批处理测试', 'spark', 'batch', '{\"canvas\":{\"width\":500,\"height\":500,\"top\":196.5},\"items\":[{\"id\":\"item_1\",\"name\":\"JDBC_1\",\"icon\":\"dagSource\",\"x\":140,\"y\":99,\"index\":1,\"type\":\"JDBCSource\",\"description\":\"JDBC输入\",\"options\":{\"driver\":\"com.mysql.jdbc.Driver\",\"url\":\"jdbc:mysql://localhost:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true\",\"username\":\"root\",\"password\":\"admin888\",\"iterable\":false,\"partitionColumn\":\"\",\"lowerBound\":\"\",\"upperBound\":\"\",\"numPartitions\":0,\"fetchSize\":0,\"sql\":\"select * from fs_member_user limit 3\"},\"alias\":\"user\",\"kvConfigPrefix\":\"\"},{\"id\":\"item_10\",\"name\":\"Console_10\",\"icon\":\"dagSink\",\"x\":54,\"y\":298,\"index\":10,\"type\":\"ConsoleSink\",\"description\":\"Console输出\",\"options\":{\"echoConfig\":false,\"mode\":\"\"},\"kvConfigPrefix\":\"\"},{\"id\":\"item_11\",\"name\":\"Elasticsearch_11\",\"icon\":\"dagSink\",\"x\":324,\"y\":291,\"index\":11,\"type\":\"ElasticsearchSink\",\"description\":\"Elasticsearch输出\",\"options\":{\"servers\":\"127.0.0.1:9200\",\"username\":\"\",\"password\":\"\",\"collection\":\"fs_test\",\"batchSize\":200,\"flushInterval\":-1,\"idField\":\"\",\"tableField\":\"_table\",\"mode\":\"index\"},\"kvConfigPrefix\":\"\"}],\"relations\":[{\"sourceId\":\"item_1\",\"targetId\":\"item_10\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"},{\"sourceId\":\"item_1\",\"targetId\":\"item_11\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"}]}', 7, 1, '', 1, 1631674988145, 1, 1636512980348);
 INSERT INTO `fs_bi_diagram` VALUES (3, 'Spark-在线流处理测试', 'spark', 'stream', '{\"canvas\":{\"width\":500,\"height\":500,\"top\":154.5},\"items\":[{\"id\":\"item_31\",\"name\":\"Console_31\",\"icon\":\"dagSink\",\"x\":240,\"y\":369,\"index\":31,\"type\":\"ConsoleSink\",\"description\":\"Console输出\",\"options\":{\"echoConfig\":true,\"mode\":\"line\"},\"kvConfigPrefix\":\"\"},{\"id\":\"item_34\",\"name\":\"JDBC_34\",\"icon\":\"dagSource\",\"x\":86,\"y\":209,\"index\":34,\"type\":\"JDBCSource\",\"description\":\"JDBC输入\",\"options\":{\"driver\":\"MySQL\",\"url\":\"jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true\",\"username\":\"root\",\"password\":\"admin888\",\"iterable\":false,\"sql\":\"select * from fs_member_role\"},\"alias\":\"\",\"kvConfigPrefix\":\"\"},{\"id\":\"item_35\",\"name\":\"JSON_35\",\"icon\":\"dagConfig\",\"x\":337,\"y\":104,\"index\":35,\"type\":\"JSONConfig\",\"description\":\"JSON参数\",\"options\":{\"json\":\"{}\"}}],\"relations\":[{\"sourceId\":\"item_34\",\"targetId\":\"item_31\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"},{\"sourceId\":\"item_35\",\"targetId\":\"item_31\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"}]}', 8, 1, '', 1, 1631858852189, 1, 1634172510556);
 INSERT INTO `fs_bi_diagram` VALUES (4, 'Flink-离线批处理测试', 'flink', 'batch', '{\"canvas\":{\"width\":500,\"height\":500,\"top\":154.5},\"items\":[{\"id\":\"item_1\",\"name\":\"Script_1\",\"icon\":\"dagScript\",\"x\":127,\"y\":148,\"index\":1,\"type\":\"ScriptTransform\",\"description\":\"逻辑脚本\",\"options\":{\"jarURI\":\"file:/D:/htdocs/fs-project-vip/java/plugins/flink/build/libs/fs-project-plugins-flink-0.0.1-SNAPSHOT.jar\",\"pkgClass\":\"com.iisquare.fs.plugins.flink.TestTransform\"},\"alias\":\"\",\"kvConfigPrefix\":\"\"},{\"id\":\"item_2\",\"name\":\"Console_2\",\"icon\":\"dagSink\",\"x\":186,\"y\":331,\"index\":2,\"type\":\"ConsoleSink\",\"description\":\"Console输出\",\"options\":{\"echoConfig\":false,\"mode\":\"line\"},\"kvConfigPrefix\":\"\"}],\"relations\":[{\"sourceId\":\"item_1\",\"targetId\":\"item_2\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"}]}', 9, 1, '', 1, 1631858899715, 1, 1634172150472);
 INSERT INTO `fs_bi_diagram` VALUES (5, 'Sample-访问日志处理', 'flink', 'stream', '{\"canvas\":{\"width\":500,\"height\":500,\"top\":63},\"items\":[{\"id\":\"item_1\",\"name\":\"Kafka_1\",\"icon\":\"dagSource\",\"x\":139,\"y\":76,\"index\":1,\"type\":\"KafkaSource\",\"description\":\"Kafka输入\",\"options\":{\"bootstrap\":\"kafka:9092\",\"zookeeper\":\"zookeeper:2181/kafka\",\"offset\":\"earliest\",\"group\":\"fs-bi\",\"topic\":\"fs-access-log\",\"commitInterval\":1000},\"alias\":\"\",\"kvConfigPrefix\":\"\"},{\"id\":\"item_2\",\"name\":\"Console_2\",\"icon\":\"dagSink\",\"x\":298,\"y\":370,\"index\":2,\"type\":\"ConsoleSink\",\"description\":\"Console输出\",\"options\":{\"echoConfig\":false,\"mode\":\"\"},\"kvConfigPrefix\":\"\"},{\"id\":\"item_3\",\"name\":\"Script_3\",\"icon\":\"dagScript\",\"x\":176,\"y\":182,\"index\":3,\"type\":\"ScriptTransform\",\"description\":\"逻辑脚本\",\"options\":{\"jarURI\":\"\",\"pkgClass\":\"com.iisquare.fs.app.flink.script.FAnalyseScript\"},\"alias\":\"\",\"kvConfigPrefix\":\"\"},{\"id\":\"item_4\",\"name\":\"Elasticsearch_4\",\"icon\":\"dagSink\",\"x\":33,\"y\":355,\"index\":4,\"type\":\"ElasticsearchSink\",\"description\":\"Elasticsearch输出\",\"options\":{\"cluster\":\"elasticsearch\",\"servers\":\"127.0.0.1:9200\",\"username\":\"\",\"password\":\"\",\"collection\":\"fs_access_log\",\"batchSize\":1,\"idField\":\"_id\",\"indexField\":\"_table\",\"tableField\":\"_table\",\"flushInterval\":-1},\"kvConfigPrefix\":\"\"}],\"relations\":[{\"sourceId\":\"item_1\",\"targetId\":\"item_3\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"},{\"sourceId\":\"item_3\",\"targetId\":\"item_2\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"},{\"sourceId\":\"item_3\",\"targetId\":\"item_4\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"}]}', 0, 1, '', 1, 1631858913325, 1, 1634172133717);
@@ -83,7 +83,6 @@ CREATE TABLE `fs_bi_source`  (
   `id` int NOT NULL AUTO_INCREMENT COMMENT '主键',
   `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '名称',
   `type` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '数据源类型',
-  `code` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '标识',
   `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '数据源配置',
   `sort` int NOT NULL DEFAULT 0 COMMENT '排序',
   `status` tinyint NOT NULL DEFAULT 0 COMMENT '状态',
@@ -93,15 +92,14 @@ CREATE TABLE `fs_bi_source`  (
   `updated_uid` int NOT NULL DEFAULT 0 COMMENT '修改者',
   `updated_time` bigint NOT NULL DEFAULT 0 COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_type`(`type`) USING BTREE,
-  INDEX `idx_code`(`code`) USING BTREE
+  INDEX `idx_type`(`type`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程图信息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_bi_source
 -- ----------------------------
-INSERT INTO `fs_bi_source` VALUES (1, 'MySQL项目库', 'MySQL', 'project', '{\"url\":\"jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true\",\"username\":\"root\",\"password\":\"admin888\",\"sql\":\"select * from fs_member_user\"}', 0, 1, '', 1, 1634711509319, 1, 1635323213647);
-INSERT INTO `fs_bi_source` VALUES (2, 'MySQL流程库', 'MySQL', 'workflow', '{\"url\":\"jdbc:mysql://127.0.0.1:3306/fs_workflow?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true\",\"username\":\"root\",\"password\":\"admin888\",\"sql\":\"select * from fs_member_role\"}', 0, 1, '', 1, 1634711556732, 1, 1635323219788);
-INSERT INTO `fs_bi_source` VALUES (3, 'Mongo托管库', 'MongoDB', 'dag', '{\"hosts\":\"127.0.0.1:27017\",\"database\":\"fs_project\",\"username\":\"root\",\"password\":\"admin888\"}', 0, 1, '', 1, 1634720050109, 1, 1635323225357);
+INSERT INTO `fs_bi_source` VALUES (1, 'MySQL项目库', 'MySQL', '{\"url\":\"jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true\",\"username\":\"root\",\"password\":\"admin888\",\"sql\":\"select * from fs_member_user\"}', 0, 1, '', 1, 1634711509319, 1, 1635323213647);
+INSERT INTO `fs_bi_source` VALUES (2, 'MySQL流程库', 'MySQL', '{\"url\":\"jdbc:mysql://127.0.0.1:3306/fs_workflow?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true\",\"username\":\"root\",\"password\":\"admin888\",\"sql\":\"select * from fs_member_role\"}', 0, 1, '', 1, 1634711556732, 1, 1635323219788);
+INSERT INTO `fs_bi_source` VALUES (3, 'Mongo托管库', 'MongoDB', '{\"hosts\":\"127.0.0.1:27017\",\"database\":\"fs_project\",\"username\":\"root\",\"password\":\"admin888\"}', 0, 1, '', 1, 1634720050109, 1, 1635323225357);
 
 SET FOREIGN_KEY_CHECKS = 1;

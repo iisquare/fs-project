@@ -1,4 +1,5 @@
 
 dependencies {
     compile project(':app:flink')
+    testCompile project(':base:test')
 }

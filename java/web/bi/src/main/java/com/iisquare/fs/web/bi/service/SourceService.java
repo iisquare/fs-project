@@ -1,7 +1,12 @@
 package com.iisquare.fs.web.bi.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
+import com.iisquare.fs.base.dag.core.DSCore;
+import com.iisquare.fs.base.jpa.util.JDBCUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.bi.dao.SourceDao;
 import com.iisquare.fs.web.bi.entity.Source;
@@ -11,9 +16,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.criteria.Predicate;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.*;
 
 @Service
@@ -23,6 +32,40 @@ public class SourceService extends ServiceBase {
     private SourceDao sourceDao;
     @Autowired
     private DefaultRbacService rbacService;
+
+    public Map<String, Object> schema(Source info) {
+        if (null == info || 1 != info.getStatus()) return ApiUtil.result(1404, "信息暂不可用！", info);
+        JsonNode config = DPUtil.parseJSON(info.getContent());
+        if (null == config) return ApiUtil.result(1001, "解析配置信息异常！", info.getId());
+        switch (info.getType()) {
+            case "MySQL": return schemaMySQL(config);
+            default: return ApiUtil.result(1002, "数据源类型暂不支持！", info.getType());
+        }
+    }
+
+    public Map<String, Object> schemaMySQL(JsonNode config) {
+        Connection connection = null;
+        try {
+            connection = DriverManager.getConnection(
+                    config.at("/url").asText(),
+                    config.at("/username").asText(),
+                    config.at("/password").asText());
+            ObjectNode tables = JDBCUtil.tables(connection);
+            Iterator<JsonNode> it = tables.iterator();
+            while (it.hasNext()) {
+                Iterator<JsonNode> iterator = it.next().get("columns").iterator();
+                while (iterator.hasNext()) {
+                    ObjectNode item = (ObjectNode) iterator.next();
+                    item.put("format", DSCore.jdbc2format(item.get("type").asText()));
+                }
+            }
+            return ApiUtil.result(0, null, tables);
+        } catch (SQLException e) {
+            return ApiUtil.result(2001, "获取数据库连接失败！", e.getMessage());
+        } finally {
+            JdbcUtils.closeConnection(connection);
+        }
+    }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -40,10 +83,6 @@ public class SourceService extends ServiceBase {
             String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
             if(!DPUtil.empty(type)) {
                 predicates.add(cb.equal(root.get("type"), type));
-            }
-            String code = DPUtil.trim(DPUtil.parseString(param.get("code")));
-            if(!DPUtil.empty(code)) {
-                predicates.add(cb.equal(root.get("code"), code));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"))));

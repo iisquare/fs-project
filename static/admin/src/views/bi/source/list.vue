@@ -17,11 +17,6 @@
               </a-form-model-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-model-item label="标识" prop="code">
-                <a-input v-model="filters.code" placeholder="" :allowClear="true" />
-              </a-form-model-item>
-            </a-col>
-            <a-col :md="6" :sm="24">
               <span class="table-page-search-submitButtons" :style="advanced && { float: 'right', oversource: 'hidden' } || {} ">
                 <a-button type="primary" @click="search(true, false)" :loading="loading">查询</a-button>
                 <a-button style="margin-left: 8px" @click="() => this.$refs.filters.resetFields()">重置</a-button>
@@ -87,9 +82,6 @@
             <a-input v-model="form.name" auto-complete="off"></a-input>
           </a-form-model-item>
           <a-form-model-item label="类型" prop="type">{{ form.type }}</a-form-model-item>
-          <a-form-model-item label="标识" prop="code">
-            <a-input v-model="form.code" auto-complete="off" placeholder="用于虚拟表别名"></a-input>
-          </a-form-model-item>
           <a-form-model-item label="排序">
             <a-input-number v-model="form.sort" :min="0" :max="200"></a-input-number>
           </a-form-model-item>
@@ -124,7 +116,6 @@ export default {
         { title: 'ID', dataIndex: 'id' },
         { title: '名称', dataIndex: 'name' },
         { title: '类型', dataIndex: 'typeText' },
-        { title: '标识', dataIndex: 'code' },
         { title: '排序', dataIndex: 'sort' },
         { title: '状态', dataIndex: 'statusText' },
         { title: '操作', scopedSlots: { customRender: 'action' }, width: 80 }

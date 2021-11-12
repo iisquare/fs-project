@@ -44,48 +44,17 @@
       <div class="fs-relation-left">
         <a-card class="fs-ui-top">
           <a-form-model>
-            <service-auto-complete :search="sourceService.list" v-model="sourceSelected" placeholder="检索选择数据源" />
+            <service-auto-complete :search="sourceService.list" v-model="sourceSelected" placeholder="检索选择数据源" :loading="sourceLoading" />
           </a-form-model>
         </a-card>
         <a-card class="fs-ui-content" title="数据表" :loading="sourceLoading">
           <ul>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
-            <li>萨法沙发沙发</li>
+            <li v-for="table in sourceTables" :key="table.name">
+              <a-icon class="icon" :component="icons.biTable" />
+              <span>{{ table.name }}</span>
+            </li>
           </ul>
+          <a-empty v-if="Object.values(sourceTables).length === 0" description="请选择有效数据源" />
         </a-card>
       </div>
       <div class="fs-relation-right"></div>
@@ -94,6 +63,7 @@
 </template>
 
 <script>
+import icons from '@/assets/icons'
 import sourceService from '@/service/bi/source'
 import datasetService from '@/service/bi/dataset'
 
@@ -103,6 +73,7 @@ export default {
   },
   data () {
     return {
+      icons,
       sourceService,
       loading: false,
       config: {
@@ -114,10 +85,11 @@ export default {
         { title: '基础信息', icon: 'solution' },
         { title: '关联关系', icon: 'deployment-unit' },
         { title: '字段映射', icon: 'experiment' },
-        { title: '数据管理', icon: 'filter' }
+        { title: '定时任务', icon: 'clock-circle' }
       ],
       sourceSelected: undefined,
       sourceLoading: false,
+      sourceTables: {},
       form: {},
       rules: {
         name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
@@ -125,7 +97,20 @@ export default {
       }
     }
   },
+  watch: {
+    sourceSelected () {
+      this.schema()
+    }
+  },
   methods: {
+    schema () {
+      if (this.sourceLoading || !this.sourceSelected) return false
+      this.sourceLoading = true
+      sourceService.schema({ id: this.sourceSelected }).then(result => {
+        this.sourceTables = result.code === 0 ? result.data : {}
+        this.sourceLoading = false
+      })
+    },
     load () {
       if (!this.$route.query.id) return false
       this.loading = true
@@ -226,6 +211,10 @@ export default {
         cursor: move;
         &:hover {
           color: #409eff;
+        }
+        .icon {
+          margin-right: 6px;
+          font-size: 14px;
         }
       }
     }

@@ -84,7 +84,7 @@
 </template>
 
 <script>
-import icons from '@/core/icons'
+import icons from '@/assets/icons'
 import config from './design/config'
 import workflowService from '@/service/oa/workflow'
 import Property from './design/Property'

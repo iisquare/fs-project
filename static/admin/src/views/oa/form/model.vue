@@ -57,7 +57,7 @@
 
 <script>
 import formFrameService from '@/service/oa/formFrame'
-import icons from '@/core/icons'
+import icons from '@/assets/icons'
 import config from './design/config'
 import draggable from 'vuedraggable'
 import WidgetForm from './design/WidgetForm'

@@ -28,6 +28,14 @@ public class SourceController extends PermitControllerBase {
     @Autowired
     private DefaultRbacService rbacService;
 
+    @RequestMapping("/schema")
+    @Permission
+    public String schemaAction(@RequestBody Map<?, ?> param) {
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        Source info = sourceService.info(id);
+        return ApiUtil.echoResult(sourceService.schema(info));
+    }
+
     @RequestMapping("/info")
     @Permission("")
     public String infoAction(@RequestBody Map<?, ?> param) {
@@ -51,7 +59,6 @@ public class SourceController extends PermitControllerBase {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
         String type = DPUtil.parseString(param.get("type"));
-        String code = DPUtil.parseString(param.get("code"));
         int sort = DPUtil.parseInt(param.get("sort"));
         int status = DPUtil.parseInt(param.get("status"));
         String content = DPUtil.parseString(param.get("content"));
@@ -76,7 +83,6 @@ public class SourceController extends PermitControllerBase {
         }
         if(param.containsKey("name") || null == info.getId()) info.setName(name);
         if(param.containsKey("type") || null == info.getId()) info.setType(type);
-        if(param.containsKey("code") || null == info.getId()) info.setCode(code);
         if(param.containsKey("content") || null == info.getId()) info.setContent(content);
         if(param.containsKey("description") || null == info.getId()) info.setDescription(description);
         if(param.containsKey("sort") || null == info.getId()) info.setSort(sort);

@@ -12,8 +12,14 @@ public class DataTester {
 
     @Test
     public void numberTest() {
-        // java.lang.NumberFormatException: For input string
-        System.out.println(Integer.valueOf(""));
+        List<String> list = Arrays.asList("a", "b", "c");
+        JsonNode json = DPUtil.toJSON(list);
+        Iterator<JsonNode> iterator = json.iterator();
+        while (iterator.hasNext()) {
+            JsonNode item = iterator.next();
+            String text = DPUtil.value(item, "").asText();
+            System.out.println(text);
+        }
     }
 
     @Test

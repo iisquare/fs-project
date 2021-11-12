@@ -26,11 +26,7 @@ public class Source {
     @Transient
     private String typeText;
     @Column
-    private String code; // 标识，用于虚拟表别名
-    @Column
     private String content; // 数据源配置
-    @Transient
-    private String schema; // 字段类型，实时获取
     @Column
     private Integer sort;
     @Column

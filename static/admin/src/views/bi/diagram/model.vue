@@ -76,7 +76,7 @@
 
 <script>
 import diagramService from '@/service/bi/diagram'
-import icons from '@/core/icons'
+import icons from '@/assets/icons'
 import config from './design/config'
 import Property from './design/Property'
 import Draw from './design/draw'

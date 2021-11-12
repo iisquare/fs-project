@@ -15,5 +15,8 @@ export default {
   },
   save (param, tips = {}) {
     return base.post('/source/save', param, tips)
+  },
+  schema (param, tips = {}) {
+    return base.post('/source/schema', param, tips)
   }
 }
