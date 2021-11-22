@@ -1,10 +1,15 @@
 package com.iisquare.fs.web.bi.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.bi.dao.DatasetDao;
+import com.iisquare.fs.web.bi.dao.SourceDao;
 import com.iisquare.fs.web.bi.entity.Dataset;
+import com.iisquare.fs.web.bi.entity.Source;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -22,7 +27,39 @@ public class DatasetService extends ServiceBase {
     @Autowired
     private DatasetDao datasetDao;
     @Autowired
+    private SourceDao sourceDao;
+    @Autowired
+    private SparkService sparkService;
+    @Autowired
     private DefaultRbacService rbacService;
+
+    public Map<String, Object> loadSource(Collection<Integer> sourceIds) {
+        if (null == sourceIds || sourceIds.size() < 1) return ApiUtil.result(2001, "未配置任何数据源", sourceIds);
+        ObjectNode result = DPUtil.objectNode();
+        Map<Integer, Source> sources = DPUtil.list2map(sourceDao.findAllById(sourceIds), Integer.class, "id");
+        for (Integer sourceId : sourceIds) {
+            Source source = sources.get(sourceId);
+            if (null == source || 1 != source.getStatus()) return ApiUtil.result(2002, "数据源暂不可用", sourceId);
+            JsonNode options = DPUtil.parseJSON(source.getContent());
+            if (null == options) return ApiUtil.result(2003, "解析数据源配置异常", sourceId);
+            ObjectNode item = DPUtil.objectNode();
+            item.put("id", sourceId).put("type", source.getType()).replace("options", options);
+            result.replace(String.valueOf(sourceId), item);
+        }
+        return ApiUtil.result(0, null, result);
+    }
+
+    public Map<String, Object> search(JsonNode preview, JsonNode query) {
+        if (null == preview || !preview.isObject()) {
+            return ApiUtil.result(1001, "配置信息异常", null);
+        }
+        ObjectNode options = (ObjectNode) preview;
+        options.replace("query", null == query ? DPUtil.objectNode() : query);
+        Map<String, Object> result = loadSource(DPUtil.values(preview.at("/relation/items"), Integer.class, "sourceId"));
+        if (ApiUtil.failed(result)) return result;
+        options.replace("sources", ApiUtil.data(result, ObjectNode.class));
+        return sparkService.dataset(options);
+    }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) {
         Map<String, Object> result = new LinkedHashMap<>();

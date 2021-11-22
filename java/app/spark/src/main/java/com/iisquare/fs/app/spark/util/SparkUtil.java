@@ -1,5 +1,9 @@
 package com.iisquare.fs.app.spark.util;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.core.DAGNode;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -53,6 +57,37 @@ public class SparkUtil {
 
     public static Row row(Collection<Object> data) {
         return RowFactory.create(data.toArray(new Object[0]));
+    }
+
+    public static ArrayNode dataset2json(Dataset<Row> dataset) {
+        List<Row> list = dataset.collectAsList();
+        String[] columns = dataset.columns();
+        ArrayNode result = DPUtil.arrayNode();
+        for (Row row : list) {
+            ObjectNode item = result.addObject();
+            for (int i = 0; i < columns.length; i++) {
+                item.replace(columns[i], DPUtil.toJSON(row.get(i)));
+            }
+        }
+        return result;
+    }
+
+    public static ObjectNode row2json(StructType schema, Row row) {
+        StructField[] fields = schema.fields();
+        ObjectNode result = DPUtil.objectNode();
+        for (int i = 0; i < fields.length; i++) {
+            result.replace(fields[i].name(), DPUtil.toJSON(row.get(i)));
+        }
+        return result;
+    }
+
+    public static Row json2row(JsonNode json) {
+        List<Object> data = new ArrayList<>();
+        Iterator<JsonNode> iterator = json.iterator();
+        while (iterator.hasNext()) {
+            data.add(DPUtil.toJSON(iterator.next(), Object.class));
+        }
+        return row(data);
     }
 
 }

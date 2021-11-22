@@ -671,19 +671,24 @@ public class DPUtil {
      * @param length 截取长度
      * @return 截取List
      */
-    public static List<Object> sublist(List<?> list, int start, int length) {
-        List<Object> subList = new ArrayList<>();
-        if (list.isEmpty()) {
-            return subList;
+    public static <T> List<T> sublist(List<T> list, int start, int length) {
+        List<T> result = new ArrayList<>();
+        int size = list.size();
+        int end = Math.min(size, start + length);
+        for (int index = start; index < end; index++) {
+            result.add(list.get(index));
         }
-        int count = 0;
-        int end = start + length;
-        for (Object item : list) {
-            if (count++ >= start && count <= end) {
-                subList.add(item);
-            }
+        return result;
+    }
+
+    public static ArrayNode subarray(JsonNode array, int start, int length) {
+        ArrayNode result = DPUtil.arrayNode();
+        int size = array.size();
+        int end = Math.min(size, start + length);
+        for (int index = start; index < end; index++) {
+            result.add(array.get(index));
         }
-        return subList;
+        return result;
     }
 
     /**
@@ -759,7 +764,7 @@ public class DPUtil {
         return array;
     }
 
-    public static ObjectNode array2object(ArrayNode array, String field) {
+    public static ObjectNode array2object(JsonNode array, String field) {
         ObjectNode nodes = DPUtil.objectNode();
         Iterator<JsonNode> iterator = array.iterator();
         while (iterator.hasNext()) {
@@ -857,7 +862,7 @@ public class DPUtil {
         return result;
     }
 
-    public static <T> Set<T> values(ArrayNode array, Class<T> tClass, String... properties) {
+    public static <T> Set<T> values(JsonNode array, Class<T> tClass, String... properties) {
         Set<T> valueList = new HashSet<>();
         Iterator<JsonNode> iterator = array.iterator();
         while (iterator.hasNext()) {

@@ -15,5 +15,8 @@ export default {
   },
   save (param, tips = {}) {
     return base.post('/dataset/save', param, tips)
+  },
+  search (param, tips = {}) {
+    return base.post('/dataset/search', param, tips)
   }
 }

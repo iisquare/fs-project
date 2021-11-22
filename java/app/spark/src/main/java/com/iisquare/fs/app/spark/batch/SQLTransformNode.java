@@ -9,12 +9,12 @@ import org.apache.spark.sql.SQLContext;
 
 public class SQLTransformNode extends AbstractConvertTransform {
     @Override
-    public Object process() {
+    public Object process() throws Exception {
         SQLContext context = runner(SparkRunner.class).session().sqlContext();
         for (DAGNode source : sources) {
             String alias = source.alias();
             if (DPUtil.empty(alias)) alias = source.getId();
-            context.registerDataFrameAsTable(source.result(Dataset.class), alias);
+            source.result(Dataset.class).createTempView(alias);
         }
         return context.sql(options.at("/sql").asText());
     }

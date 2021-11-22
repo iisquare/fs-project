@@ -42,7 +42,7 @@ subprojects {
         springCloudVersion = '2.2.6.RELEASE'
         feignVersion = '10.10.1' // based on cloud version
         scalaVersion = '2.12'
-        sparkVersion = '3.1.2'
+        sparkVersion = '3.2.0'
         flinkVersion = '1.13.2'
         hadoopVersion = '2.7.7'
         swaggerVersion = '2.9.2'

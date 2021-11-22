@@ -46,6 +46,13 @@ const DataUtil = {
       result[field] = node
     }
     return result
+  },
+  values (obj, field) {
+    const result = Array.isArray(obj) ? [] : {}
+    for (const index in obj) {
+      result[index] = obj[index][field]
+    }
+    return result
   }
 }
 export default DataUtil

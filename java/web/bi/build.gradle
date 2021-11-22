@@ -1,7 +1,10 @@
 
 dependencies {
     compile project(':base:jpa')
-    compile project(':base:dag')
     compile project(':web:core')
     testCompile project(':web:test')
+    compile (project(':app:spark')) {
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+        exclude group: 'com.google.code.gson', module: 'gson'
+    }
 }

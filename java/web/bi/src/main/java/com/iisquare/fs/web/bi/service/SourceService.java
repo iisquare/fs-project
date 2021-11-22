@@ -33,24 +33,29 @@ public class SourceService extends ServiceBase {
     @Autowired
     private DefaultRbacService rbacService;
 
-    public Map<String, Object> schema(Source info) {
-        if (null == info || 1 != info.getStatus()) return ApiUtil.result(1404, "信息暂不可用！", info);
+    public Map<String, Object> schema(Source info, String table, String dsl) {
+        if (null == info || 1 != info.getStatus()) return ApiUtil.result(1404, "当前数据源暂不可用！", info);
         JsonNode config = DPUtil.parseJSON(info.getContent());
         if (null == config) return ApiUtil.result(1001, "解析配置信息异常！", info.getId());
         switch (info.getType()) {
-            case "MySQL": return schemaMySQL(config);
+            case "MySQL": return schemaMySQL(config, table, dsl);
             default: return ApiUtil.result(1002, "数据源类型暂不支持！", info.getType());
         }
     }
 
-    public Map<String, Object> schemaMySQL(JsonNode config) {
+    public Map<String, Object> schemaMySQL(JsonNode config, String table, String sql) {
         Connection connection = null;
         try {
             connection = DriverManager.getConnection(
                     config.at("/url").asText(),
                     config.at("/username").asText(),
                     config.at("/password").asText());
-            ObjectNode tables = JDBCUtil.tables(connection);
+            ObjectNode tables;
+            if (DPUtil.empty(table)) {
+                tables = JDBCUtil.tables(connection);
+            } else {
+                tables = JDBCUtil.tables(connection, table, sql);
+            }
             Iterator<JsonNode> it = tables.iterator();
             while (it.hasNext()) {
                 Iterator<JsonNode> iterator = it.next().get("columns").iterator();

@@ -40,77 +40,58 @@
         </a-form-model-item>
       </a-form-model>
     </a-card>
-    <div class="fs-relation-layout" v-show="step === 1">
-      <div class="fs-relation-left">
-        <a-card class="fs-ui-top">
-          <a-form-model>
-            <service-auto-complete :search="sourceService.list" v-model="sourceSelected" placeholder="检索选择数据源" :loading="sourceLoading" />
-          </a-form-model>
-        </a-card>
-        <a-card class="fs-ui-content" title="数据表" :loading="sourceLoading">
-          <ul>
-            <li v-for="table in sourceTables" :key="table.name">
-              <a-icon class="icon" :component="icons.biTable" />
-              <span>{{ table.name }}</span>
-            </li>
-          </ul>
-          <a-empty v-if="Object.values(sourceTables).length === 0" description="请选择有效数据源" />
-        </a-card>
-      </div>
-      <div class="fs-relation-right"></div>
-    </div>
+    <fs-relation ref="relation" v-model="relation" v-if="step === 1" />
+    <fs-table ref="table" v-model="table" :relation="relation" v-if="step === 2" />
+    <a-card v-show="step === 3" class="fs-ui-schedule">
+      <a-form-model :model="schedule" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
+        <a-form-model-item label="处理方式">
+          <a-radio-group name="schedule" v-model="schedule.mode">
+            <a-radio :value="mode.value" :key="mode.value" v-for="mode in modes">{{ mode.label }}</a-radio>
+          </a-radio-group>
+        </a-form-model-item>
+      </a-form-model>
+    </a-card>
   </section>
 </template>
 
 <script>
-import icons from '@/assets/icons'
-import sourceService from '@/service/bi/source'
 import datasetService from '@/service/bi/dataset'
+import { triggerWindowResizeEvent } from '@/utils/util'
 
 export default {
   components: {
-    ServiceAutoComplete: () => import('@/components/Service/AutoComplete')
+    FsRelation: () => import('./design/Relation'),
+    FsTable: () => import('./design/Table')
   },
   data () {
     return {
-      icons,
-      sourceService,
       loading: false,
       config: {
         ready: false,
         status: []
       },
-      step: 1,
+      step: 0,
       steps: [
         { title: '基础信息', icon: 'solution' },
         { title: '关联关系', icon: 'deployment-unit' },
         { title: '字段映射', icon: 'experiment' },
-        { title: '定时任务', icon: 'clock-circle' }
+        { title: '计划任务', icon: 'clock-circle' }
       ],
-      sourceSelected: undefined,
-      sourceLoading: false,
-      sourceTables: {},
       form: {},
       rules: {
         name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
         status: [{ required: true, message: '请选择状态', trigger: 'change' }]
-      }
-    }
-  },
-  watch: {
-    sourceSelected () {
-      this.schema()
+      },
+      relation: {},
+      table: [],
+      schedule: { mode: '' },
+      modes: [
+        { label: '实时计算', value: '' },
+        { label: '静态数据', value: 'static' }
+      ]
     }
   },
   methods: {
-    schema () {
-      if (this.sourceLoading || !this.sourceSelected) return false
-      this.sourceLoading = true
-      sourceService.schema({ id: this.sourceSelected }).then(result => {
-        this.sourceTables = result.code === 0 ? result.data : {}
-        this.sourceLoading = false
-      })
-    },
     load () {
       if (!this.$route.query.id) return false
       this.loading = true
@@ -119,17 +100,31 @@ export default {
         this.form = result.data
         try {
           if (result.data.content) {
-            // const data = JSON.parse(result.data.content)
+            const data = JSON.parse(result.data.content)
+            if (data.relation) this.relation = data.relation
+            if (data.table) this.table = data.table
+            if (data.schedule) Object.assign(this.schedule, data.schedule)
+            this.$nextTick(() => {
+              this.$refs.relation && this.$refs.relation.reset()
+              this.$refs.table && this.$refs.table.reset()
+            })
           }
         } catch (e) {
           this.$error({ title: '数据解析异常', content: e.message })
         } finally {
           this.loading = false
+          triggerWindowResizeEvent()
         }
       })
     },
     collect () {
-      return Object.assign({})
+      if (this.$refs.relation) this.relation = this.$refs.relation.collect()
+      if (this.$refs.table) this.table = this.$refs.table.collect()
+      return Object.assign({
+        relation: this.relation,
+        table: this.table,
+        schedule: this.schedule
+      })
     },
     submit () {
       this.$refs.form.validate(valid => {
@@ -183,44 +178,13 @@ export default {
     background: none;
   }
 }
-.fs-relation-layout {
-  width: 100%;
-  height: calc(100vh - 170px);
-  .fs-relation-left {
-    width: 350px;
-    margin-right: 20px;
-    .fs-ui-top {
-      margin-bottom: 20px;
+.fs-ui-schedule {
+  & /deep/ .ant-radio-wrapper {
+    display: block;
+    line-height: 32px;
+    span {
+      vertical-align: middle;
     }
-    .fs-ui-content {
-      & /deep/ .ant-card-body {
-        padding: 0px;
-        height: calc(100vh - 340px);
-        overflow-y: auto;
-        overflow-x: hidden;
-      }
-      li {
-        font-size: 12px;
-        display: block;
-        line-height: 26px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        padding: 5px 2px;
-        content: attr(title);
-        cursor: move;
-        &:hover {
-          color: #409eff;
-        }
-        .icon {
-          margin-right: 6px;
-          font-size: 14px;
-        }
-      }
-    }
-  }
-  .fs-relation-right {
-    width: calc(100% - 370px);
   }
 }
 </style>

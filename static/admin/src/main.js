@@ -12,6 +12,9 @@ import bootstrap from './core/bootstrap'
 import './core/lazy_use'
 import './core/filter' // global filter
 import './components/global.less'
+import draggable from 'vuedraggable'
+
+Vue.use(draggable)
 
 Vue.config.productionTip = false
 

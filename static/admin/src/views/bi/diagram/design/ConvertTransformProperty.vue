@@ -22,8 +22,8 @@
           </span>
         </a-table>
         <a-row class="fs-layout-ctr">
-          <a-col span="12">排序：<a-button type="link" @click="sortTable.up()">上移</a-button>/<a-button type="link" @click="sortTable.down()">下移</a-button></a-col>
-          <a-col span="12">操作：<a-button type="link" @click="rowAdd">新增</a-button>/<a-button type="link" @click="rowInsert">插入</a-button>/<a-button type="link" @click="sortTable.remove()">删除</a-button></a-col>
+          <a-col span="11">排序：<a-button type="link" @click="sortTable.up()">上移</a-button>/<a-button type="link" @click="sortTable.down()">下移</a-button></a-col>
+          <a-col span="13">操作：<a-button type="link" @click="rowAdd">新增</a-button>/<a-button type="link" @click="rowInsert">插入</a-button>/<a-button type="link" @click="sortTable.remove()">删除</a-button></a-col>
         </a-row>
       </a-form-model>
       <a-modal title="字段映射" v-model="formVisible" :footer="null">

@@ -13,6 +13,8 @@ const MongoDBOptions = () => {
   return { hosts: '127.0.0.1:27017', database: 'admin', username: '', password: '' }
 }
 
+const DefaultOptions = () => {}
+
 export default Object.assign(config, {
   widgetTransientMap: null,
   widgetByType (type) {
@@ -40,10 +42,20 @@ export default Object.assign(config, {
   }, {
     key: 'file',
     name: '文件',
-    children: []
+    children: [
+      { type: 'Excel', label: 'Excel文件', options: DefaultOptions, property: () => import('./DefaultProperty') }
+    ]
   }, {
     key: 'dag',
     name: '计算',
-    children: []
+    children: [
+      { type: 'Diagram', label: '数据加工', options: DefaultOptions, property: () => import('./DefaultProperty') }
+    ]
+  }, {
+    key: 'api',
+    name: '接口',
+    children: [
+      { type: 'Restful', label: 'Restful', options: DefaultOptions, property: () => import('./DefaultProperty') }
+    ]
   }]
 })

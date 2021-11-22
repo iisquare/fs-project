@@ -53,12 +53,12 @@ public class MongoConfiguration implements DisposableBean {
             list.add(new ServerAddress(items[0], port));
         }
         MongoClientOptions.Builder options = new MongoClientOptions.Builder();
+        options.minConnectionsPerHost(1);
         options.connectionsPerHost(connectionsPerHost);
         options.connectTimeout(connectTimeout);
         options.maxWaitTime(maxWaitTime);
         options.socketTimeout(socketTimeout);
         MongoClient client = new MongoClient(list, credential, options.build());
-        client.listDatabaseNames(); // trigger connection
         return this.client = client;
     }
 

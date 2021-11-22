@@ -24,6 +24,7 @@ public class JDBCTester {
             System.out.println("getColumnDisplaySize:" + meta.getColumnDisplaySize(index));
             System.out.println("getColumnClassName:" + meta.getColumnClassName(index));
         }
+        statement.close();
         rs.close();
         connection.close();
     }

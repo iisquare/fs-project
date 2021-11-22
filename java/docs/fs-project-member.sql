@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 10/11/2021 19:23:42
+ Date: 19/11/2021 17:20:54
 */
 
 SET NAMES utf8mb4;
@@ -37,7 +37,7 @@ CREATE TABLE `fs_member_dictionary`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_content`(`content`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_dictionary
@@ -341,6 +341,7 @@ INSERT INTO `fs_member_relation` VALUES ('role_resource_1_125', 'role_resource',
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_126', 'role_resource', 1, 126);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_127', 'role_resource', 1, 127);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_128', 'role_resource', 1, 128);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_129', 'role_resource', 1, 129);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_13', 'role_resource', 1, 13);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_14', 'role_resource', 1, 14);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_15', 'role_resource', 1, 15);
@@ -469,7 +470,7 @@ CREATE TABLE `fs_member_resource`  (
   `updated_time` bigint NOT NULL DEFAULT 0,
   `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 128 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 129 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_resource
@@ -602,6 +603,7 @@ INSERT INTO `fs_member_resource` VALUES (125, '添加', '内容管理:引用:添
 INSERT INTO `fs_member_resource` VALUES (126, '修改', '内容管理:引用:修改', 121, 'cms', 'cite', 'modify', 0, 1, '', 1628841651912, 1, 1628841651912, 1);
 INSERT INTO `fs_member_resource` VALUES (127, '删除', '内容管理:引用:删除', 121, 'cms', 'cite', 'delete', 0, 1, '', 1628841661763, 1, 1628841661763, 1);
 INSERT INTO `fs_member_resource` VALUES (128, '结构', '商业智能:数据源:结构', 36, 'bi', 'source', 'schema', 0, 1, '', 1636543399133, 1, 1636543399133, 1);
+INSERT INTO `fs_member_resource` VALUES (129, '检索', '商业智能:数据集:检索', 40, 'bi', 'dataset', 'search', 0, 1, '', 1637313631642, 1, 1637313631642, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_role

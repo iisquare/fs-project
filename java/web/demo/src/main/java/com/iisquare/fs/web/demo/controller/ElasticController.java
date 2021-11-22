@@ -23,26 +23,22 @@ public class ElasticController extends ControllerBase {
 
     @GetMapping("/create")
     public String createAction(@RequestParam Map<String, Object> param) {
-        testES.resolveVersion(DPUtil.parseInt(param.get("version")));
+        testES.version(DPUtil.parseInt(param.get("version")));
         boolean withAlias = !DPUtil.empty(param.get("withAlias"));
-        String result = testES.create(withAlias);
-        testES.rejectVersion();
-        return result;
+        return testES.create(withAlias);
     }
 
     @GetMapping("/template")
     public String templateAction(@RequestParam Map<String, Object> param) {
         boolean withAlias = !DPUtil.empty(param.get("withAlias"));
-        String result = logES.template(withAlias);
-        return result;
+        return logES.template(withAlias);
     }
 
     @GetMapping("/alias")
     public String aliasAction(@RequestParam Map<String, Object> param) {
         int fromVersion = DPUtil.parseInt(param.get("fromVersion"));
         int toVersion = DPUtil.parseInt(param.get("toVersion"));
-        String result = testES.alias(fromVersion, toVersion);
-        return result;
+        return testES.alias(fromVersion, toVersion);
     }
 
 }

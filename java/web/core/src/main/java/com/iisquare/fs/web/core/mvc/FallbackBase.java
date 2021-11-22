@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.core.mvc;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import feign.Response;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +24,24 @@ public abstract class FallbackBase implements RpcBase {
     }
 
     public String post(String uri, Map param, Throwable cause) {
+        return fallback(cause);
+    }
+
+    @Override
+    public String post(String uri, JsonNode json) {
+        return fallback();
+    }
+
+    public String post(String uri, JsonNode json, Throwable cause) {
+        return fallback(cause);
+    }
+
+    @Override
+    public String post(String uri, String body) {
+        return fallback();
+    }
+
+    public String post(String uri, String body, Throwable cause) {
         return fallback(cause);
     }
 

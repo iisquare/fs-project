@@ -33,7 +33,9 @@ public class SourceController extends PermitControllerBase {
     public String schemaAction(@RequestBody Map<?, ?> param) {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
         Source info = sourceService.info(id);
-        return ApiUtil.echoResult(sourceService.schema(info));
+        String table = DPUtil.parseString(param.get("table"));
+        String dsl = DPUtil.parseString(param.get("dsl"));
+        return ApiUtil.echoResult(sourceService.schema(info, table, dsl));
     }
 
     @RequestMapping("/info")

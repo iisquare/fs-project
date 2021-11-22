@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.*;
 
@@ -46,26 +47,32 @@ public abstract class ElasticsearchBase {
     protected Logger logger = LoggerFactory.getLogger(this.getClass());
     public static final String FIELD_ID = "_id";
     public static final int STATE_FAILED = -1;
-    private ThreadLocal<Integer> version = new ThreadLocal<>();
+    public static final String ATTR_VERSION = "_ELASTIC.VERSION_";
 
     @Autowired
     private RestHighLevelClient client;
+    @Autowired
+    private HttpServletRequest request;
 
     protected String collection = "fs_not_exist";
     protected int shards = 1;
     protected int replicas = 0;
 
-    public boolean resolveVersion(Integer version) {
-        this.version.set(version);
-        return null != version;
+    public Integer version() {
+        return DPUtil.parseInt(request.getAttribute(ATTR_VERSION), null);
     }
 
-    public void rejectVersion() {
-        this.version.remove();
+    public Integer version(Integer version) {
+        if (null == version) {
+            request.removeAttribute(ATTR_VERSION);
+        } else {
+            request.setAttribute(ATTR_VERSION, version);
+        }
+        return version;
     }
 
     public String collection() {
-        Integer version = this.version.get();
+        Integer version = version();
         if (null == version) return collection;
         return collection + "_v" + version;
     }

@@ -26,6 +26,7 @@ public class DataTester {
     public void arrayTest() {
         List<String> list = Arrays.asList("a", "b", "c");
         String[] strings = list.toArray(new String[0]);
+        System.out.println(DPUtil.sublist(list, 1, 5));
         System.out.println(Arrays.toString(strings));
         System.out.println(Arrays.toString(DPUtil.array(String.class, 2)));
     }

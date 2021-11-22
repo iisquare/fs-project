@@ -1,6 +1,7 @@
 package com.iisquare.fs.base.core.tool;
 
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.core.util.SQLUtil;
 
 import java.beans.Transient;
 import java.lang.reflect.Field;
@@ -23,7 +24,7 @@ public class SQLBuilder {
     private Map<String, Object> params = new LinkedHashMap<>();
 
     private SQLBuilder(String tableName) {
-        this.tableName = escape(apply(tableName));
+        this.tableName = SQLUtil.escape(apply(tableName));
     }
 
     public static SQLBuilder build(String tableName) {
@@ -298,11 +299,6 @@ public class SQLBuilder {
         return sb.toString();
     }
 
-    public static String escape(String str) {
-        if(null == str) return null;
-        return str.replaceAll("'", "''");
-    }
-
     /**
      * 批量插入
      */
@@ -318,7 +314,7 @@ public class SQLBuilder {
                 if(null == value) {
                     value = "''";
                 } else {
-                    value = "'" + escape(value.toString()) + "'";
+                    value = "'" + SQLUtil.escape(value.toString()) + "'";
                 }
                 list.add(value);
             }

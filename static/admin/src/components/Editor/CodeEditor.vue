@@ -17,6 +17,9 @@ import 'codemirror/addon/dialog/dialog.css'
 import 'codemirror/addon/search/searchcursor.js'
 import 'codemirror/addon/search/search.js'
 
+import 'codemirror/addon/hint/show-hint.css'
+import 'codemirror/addon/hint/show-hint.js'
+
 import 'codemirror/mode/javascript/javascript'
 import 'codemirror/mode/sql/sql'
 
@@ -28,7 +31,8 @@ export default {
     height: { type: Number, default: 500 },
     theme: { type: String, default: 'ayu-dark' },
     lineNumbers: { type: Boolean, default: true },
-    lineWrapping: { type: Boolean, default: true }
+    lineWrapping: { type: Boolean, default: true },
+    hints: { type: Array, default: () => [] }
   },
   data () {
     return {
@@ -38,9 +42,13 @@ export default {
   methods: {
     setContent (content) {
       this.editor.setValue(content)
+      this.refresh()
     },
     getContent () {
       return this.editor.getValue()
+    },
+    refresh () {
+      window.setTimeout(() => this.editor.refresh(), 100)
     },
     load () {
       this.editor = CodeMirror(this.$refs.editor, {
@@ -48,12 +56,38 @@ export default {
         mode: this.mode,
         theme: this.theme,
         lineNumbers: this.lineNumbers,
-        lineWrapping: this.lineWrapping
+        lineWrapping: this.lineWrapping,
+        hintOptions: {
+          completeSingle: false,
+          hint: this.handleHint
+        }
       })
       this.editor.setSize('auto', this.height + 'px')
       this.editor.on('change', () => {
         this.$emit('input', this.getContent())
       })
+      this.editor.on('inputRead', cm => cm.showHint())
+      this.refresh()
+    },
+    handleHint () {
+      const cursor = this.editor.getCursor()
+      const line = this.editor.getLine(cursor.line)
+      let word = ''
+      for (let index = cursor.ch - 1; index >= 0; index--) {
+        const char = line.charAt(index)
+        if (!new RegExp('[\\w\\d_\\-\\.`]').test(char)) break
+        word = char + word
+      }
+      let list = []
+      if (word.length > 0) {
+        list = this.hints.filter(item => item.toUpperCase().indexOf(word.toUpperCase()) >= 0)
+      }
+      const token = this.editor.getTokenAt(cursor)
+      return {
+        list: list,
+        from: { ch: cursor.ch - word.length, line: cursor.line },
+        to: { ch: token.end, line: cursor.line }
+      }
     }
   },
   mounted () {
@@ -68,5 +102,10 @@ export default {
 <style lang="less">
 .fs-code-editor {
   line-height: normal;
+}
+</style>
+<style>
+.CodeMirror-hints {
+  z-index: 1000;
 }
 </style>

@@ -37,7 +37,7 @@
           <a-switch :checked-children="item.options.txtChecked" :un-checked-children="item.options.txtUnChecked" />
         </a-form-model-item>
         <a-form-model-item :label="item.label" v-else-if="item.type === 'select'">
-          <a-auto-complete v-if="item.options.mode === 'combobox'" optionLabelProp="value" :placeholder="item.options.placeholder" :allowClear="item.options.allowClear">
+          <a-auto-complete v-if="item.options.mode === 'combobox'" optionLabelProp="value" :filterOption="UIUtil.filterOption" :placeholder="item.options.placeholder" :allowClear="item.options.allowClear">
             <template slot="dataSource">
               <a-select-option :key="k" :value="v.value" v-for="(v, k) in item.options.items">{{ v.label }}</a-select-option>
             </template>
@@ -73,6 +73,7 @@
 <script>
 import draggable from 'vuedraggable'
 import MenuUtil from '@/utils/menu'
+import UIUtil from '@/utils/ui'
 
 export default {
   components: { draggable },
@@ -85,6 +86,7 @@ export default {
   },
   data () {
     return {
+      UIUtil
     }
   },
   methods: {

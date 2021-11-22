@@ -9,6 +9,9 @@ export default {
     },
     callback: {
       type: Function
+    },
+    options: {
+      type: Object
     }
   },
   data () {
@@ -101,6 +104,7 @@ export default {
         click: this.handleClick
       }
     }
+    if (this.options.width) dynamicProps.style.width = this.options.width + 'px'
     return (
       <a-menu {...dynamicProps}>
         {this.renderWalk(this.menus)}

@@ -210,6 +210,12 @@ const UIUtil = {
       wrapperCol: { flex: 0, style: { width: `calc(100% - ${layout.labelWidth}px)` } }
     }
     return result
+  },
+  uuid (prefix = '') {
+    return prefix + new Date().getTime() + ('' + Math.random()).slice(-6)
+  },
+  filterOption (inputValue, option) {
+    return option.componentOptions.children[0].text.toUpperCase().indexOf(inputValue.toUpperCase()) >= 0
   }
 }
 export default UIUtil

@@ -11,7 +11,7 @@
         <a-col flex="32px"><a-button type="link" icon="deployment-unit" class="fs-sorter-sort" /></a-col>
         <a-col flex="1">
           <a-select v-model="item.field" placeholder="请选择字段">
-            <a-select-option :value="v.field" :key="v.id" v-for="v in fields">{{ v.label }}</a-select-option>
+            <a-select-option :value="v.value" :key="v.value" v-for="v in fields">{{ v.label }}</a-select-option>
           </a-select>
         </a-col>
         <a-col flex="5px"></a-col>
@@ -38,12 +38,11 @@
 import draggable from 'vuedraggable'
 
 export default {
-  name: 'ListSorter',
+  name: 'QuerySorter',
   components: { draggable },
   props: {
     value: { type: Array, required: true },
-    fields: { type: Array, required: true },
-    config: { type: Object, required: true }
+    fields: { type: Array, required: true }
   },
   data () {
     return {
@@ -67,8 +66,7 @@ export default {
     itemClear () {
       this.$emit('input', [])
     }
-  },
-  mounted () {}
+  }
 }
 </script>
 

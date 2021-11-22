@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.bi.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
@@ -10,6 +11,7 @@ import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,6 +29,31 @@ public class DatasetController extends PermitControllerBase {
     private DatasetService datasetService;
     @Autowired
     private DefaultRbacService rbacService;
+
+    private Map<?, ?> param;
+
+    @GetMapping("repeat")
+    public String repeatAction() {
+        return searchAction(this.param);
+    }
+
+    @RequestMapping("/search")
+    @Permission
+    public String searchAction(@RequestBody Map<?, ?> param) {
+        this.param = param;
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        JsonNode preview = DPUtil.toJSON(param.get("preview"));
+        if (null == preview) {
+            Dataset info = datasetService.info(id);
+            if (null == info || 1 != info.getStatus()) {
+                return ApiUtil.echoResult(1404, "当前数据集暂不可用", id);
+            }
+            preview = DPUtil.parseJSON(info.getContent());
+        }
+        JsonNode query = DPUtil.toJSON(param.get("query"));
+        Map<String, Object> result = datasetService.search(preview, query);
+        return ApiUtil.echoResult(result);
+    }
 
     @RequestMapping("/info")
     @Permission("")
