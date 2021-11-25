@@ -55,7 +55,8 @@ import {
   Space,
   Slider,
   AutoComplete,
-  TreeSelect
+  TreeSelect,
+  Statistic
 } from 'ant-design-vue'
 // import VueCropper from 'vue-cropper'
 import SDatePicker from '@/components/DatePicker'
@@ -109,6 +110,7 @@ Vue.use(Space)
 Vue.use(Slider)
 Vue.use(AutoComplete)
 Vue.use(TreeSelect)
+Vue.use(Statistic)
 
 Vue.prototype.$confirm = Modal.confirm
 Vue.prototype.$message = message

@@ -11,11 +11,33 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 10/11/2021 16:11:20
+ Date: 25/11/2021 14:31:26
 */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for fs_bi_dashboard
+-- ----------------------------
+DROP TABLE IF EXISTS `fs_bi_dashboard`;
+CREATE TABLE `fs_bi_dashboard`  (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '名称',
+  `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '大屏配置',
+  `sort` int NOT NULL DEFAULT 0 COMMENT '排序',
+  `status` tinyint NOT NULL DEFAULT 0 COMMENT '状态',
+  `description` tinytext CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '描述',
+  `created_uid` int NOT NULL DEFAULT 0 COMMENT '创建者',
+  `created_time` bigint NOT NULL DEFAULT 0 COMMENT '创建时间',
+  `updated_uid` int NOT NULL DEFAULT 0 COMMENT '修改者',
+  `updated_time` bigint NOT NULL DEFAULT 0 COMMENT '修改时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程图信息' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of fs_bi_dashboard
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for fs_bi_dataset
@@ -34,13 +56,14 @@ CREATE TABLE `fs_bi_dataset`  (
   `updated_uid` int NOT NULL DEFAULT 0 COMMENT '修改者',
   `updated_time` bigint NOT NULL DEFAULT 0 COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程图信息' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程图信息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_bi_dataset
 -- ----------------------------
-INSERT INTO `fs_bi_dataset` VALUES (1, 'MySQL测试', '', '{}', 0, 1, 'sa', 1, 1634781824646, 1, 1636440862032);
+INSERT INTO `fs_bi_dataset` VALUES (1, 'MySQL测试', '', '{\"relation\":{\"width\":500,\"height\":300,\"top\":53.5,\"items\":[{\"id\":\"item_7\",\"name\":\"fs_member_resource\",\"x\":142,\"y\":87,\"index\":7,\"sourceId\":1,\"table\":\"fs_member_resource\",\"dsl\":\"\",\"columns\":{\"id\":{\"name\":\"id\",\"type\":\"INT\",\"remark\":\"\",\"format\":\"Number\"},\"name\":{\"name\":\"name\",\"type\":\"VARCHAR\",\"remark\":\"\",\"format\":\"String\"},\"full_name\":{\"name\":\"full_name\",\"type\":\"VARCHAR\",\"remark\":\"\",\"format\":\"String\"},\"parent_id\":{\"name\":\"parent_id\",\"type\":\"INT\",\"remark\":\"\",\"format\":\"Number\"},\"module\":{\"name\":\"module\",\"type\":\"VARCHAR\",\"remark\":\"\",\"format\":\"String\"},\"controller\":{\"name\":\"controller\",\"type\":\"VARCHAR\",\"remark\":\"\",\"format\":\"String\"},\"action\":{\"name\":\"action\",\"type\":\"VARCHAR\",\"remark\":\"\",\"format\":\"String\"},\"sort\":{\"name\":\"sort\",\"type\":\"TINYINT\",\"remark\":\"\",\"format\":\"Number\"},\"status\":{\"name\":\"status\",\"type\":\"TINYINT\",\"remark\":\"\",\"format\":\"Number\"},\"description\":{\"name\":\"description\",\"type\":\"TEXT\",\"remark\":\"\",\"format\":\"String\"},\"created_time\":{\"name\":\"created_time\",\"type\":\"BIGINT\",\"remark\":\"\",\"format\":\"Number\"},\"created_uid\":{\"name\":\"created_uid\",\"type\":\"INT\",\"remark\":\"\",\"format\":\"Number\"},\"updated_time\":{\"name\":\"updated_time\",\"type\":\"BIGINT\",\"remark\":\"\",\"format\":\"Number\"},\"updated_uid\":{\"name\":\"updated_uid\",\"type\":\"INT\",\"remark\":\"\",\"format\":\"Number\"}}}],\"relations\":{}},\"table\":[{\"enabled\":true,\"viewable\":true,\"name\":\"id\",\"title\":\"id\",\"table\":\"fs_member_resource\",\"column\":\"id\",\"format\":\"Number\",\"type\":\"INT\",\"transform\":\"\",\"options\":{}},{\"enabled\":true,\"viewable\":true,\"name\":\"name\",\"title\":\"name\",\"table\":\"fs_member_resource\",\"column\":\"name\",\"format\":\"String\",\"type\":\"VARCHAR\",\"transform\":\"\",\"options\":{}},{\"enabled\":true,\"viewable\":true,\"name\":\"full_name\",\"title\":\"full_name\",\"table\":\"fs_member_resource\",\"column\":\"full_name\",\"format\":\"String\",\"type\":\"VARCHAR\",\"transform\":\"\",\"options\":{}},{\"enabled\":true,\"viewable\":true,\"name\":\"parent_id\",\"title\":\"parent_id\",\"table\":\"fs_member_resource\",\"column\":\"parent_id\",\"format\":\"Number\",\"type\":\"INT\",\"transform\":\"\",\"options\":{}},{\"enabled\":true,\"viewable\":true,\"name\":\"module\",\"title\":\"module\",\"table\":\"fs_member_resource\",\"column\":\"module\",\"format\":\"String\",\"type\":\"VARCHAR\",\"transform\":\"\",\"options\":{}},{\"enabled\":true,\"viewable\":true,\"name\":\"controller\",\"title\":\"controller\",\"table\":\"fs_member_resource\",\"column\":\"controller\",\"format\":\"String\",\"type\":\"VARCHAR\",\"transform\":\"\",\"options\":{}},{\"enabled\":true,\"viewable\":true,\"name\":\"action\",\"title\":\"action\",\"table\":\"fs_member_resource\",\"column\":\"action\",\"format\":\"String\",\"type\":\"VARCHAR\",\"transform\":\"\",\"options\":{}},{\"enabled\":true,\"viewable\":true,\"name\":\"sort\",\"title\":\"sort\",\"table\":\"fs_member_resource\",\"column\":\"sort\",\"format\":\"Number\",\"type\":\"TINYINT\",\"transform\":\"\",\"options\":{}},{\"enabled\":true,\"viewable\":true,\"name\":\"status\",\"title\":\"status\",\"table\":\"fs_member_resource\",\"column\":\"status\",\"format\":\"Number\",\"type\":\"TINYINT\",\"transform\":\"\",\"options\":{}},{\"enabled\":true,\"viewable\":true,\"name\":\"description\",\"title\":\"description\",\"table\":\"fs_member_resource\",\"column\":\"description\",\"format\":\"String\",\"type\":\"TEXT\",\"transform\":\"\",\"options\":{}},{\"enabled\":true,\"viewable\":true,\"name\":\"created_time\",\"title\":\"created_time\",\"table\":\"fs_member_resource\",\"column\":\"created_time\",\"format\":\"Number\",\"type\":\"BIGINT\",\"transform\":\"\",\"options\":{}},{\"enabled\":true,\"viewable\":true,\"name\":\"created_uid\",\"title\":\"created_uid\",\"table\":\"fs_member_resource\",\"column\":\"created_uid\",\"format\":\"Number\",\"type\":\"INT\",\"transform\":\"\",\"options\":{}},{\"enabled\":true,\"viewable\":true,\"name\":\"updated_time\",\"title\":\"updated_time\",\"table\":\"fs_member_resource\",\"column\":\"updated_time\",\"format\":\"Number\",\"type\":\"BIGINT\",\"transform\":\"\",\"options\":{}},{\"enabled\":true,\"viewable\":true,\"name\":\"updated_uid\",\"title\":\"updated_uid\",\"table\":\"fs_member_resource\",\"column\":\"updated_uid\",\"format\":\"Number\",\"type\":\"INT\",\"transform\":\"\",\"options\":{}}],\"schedule\":{\"mode\":\"\"}}', 0, 1, '2021-11-23 16:18:17', 1, 1634781824646, 1, 1637799864391);
 INSERT INTO `fs_bi_dataset` VALUES (2, 'Mongo测试', '', '{}', 0, 1, '', 1, 1634781928370, 1, 1635323252448);
+INSERT INTO `fs_bi_dataset` VALUES (3, 'dsgdsg', '', '', 0, 1, '', 1, 1637713876022, 1, 1637713876022);
 
 -- ----------------------------
 -- Table structure for fs_bi_diagram
@@ -100,6 +123,34 @@ CREATE TABLE `fs_bi_source`  (
 -- ----------------------------
 INSERT INTO `fs_bi_source` VALUES (1, 'MySQL项目库', 'MySQL', '{\"url\":\"jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true\",\"username\":\"root\",\"password\":\"admin888\",\"sql\":\"select * from fs_member_user\"}', 0, 1, '', 1, 1634711509319, 1, 1635323213647);
 INSERT INTO `fs_bi_source` VALUES (2, 'MySQL流程库', 'MySQL', '{\"url\":\"jdbc:mysql://127.0.0.1:3306/fs_workflow?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true\",\"username\":\"root\",\"password\":\"admin888\",\"sql\":\"select * from fs_member_role\"}', 0, 1, '', 1, 1634711556732, 1, 1635323219788);
-INSERT INTO `fs_bi_source` VALUES (3, 'Mongo托管库', 'MongoDB', '{\"hosts\":\"127.0.0.1:27017\",\"database\":\"fs_project\",\"username\":\"root\",\"password\":\"admin888\"}', 0, 1, '', 1, 1634720050109, 1, 1635323225357);
+INSERT INTO `fs_bi_source` VALUES (3, 'Mongo托管库', 'MongoDB', '{\"hosts\":\"127.0.0.1:27017\",\"database\":\"fs_project\",\"username\":\"root\",\"password\":\"admin888\"}', 0, 2, '', 1, 1634720050109, 1, 1636532173029);
+
+-- ----------------------------
+-- Table structure for fs_bi_visualize
+-- ----------------------------
+DROP TABLE IF EXISTS `fs_bi_visualize`;
+CREATE TABLE `fs_bi_visualize`  (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '名称',
+  `type` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '类型',
+  `dataset_id` int NOT NULL DEFAULT 0 COMMENT '引用数据集',
+  `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '报表配置项',
+  `sort` int NOT NULL DEFAULT 0 COMMENT '排序',
+  `status` tinyint NOT NULL DEFAULT 0 COMMENT '状态',
+  `description` tinytext CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '描述',
+  `created_uid` int NOT NULL DEFAULT 0 COMMENT '创建者',
+  `created_time` bigint NOT NULL DEFAULT 0 COMMENT '创建时间',
+  `updated_uid` int NOT NULL DEFAULT 0 COMMENT '修改者',
+  `updated_time` bigint NOT NULL DEFAULT 0 COMMENT '修改时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_dataset_id`(`dataset_id`) USING BTREE,
+  INDEX `idx_type`(`type`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程图信息' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of fs_bi_visualize
+-- ----------------------------
+INSERT INTO `fs_bi_visualize` VALUES (1, 'test', '', 1, '{\"filter\":[],\"axis\":{\"metrics\":[{\"aggregation\":\"COUNT\",\"field\":\"\",\"label\":\"\",\"filter\":[]}],\"buckets\":[{\"aggregation\":\"TERM\",\"field\":\"`module`\",\"label\":\"\",\"interval\":\"\",\"filters\":[]}]}}', 0, 1, '', 1, 1637660291833, 1, 1637799882233);
+INSERT INTO `fs_bi_visualize` VALUES (2, '测试', '', 0, '', 0, 1, '', 1, 1637713900011, 1, 1637713914601);
 
 SET FOREIGN_KEY_CHECKS = 1;

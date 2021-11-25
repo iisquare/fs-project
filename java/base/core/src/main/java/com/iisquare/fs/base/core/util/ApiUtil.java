@@ -49,6 +49,10 @@ public class ApiUtil {
         return 0 != (int) result.get(FIELD_CODE);
     }
 
+    public static boolean succeed(Map<String, Object> result) {
+        return !failed(result);
+    }
+
     public static  <T> T data(Map<String, Object> result, Class<T> classType) {
         return (T) result.get(FIELD_DATA);
     }

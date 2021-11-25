@@ -1,6 +1,7 @@
 package com.iisquare.fs.web.bi.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
@@ -33,7 +34,9 @@ public class DatasetService extends ServiceBase {
     @Autowired
     private DefaultRbacService rbacService;
 
-    public Map<String, Object> loadSource(Collection<Integer> sourceIds) {
+    public Map<String, Object> loadSource(JsonNode preview) {
+        if (null == preview) return ApiUtil.result(20403, "数据源配置信息异常", null);
+        Collection<Integer> sourceIds = DPUtil.values(preview.at("/relation/items"), Integer.class, "sourceId");
         if (null == sourceIds || sourceIds.size() < 1) return ApiUtil.result(2001, "未配置任何数据源", sourceIds);
         ObjectNode result = DPUtil.objectNode();
         Map<Integer, Source> sources = DPUtil.list2map(sourceDao.findAllById(sourceIds), Integer.class, "id");
@@ -49,16 +52,45 @@ public class DatasetService extends ServiceBase {
         return ApiUtil.result(0, null, result);
     }
 
+    public Map<String, Object> dataset(Integer id) {
+        Dataset info = info(id);
+        if (null == info || 1 != info.getStatus()) {
+            return ApiUtil.result(61001, "数据集状态异常", id);
+        }
+        JsonNode dataset = DPUtil.parseJSON(info.getContent());
+        Map<String, Object> result = loadSource(dataset);
+        if (ApiUtil.failed(result)) return result;
+        ((ObjectNode) dataset).replace("sources", ApiUtil.data(result, ObjectNode.class));
+        return ApiUtil.result(0, null, dataset);
+    }
+
     public Map<String, Object> search(JsonNode preview, JsonNode query) {
         if (null == preview || !preview.isObject()) {
             return ApiUtil.result(1001, "配置信息异常", null);
         }
         ObjectNode options = (ObjectNode) preview;
         options.replace("query", null == query ? DPUtil.objectNode() : query);
-        Map<String, Object> result = loadSource(DPUtil.values(preview.at("/relation/items"), Integer.class, "sourceId"));
+        Map<String, Object> result = loadSource(preview);
         if (ApiUtil.failed(result)) return result;
         options.replace("sources", ApiUtil.data(result, ObjectNode.class));
         return sparkService.dataset(options);
+    }
+
+    public Map<String, Object> columns(JsonNode options) {
+        if (null == options || !options.isObject()) {
+            return ApiUtil.result(1001, "配置信息异常", null);
+        }
+        ObjectNode result = DPUtil.objectNode();
+        ArrayNode columns = result.putArray("columns");
+        Iterator<JsonNode> iterator = options.at("/table").iterator();
+        while (iterator.hasNext()) {
+            JsonNode item = iterator.next();
+            if (!item.at("/enabled").asBoolean(false)) continue;
+            ObjectNode column = (ObjectNode) item.deepCopy();
+            column.remove("enabled");
+            columns.add(column);
+        }
+        return ApiUtil.result(0, null, result);
     }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) {
@@ -67,6 +99,8 @@ public class DatasetService extends ServiceBase {
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
         Page<Dataset> data = datasetDao.findAll((Specification<Dataset>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            int id = DPUtil.parseInt(param.get("id"));
+            if(id > 0) predicates.add(cb.equal(root.get("id"), id));
             predicates.add(cb.notEqual(root.get("status"), -1));
             String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
             if(!DPUtil.empty(name)) {
@@ -132,6 +166,13 @@ public class DatasetService extends ServiceBase {
         }
         datasetDao.saveAll(list);
         return true;
+    }
+
+    public <T> List<T> fillInfo(List<T> list, String ...properties) {
+        Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
+        if(ids.size() < 1) return list;
+        Map<Integer, Dataset> data = DPUtil.list2map(datasetDao.findAllById(ids), Integer.class, "id");
+        return DPUtil.fillValues(list, properties, "Name", DPUtil.values(data, String.class, "name"));
     }
 
 }

@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 19/11/2021 17:20:54
+ Date: 24/11/2021 16:09:47
 */
 
 SET NAMES utf8mb4;
@@ -37,7 +37,7 @@ CREATE TABLE `fs_member_dictionary`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_content`(`content`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_dictionary
@@ -119,13 +119,13 @@ INSERT INTO `fs_member_menu` VALUES (24, '节点管理', '后台管理:网页爬
 INSERT INTO `fs_member_menu` VALUES (25, '节点面板', '后台管理:网页爬虫:节点管理:节点面板', 24, '', '/spider/crawler/dashboard', '', 0, 1, '', 1585195373342, 1, 1585195373342, 1);
 INSERT INTO `fs_member_menu` VALUES (26, '商业智能', '后台管理:商业智能', 1, 'cluster', '/bi/index/index', '', 0, 1, '数据分子、规则引擎、智能报表', 1585384043533, 1, 1631754366305, 1);
 INSERT INTO `fs_member_menu` VALUES (27, '数据加工', '后台管理:商业智能:数据加工', 26, 'apartment', '/bi/diagram', '', 0, 1, '', 1585384219002, 1, 1634258659883, 1);
-INSERT INTO `fs_member_menu` VALUES (28, '规则列表', '后台管理:商业智能:数据加工:规则列表', 27, '', '/bi/diagram/list', '', 0, 1, '', 1585384240550, 1, 1631754429331, 1);
+INSERT INTO `fs_member_menu` VALUES (28, '清洗规则', '后台管理:商业智能:数据加工:清洗规则', 27, '', '/bi/diagram/list', '', 0, 1, '', 1585384240550, 1, 1637656893932, 1);
 INSERT INTO `fs_member_menu` VALUES (29, '数据管理', '后台管理:商业智能:数据管理', 26, 'dropbox', '/bi/data', '', 0, 1, '', 1585661766299, 1, 1634258058714, 1);
 INSERT INTO `fs_member_menu` VALUES (30, '数据源', '后台管理:商业智能:数据管理:数据源', 29, '', '/bi/data/source', '', 0, 1, '', 1585661826570, 1, 1634258102486, 1);
 INSERT INTO `fs_member_menu` VALUES (31, '数据集', '后台管理:商业智能:数据管理:数据集', 29, '', '/bi/data/dataset', '', 0, 1, '', 1585661841784, 1, 1634258119688, 1);
 INSERT INTO `fs_member_menu` VALUES (32, '数据矩阵', '后台管理:商业智能:智能报表:数据矩阵', 37, '', '/bi/report/matrix', '', 0, 1, '', 1585661854477, 1, 1634258546289, 1);
 INSERT INTO `fs_member_menu` VALUES (37, '智能报表', '后台管理:商业智能:智能报表', 26, 'radar-chart', '/bi/report', '', 0, 1, '', 1585662611501, 1, 1634258458541, 1);
-INSERT INTO `fs_member_menu` VALUES (38, '数据报表', '后台管理:商业智能:智能报表:数据报表', 37, '', '/bi/report/chart', '', 0, 1, '', 1585663056291, 1, 1634258568834, 1);
+INSERT INTO `fs_member_menu` VALUES (38, '数据报表', '后台管理:商业智能:智能报表:数据报表', 37, '', '/bi/report/visualize', '', 0, 1, '', 1585663056291, 1, 1637658388654, 1);
 INSERT INTO `fs_member_menu` VALUES (39, '数据大屏', '后台管理:商业智能:智能报表:数据大屏', 37, '', '/bi/report/dashboard', '', 0, 1, '', 1585663079511, 1, 1634258605522, 1);
 INSERT INTO `fs_member_menu` VALUES (40, '人脸识别', '后台管理:人脸识别', 1, 'smile', '/face/index/index', '', 0, 1, '人脸检测、人脸识别、检索对比', 1597297964946, 1, 1597298791858, 1);
 INSERT INTO `fs_member_menu` VALUES (41, '分组管理', '后台管理:人脸识别:分组管理', 40, 'team', '/face/group', '', 0, 1, '', 1597297984692, 1, 1598260929886, 1);
@@ -343,6 +343,15 @@ INSERT INTO `fs_member_relation` VALUES ('role_resource_1_127', 'role_resource',
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_128', 'role_resource', 1, 128);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_129', 'role_resource', 1, 129);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_13', 'role_resource', 1, 13);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_130', 'role_resource', 1, 130);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_131', 'role_resource', 1, 131);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_132', 'role_resource', 1, 132);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_133', 'role_resource', 1, 133);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_134', 'role_resource', 1, 134);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_135', 'role_resource', 1, 135);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_136', 'role_resource', 1, 136);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_137', 'role_resource', 1, 137);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_138', 'role_resource', 1, 138);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_14', 'role_resource', 1, 14);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_15', 'role_resource', 1, 15);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_16', 'role_resource', 1, 16);
@@ -470,7 +479,7 @@ CREATE TABLE `fs_member_resource`  (
   `updated_time` bigint NOT NULL DEFAULT 0,
   `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 129 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 130 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_resource
@@ -604,6 +613,15 @@ INSERT INTO `fs_member_resource` VALUES (126, '修改', '内容管理:引用:修
 INSERT INTO `fs_member_resource` VALUES (127, '删除', '内容管理:引用:删除', 121, 'cms', 'cite', 'delete', 0, 1, '', 1628841661763, 1, 1628841661763, 1);
 INSERT INTO `fs_member_resource` VALUES (128, '结构', '商业智能:数据源:结构', 36, 'bi', 'source', 'schema', 0, 1, '', 1636543399133, 1, 1636543399133, 1);
 INSERT INTO `fs_member_resource` VALUES (129, '检索', '商业智能:数据集:检索', 40, 'bi', 'dataset', 'search', 0, 1, '', 1637313631642, 1, 1637313631642, 1);
+INSERT INTO `fs_member_resource` VALUES (130, '数据报表', '商业智能:数据报表', 31, 'bi', 'visualize', '', 0, 1, '', 1637658795954, 1, 1637658795954, 1);
+INSERT INTO `fs_member_resource` VALUES (131, '添加', '商业智能:数据报表:添加', 130, 'bi', 'visualize', 'add', 0, 1, '', 1637658815910, 1, 1637658815910, 1);
+INSERT INTO `fs_member_resource` VALUES (132, '修改', '商业智能:数据报表:修改', 130, 'bi', 'visualize', 'modify', 0, 1, '', 1637658833371, 1, 1637658833371, 1);
+INSERT INTO `fs_member_resource` VALUES (133, '删除', '商业智能:数据报表:删除', 130, 'bi', 'visualize', 'delete', 0, 1, '', 1637658848750, 1, 1637658848750, 1);
+INSERT INTO `fs_member_resource` VALUES (134, '数据大屏', '商业智能:数据大屏', 31, 'bi', 'dashboard', '', 0, 1, '', 1637658872174, 1, 1637658872174, 1);
+INSERT INTO `fs_member_resource` VALUES (135, '添加', '商业智能:数据大屏:添加', 134, 'bi', 'dashboard', 'add', 0, 1, '', 1637658885131, 1, 1637658885131, 1);
+INSERT INTO `fs_member_resource` VALUES (136, '修改', '商业智能:数据大屏:修改', 134, 'bi', 'dashboard', 'modify', 0, 1, '', 1637658899570, 1, 1637658899570, 1);
+INSERT INTO `fs_member_resource` VALUES (137, '删除', '商业智能:数据大屏:删除', 134, 'bi', 'dashboard', 'delete', 0, 1, '', 1637658911014, 1, 1637658911014, 1);
+INSERT INTO `fs_member_resource` VALUES (138, '检索', '商业智能:数据报表:检索', 130, 'bi', 'visualize', 'search', 0, 1, '', 1637741322686, 1, 1637741322686, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_role

@@ -27,7 +27,8 @@ export default {
       this.relation.items.forEach((item, tableIndex) => {
         for (const columnIndex in item.columns) {
           const column = item.columns[columnIndex]
-          result.push('`' + item.table + '`.`' + column.name + '`')
+          const text = '`' + item.table + '`.`' + column.name + '`'
+          result.push({ text: text, displayText: text })
         }
       })
       return result

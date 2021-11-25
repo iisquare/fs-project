@@ -29,6 +29,8 @@ public class DataTester {
         System.out.println(DPUtil.sublist(list, 1, 5));
         System.out.println(Arrays.toString(strings));
         System.out.println(Arrays.toString(DPUtil.array(String.class, 2)));
+        JsonNode json = DPUtil.toJSON(list);
+        System.out.println(json.get(6));
     }
 
     @Test

@@ -95,7 +95,10 @@
         <a-form-model-item label="来源字段" prop="column">
           <a-input v-model="form.column" auto-complete="on"></a-input>
         </a-form-model-item>
-        <column-calculate v-model="form.options" :column="form" :relation="relation" v-if="form.type === 'calculate'" />
+        <a-form-model-item label="处理方式" prop="transform">{{ form.transform || '默认值' }} from {{ form.type }} to {{ form.format }}</a-form-model-item>
+        <column-calculate v-model="form.options" :column="form" :relation="relation" v-if="form.transform === 'calculate'" />
+        <column-date v-model="form.options" :column="form" :relation="relation" v-if="form.transform === 'cast2date'" />
+        <column-location v-model="form.options" :column="form" :relation="relation" v-if="form.transform === 'location'" />
       </a-form-model>
     </a-modal>
   </div>
@@ -113,7 +116,9 @@ export default {
   components: {
     QueryFilter: () => import('@/components/Service/QueryFilter'),
     QuerySorter: () => import('@/components/Service/QuerySorter'),
-    ColumnCalculate: () => import('./ColumnCalculate')
+    ColumnCalculate: () => import('./ColumnCalculate'),
+    ColumnDate: () => import('./ColumnDate'),
+    ColumnLocation: () => import('./ColumnLocation')
   },
   props: {
     value: { type: Array, required: true },
@@ -197,21 +202,21 @@ export default {
       ]
       if (ref.type === 'column') {
         menus.push(
-          { key: 'level', icon: '', title: '创建层级结构' },
-          { key: 'calculate', icon: '', title: '创建计算字段' },
+          { key: 'calculate', icon: '', title: '创建计算字段', format: 'Calculate' },
           {
             key: 'cast',
             icon: '',
             title: '转换数据类型',
             type: 'sub-menu',
             children: [
-              { key: 'cast2string', icon: '', title: '字符串' },
-              { key: 'cast2number', icon: '', title: '整数' },
-              { key: 'cast2decimal', icon: '', title: '小数' },
-              { key: 'cast2date', icon: '', title: '日期' },
-              { key: 'cast2location', icon: '', title: '地理位置' }
+              { key: 'cast2string', icon: '', title: '字符串', format: 'String' },
+              { key: 'cast2integer', icon: '', title: '整数', format: 'Number' },
+              { key: 'cast2long', icon: '', title: '长整数', format: 'Number' },
+              { key: 'cast2double', icon: '', title: '小数', format: 'Number' },
+              { key: 'cast2date', icon: '', title: '日期', format: 'Date' }
             ]
-          }
+          },
+          { key: 'location', icon: '', title: '地理位置', format: 'Location' }
         )
       }
       MenuUtil.context(event, menus, menu => {
@@ -234,9 +239,17 @@ export default {
               }
             }
             return true
+          case 'location':
+          case 'cast2date':
           case 'calculate':
-            this.form = this.add(ref.data, ref.name, menu.key)
+            this.form = this.add(ref.data, ref.name, { transform: menu.key, format: menu.format })
             this.formVisible = true
+            return true
+          case 'cast2string':
+          case 'cast2integer':
+          case 'cast2long':
+          case 'cast2double':
+            this.add(ref.data, ref.name, { transform: menu.key, format: menu.format })
             return true
           default:
             return false
@@ -255,7 +268,7 @@ export default {
         this.add(this.treeDragged.data, this.treeDragged.name)
       }
     },
-    add (table, columnName, type = '', options = {}) {
+    add (table, columnName, options = {}) {
       const column = table.columns[columnName]
       const item = {
         enabled: true,
@@ -264,9 +277,10 @@ export default {
         title: columnName,
         table: table.table,
         column: columnName,
-        format: column.format,
-        type: type,
-        options: options
+        format: options.format ?? column.format,
+        type: column.type,
+        transform: options.transform ?? '',
+        options: options.options ?? {}
       }
       return this.sortTable.add(item)
     },
@@ -306,6 +320,7 @@ export default {
       const result = {}
       for (const index in columns) {
         const column = columns[index]
+        if (!column.viewable) continue
         const item = { title: column.title, dataIndex: column.name, ellipsis: true }
         result[item.dataIndex] = item
       }
@@ -369,12 +384,6 @@ export default {
         width: 100%;
         height: calc(100% - 65px);
         overflow: hidden;
-        & /deep/ .ant-table-thead > tr > th {
-          border-bottom: none;
-        }
-        & /deep/ .ant-table-bordered .ant-table-header > table {
-          border: none;
-        }
       }
       .fs-ui-bottom {
         width: 100%;

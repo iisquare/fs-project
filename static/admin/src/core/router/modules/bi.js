@@ -2,8 +2,12 @@ import { layout } from '../config'
 
 export const blanks = [{
   path: '/bi/diagram/model',
-  meta: { title: '计算规则设计器' },
+  meta: { title: '清洗规则设计器' },
   component: () => import(/* webpackChunkName: 'bi' */ '@/views/bi/diagram/model')
+}, {
+  path: '/bi/report/screen',
+  meta: { title: '大屏设计器' },
+  component: () => import(/* webpackChunkName: 'bi' */ '@/views/bi/dashboard/model')
 }]
 
 export const layouts = [{
@@ -16,7 +20,7 @@ export const layouts = [{
     component: layout.default
   }, {
     path: '/bi/diagram/list',
-    meta: { title: '规则列表' },
+    meta: { title: '清洗规则' },
     component: () => import(/* webpackChunkName: 'bi' */ '@/views/bi/diagram/list')
   }, {
     path: '/bi/data/source',
@@ -30,6 +34,18 @@ export const layouts = [{
     path: '/bi/data/model',
     meta: { title: '数据集', hiddenGlobalFooter: true },
     component: () => import(/* webpackChunkName: 'bi' */ '@/views/bi/dataset/model')
+  }, {
+    path: '/bi/report/visualize',
+    meta: { title: '数据报表' },
+    component: () => import(/* webpackChunkName: 'bi' */ '@/views/bi/visualize/list')
+  }, {
+    path: '/bi/report/chart',
+    meta: { title: '数据集', hiddenGlobalFooter: true },
+    component: () => import(/* webpackChunkName: 'bi' */ '@/views/bi/visualize/model')
+  }, {
+    path: '/bi/report/dashboard',
+    meta: { title: '数据大屏' },
+    component: () => import(/* webpackChunkName: 'bi' */ '@/views/bi/dashboard/list')
   }]
 }]
 

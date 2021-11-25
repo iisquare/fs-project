@@ -1,3 +1,5 @@
+const CLS_NAME = 'fs-context-menu'
+
 export default {
   name: 'ContextMenu',
   props: {
@@ -18,8 +20,18 @@ export default {
     return {}
   },
   methods: {
+    itemByPath (menus, path) {
+      if (!path) return {}
+      const key = path.pop()
+      for (const item of menus) {
+        if (item.key !== key) continue
+        if (path.length === 0) return item
+        return this.itemByPath(item.children, path)
+      }
+      return {}
+    },
     handleCancel (ev) {
-      if (ev && ev.target.parentElement === this.$el) {
+      if (ev && ev.target.classList.contains(CLS_NAME)) {
         return true
       }
       this.handleClick({})
@@ -27,7 +39,7 @@ export default {
     handleClick (item, key, keyPath) {
       this.$el.remove()
       this.$destroy()
-      this.callback(item)
+      this.callback(this.itemByPath(this.menus, item.keyPath), item)
     },
     renderIcon (icon) {
       if (icon === 'none' || icon === undefined || icon === '') {
@@ -45,7 +57,8 @@ export default {
     renderWalk (menus) {
       return menus.map(item => {
         const dynamicProps = {
-          key: item.key || this.uuid()
+          key: item.key || this.uuid(),
+          class: CLS_NAME
         }
         switch (item.type) {
           case 'sub-menu':
@@ -79,10 +92,26 @@ export default {
             )
         }
       })
+    },
+    offset () {
+      if (!this.event) return false
+      if (document.body.scrollTop + this.event.pageY + this.$el.offsetHeight > document.body.clientHeight) {
+        this.$el.style.top = document.body.scrollTop + document.body.clientHeight - this.$el.offsetHeight - 12 + 'px'
+      } else {
+        this.$el.style.top = this.event.pageY + 'px'
+      }
+      if (document.body.scrollLeft + this.event.pageX + this.$el.offsetWidth > document.body.clientWidth) {
+        this.$el.style.left = document.body.scrollLeft + document.body.clientWidth - this.$el.offsetWidth - 12 + 'px'
+      } else {
+        this.$el.style.left = this.event.pageX + 'px'
+      }
+      this.$el.style.visibility = 'visible'
+      return true
     }
   },
   mounted () {
     document.body.addEventListener('mousedown', this.handleCancel, false)
+    window.setTimeout(this.offset, 10)
   },
   destroyed () {
     document.body.removeEventListener('mousedown', this.handleCancel, false)
@@ -94,12 +123,14 @@ export default {
         'border-radius': '3px',
         border: '1px solid #ccc',
         position: 'absolute',
-        top: this.event.pageY + 'px',
-        left: this.event.pageX + 'px'
+        visibility: 'hidden',
+        top: '0px',
+        left: '0px'
       },
       props: {
         mode: 'vertical'
       },
+      class: CLS_NAME,
       on: {
         click: this.handleClick
       }

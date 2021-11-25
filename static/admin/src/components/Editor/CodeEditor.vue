@@ -32,7 +32,7 @@ export default {
     theme: { type: String, default: 'ayu-dark' },
     lineNumbers: { type: Boolean, default: true },
     lineWrapping: { type: Boolean, default: true },
-    hints: { type: Array, default: () => [] }
+    hints: { type: Array, default: () => [] } // { className: 'li的类名', displayText: '联想展示内容', text: '实际插入内容' }
   },
   data () {
     return {
@@ -80,14 +80,20 @@ export default {
       }
       let list = []
       if (word.length > 0) {
-        list = this.hints.filter(item => item.toUpperCase().indexOf(word.toUpperCase()) >= 0)
+        list = this.hints.filter(item => item.displayText.toUpperCase().indexOf(word.toUpperCase()) >= 0)
       }
+      list = list.map(item => Object.assign(item, { render: this.hintRender }))
       const token = this.editor.getTokenAt(cursor)
       return {
         list: list,
         from: { ch: cursor.ch - word.length, line: cursor.line },
         to: { ch: token.end, line: cursor.line }
       }
+    },
+    hintRender (elt, data, cur) {
+      const wrapper = document.createElement('div')
+      wrapper.innerHTML = cur.displayText
+      elt.appendChild(wrapper)
     }
   },
   mounted () {

@@ -128,6 +128,7 @@ export default {
     },
     submit () {
       this.$refs.form.validate(valid => {
+        if (!valid) this.step = 0
         if (!valid || this.loading) return false
         this.loading = true
         let data = this.collect()

@@ -18,5 +18,8 @@ export default {
   },
   search (param, tips = {}) {
     return base.post('/dataset/search', param, tips)
+  },
+  columns (param, tips = {}) {
+    return base.post('/dataset/columns', param, tips)
   }
 }

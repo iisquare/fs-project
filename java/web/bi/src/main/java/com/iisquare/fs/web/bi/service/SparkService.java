@@ -96,7 +96,7 @@ public class SparkService implements InitializingBean, Closeable {
         Iterator<JsonNode> iterator = table.iterator();
         while (iterator.hasNext()) {
             JsonNode item = iterator.next();
-            if ("calculate".equals(item.at("/type").asText())) {
+            if ("calculate".equals(item.at("/transform").asText())) {
                 String expression = item.at("/options/expression").asText();
                 if (!DPUtil.empty(expression)) {
                     result.addAll(parseExpressionColumn(expression));
@@ -290,9 +290,10 @@ public class SparkService implements InitializingBean, Closeable {
             if (!item.at("/enabled").asBoolean(false)) continue;
             String name = item.at("/name").asText();
             String expression = String.format("`%s`.`%s`", item.at("/table").asText(), item.at("/column").asText());
-            String type = item.at("/type").asText("");
-            switch (type) {
+            String transform = item.at("/transform").asText("");
+            switch (transform) {
                 case "":
+                case "location":
                     result.add(String.format("%s as %s", expression, name));
                     break;
                 case "calculate":
@@ -300,8 +301,30 @@ public class SparkService implements InitializingBean, Closeable {
                     if (DPUtil.empty(calculate)) calculate = expression;
                     result.add(String.format("(%s) as %s", calculate, name));
                     break;
+                case "cast2string":
+                    result.add(String.format("cast(%s as string) as %s", expression, name));
+                    break;
+                case "cast2integer":
+                    result.add(String.format("cast(%s as int) as %s", expression, name));
+                    break;
+                case "cast2long":
+                    result.add(String.format("cast(%s as long) as %s", expression, name));
+                    break;
+                case "cast2double":
+                    result.add(String.format("cast(%s as double) as %s", expression, name));
+                    break;
+                case "cast2date":
+                    String format = item.at("/options/format").asText();
+                    if ("millisecond".equals(format)) {
+                        result.add(String.format("%s as %s", expression, name));
+                    } else if ("second".equals(format)) {
+                        result.add(String.format("(%s * 1000) as %s", expression, name));
+                    } else {
+                        result.add(String.format("(unix_timestamp(%s, '%s') * 1000) as %s", expression, format, name));
+                    }
+                    break;
                 default:
-                    throw new RuntimeException("Column [" + type + "] for [" + name + "] not supported");
+                    throw new RuntimeException("Column [" + transform + "] for [" + name + "] not supported");
             }
         }
         return DPUtil.implode(", ", result.toArray(new String[0]));
@@ -344,10 +367,9 @@ public class SparkService implements InitializingBean, Closeable {
         while (iterator.hasNext()) {
             JsonNode item = iterator.next();
             if (!item.at("/enabled").asBoolean(false)) continue;
-            if (!item.at("/viewable").asBoolean(false)) continue;
-            ObjectNode column = columns.addObject();
-            column.put("name", item.at("/name").asText());
-            column.put("title", item.at("/title").asText());
+            ObjectNode column = (ObjectNode) item.deepCopy();
+            column.remove("enabled");
+            columns.add(column);
         }
         String filter = filter(options.at("/query/filter"), null);
         if (!DPUtil.empty(filter)) dataset = dataset.where(filter);
@@ -373,4 +395,172 @@ public class SparkService implements InitializingBean, Closeable {
     public void close() throws IOException {
         if (null != spark) spark.close();
     }
+
+    public Map<String, Object> visualize(JsonNode dataset, JsonNode options, JsonNode level) {
+        SparkSession session = spark.newSession();
+        try {
+            Map<String, Object> result = loadSource(session, dataset);
+            if (ApiUtil.failed(result)) return result;
+            result = sql(dataset);
+            if (ApiUtil.failed(result)) return result;
+            return axis(options, level, session.sql(ApiUtil.data(result, String.class)));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiUtil.result(30500, e.getMessage(), null);
+        }
+    }
+
+    public Map<String, Object> level(JsonNode options, JsonNode level) {
+        List<String> result = new ArrayList<>();
+        JsonNode buckets = options.at("/axis/buckets");
+        Iterator<JsonNode> iterator = level.iterator();
+        int levelIndex = 0;
+        while (iterator.hasNext()) {
+            JsonNode item = iterator.next();
+            JsonNode bucket = buckets.get(levelIndex);
+            if (null == bucket) return ApiUtil.result(71001, "获取层级维度条件失败", levelIndex);
+            String aggregation = bucket.at("/aggregation").asText("");
+            switch (aggregation) {
+                case "TERM":
+                case "HISTOGRAM":
+                case "DATE_HISTOGRAM":
+                    String field = bucket.at("/field").asText();
+                    String interval = bucket.at("/interval").asText("");
+                    if (DPUtil.empty(field)) {
+                        return ApiUtil.result(71003, "维度字段配置异常", item);
+                    }
+                    if ("HISTOGRAM".equals(aggregation)) {
+                        int divider = DPUtil.parseInt(interval);
+                        if (Math.abs(divider) > 1) field = String.format("floor(%s / %d)", field, divider);
+                    } else if ("DATE_HISTOGRAM".equals(aggregation)) {
+                        field = date(field, interval);
+                    }
+                    result.add(String.format("((%s)='%s')", field, item.at("/x").asText("")));
+                    break;
+                case "FILTER":
+                    JsonNode ft = bucket.at("/filters").get(item.at("/index").asInt(-1));
+                    if (null == ft) return ApiUtil.result(71004, "维度过滤配置异常", item);
+                    String filter = filter(ft.at("/filter"), null);
+                    if (!DPUtil.empty(filter)) result.add(String.format("(%s)", filter));
+                    break;
+                default:
+                    return ApiUtil.result(71002, "维度类型暂不支持", aggregation);
+            }
+            levelIndex++;
+        }
+        return ApiUtil.result(0, null, DPUtil.implode(" AND ", result.toArray(new String[0])));
+    }
+
+    public Map<String, Object> bucket(Dataset<Row> dataset, JsonNode bucket, ObjectNode x) {
+        if (null == bucket || !bucket.isObject()) {
+            return ApiUtil.result(61001, "获取所在层级维度配置异常", null);
+        }
+        String aggregation = bucket.at("/aggregation").asText("");
+        String interval = bucket.at("/interval").asText("");
+        x.put("aggregation", aggregation).put("interval", interval);
+        x.put("label", bucket.at("/label").asText()); // 层级名称
+        ArrayNode data = x.putArray("data");
+        List<Dataset<Row>> list = new ArrayList<>();
+        Iterator<JsonNode> iterator = null;
+        switch (aggregation) {
+            case "TERM":
+            case "HISTOGRAM":
+            case "DATE_HISTOGRAM":
+                String field = bucket.at("/field").asText();
+                if (DPUtil.empty(field)) {
+                    return ApiUtil.result(61003, "维度字段配置异常", null);
+                }
+                if ("HISTOGRAM".equals(aggregation)) {
+                    int divider = DPUtil.parseInt(interval);
+                    if (Math.abs(divider) > 1) field = String.format("floor(%s / %d)", field, divider);
+                } else if ("DATE_HISTOGRAM".equals(aggregation)) {
+                    field = date(field, interval);
+                }
+                Dataset<Row> distinct = dataset.selectExpr(field).distinct();
+                List<Row> values = distinct.sort(distinct.col(distinct.columns()[0]).asc()).collectAsList();
+                for (Row row : values) {
+                    String label = row.get(0).toString();
+                    data.add(label);
+                    list.add(dataset.where(String.format("(%s)='%s'", field, label)));
+                }
+                break;
+            case "FILTER":
+                iterator = bucket.at("/filters").iterator();
+                while (iterator.hasNext()) {
+                    JsonNode ft = iterator.next();
+                    data.add(ft.at("/label").asText());
+                    String filter = filter(ft.at("/filter"), null);
+                    list.add(DPUtil.empty(filter) ? dataset : dataset.where(filter));
+                }
+                break;
+            default:
+                return ApiUtil.result(61002, "维度类型暂不支持", aggregation);
+        }
+        return ApiUtil.result(0, null, list);
+    }
+
+    public Map<String, Object> axis(JsonNode options, JsonNode level, Dataset<Row> dataset) {
+        if (null == level || !level.isArray()) level = DPUtil.arrayNode();
+        String filter = filter(options.at("/filter"), null);
+        if (!DPUtil.empty(filter)) dataset = dataset.where(filter);
+        Map<String, Object> result = level(options, level);
+        if (ApiUtil.failed(result)) return result;
+        filter = ApiUtil.data(result, String.class);
+        if (!DPUtil.empty(filter)) dataset = dataset.where(filter);
+        JsonNode bucket = options.at("/axis/buckets").get(level.size());
+        ObjectNode axis = DPUtil.objectNode();
+        result = bucket(dataset, bucket, axis.putObject("x"));
+        if (ApiUtil.failed(result)) return result;
+        result = metrics(ApiUtil.data(result, List.class), options.at("/axis/metrics"), axis.putArray("y"));
+        if (ApiUtil.failed(result)) return result;
+        axis.put("xSize", options.at("/axis/buckets").size());
+        axis.put("ySize", options.at("/axis/metrics").size());
+        axis.replace("level", level); // 请求的钻取历史
+        return ApiUtil.result(0, null, axis);
+    }
+
+    public String date(String field, String interval) {
+        switch (interval) {
+            case "SECOND": return String.format("from_unixtime(%s / 1000, 'yyyy-MM-dd HH:mm:ss')", field);
+            case "MINUTE": return String.format("from_unixtime(%s / 1000, 'yyyy-MM-dd HH:mm')", field);
+            case "HOUR": return String.format("from_unixtime(%s / 1000, 'yyyy-MM-dd HH')", field);
+            case "DAY": return String.format("from_unixtime(%s / 1000, 'yyyy-MM-dd')", field);
+            case "MONTH": return String.format("from_unixtime(%s / 1000, 'yyyy-MM')", field);
+            case "QUARTER": return String.format("concat(from_unixtime(%s / 1000, 'yyyy'), '-Q', quarter(from_unixtime(%s / 1000, 'yyyy-MM-dd')))", field, field);
+            case "YEAR": return String.format("from_unixtime(%s / 1000, 'yyyy')", field);
+            default: return field;
+        }
+    }
+
+    public Map<String, Object> metrics(List<Dataset<Row>> list, JsonNode metrics, ArrayNode y) {
+        ArrayNode result = DPUtil.arrayNode();
+        Iterator<JsonNode> iterator = metrics.iterator();
+        while (iterator.hasNext()) {
+            JsonNode metric = iterator.next();
+            ObjectNode item = y.addObject();
+            item.put("label", metric.at("/label").asText());
+            String field = metric.at("/field").asText("");
+            String aggregation = metric.at("/aggregation").asText("");
+            switch (aggregation) {
+                case "COUNT":
+                    aggregation += "(*)";
+                    break;
+                case "SUM": case "MAX": case "MIN": case "AVG":
+                    aggregation = String.format("%s(%s)", aggregation, field);
+                    break;
+                case "COUNT_DISTINCT":
+                    aggregation = String.format("%s(DISTINCT %s)", aggregation, field);
+                    break;
+            }
+            ArrayNode data = item.putArray("data");
+            String filter = filter(metric.at("/filter"), null);
+            for (Dataset<Row> dataset : list) {
+                if (!DPUtil.empty(filter)) dataset = dataset.where(filter);
+                Row row = dataset.selectExpr(aggregation).collectAsList().get(0);
+                data.add(DPUtil.toJSON(row.get(0)));
+            }
+        }
+        return null;
+    }
+
 }
