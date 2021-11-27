@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
-import com.iisquare.fs.web.bi.entity.Visualize;
-import com.iisquare.fs.web.bi.service.VisualizeService;
+import com.iisquare.fs.web.bi.entity.Matrix;
+import com.iisquare.fs.web.bi.service.MatrixService;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
@@ -21,29 +21,28 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/visualize")
-public class VisualizeController extends PermitControllerBase {
+@RequestMapping("/matrix")
+public class MatrixController extends PermitControllerBase {
 
     @Autowired
-    private VisualizeService visualizeService;
+    private MatrixService matrixService;
     @Autowired
     private DefaultRbacService rbacService;
 
     @RequestMapping("/search")
     @Permission
     public String searchAction(@RequestBody Map<?, ?> param) {
-        Visualize info = null;
+        Matrix info = null;
         if (param.containsKey("id")) {
             Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
-            info = visualizeService.info(id);
+            info = matrixService.info(id);
             if (null == info || 1 != info.getStatus()) {
-                return ApiUtil.echoResult(1404, "当前报表暂不可用", id);
+                return ApiUtil.echoResult(1404, "当前矩阵表暂不可用", id);
             }
         }
         Integer datasetId = null == info ? DPUtil.parseInt(param.get("datasetId")) : info.getDatasetId();
         JsonNode preview = null == info ? DPUtil.toJSON(param.get("preview")) : DPUtil.parseJSON(info.getContent());
-        JsonNode levels = DPUtil.toJSON(param.get("levels"));
-        Map<String, Object> result = visualizeService.search(datasetId, preview, levels);
+        Map<String, Object> result = matrixService.search(datasetId, preview);
         return ApiUtil.echoResult(result);
     }
 
@@ -51,14 +50,14 @@ public class VisualizeController extends PermitControllerBase {
     @Permission("")
     public String infoAction(@RequestBody Map<?, ?> param) {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
-        Visualize info = visualizeService.info(id);
+        Matrix info = matrixService.info(id);
         return ApiUtil.echoResult(null == info ? 404 : 0, null, info);
     }
 
     @RequestMapping("/list")
     @Permission("")
     public String listAction(@RequestBody Map<?, ?> param) {
-        Map<?, ?> result = visualizeService.search(param, DPUtil.buildMap(
+        Map<?, ?> result = matrixService.search(param, DPUtil.buildMap(
             "withUserInfo", true, "withDatasetInfo", true, "withStatusText", true
         ));
         return ApiUtil.echoResult(0, null, result);
@@ -72,32 +71,30 @@ public class VisualizeController extends PermitControllerBase {
         int sort = DPUtil.parseInt(param.get("sort"));
         int status = DPUtil.parseInt(param.get("status"));
         int datasetId = DPUtil.parseInt(param.get("datasetId"));
-        String type = DPUtil.parseString(param.get("type"));
         String content = DPUtil.parseString(param.get("content"));
         String description = DPUtil.parseString(param.get("description"));
         if(param.containsKey("name") || id < 1) {
             if(DPUtil.empty(name)) return ApiUtil.echoResult(1001, "名称异常", name);
         }
         if(param.containsKey("status")) {
-            if(!visualizeService.status("default").containsKey(status)) return ApiUtil.echoResult(1004, "状态参数异常", status);
+            if(!matrixService.status("default").containsKey(status)) return ApiUtil.echoResult(1004, "状态参数异常", status);
         }
-        Visualize info;
+        Matrix info;
         if(id > 0) {
             if(!rbacService.hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
-            info = visualizeService.info(id);
+            info = matrixService.info(id);
             if(null == info) return ApiUtil.echoResult(404, null, id);
         } else {
             if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
-            info = new Visualize();
+            info = new Matrix();
         }
         if(param.containsKey("datasetId") || null == info.getId()) info.setDatasetId(datasetId);
         if(param.containsKey("name") || null == info.getId()) info.setName(name);
-        if(param.containsKey("type") || null == info.getId()) info.setType(type);
         if(param.containsKey("content") || null == info.getId()) info.setContent(content);
         if(param.containsKey("description") || null == info.getId()) info.setDescription(description);
         if(param.containsKey("sort") || null == info.getId()) info.setSort(sort);
         if(param.containsKey("status") || null == info.getId()) info.setStatus(status);
-        info = visualizeService.save(info, rbacService.uid(request));
+        info = matrixService.save(info, rbacService.uid(request));
         return ApiUtil.echoResult(null == info ? 500 : 0, null, info);
     }
 
@@ -110,14 +107,14 @@ public class VisualizeController extends PermitControllerBase {
         } else {
             ids = Arrays.asList(DPUtil.parseInt(param.get("ids")));
         }
-        boolean result = visualizeService.delete(ids, rbacService.uid(request));
+        boolean result = matrixService.delete(ids, rbacService.uid(request));
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }
 
     @RequestMapping("/config")
     @Permission("")
     public String configAction(ModelMap model) {
-        model.put("status", visualizeService.status("default"));
+        model.put("status", matrixService.status("default"));
         return ApiUtil.echoResult(0, null, model);
     }
 

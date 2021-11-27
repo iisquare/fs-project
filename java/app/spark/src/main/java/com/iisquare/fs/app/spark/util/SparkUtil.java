@@ -5,15 +5,24 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.core.DAGNode;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.*;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
 import java.util.*;
 
 public class SparkUtil {
+
+    public static Dataset<Row> agg(RelationalGroupedDataset dataset, Collection<Column> columns) {
+        if (null == columns || columns.size() < 1) return null;
+        Iterator<Column> iterator = columns.iterator();
+        Column column = iterator.next();
+        List<Column> list = new ArrayList<>();
+        while (iterator.hasNext()) {
+            list.add(iterator.next());
+        }
+        return dataset.agg(column, list.toArray(new Column[0]));
+    }
 
     public static <T> Dataset<T> union(Dataset<T>... ds) {
         if (ds.length < 1) return null;

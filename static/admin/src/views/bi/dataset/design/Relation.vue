@@ -218,6 +218,7 @@ export default {
             break
           case 'delete':
             if (this.activeItem === item) this.activeItem = null
+            this.relationConnectionInfo = null
             return this.draw.removeItem(item)
           default:
             return false

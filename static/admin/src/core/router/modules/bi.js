@@ -40,8 +40,16 @@ export const layouts = [{
     component: () => import(/* webpackChunkName: 'bi' */ '@/views/bi/visualize/list')
   }, {
     path: '/bi/report/chart',
-    meta: { title: '数据集', hiddenGlobalFooter: true },
+    meta: { title: '报表设计', hiddenGlobalFooter: true },
     component: () => import(/* webpackChunkName: 'bi' */ '@/views/bi/visualize/model')
+  }, {
+    path: '/bi/report/matrix',
+    meta: { title: '数据矩阵' },
+    component: () => import(/* webpackChunkName: 'bi' */ '@/views/bi/matrix/list')
+  }, {
+    path: '/bi/report/aggregate',
+    meta: { title: '矩阵设计', hiddenGlobalFooter: true },
+    component: () => import(/* webpackChunkName: 'bi' */ '@/views/bi/matrix/model')
   }, {
     path: '/bi/report/dashboard',
     meta: { title: '数据大屏' },

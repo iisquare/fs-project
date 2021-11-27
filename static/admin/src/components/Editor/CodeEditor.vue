@@ -32,11 +32,17 @@ export default {
     theme: { type: String, default: 'ayu-dark' },
     lineNumbers: { type: Boolean, default: true },
     lineWrapping: { type: Boolean, default: true },
-    hints: { type: Array, default: () => [] } // { className: 'li的类名', displayText: '联想展示内容', text: '实际插入内容' }
+    hints: { type: Array, default: () => [] }, // { className: 'li的类名', displayText: '联想展示内容', text: '实际插入内容' }
+    volatile: { type: [Object, String, Number], default: null }
   },
   data () {
     return {
       editor: null
+    }
+  },
+  watch: {
+    volatile () {
+      this.setContent(this.value)
     }
   },
   methods: {

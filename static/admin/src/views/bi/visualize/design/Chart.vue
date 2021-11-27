@@ -3,7 +3,7 @@
     <div class="fs-ui-space" v-if="loading"><a-skeleton avatar :paragraph="{ rows: 4 }" /></div>
     <div class="fs-ui-space" v-else-if="!axis"><a-empty description="暂无数据" /></div>
     <chart-table
-      v-model="level"
+      v-model="levels"
       :config="config"
       :axis="axis"
       :options="options"
@@ -31,7 +31,7 @@ export default {
   data () {
     return {
       axis: null,
-      level: [],
+      levels: [],
       loading: false,
       lastPreview: null
     }
@@ -41,11 +41,11 @@ export default {
     },
     drill () {
       if (this.lastPreview) {
-        this.preview(this.lastPreview.datasetId, this.lastPreview.preview, this.level)
+        this.preview(this.lastPreview.datasetId, this.lastPreview.preview, this.levels)
       } else {
         if (this.loading) return false
         this.loading = true
-        visualizeService.search({ id: this.value, level: this.level }).then((result) => {
+        visualizeService.search({ id: this.value, levels: this.levels }).then((result) => {
           if (ApiUtil.succeed(result)) {
             this.axis = result.data
           }
@@ -53,14 +53,14 @@ export default {
         })
       }
     },
-    async preview (datasetId, preview, level) {
+    async preview (datasetId, preview, levels) {
       if (this.loading) return false
       this.loading = true
-      this.lastPreview = { datasetId, preview, level }
+      this.lastPreview = { datasetId, preview, levels }
       return visualizeService.search(this.lastPreview).then((result) => {
         if (ApiUtil.succeed(result)) {
           this.axis = result.data
-          this.level = result.data.level
+          this.levels = result.data.levels
         }
         this.loading = false
         return result

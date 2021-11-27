@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 25/11/2021 14:31:26
+ Date: 26/11/2021 08:21:54
 */
 
 SET NAMES utf8mb4;
@@ -99,6 +99,30 @@ INSERT INTO `fs_bi_diagram` VALUES (7, 'Flink-在线流处理测试', 'flink', '
 INSERT INTO `fs_bi_diagram` VALUES (8, 'Sample-字段转换', 'spark', 'batch', '{\"canvas\":{\"width\":500,\"height\":500,\"top\":154.5},\"items\":[{\"id\":\"item_1\",\"name\":\"JDBC_1\",\"icon\":\"dagSource\",\"x\":172,\"y\":86,\"index\":1,\"type\":\"JDBCSource\",\"description\":\"JDBC输入\",\"options\":{\"driver\":\"MySQL\",\"url\":\"jdbc:mysql://localhost:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true\",\"username\":\"root\",\"password\":\"admin888\",\"iterable\":false,\"partitionColumn\":\"\",\"lowerBound\":\"\",\"upperBound\":\"\",\"numPartitions\":0,\"fetchSize\":0,\"sql\":\"select * from fs_member_user limit 3\"},\"alias\":\"\",\"kvConfigPrefix\":\"\"},{\"id\":\"item_2\",\"name\":\"Console_2\",\"icon\":\"dagSink\",\"x\":278,\"y\":385,\"index\":2,\"type\":\"ConsoleSink\",\"description\":\"Console输出\",\"options\":{\"echoConfig\":false,\"mode\":\"\"},\"kvConfigPrefix\":\"\"},{\"id\":\"item_3\",\"name\":\"Mongo_3\",\"icon\":\"dagSink\",\"x\":57,\"y\":416,\"index\":3,\"type\":\"MongoSink\",\"description\":\"Mongo输出\",\"options\":{\"hosts\":\"127.0.0.1:27017\",\"database\":\"fs_project\",\"username\":\"root\",\"password\":\"admin888\",\"collection\":\"fs.data\",\"batchSize\":0,\"replaceDocument\":false,\"forceInsert\":false},\"kvConfigPrefix\":\"\"},{\"id\":\"item_4\",\"name\":\"Convert_ID\",\"icon\":\"dagTransform\",\"x\":177,\"y\":203,\"index\":4,\"type\":\"ConvertTransform\",\"description\":\"字段转换\",\"options\":{\"mode\":\"KEEP_SOURCE\",\"items\":[{\"target\":\"_id\",\"source\":\"id\",\"clsType\":\"String\"}]},\"alias\":\"\",\"kvConfigPrefix\":\"\"},{\"id\":\"item_5\",\"name\":\"脱敏处理\",\"icon\":\"dagTransform\",\"x\":142,\"y\":297,\"index\":5,\"type\":\"ConvertTransform\",\"description\":\"字段转换\",\"options\":{\"mode\":\"REMOVE_TARGET\",\"items\":[{\"target\":\"password\",\"source\":\"\",\"clsType\":\"\"}]},\"alias\":\"\",\"kvConfigPrefix\":\"\"}],\"relations\":[{\"sourceId\":\"item_1\",\"targetId\":\"item_4\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"},{\"sourceId\":\"item_4\",\"targetId\":\"item_5\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"},{\"sourceId\":\"item_5\",\"targetId\":\"item_3\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"},{\"sourceId\":\"item_5\",\"targetId\":\"item_2\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"}]}', 0, 1, '', 1, 1634172188749, 1, 1634718737990);
 
 -- ----------------------------
+-- Table structure for fs_bi_matrix
+-- ----------------------------
+DROP TABLE IF EXISTS `fs_bi_matrix`;
+CREATE TABLE `fs_bi_matrix`  (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '名称',
+  `dataset_id` int NOT NULL DEFAULT 0 COMMENT '引用数据集',
+  `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '矩阵配置项',
+  `sort` int NOT NULL DEFAULT 0 COMMENT '排序',
+  `status` tinyint NOT NULL DEFAULT 0 COMMENT '状态',
+  `description` tinytext CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '描述',
+  `created_uid` int NOT NULL DEFAULT 0 COMMENT '创建者',
+  `created_time` bigint NOT NULL DEFAULT 0 COMMENT '创建时间',
+  `updated_uid` int NOT NULL DEFAULT 0 COMMENT '修改者',
+  `updated_time` bigint NOT NULL DEFAULT 0 COMMENT '修改时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_dataset_id`(`dataset_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程图信息' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of fs_bi_matrix
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for fs_bi_source
 -- ----------------------------
 DROP TABLE IF EXISTS `fs_bi_source`;
@@ -150,7 +174,7 @@ CREATE TABLE `fs_bi_visualize`  (
 -- ----------------------------
 -- Records of fs_bi_visualize
 -- ----------------------------
-INSERT INTO `fs_bi_visualize` VALUES (1, 'test', '', 1, '{\"filter\":[],\"axis\":{\"metrics\":[{\"aggregation\":\"COUNT\",\"field\":\"\",\"label\":\"\",\"filter\":[]}],\"buckets\":[{\"aggregation\":\"TERM\",\"field\":\"`module`\",\"label\":\"\",\"interval\":\"\",\"filters\":[]}]}}', 0, 1, '', 1, 1637660291833, 1, 1637799882233);
+INSERT INTO `fs_bi_visualize` VALUES (1, 'test', 'Table', 1, '{\"filter\":[],\"axis\":{\"metrics\":[{\"aggregation\":\"COUNT\",\"field\":\"\",\"label\":\"数量\",\"filter\":[]},{\"aggregation\":\"AVG\",\"field\":\"`id`\",\"label\":\"评分\",\"filter\":[]}],\"buckets\":[{\"aggregation\":\"FILTER\",\"field\":\"`module`\",\"label\":\"模块\",\"interval\":\"\",\"filters\":[{\"label\":\"aaa\",\"filter\":[{\"id\":\"operation-1637831753583621792\",\"enabled\":true,\"type\":\"OPERATION\",\"value\":\"IN\",\"left\":\"`module`\",\"right\":\"oa,bi\"}]},{\"label\":\"bbb\",\"filter\":[{\"id\":\"operation-1637831780166010495\",\"enabled\":true,\"type\":\"OPERATION\",\"value\":\"EQUAL\",\"left\":\"`module`\",\"right\":\"member\"}]}]},{\"aggregation\":\"TERM\",\"field\":\"controller\",\"label\":\"控制器\",\"interval\":\"\",\"filters\":[]},{\"aggregation\":\"TERM\",\"field\":\"`action`\",\"label\":\"方法\",\"interval\":\"\",\"filters\":[]}]}}', 0, 1, '', 1, 1637660291833, 1, 1637886097591);
 INSERT INTO `fs_bi_visualize` VALUES (2, '测试', '', 0, '', 0, 1, '', 1, 1637713900011, 1, 1637713914601);
 
 SET FOREIGN_KEY_CHECKS = 1;

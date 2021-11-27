@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 24/11/2021 16:09:47
+ Date: 26/11/2021 08:37:52
 */
 
 SET NAMES utf8mb4;
@@ -37,7 +37,7 @@ CREATE TABLE `fs_member_dictionary`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_content`(`content`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_dictionary
@@ -352,7 +352,12 @@ INSERT INTO `fs_member_relation` VALUES ('role_resource_1_135', 'role_resource',
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_136', 'role_resource', 1, 136);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_137', 'role_resource', 1, 137);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_138', 'role_resource', 1, 138);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_139', 'role_resource', 1, 139);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_14', 'role_resource', 1, 14);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_140', 'role_resource', 1, 140);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_141', 'role_resource', 1, 141);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_142', 'role_resource', 1, 142);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_143', 'role_resource', 1, 143);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_15', 'role_resource', 1, 15);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_16', 'role_resource', 1, 16);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_17', 'role_resource', 1, 17);
@@ -479,7 +484,7 @@ CREATE TABLE `fs_member_resource`  (
   `updated_time` bigint NOT NULL DEFAULT 0,
   `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 130 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 139 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_resource
@@ -622,6 +627,11 @@ INSERT INTO `fs_member_resource` VALUES (135, '添加', '商业智能:数据大�
 INSERT INTO `fs_member_resource` VALUES (136, '修改', '商业智能:数据大屏:修改', 134, 'bi', 'dashboard', 'modify', 0, 1, '', 1637658899570, 1, 1637658899570, 1);
 INSERT INTO `fs_member_resource` VALUES (137, '删除', '商业智能:数据大屏:删除', 134, 'bi', 'dashboard', 'delete', 0, 1, '', 1637658911014, 1, 1637658911014, 1);
 INSERT INTO `fs_member_resource` VALUES (138, '检索', '商业智能:数据报表:检索', 130, 'bi', 'visualize', 'search', 0, 1, '', 1637741322686, 1, 1637741322686, 1);
+INSERT INTO `fs_member_resource` VALUES (139, '数据矩阵', '商业智能:数据矩阵', 31, 'bi', 'matrix', '', 0, 1, '', 1637886974028, 1, 1637886974028, 1);
+INSERT INTO `fs_member_resource` VALUES (140, '添加', '商业智能:数据矩阵:添加', 139, 'bi', 'matrix', 'add', 0, 1, '', 1637886991599, 1, 1637886991599, 1);
+INSERT INTO `fs_member_resource` VALUES (141, '修改', '商业智能:数据矩阵:修改', 139, 'bi', 'matrix', 'modify', 0, 1, '', 1637887005890, 1, 1637887005890, 1);
+INSERT INTO `fs_member_resource` VALUES (142, '删除', '商业智能:数据矩阵:删除', 139, 'bi', 'matrix', 'delete', 0, 1, '', 1637887016065, 1, 1637887016065, 1);
+INSERT INTO `fs_member_resource` VALUES (143, '检索', '商业智能:数据矩阵:检索', 139, 'bi', 'matrix', 'search', 0, 1, '', 1637887027205, 1, 1637887027205, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_role
@@ -638,7 +648,7 @@ CREATE TABLE `fs_member_role`  (
   `updated_time` bigint NOT NULL DEFAULT 0,
   `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_role
