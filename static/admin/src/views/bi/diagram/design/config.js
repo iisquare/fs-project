@@ -125,7 +125,7 @@ const ConsoleSinkOptions = () => {
 }
 
 const ElasticsearchSinkOptions = () => {
-  return { servers: '127.0.0.1:9200', username: '', password: '', collection: '', batchSize: 1, flushInterval: -1, idField: '_id', tableField: '_table', mode: 'index' }
+  return { servers: '127.0.0.1:9200', username: '', password: '', collection: '', batchSize: 1, flushInterval: -1, idField: '_id', tableField: '_table', mode: 'index', format: '' }
 }
 
 const MongoSinkOptions = () => {
@@ -229,7 +229,7 @@ export default Object.assign(config, {
     }, {
       type: 'JSONParseTransform', label: 'JSONParse', title: 'JSON格式化', icon: 'dagTransform', options: JSONParseTransformOptions, property: () => import('./JSONParseTransformProperty')
     }), Object.assign({
-      supports: []
+      supports: [[ENGINE_SPARK, MODEL_BATCH]]
     }, {
       type: 'JSONStringifyTransform', label: 'JSONStringify', title: 'JSON序列化', icon: 'dagTransform', options: JSONStringifyTransformOptions, property: () => import('./JSONStringifyTransformProperty')
     }), Object.assign({

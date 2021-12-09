@@ -19,7 +19,7 @@
     "@toast-ui/editor-plugin-table-merged-cell": "^3.0.0",
     "ant-design-vue": "1.7.8",
     "axios": "^0.19.0",
-    "bpmn-js": "8.6.1",
+    "bpmn-js": "8.8.2",
     "codemirror": "^5.62.3",
     "core-js": "^3.1.2",
     "enquire.js": "^2.1.6",

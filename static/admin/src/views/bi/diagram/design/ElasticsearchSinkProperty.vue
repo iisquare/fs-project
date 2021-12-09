@@ -12,9 +12,14 @@
         <a-form-model-item label="刷新间隔" v-if="config.diagram.engine === config.ENGINE_FLINK">
           <a-space><a-input-number v-model="value.options.flushInterval" placeholder="-1禁用" /><span>ms</span></a-space>
         </a-form-model-item>
-        <a-form-model-item label="主键字段"><a-input v-model="value.options.idField" placeholder="主键字段名称" /></a-form-model-item>
+        <a-form-model-item label="主键字段"><a-input v-model="value.options.idField" placeholder="主键字段名称，留空自动生成" /></a-form-model-item>
         <a-form-model-item label="索引字段" v-if="config.diagram.engine === config.ENGINE_FLINK">
           <a-input v-model="value.options.tableField" placeholder="索引字段名称，用于索引拆分" />
+        </a-form-model-item>
+        <a-form-model-item label="数据格式">
+          <a-select v-model="value.options.format" placeholder="请选择数据格式" :allowClear="true">
+            <a-select-option :value="item.value" v-for="item in formats" :key="item.value">{{ item.label }}</a-select-option>
+          </a-select>
         </a-form-model-item>
         <a-form-model-item label="输出模式">
           <a-select v-model="value.options.mode" placeholder="请选择输出模式" :allowClear="true">
@@ -44,6 +49,10 @@ export default {
         { label: 'create - 添新，若存在抛异常', value: 'create' },
         { label: 'update - 更旧，若不存在抛异常', value: 'update' },
         { label: 'upsert - 添新合旧', value: 'upsert' }
+      ],
+      formats: [
+        { label: '基础格式', value: '' },
+        { label: 'JSON格式', value: 'json' }
       ]
     }
   },
@@ -69,8 +78,10 @@ export default {
         collection: obj.options.collection || this.defaults.collection,
         batchSize: Number.isInteger(obj.options.batchSize) ? obj.options.batchSize : this.defaults.batchSize,
         flushInterval: Number.isInteger(obj.options.flushInterval) ? obj.options.flushInterval : this.defaults.flushInterval,
-        idField: obj.options.idField || this.defaults.idField,
-        tableField: obj.options.tableField || this.defaults.tableField
+        idField: typeof obj.options.idField === 'undefined' ? this.defaults.idField : obj.options.idField,
+        tableField: obj.options.tableField || this.defaults.tableField,
+        mode: obj.options.mode || this.defaults.mode,
+        format: obj.options.format || this.defaults.format
       }
       const result = Object.assign({}, obj, { options: Object.assign({}, obj.options, options) })
       return result

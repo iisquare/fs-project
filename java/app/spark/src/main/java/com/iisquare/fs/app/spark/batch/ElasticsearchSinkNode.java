@@ -5,6 +5,7 @@ import com.iisquare.fs.app.spark.util.SparkUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.sink.AbstractElasticsearchSink;
 import org.apache.spark.sql.Dataset;
+import org.elasticsearch.spark.rdd.api.java.JavaEsSpark;
 import org.elasticsearch.spark.sql.api.java.JavaEsSparkSQL;
 
 import java.util.LinkedHashMap;
@@ -39,7 +40,11 @@ public class ElasticsearchSinkNode extends AbstractElasticsearchSink {
     @Override
     public Object process() {
         Dataset dataset = SparkUtil.union(Dataset.class, sources);
-        JavaEsSparkSQL.saveToEs(dataset, resource, config);
+        if ("json".equals(options.at("/format").asText())) {
+            JavaEsSpark.saveJsonToEs(dataset.toJavaRDD(), resource, config);
+        } else {
+            JavaEsSparkSQL.saveToEs(dataset, resource, config);
+        }
         return null;
     }
 
