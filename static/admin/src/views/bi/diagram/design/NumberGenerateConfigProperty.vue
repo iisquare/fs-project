@@ -45,10 +45,10 @@ export default {
     formatted (obj) {
       const options = {
         arg: obj.options.variable || this.defaults.variable,
-        start: Number.isNaN(obj.options.start) ? this.defaults.start : this.defaults.start,
-        step: Number.isNaN(obj.options.step) ? this.defaults.step : this.defaults.step,
-        end: Number.isNaN(obj.options.end) ? this.defaults.end : this.defaults.end,
-        divisor: Number.isNaN(obj.options.divisor) ? this.defaults.divisor : this.defaults.divisor
+        start: Number.isNaN(obj.options.start) ? this.defaults.start : obj.options.start,
+        step: Number.isNaN(obj.options.step) ? this.defaults.step : obj.options.step,
+        end: Number.isNaN(obj.options.end) ? this.defaults.end : obj.options.end,
+        divisor: Number.isNaN(obj.options.divisor) ? this.defaults.divisor : obj.options.divisor
       }
       const result = Object.assign({}, obj, { options: Object.assign({}, obj.options, options) })
       return result
