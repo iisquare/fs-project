@@ -14,7 +14,7 @@ const config = {
 }
 
 const ElementOptions = () => {
-  return { id: '', name: '', top: 0, left: 0, width: 100, height: 100, rotate: 0, opacity: 100, locked: false, hidden: false, level: 500 }
+  return { id: '', name: '', top: 0, left: 0, width: 100, height: 100, rotate3d: false, rotateX: 0, rotateY: 0, rotateZ: 1, rotateAngle: 0, opacity: 100, locked: false, hidden: false, level: 500 }
 }
 
 const CanvasOptions = () => {
@@ -56,15 +56,23 @@ export default Object.assign(config, {
     return style
   },
   elementStyle (element) {
-    return {
+    const style = {
       top: `${element.top}px`,
       left: `${element.left}px`,
       width: `${element.width}px`,
       height: `${element.height}px`,
-      rotate: `${element.rotate}deg`,
       opacity: element.opacity / 100,
       'z-index': element.level
     }
+    if (element.rotate3d) {
+      style.transform = `rotate3d(${element.rotateX}, ${element.rotateY}, ${element.rotateZ}, ${element.rotateAngle}deg)`
+    } else {
+      style.transform = `rotate(${element.rotateAngle}deg)`
+    }
+    if (element.hidden) {
+      style.visibility = 'hidden'
+    }
+    return style
   },
   widgetTransientMap: null,
   widgetByType (type) {
@@ -95,6 +103,9 @@ export default Object.assign(config, {
     children: []
   }, {
     name: '表格',
+    children: []
+  }, {
+    name: '表单',
     children: []
   }]
 })

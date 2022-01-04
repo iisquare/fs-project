@@ -35,9 +35,17 @@
         <span>px</span>
       </a-space>
     </a-form-model-item>
-    <a-form-model-item label="旋转">
+    <a-form-model-item label="三维旋转"><a-checkbox v-model="value.rotate3d">启用3D旋转效果</a-checkbox></a-form-model-item>
+    <a-form-model-item label="旋转原点">
       <a-space>
-        <a-input-number v-model="value.rotate" />
+        <a-input-number v-model="value.rotateX" :formatter="v => `X：${v}`" :parser="v => v.replace('X：', '')" style="width: 75px;" />
+        <a-input-number v-model="value.rotateY" :formatter="v => `Y：${v}`" :parser="v => v.replace('Y：', '')" style="width: 75px;" />
+        <a-input-number v-model="value.rotateZ" :formatter="v => `Z：${v}`" :parser="v => v.replace('Z：', '')" style="width: 75px;" />
+      </a-space>
+    </a-form-model-item>
+    <a-form-model-item label="旋转角度">
+      <a-space>
+        <a-input-number v-model="value.rotateAngle" />
         <span>度</span>
       </a-space>
     </a-form-model-item>
@@ -81,8 +89,12 @@ export default {
         left: Number.isInteger(obj.left) ? obj.left : this.defaults.left,
         width: Number.isInteger(obj.width) ? obj.width : this.defaults.width,
         height: Number.isInteger(obj.height) ? obj.height : this.defaults.height,
-        rotate: Number.isInteger(obj.rotate) ? obj.rotate : this.defaults.rotate,
-        opacity: Number.isInteger(obj.opacity) ? obj.opacity : this.defaults.opacity
+        opacity: Number.isInteger(obj.opacity) ? obj.opacity : this.defaults.opacity,
+        rotate3d: !!obj.rotate3d,
+        rotateX: Number.isInteger(obj.rotateX) ? obj.rotateX : this.defaults.rotateX,
+        rotateY: Number.isInteger(obj.rotateY) ? obj.rotateY : this.defaults.rotateY,
+        rotateZ: Number.isInteger(obj.rotateZ) ? obj.rotateZ : this.defaults.rotateZ,
+        rotateAngle: Number.isInteger(obj.rotateAngle) ? obj.rotateAngle : this.defaults.rotateAngle
       }
       const result = Object.assign({}, obj, options)
       return result

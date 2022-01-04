@@ -1167,16 +1167,17 @@
   dependencies:
     prismjs "^1.23.0"
 
-"@toast-ui/editor-plugin-table-merged-cell@^3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@toast-ui/editor-plugin-table-merged-cell/-/editor-plugin-table-merged-cell-3.0.0.tgz#5c66b4ec81d29b425a5418097677ca35a205c55c"
-  integrity sha512-aA7DGZtaPMxtzJxU1geKrLTxSK8oWzTz6VnRZdDCdOfMkoFEgddSeWqyu8rIEoONG16y4YyJFljuAW8loHwC0A==
+"@toast-ui/editor-plugin-table-merged-cell@3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@toast-ui/editor-plugin-table-merged-cell/-/editor-plugin-table-merged-cell-3.0.1.tgz#a0c573db72c15bc08d877698ffb417267ac6d7fb"
+  integrity sha512-o6A9byDmkQujNAuhT20usdcV2pnPPdnBYyWwjTrSlFD4vT9RdyU9P5WrRf6WPdj0pWioyoI16X8qnB2B2J2T/w==
 
-"@toast-ui/editor@^3.0.3":
-  version "3.0.3"
-  resolved "https://registry.yarnpkg.com/@toast-ui/editor/-/editor-3.0.3.tgz#8423e27ce92b6806c7dbdab1ea67f065afa91a81"
-  integrity sha512-uU8FhUKsbW6nYSS+NrwqE7d/63JvezfmQ9xsRwIV9crLLyZ3K6a9/kT8XPIDcep2yKviybIDLeTEbXxuwBWvFQ==
+"@toast-ui/editor@3.1.2":
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/@toast-ui/editor/-/editor-3.1.2.tgz#b7d73c69e9bc0b6da346b9171b81df12f3dde49c"
+  integrity sha512-3If4pnDULrduyiWP9gLZKNqeK2FatzNa8APU6eV/bEDAXJqbCJFahNDivMPtR5k7iZMtkdE1ez1FphueHyjmUQ==
   dependencies:
+    dompurify "^2.3.3"
     prosemirror-commands "^1.1.9"
     prosemirror-history "^1.1.3"
     prosemirror-inputrules "^1.1.3"
@@ -4210,6 +4211,11 @@ domify@^1.3.1:
   version "1.4.1"
   resolved "https://registry.nlark.com/domify/download/domify-1.4.1.tgz#2e1e813019646715deeb8d3c5de4d3ef7bddd07e"
   integrity sha1-Lh6BMBlkZxXe6408XeTT73vd0H4=
+
+dompurify@^2.3.3:
+  version "2.3.4"
+  resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-2.3.4.tgz#1cf5cf0105ccb4debdf6db162525bd41e6ddacc6"
+  integrity sha512-6BVcgOAVFXjI0JTjEvZy901Rghm+7fDQOrNIcxB4+gdhj6Kwp6T9VBhBY/AbagKHJocRkDYGd6wvI+p4/10xtQ==
 
 domutils@1.5.1:
   version "1.5.1"

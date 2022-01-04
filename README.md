@@ -30,9 +30,21 @@ Full Stack Project：企业级快速开发平台 + 数据聚合分析平台 + �
 - 集成大数据DAG计算平台，支持自定义数据模型、多数据源聚合、多维度实时分析。
 - 支持个性化数据报表，通过数据矩阵精确匹配数据统计项。
 
-### 大屏设计器和组态可视化
-- 提供DataV基础设计器面板，集成自定义报表组件。
-- 组态可视化，支持2D和3D组件交互。
+### 自定义大屏和应用设计器
+- 提供DataV基础设计器面板，集成自定义报表组件和装饰效果。
+- 组态可视化，支持2D和3D组件交互、钻取、联动、跳转。
+- 个性化定制页面内容，所见即所得生成定制化应用。
+
+## 项目演示
+
+![应用列表](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/fs-apps.png)
+
+| 功能 | 示例 | 描述 |
+| :----- | :----- | :----- |
+| 表单设计器 | [gif](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/oa-form-design.gif)/[mp4](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/oa-form-design.mp4) | 无 |
+| 流程设计器 | [gif](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/oa-flow-design.gif)/[mp4](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/oa-flow-design.mp4) | 无 |
+| 数据钻取报表 | [gif](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/bi-drill-table.gif)/[mp4](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/bi-drill-table.mp4) | 支持多维度多度量钻取 |
+| 数据分布报表 | [gif](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/bi-distribution-table.gif)/[mp4](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/bi-distribution-table.mp4) | 支持任意维度分组统计 |
 
 ## 已完成功能
 - 基础RBAC后台管理系统。
@@ -40,6 +52,7 @@ Full Stack Project：企业级快速开发平台 + 数据聚合分析平台 + �
 - 大数据计算和在线作业管理。
 - 表单设计器和数据托管。
 - 工作流和节点权限绑定。
+- 异构数据源实时计算报表。
 
 ## 特性实验室
 - 人脸检测和识别。
@@ -48,12 +61,9 @@ Full Stack Project：企业级快速开发平台 + 数据聚合分析平台 + �
 
 ## 开发计划
 - 大屏设计器和组态可视化。
-- 智能报表与DAG计算集成。
+- 应用设计和脚手架代码生成器。
 - 数据同步平台化开发。
-- 代码生成器功能拓展。
-- Ceph文件管理和图库开发。
 - 知识图谱和智能问答系统。
-- 图像超分辨率和去水印。
 - 分布式定时器。
 - 线上演示系统。
 

@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 26/11/2021 08:37:52
+ Date: 17/12/2021 13:51:10
 */
 
 SET NAMES utf8mb4;
@@ -37,7 +37,7 @@ CREATE TABLE `fs_member_dictionary`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_content`(`content`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_dictionary
@@ -87,7 +87,7 @@ CREATE TABLE `fs_member_menu`  (
   `updated_time` bigint NOT NULL DEFAULT 0,
   `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 99 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 102 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_menu
@@ -186,6 +186,9 @@ INSERT INTO `fs_member_menu` VALUES (95, '引用管理', '后台管理:内容管
 INSERT INTO `fs_member_menu` VALUES (96, '文件存储', '后台管理:文件存储', 1, 'hdd', '/file/index/index', '', 0, 1, '文件存储、图库图床、对象存储', 1627548117479, 1, 1627548117479, 1);
 INSERT INTO `fs_member_menu` VALUES (97, '存档管理', '后台管理:文件存储:存档管理', 96, 'file', '/file/archive', '', 0, 1, '', 1627548162634, 1, 1627548162634, 1);
 INSERT INTO `fs_member_menu` VALUES (98, '文件列表', '后台管理:文件存储:存档管理:文件列表', 97, '', '/file/archive/list', '', 0, 1, '', 1627548198271, 1, 1627548198271, 1);
+INSERT INTO `fs_member_menu` VALUES (99, '项目管理', '后台管理:项目管理', 1, 'project', '/project/index/index', '', 0, 1, '脚手架、页面设计、应用设计', 1639719591630, 1, 1639720193584, 1);
+INSERT INTO `fs_member_menu` VALUES (100, '页面管理', '后台管理:项目管理:页面管理', 99, 'read', '/project/page', '', 0, 1, '', 1639719989845, 1, 1639719989845, 1);
+INSERT INTO `fs_member_menu` VALUES (101, '应用管理', '后台管理:项目管理:应用管理', 99, 'book', '/project/app', '', 0, 1, '', 1639720019045, 1, 1639720019045, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_relation
@@ -204,6 +207,8 @@ CREATE TABLE `fs_member_relation`  (
 -- ----------------------------
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_1', 'role_menu', 1, 1);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_10', 'role_menu', 1, 10);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_100', 'role_menu', 1, 100);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_101', 'role_menu', 1, 101);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_11', 'role_menu', 1, 11);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_12', 'role_menu', 1, 12);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_13', 'role_menu', 1, 13);
@@ -300,6 +305,7 @@ INSERT INTO `fs_member_relation` VALUES ('role_menu_1_95', 'role_menu', 1, 95);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_96', 'role_menu', 1, 96);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_97', 'role_menu', 1, 97);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_98', 'role_menu', 1, 98);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_99', 'role_menu', 1, 99);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_2_1', 'role_menu', 2, 1);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_2_2', 'role_menu', 2, 2);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_2_3', 'role_menu', 2, 3);
@@ -484,7 +490,7 @@ CREATE TABLE `fs_member_resource`  (
   `updated_time` bigint NOT NULL DEFAULT 0,
   `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 139 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 144 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_resource
@@ -719,7 +725,7 @@ CREATE TABLE `fs_member_user`  (
 -- ----------------------------
 -- Records of fs_member_user
 -- ----------------------------
-INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1636420197403, '127.0.0.1', 0);
+INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1639041881705, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (2, 'test', '测试123', '4b361be828611add84453a24f39772a5', '0905', 0, 1, '', 1528081567988, '127.0.0.1', 1, 1542958281919, 1, 1528267171953, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (3, '111', '111', '', '', 6, -1, '', 0, '', 0, 1584360531961, 1, 0, '', 0);
 INSERT INTO `fs_member_user` VALUES (4, '222', '222', '', '', 0, 1, '', 0, '', 0, 1629363081609, 1, 0, '', 1630054276000);

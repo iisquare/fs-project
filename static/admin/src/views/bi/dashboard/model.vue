@@ -46,15 +46,9 @@
             @dragover="canvasDragOver"
             @drop="canvasDrop"
             :style="config.canvasStyle(screen.options, zoom)">
-            <fs-element
-              v-for="item in items"
-              :key="item.id"
-              :value="item"
-              :config="config"
-              :activeItem="activeItem"
-              class="fs-bi-element"
-              @click.stop="triggerCanvasItem(item)"
-              :style="config.elementStyle(item)" />
+            <div v-for="item in items" :key="item.id" class="fs-bi-element" :style="config.elementStyle(item)" @click.stop="triggerCanvasItem(item)">
+              <fs-element :value="item" :config="config" :activeItem="activeItem" />
+            </div>
           </div>
         </div>
       </div>
@@ -100,6 +94,13 @@ export default {
     'diagram.options.height': {
       handler () {
         this.resizeCanvas()
+      },
+      deep: true
+    },
+    activeItem: {
+      handler (item) {
+        if (item === null) return
+        this.items[item.id] = item
       },
       deep: true
     }
@@ -174,7 +175,7 @@ export default {
 <style lang="less" scoped>
 .fs-bi-element {
   position: absolute;
-  border: 1px solid red;
+  border: 1px solid transparent;
 }
 .fs-ui-elements {
   width: 365px;

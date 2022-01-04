@@ -24,14 +24,14 @@
 ## Project
 | 名称 | 说明 | 备注 |
 | :----- | :----- | :----- |
-| [attentive-gan-derainnet](https://github.com/MaybeShewill-CV/attentive-gan-derainnet) | 去雨滴 | 无 |
+| [lama](https://github.com/saic-mdal/lama) | 图像修复 | 无 |
 | [crnn](https://github.com/MaybeShewill-CV/CRNN_Tensorflow) | 文本识别 | 无 |
 | [east](https://github.com/argman/EAST) | 文本检测 | 无 |
 | [mask-rcnn](https://github.com/matterport/Mask_RCNN) | 图片语义分割 | 无 |
 | [multi-label-image](https://github.com/suraj-deshmukh/Keras-Multi-Label-Image-Classification) | 图片多标签分类 | 无 |
 | [mtcnn](https://github.com/AITTSMD/MTCNN-Tensorflow) | 人脸检测 | 无 |
 | [insightface](https://github.com/auroua/InsightFace_TF) | 人脸识别 | 无 |
-| [deep-image-prior](https://github.com/DmitryUlyanov/deep-image-prior) | 降噪、修复、超分辨率 | 无 |
+| [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) | 图片降噪、超分辨率 | 无 |
 
 
 ## Anaconda
@@ -68,10 +68,16 @@ conda uninstall jupyter
 conda deactivate
 conda env remove -n xxx
 ```
+- 环境变量
+```
+PYTHONPATH=.
+```
 - 与pip协作
 ```
 pip freeze > requirements.txt
 pip install -r requirements.txt
+python -m pip install 'git+https://github.com/xxx.git'
+python -m pip install -e [local clone]
 conda list -e > requirements.txt
 conda install --yes --file requirements.txt
 ```
