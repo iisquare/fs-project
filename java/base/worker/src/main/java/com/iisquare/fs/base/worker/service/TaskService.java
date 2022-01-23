@@ -69,7 +69,7 @@ public class TaskService extends ServiceBase implements InitializingBean, Dispos
         return zookeeper.participants();
     }
 
-    public JsonNode node() {
+    public ObjectNode node() {
         ObjectNode data = DPUtil.objectNode();
         data.put("id", zookeeper.nodeId());
         data.put("state", zookeeper.state());

@@ -14,6 +14,14 @@ export const layouts = [{
     path: '/server/rabbit/dashboard',
     meta: { title: '消息队列' },
     component: () => import(/* webpackChunkName: 'server' */ '@/views/server/rabbit/dashboard')
+  }, {
+    path: '/server/cron/node',
+    meta: { title: '工作节点' },
+    component: () => import(/* webpackChunkName: 'server' */ '@/views/server/cron/node')
+  }, {
+    path: '/server/cron/job',
+    meta: { title: '作业管理' },
+    component: () => import(/* webpackChunkName: 'server' */ '@/views/server/cron/job')
   }]
 }]
 

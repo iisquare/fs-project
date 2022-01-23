@@ -35,7 +35,7 @@ public class TaskController extends PermitControllerBase {
     @GetMapping("/node")
     public String nodeAction(@RequestParam Map<String, String> param) {
         boolean withQueueKey = !DPUtil.empty(param.get("withQueueKey"));
-        ObjectNode data = (ObjectNode) taskService.node();
+        ObjectNode data = taskService.node();
         data.replace("containers", containerService.state(withQueueKey));
         return ApiUtil.echoResult(0, null, data);
     }

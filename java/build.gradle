@@ -55,6 +55,7 @@ subprojects {
         rabbitmqVersion = '5.10.0'
         elasticVersion = '7.15.1'
         flowableVersion = '6.6.0'
+        quartzVersion = '2.3.2'
     }
 
     dependencies {

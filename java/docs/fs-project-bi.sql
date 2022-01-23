@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 26/11/2021 08:21:54
+ Date: 19/01/2022 13:51:50
 */
 
 SET NAMES utf8mb4;
@@ -33,11 +33,12 @@ CREATE TABLE `fs_bi_dashboard`  (
   `updated_uid` int NOT NULL DEFAULT 0 COMMENT '修改者',
   `updated_time` bigint NOT NULL DEFAULT 0 COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程图信息' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_bi_dashboard
 -- ----------------------------
+INSERT INTO `fs_bi_dashboard` VALUES (1, '测试', '', 0, 1, '', 1, 1638170270182, 1, 1638170270182);
 
 -- ----------------------------
 -- Table structure for fs_bi_dataset
@@ -56,7 +57,7 @@ CREATE TABLE `fs_bi_dataset`  (
   `updated_uid` int NOT NULL DEFAULT 0 COMMENT '修改者',
   `updated_time` bigint NOT NULL DEFAULT 0 COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程图信息' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_bi_dataset
@@ -85,12 +86,12 @@ CREATE TABLE `fs_bi_diagram`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_engine`(`engine`) USING BTREE,
   INDEX `idx_model`(`model`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程图信息' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_bi_diagram
 -- ----------------------------
-INSERT INTO `fs_bi_diagram` VALUES (2, 'Spark-离线批处理测试', 'spark', 'batch', '{\"canvas\":{\"width\":500,\"height\":500,\"top\":196.5},\"items\":[{\"id\":\"item_1\",\"name\":\"JDBC_1\",\"icon\":\"dagSource\",\"x\":140,\"y\":99,\"index\":1,\"type\":\"JDBCSource\",\"description\":\"JDBC输入\",\"options\":{\"driver\":\"com.mysql.jdbc.Driver\",\"url\":\"jdbc:mysql://localhost:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true\",\"username\":\"root\",\"password\":\"admin888\",\"iterable\":false,\"partitionColumn\":\"\",\"lowerBound\":\"\",\"upperBound\":\"\",\"numPartitions\":0,\"fetchSize\":0,\"sql\":\"select * from fs_member_user limit 3\"},\"alias\":\"user\",\"kvConfigPrefix\":\"\"},{\"id\":\"item_10\",\"name\":\"Console_10\",\"icon\":\"dagSink\",\"x\":54,\"y\":298,\"index\":10,\"type\":\"ConsoleSink\",\"description\":\"Console输出\",\"options\":{\"echoConfig\":false,\"mode\":\"\"},\"kvConfigPrefix\":\"\"},{\"id\":\"item_11\",\"name\":\"Elasticsearch_11\",\"icon\":\"dagSink\",\"x\":324,\"y\":291,\"index\":11,\"type\":\"ElasticsearchSink\",\"description\":\"Elasticsearch输出\",\"options\":{\"servers\":\"127.0.0.1:9200\",\"username\":\"\",\"password\":\"\",\"collection\":\"fs_test\",\"batchSize\":200,\"flushInterval\":-1,\"idField\":\"\",\"tableField\":\"_table\",\"mode\":\"index\"},\"kvConfigPrefix\":\"\"}],\"relations\":[{\"sourceId\":\"item_1\",\"targetId\":\"item_10\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"},{\"sourceId\":\"item_1\",\"targetId\":\"item_11\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"}]}', 7, 1, '', 1, 1631674988145, 1, 1636512980348);
+INSERT INTO `fs_bi_diagram` VALUES (2, 'Spark-离线批处理测试', 'spark', 'batch', '{\"canvas\":{\"width\":500,\"height\":500,\"top\":196.5},\"items\":[{\"id\":\"item_1\",\"name\":\"JDBC_1\",\"icon\":\"dagSource\",\"x\":152,\"y\":90,\"index\":1,\"type\":\"JDBCSource\",\"description\":\"JDBC输入\",\"options\":{\"driver\":\"com.mysql.jdbc.Driver\",\"url\":\"jdbc:mysql://localhost:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true\",\"username\":\"root\",\"password\":\"admin888\",\"iterable\":false,\"partitionColumn\":\"\",\"lowerBound\":\"\",\"upperBound\":\"\",\"numPartitions\":0,\"fetchSize\":0,\"sql\":\"select * from fs_member_user limit 3\"},\"alias\":\"user\",\"kvConfigPrefix\":\"\"},{\"id\":\"item_10\",\"name\":\"Console_10\",\"icon\":\"dagSink\",\"x\":46,\"y\":364,\"index\":10,\"type\":\"ConsoleSink\",\"description\":\"Console输出\",\"options\":{\"echoConfig\":false,\"mode\":\"\"},\"kvConfigPrefix\":\"\"},{\"id\":\"item_11\",\"name\":\"Elasticsearch_11\",\"icon\":\"dagSink\",\"x\":324,\"y\":321,\"index\":11,\"type\":\"ElasticsearchSink\",\"description\":\"Elasticsearch输出\",\"options\":{\"servers\":\"127.0.0.1:9200\",\"username\":\"\",\"password\":\"\",\"collection\":\"fs_test\",\"batchSize\":200,\"flushInterval\":-1,\"idField\":\"\",\"tableField\":\"_table\",\"mode\":\"index\",\"format\":\"json\"},\"kvConfigPrefix\":\"\"},{\"id\":\"item_12\",\"name\":\"JSONStringify_12\",\"icon\":\"dagTransform\",\"x\":157,\"y\":233,\"index\":12,\"type\":\"JSONStringifyTransform\",\"description\":\"JSON序列化\",\"options\":{\"arg\":\"\",\"reference\":\"\"},\"alias\":\"\",\"kvConfigPrefix\":\"\"},{\"id\":\"item_13\",\"name\":\"NumberGenerate_13\",\"icon\":\"dagConfig\",\"x\":276,\"y\":142,\"index\":13,\"type\":\"NumberGenerateConfig\",\"description\":\"生成数值参数\",\"options\":{\"start\":0,\"step\":1,\"end\":1,\"divisor\":0}}],\"relations\":[{\"sourceId\":\"item_1\",\"targetId\":\"item_12\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"},{\"sourceId\":\"item_12\",\"targetId\":\"item_10\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"},{\"sourceId\":\"item_12\",\"targetId\":\"item_11\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"}]}', 7, 1, '', 1, 1631674988145, 1, 1639127186006);
 INSERT INTO `fs_bi_diagram` VALUES (3, 'Spark-在线流处理测试', 'spark', 'stream', '{\"canvas\":{\"width\":500,\"height\":500,\"top\":154.5},\"items\":[{\"id\":\"item_31\",\"name\":\"Console_31\",\"icon\":\"dagSink\",\"x\":240,\"y\":369,\"index\":31,\"type\":\"ConsoleSink\",\"description\":\"Console输出\",\"options\":{\"echoConfig\":true,\"mode\":\"line\"},\"kvConfigPrefix\":\"\"},{\"id\":\"item_34\",\"name\":\"JDBC_34\",\"icon\":\"dagSource\",\"x\":86,\"y\":209,\"index\":34,\"type\":\"JDBCSource\",\"description\":\"JDBC输入\",\"options\":{\"driver\":\"MySQL\",\"url\":\"jdbc:mysql://127.0.0.1:3306/fs-project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true\",\"username\":\"root\",\"password\":\"admin888\",\"iterable\":false,\"sql\":\"select * from fs_member_role\"},\"alias\":\"\",\"kvConfigPrefix\":\"\"},{\"id\":\"item_35\",\"name\":\"JSON_35\",\"icon\":\"dagConfig\",\"x\":337,\"y\":104,\"index\":35,\"type\":\"JSONConfig\",\"description\":\"JSON参数\",\"options\":{\"json\":\"{}\"}}],\"relations\":[{\"sourceId\":\"item_34\",\"targetId\":\"item_31\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"},{\"sourceId\":\"item_35\",\"targetId\":\"item_31\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"}]}', 8, 1, '', 1, 1631858852189, 1, 1634172510556);
 INSERT INTO `fs_bi_diagram` VALUES (4, 'Flink-离线批处理测试', 'flink', 'batch', '{\"canvas\":{\"width\":500,\"height\":500,\"top\":154.5},\"items\":[{\"id\":\"item_1\",\"name\":\"Script_1\",\"icon\":\"dagScript\",\"x\":127,\"y\":148,\"index\":1,\"type\":\"ScriptTransform\",\"description\":\"逻辑脚本\",\"options\":{\"jarURI\":\"file:/D:/htdocs/fs-project-vip/java/plugins/flink/build/libs/fs-project-plugins-flink-0.0.1-SNAPSHOT.jar\",\"pkgClass\":\"com.iisquare.fs.plugins.flink.TestTransform\"},\"alias\":\"\",\"kvConfigPrefix\":\"\"},{\"id\":\"item_2\",\"name\":\"Console_2\",\"icon\":\"dagSink\",\"x\":186,\"y\":331,\"index\":2,\"type\":\"ConsoleSink\",\"description\":\"Console输出\",\"options\":{\"echoConfig\":false,\"mode\":\"line\"},\"kvConfigPrefix\":\"\"}],\"relations\":[{\"sourceId\":\"item_1\",\"targetId\":\"item_2\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"}]}', 9, 1, '', 1, 1631858899715, 1, 1634172150472);
 INSERT INTO `fs_bi_diagram` VALUES (5, 'Sample-访问日志处理', 'flink', 'stream', '{\"canvas\":{\"width\":500,\"height\":500,\"top\":63},\"items\":[{\"id\":\"item_1\",\"name\":\"Kafka_1\",\"icon\":\"dagSource\",\"x\":139,\"y\":76,\"index\":1,\"type\":\"KafkaSource\",\"description\":\"Kafka输入\",\"options\":{\"bootstrap\":\"kafka:9092\",\"zookeeper\":\"zookeeper:2181/kafka\",\"offset\":\"earliest\",\"group\":\"fs-bi\",\"topic\":\"fs-access-log\",\"commitInterval\":1000},\"alias\":\"\",\"kvConfigPrefix\":\"\"},{\"id\":\"item_2\",\"name\":\"Console_2\",\"icon\":\"dagSink\",\"x\":298,\"y\":370,\"index\":2,\"type\":\"ConsoleSink\",\"description\":\"Console输出\",\"options\":{\"echoConfig\":false,\"mode\":\"\"},\"kvConfigPrefix\":\"\"},{\"id\":\"item_3\",\"name\":\"Script_3\",\"icon\":\"dagScript\",\"x\":176,\"y\":182,\"index\":3,\"type\":\"ScriptTransform\",\"description\":\"逻辑脚本\",\"options\":{\"jarURI\":\"\",\"pkgClass\":\"com.iisquare.fs.app.flink.script.FAnalyseScript\"},\"alias\":\"\",\"kvConfigPrefix\":\"\"},{\"id\":\"item_4\",\"name\":\"Elasticsearch_4\",\"icon\":\"dagSink\",\"x\":33,\"y\":355,\"index\":4,\"type\":\"ElasticsearchSink\",\"description\":\"Elasticsearch输出\",\"options\":{\"cluster\":\"elasticsearch\",\"servers\":\"127.0.0.1:9200\",\"username\":\"\",\"password\":\"\",\"collection\":\"fs_access_log\",\"batchSize\":1,\"idField\":\"_id\",\"indexField\":\"_table\",\"tableField\":\"_table\",\"flushInterval\":-1},\"kvConfigPrefix\":\"\"}],\"relations\":[{\"sourceId\":\"item_1\",\"targetId\":\"item_3\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"},{\"sourceId\":\"item_3\",\"targetId\":\"item_2\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"},{\"sourceId\":\"item_3\",\"targetId\":\"item_4\",\"sourceAnchor\":\"BottomCenter\",\"targetAnchor\":\"TopCenter\"}]}', 0, 1, '', 1, 1631858913325, 1, 1634172133717);
@@ -116,11 +117,12 @@ CREATE TABLE `fs_bi_matrix`  (
   `updated_time` bigint NOT NULL DEFAULT 0 COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_dataset_id`(`dataset_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程图信息' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_bi_matrix
 -- ----------------------------
+INSERT INTO `fs_bi_matrix` VALUES (1, '聚合报表', 1, '{\"filter\":[],\"aggregation\":{\"levels\":[{\"enabled\":true,\"type\":\"levels\",\"name\":\"module\",\"title\":\"module\",\"expression\":\"\",\"sort\":\"asc\"},{\"enabled\":true,\"type\":\"levels\",\"name\":\"controller\",\"title\":\"controller\",\"expression\":\"\",\"sort\":\"asc\"}],\"metrics\":[{\"enabled\":true,\"type\":\"metrics\",\"name\":\"id\",\"title\":\"总数\",\"expression\":\"\",\"aggregation\":\"COUNT\"},{\"enabled\":true,\"type\":\"metrics\",\"name\":\"id\",\"title\":\"评分\",\"expression\":\"\",\"aggregation\":\"AVG\"}],\"buckets\":[{\"enabled\":true,\"type\":\"buckets\",\"name\":\"action\",\"title\":\"action\",\"expression\":\"\",\"sort\":\"asc\"}]}}', 0, 1, '', 1, 1637887658890, 1, 1640143414707);
 
 -- ----------------------------
 -- Table structure for fs_bi_source
@@ -140,7 +142,7 @@ CREATE TABLE `fs_bi_source`  (
   `updated_time` bigint NOT NULL DEFAULT 0 COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_type`(`type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程图信息' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_bi_source
@@ -169,12 +171,12 @@ CREATE TABLE `fs_bi_visualize`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_dataset_id`(`dataset_id`) USING BTREE,
   INDEX `idx_type`(`type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程图信息' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_bi_visualize
 -- ----------------------------
-INSERT INTO `fs_bi_visualize` VALUES (1, 'test', 'Table', 1, '{\"filter\":[],\"axis\":{\"metrics\":[{\"aggregation\":\"COUNT\",\"field\":\"\",\"label\":\"数量\",\"filter\":[]},{\"aggregation\":\"AVG\",\"field\":\"`id`\",\"label\":\"评分\",\"filter\":[]}],\"buckets\":[{\"aggregation\":\"FILTER\",\"field\":\"`module`\",\"label\":\"模块\",\"interval\":\"\",\"filters\":[{\"label\":\"aaa\",\"filter\":[{\"id\":\"operation-1637831753583621792\",\"enabled\":true,\"type\":\"OPERATION\",\"value\":\"IN\",\"left\":\"`module`\",\"right\":\"oa,bi\"}]},{\"label\":\"bbb\",\"filter\":[{\"id\":\"operation-1637831780166010495\",\"enabled\":true,\"type\":\"OPERATION\",\"value\":\"EQUAL\",\"left\":\"`module`\",\"right\":\"member\"}]}]},{\"aggregation\":\"TERM\",\"field\":\"controller\",\"label\":\"控制器\",\"interval\":\"\",\"filters\":[]},{\"aggregation\":\"TERM\",\"field\":\"`action`\",\"label\":\"方法\",\"interval\":\"\",\"filters\":[]}]}}', 0, 1, '', 1, 1637660291833, 1, 1637886097591);
+INSERT INTO `fs_bi_visualize` VALUES (1, 'test', 'Table', 1, '{\"filter\":[],\"axis\":{\"metrics\":[{\"aggregation\":\"COUNT\",\"field\":\"\",\"label\":\"数量\",\"filter\":[]},{\"aggregation\":\"AVG\",\"field\":\"`id`\",\"label\":\"评分\",\"filter\":[]},{\"aggregation\":\"MAX\",\"field\":\"`sort`\",\"label\":\"\",\"filter\":[]}],\"buckets\":[{\"aggregation\":\"TERM\",\"field\":\"`module`\",\"label\":\"模块\",\"interval\":\"\",\"filters\":[{\"label\":\"aaa\",\"filter\":[{\"id\":\"operation-1637831753583621792\",\"enabled\":true,\"type\":\"OPERATION\",\"value\":\"IN\",\"left\":\"`module`\",\"right\":\"oa,bi\"}]},{\"label\":\"bbb\",\"filter\":[{\"id\":\"operation-1637831780166010495\",\"enabled\":true,\"type\":\"OPERATION\",\"value\":\"EQUAL\",\"left\":\"`module`\",\"right\":\"member\"}]}]},{\"aggregation\":\"TERM\",\"field\":\"controller\",\"label\":\"控制器\",\"interval\":\"\",\"filters\":[]},{\"aggregation\":\"TERM\",\"field\":\"`action`\",\"label\":\"方法\",\"interval\":\"\",\"filters\":[]}]}}', 0, 1, '', 1, 1637660291833, 1, 1638156343890);
 INSERT INTO `fs_bi_visualize` VALUES (2, '测试', '', 0, '', 0, 1, '', 1, 1637713900011, 1, 1637713914601);
 
 SET FOREIGN_KEY_CHECKS = 1;

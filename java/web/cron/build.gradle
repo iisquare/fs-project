@@ -1,0 +1,15 @@
+
+dependencies {
+    compile project(':base:jpa')
+    compile project(':web:core')
+    compile (group: 'org.apache.curator', name: 'curator-recipes', version: curatorVersion) { // ZooKeeper
+        exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+    }
+    compile (group: 'org.apache.zookeeper', name: 'zookeeper', version: zookeeperVersion) {
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    }
+    compile (group: 'org.quartz-scheduler', name: 'quartz', version: quartzVersion) {
+        exclude group: 'com.zaxxer', module: 'HikariCP-java7'
+    }
+    testCompile project(':web:test')
+}

@@ -1,0 +1,6 @@
+
+dependencies {
+    compile project(':base:jpa')
+    compile project(':web:core')
+    testCompile project(':web:test')
+}

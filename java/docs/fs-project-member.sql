@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 17/12/2021 13:51:10
+ Date: 19/01/2022 13:52:04
 */
 
 SET NAMES utf8mb4;
@@ -37,7 +37,7 @@ CREATE TABLE `fs_member_dictionary`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_content`(`content`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_dictionary
@@ -87,7 +87,7 @@ CREATE TABLE `fs_member_menu`  (
   `updated_time` bigint NOT NULL DEFAULT 0,
   `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 102 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 107 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_menu
@@ -117,7 +117,7 @@ INSERT INTO `fs_member_menu` VALUES (22, '模板管理', '后台管理:网页爬
 INSERT INTO `fs_member_menu` VALUES (23, '模板列表', '后台管理:网页爬虫:模板管理:模板列表', 22, '', '/spider/template/list', '', 0, 1, '', 1585195284371, 1, 1585195284371, 1);
 INSERT INTO `fs_member_menu` VALUES (24, '节点管理', '后台管理:网页爬虫:节点管理', 21, 'cloud-server', '/spider/crawler', '', 0, 1, '', 1585195333832, 1, 1585195333832, 1);
 INSERT INTO `fs_member_menu` VALUES (25, '节点面板', '后台管理:网页爬虫:节点管理:节点面板', 24, '', '/spider/crawler/dashboard', '', 0, 1, '', 1585195373342, 1, 1585195373342, 1);
-INSERT INTO `fs_member_menu` VALUES (26, '商业智能', '后台管理:商业智能', 1, 'cluster', '/bi/index/index', '', 0, 1, '数据分子、规则引擎、智能报表', 1585384043533, 1, 1631754366305, 1);
+INSERT INTO `fs_member_menu` VALUES (26, '商业智能', '后台管理:商业智能', 1, 'cluster', '/bi/index/index', '', 0, 1, '数据清洗、规则引擎、智能报表', 1585384043533, 1, 1642381343286, 1);
 INSERT INTO `fs_member_menu` VALUES (27, '数据加工', '后台管理:商业智能:数据加工', 26, 'apartment', '/bi/diagram', '', 0, 1, '', 1585384219002, 1, 1634258659883, 1);
 INSERT INTO `fs_member_menu` VALUES (28, '清洗规则', '后台管理:商业智能:数据加工:清洗规则', 27, '', '/bi/diagram/list', '', 0, 1, '', 1585384240550, 1, 1637656893932, 1);
 INSERT INTO `fs_member_menu` VALUES (29, '数据管理', '后台管理:商业智能:数据管理', 26, 'dropbox', '/bi/data', '', 0, 1, '', 1585661766299, 1, 1634258058714, 1);
@@ -148,7 +148,7 @@ INSERT INTO `fs_member_menu` VALUES (57, '词库列表', '后台管理:搜索引
 INSERT INTO `fs_member_menu` VALUES (58, '服务管理', '后台管理:服务管理', 1, 'box-plot', '/server/index/index', '', 0, 1, '管理项目基础服务', 1611814694744, 1, 1611814694744, 1);
 INSERT INTO `fs_member_menu` VALUES (59, '消息队列', '后台管理:服务管理:消息队列', 58, 'hourglass', '/server/rabbit', '', 0, 1, '', 1611814821145, 1, 1611814821145, 1);
 INSERT INTO `fs_member_menu` VALUES (60, '控制面板', '后台管理:服务管理:消息队列:控制面板', 59, '', '/server/rabbit/dashboard', '', 0, 1, '', 1611814876795, 1, 1611814876795, 1);
-INSERT INTO `fs_member_menu` VALUES (61, '在线办公', '后台管理:在线办公', 1, 'snippets', '/oa/index/index', '', 0, 1, '表单设计、工作流程、代码生成', 1618451824790, 1, 1618451924910, 1);
+INSERT INTO `fs_member_menu` VALUES (61, '在线办公', '后台管理:在线办公', 1, 'snippets', '/oa/index/index', '', 0, 1, '表单设计、流程设计、在线审批', 1618451824790, 1, 1642382345449, 1);
 INSERT INTO `fs_member_menu` VALUES (62, '表单管理', '后台管理:在线办公:表单管理', 61, 'file-protect', '/oa/form', '', 30, 1, '', 1618451979842, 1, 1622708492969, 1);
 INSERT INTO `fs_member_menu` VALUES (63, '表单模型', '后台管理:在线办公:表单管理:表单模型', 62, '', '/oa/form/frame', '', 0, 1, '', 1618452012679, 1, 1618452012679, 1);
 INSERT INTO `fs_member_menu` VALUES (64, '托管数据', '后台管理:在线办公:表单管理:托管数据', 62, '', '/oa/form/data', '', 0, 1, '', 1618452012679, 1, 1618452012679, 1);
@@ -189,6 +189,11 @@ INSERT INTO `fs_member_menu` VALUES (98, '文件列表', '后台管理:文件存
 INSERT INTO `fs_member_menu` VALUES (99, '项目管理', '后台管理:项目管理', 1, 'project', '/project/index/index', '', 0, 1, '脚手架、页面设计、应用设计', 1639719591630, 1, 1639720193584, 1);
 INSERT INTO `fs_member_menu` VALUES (100, '页面管理', '后台管理:项目管理:页面管理', 99, 'read', '/project/page', '', 0, 1, '', 1639719989845, 1, 1639719989845, 1);
 INSERT INTO `fs_member_menu` VALUES (101, '应用管理', '后台管理:项目管理:应用管理', 99, 'book', '/project/app', '', 0, 1, '', 1639720019045, 1, 1639720019045, 1);
+INSERT INTO `fs_member_menu` VALUES (102, '数据治理', '后台管理:数据治理', 1, 'medicine-box', '/govern/index/index', '', 0, 1, '数据接入、元数据、集成同步', 1642381520827, 1, 1642381520827, 1);
+INSERT INTO `fs_member_menu` VALUES (103, '数据安全', '后台管理:数据治理:数据安全', 102, 'insurance', '/govern/secure', '', 0, 1, '', 1642381648881, 1, 1642382039771, 1);
+INSERT INTO `fs_member_menu` VALUES (104, '定时任务', '后台管理:服务管理:定时任务', 58, 'clock-circle', '/server/cron', '', 0, 1, '', 1642571306245, 1, 1642571306245, 1);
+INSERT INTO `fs_member_menu` VALUES (105, '工作节点', '后台管理:服务管理:定时任务:工作节点', 104, '', '/server/cron/node', '', 0, 1, '', 1642571336578, 1, 1642571336578, 1);
+INSERT INTO `fs_member_menu` VALUES (106, '作业管理', '后台管理:服务管理:定时任务:作业管理', 104, '', '/server/cron/job', '', 0, 1, '', 1642571363823, 1, 1642571363823, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_relation
@@ -209,6 +214,11 @@ INSERT INTO `fs_member_relation` VALUES ('role_menu_1_1', 'role_menu', 1, 1);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_10', 'role_menu', 1, 10);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_100', 'role_menu', 1, 100);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_101', 'role_menu', 1, 101);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_102', 'role_menu', 1, 102);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_103', 'role_menu', 1, 103);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_104', 'role_menu', 1, 104);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_105', 'role_menu', 1, 105);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_106', 'role_menu', 1, 106);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_11', 'role_menu', 1, 11);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_12', 'role_menu', 1, 12);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_13', 'role_menu', 1, 13);
@@ -725,7 +735,7 @@ CREATE TABLE `fs_member_user`  (
 -- ----------------------------
 -- Records of fs_member_user
 -- ----------------------------
-INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1639041881705, '127.0.0.1', 0);
+INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1642156193175, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (2, 'test', '测试123', '4b361be828611add84453a24f39772a5', '0905', 0, 1, '', 1528081567988, '127.0.0.1', 1, 1542958281919, 1, 1528267171953, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (3, '111', '111', '', '', 6, -1, '', 0, '', 0, 1584360531961, 1, 0, '', 0);
 INSERT INTO `fs_member_user` VALUES (4, '222', '222', '', '', 0, 1, '', 0, '', 0, 1629363081609, 1, 0, '', 1630054276000);
