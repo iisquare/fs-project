@@ -321,8 +321,8 @@ spring:
       time-between-eviction-runs-millis: 18800
     cron:
       table-prefix: fs_cron_
-      url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
-      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      url: jdbc:mysql://127.0.0.1:3306/fs_quartz?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs_quartz?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888

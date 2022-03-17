@@ -7,9 +7,9 @@
           <a-button @click="restart(false)" :loading="loading" :disabled="selection.selectedRowKeys.length == 0">重新启动</a-button>
           <a-button @click="standby(false)" :loading="loading" :disabled="selection.selectedRowKeys.length == 0">待机等候</a-button>
           <a-button @click="shutdown(false)" :loading="loading" :disabled="selection.selectedRowKeys.length == 0">终止运行</a-button>
-          <a-button @click="restart(true)" :loading="loading">重启全部</a-button>
+          <a-button @click="restart(true)" :loading="loading">全部重启</a-button>
           <a-button @click="standby(true)" :loading="loading">全部待机</a-button>
-          <a-button @click="shutdown(true)" :loading="loading">终止全部</a-button>
+          <a-button @click="shutdown(true)" :loading="loading">全部终止</a-button>
           <a-checkbox v-model="modeForce">强制模式</a-checkbox>
         </a-space>
         <a-table

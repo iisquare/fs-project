@@ -8,6 +8,10 @@ export const blanks = [{
   path: '/oa/workflow/model',
   meta: { title: '流程设计器' },
   component: () => import(/* webpackChunkName: 'oa' */ '@/views/oa/workflow/model')
+}, {
+  path: '/oa/print/model',
+  meta: { title: '打印设计器' },
+  component: () => import(/* webpackChunkName: 'oa' */ '@/views/oa/print/model')
 }]
 
 export const layouts = [{
@@ -74,6 +78,14 @@ export const layouts = [{
     path: '/oa/approve/process',
     meta: { title: '流程详情' },
     component: () => import(/* webpackChunkName: 'oa' */ '@/views/oa/approve/process')
+  }, {
+    path: '/oa/print/list',
+    meta: { title: '在线打印' },
+    component: () => import(/* webpackChunkName: 'oa' */ '@/views/oa/print/list')
+  }, {
+    path: '/oa/print/pdf',
+    meta: { title: '打印预览' },
+    component: () => import(/* webpackChunkName: 'oa' */ '@/views/oa/print/pdf')
   }]
 }]
 

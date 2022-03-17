@@ -74,6 +74,7 @@
 - CDC同步：Canal、Maxwall、Debezium、FlinkCDC。
 - 消息队列：kafka、rabbitmq、rocketmq、activemq。
 - 图数据库：neo4j、JanusGraph、NebulaGraph。
+- 数据湖：Delta、Iceberg、Hudi。
 
 ### 组件
 - Hadoop：计算框架，提供Yarn资源调度、HDFS文件存储、HBase数据存储等上层服务。

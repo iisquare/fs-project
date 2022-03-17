@@ -26,5 +26,35 @@ export default {
   },
   nodeShutdown (param, tips = {}) {
     return this.get('/node/shutdown', param, tips)
+  },
+  jobList (param, tips = {}) {
+    return this.post('/job/list', param, tips)
+  },
+  jobSave (param, tips = {}) {
+    return this.post('/job/save', param, tips)
+  },
+  jobCommand (param, tips = {}) {
+    return this.post('/job/command', param, tips)
+  },
+  triggerList (param, tips = {}) {
+    return this.post('/trigger/list', param, tips)
+  },
+  triggerSave (param, tips = {}) {
+    return this.post('/trigger/save', param, tips)
+  },
+  triggerCommand (param, tips = {}) {
+    return this.post('/trigger/command', param, tips)
+  },
+  flowInfo (param, tips = {}) {
+    return this.post('/flow/info', param, tips)
+  },
+  flowList (param, tips = {}) {
+    return this.post('/flow/list', param, tips)
+  },
+  flowSave (param, tips = {}) {
+    return this.post('/flow/save', param, tips)
+  },
+  flowDelete (param, tips = {}) {
+    return this.post('/flow/delete', param, tips)
   }
 }

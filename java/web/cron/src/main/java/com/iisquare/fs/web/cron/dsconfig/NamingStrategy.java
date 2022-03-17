@@ -14,6 +14,7 @@ public class NamingStrategy extends SpringPhysicalNamingStrategy {
 
     @Override
     public Identifier toPhysicalTableName(Identifier name, JdbcEnvironment jdbcEnvironment) {
+        if (name.getText().indexOf("_") > 0) return name;
         name = super.toPhysicalTableName(name, jdbcEnvironment);
         if(null == tablePrefix) return name;
         return getIdentifier(tablePrefix + name.getText(), name.isQuoted(), jdbcEnvironment);

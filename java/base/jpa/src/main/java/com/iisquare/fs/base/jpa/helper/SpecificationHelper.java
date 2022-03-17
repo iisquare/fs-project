@@ -30,7 +30,7 @@ public class SpecificationHelper<T> {
         return new SpecificationHelper<>(root, builder, param);
     }
 
-    public SpecificationHelper dateFormat(String dateFormat) {
+    public SpecificationHelper<T> dateFormat(String dateFormat) {
         this.dateFormat = dateFormat;
         return this;
     }
@@ -39,11 +39,11 @@ public class SpecificationHelper<T> {
         return predicates.toArray(new Predicate[0]);
     }
 
-    public SpecificationHelper like(String key) {
+    public SpecificationHelper<T> like(String key) {
         return like(key, key);
     }
 
-    public SpecificationHelper like(String key, String field) {
+    public SpecificationHelper<T> like(String key, String field) {
         String value = DPUtil.trim(DPUtil.parseString(param.get(key)));
         if(!DPUtil.empty(value)) {
             predicates.add(builder.like(root.get(field), "%" + value + "%"));
@@ -51,11 +51,23 @@ public class SpecificationHelper<T> {
         return this;
     }
 
-    public SpecificationHelper equalWithIntGTZero(String key) {
+    public SpecificationHelper<T> likeExp(String key) {
+        return likeExp(key, key);
+    }
+
+    public SpecificationHelper<T> likeExp(String key, String field) {
+        String value = DPUtil.trim(DPUtil.parseString(param.get(key)));
+        if(!DPUtil.empty(value)) {
+            predicates.add(builder.like(root.get(field), value));
+        }
+        return this;
+    }
+
+    public SpecificationHelper<T> equalWithIntGTZero(String key) {
         return equalWithIntGTZero(key, key);
     }
 
-    public SpecificationHelper equalWithIntGTZero(String key, String field) {
+    public SpecificationHelper<T> equalWithIntGTZero(String key, String field) {
         int value = DPUtil.parseInt(param.get(key));
         if(value > 0) {
             predicates.add(builder.equal(root.get(field), value));
@@ -63,19 +75,19 @@ public class SpecificationHelper<T> {
         return this;
     }
 
-    public SpecificationHelper equalWithIntNotEmpty(String key) {
+    public SpecificationHelper<T> equalWithIntNotEmpty(String key) {
         return equalWithIntNotEmpty(key, key, null);
     }
 
-    public SpecificationHelper equalWithIntNotEmpty(String key, String field) {
+    public SpecificationHelper<T> equalWithIntNotEmpty(String key, String field) {
         return equalWithIntNotEmpty(key, field, null);
     }
 
-    public SpecificationHelper equalWithIntNotEmpty(String key, Integer defaultValue) {
+    public SpecificationHelper<T> equalWithIntNotEmpty(String key, Integer defaultValue) {
         return equalWithIntNotEmpty(key, key, defaultValue);
     }
 
-    public SpecificationHelper equalWithIntNotEmpty(String key, String field, Integer defaultValue) {
+    public SpecificationHelper<T> equalWithIntNotEmpty(String key, String field, Integer defaultValue) {
         if("".equals(DPUtil.parseString(param.get(key)))) {
             if (null != defaultValue) predicates.add(builder.equal(root.get(field), defaultValue));
         } else {
@@ -85,11 +97,11 @@ public class SpecificationHelper<T> {
         return this;
     }
 
-    public SpecificationHelper equalWithIntElseNot(String key, Integer notValue) {
+    public SpecificationHelper<T> equalWithIntElseNot(String key, Integer notValue) {
         return equalWithIntElseNot(key, key, notValue);
     }
 
-    public SpecificationHelper equalWithIntElseNot(String key, String field, Integer notValue) {
+    public SpecificationHelper<T> equalWithIntElseNot(String key, String field, Integer notValue) {
         if("".equals(DPUtil.parseString(param.get(key)))) {
             predicates.add(builder.notEqual(root.get(field), notValue));
         } else {
@@ -99,11 +111,11 @@ public class SpecificationHelper<T> {
         return this;
     }
 
-    public SpecificationHelper equal(String key) {
+    public SpecificationHelper<T> equal(String key) {
         return equal(key, key);
     }
 
-    public SpecificationHelper equal(String key, String field) {
+    public SpecificationHelper<T> equal(String key, String field) {
         String value = DPUtil.parseString(param.get(key));
         if(!DPUtil.empty(value)) {
             predicates.add(builder.equal(root.get(field), value));
@@ -111,7 +123,7 @@ public class SpecificationHelper<T> {
         return this;
     }
 
-    public SpecificationHelper geWithDate(String key, String field) {
+    public SpecificationHelper<T> geWithDate(String key, String field) {
         String value = DPUtil.trim(DPUtil.parseString(param.get(key)));
         if(!DPUtil.empty(value)) {
             predicates.add(builder.ge(root.get(field), DPUtil.dateTime2millis(value, dateFormat)));
@@ -119,7 +131,7 @@ public class SpecificationHelper<T> {
         return this;
     }
 
-    public SpecificationHelper leWithDate(String key, String field) {
+    public SpecificationHelper<T> leWithDate(String key, String field) {
         String value = DPUtil.trim(DPUtil.parseString(param.get(key)));
         if(!DPUtil.empty(value)) {
             predicates.add(builder.le(root.get(field), DPUtil.dateTime2millis(value, dateFormat) + 999));
@@ -127,11 +139,11 @@ public class SpecificationHelper<T> {
         return this;
     }
 
-    public SpecificationHelper betweenWithDate(String key) {
+    public SpecificationHelper<T> betweenWithDate(String key) {
         return betweenWithDate(key, key);
     }
 
-    public SpecificationHelper betweenWithDate(String key, String field) {
+    public SpecificationHelper<T> betweenWithDate(String key, String field) {
         String value = DPUtil.trim(DPUtil.parseString(param.get(key)));
         if(!DPUtil.empty(value)) {
             predicates.add(builder.le(root.get(field), DPUtil.dateTime2millis(value, dateFormat) + 999));
@@ -139,11 +151,11 @@ public class SpecificationHelper<T> {
         return geWithDate(key + "Begin", field).leWithDate(key + "End", field);
     }
 
-    public SpecificationHelper ge(String key) {
+    public SpecificationHelper<T> ge(String key) {
         return ge(key, key);
     }
 
-    public SpecificationHelper ge(String key, String field) {
+    public SpecificationHelper<T> ge(String key, String field) {
         String value = DPUtil.trim(DPUtil.parseString(param.get(key)));
         if(!DPUtil.empty(value)) {
             predicates.add(builder.ge(root.get(field), DPUtil.parseDouble(value)));
@@ -151,11 +163,11 @@ public class SpecificationHelper<T> {
         return this;
     }
 
-    public SpecificationHelper gt(String key) {
+    public SpecificationHelper<T> gt(String key) {
         return gt(key, key);
     }
 
-    public SpecificationHelper gt(String key, String field) {
+    public SpecificationHelper<T> gt(String key, String field) {
         String value = DPUtil.trim(DPUtil.parseString(param.get(key)));
         if(!DPUtil.empty(value)) {
             predicates.add(builder.gt(root.get(field), DPUtil.parseDouble(value)));
@@ -163,11 +175,11 @@ public class SpecificationHelper<T> {
         return this;
     }
 
-    public SpecificationHelper le(String key) {
+    public SpecificationHelper<T> le(String key) {
         return le(key, key);
     }
 
-    public SpecificationHelper le(String key, String field) {
+    public SpecificationHelper<T> le(String key, String field) {
         String value = DPUtil.trim(DPUtil.parseString(param.get(key)));
         if(!DPUtil.empty(value)) {
             predicates.add(builder.le(root.get(field), DPUtil.parseDouble(value)));
@@ -175,11 +187,11 @@ public class SpecificationHelper<T> {
         return this;
     }
 
-    public SpecificationHelper lt(String key) {
+    public SpecificationHelper<T> lt(String key) {
         return lt(key, key);
     }
 
-    public SpecificationHelper lt(String key, String field) {
+    public SpecificationHelper<T> lt(String key, String field) {
         String value = DPUtil.trim(DPUtil.parseString(param.get(key)));
         if(!DPUtil.empty(value)) {
             predicates.add(builder.lt(root.get(field), DPUtil.parseDouble(value)));
@@ -187,19 +199,19 @@ public class SpecificationHelper<T> {
         return this;
     }
 
-    public SpecificationHelper between(String key) {
+    public SpecificationHelper<T> between(String key) {
         return between(key, key);
     }
 
-    public SpecificationHelper between(String key, String field) {
+    public SpecificationHelper<T> between(String key, String field) {
         return ge(key + "Begin", field).lt(key + "End", field);
     }
 
-    public SpecificationHelper in(String key) {
+    public SpecificationHelper<T> in(String key) {
         return in(key, key);
     }
 
-    public SpecificationHelper in(String key, String field) {
+    public SpecificationHelper<T> in(String key, String field) {
         Object value = param.get(key);
         if (DPUtil.empty(value)) return this;
         if (value instanceof Collection) {
@@ -214,11 +226,11 @@ public class SpecificationHelper<T> {
         return this;
     }
 
-    public SpecificationHelper functionFindInSet(String key) {
+    public SpecificationHelper<T> functionFindInSet(String key) {
         return functionFindInSet(key, key);
     }
 
-    public SpecificationHelper functionFindInSet(String key, String field) {
+    public SpecificationHelper<T> functionFindInSet(String key, String field) {
         Object value = param.get(key);
         if (DPUtil.empty(value)) return this;
         Iterator iterator = value instanceof Collection
@@ -250,7 +262,7 @@ public class SpecificationHelper<T> {
         return list;
     }
 
-    public SpecificationHelper add(Predicate e) {
+    public SpecificationHelper<T> add(Predicate e) {
         predicates.add(e);
         return this;
     }

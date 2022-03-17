@@ -1,6 +1,10 @@
 import { layout } from '../config'
 
-export const blanks = []
+export const blanks = [{
+  path: '/server/cron/model',
+  meta: { title: '定时任务' },
+  component: () => import(/* webpackChunkName: 'server' */ '@/views/server/cron/model')
+}]
 
 export const layouts = [{
   path: '/server',
@@ -22,6 +26,14 @@ export const layouts = [{
     path: '/server/cron/job',
     meta: { title: '作业管理' },
     component: () => import(/* webpackChunkName: 'server' */ '@/views/server/cron/job')
+  }, {
+    path: '/server/cron/trigger',
+    meta: { title: '作业调度' },
+    component: () => import(/* webpackChunkName: 'server' */ '@/views/server/cron/trigger')
+  }, {
+    path: '/server/cron/flow',
+    meta: { title: '流程管理' },
+    component: () => import(/* webpackChunkName: 'server' */ '@/views/server/cron/flow')
   }]
 }]
 

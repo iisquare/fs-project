@@ -1,172 +1,179 @@
 package com.iisquare.fs.web.cron.service;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.iisquare.fs.base.core.util.FileUtil;
-import com.iisquare.fs.base.core.util.PropertiesUtil;
+import com.iisquare.fs.base.core.util.ValidateUtil;
+import com.iisquare.fs.base.jpa.util.JDBCUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.web.cron.core.WatchListener;
-import com.iisquare.fs.web.cron.core.ZooKeeperClient;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.SchedulerFactory;
-import org.quartz.impl.StdSchedulerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.context.WebServerInitializedEvent;
-import org.springframework.context.ApplicationListener;
+import com.iisquare.fs.web.cron.dao.JobDao;
+import com.iisquare.fs.web.cron.entity.QuartzJob;
+import org.quartz.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.net.InetAddress;
-import java.util.Arrays;
+import javax.persistence.criteria.Predicate;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 @Service
-public class JobService extends ServiceBase implements DisposableBean, ApplicationListener<WebServerInitializedEvent> {
+public class JobService extends ServiceBase {
 
-    @Value("${fs.cron.zookeeper.host}")
-    private String zhHost;
-    @Value("${fs.cron.zookeeper.timeout}")
-    private int zhTimeout;
+    @Autowired
+    private NodeService nodeService;
+    @Autowired
+    private JobDao jobDao;
 
-    private ZooKeeperClient zookeeper;
-    private static volatile Scheduler scheduler = null;
-    private static Logger logger = LoggerFactory.getLogger(JobService.class);
-
-    @Override
-    public void destroy() throws Exception {
-        shutdown(true);
-        FileUtil.close(zookeeper);
-        zookeeper = null;
-        scheduler = null;
+    public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) throws Exception {
+        Scheduler scheduler = nodeService.scheduler();
+        String schedule = scheduler.getSchedulerName();
+        Map<String, Object> result = new LinkedHashMap<>();
+        int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
+        int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
+        Page<QuartzJob> data = jobDao.findAll((Specification<QuartzJob>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.like(root.get("schedule"), schedule)); // 仅获取当前实例下的作业
+            String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+            if(!DPUtil.empty(name)) {
+                predicates.add(cb.like(root.get("name"), name));
+            }
+            String group = DPUtil.trim(DPUtil.parseString(param.get("group")));
+            if(!DPUtil.empty(group)) {
+                predicates.add(cb.like(root.get("group"), group));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "name"))));
+        List<QuartzJob> rows = data.getContent();
+        for (QuartzJob job : rows) {
+            job.setArg(DPUtil.stringify(JDBCUtil.blob2object(job.getData())));
+            job.setData(null);
+        }
+        result.put("page", page);
+        result.put("pageSize", pageSize);
+        result.put("total", data.getTotalElements());
+        result.put("rows", rows);
+        return result;
     }
 
-    @Override
-    public void onApplicationEvent(WebServerInitializedEvent event) {
-        String nodeAddress = InetAddress.getLoopbackAddress().getHostAddress();
-        int nodePort = event.getWebServer().getPort();
-        String nodeName = nodeAddress + ":" + nodePort;
-        zookeeper = new ZooKeeperClient(zhHost, zhTimeout, nodeName);
-        zookeeper.listen(new WatchListener(this));
-        zookeeper.open();
+    public Map<String, Object> save(Map<?, ?> param) {
+        Scheduler scheduler = nodeService.scheduler();
+        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+        if (DPUtil.empty(name)) return ApiUtil.result(1001, "作业名称不能为空", name);
+        String group = DPUtil.trim(DPUtil.parseString(param.get("group")));
+        if (DPUtil.empty(group)) return ApiUtil.result(1002, "分组名称不能为空", group);
+        String cls = DPUtil.trim(DPUtil.parseString(param.get("cls")));
+        if (DPUtil.empty(cls)) return ApiUtil.result(1003, "执行器类名称不能为空", cls);
+        String arg = DPUtil.parseString(param.get("arg"));
+
+        JobBuilder builder;
         try {
-            scheduler = scheduler();
-            if (WatchListener.canStart(zookeeper.command())) {
-                scheduler.start();
-                zookeeper.command(WatchListener.CMD_EMPTY);
+            builder = JobBuilder.newJob((Class<? extends Job>) Class.forName(cls));
+        } catch (Exception e) {
+            return ApiUtil.result(5001, "获取执行器失败", e.getMessage());
+        }
+        JobDetail detail = builder.withIdentity(JobKey.jobKey(name, group))
+                .withDescription(DPUtil.parseString(param.get("description"))).storeDurably().build();
+        if (!DPUtil.empty(arg)) {
+            Map data = DPUtil.toJSON(DPUtil.parseJSON(arg), Map.class);
+            if (null == data) return ApiUtil.result(1005, "解析作业参数失败", arg);
+            detail.getJobDataMap().putAll(data);
+        }
+        try {
+            scheduler.addJob(detail, true); // 添加或替换作业
+        } catch (Exception e) {
+            return ApiUtil.result(5003, "保存作业信息失败", e.getMessage());
+        }
+        try {
+            return ApiUtil.result(0, null, quartz2job(scheduler, detail));
+        } catch (Exception e) {
+            return ApiUtil.result(5501, "转换作业信息失败", e.getMessage());
+        }
+    }
+
+    public Map<String, Object> command(Map<?, ?> param) {
+        Scheduler scheduler = nodeService.scheduler();
+        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+        String group = DPUtil.trim(DPUtil.parseString(param.get("group")));
+        String command = DPUtil.trim(DPUtil.parseString(param.get("command")));
+        String arg = DPUtil.parseString(param.get("arg"));
+        JobKey jobKey = JobKey.jobKey(name, group);
+        JobDetail detail;
+        try {
+            detail = scheduler.getJobDetail(jobKey);
+        } catch (Exception e) {
+            return ApiUtil.result(5001, "获取作业信息失败", e.getMessage());
+        }
+        if (null == detail) {
+            if ("delete".equals(command)) {
+                return ApiUtil.result(0, null, false);
             } else {
-                zookeeper.command(WatchListener.CMD_DONE_STANDBY);
+                return ApiUtil.result(1404, "作业信息不存在", null);
             }
-        } catch (Exception e) {
-            logger.error("quartz service start error!", e);
-            zookeeper.command(WatchListener.CMD_ERROR);
         }
-    }
-
-    public ZooKeeperClient zookeeper() {
-        return this.zookeeper;
-    }
-
-    public List<String> participants() {
-        return zookeeper.participants();
-    }
-
-    public Map<String, String> commands() {
-        return zookeeper.commands();
-    }
-
-    public ObjectNode state() throws Exception {
-        ObjectNode state = DPUtil.objectNode();
-        state.put("id", zookeeper.nodeId());
-        state.put("state", zookeeper.state());
-        state.put("leader", zookeeper.leaderId());
-        state.put("leadership", zookeeper.isLeader());
-        ObjectNode scheduler = state.putObject("scheduler");
-        scheduler.put("id", JobService.scheduler.getSchedulerInstanceId());
-        scheduler.put("name", JobService.scheduler.getSchedulerName());
-        scheduler.put("standby", JobService.scheduler.isInStandbyMode());
-        scheduler.put("started", JobService.scheduler.isStarted());
-        scheduler.put("shutdown", JobService.scheduler.isShutdown());
-        return state;
-    }
-
-    private Scheduler scheduler() throws Exception {
-        SchedulerFactory factory = new StdSchedulerFactory(
-                PropertiesUtil.load(JobService.class.getClassLoader(), "quartz.properties"));
-        return factory.getScheduler();
-    }
-
-    public boolean standby() {
+        switch (command) {
+            case "pause":
+                try {
+                    scheduler.pauseJob(detail.getKey());
+                } catch (Exception e) {
+                    return ApiUtil.result(5001, "暂停作业失败", e.getMessage());
+                }
+                break;
+            case "resume":
+                try {
+                    scheduler.resumeJob(detail.getKey());
+                } catch (Exception e) {
+                    return ApiUtil.result(5001, "恢复作业失败", e.getMessage());
+                }
+                break;
+            case "delete":
+                try {
+                    scheduler.deleteJob(detail.getKey());
+                } catch (Exception e) {
+                    return ApiUtil.result(5001, "删除作业失败", e.getMessage());
+                }
+                break;
+            case "trigger":
+                JobDataMap data = null;
+                if (!DPUtil.empty(arg)) {
+                    data = DPUtil.toJSON(DPUtil.parseJSON(arg), JobDataMap.class);
+                    if (null == data) return ApiUtil.result(1005, "解析触发参数失败", arg);
+                }
+                try {
+                    scheduler.triggerJob(detail.getKey(), data);
+                } catch (Exception e) {
+                    return ApiUtil.result(5003, "触发作业失败", e.getMessage());
+                }
+                break;
+            default:
+                return ApiUtil.result(1405, "操作指令暂不支持", command);
+        }
         try {
-            if (null == scheduler || scheduler.isShutdown()) return false;
-            if (scheduler.isInStandbyMode() && !scheduler.isStarted()) return true;
-            scheduler.standby();
-            return true;
+            return ApiUtil.result(0, null, quartz2job(scheduler, detail));
         } catch (Exception e) {
-            logger.error("quartz service standby error!", e);
-            return false;
+            return ApiUtil.result(5501, "转换作业信息失败", e.getMessage());
         }
     }
 
-    public boolean restart(boolean waitForJobsToComplete) {
-        try {
-            if (null != scheduler && scheduler.isInStandbyMode() && !scheduler.isShutdown()) {
-                scheduler.start();
-                return true;
-            }
-            shutdown(waitForJobsToComplete);
-            scheduler = scheduler();
-            if (null != scheduler) scheduler.start();
-            return true;
-        } catch (Exception e) {
-            logger.error("quartz service restart error!", e);
-            return false;
-        }
+    public QuartzJob quartz2job(Scheduler scheduler, JobDetail detail) throws Exception {
+        QuartzJob.QuartzJobBuilder builder = QuartzJob.builder();
+        builder.schedule(scheduler.getSchedulerName());
+        builder.name(detail.getKey().getName()).group(detail.getKey().getGroup());
+        builder.cls(detail.getJobClass().getName()).description(detail.getDescription());
+        builder.arg(DPUtil.stringify(detail.getJobDataMap()));
+        builder.durable(bool2str(detail.isDurable()));
+        builder.nonConcurrent(bool2str(detail.isConcurrentExectionDisallowed()));
+        builder.updateData(bool2str(detail.isPersistJobDataAfterExecution()));
+        builder.recovery(bool2str(detail.requestsRecovery()));
+        return builder.build();
     }
 
-    public boolean shutdown(boolean waitForJobsToComplete) {
-        if (null == scheduler) return false;
-        try {
-            if (!scheduler.isShutdown()) {
-                scheduler.shutdown(waitForJobsToComplete);
-            }
-            return true;
-        } catch (SchedulerException e) {
-            logger.error("quartz service shutdown error!", e);
-            return false;
-        }
-    }
-
-    public Map<String, Object> standby(String nodeId) {
-        return command(nodeId, WatchListener.CMD_STANDBY);
-    }
-
-    public Map<String, Object> restart(String nodeId, boolean modeForce) {
-        String command = modeForce ? WatchListener.CMD_FORCE_RESTART : WatchListener.CMD_RESTART;
-        return command(nodeId, command);
-    }
-
-    public Map<String, Object> shutdown(String nodeId, boolean modeForce) {
-        String command = modeForce ? WatchListener.CMD_FORCE_SHUTDOWN : WatchListener.CMD_SHUTDOWN;
-        return command(nodeId, command);
-    }
-
-    public Map<String, Object> command(String nodeId, String command) {
-        List<String> participants = zookeeper.participants();
-        if (!DPUtil.empty(nodeId)) {
-            if (!participants.contains(nodeId)) return ApiUtil.result(1403, "节点异常", nodeId);
-            participants = Arrays.asList(nodeId);
-        }
-        Map<String, Boolean> result = new LinkedHashMap<>();
-        for (String participant : participants) {
-            result.put(participant, zookeeper.save("/command/" + participant, command));
-        }
-        return ApiUtil.result(0, null, result);
+    public String bool2str(boolean b) {
+        return b ? "1" : "0";
     }
 
 }

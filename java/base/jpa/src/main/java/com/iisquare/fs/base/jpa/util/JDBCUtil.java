@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import org.springframework.jdbc.support.JdbcUtils;
 
+import java.io.*;
 import java.sql.*;
 
 public class JDBCUtil {
@@ -74,6 +75,38 @@ public class JDBCUtil {
             item.put("type", meta.getColumnTypeName(index));
         }
         return columns;
+    }
+
+    public static Object blob2object(Blob blob) throws SQLException, IOException, ClassNotFoundException {
+        Object obj = null;
+        if (blob != null && blob.length() != 0) {
+            InputStream binaryInput = blob.getBinaryStream();
+
+            if (null != binaryInput) {
+                if (binaryInput instanceof ByteArrayInputStream
+                        && ((ByteArrayInputStream) binaryInput).available() == 0 ) {
+                    // do nothing
+                } else {
+                    ObjectInputStream in = new ObjectInputStream(binaryInput);
+                    try {
+                        obj = in.readObject();
+                    } finally {
+                        in.close();
+                    }
+                }
+            }
+        }
+        return obj;
+    }
+
+    public static ByteArrayOutputStream object2byte(Object obj) throws IOException {
+        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+        if (null != obj) {
+            ObjectOutputStream out = new ObjectOutputStream(bo);
+            out.writeObject(obj);
+            out.flush();
+        }
+        return bo;
     }
 
 }

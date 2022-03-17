@@ -62,7 +62,7 @@ public class PermitInterceptor implements HandlerInterceptor {
         Map<String, Boolean> name2boolean = new HashMap<>();
         for (String str : permissions) {
             if(null == str) str = "";
-            String[] strs = str.split(":");
+            String[] strs = str.split(":", -1);
             if(strs.length > 3) {
                 throw new PermitException(PermitException.NAME_TOO_LONG);
             } else if(strs.length > 2) {

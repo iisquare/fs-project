@@ -371,7 +371,7 @@ public class DPUtil {
             return new String[]{};
         }
         if ("\\".equals(splitRegex)) splitRegex = "\\\\";
-        for (String str : string.split(splitRegex)) {
+        for (String str : string.split(splitRegex, -1)) {
             if (filterEmpty && empty(str)) continue;
             if (null != trimStr) {
                 list.add(DPUtil.trim(str));
@@ -740,6 +740,7 @@ public class DPUtil {
     }
 
     public static String stringify(Object object) {
+        if (null == object) return "";
         try {
             return mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
@@ -755,7 +756,8 @@ public class DPUtil {
         return mapper.createArrayNode();
     }
 
-    public static ArrayNode arrayNode(ObjectNode nodes) {
+    public static ArrayNode arrayNode(JsonNode nodes) {
+        if (nodes.isArray()) return (ArrayNode) nodes;
         ArrayNode array = arrayNode();
         Iterator<JsonNode> iterator = nodes.elements();
         while (iterator.hasNext()) {

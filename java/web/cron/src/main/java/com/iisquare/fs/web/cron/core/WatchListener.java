@@ -1,6 +1,6 @@
 package com.iisquare.fs.web.cron.core;
 
-import com.iisquare.fs.web.cron.service.JobService;
+import com.iisquare.fs.web.cron.service.NodeService;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
@@ -21,10 +21,10 @@ public class WatchListener implements TreeCacheListener {
     public static final String CMD_FORCE_SHUTDOWN = "WAIT_FORCE_SHUTDOWN";
     public static final String CMD_DONE_SHUTDOWN = "DONE_SHUTDOWN";
 
-    private JobService jobService;
+    private NodeService nodeService;
 
-    public WatchListener(JobService jobService) {
-        this.jobService = jobService;
+    public WatchListener(NodeService nodeService) {
+        this.nodeService = nodeService;
     }
 
     public static boolean canStart(String command) {
@@ -38,30 +38,30 @@ public class WatchListener implements TreeCacheListener {
         String path = data.getPath();
         if (event.getType().equals(TreeCacheEvent.Type.NODE_UPDATED) && path.startsWith("/runtime/command/")) {
             String nodeId = path.substring("/runtime/command/".length());
-            ZooKeeperClient zookeeper = jobService.zookeeper();
+            ZooKeeperClient zookeeper = nodeService.zookeeper();
             if (!nodeId.equals(zookeeper.nodeId())) return;
             byte[] message = data.getData();
             if (null == message) return;
             String command = new String(message, ZooKeeperClient.charset);
             switch (command) {
                 case CMD_STANDBY:
-                    jobService.standby();
+                    nodeService.standby();
                     zookeeper.command(CMD_DONE_STANDBY);
                     break;
                 case CMD_RESTART:
-                    jobService.restart(true);
+                    nodeService.restart(true);
                     zookeeper.command(CMD_DONE_RESTART);
                     break;
                 case CMD_FORCE_RESTART:
-                    jobService.restart(false);
+                    nodeService.restart(false);
                     zookeeper.command(CMD_DONE_RESTART);
                     break;
                 case CMD_SHUTDOWN:
-                    jobService.shutdown(true);
+                    nodeService.shutdown(true);
                     zookeeper.command(CMD_DONE_SHUTDOWN);
                     break;
                 case CMD_FORCE_SHUTDOWN:
-                    jobService.shutdown(false);
+                    nodeService.shutdown(false);
                     zookeeper.command(CMD_DONE_SHUTDOWN);
                     break;
             }
