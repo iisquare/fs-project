@@ -1,6 +1,17 @@
 version: '3.1'
 
 services:
+  postgres:
+    build:
+      context: ./service/postgres
+      args:
+        - POSTGRES_VERSION=${POSTGRES_VERSION}
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${BIND_ADDRESS}${BIND_COLON}${POSTGRES_PORT}:5432"
+    volumes:
+      - ${DATA_DIR}/postgres/data:/var/lib/postgresql/data
   openresty:
     build:
       context: ./service/openresty
@@ -112,52 +123,6 @@ services:
       - "${BIND_ADDRESS}${BIND_COLON}${RABBITMQ_MANAGEMENT_PORT}:15672"
     volumes:
       - ${DATA_DIR}/rabbitmq:/var/lib/rabbitmq/mnesia
-  ceph-monitor:
-    build:
-      context: ./service/ceph
-      args:
-        - CEPH_VERSION=${CEPH_VERSION}
-    entrypoint: ["/opt/ceph-container/bin/entrypoint.sh", "mon"]
-    environment:
-      NETWORK_AUTO_DETECT: 1
-    ports:
-      - "${BIND_ADDRESS}${BIND_COLON}${CEPH_MONITOR_PORT}:6789"
-    volumes:
-      - ${DATA_DIR}/ceph/etc:/etc/ceph
-      - ${DATA_DIR}/ceph/lib:/var/lib/ceph
-  ceph-manager:
-    build:
-      context: ./service/ceph
-      args:
-        - CEPH_VERSION=${CEPH_VERSION}
-    entrypoint: ["/opt/ceph-container/bin/entrypoint.sh", "mgr"]
-    ports:
-      - "${BIND_ADDRESS}${BIND_COLON}${CEPH_DASHBOARD_PORT}:16789"
-    volumes:
-      - ${DATA_DIR}/ceph/etc:/etc/ceph
-      - ${DATA_DIR}/ceph/lib:/var/lib/ceph
-  ceph-storage:
-    build:
-      context: ./service/ceph
-      args:
-        - CEPH_VERSION=${CEPH_VERSION}
-    entrypoint: ["/opt/ceph-container/bin/entrypoint.sh", "osd_directory"]
-    privileged: true
-    volumes:
-      - ${DATA_DIR}/ceph/etc:/etc/ceph
-      - ${DATA_DIR}/ceph/lib:/var/lib/ceph
-      - ${DATA_DIR}/ceph/files:/var/lib/ceph/osd
-  ceph-metadata:
-    build:
-      context: ./service/ceph
-      args:
-        - CEPH_VERSION=${CEPH_VERSION}
-    entrypoint: ["/opt/ceph-container/bin/entrypoint.sh", "mds"]
-    environment:
-      CEPHFS_CREATE: 1
-    volumes:
-      - ${DATA_DIR}/ceph/etc:/etc/ceph
-      - ${DATA_DIR}/ceph/lib:/var/lib/ceph
   filebeat:
     build:
       context: ./service/filebeat
