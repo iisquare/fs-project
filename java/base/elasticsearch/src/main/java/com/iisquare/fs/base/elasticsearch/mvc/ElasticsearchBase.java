@@ -29,7 +29,9 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.SearchHits;
@@ -122,13 +124,18 @@ public abstract class ElasticsearchBase {
 
     public long delete(String... ids) {
         if (ids.length < 1) return 0;
+        TermsQueryBuilder query = QueryBuilders.termsQuery(FIELD_ID, ids);
+        return deleteByQuery(query);
+    }
+
+    public long deleteByQuery(QueryBuilder query) {
         DeleteByQueryRequest request = new DeleteByQueryRequest(collection());
-        request.setQuery(QueryBuilders.termsQuery(FIELD_ID, ids));
+        request.setQuery(query);
         try {
             BulkByScrollResponse response = client.deleteByQuery(request, options());
-            return response.getDeleted();
+            return response.getTotal();
         } catch (IOException e) {
-            logger.warn("delete sources failed:" + DPUtil.implode(",", ids), e);
+            logger.warn("delete sources failed:" + query, e);
             return STATE_FAILED;
         }
     }

@@ -53,6 +53,14 @@ const DataUtil = {
       result[index] = obj[index][field]
     }
     return result
+  },
+  array2map (rows, key = 'id') {
+    const result = {}
+    for (const index in rows) {
+      const item = rows[index]
+      result[item[key]] = item
+    }
+    return result
   }
 }
 export default DataUtil

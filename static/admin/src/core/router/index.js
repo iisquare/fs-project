@@ -26,6 +26,10 @@ routes.push({
   meta: { title: '启动页面' },
   component: () => import(/* webpackChunkName: 'main' */ '@/views/frame/page/startup')
 }, {
+  path: '/redirect',
+  meta: { title: '刷新重定向' },
+  component: () => import(/* webpackChunkName: 'main' */ '@/views/frame/page/redirect')
+}, {
   path: '/user',
   component: layout.user,
   children: [{

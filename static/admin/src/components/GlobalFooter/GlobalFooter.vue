@@ -6,7 +6,7 @@
       </a>
       <a href="https://preview.pro.antdv.com/" target="_blank">预览</a>
       <a href="https://pro.antdv.com/" target="_blank">Pro</a>
-      <a href="https://www.antdv.com/docs/vue/introduce-cn/" target="_blank">Vue Antd</a>
+      <a href="https://1x.antdv.com/docs/vue/introduce-cn/" target="_blank">Vue Antd</a>
     </div>
     <div class="copyright">
       Copyright

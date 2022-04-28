@@ -44,18 +44,29 @@ const RouteUtil = {
       onChange (selectedRowKeys, selectedRows) {
         this.selectedRowKeys = selectedRowKeys
         this.selectedRows = selectedRows
+      },
+      revertSelected (rows, rowKey) {
+        const result = []
+        for (const index in rows) {
+          const record = rows[index]
+          if (this.selectedRowKeys.indexOf(record[rowKey]) === -1) {
+            result.push(record[rowKey])
+          }
+        }
+        this.selectedRowKeys = result
       }
     }, rowSelection)
   },
+  paginationPageKey: 'current',
   paginationChange (oldValue, newValue) {
     if (oldValue.pageSize !== newValue.pageSize) {
-      newValue.current = 1
+      newValue[this.paginationPageKey] = 1
     }
     return newValue
   },
   paginationData (pagination, fromChange) {
     return {
-      page: fromChange ? pagination.current : 1,
+      page: fromChange ? pagination[[this.paginationPageKey]] : 1,
       pageSize: pagination.pageSize
     }
   },
@@ -63,7 +74,7 @@ const RouteUtil = {
     return {
       showQuickJumper: true,
       showSizeChanger: true,
-      current: filters.page,
+      [this.paginationPageKey]: filters.page,
       pageSize: filters.pageSize,
       total: 0,
       showTotal: (total, range) => `共 ${total} 条`,
@@ -73,7 +84,7 @@ const RouteUtil = {
   result (result) {
     if (result.code !== 0) return {}
     return {
-      current: result.data.page,
+      [this.paginationPageKey]: result.data.page,
       pageSize: result.data.pageSize,
       total: result.data.total
     }
@@ -111,6 +122,27 @@ const RouteUtil = {
         [this.filterKey]: this.encode(filter)
       }
     }).catch(err => err)
+  },
+  filter (param) { // 返回编码后的请求参数
+    return { [this.filterKey]: this.encode(param) }
+  },
+  forward (obj, event, location) {
+    if (!location) { // 刷新当前页面
+      obj.$router.replace({
+        path: '/redirect',
+        query: {
+          path: obj.$route.path,
+          query: this.encode(obj.$route.query)
+        }
+      }).catch(err => err)
+    }
+    if (!location.path) location.path = obj.$route.path
+    if (!event || event.ctrlKey) { // 忽略事件或按住Ctr键
+      const url = obj.$router.resolve(location)
+      window.open(url.href) // 新页面打开
+    } else { // 当前页面打开
+      obj.$router.push(location).catch(err => err)
+    }
   }
 }
 

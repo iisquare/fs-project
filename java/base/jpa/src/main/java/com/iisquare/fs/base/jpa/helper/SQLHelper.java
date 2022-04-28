@@ -1,41 +1,54 @@
 package com.iisquare.fs.base.jpa.helper;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.iisquare.fs.base.core.tool.SQLBuilder;
+import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.jpa.core.SQLBatchCallback;
+import com.iisquare.fs.base.jpa.util.JPAUtil;
+import org.springframework.jdbc.support.JdbcUtils;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class SQLHelper {
 
     private String sql;
-    private EntityManager entityManager;
+    private EntityManager manager;
     private SQLBuilder builder;
 
-    private SQLHelper(EntityManager entityManager, String tableName) {
-        this.entityManager = entityManager;
-        this.builder = SQLBuilder.build(tableName);
+    private SQLHelper(EntityManager manager, Class entity) {
+        this.manager = manager;
+        this.builder = SQLBuilder.build(JPAUtil.tableName(manager, entity));
     }
 
-    public static SQLHelper build(EntityManager entityManager, String tableName) {
-        return new SQLHelper(entityManager, tableName);
+    public static SQLHelper build(EntityManager entityManager, Class entity) {
+        return new SQLHelper(entityManager, entity);
     }
 
     public SQLBuilder builder() {
         return this.builder;
     }
 
+    public SQLHelper where(String condition, Object... params) {
+        this.builder.where(condition, params);
+        return this;
+    }
+
     public String lastSql() {
         return this.sql;
     }
 
-    private Query query(String sql, Class requiredType) {
+    public Query query(String sql, Class requiredType) {
         Query query;
         if(null == requiredType) {
-            query = entityManager.createNativeQuery(sql);
+            query = manager.createNativeQuery(sql);
         } else {
-            query = entityManager.createNativeQuery(sql, requiredType);
+            query = manager.createNativeQuery(sql, requiredType);
         }
         for (Map.Entry<String, Object> entry : builder.params().entrySet()) {
             query.setParameter(entry.getKey(), entry.getValue());
@@ -108,8 +121,8 @@ public class SQLHelper {
     /**
      * 批量插入
      */
-    public Number batchInsert(List<Map<String, Object>> datas, boolean needUpdate, String... fieldsUpdate) {
-        sql = builder.batchInsert(datas, needUpdate, fieldsUpdate);
+    public Number batchInsert(List<Map<String, Object>> data, boolean needUpdate, String... fieldsUpdate) {
+        sql = builder.batchInsert(data, needUpdate, fieldsUpdate);
         query(sql, null).executeUpdate();
         return lastInsertId();
     }
@@ -122,6 +135,93 @@ public class SQLHelper {
     public Number delete() {
         sql = builder.delete();
         return query(sql, null).executeUpdate();
+    }
+
+    public PreparedStatement statement(Connection connection, String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
+        List<Object> list = new ArrayList<>();
+        Map<String, Object> pendingParams = builder.params();
+        List<String> params = DPUtil.matcher(SQLBuilder.PARAM_PREFIX, sql, false); // 获取全部命名参数
+        int size = params.size();
+        for (int index = 0; index < size; index++) {
+            String key = params.get(index);
+            Object value = pendingParams.get(key);
+            if(null == value) { // null值
+                list.add("");
+            } else if(value.getClass().isArray()) { // 数组
+                Object[] values = (Object[]) value;
+                sql = sql.replaceFirst(key, DPUtil.implode(", ", DPUtil.fillArray("?", values.length)));
+                for (Object item : values) {
+                    list.add(item);
+                }
+            } else {
+                list.add(value);
+            }
+        }
+        sql = sql.replaceAll(SQLBuilder.PARAM_PREFIX, "?"); // 替换命名参数为占位符
+        PreparedStatement statement = connection.prepareStatement(sql, resultSetType, resultSetConcurrency);
+        size = list.size();
+        for (int index = 0; index < size;) {
+            Object param = list.get(index++);
+            if(null == param) {
+                statement.setObject(index, null);
+            } else if (param instanceof String) {
+                statement.setString(index, param.toString());
+            } else if (param instanceof Date) {
+                statement.setDate(index, Date.valueOf(param.toString()));
+            } else if (param instanceof Boolean) {
+                statement.setBoolean(index, (Boolean) (param));
+            } else if (param instanceof Integer) {
+                statement.setInt(index, (Integer) param);
+            } else if (param instanceof Float) {
+                statement.setFloat(index, (Float) param);
+            } else if (param instanceof Double) {
+                statement.setDouble(index, (Double) param);
+            } else {
+                statement.setObject(index, param);
+            }
+        }
+        return statement;
+    }
+
+    public PreparedStatement statement(Connection connection, String sql) throws SQLException {
+        return statement(connection, sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+    }
+
+    public boolean batch(SQLBatchCallback callback) throws Exception {
+        Connection connection = JPAUtil.connection(manager);
+        sql = builder.all();
+        PreparedStatement statement = null;
+        ResultSet rs = null;
+        try {
+            statement = statement(connection, sql);
+            statement.setFetchSize(callback.fetchSize);
+            statement.setFetchDirection(ResultSet.FETCH_REVERSE);
+            rs = statement.executeQuery();
+            ResultSetMetaData meta = rs.getMetaData();
+            int count = meta.getColumnCount();
+            ArrayNode result = DPUtil.arrayNode();
+            while (rs.next()) {
+                Map<String, Object> item = new LinkedHashMap<>();
+                for (int i = 1; i <= count; i++) {
+                    item.put(meta.getColumnName(i), rs.getObject(i));
+                }
+                result.add(DPUtil.toJSON(item));
+                if (result.size() >= callback.batchSize) {
+                    if (!callback.call(result)) return false;
+                    result = DPUtil.arrayNode();
+                }
+            }
+            if (result.size() > 0) {
+                return callback.call(result);
+            }
+            return true;
+        } catch (SQLException e) {
+            throw e;
+        } finally {
+            JdbcUtils.closeResultSet(rs);
+            JdbcUtils.closeStatement(statement);
+            JPAUtil.release(manager, connection);
+        }
     }
 
 }

@@ -1,6 +1,8 @@
 package com.iisquare.fs.base.jpa.tester;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.jpa.util.JDBCUtil;
 import org.junit.Test;
 
 import java.sql.*;
@@ -24,6 +26,16 @@ public class JDBCTester {
         }
         statement.close();
         rs.close();
+        connection.close();
+    }
+
+    @Test
+    public void metaTest() throws Exception {
+        Class.forName("com.mysql.jdbc.Driver");
+        String url = "jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true";
+        Connection connection = DriverManager.getConnection(url, "root", "admin888");
+        ObjectNode tables = JDBCUtil.tables(connection);
+        System.out.println(tables);
         connection.close();
     }
 

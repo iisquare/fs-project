@@ -27,4 +27,15 @@ public class CronUtil {
         printer.flush();
     }
 
+    public static void flushString(HttpServletResponse response, boolean withLine, String format, Object... args) throws IOException {
+        flush(response, String.format(format, args), withLine);
+    }
+
+    public static void flush(HttpServletResponse response, Exception e, boolean withLine) {
+        try {
+            e.printStackTrace(response.getWriter());
+        } catch (IOException ex) {
+        }
+    }
+
 }

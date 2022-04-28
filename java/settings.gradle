@@ -11,6 +11,7 @@ include 'base:elasticsearch'
 include 'base:mongodb'
 include 'base:worker'
 include 'base:dag'
+include 'base:neo4j'
 
 include 'app:crawler'
 include 'app:spark'

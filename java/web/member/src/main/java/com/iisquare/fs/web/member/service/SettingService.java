@@ -8,7 +8,6 @@ import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.member.dao.SettingDao;
 import com.iisquare.fs.web.member.entity.Setting;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -32,8 +31,6 @@ public class SettingService extends ServiceBase {
     private UserService userService;
     @Autowired
     private EntityManager entityManager;
-    @Value("${spring.datasource.member.table-prefix}")
-    private String tablePrefix;
 
     public boolean set(String type, String key, String value) {
         Setting info = settingDao.findFirstByTypeAndName(type, key);
@@ -54,7 +51,7 @@ public class SettingService extends ServiceBase {
                 put("description", "系统更新");
             }});
         }
-        return SQLHelper.build(entityManager, tablePrefix + "setting").batchInsert(list, true, "content").intValue();
+        return SQLHelper.build(entityManager, Setting.class).batchInsert(list, true, "content").intValue();
     }
 
     public Map<String, String> get(String type, List<String> include, List<String> exclude) {

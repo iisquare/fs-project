@@ -1,6 +1,8 @@
 
 dependencies {
     compile project(':base:jpa')
+    compile project(':base:neo4j')
     compile project(':web:core')
     testCompile project(':web:test')
+    compile project(':base:elasticsearch')
 }

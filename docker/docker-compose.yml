@@ -1,6 +1,33 @@
 version: '3.1'
 
 services:
+  minio:
+    build:
+      context: ./service/minio
+      args:
+        - MINIO_VERSION=${MINIO_VERSION}
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+    ports:
+      - "${BIND_ADDRESS}${BIND_COLON}${MINIO_HTTP_PORT}:9000"
+      - "${BIND_ADDRESS}${BIND_COLON}${MINIO_CONSOLE_PORT}:9001"
+    command: server --console-address ':9001' /data
+    volumes:
+      - ${DATA_DIR}/minio/data:/data
+  neo4j:
+    build:
+      context: ./service/neo4j
+      args:
+        - NEO4J_VERSION=${NEO4J_VERSION}
+    environment:
+      NEO4J_AUTH: ${NEO4J_USERNAME}/${NEO4J_PASSWORD}
+    ports:
+      - "${BIND_ADDRESS}${BIND_COLON}${NEO4J_HTTP_PORT}:7474"
+      - "${BIND_ADDRESS}${BIND_COLON}${NEO4J_BOLT_PORT}:7687"
+    volumes:
+      - ${DATA_DIR}/neo4j/data:/data
+      # - ${DATA_DIR}/neo4j/logs:/logs
   postgres:
     build:
       context: ./service/postgres

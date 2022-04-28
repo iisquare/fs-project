@@ -2,6 +2,13 @@ import store from '@/core/store'
 
 const UIUtil = {
   cache: store.getters['cache/load'],
+  kv (key, value, ttl) {
+    if (arguments.length === 1) {
+      return store.getters['cache/get'](key)
+    } else {
+      return store.getters['cache/set'](key, value, ttl)
+    }
+  },
   tableTree (rows, parentId, idField = 'id', parentField = 'parentId', childField = 'children') {
     const result = []
     for (const item of rows) {
@@ -216,6 +223,13 @@ const UIUtil = {
   },
   filterOption (inputValue, option) {
     return option.componentOptions.children[0].text.toUpperCase().indexOf(inputValue.toUpperCase()) >= 0
+  },
+  highlight (highlight, glue = '') {
+    const result = {}
+    for (const key in highlight) {
+      result[key] = highlight[key].join(glue)
+    }
+    return result
   }
 }
 export default UIUtil

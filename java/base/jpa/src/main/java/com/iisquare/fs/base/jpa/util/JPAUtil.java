@@ -2,8 +2,16 @@ package com.iisquare.fs.base.jpa.util;
 
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.jpa.mvc.DaoBase;
+import org.hibernate.metamodel.spi.MetamodelImplementor;
+import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.springframework.data.domain.Sort;
+import org.springframework.jdbc.datasource.DataSourceUtils;
+import org.springframework.orm.jpa.EntityManagerFactoryInfo;
 
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.sql.DataSource;
+import java.sql.Connection;
 import java.util.*;
 
 public class JPAUtil {
@@ -33,4 +41,25 @@ public class JPAUtil {
         if (orders.size() < 1) return null;
         return Sort.by(orders);
     }
+
+    public static String tableName(EntityManager manager, Class cls) {
+        EntityManagerFactory factory = manager.getEntityManagerFactory();
+        MetamodelImplementor meta = (MetamodelImplementor) factory.getMetamodel();
+        SingleTableEntityPersister persist = (SingleTableEntityPersister) meta.entityPersister(cls);
+        return persist.getTableName();
+    }
+
+    public static DataSource dataSource(EntityManager manager) {
+        EntityManagerFactoryInfo info = (EntityManagerFactoryInfo) manager.getEntityManagerFactory();
+        return info.getDataSource();
+    }
+
+    public static Connection connection(EntityManager manager) {
+        return DataSourceUtils.getConnection(dataSource(manager));
+    }
+
+    public static void release(EntityManager manager, Connection connection) {
+        DataSourceUtils.releaseConnection(connection, dataSource(manager));
+    }
+
 }

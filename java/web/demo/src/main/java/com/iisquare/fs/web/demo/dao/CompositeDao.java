@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @see(https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
@@ -56,6 +57,12 @@ public interface CompositeDao extends JpaRepository<Composite, Composite.IdClass
     @Query(value = "select aid, bid, name from Composite where name = :name",
             countQuery = "select count(aid) from Composite where name = :name")
     Page<Object[]> findListByName(@Param("name") String name, Pageable pageable);
+
+    /**
+     * 自定义分组查询，字段必须提供别名，否则为null
+     */
+    @Query(value = "select name as name, count(name) as ct from Composite group by name order by ct desc")
+    List<Map<String, Object>> countByName();
 
     @Query("select t from Composite t where t.name = :name")
     Composite findByName(@Param("name") String name);
