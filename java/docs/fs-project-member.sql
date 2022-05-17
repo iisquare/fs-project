@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 24/04/2022 08:43:47
+ Date: 17/05/2022 08:57:28
 */
 
 SET NAMES utf8mb4;
@@ -147,7 +147,7 @@ CREATE TABLE `fs_member_resource`  (
   `updated_time` bigint(0) NOT NULL DEFAULT 0,
   `updated_uid` int(0) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 166 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 186 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of fs_member_resource
@@ -317,6 +317,28 @@ INSERT INTO `fs_member_resource` VALUES (162, '模型关系', '数据治理:模�
 INSERT INTO `fs_member_resource` VALUES (163, '添加', '数据治理:模型关系:添加', 162, 'govern', 'modelRelation', 'add', 0, 1, '', 1649856205906, 1, 1649856205906, 1);
 INSERT INTO `fs_member_resource` VALUES (164, '修改', '数据治理:模型关系:修改', 162, 'govern', 'modelRelation', 'modify', 0, 1, '', 1649856221977, 1, 1649856221977, 1);
 INSERT INTO `fs_member_resource` VALUES (165, '删除', '数据治理:模型关系:删除', 162, 'govern', 'modelRelation', 'delete', 0, 1, '', 1649856238307, 1, 1649856238307, 1);
+INSERT INTO `fs_member_resource` VALUES (166, '数据源', '数据治理:数据源', 157, 'govern', 'source', '', 0, 1, '', 1651288127259, 1, 1651288127259, 1);
+INSERT INTO `fs_member_resource` VALUES (167, '添加', '数据治理:数据源:添加', 166, 'govern', 'source', 'add', 0, 1, '', 1651288142907, 1, 1651288142907, 1);
+INSERT INTO `fs_member_resource` VALUES (168, '修改', '数据治理:数据源:修改', 166, 'govern', 'source', 'modify', 0, 1, '', 1651288155369, 1, 1651288155369, 1);
+INSERT INTO `fs_member_resource` VALUES (169, '删除', '数据治理:数据源:删除', 166, 'govern', 'source', 'delete', 0, 1, '', 1651288169410, 1, 1651288169410, 1);
+INSERT INTO `fs_member_resource` VALUES (170, '标准', '数据治理:标准', 157, 'govern', 'standard', '', 0, 1, '', 1651369369718, 1, 1651369369718, 1);
+INSERT INTO `fs_member_resource` VALUES (171, '添加', '数据治理:标准:添加', 170, 'govern', 'standard', 'add', 0, 1, '', 1651369379754, 1, 1651369379754, 1);
+INSERT INTO `fs_member_resource` VALUES (172, '修改', '数据治理:标准:修改', 170, 'govern', 'standard', 'modify', 0, 1, '', 1651369391457, 1, 1651369391457, 1);
+INSERT INTO `fs_member_resource` VALUES (173, '删除', '数据治理:标准:删除', 170, 'govern', 'standard', 'delete', 0, 1, '', 1651369400862, 1, 1651369400862, 1);
+INSERT INTO `fs_member_resource` VALUES (174, '落地评估', '数据治理:落地评估', 157, 'govern', 'assess', '', 0, 1, '', 1651369440554, 1, 1651369440554, 1);
+INSERT INTO `fs_member_resource` VALUES (175, '添加', '数据治理:落地评估:添加', 174, 'govern', 'assess', 'add', 0, 1, '', 1651369470508, 1, 1651369470508, 1);
+INSERT INTO `fs_member_resource` VALUES (176, '修改', '数据治理:落地评估:修改', 174, 'govern', 'assess', 'modify', 0, 1, '', 1651369483410, 1, 1651369483410, 1);
+INSERT INTO `fs_member_resource` VALUES (177, '删除', '数据治理:落地评估:删除', 174, 'govern', 'assess', 'delete', 0, 1, '', 1651369492457, 1, 1651369492457, 1);
+INSERT INTO `fs_member_resource` VALUES (178, '质量', '数据治理:质量', 157, 'govern', 'quality', '', 0, 1, '', 1651369515566, 1, 1651369515566, 1);
+INSERT INTO `fs_member_resource` VALUES (179, '添加', '数据治理:质量:添加', 178, 'govern', 'quality', 'add', 0, 1, '', 1651369527926, 1, 1651369527926, 1);
+INSERT INTO `fs_member_resource` VALUES (180, '修改', '数据治理:质量:修改', 178, 'govern', 'quality', 'modify', 0, 1, '', 1651369543376, 1, 1651369543376, 1);
+INSERT INTO `fs_member_resource` VALUES (181, '删除', '数据治理:质量:删除', 178, 'govern', 'quality', 'delete', 0, 1, '', 1651369553877, 1, 1651369553877, 1);
+INSERT INTO `fs_member_resource` VALUES (182, '质检方案', '数据治理:质检方案', 157, 'govern', 'plan', '', 0, 1, '', 1651369579119, 1, 1651369579119, 1);
+INSERT INTO `fs_member_resource` VALUES (183, '添加', '数据治理:质检方案:添加', 182, 'govern', 'plan', 'add', 0, 1, '', 1651369589073, 1, 1651369589073, 1);
+INSERT INTO `fs_member_resource` VALUES (184, '修改', '数据治理:质检方案:修改', 182, 'govern', 'plan', 'modify', 0, 1, '', 1651369599391, 1, 1651369599391, 1);
+INSERT INTO `fs_member_resource` VALUES (185, '删除', '数据治理:质检方案:删除', 182, 'govern', 'plan', 'delete', 0, 1, '', 1651369607940, 1, 1651369607940, 1);
+INSERT INTO `fs_member_resource` VALUES (186, '评估结果', '数据治理:落地评估:评估结果', 174, 'govern', 'assess', 'log', 0, 1, '', 1652748865504, 1, 1652748865504, 1);
+INSERT INTO `fs_member_resource` VALUES (187, '删除日志', '数据治理:落地评估:删除日志', 174, 'govern', 'assess', 'clear', 0, 1, '', 1652748880199, 1, 1652748880199, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_relation
@@ -355,7 +377,13 @@ INSERT INTO `fs_member_relation` VALUES ('role_menu_1_115', 'role_menu', 1, 115)
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_116', 'role_menu', 1, 116);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_117', 'role_menu', 1, 117);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_118', 'role_menu', 1, 118);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_119', 'role_menu', 1, 119);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_12', 'role_menu', 1, 12);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_120', 'role_menu', 1, 120);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_121', 'role_menu', 1, 121);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_122', 'role_menu', 1, 122);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_123', 'role_menu', 1, 123);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_124', 'role_menu', 1, 124);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_13', 'role_menu', 1, 13);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_14', 'role_menu', 1, 14);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_15', 'role_menu', 1, 15);
@@ -533,8 +561,30 @@ INSERT INTO `fs_member_relation` VALUES ('role_resource_1_162', 'role_resource',
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_163', 'role_resource', 1, 163);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_164', 'role_resource', 1, 164);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_165', 'role_resource', 1, 165);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_166', 'role_resource', 1, 166);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_167', 'role_resource', 1, 167);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_168', 'role_resource', 1, 168);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_169', 'role_resource', 1, 169);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_17', 'role_resource', 1, 17);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_170', 'role_resource', 1, 170);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_171', 'role_resource', 1, 171);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_172', 'role_resource', 1, 172);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_173', 'role_resource', 1, 173);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_174', 'role_resource', 1, 174);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_175', 'role_resource', 1, 175);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_176', 'role_resource', 1, 176);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_177', 'role_resource', 1, 177);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_178', 'role_resource', 1, 178);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_179', 'role_resource', 1, 179);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_18', 'role_resource', 1, 18);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_180', 'role_resource', 1, 180);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_181', 'role_resource', 1, 181);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_182', 'role_resource', 1, 182);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_183', 'role_resource', 1, 183);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_184', 'role_resource', 1, 184);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_185', 'role_resource', 1, 185);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_186', 'role_resource', 1, 186);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_187', 'role_resource', 1, 187);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_19', 'role_resource', 1, 19);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_2', 'role_resource', 1, 2);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_20', 'role_resource', 1, 20);
@@ -657,7 +707,7 @@ CREATE TABLE `fs_member_menu`  (
   `updated_time` bigint(0) NOT NULL DEFAULT 0,
   `updated_uid` int(0) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 119 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 125 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of fs_member_menu
@@ -776,6 +826,12 @@ INSERT INTO `fs_member_menu` VALUES (115, '数据交换', '后台管理:数据�
 INSERT INTO `fs_member_menu` VALUES (116, '模型管理', '后台管理:数据治理:元数据:模型管理', 103, '', '/govern/meta/model', '', 0, 1, '', 1648782739796, 1, 1649821115608, 1);
 INSERT INTO `fs_member_menu` VALUES (117, '模型关系', '后台管理:数据治理:元数据:模型关系', 103, '', '/govern/meta/modelRelation', '', 0, 1, '', 1649856291456, 1, 1649856291456, 1);
 INSERT INTO `fs_member_menu` VALUES (118, '数据地图', '后台管理:数据治理:元数据:数据地图', 103, '', '/govern/meta/map', '', 99, 1, '', 1650760956687, 1, 1650760956687, 1);
+INSERT INTO `fs_member_menu` VALUES (119, '系统设置', '后台管理:数据治理:系统设置', 102, 'solution', '/govern/system', '', 0, 1, '', 1651288300961, 1, 1651288300961, 1);
+INSERT INTO `fs_member_menu` VALUES (120, '数据源', '后台管理:数据治理:系统设置:数据源', 119, '', '/govern/system/source', '', 0, 1, '', 1651288324135, 1, 1651288324135, 1);
+INSERT INTO `fs_member_menu` VALUES (121, '标准管理', '后台管理:数据治理:数据标准:标准管理', 111, '', '/govern/standard/list', '', 0, 1, '', 1651369141111, 1, 1651369141111, 1);
+INSERT INTO `fs_member_menu` VALUES (122, '落地评估', '后台管理:数据治理:数据标准:落地评估', 111, '', '/govern/standard/assess', '', 0, 1, '', 1651369188363, 1, 1651369188363, 1);
+INSERT INTO `fs_member_menu` VALUES (123, '质检方案', '后台管理:数据治理:数据质量:质检方案', 113, '', '/govern/quality/plan', '', 0, 1, '', 1651369714750, 1, 1651369714750, 1);
+INSERT INTO `fs_member_menu` VALUES (124, '评估结果', '后台管理:数据治理:数据标准:评估结果', 111, '', '/govern/standard/log', '', 0, 1, '', 1652682411082, 1, 1652682411082, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_dictionary
@@ -797,7 +853,7 @@ CREATE TABLE `fs_member_dictionary`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_content`(`content`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of fs_member_dictionary

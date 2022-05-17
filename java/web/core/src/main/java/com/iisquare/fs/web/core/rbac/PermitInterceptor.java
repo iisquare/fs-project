@@ -35,7 +35,7 @@ public class PermitInterceptor implements HandlerInterceptor {
         if (!FeignInterceptor.hashPermit(request, response, method)) return false;
         if(!(method.getBean() instanceof PermitControllerBase)) return true;
         PermitControllerBase instance = (PermitControllerBase) method.getBean();
-        String[] names = DPUtil.explode(instance.getClass().getName(), "\\.", null, false);
+        String[] names = DPUtil.explode("\\.", instance.getClass().getName(), null, false);
         if(names.length < 5) throw new PermitException(PermitException.NO_PACKAGE);
         String module = names[names.length - 2];
         if (module.equalsIgnoreCase(PACKAGE_CONTROLLER)) { // like *.xxx.controller

@@ -89,7 +89,7 @@ export default {
     batchRemove () {
       this.$confirm(this.selection.confirm(() => {
         this.loading = true
-        const record = this.rows[this.selection.selectedRowKeys]
+        const record = this.rows[this.selection.selectedRowKeys[0]]
         const param = { name: record.name, project: record.project }
         cronService.flowDelete(param, { success: true }).then((result) => {
           if (result.code === 0) {

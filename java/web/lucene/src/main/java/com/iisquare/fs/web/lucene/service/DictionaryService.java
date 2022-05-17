@@ -77,7 +77,7 @@ public class DictionaryService extends ServiceBase {
         }
         long time = System.currentTimeMillis();
         List<Dictionary> list = new ArrayList<>();
-        for (String content : DPUtil.explode(info.getContent(), "\n")) {
+        for (String content : DPUtil.explode("\n", info.getContent())) {
             content = DPUtil.trim(content);
             if (DPUtil.empty(content)) continue;
             list.add(Dictionary.builder()

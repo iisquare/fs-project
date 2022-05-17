@@ -66,9 +66,9 @@ public class MongoUtil {
     public static Bson sort(String sort, Collection<String> fields) {
         if (DPUtil.empty(sort)) return null;
         List<Bson> orders = new ArrayList<>();
-        String[] sorts = DPUtil.explode(sort);
+        String[] sorts = DPUtil.explode(",", sort);
         for (String item : sorts) {
-            String[] explode = DPUtil.explode(item, "\\.");
+            String[] explode = DPUtil.explode("\\.", item);
             String order = explode[0];
             if (!fields.contains(order)) continue;
             String direction = explode.length > 1 ? explode[1].toLowerCase() : "asc";

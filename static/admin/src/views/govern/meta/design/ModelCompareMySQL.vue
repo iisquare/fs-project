@@ -75,7 +75,7 @@ export default {
       })
     },
     compare () {
-      const record = this.rows[this.selection.selectedRowKeys]
+      const record = this.rows[this.selection.selectedRowKeys[0]]
       this.$emit('input', Object.values(record.columns).map(item => {
         return {
           code: item.name,

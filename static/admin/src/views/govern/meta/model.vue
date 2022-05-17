@@ -149,7 +149,7 @@ export default {
     batchRemove () {
       this.$confirm(this.selection.confirm(() => {
         this.loading = true
-        const record = this.rows[this.selection.selectedRowKeys]
+        const record = this.rows[this.selection.selectedRowKeys[0]]
         const param = { catalog: record.catalog, code: record.code }
         modelService.delete(param, { success: true }).then((result) => {
           if (result.code === 0) {

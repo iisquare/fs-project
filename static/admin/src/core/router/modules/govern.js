@@ -8,6 +8,18 @@ export const blanks = [{
   path: '/govern/meta/modelCompare',
   meta: { title: '模型对比' },
   component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/meta/modelCompare')
+}, {
+  path: '/govern/system/sourceModel',
+  meta: { title: '数据源配置' },
+  component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/system/sourceModel')
+}, {
+  path: '/govern/standard/draw',
+  meta: { title: '数据标准' },
+  component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/standard/draw')
+}, {
+  path: '/govern/standard/model',
+  meta: { title: '评估方案' },
+  component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/standard/model')
 }]
 
 export const layouts = [{
@@ -42,6 +54,22 @@ export const layouts = [{
     path: '/govern/meta/blood',
     meta: { title: '血缘分析' },
     component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/meta/blood')
+  }, {
+    path: '/govern/system/source',
+    meta: { title: '数据源' },
+    component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/system/source')
+  }, {
+    path: '/govern/standard/list',
+    meta: { title: '数据标准' },
+    component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/standard/list')
+  }, {
+    path: '/govern/standard/assess',
+    meta: { title: '落地评估' },
+    component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/standard/assess')
+  }, {
+    path: '/govern/standard/log',
+    meta: { title: '评估结果' },
+    component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/standard/log')
   }]
 }]
 

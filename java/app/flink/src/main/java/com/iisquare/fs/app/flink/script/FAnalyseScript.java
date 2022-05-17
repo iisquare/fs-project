@@ -97,7 +97,7 @@ public class FAnalyseScript extends DAGTransform implements MapFunction<JsonNode
 
     public ArrayNode parseUri(String uri) {
         ArrayNode result = DPUtil.arrayNode();
-        String[] paths = DPUtil.explode(uri, "/", "/", true);
+        String[] paths = DPUtil.explode("/", uri, "/", true);
         for (int index = 0; index < paths.length; index++) {
             result.addObject().put("key", index).put("value", paths[index]);
         }

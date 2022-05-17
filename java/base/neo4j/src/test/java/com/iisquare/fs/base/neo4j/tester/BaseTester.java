@@ -52,7 +52,7 @@ public class BaseTester extends Neo4jBase {
 
     @Test
     public void deleteByIdentityTest() {
-        long result = deleteByIdentity(true, 0L, 1L, 2L, 3L);
+        long result = deleteNodeByIdentity(true, 0L, 1L, 2L, 3L);
         System.out.println(result);
     }
 

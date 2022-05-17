@@ -69,7 +69,7 @@ public class Archive {
     }
 
     public static String suffix(String filename) {
-        String[] strings = DPUtil.explode(filename, "\\.");
+        String[] strings = DPUtil.explode("\\.", filename);
         if (strings.length < 2) return "";
         String suffix = strings[strings.length - 1];
         return DPUtil.isMatcher("^[a-zA-Z\\d]+$", suffix) ? "." + suffix : "";

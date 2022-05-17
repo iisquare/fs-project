@@ -5,6 +5,7 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 
 public class CronUtil {
 
@@ -36,6 +37,13 @@ public class CronUtil {
             e.printStackTrace(response.getWriter());
         } catch (IOException ex) {
         }
+    }
+
+    public static String getStackTrace(final Throwable throwable) {
+        final StringWriter sw = new StringWriter();
+        final PrintWriter pw = new PrintWriter(sw, true);
+        throwable.printStackTrace(pw);
+        return sw.getBuffer().toString();
     }
 
 }

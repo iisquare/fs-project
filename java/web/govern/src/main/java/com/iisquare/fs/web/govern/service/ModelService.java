@@ -97,7 +97,7 @@ public class ModelService extends ServiceBase {
         if ("catalog".equals(info.getType())) {
             return ApiUtil.result(0, null, result);
         }
-        result.replace("pk", DPUtil.toJSON(DPUtil.explode(info.getPk(), ",")));
+        result.replace("pk", DPUtil.toJSON(DPUtil.explode(",", info.getPk())));
         List<ModelColumn> columns = columnDao.findAllByCatalogAndModel(
                 info.getCatalog(), info.getCode(), Sort.by(Sort.Order.asc("sort")));
         result.replace("columns", columnService.format(columns));

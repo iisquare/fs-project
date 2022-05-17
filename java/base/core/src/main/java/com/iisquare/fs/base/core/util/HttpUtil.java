@@ -20,9 +20,9 @@ public class HttpUtil {
         Map<String, String> map = new LinkedHashMap<>();
         for (String cookie : cookies) {
             if (DPUtil.empty(cookie)) continue;
-            String[] items = DPUtil.explode(cookie, ";");
+            String[] items = DPUtil.explode(";", cookie);
             for (String item : items) {
-                String[] kv = DPUtil.explode(item, "=");
+                String[] kv = DPUtil.explode("=", item);
                 if (kv.length < 2) continue;
                 map.put(kv[0], DPUtil.implode("=", kv, 1, kv.length));
             }

@@ -85,13 +85,13 @@ public class DPUtil {
         List<Integer> result = new ArrayList<>();
         if (null == object) return result;
         if (object instanceof Collection) {
-            Collection collection = (Collection) object;
+            Collection<?> collection = (Collection<?>) object;
             for (Object item : collection) {
                 result.add(parseInt(item));
             }
         } else if (object instanceof Map) {
             Map<?, ?> map = (Map<?, ?>) object;
-            for (Map.Entry entry : map.entrySet()) {
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
                 result.add(parseInt(entry.getValue()));
             }
         } else if (object.getClass().isArray()) {
@@ -360,18 +360,18 @@ public class DPUtil {
     /**
      * 采用指定表达式分隔字符串
      *
+     * @param separator 表达式
      * @param string     带分割字符串
-     * @param splitRegex 表达式
      * @param trimStr    对子项进行trim操作
      * @return 分隔后的字符串数组
      */
-    public static String[] explode(String string, String splitRegex, String trimStr, boolean filterEmpty) {
-        List<String> list = new ArrayList<String>(0);
+    public static String[] explode(String separator, String string, String trimStr, boolean filterEmpty) {
+        List<String> list = new ArrayList<>(0);
         if (empty(string)) {
             return new String[]{};
         }
-        if ("\\".equals(splitRegex)) splitRegex = "\\\\";
-        for (String str : string.split(splitRegex, -1)) {
+        if ("\\".equals(separator)) separator = "\\\\";
+        for (String str : string.split(separator, -1)) {
             if (filterEmpty && empty(str)) continue;
             if (null != trimStr) {
                 list.add(DPUtil.trim(str));
@@ -382,20 +382,16 @@ public class DPUtil {
         return toArray(String.class, list);
     }
 
-    public static String[] explode(String string, String splitRegex) {
-        return explode(string, splitRegex, " ", true);
+    public static String[] explode(String separator, String string) {
+        return explode(separator, string, " ", true);
     }
 
-    public static String[] explode(String string) {
-        return explode(string, ",", " ", true);
-    }
-
-    public static String implode(String split, Object[] array) {
+    public static String implode(String separator, Object[] array) {
         if (null == array) return "";
-        return implode(split, array, 0, array.length);
+        return implode(separator, array, 0, array.length);
     }
 
-    public static String implode(String split, Object[] array, int start, int end) {
+    public static String implode(String separator, Object[] array, int start, int end) {
         if (null == array) return "";
         int size = array.length;
         if (1 > size) return "";
@@ -407,16 +403,26 @@ public class DPUtil {
             if (null == value) continue;
             if (value instanceof Collection) {
                 Object[] objects = toArray(Object.class, (Collection<Object>) value);
-                sb.append(implode(split, objects, 0, objects.length));
+                sb.append(implode(separator, objects, 0, objects.length));
             } else if (value instanceof Map) {
                 Object[] objects = toArray(Object.class, ((Map<Object, Object>) value).values());
-                sb.append(implode(split, objects, 0, objects.length));
+                sb.append(implode(separator, objects, 0, objects.length));
             } else {
                 sb.append(value);
             }
-            if (i + 1 < size) sb.append(split);
+            if (i + 1 < size) sb.append(separator);
         }
         return sb.toString();
+    }
+
+    public static String implode(String separator, Collection<?> list) {
+        if (null == list) return "";
+        return implode(separator, list.toArray(new Object[0]));
+    }
+
+    public static String implode(String separator, Collection<?> list, int start, int end) {
+        if (null == list) return "";
+        return implode(separator, list.toArray(new Object[0]), start, end);
     }
 
     /**
@@ -434,6 +440,24 @@ public class DPUtil {
             list.add(null == wrap ? str : (wrap + str + wrap));
         }
         return toArray(String.class, list);
+    }
+
+    public static JsonNode filterByKey(JsonNode json, boolean in2exclude, String... filters) {
+        if (filters.length == 0) return json;
+        ObjectNode result = DPUtil.objectNode();
+        Iterator<Map.Entry<String, JsonNode>> iterator = json.fields();
+        while (iterator.hasNext()) {
+            Map.Entry<String, JsonNode> entry = iterator.next();
+            String key = entry.getKey();
+            JsonNode value = entry.getValue();
+            for (String filter : filters) {
+                if (key.matches(filter) == in2exclude) {
+                    result.replace(key, value);
+                    break;
+                }
+            }
+        }
+        return result;
     }
 
     public static <T> ArrayList<T> array2list(T[] array) {
@@ -940,7 +964,7 @@ public class DPUtil {
     }
 
     public static JsonNode value(JsonNode json, String path) {
-        String[] paths = DPUtil.explode(path, "\\.",null, false);
+        String[] paths = DPUtil.explode("\\.",path, null, false);
         return value(json, new LinkedList<>(Arrays.asList(paths)));
     }
 
@@ -951,7 +975,7 @@ public class DPUtil {
     }
 
     public static boolean value(JsonNode json, String path, JsonNode value) {
-        String[] paths = DPUtil.explode(path, "\\.",null, false);
+        String[] paths = DPUtil.explode("\\.",path, null, false);
         return value(json, new LinkedList<>(Arrays.asList(paths)), value);
     }
 

@@ -113,8 +113,10 @@ routes.push({
 
 const router = new Router({ routes })
 // const router = new Router({ mode: 'history', routes })
+const title = document.title
 
 router.beforeEach((to, from, next) => {
+  document.title = (to.meta && to.meta.title) ? title.replace('FS Project', to.meta.title) : title
   const user = store.state.user
   if (!user.ready) { // 用户状态未同步
     if (to.path === page.startup || to.path === page.e404) {

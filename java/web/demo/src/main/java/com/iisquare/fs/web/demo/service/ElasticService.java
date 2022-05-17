@@ -36,11 +36,11 @@ public class ElasticService extends ServiceBase {
         List<QueryBuilder> must = queries.must();
         String id = DPUtil.trim(DPUtil.parseString(param.get("id")));
         if (!DPUtil.empty(id)) {
-            must.add(QueryBuilders.termsQuery("id", Arrays.asList(DPUtil.explode(id, ","))));
+            must.add(QueryBuilders.termsQuery("id", Arrays.asList(DPUtil.explode(",", id))));
         }
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
         if (!DPUtil.empty(name)) {
-            must.add(QueryBuilders.termsQuery("name", Arrays.asList((DPUtil.explode(name, ",")))));
+            must.add(QueryBuilders.termsQuery("name", Arrays.asList((DPUtil.explode(",", name)))));
         }
         SearchSourceBuilder search = SearchSourceBuilder.searchSource();
         search.query(queries);

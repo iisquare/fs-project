@@ -171,7 +171,7 @@ public class DatasetUnit {
 
     public static String in(String expression) {
         List<String> result = new ArrayList<>();
-        for (String exp : DPUtil.explode(expression)) {
+        for (String exp : DPUtil.explode(",", expression)) {
             result.add(expression(exp));
         }
         return DPUtil.implode(", ", result.toArray(new String[0]));

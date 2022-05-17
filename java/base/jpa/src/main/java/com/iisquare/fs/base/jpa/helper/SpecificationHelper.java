@@ -221,7 +221,7 @@ public class SpecificationHelper<T> {
             if (list.size() > 0) predicates.add(root.get(field).in(list));
             return this;
         }
-        String[] strings = DPUtil.explode(DPUtil.parseString(value));
+        String[] strings = DPUtil.explode(",", DPUtil.parseString(value));
         if (strings.length > 0) predicates.add(root.get(field).in(strings));
         return this;
     }
@@ -235,7 +235,7 @@ public class SpecificationHelper<T> {
         if (DPUtil.empty(value)) return this;
         Iterator iterator = value instanceof Collection
                 ? ((Collection) value).iterator()
-                : Arrays.asList(DPUtil.explode(DPUtil.parseString(value))).iterator();
+                : Arrays.asList(DPUtil.explode(",", DPUtil.parseString(value))).iterator();
         List<Predicate> predicates = new ArrayList<>();
         while (iterator.hasNext()) {
             String item = DPUtil.parseString(iterator.next());
@@ -256,7 +256,7 @@ public class SpecificationHelper<T> {
             Iterator iterator = ((Collection) value).iterator();
             while (iterator.hasNext()) list.add(DPUtil.parseInt(iterator.next()));
         } else {
-            String[] strings = DPUtil.explode(DPUtil.parseString(value));
+            String[] strings = DPUtil.explode(",", DPUtil.parseString(value));
             for (String str : strings) list.add(DPUtil.parseInt(str));
         }
         return list;

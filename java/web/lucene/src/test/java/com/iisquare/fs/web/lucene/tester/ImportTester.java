@@ -15,9 +15,9 @@ public class ImportTester {
         URL url = getClass().getClassLoader().getResource("suggest_synonym.txt");
         String content = FileUtil.getContent(url, false, "UTF-8");
         Set<String> result = new LinkedHashSet<>();
-        for (String line : DPUtil.explode(content, "\n")) {
+        for (String line : DPUtil.explode("\n", content)) {
             System.out.println(line);
-            String[] strings = DPUtil.explode(line, "=&gt;");
+            String[] strings = DPUtil.explode("=&gt;", line);
             if (strings.length != 2) continue;
             String pinyin = DPUtil.trim(strings[0]).toLowerCase().replaceAll("ü", "v");
             line = DPUtil.trim(strings[1].replaceAll("[',]", ""));
@@ -47,11 +47,11 @@ public class ImportTester {
         URL url = getClass().getClassLoader().getResource("suggest_pinyi.txt");
         String content = FileUtil.getContent(url, false, "UTF-8");
         Set<String> result = new LinkedHashSet<>();
-        for (String line : DPUtil.explode(content, "\n")) {
+        for (String line : DPUtil.explode("\n", content)) {
             line = line.replaceAll("[\\s　\\t]+", " ");
             line = line.replaceAll("ü", "v");
             System.out.println(line);
-            for (String item : DPUtil.explode(line.toLowerCase(), " ")) {
+            for (String item : DPUtil.explode(" ", line.toLowerCase())) {
                 if (DPUtil.empty(item)) continue;
                 String word = "";
                 int length = item.length();

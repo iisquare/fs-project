@@ -45,10 +45,10 @@ public class MongoConfiguration implements DisposableBean {
     @Bean
     public MongoClient afterPropertiesSet() throws Exception {
         MongoCredential credential = MongoCredential.createCredential(username, database, password.toCharArray());
-        String[] hostArray = DPUtil.explode(hosts, ",", " ", true);
+        String[] hostArray = DPUtil.explode(",", hosts, " ", true);
         List<ServerAddress> list = new ArrayList<>();
         for (String item : hostArray) {
-            String[] items = DPUtil.explode(item, ":", " ", true);
+            String[] items = DPUtil.explode(":", item, " ", true);
             int port = DPUtil.parseInt(items.length > 1 ? items[1] : 27017);
             list.add(new ServerAddress(items[0], port));
         }

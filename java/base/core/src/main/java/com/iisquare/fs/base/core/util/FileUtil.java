@@ -200,9 +200,9 @@ public class FileUtil {
         return true;
     }
 
-    public static void close(Closeable... args) {
+    public static void close(AutoCloseable... args) {
         try {
-            for (Closeable arg : args) {
+            for (AutoCloseable arg : args) {
                 if (null != arg) arg.close();
             }
         } catch (Exception e) {

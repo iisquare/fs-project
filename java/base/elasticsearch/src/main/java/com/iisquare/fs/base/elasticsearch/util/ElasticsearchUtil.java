@@ -68,10 +68,10 @@ public class ElasticsearchUtil {
 
     public static boolean order(SearchSourceBuilder search, String sort, Collection<String> fields) {
         if (DPUtil.empty(sort)) return false;
-        String[] sorts = DPUtil.explode(sort, ",");
+        String[] sorts = DPUtil.explode(",", sort);
         boolean result = false;
         for (String item : sorts) {
-            String[] explode = DPUtil.explode(item, "\\.");
+            String[] explode = DPUtil.explode("\\.", item);
             String order = explode[0];
             if (!fields.contains(order)) continue;
             String direction = explode.length > 1 ? explode[1].toLowerCase() : "asc";
@@ -92,7 +92,7 @@ public class ElasticsearchUtil {
     public static HighlightBuilder highlight(String highlight, Map<String, String> highlights, List<String> sources) {
         HighlightBuilder highlighter = new HighlightBuilder();
         if (DPUtil.empty(highlight)) return highlighter;
-        String[] strings =DPUtil.explode(highlight, ",");
+        String[] strings =DPUtil.explode(",", highlight);
         for (String item : strings) {
             String field = highlights.get(item);
             if (null == field) continue;

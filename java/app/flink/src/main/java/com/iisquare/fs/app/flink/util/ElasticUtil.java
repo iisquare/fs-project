@@ -15,8 +15,8 @@ public class ElasticUtil {
 
     public static List<HttpHost> hosts(String nodes) {
         List<HttpHost> hosts = new ArrayList<>();
-        for (String target : DPUtil.explode(nodes, ",", " ", true)) {
-            String[] strings = DPUtil.explode(target, ":", " ", true);
+        for (String target : DPUtil.explode(",", nodes, " ", true)) {
+            String[] strings = DPUtil.explode(":", target, " ", true);
             String host = strings.length > 0 ? strings[0] : "localhost";
             int port = strings.length > 1 ? DPUtil.parseInt(strings[1]) : 9200;
             hosts.add(new HttpHost(host, port, "http"));

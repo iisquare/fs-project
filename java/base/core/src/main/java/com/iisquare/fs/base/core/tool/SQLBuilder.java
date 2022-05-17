@@ -302,17 +302,17 @@ public class SQLBuilder {
     /**
      * 批量插入
      */
-    public String batchInsert(List<Map<String, Object>> datas, boolean needUpdate, String... fieldsUpdate) {
+    public String batchInsert(List<Map<String, Object>> data, boolean needUpdate, String... fieldsUpdate) {
         Set<String> keys = null;
         List<String> values = new ArrayList<>();
-        for (Map<String, Object> data : datas) {
-            data = prepare(data);
-            if(null == keys) keys = data.keySet();
+        for (Map<String, Object> item : data) {
+            item = prepare(item);
+            if(null == keys) keys = item.keySet();
             List<Object> list = new ArrayList<>();
             for (String key : keys) {
-                Object value = data.get(key);
+                Object value = item.get(key);
                 if(null == value) {
-                    value = "''";
+                    value = "NULL";
                 } else {
                     value = "'" + SQLUtil.escape(value.toString()) + "'";
                 }

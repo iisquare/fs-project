@@ -80,7 +80,7 @@ public class MetaService extends ServiceBase {
         }
         String mold = DPUtil.trim(DPUtil.parseString(param.get("mold")));
         if (!DPUtil.empty(mold)) {
-            must.add(QueryBuilders.termsQuery("mold", Arrays.asList((DPUtil.explode(mold, ",")))));
+            must.add(QueryBuilders.termsQuery("mold", Arrays.asList((DPUtil.explode(",", mold)))));
         }
         String keyword = DPUtil.trim(DPUtil.parseString(param.get("keyword")));
         if (!DPUtil.empty(keyword)) {

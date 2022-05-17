@@ -72,7 +72,7 @@ public class IndexController extends PermitControllerBase {
 
     @GetMapping("/file/{filename:.+}")
     public String fileAction(@PathVariable("filename") String filename, @RequestParam Map<String, Object> param, HttpServletRequest request, HttpServletResponse response) throws Exception {
-        String[] strings = DPUtil.explode(filename, "\\.");
+        String[] strings = DPUtil.explode("\\.", filename);
         if (!ossService.decode(strings[0], param)) {
             return displayJSON(response, ApiUtil.result(1403, "文件已过期", filename));
         }

@@ -1,18 +1,27 @@
 package com.iisquare.fs.app.spark.tester;
 
+import com.iisquare.fs.app.spark.util.SparkUtil;
+import com.iisquare.fs.base.core.tool.SQLBuilder;
+import com.iisquare.fs.base.core.util.FileUtil;
+import lombok.SneakyThrows;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Encoders;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
+import org.apache.spark.api.java.function.ForeachPartitionFunction;
+import org.apache.spark.api.java.function.MapFunction;
+import org.apache.spark.sql.*;
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils;
 import org.apache.spark.sql.streaming.StreamingQuery;
+import org.apache.spark.sql.types.StructType;
 import org.junit.Test;
+import scala.Function0;
 
-import java.util.Arrays;
-import java.util.List;
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+import java.util.*;
 
 public class SparkTester {
 
@@ -50,7 +59,28 @@ public class SparkTester {
 
     @Test
     public void sqlTest() {
-
+        SparkSession session = SparkSession.builder().appName("sql-test").master("local").getOrCreate();
+        String url = "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true";
+        Properties properties = new Properties();
+        properties.put("driver", "com.mysql.jdbc.Driver");
+        properties.put("user", "root");
+        properties.put("password", "admin888");
+        Dataset<Row> dataset = session.read().jdbc(url, "t_memory", properties);
+        dataset.show();
+        dataset = dataset.map((MapFunction<Row, Row>) row ->
+                RowFactory.create(row.get(0), row.get(1), row.getDecimal(2).add(BigDecimal.valueOf(1))), dataset.encoder());
+        dataset.show();
+        StructType schema = dataset.schema();
+        dataset.foreachPartition((ForeachPartitionFunction<Row>) t -> {
+            List<Map<String, Object>> data = SparkUtil.row2list(schema, t);
+            String sql = SQLBuilder.build("t_memory").batchInsert(data, true, "score");
+            Connection connection = DriverManager.getConnection(url, "root", "admin888");
+            Statement statement = connection.createStatement();
+            int result = statement.executeUpdate(sql);
+            System.out.println(result);
+            FileUtil.close(statement, connection);
+        });
+        session.close();
     }
 
 }

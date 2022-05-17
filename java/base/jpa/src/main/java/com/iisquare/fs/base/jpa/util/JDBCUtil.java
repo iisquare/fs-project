@@ -1,5 +1,6 @@
 package com.iisquare.fs.base.jpa.util;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
@@ -11,6 +12,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class JDBCUtil {
+
+    public static Connection connection(JsonNode config) throws SQLException {
+        return DriverManager.getConnection(config.at("/url").asText(),
+                config.at("/username").asText(), config.at("/password").asText());
+    }
 
     public static ObjectNode tables(Connection connection) throws SQLException {
         return tables(connection, null, new String[]{"TABLE"});

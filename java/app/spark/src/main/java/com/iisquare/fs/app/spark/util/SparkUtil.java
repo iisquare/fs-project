@@ -90,6 +90,23 @@ public class SparkUtil {
         return result;
     }
 
+    public static Map<String, Object> row2map(StructType schema, Row row) {
+        StructField[] fields = schema.fields();
+        Map<String, Object> result = new LinkedHashMap<>();
+        for (int i = 0; i < fields.length; i++) {
+            result.put(fields[i].name(), row.get(i));
+        }
+        return result;
+    }
+
+    public static List<Map<String, Object>> row2list(StructType schema, Iterator<Row> iterator) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        while (iterator.hasNext()) {
+            result.add(row2map(schema, iterator.next()));
+        }
+        return result;
+    }
+
     public static Row json2row(JsonNode json) {
         List<Object> data = new ArrayList<>();
         Iterator<JsonNode> iterator = json.iterator();

@@ -113,8 +113,16 @@ public class DAGUtil {
         return json.at("/data");
     }
 
+    public static JsonNode loadDiagramFromFile(String url) throws IOException {
+        url = url.replaceFirst("file://", "");
+        JsonNode json = DPUtil.parseJSON(FileUtil.getContent(url));
+        if (null == json) throw new RuntimeException("无法解析JSON配置：" + url);
+        return json.at("/data");
+    }
+
     public static JsonNode loadDiagram(String uri) throws IOException {
         if(uri.startsWith("http")) return loadDiagramFromUrl(uri);
+        if(uri.startsWith("file")) return loadDiagramFromFile(uri);
         if (uri.matches("^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$")) {
             uri = new String(Base64.getDecoder().decode(uri));
         }

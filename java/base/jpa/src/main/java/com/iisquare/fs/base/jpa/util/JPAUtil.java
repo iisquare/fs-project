@@ -29,9 +29,9 @@ public class JPAUtil {
     public static Sort sort(String sort, Collection<String> fields) {
         if (DPUtil.empty(sort)) return null;
         List<Sort.Order> orders = new ArrayList<>();
-        String[] sorts = DPUtil.explode(sort);
+        String[] sorts = DPUtil.explode(",", sort);
         for (String item : sorts) {
-            String[] explode = DPUtil.explode(item, "\\.");
+            String[] explode = DPUtil.explode("\\.", item);
             String order = explode[0];
             if (!fields.contains(order)) continue;
             String direction = explode.length > 1 ? explode[1].toLowerCase() : null;

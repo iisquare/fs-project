@@ -135,7 +135,7 @@ public class FilterHelper {
                 if (!DPUtil.empty(item)) list.add(new ObjectId(item));
             }
         } else {
-            String[] strings = DPUtil.explode(DPUtil.parseString(value));
+            String[] strings = DPUtil.explode(",", DPUtil.parseString(value));
             for (String item : strings) {
                 if (!DPUtil.empty(item)) list.add(new ObjectId(item));
             }
@@ -158,7 +158,7 @@ public class FilterHelper {
             if (list.size() > 0) filters.add(Filters.in(field, list));
             return this;
         }
-        String[] strings = DPUtil.explode(DPUtil.parseString(value));
+        String[] strings = DPUtil.explode(",", DPUtil.parseString(value));
         if (strings.length > 0) filters.add(Filters.in(field, strings));
         return this;
     }
@@ -171,7 +171,7 @@ public class FilterHelper {
             Iterator iterator = ((Collection) value).iterator();
             while (iterator.hasNext()) list.add(DPUtil.parseInt(iterator.next()));
         } else {
-            String[] strings = DPUtil.explode(DPUtil.parseString(value));
+            String[] strings = DPUtil.explode(",", DPUtil.parseString(value));
             for (String str : strings) list.add(DPUtil.parseInt(str));
         }
         return list;

@@ -82,7 +82,7 @@ public class DictionaryService extends ServiceBase {
     }
 
     public ObjectNode findAvailable(ObjectNode available, String path, boolean withChildren) {
-        String[] paths = DPUtil.explode(path, "\\.");
+        String[] paths = DPUtil.explode("\\.", path);
         for (String key : paths) {
             JsonNode node = available.at("/" + key + "/children");
             if (!node.isObject()) return DPUtil.objectNode();

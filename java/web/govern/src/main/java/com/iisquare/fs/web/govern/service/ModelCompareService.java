@@ -59,7 +59,7 @@ public class ModelCompareService extends ServiceBase {
             buffer = new BufferedReader(reader);
             String line = buffer.readLine();
             // code,name,type,size,digit,nullable,description
-            String[] strings = DPUtil.explode(line, glue);
+            String[] strings = DPUtil.explode(glue, line);
             int length = strings.length;
             if (length != 7) return ApiUtil.result(1005, "表头字段数量不匹配", line);
             Map<String, Integer> columns = new LinkedHashMap<>();
@@ -70,7 +70,7 @@ public class ModelCompareService extends ServiceBase {
             ObjectNode result = DPUtil.objectNode();
             while ((line = buffer.readLine()) != null) {
                 index++;
-                strings = DPUtil.explode(line, glue, null, false);
+                strings = DPUtil.explode(glue, line, null, false);
                 if (strings.length != length) {
                     return ApiUtil.result(1006, "第" + index + "行数据异常", line);
                 }
