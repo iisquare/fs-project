@@ -132,6 +132,15 @@ const MongoSinkOptions = () => {
   return { hosts: '127.0.0.1:27017', database: 'admin', username: '', password: '', collection: '', batchSize: 0, replaceDocument: true, forceInsert: false }
 }
 
+const MySQLCaptureOptions = () => {
+  return {
+    hostname: '127.0.0.1',
+    username: 'root',
+    password: '',
+    startup: 'latest'
+  }
+}
+
 export default Object.assign(config, {
   canvas: {
     options: CanvasOptions, property: () => import('./CanvasProperty')
@@ -291,6 +300,13 @@ export default Object.assign(config, {
       supports: [[ENGINE_FLINK, MODEL_STREAM], [ENGINE_SPARK, MODEL_BATCH]]
     }, {
       type: 'ElasticsearchSink', label: 'Elasticsearch', title: 'Elasticsearch输出', icon: 'dagSink', options: ElasticsearchSinkOptions, property: () => import('./ElasticsearchSinkProperty')
+    })]
+  }, {
+    name: '数据变更',
+    children: [Object.assign({
+      supports: [[ENGINE_FLINK, MODEL_STREAM]]
+    }, {
+      type: 'MySQLCapture', label: 'MySQL CDC', title: 'MySQL Change Data Capture', icon: 'dagSource', options: MySQLCaptureOptions, property: () => import('./MySQLCaptureProperty')
     })]
   }]
 })

@@ -22,8 +22,8 @@ public class ElasticsearchSinkNode extends AbstractElasticsearchSink implements 
     public static final Map<String, DocWriteRequest.OpType> modes = new LinkedHashMap(){{
         put("index", DocWriteRequest.OpType.INDEX);
         put("create", DocWriteRequest.OpType.CREATE);
-        put("update", DocWriteRequest.OpType.fromId((byte) -1));
-        put("upsert", DocWriteRequest.OpType.fromId((byte) -1));
+        put("update", DocWriteRequest.OpType.UPDATE);
+        put("upsert", DocWriteRequest.OpType.UPDATE);
     }};
 
     String collection, idField, tableField;

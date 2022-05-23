@@ -1,8 +1,0 @@
-canal.mq.topic=localhost
-
-canal.instance.master.address=mysql:3306
-canal.instance.dbUsername=root
-canal.instance.dbPassword=admin888
-canal.instance.connectionCharset = UTF-8
-canal.instance.enableDruid=false
-canal.instance.filter.regex=.*\\..*

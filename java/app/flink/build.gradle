@@ -3,13 +3,17 @@ dependencies {
     testCompile project(':base:test')
 //    compile group: 'org.glassfish.jersey.core', name: 'jersey-client', version: '2.27'
     compile group: 'org.apache.flink', name: 'flink-java', version: flinkVersion
-    compile group: 'org.apache.flink', name: 'flink-scala_' + scalaVersion, version: flinkVersion
     compile group: 'org.apache.flink', name: 'flink-clients_' + scalaVersion, version: flinkVersion
     compile group: 'org.apache.flink', name: 'flink-streaming-java_' + scalaVersion, version: flinkVersion
-    compile group: 'org.apache.flink', name: 'flink-streaming-scala_' + scalaVersion, version: flinkVersion
+    compile group: 'org.apache.flink', name: 'flink-table-api-java', version: flinkVersion
+    compile group: 'org.apache.flink', name: 'flink-table-api-java-bridge_' + scalaVersion, version: flinkVersion
 
     compile group: 'org.apache.flink', name: 'flink-connector-kafka_' + scalaVersion, version: flinkVersion
     compile group: 'org.apache.flink', name: 'flink-connector-elasticsearch7_' + scalaVersion, version: flinkVersion
+
+    compile group: 'com.ververica', name: 'flink-connector-mysql-cdc', version: cdcVersion
+
+    testCompile group: 'org.apache.flink', name: 'flink-runtime-web_' + scalaVersion, version: flinkVersion
 }
 
 jar {

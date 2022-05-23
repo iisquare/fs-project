@@ -43,7 +43,12 @@ subprojects {
         feignVersion = '10.10.1' // based on cloud version
         scalaVersion = '2.12' // based on spark and flink version
         sparkVersion = '3.2.1'
-        flinkVersion = '1.14.4'
+        flinkVersion = '1.13.6'
+        /**
+         * CDC Connectors Supported Flink Versions
+         * https://ververica.github.io/flink-cdc-connectors/master/content/about.html
+         */
+        cdcVersion = '2.2.1'
         hadoopVersion = '3.3.2' // based on spark version
         swaggerVersion = '2.9.2'
         torchVersion = '1.10.0'

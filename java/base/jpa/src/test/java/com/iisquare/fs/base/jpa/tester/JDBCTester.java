@@ -2,6 +2,7 @@ package com.iisquare.fs.base.jpa.tester;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.core.util.FileUtil;
 import com.iisquare.fs.base.jpa.util.JDBCUtil;
 import org.junit.Test;
 
@@ -37,6 +38,25 @@ public class JDBCTester {
         ObjectNode tables = JDBCUtil.tables(connection);
         System.out.println(tables);
         connection.close();
+    }
+
+    @Test
+    public void batchTest() throws Exception {
+        Class.forName("com.mysql.jdbc.Driver");
+        String url = "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true";
+        Connection connection = DriverManager.getConnection(url, "root", "admin888");
+        String sql = "select * from t_memory";
+        PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+        statement.setFetchSize(Integer.MIN_VALUE);
+        // ((com.mysql.jdbc.Statement) statement).enableStreamingResults();
+        statement.setFetchDirection(ResultSet.FETCH_REVERSE);
+        ResultSet rs = statement.executeQuery();
+        int index = 0;
+        while (rs.next()) {
+            if (index++ > 100) break;
+            System.out.println(rs.getObject(1));
+        }
+        FileUtil.close(rs, statement, connection);
     }
 
 }

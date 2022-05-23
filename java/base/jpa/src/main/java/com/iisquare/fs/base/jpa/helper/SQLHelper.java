@@ -196,6 +196,7 @@ public class SQLHelper {
             statement = statement(connection, sql);
             statement.setFetchSize(callback.fetchSize);
             statement.setFetchDirection(ResultSet.FETCH_REVERSE);
+            ((com.mysql.jdbc.Statement) statement).enableStreamingResults(); // setFetchSize(Integer.MIN_VALUE);
             rs = statement.executeQuery();
             ResultSetMetaData meta = rs.getMetaData();
             int count = meta.getColumnCount();
