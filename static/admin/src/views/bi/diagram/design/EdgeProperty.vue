@@ -10,10 +10,8 @@
             </a-popconfirm>
           </a-space>
         </div>
-        <a-form-model-item label="来源">{{ value.source.cell }}</a-form-model-item>
-        <a-form-model-item label="目标">{{ value.target.cell }}</a-form-model-item>
-        <div class="fs-property-title">连接信息</div>
-        <a-form-model-item label="名称"><a-input v-model="value.data.title" auto-complete="on" /></a-form-model-item>
+        <a-form-model-item label="类型">{{ value.shape }}</a-form-model-item>
+        <a-form-model-item label="标题"><a-input v-model="value.data.title" auto-complete="on" /></a-form-model-item>
         <a-form-model-item label="备注"><a-textarea v-model="value.data.description" /></a-form-model-item>
       </a-form-model>
     </a-tab-pane>

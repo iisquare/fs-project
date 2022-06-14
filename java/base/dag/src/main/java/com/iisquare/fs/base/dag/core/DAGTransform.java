@@ -9,7 +9,6 @@ import lombok.Setter;
 @Setter
 @Getter
 public abstract class DAGTransform extends DAGNode {
-    protected String alias;
     protected String kvConfigPrefix;
 
     @Override

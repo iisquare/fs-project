@@ -13,7 +13,8 @@
           :tips="tips"
           @update:tips="val => $emit('update:tips', val)" />
         <div class="fs-property-title">参数配置</div>
-        <a-form-model-item label="变量名称"><a-input v-model="value.data.options.arg" placeholder="为空时不创建新变量，直接展开" /></a-form-model-item>
+        <a-form-model-item label="外层变量"><a-input v-model="value.data.options.outer" placeholder="like {outer: []}" /></a-form-model-item>
+        <a-form-model-item label="内层变量"><a-input v-model="value.data.options.inner" placeholder="like [{inner: 0}]" /></a-form-model-item>
         <a-form-model-item label="起始数值"><a-input-number v-model="value.data.options.start" /></a-form-model-item>
         <a-form-model-item label="步长数值"><a-input-number v-model="value.data.options.step" /></a-form-model-item>
         <a-form-model-item label="终止数值"><a-input-number v-model="value.data.options.end" /></a-form-model-item>
@@ -56,7 +57,8 @@ export default {
   methods: {
     formatted (obj) {
       const options = {
-        arg: obj.data.options.variable || this.defaults.variable,
+        inner: obj.data.options.inner || this.defaults.inner,
+        outer: obj.data.options.outer || this.defaults.outer,
         start: Number.isNaN(obj.data.options.start) ? this.defaults.start : obj.data.options.start,
         step: Number.isNaN(obj.data.options.step) ? this.defaults.step : obj.data.options.step,
         end: Number.isNaN(obj.data.options.end) ? this.defaults.end : obj.data.options.end,

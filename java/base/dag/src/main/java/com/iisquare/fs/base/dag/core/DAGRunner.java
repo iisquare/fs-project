@@ -31,11 +31,10 @@ public abstract class DAGRunner implements Serializable {
             if (Arrays.asList("SubprocessLayout").contains(type)) continue;
             DAGNode node = this.nodes.get(type).newInstance();
             node.setId(item.at("/id").asText());
+            node.setName(item.at("/name").asText());
             if (node instanceof DAGSource) {
-                ((DAGSource) node).setAlias(item.at("/alias").asText());
                 ((DAGSource) node).setKvConfigPrefix(item.at("/kvConfigPrefix").asText());
             } else if (node instanceof DAGTransform) {
-                ((DAGTransform) node).setAlias(item.at("/alias").asText());
                 ((DAGTransform) node).setKvConfigPrefix(item.at("/kvConfigPrefix").asText());
             } else if (node instanceof DAGSink) {
                 ((DAGSink) node).setKvConfigPrefix(item.at("/kvConfigPrefix").asText());

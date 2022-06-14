@@ -255,12 +255,11 @@ class Flow {
     visible ? this.graph.showGrid() : this.graph.hideGrid()
   }
 
-  generateNode (widget, ev, callback) {
+  widgetDragStart (widget, ev, callback) {
     const counter = ++this.counter
     const point = this.graph.pageToLocal(ev.pageX, ev.pageY)
     const shapeSize = this.shapeSizes[widget.shape]
     const item = {
-      id: `node_${counter}`,
       x: point.x - shapeSize.offsetX,
       y: point.y - shapeSize.offsetY,
       width: shapeSize.width,
@@ -268,6 +267,7 @@ class Flow {
       shape: widget.shape,
       data: Object.assign({
         index: counter,
+        name: '', // default `node_${index}`
         title: `${widget.label}_${counter}`,
         icon: widget.icon,
         type: widget.type,
@@ -275,15 +275,6 @@ class Flow {
         options: widget.options()
       }, callback ? callback() : {})
     }
-    return item
-  }
-
-  addNode (item) {
-    return this.graph.addNode(item)
-  }
-
-  widgetDragStart (widget, ev, callback) {
-    const item = this.generateNode(widget, ev, callback)
     const node = this.graph.createNode(item)
     this.dnd.start(node, ev)
     return item

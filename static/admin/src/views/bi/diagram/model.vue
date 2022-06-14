@@ -127,7 +127,7 @@ export default {
     triggerCanvasItem (item) {
       if (this.activeItem && this.activeItem.id === item.id) return true
       this.activeItem = item
-      this.tips = `选中元素 ${item.id} - ${item.data.title}`
+      this.tips = `选中 ${item.shape} ${item.data.title}`
       this.flow.highlight([item])
       return true
     },

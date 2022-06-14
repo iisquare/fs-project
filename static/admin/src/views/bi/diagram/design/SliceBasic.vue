@@ -8,12 +8,11 @@
         </a-popconfirm>
       </a-space>
     </div>
-    <a-form-model-item label="节点">{{ value.id }}</a-form-model-item>
     <a-form-model-item label="类型">{{ value.data.type }}</a-form-model-item>
-    <a-form-model-item label="名称"><a-input v-model="value.data.title" auto-complete="on" /></a-form-model-item>
+    <a-form-model-item label="名称"><a-input v-model="value.data.name" auto-complete="on" :placeholder="'dag_' + config.diagram.id + '_node_' + value.data.index" /></a-form-model-item>
+    <a-form-model-item label="标题"><a-input v-model="value.data.title" auto-complete="on" /></a-form-model-item>
     <a-form-model-item label="备注"><a-textarea v-model="value.data.description" /></a-form-model-item>
-    <div class="fs-property-title" v-if="hasAlias || hasPrefix">配置中心</div>
-    <a-form-model-item label="别名" v-if="hasAlias"><a-input v-model="value.data.alias" auto-complete="on" :placeholder="'dag_' + config.diagram.id + '_' + value.id" /></a-form-model-item>
+    <div class="fs-property-title" v-if="hasPrefix">配置中心</div>
     <a-form-model-item label="前缀" v-if="hasPrefix"><a-input v-model="value.data.kvConfigPrefix" auto-complete="on" placeholder="定位配置项，替换{变量}参数" /></a-form-model-item>
   </section>
 </template>
@@ -33,9 +32,6 @@ export default {
     return {}
   },
   computed: {
-    hasAlias () {
-      return ['Source', 'Transform'].some(suffix => this.value.data.type.endsWith(suffix))
-    },
     hasPrefix () {
       return ['Source', 'Transform', 'Sink'].some(suffix => this.value.data.type.endsWith(suffix))
     }
@@ -55,10 +51,10 @@ export default {
     },
     formatted (obj) {
       const data = {
+        name: obj.data.name || '',
         title: obj.data.title || '',
         description: obj.data.description || ''
       }
-      if (this.hasAlias) data.alias = obj.alias || ''
       if (this.hasPrefix) data.kvConfigPrefix = obj.kvConfigPrefix || ''
       return this.config.mergeData(obj, data)
     }

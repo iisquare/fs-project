@@ -13,6 +13,7 @@ import java.util.Set;
 public abstract class DAGNode implements Serializable {
 
     protected String id;
+    protected String name;
     protected DAGRunner runner;
     protected JsonNode options;
     protected Set<DAGNode> sources = new HashSet<>();
@@ -31,16 +32,6 @@ public abstract class DAGNode implements Serializable {
 
     public <T> T result(Class<T> classType) {
         return (T) this.result;
-    }
-
-    public String alias() {
-        if (this instanceof DAGSource) {
-            return ((DAGSource) this).getAlias();
-        }
-        if (this instanceof DAGTransform) {
-            return ((DAGTransform) this).getAlias();
-        }
-        return null;
     }
 
 }

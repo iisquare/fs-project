@@ -85,11 +85,13 @@ public class DAGService extends ServiceBase {
             ObjectNode node = nodes.addObject();
             node.put("id", nodeId);
             node.put("type", type);
+            String name = json.at("/data/name").asText();
+            if (DPUtil.empty(name)) {
+                name = String.format("data_%d_node_%d", diagram.getId(), json.at("/data/index").asInt());
+            }
+            node.put("name", name);
             String parent = json.at("/parent").asText();
             node.put("parent", DPUtil.empty(parent) ? "" : ("dag_" + diagram.getId() + "_" + parent));
-            if (type.endsWith("Source") || type.endsWith("Transform")) {
-                node.put("alias", json.at("/data/alias").asText());
-            }
             if (type.endsWith("Source") || type.endsWith("Transform") || type.endsWith("Sink")) {
                 node.put("kvConfigPrefix", json.at("/data/kvConfigPrefix").asText());
             }

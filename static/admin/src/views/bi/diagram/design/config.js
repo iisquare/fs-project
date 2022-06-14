@@ -65,7 +65,7 @@ const CalendarOffsetConfigOptions = () => {
 }
 
 const NumberGenerateConfigOptions = () => {
-  return { arg: '', start: 0, step: 0, end: 0, divisor: 0 }
+  return { inner: '', outer: '', start: 0, step: 0, end: 0, divisor: 0 }
 }
 
 const JSONParseTransformOptions = () => {
