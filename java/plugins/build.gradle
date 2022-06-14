@@ -1,4 +1,0 @@
-
-subprojects {
-    archivesBaseName = rootProject.name + '-plugins-' + name
-}

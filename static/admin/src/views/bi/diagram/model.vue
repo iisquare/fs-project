@@ -18,8 +18,7 @@
                 :data-id="item.type"
                 :key="item.type"
                 v-for="item in widget.children"
-                @dragstart="ev => dragWidget = item"
-                @dragend="ev => dragWidget = null"
+                @dragstart="event => onWidgetDragStart(item, event)"
                 :draggable="draggable(item)">
                 <a-icon class="icon" :component="icons[item.icon]" />
                 <span>{{ item.label }}</span>
@@ -31,37 +30,32 @@
       <div class="fs-layout-center">
         <div class="fs-layout-top">
           <a-space class="fs-device">
+            <a-icon
+              :class="[activeToolbar === item.type && 'fs-selected']"
+              :component="icons[item.icon]"
+              :key="item.type"
+              :title="item.label"
+              v-for="item in config.toolbars"
+              @click="event => handleToolbar(item, event)" />
+            <a-divider type="vertical" />
             <span>计算引擎：{{ diagram.engine }}</span>
             <a-divider type="vertical" />
             <span>处理模式：{{ diagram.model }}</span>
           </a-space>
         </div>
         <div class="fs-layout-main">
-          <div
-            ref="canvas"
-            id="fs-layout-canvas"
-            @click="triggerCanvas"
-            @dragover="canvasDragOver"
-            @drop="canvasDrop"
-            :style="{ width: diagram.options.width + 'px', height: diagram.options.height + 'px', top: diagram.options.top + 'px' }"
-          >
-            <div
-              :class="['fs-layout-item', activeItem === item && 'fs-layout-selected']"
-              :id="item.id"
-              :key="item.id"
-              @click.stop="triggerCanvasItem(item)"
-              @contextmenu="ev => handleContextMenu(ev, item)"
-              :style="{ left: item.x + 'px', top:item.y + 'px' }"
-              v-for="item in draw.items">
-              <a-icon class="icon" :component="icons[item.icon]" />
-              <span>{{ item.name }}</span>
-            </div>
-          </div>
+          <div ref="canvas" id="fs-flow-canvas" />
         </div>
       </div>
       <div class="fs-layout-right">
-        <property v-if="activeItem" v-model="activeItem" :config="config" :activeItem="activeItem" :tips.sync="tips" />
-        <property v-else v-model="diagram" :config="config" :activeItem="activeItem" :tips.sync="tips" />
+        <property
+          v-model="activeItem"
+          v-if="flow"
+          :flow="flow"
+          :config="config"
+          :diagram.sync="diagram"
+          :activeItem.sync="activeItem"
+          :tips.sync="tips" />
       </div>
     </div>
     <div class="fs-layout-footer">
@@ -79,7 +73,7 @@ import diagramService from '@/service/bi/diagram'
 import icons from '@/assets/icons'
 import config from './design/config'
 import Property from './design/Property'
-import Draw from './design/draw'
+import Flow from '@/components/X6/flow'
 import MenuUtil from '@/utils/menu'
 import { triggerWindowResizeEvent } from '@/utils/util'
 
@@ -101,53 +95,48 @@ export default {
         options: config.canvas.options()
       },
       activeItem: null,
-      dragWidget: null,
-      draw: new Draw('#fs-layout-canvas')
+      flow: null,
+      activeToolbar: 'hand'
     }
   },
   watch: {
-    'diagram.options.height': {
-      handler () {
-        this.resizeCanvas()
-      },
-      deep: true
-    },
     activeItem: {
       handler (item) {
-        this.draw.updateItem(item)
+        this.flow.updateCell(item)
       },
       deep: true
     }
   },
   methods: {
-    canvasDragOver (ev) {
-      if (this.dragWidget) ev.preventDefault()
+    handleToolbar (toolbar, event) {
+      if (toolbar.type !== 'fit') {
+        this.activeToolbar = toolbar.type
+      }
+      toolbar.callback(toolbar, this.flow, event)
     },
-    canvasDrop (ev) {
-      const item = this.draw.generateItem(this.dragWidget, ev)
-      this.draw.addItem(item)
-      this.triggerCanvasItem(item)
+    onWidgetDragStart (widget, event) {
+      this.flow.widgetDragStart(widget, event)
     },
     triggerCanvas () {
       if (this.activeItem === null) return true
       this.activeItem = null
       this.tips = '选中画布'
+      this.flow.highlight([])
+      return true
     },
     triggerCanvasItem (item) {
-      if (this.activeItem === item) return true
+      if (this.activeItem && this.activeItem.id === item.id) return true
       this.activeItem = item
-      this.tips = `选中节点 ${item.id} - ${item.name}`
-    },
-    resizeCanvas () {
-      const top = Math.max(0, this.$refs.canvas.parentElement.offsetHeight - this.diagram.options.height - 30)
-      this.diagram.options.top = top / 2
+      this.tips = `选中元素 ${item.id} - ${item.data.title}`
+      this.flow.highlight([item])
+      return true
     },
     handleContextMenu (ev, item) {
       MenuUtil.context(ev, [{ key: 'delete', icon: 'delete', title: '删除节点' }], menu => {
         switch (menu.key) {
           case 'delete':
             if (this.activeItem === item) this.activeItem = null
-            return this.draw.removeItem(item)
+            return this.flow.removeItem(item)
           default:
             return false
         }
@@ -166,7 +155,7 @@ export default {
       this.loading = true
       this.tips = '执行画布清空...'
       this.activeItem = null
-      this.draw.clear()
+      this.flow.reset()
       this.tips = '画布清空完成'
       this.loading = false
     },
@@ -186,9 +175,8 @@ export default {
         try {
           if (result.data.content) {
             const data = JSON.parse(result.data.content)
-            Object.assign(this.diagram.options, data.canvas)
-            data.items.forEach(item => this.draw.addItem(item))
-            this.draw.addRelations(data.relations)
+            Object.assign(this.diagram.options, { grid: !!data.grid })
+            this.flow.reset(data.cells)
           }
         } catch (e) {
           this.$error({ title: '数据解析异常', content: e.message })
@@ -201,7 +189,7 @@ export default {
       })
     },
     collect () {
-      return Object.assign({}, { canvas: this.diagram.options }, this.draw.collect())
+      return Object.assign({}, this.diagram.options, this.flow.collect())
     },
     save () {
       this.loading = true
@@ -215,25 +203,34 @@ export default {
     }
   },
   mounted () {
-    window.onresize = () => { this.resizeCanvas() }
     this.load()
-  },
-  updated () {
-    this.draw.repaint()
+    const _this = this
+    this.flow = new Flow(this.$refs.canvas, {
+      onBlankClick () {
+        return _this.triggerCanvas()
+      },
+      onCellClick ({ cell }) {
+        return _this.triggerCanvasItem(_this.flow.cell2meta(cell))
+      },
+      onNodeAdded ({ node }) {
+        return _this.triggerCanvasItem(_this.flow.cell2meta(node))
+      },
+      onEdgeConnected ({ edge }) {
+        return _this.triggerCanvasItem(_this.flow.cell2meta(edge))
+      }
+    })
   }
 }
 </script>
 
 <style lang="less" scoped>
-/deep/ #fs-layout-canvas {
-  margin: 15px auto;
-  position: relative;
-  min-width: 100px;
-  min-height: 100px;
-  background: url(../../../assets/grid.gif) white;
-  .fs-label-pointer {
-    cursor: pointer;
-  }
+@import url('../../../components/X6/flow.less');
+
+/deep/ #fs-flow-canvas {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  .widget()
 }
 .fs-layout-box {
   width: 100%;
@@ -313,7 +310,6 @@ export default {
           line-height: 100%;
           vertical-align: middle;
           .fs-selected {
-            background: #e4e7ed;
             color: #409eff;
           }
           .icon {
@@ -353,32 +349,7 @@ export default {
       }
     }
     .fs-layout-right {
-      height: 100%;
-      width: 350px;
-      display: inline-block;
-      border-left: solid 1px #cbcccc;
-      & /deep/ .ant-tabs {
-        height: 100%;
-      }
-      & /deep/ .ant-tabs-bar {
-        margin: 0px;
-      }
-      & /deep/ .ant-tabs-content {
-        height: calc(100% - 44px);
-        overflow-y: scroll;
-        padding: 10px 15px 10px 15px;
-      }
-      & /deep/ .ant-form-item {
-        margin-bottom: 0px;
-        padding: 5px 0px;
-      }
-      & /deep/ .fs-property-title {
-          color: rgba(0,0,0,.85);
-          font-weight: 600;
-          font-size: 14px;
-          line-height: 1.5;
-          padding: 5px 0px;
-      }
+      .property(350px)
     }
   }
   .fs-layout-footer {

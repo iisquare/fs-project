@@ -30,22 +30,43 @@ public class DAGService extends ServiceBase {
             if (null != cached) cached.replace(sid, null);
             return null;
         }
-        ObjectNode node = DPUtil.objectNode();
-        node.put("id", diagram.getId()).put("name", diagram.getName());
-        node.put("engine", diagram.getEngine()).put("model", diagram.getModel());
+        ObjectNode result = DPUtil.objectNode();
+        result.put("id", diagram.getId()).put("name", diagram.getName());
+        result.put("engine", diagram.getEngine()).put("model", diagram.getModel());
         JsonNode content = DPUtil.parseJSON(diagram.getContent());
         if (null == content || !content.isObject()) content = DPUtil.objectNode();
-        ArrayNode items = node.putArray("items");
+        ArrayNode nodes = result.putArray("nodes");
+        ArrayNode edges = result.putArray("edges");
         List<String> exportIds = new ArrayList<>();
         ObjectNode importIds = DPUtil.objectNode();
         ArrayNode jars = DPUtil.arrayNode();
-        Iterator<JsonNode> iterator = content.at("/items").iterator();
+        ArrayNode exports = DPUtil.arrayNode();
+        Iterator<JsonNode> iterator = content.at("/cells").iterator();
         while (iterator.hasNext()) {
             JsonNode json = iterator.next();
+            String shape = json.at("/shape").asText("");
+            if ("flow-edge".equals(shape)) {
+                String source = "dag_" + diagram.getId() + "_" + json.at("/source/cell").asText();
+                String target = "dag_" + diagram.getId() + "_" + json.at("/target/cell").asText();
+                if (exportIds.contains(target)) {
+                    exports.add(target);
+                    continue;
+                }
+                if (importIds.has(source)) {
+                    Iterator<JsonNode> it = importIds.get(source).iterator();
+                    while (it.hasNext()) {
+                        edges.addObject().put("source", it.next().asText()).put("target", target);
+                    }
+                    continue;
+                }
+                edges.addObject().put("source", source).put("target", target);
+                continue;
+            }
             String nodeId = "dag_" + diagram.getId() + "_" + json.at("/id").asText();
-            String type = json.at("/type").asText();
-            JsonNode options = json.at("/options");
+            String type = json.at("/data/type").asText();
+            JsonNode options = json.at("/data/options");
             if (!options.isObject()) options = DPUtil.objectNode();
+            if ("GroupLayout".equals(type)) continue;
             if ("ExportConfig".equals(type)) {
                 exportIds.add(nodeId);
                 continue;
@@ -53,48 +74,31 @@ public class DAGService extends ServiceBase {
             if ("ImportConfig".equals(type)) {
                 ObjectNode sub = diagram(DPUtil.parseInt(options.at("/id").asText()), cached);
                 importIds.replace(nodeId, null == sub ? DPUtil.arrayNode() : sub.at("/exports"));
-                items.addAll((ArrayNode) sub.at("/items"));
+                nodes.addAll((ArrayNode) sub.at("/nodes"));
+                jars.addAll((ArrayNode) sub.at("/jars"));
                 continue;
             }
             if ("ScriptTransform".equals(type)) {
                 String jar = options.at("/jarURI").asText();
                 if (!DPUtil.empty(jar)) jars.add(jar);
             }
-            ObjectNode item = items.addObject();
-            item.put("id", nodeId);
-            item.put("type", type);
+            ObjectNode node = nodes.addObject();
+            node.put("id", nodeId);
+            node.put("type", type);
+            String parent = json.at("/parent").asText();
+            node.put("parent", DPUtil.empty(parent) ? "" : ("dag_" + diagram.getId() + "_" + parent));
             if (type.endsWith("Source") || type.endsWith("Transform")) {
-                item.put("alias", json.at("/alias").asText());
+                node.put("alias", json.at("/data/alias").asText());
             }
             if (type.endsWith("Source") || type.endsWith("Transform") || type.endsWith("Sink")) {
-                item.put("kvConfigPrefix", json.at("/kvConfigPrefix").asText());
+                node.put("kvConfigPrefix", json.at("/data/kvConfigPrefix").asText());
             }
-            item.replace("options", options);
+            node.replace("options", options);
         }
-        ArrayNode relations = node.putArray("relations");
-        ArrayNode exports = DPUtil.arrayNode();
-        iterator = content.at("/relations").iterator();
-        while (iterator.hasNext()) {
-            JsonNode json = iterator.next();
-            String sourceId = "dag_" + diagram.getId() + "_" + json.at("/sourceId").asText();
-            String targetId = "dag_" + diagram.getId() + "_" + json.at("/targetId").asText();
-            if (exportIds.contains(targetId)) {
-                exports.add(sourceId);
-                continue;
-            }
-            if (importIds.has(sourceId)) {
-                Iterator<JsonNode> it = importIds.get(sourceId).iterator();
-                while (it.hasNext()) {
-                    relations.addObject().put("sourceId", it.next().asText()).put("targetId", targetId);
-                }
-                continue;
-            }
-            relations.addObject().put("sourceId", sourceId).put("targetId", targetId);
-        }
-        node.replace("exports", exports);
-        node.replace("jars", jars);
-        if (null == cached) cached.replace(sid, node);
-        return node;
+        result.replace("exports", exports);
+        result.replace("jars", jars);
+        if (null == cached) cached.replace(sid, result);
+        return result;
     }
 
 }

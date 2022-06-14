@@ -2,9 +2,18 @@
   <a-tabs default-active-key="property" :animated="false">
     <a-tab-pane key="property" tab="属性">
       <a-form-model :model="value" labelAlign="left" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-        <slice-basic :value="value" @input="value => $emit('input', value)" :config="config" :activeItem="activeItem" />
+        <slice-basic
+          :value="value"
+          @input="value => $emit('input', value)"
+          :flow="flow"
+          :config="config"
+          :diagram="diagram"
+          :activeItem="activeItem"
+          @update:activeItem="val => $emit('update:activeItem', val)"
+          :tips="tips"
+          @update:tips="val => $emit('update:tips', val)" />
         <div class="fs-property-title">引用配置</div>
-        <a-form-model-item label="规则"><a-input v-model="value.options.id" placeholder="引用规则标识" /></a-form-model-item>
+        <a-form-model-item label="规则"><a-input v-model="value.data.options.id" placeholder="引用规则标识" /></a-form-model-item>
       </a-form-model>
     </a-tab-pane>
   </a-tabs>
@@ -18,15 +27,18 @@ export default {
   },
   props: {
     value: { type: Object, required: true },
+    flow: { type: Object, required: true },
     config: { type: Object, required: true },
-    activeItem: { type: Object, required: true }
+    diagram: { type: Object, required: true },
+    activeItem: { type: Object, default: null },
+    tips: { type: String, default: '' }
   },
   data () {
     return {}
   },
   computed: {
     defaults () {
-      return this.config.widgetDefaults(this.value.type)
+      return this.config.widgetDefaults(this.value.data.type)
     }
   },
   watch: {
@@ -40,10 +52,9 @@ export default {
   methods: {
     formatted (obj) {
       const options = {
-        id: obj.options.id || this.defaults.id
+        id: obj.data.options.id || this.defaults.id
       }
-      const result = Object.assign({}, obj, { options: Object.assign({}, obj.options, options) })
-      return result
+      return this.config.mergeOptions(obj, options)
     }
   }
 }

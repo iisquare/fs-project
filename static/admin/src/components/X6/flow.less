@@ -1,0 +1,77 @@
+.widget () {
+  .x6-widget-stencil  {
+    background-color: #fff;
+  }
+  .x6-widget-stencil-title {
+    background-color: #fff;
+  }
+  .x6-widget-stencil-group-title {
+    background-color: #fff !important;
+  }
+  .x6-widget-transform {
+    margin: -1px 0 0 -1px;
+    padding: 0px;
+    border: 1px solid #239edd;
+  }
+  .x6-widget-transform > div {
+    border: 1px solid #239edd;
+  }
+  .x6-widget-transform > div:hover {
+    background-color: #3dafe4;
+  }
+  .x6-widget-transform-active-handle {
+    background-color: #3dafe4;
+  }
+  .x6-widget-transform-resize {
+    border-radius: 0;
+  }
+  .x6-widget-selection-inner {
+    border: 1px solid #239edd;
+  }
+  .x6-widget-selection-box {
+    opacity: 0;
+  }
+  .fs-flow-highlight {
+    .fs-flow-node {
+      color: #409eff;
+    }
+  }
+}
+
+.property (@width) {
+  height: 100%;
+  width: @width;
+  display: inline-block;
+  border-left: solid 1px #cbcccc;
+  & /deep/ .ant-tabs {
+    height: 100%;
+  }
+  & /deep/ .ant-tabs-bar {
+    margin: 0px;
+  }
+  & /deep/ .ant-tabs-content {
+    height: calc(100% - 44px);
+    overflow-y: scroll;
+    padding: 10px 15px 10px 15px;
+  }
+  & /deep/ .ant-form-item {
+    margin-bottom: 0px;
+    padding: 5px 0px;
+  }
+  & /deep/ .fs-property-title {
+      color: rgba(0,0,0,.85);
+      font-weight: 600;
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 5px 0px;
+      .fs-property-action {
+        float: right;
+        .ant-space-item {
+          cursor: pointer;
+        }
+        .fs-action-delete:hover {
+          color: #ff4d4f;
+        }
+      }
+  }
+}

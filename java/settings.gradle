@@ -17,8 +17,8 @@ include 'app:crawler'
 include 'app:spark'
 include 'app:flink'
 
-include 'plugins:flink'
-include 'plugins:spark'
+include 'ext:flink'
+include 'ext:spark'
 
 include 'web:admin'
 include 'web:core'

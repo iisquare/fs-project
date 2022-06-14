@@ -9,7 +9,15 @@ const config = {
   MODEL_BATCH,
   MODEL_STREAM,
   diagram: { id: 0, name: '', engine: '', model: '' },
-  uuid () { return new Date().getTime() + ('' + Math.random()).slice(-6) }
+  uuid () { return new Date().getTime() + ('' + Math.random()).slice(-6) },
+  mergeData (obj, data) {
+    data = Object.assign({}, obj.data, data)
+    return Object.assign({}, obj, { data })
+  },
+  mergeOptions (obj, options) {
+    options = Object.assign({}, obj.data.options, options)
+    return this.mergeData(obj, { options })
+  }
 }
 
 const DefaultOptions = () => {
@@ -17,7 +25,11 @@ const DefaultOptions = () => {
 }
 
 const CanvasOptions = () => {
-  return { top: 0, width: 500, height: 500 }
+  return { grid: true }
+}
+
+const EdgeOptions = () => {
+  return {}
 }
 
 const ImportConfigOptions = () => {
@@ -142,9 +154,8 @@ const MySQLCaptureOptions = () => {
 }
 
 export default Object.assign(config, {
-  canvas: {
-    options: CanvasOptions, property: () => import('./CanvasProperty')
-  },
+  canvas: { options: CanvasOptions, property: () => import('./CanvasProperty') },
+  edge: { options: EdgeOptions, property: () => import('./EdgeProperty') },
   widgetTransientMap: null,
   widgetByType (type) {
     if (this.widgetTransientMap === null) {
@@ -166,147 +177,235 @@ export default Object.assign(config, {
     children: [Object.assign({
       supports: [[ENGINE_SPARK, ENGINE_FLINK, MODEL_BATCH, MODEL_STREAM]]
     }, {
-      type: 'ImportConfig', label: 'Import', title: '接入子图规则', icon: 'dagConfig', options: ImportConfigOptions, property: () => import('./ImportConfigProperty')
+      type: 'ImportConfig', label: 'Import', title: '接入子图规则', icon: 'dagConfig'
+    }, {
+      shape: 'flow-node', options: ImportConfigOptions, property: () => import('./ImportConfigProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, ENGINE_FLINK, MODEL_BATCH, MODEL_STREAM]]
     }, {
-      type: 'ExportConfig', label: 'Export', title: '导出当前规则', icon: 'dagConfig', options: DefaultOptions, property: () => import('./DefaultProperty')
+      type: 'ExportConfig', label: 'Export', title: '导出当前规则', icon: 'dagConfig'
+    }, {
+      shape: 'flow-node', options: DefaultOptions, property: () => import('./DefaultProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, ENGINE_FLINK, MODEL_BATCH, MODEL_STREAM]]
     }, {
-      type: 'JSONConfig', label: 'JSON', title: 'JSON参数', icon: 'dagConfig', options: JSONConfigOptions, property: () => import('./JSONConfigProperty')
+      type: 'JSONConfig', label: 'JSON', title: 'JSON参数', icon: 'dagConfig'
+    }, {
+      shape: 'flow-node', options: JSONConfigOptions, property: () => import('./JSONConfigProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, ENGINE_FLINK, MODEL_BATCH, MODEL_STREAM]]
     }, {
-      type: 'MergeConfig', label: 'Merge', title: '合并执行参数', icon: 'dagConfig', options: MergeConfigOptions, property: () => import('./MergeConfigProperty')
+      type: 'MergeConfig', label: 'Merge', title: '合并执行参数', icon: 'dagConfig'
+    }, {
+      shape: 'flow-node', options: MergeConfigOptions, property: () => import('./MergeConfigProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, ENGINE_FLINK, MODEL_BATCH, MODEL_STREAM]]
     }, {
-      type: 'APIConfig', label: 'API', title: '远端接口参数', icon: 'dagConfig', options: APIConfigOptions, property: () => import('./APIConfigProperty')
+      type: 'APIConfig', label: 'API', title: '远端接口参数', icon: 'dagConfig'
+    }, {
+      shape: 'flow-node', options: APIConfigOptions, property: () => import('./APIConfigProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, ENGINE_FLINK, MODEL_BATCH, MODEL_STREAM]]
     }, {
-      type: 'ConsulConfig', label: 'Consul', title: 'Consul配置中心参数', icon: 'dagConfig', options: ConsulConfigOptions, property: () => import('./ConsulConfigProperty')
+      type: 'ConsulConfig', label: 'Consul', title: 'Consul配置中心参数', icon: 'dagConfig'
+    }, {
+      shape: 'flow-node', options: ConsulConfigOptions, property: () => import('./ConsulConfigProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, ENGINE_FLINK, MODEL_BATCH, MODEL_STREAM]]
     }, {
-      type: 'DateGenerateConfig', label: 'DateGenerate', title: '生成日期参数', icon: 'dagConfig', options: DateGenerateConfigOptions, property: () => import('./DateGenerateConfigProperty')
+      type: 'DateGenerateConfig', label: 'DateGenerate', title: '生成日期参数', icon: 'dagConfig'
+    }, {
+      shape: 'flow-node', options: DateGenerateConfigOptions, property: () => import('./DateGenerateConfigProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, ENGINE_FLINK, MODEL_BATCH, MODEL_STREAM]]
     }, {
-      type: 'DateFormatConfig', label: 'DateFormat', title: '格式化日期参数', icon: 'dagConfig', options: DateFormatConfigOptions, property: () => import('./DateFormatConfigProperty')
+      type: 'DateFormatConfig', label: 'DateFormat', title: '格式化日期参数', icon: 'dagConfig'
+    }, {
+      shape: 'flow-node', options: DateFormatConfigOptions, property: () => import('./DateFormatConfigProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, ENGINE_FLINK, MODEL_BATCH, MODEL_STREAM]]
     }, {
-      type: 'CalendarOffsetConfig', label: 'CalendarOffset', title: '日期偏移参数', icon: 'dagConfig', options: CalendarOffsetConfigOptions, property: () => import('./CalendarOffsetConfigProperty')
+      type: 'CalendarOffsetConfig', label: 'CalendarOffset', title: '日期偏移参数', icon: 'dagConfig'
+    }, {
+      shape: 'flow-node', options: CalendarOffsetConfigOptions, property: () => import('./CalendarOffsetConfigProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, ENGINE_FLINK, MODEL_BATCH, MODEL_STREAM]]
     }, {
-      type: 'NumberGenerateConfig', label: 'NumberGenerate', title: '生成数值参数', icon: 'dagConfig', options: NumberGenerateConfigOptions, property: () => import('./NumberGenerateConfigProperty')
+      type: 'NumberGenerateConfig', label: 'NumberGenerate', title: '生成数值参数', icon: 'dagConfig'
+    }, {
+      shape: 'flow-node', options: NumberGenerateConfigOptions, property: () => import('./NumberGenerateConfigProperty')
     })]
   }, {
     name: '数据输入',
     children: [Object.assign({
       supports: [[ENGINE_SPARK, MODEL_BATCH]]
     }, {
-      type: 'JDBCSource', label: 'JDBC', title: 'JDBC输入', icon: 'dagSource', options: JDBCSourceOptions, property: () => import('./JDBCSourceProperty')
+      type: 'JDBCSource', label: 'JDBC', title: 'JDBC输入', icon: 'dagSource'
+    }, {
+      shape: 'flow-node', options: JDBCSourceOptions, property: () => import('./JDBCSourceProperty')
     }), Object.assign({
       supports: []
     }, {
-      type: 'MongoSource', label: 'Mongo', title: 'Mongo输入', icon: 'dagSource', options: DefaultOptions, property: () => import('./DefaultProperty')
+      type: 'MongoSource', label: 'Mongo', title: 'Mongo输入', icon: 'dagSource'
+    }, {
+      shape: 'flow-node', options: DefaultOptions, property: () => import('./DefaultProperty')
     }), Object.assign({
       supports: []
     }, {
-      type: 'FileSource', label: 'File', title: '文件输入', icon: 'dagSource', options: FileSourceOptions, property: () => import('./FileSourceProperty')
+      type: 'FileSource', label: 'File', title: '文件输入', icon: 'dagSource'
+    }, {
+      shape: 'flow-node', options: FileSourceOptions, property: () => import('./FileSourceProperty')
     }), Object.assign({
       supports: [[ENGINE_FLINK, MODEL_STREAM]]
     }, {
-      type: 'KafkaSource', label: 'Kafka', title: 'Kafka输入', icon: 'dagSource', options: KafkaSourceOptions, property: () => import('./KafkaSourceProperty')
+      type: 'KafkaSource', label: 'Kafka', title: 'Kafka输入', icon: 'dagSource'
+    }, {
+      shape: 'flow-node', options: KafkaSourceOptions, property: () => import('./KafkaSourceProperty')
     }), Object.assign({
       supports: []
     }, {
-      type: 'HBaseSource', label: 'HBase', title: 'HBase输入', icon: 'dagSource', options: DefaultOptions, property: () => import('./DefaultProperty')
+      type: 'HBaseSource', label: 'HBase', title: 'HBase输入', icon: 'dagSource'
+    }, {
+      shape: 'flow-node', options: DefaultOptions, property: () => import('./DefaultProperty')
     }), Object.assign({
       supports: []
     }, {
-      type: 'ElasticsearchSource', label: 'Elasticsearch', title: '搜索引擎输入', icon: 'dagSource', options: ElasticsearchSourceOptions, property: () => import('./ElasticsearchSourceProperty')
+      type: 'ElasticsearchSource', label: 'Elasticsearch', title: '搜索引擎输入', icon: 'dagSource'
+    }, {
+      shape: 'flow-node', options: ElasticsearchSourceOptions, property: () => import('./ElasticsearchSourceProperty')
     })]
   }, {
     name: '数据处理',
     children: [Object.assign({
       supports: []
     }, {
-      type: 'JSONParseTransform', label: 'JSONParse', title: 'JSON格式化', icon: 'dagTransform', options: JSONParseTransformOptions, property: () => import('./JSONParseTransformProperty')
+      type: 'JSONParseTransform', label: 'JSONParse', title: 'JSON格式化', icon: 'dagTransform'
+    }, {
+      shape: 'flow-node', options: JSONParseTransformOptions, property: () => import('./JSONParseTransformProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, MODEL_BATCH]]
     }, {
-      type: 'JSONStringifyTransform', label: 'JSONStringify', title: 'JSON序列化', icon: 'dagTransform', options: JSONStringifyTransformOptions, property: () => import('./JSONStringifyTransformProperty')
+      type: 'JSONStringifyTransform', label: 'JSONStringify', title: 'JSON序列化', icon: 'dagTransform'
+    }, {
+      shape: 'flow-node', options: JSONStringifyTransformOptions, property: () => import('./JSONStringifyTransformProperty')
     }), Object.assign({
       supports: []
     }, {
-      type: 'UnionTransform', label: 'Union', title: '数据合并', icon: 'dagTransform', options: DefaultOptions, property: () => import('./DefaultProperty')
+      type: 'UnionTransform', label: 'Union', title: '数据合并', icon: 'dagTransform'
+    }, {
+      shape: 'flow-node', options: DefaultOptions, property: () => import('./DefaultProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, MODEL_BATCH]]
     }, {
-      type: 'SQLTransform', label: 'SQL', title: 'SQL查询', icon: 'dagTransform', options: SQLTransformOptions, property: () => import('./SQLTransformProperty')
+      type: 'SQLTransform', label: 'SQL', title: 'SQL查询', icon: 'dagTransform'
+    }, {
+      shape: 'flow-node', options: SQLTransformOptions, property: () => import('./SQLTransformProperty')
     }), Object.assign({
       supports: []
     }, {
-      type: 'RegularTransform', label: 'Regular', title: '正则匹配', icon: 'dagTransform', options: RegularTransformOptions, property: () => import('./RegularTransformProperty')
+      type: 'RegularTransform', label: 'Regular', title: '正则匹配', icon: 'dagTransform'
+    }, {
+      shape: 'flow-node', options: RegularTransformOptions, property: () => import('./RegularTransformProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, MODEL_BATCH]]
     }, {
-      type: 'ConvertTransform', label: 'Convert', title: '字段转换', icon: 'dagTransform', options: ConvertTransformOptions, property: () => import('./ConvertTransformProperty')
+      type: 'ConvertTransform', label: 'Convert', title: '字段转换', icon: 'dagTransform'
+    }, {
+      shape: 'flow-node', options: ConvertTransformOptions, property: () => import('./ConvertTransformProperty')
     }), Object.assign({
       supports: []
     }, {
-      type: 'DateParseTransform', label: 'DateParse', title: '日期解析', icon: 'dagTransform', options: DateParseTransformOptions, property: () => import('./DateParseTransformProperty')
+      type: 'DateParseTransform', label: 'DateParse', title: '日期解析', icon: 'dagTransform'
+    }, {
+      shape: 'flow-node', options: DateParseTransformOptions, property: () => import('./DateParseTransformProperty')
     }), Object.assign({
       supports: []
     }, {
-      type: 'DateFormatTransform', label: 'DateFormat', title: '日期格式化', icon: 'dagTransform', options: DateFormatTransformOptions, property: () => import('./DateFormatTransformProperty')
+      type: 'DateFormatTransform', label: 'DateFormat', title: '日期格式化', icon: 'dagTransform'
+    }, {
+      shape: 'flow-node', options: DateFormatTransformOptions, property: () => import('./DateFormatTransformProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, MODEL_BATCH, ENGINE_FLINK, MODEL_STREAM]]
     }, {
-      type: 'ScriptTransform', label: 'Script', title: '逻辑脚本', icon: 'dagScript', options: ScriptTransformOptions, property: () => import('./ScriptTransformProperty')
+      type: 'ScriptTransform', label: 'Script', title: '逻辑脚本', icon: 'dagScript'
+    }, {
+      shape: 'flow-node', options: ScriptTransformOptions, property: () => import('./ScriptTransformProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, MODEL_BATCH]]
     }, {
-      type: 'AnchorTransform', label: 'Anchor', title: '数据锚点', icon: 'dagAnchor', options: AnchorTransformOptions, property: () => import('./AnchorTransformProperty')
+      type: 'AnchorTransform', label: 'Anchor', title: '数据锚点', icon: 'dagAnchor'
+    }, {
+      shape: 'flow-node', options: AnchorTransformOptions, property: () => import('./AnchorTransformProperty')
     })]
   }, {
     name: '数据输出',
     children: [Object.assign({
       supports: [[ENGINE_SPARK, MODEL_BATCH, ENGINE_FLINK, MODEL_STREAM]]
     }, {
-      type: 'ConsoleSink', label: 'Console', title: 'Console输出', icon: 'dagSink', options: ConsoleSinkOptions, property: () => import('./ConsoleSinkProperty')
+      type: 'ConsoleSink', label: 'Console', title: 'Console输出', icon: 'dagSink'
+    }, {
+      shape: 'flow-node', options: ConsoleSinkOptions, property: () => import('./ConsoleSinkProperty')
     }), Object.assign({
       supports: []
     }, {
-      type: 'JDBCSink', label: 'JDBC', title: 'JDBC输出', icon: 'dagSink', options: DefaultOptions, property: () => import('./DefaultProperty')
+      type: 'JDBCSink', label: 'JDBC', title: 'JDBC输出', icon: 'dagSink'
+    }, {
+      shape: 'flow-node', options: DefaultOptions, property: () => import('./DefaultProperty')
     }), Object.assign({
       supports: [[ENGINE_SPARK, MODEL_BATCH]]
     }, {
-      type: 'MongoSink', label: 'Mongo', title: 'Mongo输出', icon: 'dagSink', options: MongoSinkOptions, property: () => import('./MongoSinkProperty')
+      type: 'MongoSink', label: 'Mongo', title: 'Mongo输出', icon: 'dagSink'
+    }, {
+      shape: 'flow-node', options: MongoSinkOptions, property: () => import('./MongoSinkProperty')
     }), Object.assign({
       supports: []
     }, {
-      type: 'KafkaSink', label: 'Kafka', title: 'Kafka输出', icon: 'dagSink', options: DefaultOptions, property: () => import('./DefaultProperty')
+      type: 'KafkaSink', label: 'Kafka', title: 'Kafka输出', icon: 'dagSink'
+    }, {
+      shape: 'flow-node', options: DefaultOptions, property: () => import('./DefaultProperty')
     }), Object.assign({
       supports: []
     }, {
-      type: 'HBaseSink', label: 'HBase', title: 'HBase输出', icon: 'dagSink', options: DefaultOptions, property: () => import('./DefaultProperty')
+      type: 'HBaseSink', label: 'HBase', title: 'HBase输出', icon: 'dagSink'
+    }, {
+      shape: 'flow-node', options: DefaultOptions, property: () => import('./DefaultProperty')
     }), Object.assign({
       supports: [[ENGINE_FLINK, MODEL_STREAM], [ENGINE_SPARK, MODEL_BATCH]]
     }, {
-      type: 'ElasticsearchSink', label: 'Elasticsearch', title: 'Elasticsearch输出', icon: 'dagSink', options: ElasticsearchSinkOptions, property: () => import('./ElasticsearchSinkProperty')
+      type: 'ElasticsearchSink', label: 'Elasticsearch', title: 'Elasticsearch输出', icon: 'dagSink'
+    }, {
+      shape: 'flow-node', options: ElasticsearchSinkOptions, property: () => import('./ElasticsearchSinkProperty')
     })]
   }, {
     name: '数据变更',
     children: [Object.assign({
       supports: [[ENGINE_FLINK, MODEL_STREAM]]
     }, {
-      type: 'MySQLCapture', label: 'MySQL CDC', title: 'MySQL Change Data Capture', icon: 'dagSource', options: MySQLCaptureOptions, property: () => import('./MySQLCaptureProperty')
+      type: 'MySQLCapture', label: 'MySQL CDC', title: 'MySQL Change Data Capture', icon: 'dagSource'
+    }, {
+      shape: 'flow-node', options: MySQLCaptureOptions, property: () => import('./MySQLCaptureProperty')
     })]
+  }, {
+    name: '数据加工',
+    children: [Object.assign({
+      supports: [[ENGINE_SPARK, MODEL_BATCH, ENGINE_FLINK, MODEL_STREAM]]
+    }, {
+      type: 'GroupLayout', label: 'Group', title: 'Group Layout', icon: 'workflowGroup'
+    }, {
+      shape: 'flow-group', options: DefaultOptions, property: () => import('./DefaultProperty')
+    }), Object.assign({
+      supports: [[ENGINE_SPARK, MODEL_BATCH, ENGINE_FLINK, MODEL_STREAM]]
+    }, {
+      type: 'SubprocessLayout', label: 'Subprocess', title: 'Subprocess Layout', icon: 'workflowSubprocess'
+    }, {
+      shape: 'flow-subprocess', options: DefaultOptions, property: () => import('./DefaultProperty')
+    })]
+  }],
+  toolbars: [{
+    type: 'hand', label: '拖动', icon: 'actionHand', callback (toolbar, flow, event) { flow.panning() }
+  }, {
+    type: 'lasso', label: '框选', icon: 'actionLasso', callback (toolbar, flow, event) { flow.selecting() }
+  }, {
+    type: 'fit', label: '适合', icon: 'actionFit', callback (toolbar, flow, event) { flow.fitting() }
   }]
 })

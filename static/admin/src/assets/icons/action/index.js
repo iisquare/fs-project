@@ -5,6 +5,7 @@ import actionHand from '@/assets/icons/action/action-hand.svg?inline'
 import actionLasso from '@/assets/icons/action/action-lasso.svg?inline'
 import actionConnection from '@/assets/icons/action/action-connection.svg?inline'
 import actionSpace from '@/assets/icons/action/action-space.svg?inline'
+import actionFit from '@/assets/icons/action/action-fit.svg?inline'
 
 export default {
   actionAlignHorizontal,
@@ -13,5 +14,6 @@ export default {
   actionHand,
   actionLasso,
   actionConnection,
-  actionSpace
+  actionSpace,
+  actionFit
 }

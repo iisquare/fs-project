@@ -6,6 +6,7 @@ import workflowParallelGateway from '@/assets/icons/workflow/workflow-parallel-g
 import workflowInclusiveGateway from '@/assets/icons/workflow/workflow-inclusive-gateway.svg?inline'
 import workflowPool from '@/assets/icons/workflow/workflow-pool.svg?inline'
 import workflowGroup from '@/assets/icons/workflow/workflow-group.svg?inline'
+import workflowSubprocess from '@/assets/icons/workflow/workflow-subprocess.svg?inline'
 
 export default {
   workflowStartEvent,
@@ -15,5 +16,6 @@ export default {
   workflowParallelGateway,
   workflowInclusiveGateway,
   workflowPool,
-  workflowGroup
+  workflowGroup,
+  workflowSubprocess
 }

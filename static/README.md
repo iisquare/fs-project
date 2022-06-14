@@ -31,3 +31,32 @@ yarn upgrade [package]@[version]
 yarn upgrade –latest [package]
 yarn remove <package...>
 ```
+
+## 反向代理
+
+### Nginx
+```
+location /uri/ {
+  # /uri/index.html -> /path/to/static/uri/index.html
+  # root /path/to/static/;
+
+  # /uri/index.html -> /path/to/static/index.html
+  # alias /path/to/static/;
+
+  # gzip on;
+
+  # ETag: "文件大小的十六进制"; Last-Modified: UTC DateTime; Status Code: 304 OK
+  # etag on;
+
+  # exact：完全符合; before：响应的修改时间小于或等于请求头中的 “If-Modified-Since” 字段的时间
+  # if_modified_since off | exact | before;
+
+  # 在缓存期内不会请求服务端，更不会触发ETag判断。Status Code: 200 OK (from disk/memory cache)
+  # expires 30d;
+
+  # autoindex on;
+  # autoindex_localtime on;
+  # autoindex_exact_size off;
+
+}
+```

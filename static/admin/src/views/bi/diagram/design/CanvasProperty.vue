@@ -1,13 +1,12 @@
 <template>
   <a-tabs default-active-key="property" :animated="false">
     <a-tab-pane key="property" tab="属性">
-      <a-form-model :model="value" labelAlign="left" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+      <a-form-model :model="diagram" labelAlign="left" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
         <div class="fs-property-title">基础信息</div>
-        <a-form-model-item label="主键">{{ value.id }}</a-form-model-item>
-        <a-form-model-item label="名称">{{ value.name }}</a-form-model-item>
+        <a-form-model-item label="主键">{{ diagram.id }}</a-form-model-item>
+        <a-form-model-item label="名称">{{ diagram.name }}</a-form-model-item>
         <div class="fs-property-title">画布设置</div>
-        <a-form-model-item label="宽度"><a-input-number v-model="value.options.width" :min="100" /></a-form-model-item>
-        <a-form-model-item label="高度"><a-input-number v-model="value.options.height" :min="100" /></a-form-model-item>
+        <a-form-model-item label="启用网格"><a-switch v-model="diagram.options.grid" /></a-form-model-item>
       </a-form-model>
     </a-tab-pane>
   </a-tabs>
@@ -17,9 +16,12 @@
 export default {
   name: 'CanvasProperty',
   props: {
-    value: { type: Object, required: true },
+    value: { type: Object, default: null },
+    flow: { type: Object, required: true },
     config: { type: Object, required: true },
-    activeItem: { type: Object, default: null }
+    diagram: { type: Object, required: true },
+    activeItem: { type: Object, default: null },
+    tips: { type: String, default: '' }
   },
   data () {
     return {}
@@ -29,18 +31,21 @@ export default {
       return this.config.canvas.options()
     }
   },
+  watch: {
+    'diagram.options.grid' () {
+      this.flow.toggleGrid(this.diagram.options.grid)
+    }
+  },
   methods: {
     formatted (obj) {
       const options = {
-        width: Number.isInteger(obj.options.width) ? obj.options.width : this.defaults.width,
-        height: Number.isInteger(obj.options.height) ? obj.options.height : this.defaults.height
+        grid: obj.options?.grid ?? this.default.grid
       }
-      const result = Object.assign({}, obj, { options })
-      return result
+      return Object.assign({}, obj, { options })
     }
   },
   mounted () {
-    this.$emit('input', this.formatted(this.value))
+    this.$emit('update.diagram', this.formatted(this.diagram))
   }
 }
 </script>

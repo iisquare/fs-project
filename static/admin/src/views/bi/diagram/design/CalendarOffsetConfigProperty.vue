@@ -2,31 +2,40 @@
   <a-tabs default-active-key="property" :animated="false">
     <a-tab-pane key="property" tab="属性">
       <a-form-model :model="value" labelAlign="left" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-        <slice-basic :value="value" @input="value => $emit('input', value)" :config="config" :activeItem="activeItem" />
+        <slice-basic
+          :value="value"
+          @input="value => $emit('input', value)"
+          :flow="flow"
+          :config="config"
+          :diagram="diagram"
+          :activeItem="activeItem"
+          @update:activeItem="val => $emit('update:activeItem', val)"
+          :tips="tips"
+          @update:tips="val => $emit('update:tips', val)" />
         <div class="fs-property-title">参数配置</div>
-        <a-form-model-item label="变量名称"><a-input v-model="value.options.arg" placeholder="为空时直接覆盖引用的变量" /></a-form-model-item>
-        <a-form-model-item label="变量引用"><a-input v-model="value.options.reference" placeholder="配置参数的引用路径" /></a-form-model-item>
+        <a-form-model-item label="变量名称"><a-input v-model="value.data.options.arg" placeholder="为空时直接覆盖引用的变量" /></a-form-model-item>
+        <a-form-model-item label="变量引用"><a-input v-model="value.data.options.reference" placeholder="配置参数的引用路径" /></a-form-model-item>
         <a-form-model-item label="后置偏移">
-          <a-space><a-input-number v-model="value.options.offset" placeholder="微调" /><span>ms</span></a-space>
+          <a-space><a-input-number v-model="value.data.options.offset" placeholder="微调" /><span>ms</span></a-space>
         </a-form-model-item>
-        <a-form-model-item label="调整数值"><a-input-number v-model="value.options.value" placeholder="doValue" /></a-form-model-item>
+        <a-form-model-item label="调整数值"><a-input-number v-model="value.data.options.value" placeholder="doValue" /></a-form-model-item>
         <a-form-model-item label="调整方式">
-          <a-select v-model="value.options.method" placeholder="请选择调整方式" :allowClear="true">
+          <a-select v-model="value.data.options.method" placeholder="请选择调整方式" :allowClear="true">
             <a-select-option :value="item.value" v-for="item in methods" :key="item.value">{{ item.label }}</a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item label="调整字段">
-          <a-select v-model="value.options.field" placeholder="请选择日期字段" :allowClear="true">
+          <a-select v-model="value.data.options.field" placeholder="请选择日期字段" :allowClear="true">
             <a-select-option :value="item.value" v-for="item in fields" :key="item.value">{{ item.label }}</a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item label="所在时区">
-          <a-select v-model="value.options.timezone" placeholder="请选择所在时区" :allowClear="true">
+          <a-select v-model="value.data.options.timezone" placeholder="请选择所在时区" :allowClear="true">
             <a-select-option :value="item.value" v-for="item in config.timezones" :key="item.value">{{ item.label }}</a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item label="所在地区">
-          <a-select v-model="value.options.locale" placeholder="请选择所在地区" :allowClear="true">
+          <a-select v-model="value.data.options.locale" placeholder="请选择所在地区" :allowClear="true">
             <a-select-option :value="item.value" v-for="item in config.locales" :key="item.value">{{ item.label }}</a-select-option>
           </a-select>
         </a-form-model-item>
@@ -43,8 +52,11 @@ export default {
   },
   props: {
     value: { type: Object, required: true },
+    flow: { type: Object, required: true },
     config: { type: Object, required: true },
-    activeItem: { type: Object, required: true }
+    diagram: { type: Object, required: true },
+    activeItem: { type: Object, default: null },
+    tips: { type: String, default: '' }
   },
   data () {
     return {
@@ -88,7 +100,7 @@ export default {
   },
   computed: {
     defaults () {
-      return this.config.widgetDefaults(this.value.type)
+      return this.config.widgetDefaults(this.value.data.type)
     }
   },
   watch: {
@@ -102,14 +114,13 @@ export default {
   methods: {
     formatted (obj) {
       const options = {
-        arg: obj.options.arg || this.defaults.arg,
-        reference: obj.options.reference || this.defaults.reference,
-        pattern: obj.options.pattern || this.defaults.pattern,
-        timezone: obj.options.timezone || this.defaults.timezone,
-        locale: obj.options.locale || this.defaults.locale
+        arg: obj.data.options.arg || this.defaults.arg,
+        reference: obj.data.options.reference || this.defaults.reference,
+        pattern: obj.data.options.pattern || this.defaults.pattern,
+        timezone: obj.data.options.timezone || this.defaults.timezone,
+        locale: obj.data.options.locale || this.defaults.locale
       }
-      const result = Object.assign({}, obj, { options: Object.assign({}, obj.options, options) })
-      return result
+      return this.config.mergeOptions(obj, options)
     }
   }
 }

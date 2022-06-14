@@ -1,0 +1,4 @@
+
+subprojects {
+    archivesBaseName = rootProject.name + '-ext-' + name
+}

@@ -39,6 +39,7 @@ services:
       - "${BIND_ADDRESS}${BIND_COLON}${POSTGRES_PORT}:5432"
     volumes:
       - ${DATA_DIR}/postgres/data:/var/lib/postgresql/data
+      - ${DATA_DIR}/postgres/archive:/var/lib/postgresql/archive
   openresty:
     build:
       context: ./service/openresty

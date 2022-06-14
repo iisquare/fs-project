@@ -12,6 +12,7 @@ dependencies {
     compile group: 'org.apache.flink', name: 'flink-connector-elasticsearch7_' + scalaVersion, version: flinkVersion
 
     compile group: 'com.ververica', name: 'flink-connector-mysql-cdc', version: cdcVersion
+    compile group: 'com.ververica', name: 'flink-connector-postgres-cdc', version: cdcVersion
 
     testCompile group: 'org.apache.flink', name: 'flink-runtime-web_' + scalaVersion, version: flinkVersion
 }

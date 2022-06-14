@@ -10,3 +10,5 @@
 /web/xlab/libs/x86/
 /web/xlab/libs/*.jar
 /web/file/uploads
+
+/ext/flink/checkpoints/**/
