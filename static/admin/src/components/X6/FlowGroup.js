@@ -27,29 +27,19 @@ export default class FlowGroup extends Node {
     incoming.forEach(item => {
       if (!item.source.cell || !item.source.port) return
       graph.addEdge({
-        attrs: {
-          line: {
-            stroke: '#A2B1C3',
-            strokeWidth: 2,
-            targetMarker: { name: 'block', width: 12, height: 8 }
-          }
-        },
+        shape: 'flow-edge',
         source: { cell: item.source.cell, port: item.source.port },
-        target: node
+        target: node,
+        data: { title: '', description: '', options: {} }
       })
     })
     outgoing.forEach(item => {
       if (!item.target.cell || !item.target.port) return
       graph.addEdge({
-        attrs: {
-          line: {
-            stroke: '#A2B1C3',
-            strokeWidth: 2,
-            targetMarker: { name: 'block', width: 12, height: 8 }
-          }
-        },
+        shape: 'flow-edge',
         source: node,
-        target: { cell: item.target.cell, port: item.target.port }
+        target: { cell: item.target.cell, port: item.target.port },
+        data: { title: '', description: '', options: {} }
       })
     })
   }

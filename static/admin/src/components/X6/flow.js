@@ -245,8 +245,21 @@ class Flow {
 
   collect () {
     const result = this.graph.toJSON()
+    const groupIds = []
     result.cells = result.cells.map(cell => {
-      return this.briefJSON(cell)
+      const json = this.briefJSON(cell)
+      if (['flow-group', 'flow-subprocess'].indexOf(json.shape) !== -1) {
+        const node = this.graph.getCellById(cell.id)
+        json.width = node.meta.width
+        json.height = node.meta.height
+        if (json.shape === 'flow-group') groupIds.push(cell.id)
+      }
+      return json
+    }).filter(json => {
+      if (json.shape !== 'flow-edge') return true
+      if (groupIds.indexOf(json.source.cell) !== -1) return false
+      if (groupIds.indexOf(json.target.cell) !== -1) return false
+      return true
     })
     return result
   }

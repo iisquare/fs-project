@@ -40,6 +40,7 @@
 
 | 功能 | 示例 | 描述 |
 | :----- | :----- | :----- |
+| 规则设计器 | [gif](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/bi-dag-diagram.gif)/[mp4](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/bi-dag-diagram.mp4) | 流批一体规则编排 |
 | 表单设计器 | [gif](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/oa-form-design.gif)/[mp4](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/oa-form-design.mp4) | 无 |
 | 流程设计器 | [gif](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/oa-flow-design.gif)/[mp4](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/oa-flow-design.mp4) | 无 |
 | 数据钻取报表 | [gif](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/bi-drill-table.gif)/[mp4](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/demo/bi-drill-table.mp4) | 支持多维度多度量钻取 |
@@ -79,17 +80,12 @@
 - 图片和视频去水印。
 
 ## 开发计划
+- 任务编排调度部分开发，支持在线管理执行日志。
 - 数据质量采用流程编排并生成质检报告。
 - 数据交换集成接口管理和数据加密、解密、脱敏等安全规则。
-- 任务编排调度部分开发，支持在线管理执行日志。
-- 基于Ansible部署Hadoop生态组件。
 - 文件管理模块集成MinIO对象存储。
-- 打印模板设计器开发。
-- 大屏画布设计器开发（相对布局）。
-- 应用设计器开发（弹性布局）。
-
-- 知识图谱和智能问答系统。
-- 线上演示系统。
+- 打印模板设计器开发（分文档型、组件型，可套打、续打）。
+- 应用设计器开发（弹性布局，含表单、列表、报表、大屏等）。
 
 ## 开源协议
 
