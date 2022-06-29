@@ -7,8 +7,8 @@ services:
       args:
         - MINIO_VERSION=${MINIO_VERSION}
     environment:
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
       - "${BIND_ADDRESS}${BIND_COLON}${MINIO_HTTP_PORT}:9000"
       - "${BIND_ADDRESS}${BIND_COLON}${MINIO_CONSOLE_PORT}:9001"
@@ -211,3 +211,12 @@ services:
         - PROMETHEUS_MYSQL_VERSION=${PROMETHEUS_MYSQL_VERSION}
     environment:
       DATA_SOURCE_NAME: ${PROMETHEUS_MYSQL_URL}
+  superset:
+    build:
+      context: ./service/superset
+      args:
+        - SUPERSET_VERSION=${SUPERSET_VERSION}
+    ports:
+      - "${BIND_ADDRESS}${BIND_COLON}${SUPERSET_HTTP_PORT}:8088"
+    volumes:
+      - ./service/superset/config.py:/app/superset/config.py

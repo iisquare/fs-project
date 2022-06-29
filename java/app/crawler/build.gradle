@@ -19,7 +19,7 @@ dependencies {
     compile group: 'commons-cli', name: 'commons-cli', version: cliVersion
     compile group: 'io.lettuce', name: 'lettuce-core', version: '5.1.6.RELEASE' // Redis
     compile group: 'mysql', name: 'mysql-connector-java', version: mysqlVersion
-    compile group: 'org.mongodb', name: 'mongo-java-driver', version: mongodbVersion
+    compile group: 'org.mongodb', name: 'mongodb-driver-sync', version: mongodbVersion
 }
 
 shadowJar {

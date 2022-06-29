@@ -42,6 +42,10 @@ public class SparkService implements InitializingBean, Closeable {
         if (null != spark) spark.close();
     }
 
+    public SparkSession session() {
+        return spark;
+    }
+
     public List<Double> random() {
         SparkSession session = spark.newSession();
         return TestUnit.random(session);

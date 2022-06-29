@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.app.spark.util.SparkUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.sink.AbstractMongoSink;
-import com.mongodb.spark.MongoSpark;
-import com.mongodb.spark.config.WriteConfig;
 import org.apache.spark.sql.Dataset;
 
 import java.util.LinkedHashMap;
@@ -16,8 +14,8 @@ import java.util.Map;
  */
 public class MongoSinkNode extends AbstractMongoSink {
 
-    public static final String OUTPUT_PREFIX = "spark.mongodb.output.";
-    WriteConfig config;
+    public static final String OUTPUT_PREFIX = "spark.mongodb.write.";
+    Map<String, String> config;
 
     @Override
     public boolean configure(JsonNode... configs) {
@@ -29,21 +27,22 @@ public class MongoSinkNode extends AbstractMongoSink {
             uri += username + ":" + options.at("/password").asText() + "@";
         }
         uri += options.at("/hosts").asText() + "/";
-        config.put(OUTPUT_PREFIX + "uri", uri);
+        config.put(OUTPUT_PREFIX + "connection.uri", uri);
         config.put(OUTPUT_PREFIX + "database", options.at("/database").asText());
         config.put(OUTPUT_PREFIX + "collection", options.at("/collection").asText());
         int batchSize = options.at("/batchSize").asInt();
         if (batchSize > 0) config.put(OUTPUT_PREFIX + "maxBatchSize", String.valueOf(batchSize));
-        config.put(OUTPUT_PREFIX + "replaceDocument", options.at("/replaceDocument").asText("true"));
-        config.put(OUTPUT_PREFIX + "forceInsert", options.at("/forceInsert").asText("false"));
-        this.config = WriteConfig.create(config);
+        String idFieldList = options.at("/idFieldList").asText();
+        if (!DPUtil.empty(idFieldList)) config.put(OUTPUT_PREFIX + "idFieldList", idFieldList);
+        config.put(OUTPUT_PREFIX + "operationType", options.at("/operationType").asText("update"));
+        this.config = config;
         return true;
     }
 
     @Override
     public Object process() {
         Dataset dataset = SparkUtil.union(Dataset.class, sources);
-        MongoSpark.save(dataset, config);
+        dataset.write().format("mongodb").mode("append").options(config).save();
         return null;
     }
 }

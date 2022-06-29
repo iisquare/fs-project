@@ -132,6 +132,10 @@ const JDBCSourceOptions = () => {
   }
 }
 
+const MongoSourceOptions = () => {
+  return { hosts: '127.0.0.1:27017', database: 'admin', username: '', password: '', collection: '', pipeline: '' }
+}
+
 const ConsoleSinkOptions = () => {
   return { echoConfig: false, mode: '' }
 }
@@ -141,7 +145,7 @@ const ElasticsearchSinkOptions = () => {
 }
 
 const MongoSinkOptions = () => {
-  return { hosts: '127.0.0.1:27017', database: 'admin', username: '', password: '', collection: '', batchSize: 0, replaceDocument: true, forceInsert: false }
+  return { hosts: '127.0.0.1:27017', database: 'admin', username: '', password: '', collection: '', batchSize: 0, idFieldList: '', operationType: 'update' }
 }
 
 const MySQLCaptureOptions = () => {
@@ -244,11 +248,11 @@ export default Object.assign(config, {
     }, {
       shape: 'flow-node', options: JDBCSourceOptions, property: () => import('./JDBCSourceProperty')
     }), Object.assign({
-      supports: []
+      supports: [[ENGINE_SPARK, MODEL_BATCH]]
     }, {
       type: 'MongoSource', label: 'Mongo', title: 'Mongo输入', icon: 'dagSource'
     }, {
-      shape: 'flow-node', options: DefaultOptions, property: () => import('./DefaultProperty')
+      shape: 'flow-node', options: MongoSourceOptions, property: () => import('./MongoSourceProperty')
     }), Object.assign({
       supports: []
     }, {

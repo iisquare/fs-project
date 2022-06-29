@@ -18,13 +18,7 @@
         <a-form-model-item label="认证密码"><a-input v-model="value.data.options.password" placeholder="仅在配置认证用户时有效" /></a-form-model-item>
         <a-form-model-item label="数据库"><a-input v-model="value.data.options.database" placeholder="database name to write data" /></a-form-model-item>
         <a-form-model-item label="集合名称"><a-input v-model="value.data.options.collection" placeholder="collection name to write data" /></a-form-model-item>
-        <a-form-model-item label="分批大小"><a-input-number v-model="value.data.options.batchSize" placeholder="maximum batch size for bulk operations" /></a-form-model-item>
-        <a-form-model-item label="主键字段"><a-input v-model="value.data.options.idFieldList" placeholder="主键字段名称，默认为_id" /></a-form-model-item>
-        <a-form-model-item label="写入模式">
-          <a-select v-model="value.data.options.operationType" placeholder="请选择写入操作模式类型" :allowClear="true">
-            <a-select-option :value="item.value" v-for="item in operationTypes" :key="item.value">{{ item.label }}</a-select-option>
-          </a-select>
-        </a-form-model-item>
+        <a-form-model-item label="聚合管道"><a-textarea v-model="value.data.options.pipeline" /></a-form-model-item>
       </a-form-model>
     </a-tab-pane>
   </a-tabs>
@@ -74,9 +68,7 @@ export default {
         username: obj.data.options.username || this.defaults.username,
         password: obj.data.options.password || this.defaults.password,
         collection: obj.data.options.collection || this.defaults.collection,
-        idFieldList: obj.data.options.idFieldList || this.defaults.idFieldList,
-        operationType: obj.data.options.operationType || this.defaults.operationType,
-        batchSize: Number.isInteger(obj.data.options.batchSize) ? obj.data.options.batchSize : this.defaults.batchSize
+        pipeline: obj.data.options.pipeline || this.defaults.pipeline
       }
       return this.config.mergeOptions(obj, options)
     }

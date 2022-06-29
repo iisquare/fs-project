@@ -3,10 +3,8 @@ package com.iisquare.fs.app.crawler.output;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
-import com.mongodb.MongoCredential;
-import com.mongodb.ServerAddress;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
@@ -15,16 +13,17 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 public class MongoOutput extends Output {
 
-    private MongoCredential credential;
-    private List<ServerAddress> addresses;
-    private MongoClientOptions options;
     private String database;
     private String collection;
     private String unique;
+    private String uri;
     private MongoClient client;
     private MongoCollection<Document> table;
 
@@ -32,29 +31,16 @@ public class MongoOutput extends Output {
     public void configure(JsonNode parameters) {
         String server = parameters.get("server").asText();
         String username = parameters.get("username").asText();
-        String auth = parameters.get("auth").asText();
         String password = parameters.get("password").asText();
         database = parameters.get("database").asText();
         collection = parameters.get("collection").asText();
         unique = parameters.get("unique").asText();
-        credential = MongoCredential.createCredential(username, auth, password.toCharArray());
-        String[] servers = DPUtil.explode(",", server);
-        addresses = new ArrayList<>();
-        for (String item : servers) {
-            String[] host = DPUtil.explode(":", item);
-            int port = host.length > 1 ? DPUtil.parseInt(host[1]) : 27017;
-            addresses.add(new ServerAddress(host[0], port));
-        }
-        options = MongoClientOptions.builder().build();
+        uri = String.format("mongodb://%s:%s@%s/", username, password, server);
     }
 
     @Override
     public void open() throws IOException {
-        if (addresses.size() == 1) {
-            client = new MongoClient(addresses.get(0), credential, options);
-        } else {
-            client = new MongoClient(addresses, credential, options);
-        }
+        client = MongoClients.create(uri);
         MongoDatabase database = client.getDatabase(this.database);
         table = database.getCollection(this.collection);
     }

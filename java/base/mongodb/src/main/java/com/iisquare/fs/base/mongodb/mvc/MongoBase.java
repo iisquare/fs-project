@@ -2,11 +2,7 @@ package com.iisquare.fs.base.mongodb.mvc;
 
 import com.iisquare.fs.base.mongodb.MongoCore;
 import com.iisquare.fs.base.mongodb.util.MongoUtil;
-import com.mongodb.MongoClient;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
-import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.*;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOptions;
 import lombok.Getter;

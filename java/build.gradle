@@ -55,7 +55,7 @@ subprojects {
         tensorflowVersion = '1.12.0'
         zookeeperVersion = '3.5.8'
         curatorVersion = '4.3.0' // with zookeeper compatibility
-        mongodbVersion = '3.12.8'
+        mongodbVersion = '4.5.1'
         mysqlVersion = '5.1.48'
         rabbitmqVersion = '5.10.0'
         elasticVersion = '7.15.1'

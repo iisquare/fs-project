@@ -15,6 +15,14 @@ import java.util.*;
 
 /**
  * @see(https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html)
+ * fetchSize参数生效前提：
+ *  - MySQL
+ *      com.mysql.jdbc.Statement.enableStreamingResults() -> {
+ *          setFetchSize(Integer.MIN_VALUE);
+ *          setResultSetType(ResultSet.TYPE_FORWARD_ONLY);
+ *      }
+ *  - PostgreSQL@see(https://jdbc.postgresql.org/documentation/head/query.html#fetchsize-example)
+ *      setAutoCommit(false);
  */
 public class JDBCSourceNode extends AbstractJDBCSource {
 

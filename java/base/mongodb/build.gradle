@@ -1,5 +1,6 @@
 dependencies {
     compile project(':base:core')
+    testCompile project(':base:test')
     compile group: 'org.springframework.boot', name: 'spring-boot-starter', version: springBootVersion
-    compile group: 'org.mongodb', name: 'mongo-java-driver', version: mongodbVersion
+    compile group: 'org.mongodb', name: 'mongodb-driver-sync', version: mongodbVersion
 }

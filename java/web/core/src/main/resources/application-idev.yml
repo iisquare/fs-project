@@ -139,10 +139,8 @@ spring:
         acknowledge-mode: manual
         default-requeue-rejected: false
   mongodb:
-    hosts: 127.0.0.1:27017
-    database: admin
-    username: root
-    password: admin888
+    # https://www.mongodb.com/docs/drivers/java/sync/v4.5/fundamentals/connection/connection-options/
+    uri: mongodb://root:admin888@127.0.0.1:27017/
   elasticsearch:
     nodes: 127.0.0.1:9200
   neo4j:

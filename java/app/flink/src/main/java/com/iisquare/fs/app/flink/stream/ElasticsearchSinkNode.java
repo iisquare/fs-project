@@ -44,7 +44,7 @@ public class ElasticsearchSinkNode extends AbstractElasticsearchSink implements 
         int batchSize = options.at("/batchSize").asInt();
         builder.setBulkFlushMaxActions(batchSize > 0 ? batchSize : -1);
         builder.setBulkFlushInterval(Math.max(-1, options.at("/flushInterval").asInt()));
-        sink= builder.build();
+        sink = builder.build();
         return true;
     }
 
