@@ -20,7 +20,7 @@ public class KafkaSourceNode extends AbstractKafkaSource {
         properties.setProperty("auto.commit.interval.ms", options.at("/commitInterval").asText());
         properties.setProperty("group.id", options.at("/group").asText());
         DataStreamSource<JsonNode> source = runner(FlinkRunner.class).stream().addSource(new FlinkKafkaConsumer<>(
-                options.at("/topic").asText(), new KafkaDeserialization(), properties), getClass().getSimpleName());
+                options.at("/topic").asText(), new KafkaDeserialization(), properties), getClass().getSimpleName()).setParallelism(parallelism);
         return source;
     }
 }

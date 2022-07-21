@@ -35,4 +35,44 @@ public class TestService {
         return ApiUtil.result(0, null, dataset.count());
     }
 
+    public Map<String, Object> mysqlPushDown(Map<?, ?> arg) {
+        SparkSession session = sparkService.session().newSession();
+        session.read().format("jdbc").options(new LinkedHashMap<String, String>(){{
+            put("url", "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true");
+            put("dbtable", "fs_member_resource");
+            put("driver", "com.mysql.jdbc.Driver");
+            put("user", "root");
+            put("password", "admin888");
+        }}).load().createOrReplaceTempView("resource");
+        session.read().format("jdbc").options(new LinkedHashMap<String, String>(){{
+            put("url", "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true");
+            put("query", "select * from t_memory");
+            put("driver", "com.mysql.jdbc.Driver");
+            put("user", "root");
+            put("password", "admin888");
+        }}).load().createOrReplaceTempView("test");
+        Dataset<Row> dataset = session.sql(DPUtil.parseString(arg.get("sql")));
+        dataset.show();
+        return ApiUtil.result(0, null, dataset.count());
+    }
+
+    public Map<String, Object> pushDown(Map<?, ?> arg) {
+        SparkSession session = sparkService.session().newSession();
+        session.read().format("mongodb").options(new LinkedHashMap<String, String>(){{
+            put(MongoSourceNode.INPUT_PREFIX + "connection.uri", "mongodb://root:admin888@127.0.0.1:27017");
+            put(MongoSourceNode.INPUT_PREFIX + "database", "fs_project");
+            put(MongoSourceNode.INPUT_PREFIX + "collection", "fs.test");
+        }}).load().createOrReplaceTempView("mongodb");
+        session.read().format("jdbc").options(new LinkedHashMap<String, String>(){{
+            put("url", "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true");
+            put("dbtable", "t_memory");
+            put("driver", "com.mysql.jdbc.Driver");
+            put("user", "root");
+            put("password", "admin888");
+        }}).load().createOrReplaceTempView("mysql");
+        Dataset<Row> dataset = session.sql(DPUtil.parseString(arg.get("sql")));
+        dataset.show();
+        return ApiUtil.result(0, null, dataset.count());
+    }
+
 }

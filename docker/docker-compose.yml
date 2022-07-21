@@ -95,15 +95,15 @@ services:
     volumes:
       - ${DATA_DIR}/kafka/data:/kafka
       - ${DATA_DIR}/kafka/logs:/opt/kafka/logs
-  kafka-manager:
+  kafdrop:
     build:
-      context: ./service/kafka/manager
+      context: ./service/kafdrop
       args:
-        - KAFKA_MANAGE_VERSION=${KAFKA_MANAGE_VERSION}
+        - KAFDROP_VERSION=${KAFDROP_VERSION}
     environment:
-      ZK_HOSTS: zookeeper:2181
+      KAFKA_BROKERCONNECT: kafka:9092
     ports:
-      - "${BIND_ADDRESS}${BIND_COLON}${KAFKA_MANAGER_PORT}:9000"
+      - "${BIND_ADDRESS}${BIND_COLON}${KAFDROP_PORT}:9000"
   mysql:
     build:
       context: ./service/mysql
@@ -172,6 +172,7 @@ services:
       - ./service/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
       - ./service/logstash/pipeline:/usr/share/logstash/pipeline
   prometheus:
+    user: root
     build:
       context: ./service/prometheus
       args:
@@ -179,9 +180,11 @@ services:
     ports:
       - "${BIND_ADDRESS}${BIND_COLON}${PROMETHEUS_PORT}:9090"
     volumes:
+      - /etc/localtime:/etc/localtime
       - ./service/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ${DATA_DIR}/prometheus/tsdb:/prometheus
   grafana:
+    user: root
     build:
       context: ./service/grafana
       args:
@@ -211,6 +214,12 @@ services:
         - PROMETHEUS_MYSQL_VERSION=${PROMETHEUS_MYSQL_VERSION}
     environment:
       DATA_SOURCE_NAME: ${PROMETHEUS_MYSQL_URL}
+  prometheus-kafka:
+    build:
+      context: ./service/prometheus/exporter/kafka
+      args:
+        - PROMETHEUS_KAFKA_VERSION=${PROMETHEUS_KAFKA_VERSION}
+    command: "--kafka.server=kafka:9092 --kafka.version=${KAFKA_VERSION}"
   superset:
     build:
       context: ./service/superset

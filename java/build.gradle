@@ -71,8 +71,8 @@ subprojects {
         testAnnotationProcessor group: 'org.projectlombok', name: 'lombok', version: lombokVersion
     }
 
-    task jars(type: Copy) {
-        from configurations.runtime
+    task jars(type: Copy) { // 导出模块所有的运行时依赖
+        from configurations.runtimeClasspath
         into 'build/opt' // 目标依赖位置
     }
 

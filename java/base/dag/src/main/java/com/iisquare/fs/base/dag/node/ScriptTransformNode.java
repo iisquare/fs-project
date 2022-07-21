@@ -33,6 +33,7 @@ public class ScriptTransformNode extends AbstractScriptTransform {
         DAGTransform instance = (DAGTransform) cls.newInstance();
         instance.setId(getId());
         instance.setName(getName());
+        instance.setParallelism(getParallelism());
         instance.setRunner(getRunner());
         instance.setOptions(getOptions());
         instance.setSources(getSources());

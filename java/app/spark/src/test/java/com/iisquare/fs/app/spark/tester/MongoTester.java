@@ -1,5 +1,6 @@
 package com.iisquare.fs.app.spark.tester;
 
+import com.iisquare.fs.app.spark.mongo.FSMongoTableProvider;
 import com.iisquare.fs.app.spark.util.SparkUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
@@ -166,6 +167,30 @@ public class MongoTester implements Serializable {
         dataset.show(10000);
 
         session.close();
+    }
+
+    @Test
+    public void providerTest() throws AnalysisException {
+        SparkSession session = SparkSession.builder().appName("pipeline-test").master("local").getOrCreate();
+        Map<String, String> config = new LinkedHashMap<>();
+        String uri = "mongodb://root:admin888@127.0.0.1:27017";
+        String database = "fs_project";
+        String collection = "fs.test";
+        config.put(INPUT_PREFIX + "connection.uri", uri);
+        config.put(INPUT_PREFIX + "database", database);
+        config.put(INPUT_PREFIX + "collection", collection);
+        String pipeline = "{ $match: { i : { $gte : 1998999 } } }";
+        config.put(INPUT_PREFIX + "aggregation.pipeline", pipeline);
+
+        Properties properties = PropertiesUtil.load(getClass().getClassLoader(), "ddl.properties");
+        FSMongoTableProvider.registerDDL(uri, properties);
+
+        Dataset<Row> dataset = session.read().format(FSMongoTableProvider.class.getName()).options(config).load();
+        dataset.printSchema();
+        dataset.show();
+
+        session.close();
+        FSMongoTableProvider.release();
     }
 
 }

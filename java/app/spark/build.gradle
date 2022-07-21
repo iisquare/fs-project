@@ -9,44 +9,8 @@ dependencies {
     compile (group: 'org.mongodb.spark', name: 'mongo-spark-connector_' + scalaVersion, version: '3.0.2') {
         exclude group: 'org.mongodb', module: 'mongodb-driver-sync'
     }
-
+    compile group: 'org.mongodb', name: 'mongodb-driver-sync', version: mongodbVersion
     compile group: 'org.elasticsearch', name: 'elasticsearch-spark-30_' + scalaVersion, version: elasticVersion
-
     compile group: 'org.apache.spark', name: 'spark-sql-kafka-0-10_' + scalaVersion, version: sparkVersion
-}
-
-jar {
-    manifest {
-        attributes(
-            "Manifest-Version": 1.0,
-//            "Main-Class": ""
-        )
-    }
-//    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-    from {
-        fileTree(dir: '../../base/core/build/libs', include: ['*.jar']).collect {
-            it.isDirectory() ? it : zipTree(it)
-        }
-    }
-    from {
-        fileTree(dir: '../../base/dag/build/libs', include: ['*.jar']).collect {
-            it.isDirectory() ? it : zipTree(it)
-        }
-    }
-}
-
-jar.dependsOn project(':base:core').getTasks().getByName('jar')
-jar.dependsOn project(':base:dag').getTasks().getByName('jar')
-
-jars.doLast { // 移除与运行程序冲突的依赖
-    FileTree tree = fileTree(dir: 'build/opt')
-    tree.each {File file ->
-        if(file.getName().startsWith(rootProject.name + '-base-')){
-            delete file
-        } else if(file.getName().startsWith("log4j-")) {
-            delete file
-        } else if(file.getName().startsWith("slf4j-")) {
-            delete file
-        }
-    }
+    compile group: 'io.delta', name: 'delta-core_' + scalaVersion, version: '1.2.1'
 }

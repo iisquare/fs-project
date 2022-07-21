@@ -40,7 +40,7 @@ public class MySQLCaptureNode extends AbstractKafkaSource {
         builder.jdbcProperties(properties(options.at("/jdbcProperties").asText()));
         builder.debeziumProperties(properties(options.at("/debeziumProperties").asText()));
         DataStreamSource<String> source = runner(FlinkRunner.class).stream()
-                .fromSource(builder.build(), WatermarkStrategy.noWatermarks(), getClass().getSimpleName());
+                .fromSource(builder.build(), WatermarkStrategy.noWatermarks(), getClass().getSimpleName()).setParallelism(parallelism);
         return source;
     }
 

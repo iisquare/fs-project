@@ -2,21 +2,20 @@
   <a-tabs default-active-key="property" :animated="false">
     <a-tab-pane key="property" tab="属性">
       <a-form-model :model="value" labelAlign="left" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-        <div class="fs-property-title">画布设置</div>
-        <a-form-model-item label="宽度"><a-input-number v-model="value.options.width" :min="100" /></a-form-model-item>
-        <a-form-model-item label="高度"><a-input-number v-model="value.options.height" :min="100" /></a-form-model-item>
         <div class="fs-property-title">流程配置</div>
-        <a-form-model-item label="并发度"><a-input-number v-model="value.concurrency" :min="0" /></a-form-model-item>
+        <a-form-model-item label="并发度"><a-input-number v-model="diagram.options.concurrency" :min="0" /></a-form-model-item>
         <a-form-model-item label="并发策略">
-          <a-select v-model="value.concurrent" placeholder="请选择并发策略">
+          <a-select v-model="diagram.options.concurrent" placeholder="请选择并发策略">
             <a-select-option :value="item.value" v-for="item in config.concurrents" :key="item.value">{{ item.label }}</a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item label="失败策略">
-          <a-select v-model="value.failure" placeholder="请选择失败策略">
+          <a-select v-model="diagram.options.failure" placeholder="请选择失败策略">
             <a-select-option :value="item.value" v-for="item in config.failures" :key="item.value">{{ item.label }}</a-select-option>
           </a-select>
         </a-form-model-item>
+        <div class="fs-property-title">画布设置</div>
+        <a-form-model-item label="启用网格"><a-switch v-model="diagram.options.grid" /></a-form-model-item>
       </a-form-model>
     </a-tab-pane>
   </a-tabs>
@@ -26,9 +25,12 @@
 export default {
   name: 'CanvasProperty',
   props: {
-    value: { type: Object, required: true },
+    value: { type: Object, default: null },
+    flow: { type: Object, required: true },
     config: { type: Object, required: true },
-    activeItem: { type: Object, default: null }
+    diagram: { type: Object, required: true },
+    activeItem: { type: Object, default: null },
+    tips: { type: String, default: '' }
   },
   data () {
     return {}
@@ -38,22 +40,24 @@ export default {
       return this.config.canvas.options()
     }
   },
+  watch: {
+    'diagram.options.grid' () {
+      this.flow.toggleGrid(this.diagram.options.grid)
+    }
+  },
   methods: {
     formatted (obj) {
       const options = {
-        width: Number.isInteger(obj.options.width) ? obj.options.width : this.defaults.width,
-        height: Number.isInteger(obj.options.height) ? obj.options.height : this.defaults.height
+        grid: obj.options?.grid ?? this.defaults.grid,
+        concurrency: obj.options?.concurrency ?? this.defaults.concurrency,
+        concurrent: obj.options?.concurrent ?? this.defaults.concurrent,
+        failure: obj.options?.failure ?? this.defaults.failure
       }
-      const result = Object.assign({
-        concurrency: Number.isInteger(obj.concurrency) ? obj.concurrency : 1,
-        concurrent: obj.concurrent || 'SkipExecution',
-        failure: obj.concurrent || 'FinishCurrentRunning'
-      }, obj, { options })
-      return result
+      return Object.assign({}, obj, { options })
     }
   },
   mounted () {
-    this.$emit('input', this.formatted(this.value))
+    this.$emit('update.diagram', this.formatted(this.diagram))
   }
 }
 </script>

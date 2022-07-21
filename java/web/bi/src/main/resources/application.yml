@@ -8,3 +8,7 @@ spring:
     hibernate:
       naming:
         physical-strategy: com.iisquare.fs.web.bi.dsconfig.NamingStrategy
+
+logging:
+  level:
+    root: warn

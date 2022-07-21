@@ -3,6 +3,7 @@ import '@antv/x6-vue-shape'
 import FlowEdge from './FlowEdge'
 import FlowGroup from './FlowGroup'
 import FlowSubprocess from './FlowSubprocess'
+import FlowSwitch from './FlowSwitch'
 
 const CircleAttr = {
   circle: {
@@ -39,10 +40,9 @@ Graph.registerEdge('flow-edge', FlowEdge)
 
 Graph.registerNode('flow-group', FlowGroup)
 
-Graph.registerNode('flow-subprocess', {
-  inherit: FlowSubprocess,
-  ports: D4Port
-})
+Graph.registerNode('flow-subprocess', { inherit: FlowSubprocess, ports: D4Port })
+
+Graph.registerNode('flow-switch', { inherit: FlowSwitch, ports: D4Port })
 
 Graph.registerEdgeTool('circle-source-arrowhead', {
   inherit: 'source-arrowhead',

@@ -7,7 +7,6 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.util.JDBCUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.base.web.util.CronUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.govern.dao.AssessDao;
 import com.iisquare.fs.web.govern.dao.AssessLogDao;
@@ -272,7 +271,7 @@ public class AssessService extends ServiceBase {
             if (logs.size() > 0) logDao.saveAll(logs);
             return ApiUtil.result(0, null, logs);
         } catch (Exception e) {
-            return ApiUtil.result(75001, "执行异常", CronUtil.getStackTrace(e));
+            return ApiUtil.result(75001, "执行异常", ApiUtil.getStackTrace(e));
         }
     }
 

@@ -14,6 +14,7 @@ public abstract class DAGNode implements Serializable {
 
     protected String id;
     protected String name;
+    protected Integer parallelism; // 当前节点的并行度配置
     protected DAGRunner runner;
     protected JsonNode options;
     protected Set<DAGNode> sources = new HashSet<>();

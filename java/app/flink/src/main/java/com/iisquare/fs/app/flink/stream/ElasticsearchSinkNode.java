@@ -50,7 +50,7 @@ public class ElasticsearchSinkNode extends AbstractElasticsearchSink implements 
 
     @Override
     public Object process() {
-        FlinkUtil.union(DataStream.class, sources).addSink(sink);
+        FlinkUtil.union(DataStream.class, sources).addSink(sink).setParallelism(parallelism).name(getClass().getSimpleName());
         return null;
     }
 

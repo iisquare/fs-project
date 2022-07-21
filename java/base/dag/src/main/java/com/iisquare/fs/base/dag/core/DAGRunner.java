@@ -32,6 +32,7 @@ public abstract class DAGRunner implements Serializable {
             DAGNode node = this.nodes.get(type).newInstance();
             node.setId(item.at("/id").asText());
             node.setName(item.at("/name").asText());
+            node.setParallelism(Math.max(1, item.at("/parallelism").asInt()));
             if (node instanceof DAGSource) {
                 ((DAGSource) node).setKvConfigPrefix(item.at("/kvConfigPrefix").asText());
             } else if (node instanceof DAGTransform) {

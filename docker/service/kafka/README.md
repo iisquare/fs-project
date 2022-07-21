@@ -8,3 +8,6 @@
 - PLAINTEXT://[ip]:9092，采用固定IP访问。
 - PLAINTEXT://[hostname]:9092，采用域名解析，确保客户端可正常解析对应域名。
 
+```
+Caused by: org.apache.kafka.common.errors.TimeoutException: Timeout of 60000ms expired before the position for partition fs_test-0 could be determined
+```

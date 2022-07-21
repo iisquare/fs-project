@@ -11,7 +11,7 @@ public class SQLTransformNode extends AbstractConvertTransform {
     public Object process() throws Exception {
         SQLContext context = runner(SparkRunner.class).session().sqlContext();
         for (DAGNode source : sources) {
-            source.result(Dataset.class).createTempView(source.getName());
+            source.result(Dataset.class).createOrReplaceTempView(source.getName());
         }
         return context.sql(options.at("/sql").asText());
     }

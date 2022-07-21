@@ -74,7 +74,6 @@ import icons from '@/assets/icons'
 import config from './design/config'
 import Property from './design/Property'
 import Flow from '@/components/X6/flow'
-import MenuUtil from '@/utils/menu'
 import { triggerWindowResizeEvent } from '@/utils/util'
 
 export default {
@@ -130,17 +129,6 @@ export default {
       this.tips = `选中 ${item.shape} ${item.data.title}`
       this.flow.highlight([item])
       return true
-    },
-    handleContextMenu (ev, item) {
-      MenuUtil.context(ev, [{ key: 'delete', icon: 'delete', title: '删除节点' }], menu => {
-        switch (menu.key) {
-          case 'delete':
-            if (this.activeItem === item) this.activeItem = null
-            return this.flow.removeItem(item)
-          default:
-            return false
-        }
-      })
     },
     draggable (widget) {
       return widget.supports.some(item => {

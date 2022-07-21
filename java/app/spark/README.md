@@ -4,6 +4,19 @@ Spark计算框架，侧重离线计算。
 
 ## 最佳实践
 
+### 结构信息
+
+```
+Encoder<Row> encoder = dataset.encoder();
+String ddl = encoder.schema().toDDL();
+StructType schema = StructType.fromDDL(ddl);
+StructType schema = DataTypes.createStructType(Arrays.asList(
+    DataTypes.createStructField("table", DataTypes.StringType, false),
+    DataTypes.createStructField("message", DataTypes.StringType, true)
+));
+ExpressionEncoder<Row> encoder = RowEncoder.apply(schema);
+```
+
 ### 修改JDBC连接参数
 
 在某些情况下，如Postgresql只有setAutoCommit(false)的情况下，fetchSize才生效，所以需要定制Provider。

@@ -11,4 +11,10 @@ public class DAGTester {
         FlinkApplication.main(url);
     }
 
+    @Test
+    public void mysqlCDCTest() throws Exception {
+        String url = "http://127.0.0.1:7815/dag/diagram?id=9";
+        FlinkApplication.main(url);
+    }
+
 }

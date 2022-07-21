@@ -14,11 +14,11 @@ public class ConsoleSinkNode extends AbstractConsoleSink {
             if (result instanceof DataSet) {
                 DataSet batch = ((DataSet) result);
                 batch.print();
-                batch.output(new EmptyOutput());
+                batch.output(new EmptyOutput()).setParallelism(parallelism).name(getClass().getSimpleName());
                 continue;
             }
             if (result instanceof DataStream) {
-                ((DataStream) result).print();
+                ((DataStream) result).print().setParallelism(parallelism).name(getClass().getSimpleName());
                 continue;
             }
             System.out.println(result.toString());

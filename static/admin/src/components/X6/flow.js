@@ -23,6 +23,12 @@ class Flow {
         height: 300,
         offsetX: 150,
         offsetY: 150
+      },
+      'flow-switch': {
+        width: 120,
+        height: 80,
+        offsetX: 60,
+        offsetY: 40
       }
     }
     this.options = Object.assign({
@@ -345,6 +351,7 @@ class Flow {
           cell.attr({ line: { stroke: '#A2B1C3' } })
           break
         case 'flow-group':
+        case 'flow-switch':
         case 'flow-subprocess':
           cell.attr({ text: { fill: '' } })
           break
@@ -360,6 +367,7 @@ class Flow {
           cell.attr({ line: { stroke: '#409eff' } })
           break
         case 'flow-group':
+        case 'flow-switch':
         case 'flow-subprocess':
           cell.attr({ text: { fill: '#409eff' } })
           break

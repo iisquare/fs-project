@@ -3,7 +3,6 @@ package com.iisquare.fs.app.spark.tester;
 import com.iisquare.fs.app.spark.util.SparkUtil;
 import com.iisquare.fs.base.core.tool.SQLBuilder;
 import com.iisquare.fs.base.core.util.FileUtil;
-import lombok.SneakyThrows;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -11,19 +10,23 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.ForeachPartitionFunction;
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.*;
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils;
+import org.apache.spark.sql.catalyst.encoders.RowEncoder;
 import org.apache.spark.sql.streaming.StreamingQuery;
+import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 import org.junit.Test;
-import scala.Function0;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
-public class SparkTester {
+public class SparkTester implements Serializable {
 
     @Test
     public void batchTest() {
@@ -80,6 +83,35 @@ public class SparkTester {
             System.out.println(result);
             FileUtil.close(statement, connection);
         });
+        session.close();
+    }
+
+    @Test
+    public void multiTest() {
+        SparkSession session = SparkSession.builder().appName("sql-test").master("local").getOrCreate();
+        String url = "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true";
+        Properties properties = new Properties();
+        properties.put("driver", "com.mysql.jdbc.Driver");
+        properties.put("user", "root");
+        properties.put("password", "admin888");
+        Dataset<Row> dataset = session.read().jdbc(url, "fs_member_resource", properties);
+        dataset.map(new MapFunction<Row, Row>() {
+            @Override
+            public Row call(Row row) throws Exception {
+                return RowFactory.create(row.getString(4));
+            }
+        }, RowEncoder.apply(DataTypes.createStructType(Arrays.asList(
+                DataTypes.createStructField("module", DataTypes.StringType, false)
+        )))).show();
+        dataset.map(new MapFunction<Row, Row>() {
+            @Override
+            public Row call(Row row) throws Exception {
+                return RowFactory.create(row.getString(5), row.getString(6));
+            }
+        }, RowEncoder.apply(DataTypes.createStructType(Arrays.asList(
+                DataTypes.createStructField("controller", DataTypes.StringType, false),
+                DataTypes.createStructField("action", DataTypes.StringType, false)
+        )))).show();
         session.close();
     }
 

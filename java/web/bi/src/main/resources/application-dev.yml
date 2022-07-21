@@ -1,2 +1,6 @@
 server:
   port: 7815
+
+#spark:
+#  master: spark://node101:7077
+#  jarUri: http://wsl/fs-project-vip/java/web/bi/build/libs/fs-project-thin-bi-0.0.1-SNAPSHOT.jar

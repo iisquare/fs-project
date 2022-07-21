@@ -62,6 +62,14 @@
 ### 故事，基于报表
 - 在线制作PPT，方便动态展示数据报表。
 
+## 最佳实践
+
+### 即席查询
+
+- Spark可动态配置数据源，支持UDF和嵌入MapReduce处理
+- Trino谓词下推的查询性能较高，通过配置文件接入数据源
+- 在处理大数据量小范围的筛选查询时，可将固定逻辑配置为Trino查询，结合Spark处理动态逻辑
+
 ## 参考
 - [Quick BI](https://space.bilibili.com/489439272/channel/detail?cid=152024)
 - [DataV](https://www.bilibili.com/video/BV1Xi4y1s7R6)

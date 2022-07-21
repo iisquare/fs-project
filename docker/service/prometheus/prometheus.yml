@@ -14,6 +14,9 @@ scrape_configs:
   - job_name: mysql
     static_configs:
       - targets: ["prometheus-mysql:9104"]
+  - job_name: kafka
+    static_configs:
+      - targets: ["prometheus-kafka:9308"]
   - job_name: rabbitmq
     static_configs:
       - targets: ["rabbitmq:15692"]

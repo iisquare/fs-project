@@ -9,6 +9,7 @@
 - mysql-exporter:11323
 - rabbitmq:10991
 - jvm:4701
+- kafka:7589 需要有消费分组时才能看到数据
 
 
 ### 参考

@@ -1,5 +1,7 @@
 package com.iisquare.fs.base.core.util;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -55,6 +57,14 @@ public class ApiUtil {
 
     public static  <T> T data(Map<String, Object> result, Class<T> classType) {
         return (T) result.get(FIELD_DATA);
+    }
+
+
+    public static String getStackTrace(final Throwable throwable) {
+        final StringWriter sw = new StringWriter();
+        final PrintWriter pw = new PrintWriter(sw, true);
+        throwable.printStackTrace(pw);
+        return sw.getBuffer().toString();
     }
 
 }

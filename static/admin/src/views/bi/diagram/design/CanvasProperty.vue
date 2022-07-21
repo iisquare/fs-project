@@ -39,7 +39,7 @@ export default {
   methods: {
     formatted (obj) {
       const options = {
-        grid: obj.options?.grid ?? this.default.grid
+        grid: obj.options?.grid ?? this.defaults.grid
       }
       return Object.assign({}, obj, { options })
     }

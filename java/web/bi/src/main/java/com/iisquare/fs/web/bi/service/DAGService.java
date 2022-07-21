@@ -90,6 +90,7 @@ public class DAGService extends ServiceBase {
                 name = String.format("data_%d_node_%d", diagram.getId(), json.at("/data/index").asInt());
             }
             node.put("name", name);
+            node.put("parallelism", json.at("/data/parallelism").asInt());
             String parent = json.at("/parent").asText();
             node.put("parent", DPUtil.empty(parent) ? "" : ("dag_" + diagram.getId() + "_" + parent));
             if (type.endsWith("Source") || type.endsWith("Transform") || type.endsWith("Sink")) {

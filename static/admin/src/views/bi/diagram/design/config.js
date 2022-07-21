@@ -148,6 +148,10 @@ const MongoSinkOptions = () => {
   return { hosts: '127.0.0.1:27017', database: 'admin', username: '', password: '', collection: '', batchSize: 0, idFieldList: '', operationType: 'update' }
 }
 
+const KafkaSinkOptions = () => {
+  return { bootstrap: '127.0.0.1:9092', topic: '', semantic: 'AT_LEAST_ONCE', topicKey: '', partitionKey: '' }
+}
+
 const MySQLCaptureOptions = () => {
   return {
     hostname: '127.0.0.1',
@@ -362,11 +366,11 @@ export default Object.assign(config, {
     }, {
       shape: 'flow-node', options: MongoSinkOptions, property: () => import('./MongoSinkProperty')
     }), Object.assign({
-      supports: []
+      supports: [[ENGINE_FLINK, MODEL_STREAM]]
     }, {
       type: 'KafkaSink', label: 'Kafka', title: 'Kafka输出', icon: 'dagSink'
     }, {
-      shape: 'flow-node', options: DefaultOptions, property: () => import('./DefaultProperty')
+      shape: 'flow-node', options: KafkaSinkOptions, property: () => import('./KafkaSinkProperty')
     }), Object.assign({
       supports: []
     }, {
