@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.cron.core;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
 import org.apache.curator.framework.CuratorFramework;
@@ -60,6 +61,12 @@ public class ZooKeeperClient implements Closeable {
 
     public boolean isLeader() {
         return latch.hasLeadership();
+    }
+
+    public boolean notice(JsonNode notice) {
+        String data = DPUtil.stringify(notice);
+        if (DPUtil.empty(data)) return false;
+        return save("/notice", data);
     }
 
     public String command() {

@@ -13,7 +13,7 @@
     <a-form-model-item label="标题"><a-input v-model="value.data.title" auto-complete="on" /></a-form-model-item>
     <a-form-model-item label="备注"><a-textarea v-model="value.data.description" /></a-form-model-item>
     <div class="fs-property-title">流程配置</div>
-    <a-form-model-item label="跳过执行"><a-switch v-model="value.data.skiped" /></a-form-model-item>
+    <a-form-model-item label="跳过执行"><a-switch v-model="value.data.skipped" /></a-form-model-item>
   </section>
 </template>
 
@@ -49,7 +49,7 @@ export default {
         name: obj.data.name || '',
         title: obj.data.title || '',
         description: obj.data.description || '',
-        skiped: !!obj.data.skiped
+        skipped: !!obj.data.skipped
       }
       return this.config.mergeData(obj, data)
     }

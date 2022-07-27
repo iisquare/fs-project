@@ -34,6 +34,14 @@ export const layouts = [{
     path: '/server/cron/flow',
     meta: { title: '流程管理' },
     component: () => import(/* webpackChunkName: 'server' */ '@/views/server/cron/flow')
+  }, {
+    path: '/server/cron/flowLog',
+    meta: { title: '调度日志' },
+    component: () => import(/* webpackChunkName: 'server' */ '@/views/server/cron/flowLog')
+  }, {
+    path: '/server/cron/flowStage',
+    meta: { title: '调度明细' },
+    component: () => import(/* webpackChunkName: 'server' */ '@/views/server/cron/flowStage')
   }]
 }]
 

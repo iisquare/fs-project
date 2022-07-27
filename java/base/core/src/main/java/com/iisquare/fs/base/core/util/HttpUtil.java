@@ -16,6 +16,10 @@ public class HttpUtil {
 
     private static final String DEFAULT_CHARSET = "UTF-8";
 
+    public static final Map<String, String> JSON_HEADERS = new LinkedHashMap<String, String>(){{
+        put("Content-Type", "application/json");
+    }};
+
     public static String cookie(String... cookies) {
         Map<String, String> map = new LinkedHashMap<>();
         for (String cookie : cookies) {

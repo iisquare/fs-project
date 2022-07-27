@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.cron.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
@@ -15,6 +16,7 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.context.WebServerInitializedEvent;
 import org.springframework.context.ApplicationListener;
@@ -33,6 +35,8 @@ public class NodeService extends ServiceBase implements DisposableBean, Applicat
     private String zhHost;
     @Value("${fs.cron.zookeeper.timeout}")
     private int zhTimeout;
+    @Autowired
+    private FlowLogService flowLogService;
 
     private ZooKeeperClient zookeeper;
     private static volatile Scheduler scheduler = null;
@@ -172,6 +176,15 @@ public class NodeService extends ServiceBase implements DisposableBean, Applicat
             result.put(participant, zookeeper.save("/command/" + participant, command));
         }
         return ApiUtil.result(0, null, result);
+    }
+
+    public void onNotice(String message) {
+        JsonNode notice = DPUtil.parseJSON(message);
+        if (null == notice) return;
+        String subscribe = notice.at("/subscribe").asText();
+        if (FlowLogService.class.getSimpleName().equals(subscribe)) {
+            flowLogService.onNotice(notice);
+        }
     }
 
 }

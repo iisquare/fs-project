@@ -15,7 +15,7 @@ const DefaultOptions = () => {
 }
 
 const CanvasOptions = () => {
-  return { grid: true, concurrency: 1, concurrent: 'SkipExecution', failure: 'FinishCurrentRunning' }
+  return { grid: true, concurrent: 1, concurrency: 'SkipExecution', failure: 'FinishCurrentRunning' }
 }
 
 const EdgeOptions = () => {
@@ -31,7 +31,7 @@ const DateGenerateConfigOptions = () => {
 }
 
 const CommandTaskOptions = () => {
-  return { command: '' }
+  return { charset: '', command: '' }
 }
 
 const ConditionGatewayOptions = () => {
@@ -104,7 +104,7 @@ export default Object.assign(config, {
     { label: '首次失败', value: 'FirstFailure' },
     { label: '执行结束', value: 'FlowFinished' }
   ],
-  concurrents: [
+  concurrences: [
     { label: '跳过执行，忽略本次调度', value: 'SkipExecution' },
     { label: '并行执行，相互独立调度', value: 'RunConcurrently' }
   ],

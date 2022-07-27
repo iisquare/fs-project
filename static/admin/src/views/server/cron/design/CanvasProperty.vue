@@ -3,10 +3,10 @@
     <a-tab-pane key="property" tab="属性">
       <a-form-model :model="value" labelAlign="left" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
         <div class="fs-property-title">流程配置</div>
-        <a-form-model-item label="并发度"><a-input-number v-model="diagram.options.concurrency" :min="0" /></a-form-model-item>
+        <a-form-model-item label="并发度"><a-input-number v-model="diagram.options.concurrent" :min="0" /></a-form-model-item>
         <a-form-model-item label="并发策略">
-          <a-select v-model="diagram.options.concurrent" placeholder="请选择并发策略">
-            <a-select-option :value="item.value" v-for="item in config.concurrents" :key="item.value">{{ item.label }}</a-select-option>
+          <a-select v-model="diagram.options.concurrency" placeholder="请选择并发策略">
+            <a-select-option :value="item.value" v-for="item in config.concurrences" :key="item.value">{{ item.label }}</a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item label="失败策略">
@@ -49,8 +49,8 @@ export default {
     formatted (obj) {
       const options = {
         grid: obj.options?.grid ?? this.defaults.grid,
-        concurrency: obj.options?.concurrency ?? this.defaults.concurrency,
         concurrent: obj.options?.concurrent ?? this.defaults.concurrent,
+        concurrency: obj.options?.concurrency ?? this.defaults.concurrency,
         failure: obj.options?.failure ?? this.defaults.failure
       }
       return Object.assign({}, obj, { options })

@@ -13,7 +13,7 @@
           :tips="tips"
           @update:tips="val => $emit('update:tips', val)" />
         <div class="fs-property-title">参数配置</div>
-        <a-form-model-item label="分支条件"><a-textarea v-model="value.data.condition" /></a-form-model-item>
+        <a-form-model-item label="分支条件"><a-textarea v-model="value.data.options.condition" /></a-form-model-item>
       </a-form-model>
     </a-tab-pane>
   </a-tabs>
@@ -50,7 +50,7 @@ export default {
   methods: {
     formatted (obj) {
       const options = {
-        condition: obj.data.condition || this.defaults.condition
+        condition: obj.data.options.condition || this.defaults.condition
       }
       return this.config.mergeOptions(obj, options)
     }

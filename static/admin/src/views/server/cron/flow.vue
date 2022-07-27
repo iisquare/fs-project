@@ -35,6 +35,7 @@
           <span slot="action" slot-scope="text, record">
             <a-button-group>
               <a-button v-permit="'cron:flow:modify'" type="link" size="small" @click="model(record)">编辑</a-button>
+              <a-button v-permit="'cron:flow:'" type="link" size="small" @click="e => log(e, record)">日志</a-button>
             </a-button-group>
           </span>
           <a-descriptions slot="expandedRowRender" slot-scope="record">
@@ -120,6 +121,11 @@ export default {
     model (record = {}) {
       this.$router.push({
         path: '/server/cron/model', query: { name: record.name, project: record.project }
+      })
+    },
+    log (event, record = {}) {
+      RouteUtil.forward(this, event, {
+        path: '/server/cron/flowLog', query: RouteUtil.filter({ name: record.name, project: record.project })
       })
     }
   },

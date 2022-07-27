@@ -32,6 +32,7 @@ class Flow {
       }
     }
     this.options = Object.assign({
+      readonly: false,
       onCellClick ({ e, x, y, cell, view }) {},
       onCellDoubleClick ({ e, x, y, cell, view }) {},
       onCellContextmenu ({ e, x, y, cell, view }) {},
@@ -101,6 +102,35 @@ class Flow {
   }
 
   __bindEvent () {
+    this.graph.bindKey(['ctrl+1', 'meta+1'], () => { // 放大
+      const zoom = this.graph.zoom()
+      if (zoom < 1.5) { this.graph.zoom(0.1) }
+    })
+    this.graph.bindKey(['ctrl+2', 'meta+2'], () => { // 缩小
+      const zoom = this.graph.zoom()
+      if (zoom > 0.5) { this.graph.zoom(-0.1) }
+    })
+    this.graph.on('node:collapse', ({ e, node }) => {
+      e.stopPropagation()
+      node.toggleCollapse()
+      const collapsed = node.isCollapsed()
+      if (node instanceof X6.FlowGroup) {
+        collapsed ? node.addTransientEdge(this.graph) : node.removeTransientEdge(this.graph)
+      }
+      const collapse = (parent) => {
+        const cells = parent.getChildren()
+        if (cells) {
+          cells.forEach((cell) => {
+            collapsed ? cell.hide() : cell.show()
+            if (cell instanceof X6.FlowGroup || cell instanceof X6.FlowSubprocess) {
+              if (!cell.isCollapsed()) collapse(cell)
+            }
+          })
+        }
+      }
+      collapse(node)
+    })
+    if (this.options.readonly) return true
     this.graph.bindKey(['meta+c', 'ctrl+c'], () => { // 复制
       const cells = this.graph.getSelectedCells()
       if (cells.length) { this.graph.copy(cells) }
@@ -140,14 +170,6 @@ class Flow {
       const cells = this.graph.getSelectedCells()
       if (cells.length) { this.graph.removeCells(cells) }
     })
-    this.graph.bindKey(['ctrl+1', 'meta+1'], () => { // 放大
-      const zoom = this.graph.zoom()
-      if (zoom < 1.5) { this.graph.zoom(0.1) }
-    })
-    this.graph.bindKey(['ctrl+2', 'meta+2'], () => { // 缩小
-      const zoom = this.graph.zoom()
-      if (zoom > 0.5) { this.graph.zoom(-0.1) }
-    })
     this.graph.on('node:mouseenter', () => {
       const ports = this.container.querySelectorAll('.x6-port-body')
       this.showPorts(ports, true)
@@ -155,26 +177,6 @@ class Flow {
     this.graph.on('node:mouseleave', () => {
       const ports = this.container.querySelectorAll('.x6-port-body')
       this.showPorts(ports, false)
-    })
-    this.graph.on('node:collapse', ({ e, node }) => {
-      e.stopPropagation()
-      node.toggleCollapse()
-      const collapsed = node.isCollapsed()
-      if (node instanceof X6.FlowGroup) {
-        collapsed ? node.addTransientEdge(this.graph) : node.removeTransientEdge(this.graph)
-      }
-      const collapse = (parent) => {
-        const cells = parent.getChildren()
-        if (cells) {
-          cells.forEach((cell) => {
-            collapsed ? cell.hide() : cell.show()
-            if (cell instanceof X6.FlowGroup || cell instanceof X6.FlowSubprocess) {
-              if (!cell.isCollapsed()) collapse(cell)
-            }
-          })
-        }
-      }
-      collapse(node)
     })
     this.graph.on('edge:mouseenter', ({ cell }) => {
       cell.addTools([
@@ -214,6 +216,7 @@ class Flow {
     this.graph.on('blank:contextmenu', data => {
       if (this.options.onBlankContextmenu(data)) data.e.stopPropagation()
     })
+    return true
   }
 
   panning () {
@@ -256,8 +259,7 @@ class Flow {
       const json = this.briefJSON(cell)
       if (['flow-group', 'flow-subprocess'].indexOf(json.shape) !== -1) {
         const node = this.graph.getCellById(cell.id)
-        json.width = node.meta.width
-        json.height = node.meta.height
+        Object.assign(json, node.getSize())
         if (json.shape === 'flow-group') groupIds.push(cell.id)
       }
       return json

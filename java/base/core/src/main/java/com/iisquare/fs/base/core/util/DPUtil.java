@@ -940,6 +940,25 @@ public class DPUtil {
         return map;
     }
 
+    public static <K1, K2, V> Map<K1, Map<K2, V>> list2mm(List<V> list, Class<K1> k1Type, String k1, Class<K2> k2Type, String k2) {
+        Map<K1, Map<K2, V>> map = new LinkedHashMap<>();
+        for (V item : list) {
+            K1 key1 = (K1) ReflectUtil.getPropertyValue(item, k1);
+            K2 key2 = (K2) ReflectUtil.getPropertyValue(item, k2);
+            map.computeIfAbsent(key1, k -> new LinkedHashMap<>()).put(key2, item);
+        }
+        return map;
+    }
+
+    public static <K, V> Map<K, List<V>> list2ml(List<V> list, Class<K> kType, String property) {
+        Map<K, List<V>> map = new LinkedHashMap<>();
+        for (V item : list) {
+            K key = (K) ReflectUtil.getPropertyValue(item, property);
+            map.computeIfAbsent(key, k -> new ArrayList<>()).add(item);
+        }
+        return map;
+    }
+
     /**
      * 解析JSON字符串
      */

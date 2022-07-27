@@ -36,6 +36,11 @@ public class WatchListener implements TreeCacheListener {
         ChildData data = event.getData();
         if (null == data) return;
         String path = data.getPath();
+        if (path.equals("/runtime/notice")) {
+            byte[] message = data.getData();
+            nodeService.onNotice(new String(message));
+            return;
+        }
         if (event.getType().equals(TreeCacheEvent.Type.NODE_UPDATED) && path.startsWith("/runtime/command/")) {
             String nodeId = path.substring("/runtime/command/".length());
             ZooKeeperClient zookeeper = nodeService.zookeeper();

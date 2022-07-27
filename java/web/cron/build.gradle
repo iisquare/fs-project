@@ -1,6 +1,8 @@
 
 dependencies {
     compile project(':base:jpa')
+    compile project(':base:redis')
+    compile project(':base:dag')
     compile project(':web:core')
     compile (group: 'org.apache.curator', name: 'curator-recipes', version: curatorVersion) { // ZooKeeper
         exclude group: 'org.apache.zookeeper', module: 'zookeeper'

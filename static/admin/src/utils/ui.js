@@ -14,7 +14,11 @@ const UIUtil = {
     for (const item of rows) {
       if (item[parentField] !== parentId) continue
       const children = this.tableTree(rows, item[idField], idField, parentField, childField)
-      result.push(Object.assign({}, item, { [childField]: children }))
+      if (children.length > 0) {
+        result.push(Object.assign({}, item, { [childField]: children }))
+      } else {
+        result.push(Object.assign({}, item))
+      }
     }
     return result
   },

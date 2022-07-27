@@ -56,5 +56,11 @@ export default {
   },
   flowDelete (param, tips = {}) {
     return this.post('/flow/delete', param, tips)
+  },
+  flowLogList (param, tips = {}) {
+    return this.post('/flowLog/list', param, tips)
+  },
+  flowLogStages (param, tips = {}) {
+    return this.post('/flowLog/stages', param, tips)
   }
 }

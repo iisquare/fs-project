@@ -16,6 +16,7 @@ include 'base:neo4j'
 include 'app:crawler'
 include 'app:spark'
 include 'app:flink'
+include 'app:test'
 
 include 'ext:flink'
 include 'ext:spark'

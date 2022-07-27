@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@antv/data-set": "^0.10.2",
-    "@antv/x6": "1.32.8",
+    "@antv/x6": "1.32.11",
     "@antv/x6-vue-shape": "^1.4.0",
     "@toast-ui/editor": "3.1.2",
     "@toast-ui/editor-plugin-code-syntax-highlight": "^3.0.0",

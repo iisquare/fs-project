@@ -13,7 +13,8 @@
           :tips="tips"
           @update:tips="val => $emit('update:tips', val)" />
         <div class="fs-property-title">参数配置</div>
-        <a-form-model-item label="执行命令"><a-textarea v-model="value.data.command" /></a-form-model-item>
+        <a-form-model-item label="编码格式"><a-input v-model="value.data.options.charset" placeholder="默认不进行编码处理" /></a-form-model-item>
+        <a-form-model-item label="执行命令"><a-textarea v-model="value.data.options.command" /></a-form-model-item>
       </a-form-model>
     </a-tab-pane>
   </a-tabs>
@@ -50,7 +51,8 @@ export default {
   methods: {
     formatted (obj) {
       const options = {
-        command: obj.data.command || this.defaults.command
+        charset: obj.data.options.charset || this.defaults.charset,
+        command: obj.data.options.command || this.defaults.command
       }
       return this.config.mergeOptions(obj, options)
     }

@@ -147,10 +147,10 @@
   dependencies:
     vue-demi "^0.7.4"
 
-"@antv/x6@1.32.8":
-  version "1.32.8"
-  resolved "https://registry.yarnpkg.com/@antv/x6/-/x6-1.32.8.tgz#3e8e578dbf25d90c838ac7e82edc3558213aa9d7"
-  integrity sha512-wOc9aG1O/MBVxnNHE2uSpNRWfQFT3sGUCRQkTM9CbFmpNCWb0tLgyVw8xn3jDczN0acw1DLH2vueN8Wrduhi4Q==
+"@antv/x6@1.32.11":
+  version "1.32.11"
+  resolved "https://registry.yarnpkg.com/@antv/x6/-/x6-1.32.11.tgz#645f8406464c17df6dba351c0ae5ddafdd18691a"
+  integrity sha512-mlR5dRCRLTTFdSwIS91j2T78CbwEMiE8U+Q1hLGSXYw8XQLd0gdK5BqzPovVaaCt8K4beIiv4ajMokQAyAfbtA==
   dependencies:
     csstype "^3.0.3"
     jquery "^3.5.1"

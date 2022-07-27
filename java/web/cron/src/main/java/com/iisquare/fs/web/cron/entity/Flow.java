@@ -3,10 +3,10 @@ package com.iisquare.fs.web.cron.entity;
 import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
+import org.quartz.JobKey;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.sql.Blob;
 import java.util.Date;
 
 @Entity
@@ -27,6 +27,10 @@ public class Flow implements Serializable {
     public static class IdClass implements Serializable {
         private String project;
         private String name;
+
+        public static IdClass byJobKey(JobKey jobKey) {
+            return Flow.IdClass.builder().project(jobKey.getGroup()).name(jobKey.getName()).build();
+        }
     }
 
     @Id

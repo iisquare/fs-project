@@ -185,7 +185,7 @@ public class FlowService extends ServiceBase {
         String project = DPUtil.trim(DPUtil.parseString(param.get("project")));
         if (DPUtil.empty(project)) return ApiUtil.result(1002, "项目名称不能为空", project);
         if(!rbacService.hasPermit(request, "delete")) return ApiUtil.result(9403, null, null);
-        boolean result = false;
+        boolean result;
         try {
             result = scheduler.deleteJob(JobKey.jobKey(name, project));
         } catch (SchedulerException e) {

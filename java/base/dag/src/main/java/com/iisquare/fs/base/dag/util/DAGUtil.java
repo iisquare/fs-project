@@ -57,7 +57,7 @@ public class DAGUtil {
         if (!options.isTextual()) return options;
         String text = options.asText();
         if (DPUtil.empty(text)) return options;
-        List<String> list = DPUtil.matcher("\\{.*?\\}", text, false);
+        List<String> list = DPUtil.matcher("#\\{.*?\\}", text, false);
         for (String item : list) {
             JsonNode value = DPUtil.value(config, item.substring(1, item.length() - 1));
             text = text.replace(item, value.asText());
