@@ -7,7 +7,7 @@ public class BeautifyUtil {
 
     public static String duration(long timestamp) {
         List<String> result = new ArrayList<>();
-        result.add(0, timestamp % 100 + "ms");
+        result.add(0, timestamp % 1000 + "ms");
         timestamp /= 1000;
         if (timestamp > 0) {
             result.add(0, timestamp % 60 + "s");
