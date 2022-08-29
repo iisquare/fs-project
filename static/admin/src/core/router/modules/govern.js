@@ -55,6 +55,10 @@ export const layouts = [{
     meta: { title: '血缘分析' },
     component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/meta/blood')
   }, {
+    path: '/govern/meta/influence',
+    meta: { title: '影响分析' },
+    component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/meta/influence')
+  }, {
     path: '/govern/system/source',
     meta: { title: '数据源' },
     component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/system/source')
@@ -70,6 +74,22 @@ export const layouts = [{
     path: '/govern/standard/log',
     meta: { title: '评估结果' },
     component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/standard/log')
+  }, {
+    path: '/govern/quality/type',
+    meta: { title: '规则类型' },
+    component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/quality/type')
+  }, {
+    path: '/govern/quality/rule',
+    meta: { title: '质检规则' },
+    component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/quality/rule')
+  }, {
+    path: '/govern/quality/plan',
+    meta: { title: '质检方案' },
+    component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/quality/plan')
+  }, {
+    path: '/govern/quality/log',
+    meta: { title: '质检报告' },
+    component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/quality/log')
   }]
 }]
 

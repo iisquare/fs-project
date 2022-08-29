@@ -14,13 +14,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class MetaRelation extends Neo4jRelationshipBase {
+public class MetaBloodRelation extends Neo4jRelationshipBase {
 
     @Autowired
-    private MetaNode metaNode;
+    private MetaBloodNode metaBloodNode;
 
-    public MetaRelation() {
-        this.TYPE_NAME = "GovernMeta";
+    public MetaBloodRelation() {
+        this.TYPE_NAME = "GovernBlood";
     }
 
     public ObjectNode formatModelRelation(JsonNode db, Long time) {
@@ -31,12 +31,12 @@ public class MetaRelation extends Neo4jRelationshipBase {
         String aid = db.get("source_catalog").asText() + db.get("source_model").asText();
         String bid = db.get("target_catalog").asText() + db.get("target_model").asText();
 
-        a.putArray(Neo4jUtil.FIELD_LABELS).add(metaNode.labelName());
-        ObjectNode properties = a.putObject(Neo4jUtil.FIELD_PROPERTIES).put(metaNode.idName(), aid);
+        a.putArray(Neo4jUtil.FIELD_LABELS).add(metaBloodNode.labelName());
+        ObjectNode properties = a.putObject(Neo4jUtil.FIELD_PROPERTIES).put(metaBloodNode.idName(), aid);
         if (null != time) properties.put("time", time);
 
-        b.putArray(Neo4jUtil.FIELD_LABELS).add(metaNode.labelName());
-        properties = b.putObject(Neo4jUtil.FIELD_PROPERTIES).put(metaNode.idName(), bid);
+        b.putArray(Neo4jUtil.FIELD_LABELS).add(metaBloodNode.labelName());
+        properties = b.putObject(Neo4jUtil.FIELD_PROPERTIES).put(metaBloodNode.idName(), bid);
         if (null != time) properties.put("time", time);
 
         properties = r.putObject(Neo4jUtil.FIELD_PROPERTIES);
@@ -62,9 +62,9 @@ public class MetaRelation extends Neo4jRelationshipBase {
     public ArrayNode blood(String catalog, String code, int minHops, int maxHops) {
         CypherParameter parameter = new CypherParameter();
         StringBuilder sb = new StringBuilder("MATCH p=(a:");
-        sb.append(metaNode.labelName()).append(")-[r:").append(TYPE_NAME);
+        sb.append(metaBloodNode.labelName()).append(")-[r:").append(TYPE_NAME);
         sb.append("*").append(minHops).append("..").append(maxHops).append("]->(b:");
-        sb.append(metaNode.labelName()).append(") WHERE ");
+        sb.append(metaBloodNode.labelName()).append(") WHERE ");
         if (DPUtil.empty(catalog)) catalog = "/";
         if (DPUtil.empty(code)) {
             sb.append("a.catalog=").append(parameter.variable(catalog));

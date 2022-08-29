@@ -39,4 +39,11 @@ public class MetaController extends PermitControllerBase {
         return ApiUtil.echoResult(result);
     }
 
+    @RequestMapping("/influence")
+    @Permission("model:")
+    public String influenceAction(@RequestBody Map<?, ?> param) {
+        Map<String, Object> result = metaService.influence(param, DPUtil.buildMap());
+        return ApiUtil.echoResult(result);
+    }
+
 }

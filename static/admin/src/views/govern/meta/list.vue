@@ -18,8 +18,9 @@
       <a-list item-layout="vertical" size="large" :pagination="pagination" :data-source="rows" v-else>
         <a-list-item slot="renderItem" class="fs-ui-highlight" :key="index" slot-scope="item, index">
           <template slot="extra">
-            <a-button type="link" @click="forward('detail', item)">详情</a-button>
+            <a-button type="link" @click="forward('influence', item)" v-if="item.mold === 'column'">影响</a-button>
             <a-button type="link" @click="forward('blood', item)">血缘</a-button>
+            <a-button type="link" @click="forward('detail', item)">详情</a-button>
           </template>
           <a-list-item-meta>
             <a-form-model layout="inline" slot="title">
@@ -66,14 +67,31 @@ export default ({
     },
     forward (uri, item) {
       const ids = item.id.split('/')
-      const query = {}
-      if (item.mold === 'column') {
-        query.column = ids.pop()
-        query.code = ids.pop()
-      } else if (uri === 'detail' || item.mold !== 'catalog') {
-        query.code = ids.pop()
+      let query = {}
+      switch (item.mold) {
+        case 'catalog':
+          if (uri === 'detail') {
+            query.model = ids.pop()
+          }
+          break
+        case 'table':
+          query.model = ids.pop()
+          break
+        case 'column':
+          query.column = ids.pop()
+          query.model = ids.pop()
+          break
       }
       query.catalog = ids.join('/') + '/'
+      switch (uri) {
+        case 'detail':
+        case 'blood':
+          query = { catalog: query.catalog, code: query.model, column: query.column }
+          break
+        case 'influence':
+          query = { catalog: query.catalog, model: query.model, code: query.column }
+          break
+      }
       this.$router.push({ path: '/govern/meta/' + uri, query })
     }
   },

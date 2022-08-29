@@ -10,10 +10,10 @@ import org.neo4j.driver.Values;
 import org.springframework.stereotype.Component;
 
 @Component
-public class MetaNode extends Neo4jNodeBase {
+public class MetaBloodNode extends Neo4jNodeBase {
 
-    public MetaNode() {
-        this.LABEL_NAME = "GovernMeta";
+    public MetaBloodNode() {
+        this.LABEL_NAME = "GovernBlood";
     }
 
     public ObjectNode formatModel(JsonNode db, Long time) {

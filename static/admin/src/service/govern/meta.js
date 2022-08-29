@@ -9,5 +9,8 @@ export default {
   },
   blood (param, tips = {}) {
     return base.post('/meta/blood', param, tips)
+  },
+  influence (param, tips = {}) {
+    return base.post('/meta/influence', param, tips)
   }
 }

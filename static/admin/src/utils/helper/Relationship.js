@@ -37,8 +37,25 @@ class Relationship {
     this.simulation.force('center', d3.forceCenter().x(container.offsetWidth / 2).y(container.offsetHeight / 2))
   }
 
+  coincide (links) { // 标记重复路径
+    const result = []
+    const counter = {} // min_max => count
+    for (const link of links) {
+      const key = Math.min(link.source, link.target) + '_' + Math.max(link.source, link.target)
+      const count = counter[key] ?? 0
+      result.push(Object.assign({}, link, { coincideIndex: count }))
+      counter[key] = count + 1
+    }
+    for (const link of result) {
+      const key = Math.min(link.source, link.target) + '_' + Math.max(link.source, link.target)
+      link.coincideCount = counter[key]
+    }
+    return result
+  }
+
   reset (nodes, links) {
     const _this = this
+    links = this.coincide(links)
     this.canvas && this.canvas.remove()
     this.canvas = this.container.append('svg').attr('width', '100%').attr('height', '100%')
     this.svg = this.canvas.append('g')
@@ -77,13 +94,25 @@ class Relationship {
     this.nodeCircle && this.nodeCircle.attr('transform', d => `translate(${d.x}, ${d.y})`)
     this.nodeText && this.nodeText.attr('transform', d => `translate(${d.x}, ${d.y})`)
     this.edgeLine && this.edgeLine.attr('d', function (d) {
-      if (d.source.id !== d.target.id) return `M ${d.source.x} ${d.source.y} L ${d.target.x} ${d.target.y}`
-      const x = d.source.x
-      const y = d.source.y
       const r = 25
-      const theta = Math.atan2((x + centre.x) / 2 - x, y - (y + centre.y) / 2) * (180 / Math.PI)
-      d3.select(this).attr('transform', `rotate(${theta} ${x} ${y})`)
-      return `M ${x} ${y} L ${x + r} ${y + r * 4} A ${r} ${r} 0 0 1 ${x - r} ${y + r * 4} L ${x} ${y}`
+      const sx = d.source.x
+      const sy = d.source.y
+      const tx = d.target.x
+      const ty = d.target.y
+      if (d.source.id === d.target.id) {
+        let theta = Math.atan2((sx + centre.x) / 2 - sx, sy - (sy + centre.y) / 2) * (180 / Math.PI)
+        theta += Math.pow(-1, d.coincideIndex) * d.coincideIndex * 360 / d.coincideCount / Math.PI // 旋转重复路径
+        d3.select(this).attr('transform', `rotate(${theta} ${sx} ${sy})`)
+        return `M ${sx} ${sy} L ${sx + r} ${sy + r * 4} A ${r} ${r} 0 0 1 ${sx - r} ${sy + r * 4} L ${sx} ${sy}`
+      }
+      if (d.coincideCount > 1) { // 弯曲重复路径
+        let offset = d.coincideIndex % 2 === 0 ? (d.coincideIndex + 1) : d.coincideIndex // 相邻奇偶位对称
+        offset *= Math.pow(-1, d.coincideIndex + 1) * r * 2 // 对称偏移
+        const rx = sx + (tx - sx) / 2 + offset
+        const ry = sy + (ty - sy) / 2 + offset
+        return `M ${sx} ${sy} Q ${rx} ${ry} ${tx} ${ty}`
+      }
+      return `M ${sx} ${sy} L ${tx} ${ty}`
     })
     this.edgeText && this.edgeText.attr('transform', function (d, i) {
       if (d.target.x < d.source.x) {

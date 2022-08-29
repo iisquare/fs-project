@@ -123,7 +123,7 @@ public class StandardService extends ServiceBase {
         Standard info = info(catalog, code);
         if (null == info) return ApiUtil.result(1404, "标准信息不存在", null);
         ObjectNode result = DPUtil.toJSON(info, ObjectNode.class);
-        if ("catalog".equals(info.getType())) {
+        if ("catalog".equals(info.getMold())) {
             return ApiUtil.result(0, null, result);
         }
         result.put("nullable", DPUtil.parseBoolean(info.getNullable()));
@@ -209,7 +209,7 @@ public class StandardService extends ServiceBase {
         Standard info = info(catalog, code);
         if (null == info) return ApiUtil.result(0, null, null);
         Integer result = 1;
-        if ("catalog".equals(info.getType())) {
+        if ("catalog".equals(info.getMold())) {
             String path = info.getPath() + "%";
             result += standardDao.deleteByCatalog(path);
         }

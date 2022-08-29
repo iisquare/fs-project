@@ -43,17 +43,23 @@ public class CypherParameter {
     }
 
     public String properties(JsonNode item) {
+        return properties(item, null, null);
+    }
+
+    public String properties(JsonNode item, List<String> include, List<String> exclude) {
         JsonNode properties = item.at("/" + Neo4jUtil.FIELD_PROPERTIES);
         if (!properties.isObject() || properties.size() == 0) return "";
         Iterator<Map.Entry<String, JsonNode>> iterator = properties.fields();
-        StringBuilder sb = new StringBuilder(" {");
+        List<String> list = new ArrayList<>();
         while (iterator.hasNext()) {
             Map.Entry<String, JsonNode> entry = iterator.next();
-            sb.append(entry.getKey()).append(":").append(variable(entry.getValue()));
-            if (iterator.hasNext()) sb.append(", ");
+            String key = entry.getKey();
+            if (null != include && !include.contains(key)) continue;
+            if (null != exclude && exclude.contains(key)) continue;
+            list.add(String.format("%s:%s", key, variable(entry.getValue())));
         }
-        sb.append("}");
-        return sb.toString();
+        if (list.size() == 0) return "";
+        return " {" + DPUtil.implode(", ", list) + "}";
     }
 
     public String labels(JsonNode item) {

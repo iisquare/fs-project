@@ -1,5 +1,7 @@
 package com.iisquare.fs.web.govern.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
@@ -102,6 +104,36 @@ public class ModelService extends ServiceBase {
                 info.getCatalog(), info.getCode(), Sort.by(Sort.Order.asc("sort")));
         result.replace("columns", columnService.format(columns));
         return ApiUtil.result(0, null, result);
+    }
+
+    public ObjectNode infos(Set<Model.IdClass> ids) {
+        ObjectNode result = DPUtil.objectNode();
+        if (ids.size() < 1) return result;
+        List<Model> models = modelDao.findAllById(ids);
+        ArrayNode columns = columnService.format(columnDao.findAll((Specification<ModelColumn>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            for (Model.IdClass id : ids) {
+                predicates.add(cb.and(
+                        cb.equal(root.get("catalog"), id.getCatalog()),
+                        cb.equal(root.get("model"), id.getCode())
+                ));
+            }
+            return cb.or(predicates.toArray(new Predicate[0]));
+        }, Sort.by(Sort.Order.asc("sort"), Sort.Order.asc("code"))));
+        for (Model model : models) {
+            ObjectNode item = DPUtil.toJSON(model, ObjectNode.class);
+            result.replace(model.path(), item);
+            item.replace("pk", DPUtil.toJSON(DPUtil.explode(",", model.getPk())));
+            ArrayNode array = item.putArray("columns");
+            Iterator<JsonNode> iterator = columns.iterator();
+            while (iterator.hasNext()) {
+                JsonNode column = iterator.next();
+                if (!column.at("/catalog").asText().equals(model.getCatalog())) continue;
+                if (!column.at("/model").asText().equals(model.getCode())) continue;
+                array.add(column);
+            }
+        }
+        return result;
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {

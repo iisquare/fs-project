@@ -15,7 +15,8 @@ import com.iisquare.fs.web.govern.dao.ModelRelationDao;
 import com.iisquare.fs.web.govern.elasticsearch.MetaES;
 import com.iisquare.fs.web.govern.entity.Model;
 import com.iisquare.fs.web.govern.entity.ModelRelation;
-import com.iisquare.fs.web.govern.neo4j.MetaRelation;
+import com.iisquare.fs.web.govern.neo4j.MetaBloodRelation;
+import com.iisquare.fs.web.govern.neo4j.MetaInfluenceRelation;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -41,7 +42,11 @@ public class MetaService extends ServiceBase {
     @Autowired
     private MetaES metaES;
     @Autowired
-    private MetaRelation metaRelation;
+    private MetaBloodRelation metaBloodRelation;
+    @Autowired
+    private MetaInfluenceRelation metaInfluenceRelation;
+    @Autowired
+    private ModelService modelService;
 
     public static final Map<String, String> highlights = new LinkedHashMap() {{
         put("code", "code");
@@ -139,8 +144,28 @@ public class MetaService extends ServiceBase {
         String code = DPUtil.trim(DPUtil.parseString(param.get("code")));
         int minHops = ValidateUtil.filterInteger(param.get("minHops"), true, 0, 10, 0);
         int maxHops = ValidateUtil.filterInteger(param.get("maxHops"), true, 0, 10, 1);
-        ArrayNode blood = metaRelation.blood(catalog, code, minHops, maxHops);
+        ArrayNode blood = metaBloodRelation.blood(catalog, code, minHops, maxHops);
         ObjectNode result = Neo4jUtil.mergePath(blood, "p");
+        return ApiUtil.result(0, null, result);
+    }
+
+    public Map<String, Object> influence(Map<?, ?> param, Map<?, ?> config) {
+        String catalog = DPUtil.trim(DPUtil.parseString(param.get("catalog")));
+        String model = DPUtil.trim(DPUtil.parseString(param.get("model")));
+        String code = DPUtil.trim(DPUtil.parseString(param.get("code")));
+        int minHops = ValidateUtil.filterInteger(param.get("minHops"), true, 0, 10, 0);
+        int maxHops = ValidateUtil.filterInteger(param.get("maxHops"), true, 0, 10, 1);
+        ArrayNode blood = metaInfluenceRelation.influence(catalog, model, code, minHops, maxHops);
+        ObjectNode result = Neo4jUtil.mergePath(blood, "p");
+        Iterator<JsonNode> iterator = result.at("/nodes").iterator();
+        Set<Model.IdClass> ids = new LinkedHashSet<>();
+        while (iterator.hasNext()) {
+            JsonNode node = iterator.next();
+            ids.add(Model.IdClass.builder()
+                    .catalog(node.at("/properties/catalog").asText())
+                    .code(node.at("/properties/model").asText()).build());
+        }
+        result.replace("models", modelService.infos(ids));
         return ApiUtil.result(0, null, result);
     }
 
