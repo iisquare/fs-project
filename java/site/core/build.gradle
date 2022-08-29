@@ -1,5 +1,0 @@
-
-dependencies {
-    compile project(':web:core')
-    compile project(':base:view')
-}

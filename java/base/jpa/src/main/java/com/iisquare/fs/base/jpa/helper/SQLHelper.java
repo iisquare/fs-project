@@ -196,7 +196,8 @@ public class SQLHelper {
             statement = statement(connection, sql);
             statement.setFetchSize(callback.fetchSize);
             statement.setFetchDirection(ResultSet.FETCH_REVERSE);
-            ((com.mysql.jdbc.Statement) statement).enableStreamingResults(); // setFetchSize(Integer.MIN_VALUE);
+            // 被HikariProxyPreparedStatement代理，不能直接调用enableStreamingResults
+            statement.setFetchSize(Integer.MIN_VALUE);
             rs = statement.executeQuery();
             ResultSetMetaData meta = rs.getMetaData();
             int count = meta.getColumnCount();

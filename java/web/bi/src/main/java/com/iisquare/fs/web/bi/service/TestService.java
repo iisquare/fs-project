@@ -23,12 +23,12 @@ public class TestService {
         session.read().format("mongodb").options(new LinkedHashMap<String, String>(){{
             put(MongoSourceNode.INPUT_PREFIX + "connection.uri", "mongodb://root:admin888@127.0.0.1:27017");
             put(MongoSourceNode.INPUT_PREFIX + "database", "fs_project");
-            put(MongoSourceNode.INPUT_PREFIX + "collection", "fs.resource");
+            put(MongoSourceNode.INPUT_PREFIX + "collection", "fs_resource");
         }}).load().createOrReplaceTempView("resource");
         session.read().format("mongodb").options(new LinkedHashMap<String, String>(){{
             put(MongoSourceNode.INPUT_PREFIX + "connection.uri", "mongodb://root:admin888@127.0.0.1:27017");
             put(MongoSourceNode.INPUT_PREFIX + "database", "fs_project");
-            put(MongoSourceNode.INPUT_PREFIX + "collection", "fs.test");
+            put(MongoSourceNode.INPUT_PREFIX + "collection", "fs_test");
         }}).load().createOrReplaceTempView("test");
         Dataset<Row> dataset = session.sql(DPUtil.parseString(arg.get("sql")));
         dataset.show();

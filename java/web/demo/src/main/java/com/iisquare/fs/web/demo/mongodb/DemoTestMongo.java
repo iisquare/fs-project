@@ -9,7 +9,7 @@ public class DemoTestMongo extends MongoBase {
 
     public DemoTestMongo() {
         this.database = "fs_project";
-        this.table = "fs.demo.test";
+        this.table = "fs_demo_test";
     }
 
     @Override

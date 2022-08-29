@@ -2,5 +2,6 @@ dependencies {
     compile project(':base:core')
     testCompile project(':base:test')
 
-    compile group: 'com.clickhouse', name: 'clickhouse-jdbc', version: '0.3.2-patch10', classifier: 'all'
+    compile group: 'org.postgresql', name: 'postgresql', version: '42.4.0'
+    compile group: 'com.clickhouse', name: 'clickhouse-jdbc', version: '0.3.2-patch11', classifier: 'all'
 }

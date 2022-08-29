@@ -10,7 +10,7 @@ public class FormDataMongo extends MongoBase {
 
     public FormDataMongo() {
         this.database = "fs_project";
-        this.table = "fs.oa.form.data";
+        this.table = "fs_oa_form_data";
     }
 
     @Override

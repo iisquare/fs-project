@@ -230,6 +230,7 @@ services:
     volumes:
       - ./service/superset/config.py:/app/superset/config.py
   clickhouse:
+    privileged: true
     build:
       context: ./service/clickhouse
       args:
@@ -248,3 +249,14 @@ services:
     volumes:
       - ${DATA_DIR}/clickhouse/data:/var/lib/clickhouse
       - ${DATA_DIR}/clickhouse/logs:/val/log/clickhouse-server
+  trino:
+    user: root
+    build:
+      context: ./service/trino
+      args:
+        - TRINO_VERSION=${TRINO_VERSION}
+    ports:
+      - "${BIND_ADDRESS}${BIND_COLON}${TRINO_PORT}:8080"
+    volumes:
+      - ${DATA_DIR}/trino/data:/data/trino
+      - ./service/trino/etc/catalog:/etc/trino/catalog

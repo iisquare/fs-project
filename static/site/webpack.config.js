@@ -16,7 +16,7 @@ module.exports = (env, args) => {
   const isProd = process.env.NODE_ENV === 'production'
   const siteDir = './sites'
   const destPath = path.resolve(__dirname, '../resources/dest')
-  const assetsPath = path.resolve(__dirname, '../../java/site/core/src/main/resources')
+  const assetsPath = path.resolve(__dirname, '../../java/web/site/src/main/resources')
 
   const entry = (function () {
     const entry = {}

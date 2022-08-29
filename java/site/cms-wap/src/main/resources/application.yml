@@ -1,5 +1,0 @@
-spring:
-  application:
-    name: fs-cms-wap
-  profiles:
-    active: dev,idev
