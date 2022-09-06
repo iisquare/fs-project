@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.lucene.service;
 
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
@@ -16,6 +17,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.criteria.Predicate;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
@@ -70,26 +72,52 @@ public class DictionaryService extends ServiceBase {
         return info.isPresent() ? info.get() : null;
     }
 
-    public List<Dictionary> saveAll(Dictionary info, int uid) {
-        if (null == info || DPUtil.empty(info.getContent())) return null;
+    public Map<String, Object> saveAll(Map<?, ?> param, HttpServletRequest request) {
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        String catalogue = DPUtil.trim(DPUtil.parseString(param.get("catalogue")));
+        if(DPUtil.empty(catalogue)) return ApiUtil.result(1001, "词库目录异常", catalogue);
+        String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
+        if(!type().containsKey(type)) {
+            return ApiUtil.result(1002, "词库类型异常", type);
+        }
+        String content = DPUtil.trim(DPUtil.parseString(param.get("content")));
+        if(DPUtil.empty(content)) return ApiUtil.result(1003, "词条内容不能为空", content);
+        String source = DPUtil.trim(DPUtil.parseString(param.get("source")));
+        if(DPUtil.empty(source)) return ApiUtil.result(1004, "词条来源不能为空", source);
+        Dictionary info;
+        if(id > 0) {
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
+            info = info(id);
+            if(null == info) return ApiUtil.result(404, null, id);
+        } else {
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
+            info = new Dictionary();
+        }
+        info.setCatalogue(catalogue);
+        info.setType(type);
+        info.setContent(content);
+        info.setSource(source);
+        int uid = rbacService.uid(request);
+        if (DPUtil.empty(info.getContent())) return null;
         if (!DPUtil.empty(info.getId())) {
-            return Arrays.asList(save(info, uid));
+            return ApiUtil.result(0, null, Arrays.asList(save(info, uid)));
         }
         long time = System.currentTimeMillis();
         List<Dictionary> list = new ArrayList<>();
-        for (String content : DPUtil.explode("\n", info.getContent())) {
-            content = DPUtil.trim(content);
-            if (DPUtil.empty(content)) continue;
+        for (String item : DPUtil.explode("\n", info.getContent())) {
+            item = DPUtil.trim(item);
+            if (DPUtil.empty(item)) continue;
             list.add(Dictionary.builder()
-                    .catalogue(info.getCatalogue()).type(info.getType()).source(info.getSource()).content(content)
+                    .catalogue(info.getCatalogue()).type(info.getType()).source(info.getSource()).content(item)
                     .createdTime(time).createdUid(uid).updatedTime(time).updatedUid(uid)
                     .build());
         }
         if (list.size() < 1) return null;
-        return dictionaryDao.saveAll(list);
+        list = dictionaryDao.saveAll(list);
+        return ApiUtil.result(0, null, list);
     }
 
-    public Dictionary save(Dictionary info, int uid) {
+    private Dictionary save(Dictionary info, int uid) {
         long time = System.currentTimeMillis();
         info.setUpdatedTime(time);
         info.setUpdatedUid(uid);

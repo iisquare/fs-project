@@ -67,7 +67,7 @@
 <script>
 import icons from '@/assets/icons'
 import config from './design/config'
-import dashboardService from '@/service/bi/dashboard'
+import layoutService from '@/service/auto/layout'
 import Property from './design/Property'
 import Element from './design/Element'
 
@@ -131,7 +131,7 @@ export default {
     load () {
       this.loading = true
       this.tips = '正在载入数据信息...'
-      dashboardService.info({ id: this.$route.query.id }).then(result => {
+      layoutService.info({ id: this.$route.query.id }).then(result => {
         if (result.code !== 0) return false
         Object.assign(this.screen, {
           id: result.data.id,
@@ -157,7 +157,7 @@ export default {
     },
     save () {
       const data = this.collect()
-      dashboardService.save({ id: this.info.id, content: JSON.stringify(data) }).then(result => {
+      layoutService.save({ id: this.info.id, content: JSON.stringify(data) }).then(result => {
         this.loading = false
         this.tips = result.message
       })

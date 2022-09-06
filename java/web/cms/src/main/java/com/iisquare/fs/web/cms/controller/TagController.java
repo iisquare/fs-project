@@ -2,7 +2,6 @@ package com.iisquare.fs.web.cms.controller;
 
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.iisquare.fs.web.cms.entity.Tag;
 import com.iisquare.fs.web.cms.service.TagService;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rbac.Permission;
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -39,37 +37,14 @@ public class TagController extends PermitControllerBase {
     @RequestMapping("/save")
     @Permission({"add", "modify"})
     public String saveAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-        if(DPUtil.empty(name)) return ApiUtil.echoResult(1001, "名称异常", name);
-        int status = DPUtil.parseInt(param.get("status"));
-        if(!tagService.status("default").containsKey(status)) return ApiUtil.echoResult(1002, "状态异常", status);
-        Tag info = tagService.info(name);
-        if(null == info) {
-            if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
-            info = new Tag();
-        } else {
-            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
-        }
-        info.setName(name);
-        info.setCover(DPUtil.trim(DPUtil.parseString(param.get("cover"))));
-        info.setTitle(DPUtil.trim(DPUtil.parseString(param.get("title"))));
-        info.setKeyword(DPUtil.trim(DPUtil.parseString(param.get("keyword"))));
-        info.setSort(DPUtil.parseInt(param.get("sort")));
-        info.setStatus(status);
-        info.setDescription(DPUtil.parseString(param.get("description")));
-        info = tagService.save(info, rbacService.uid(request));
-        return ApiUtil.echoResult(null == info ? 500 : 0, null, info);
+        Map<String, Object> result = tagService.save(param, request);
+        return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/delete")
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        List<Integer> ids = null;
-        if(param.get("ids") instanceof List) {
-            ids = DPUtil.parseIntList((List<?>) param.get("ids"));
-        } else {
-            ids = Arrays.asList(DPUtil.parseInt(param.get("ids")));
-        }
+        List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
         boolean result = tagService.delete(ids, rbacService.uid(request));
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }

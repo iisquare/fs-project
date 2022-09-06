@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 11/08/2022 15:46:15
+ Date: 29/08/2022 10:01:22
 */
 
 SET NAMES utf8mb4;
@@ -34,7 +34,7 @@ CREATE TABLE `fs_govern_assess`  (
   `updated_uid` int(0) NOT NULL DEFAULT 0,
   `updated_time` bigint(0) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for fs_govern_assess_log
@@ -58,7 +58,7 @@ CREATE TABLE `fs_govern_assess_log`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_assess`(`assess`) USING BTREE,
   INDEX `idx_standard`(`standard`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 15 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for fs_govern_model
@@ -124,19 +124,21 @@ CREATE TABLE `fs_govern_model_relation`  (
   INDEX `idx_relation`(`relation`) USING BTREE,
   INDEX `idx_source_model`(`source_model`) USING BTREE,
   INDEX `idx_target_model`(`target_model`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for fs_govern_quality_type
+-- Table structure for fs_govern_quality_logic
 -- ----------------------------
-DROP TABLE IF EXISTS `fs_govern_quality_type`;
-CREATE TABLE `fs_govern_quality_type`  (
+DROP TABLE IF EXISTS `fs_govern_quality_logic`;
+CREATE TABLE `fs_govern_quality_logic`  (
   `catalog` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `code` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `path` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `mold` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  `arg` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  `suggest` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `sort` int(0) NOT NULL DEFAULT 0,
   `status` tinyint(0) NOT NULL DEFAULT 0,
   `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,

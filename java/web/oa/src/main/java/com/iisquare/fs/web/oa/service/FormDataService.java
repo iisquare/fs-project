@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.oa.service;
 
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.mongodb.MongoCore;
@@ -15,6 +16,7 @@ import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
@@ -90,13 +92,35 @@ public class FormDataService extends ServiceBase {
         return formDataMongo.one(id);
     }
 
-    public Document save(Document info, int uid) {
-        long time = System.currentTimeMillis();
-        info.append("updatedTime", time).append("updatedUid", uid);
-        if(!info.containsKey(MongoCore.FIELD_ID)) {
-            info.append("createdTime", time).append("createdUid", uid);
+    public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
+        String id = DPUtil.trim(DPUtil.parseString(param.get(MongoCore.FIELD_ID)));
+        Integer frameId = ValidateUtil.filterInteger(param.get("frameId"), true, 1, null, 0);
+        if(frameId < 1) return ApiUtil.result(1001, "所属表单参数异常", frameId);
+        String bpmWorkflowId = DPUtil.trim(DPUtil.parseString(param.get("bpmWorkflowId")));
+        String bpmInstanceId = DPUtil.trim(DPUtil.parseString(param.get("bpmInstanceId")));
+        String bpmStartUserId = DPUtil.trim(DPUtil.parseString(param.get("bpmStartUserId")));
+        Document document = Document.parse(DPUtil.stringify(param.get("content")));
+        document.append("frameId", frameId).append("bpmWorkflowId", bpmWorkflowId);
+        document.append("bpmInstanceId", bpmInstanceId).append("bpmStartUserId", bpmStartUserId);
+        if(DPUtil.empty(id)) {
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
+            document.remove(MongoCore.FIELD_ID);
+        } else {
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
+            document.put(MongoCore.FIELD_ID, id);
         }
-        return formDataMongo.save(info);
+        document = save(document, rbacService.uid(request));
+        return ApiUtil.result(null == document ? 500 : 0, null, document);
+
+    }
+
+    public Document save(Document document, int uid) {
+        long time = System.currentTimeMillis();
+        document.append("updatedTime", time).append("updatedUid", uid);
+        if(!document.containsKey(MongoCore.FIELD_ID)) {
+            document.append("createdTime", time).append("createdUid", uid);
+        }
+        return formDataMongo.save(document);
     }
 
     public long delete(List<String> ids, int uid) {

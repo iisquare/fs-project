@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 11/08/2022 15:45:53
+ Date: 06/09/2022 17:11:08
 */
 
 SET NAMES utf8mb4;
@@ -87,7 +87,7 @@ CREATE TABLE `fs_member_menu`  (
   `updated_time` bigint(0) NOT NULL DEFAULT 0,
   `updated_uid` int(0) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 126 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 129 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of fs_member_menu
@@ -186,9 +186,9 @@ INSERT INTO `fs_member_menu` VALUES (95, '引用管理', '后台管理:内容管
 INSERT INTO `fs_member_menu` VALUES (96, '文件存储', '后台管理:文件存储', 1, 'hdd', '/file/index/index', '', 0, 1, '文件存储、图库图床、对象存储', 1627548117479, 1, 1627548117479, 1);
 INSERT INTO `fs_member_menu` VALUES (97, '存档管理', '后台管理:文件存储:存档管理', 96, 'file', '/file/archive', '', 0, 1, '', 1627548162634, 1, 1627548162634, 1);
 INSERT INTO `fs_member_menu` VALUES (98, '文件列表', '后台管理:文件存储:存档管理:文件列表', 97, '', '/file/archive/list', '', 0, 1, '', 1627548198271, 1, 1627548198271, 1);
-INSERT INTO `fs_member_menu` VALUES (99, '项目管理', '后台管理:项目管理', 1, 'project', '/project/index/index', '', 0, 1, '脚手架、页面设计、应用设计', 1639719591630, 1, 1639720193584, 1);
-INSERT INTO `fs_member_menu` VALUES (100, '页面管理', '后台管理:项目管理:页面管理', 99, 'read', '/project/page', '', 0, 1, '', 1639719989845, 1, 1639719989845, 1);
-INSERT INTO `fs_member_menu` VALUES (101, '应用管理', '后台管理:项目管理:应用管理', 99, 'book', '/project/app', '', 0, 1, '', 1639720019045, 1, 1639720019045, 1);
+INSERT INTO `fs_member_menu` VALUES (99, '项目管理', '后台管理:项目管理', 1, 'project', '/auto/index/index', '', 0, 1, '脚手架、页面设计、应用设计', 1639719591630, 1, 1662455201977, 1);
+INSERT INTO `fs_member_menu` VALUES (100, '页面设计', '后台管理:项目管理:页面设计', 99, 'read', '/auto/layout', '', 0, 1, '', 1639719989845, 1, 1662455350983, 1);
+INSERT INTO `fs_member_menu` VALUES (101, '应用管理', '后台管理:项目管理:应用管理', 99, 'book', '/auto/app', '', 0, 1, '', 1639720019045, 1, 1662455223175, 1);
 INSERT INTO `fs_member_menu` VALUES (102, '数据治理', '后台管理:数据治理', 1, 'medicine-box', '/govern/index/index', '', 0, 1, '数据接入、元数据、集成同步', 1642381520827, 1, 1642381520827, 1);
 INSERT INTO `fs_member_menu` VALUES (103, '元数据', '后台管理:数据治理:元数据', 102, 'container', '/govern/meta', '', 0, 1, '', 1642381648881, 1, 1648436130377, 1);
 INSERT INTO `fs_member_menu` VALUES (104, '定时任务', '后台管理:服务管理:定时任务', 58, 'clock-circle', '/server/cron', '', 0, 1, '', 1642571306245, 1, 1642571306245, 1);
@@ -210,12 +210,13 @@ INSERT INTO `fs_member_menu` VALUES (119, '系统设置', '后台管理:数据�
 INSERT INTO `fs_member_menu` VALUES (120, '数据源', '后台管理:数据治理:系统设置:数据源', 119, '', '/govern/system/source', '', 0, 1, '', 1651288324135, 1, 1651288324135, 1);
 INSERT INTO `fs_member_menu` VALUES (121, '标准管理', '后台管理:数据治理:数据标准:标准管理', 111, '', '/govern/standard/list', '', 0, 1, '', 1651369141111, 1, 1651369141111, 1);
 INSERT INTO `fs_member_menu` VALUES (122, '落地评估', '后台管理:数据治理:数据标准:落地评估', 111, '', '/govern/standard/assess', '', 0, 1, '', 1651369188363, 1, 1651369188363, 1);
-INSERT INTO `fs_member_menu` VALUES (123, '规则类型', '后台管理:数据治理:数据质量:规则类型', 113, '', '/govern/quality/type', '', 0, 1, '', 1651369714750, 1, 1660203474581, 1);
+INSERT INTO `fs_member_menu` VALUES (123, '规则逻辑', '后台管理:数据治理:数据质量:规则逻辑', 113, '', '/govern/quality/logic', '', 0, 1, '', 1651369714750, 1, 1661737120779, 1);
 INSERT INTO `fs_member_menu` VALUES (124, '评估结果', '后台管理:数据治理:数据标准:评估结果', 111, '', '/govern/standard/log', '', 0, 1, '', 1652682411082, 1, 1652682411082, 1);
 INSERT INTO `fs_member_menu` VALUES (125, '调度日志', '后台管理:服务管理:定时任务:调度日志', 104, '', '/server/cron/flowLog', '', 0, 1, '', 1658735846363, 1, 1658735846363, 1);
 INSERT INTO `fs_member_menu` VALUES (126, '质检规则', '后台管理:数据治理:数据质量:质检规则', 113, '', '/govern/quality/rule', '', 0, 1, '', 1660203491808, 1, 1660203491808, 1);
 INSERT INTO `fs_member_menu` VALUES (127, '质检方案', '后台管理:数据治理:数据质量:质检方案', 113, '', '/govern/quality/plan', '', 0, 1, '', 1660203503955, 1, 1660203503955, 1);
 INSERT INTO `fs_member_menu` VALUES (128, '质检报告', '后台管理:数据治理:数据质量:质检报告', 113, '', '/govern/quality/log', '', 0, 1, '', 1660203570855, 1, 1660203570855, 1);
+INSERT INTO `fs_member_menu` VALUES (129, '页面布局', '后台管理:项目管理:页面管理:页面布局', 100, '', '/auto/layout/list', '', 0, 1, '', 1662455306154, 1, 1662455306154, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_relation
@@ -265,6 +266,7 @@ INSERT INTO `fs_member_relation` VALUES ('role_menu_1_125', 'role_menu', 1, 125)
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_126', 'role_menu', 1, 126);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_127', 'role_menu', 1, 127);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_128', 'role_menu', 1, 128);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_129', 'role_menu', 1, 129);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_13', 'role_menu', 1, 13);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_14', 'role_menu', 1, 14);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_15', 'role_menu', 1, 15);
@@ -466,6 +468,7 @@ INSERT INTO `fs_member_relation` VALUES ('role_resource_1_184', 'role_resource',
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_185', 'role_resource', 1, 185);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_186', 'role_resource', 1, 186);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_187', 'role_resource', 1, 187);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_188', 'role_resource', 1, 188);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_19', 'role_resource', 1, 19);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_2', 'role_resource', 1, 2);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_20', 'role_resource', 1, 20);
@@ -726,10 +729,10 @@ INSERT INTO `fs_member_resource` VALUES (130, '数据报表', '商业智能:数�
 INSERT INTO `fs_member_resource` VALUES (131, '添加', '商业智能:数据报表:添加', 130, 'bi', 'visualize', 'add', 0, 1, '', 1637658815910, 1, 1637658815910, 1);
 INSERT INTO `fs_member_resource` VALUES (132, '修改', '商业智能:数据报表:修改', 130, 'bi', 'visualize', 'modify', 0, 1, '', 1637658833371, 1, 1637658833371, 1);
 INSERT INTO `fs_member_resource` VALUES (133, '删除', '商业智能:数据报表:删除', 130, 'bi', 'visualize', 'delete', 0, 1, '', 1637658848750, 1, 1637658848750, 1);
-INSERT INTO `fs_member_resource` VALUES (134, '数据大屏', '商业智能:数据大屏', 31, 'bi', 'dashboard', '', 0, 1, '', 1637658872174, 1, 1637658872174, 1);
-INSERT INTO `fs_member_resource` VALUES (135, '添加', '商业智能:数据大屏:添加', 134, 'bi', 'dashboard', 'add', 0, 1, '', 1637658885131, 1, 1637658885131, 1);
-INSERT INTO `fs_member_resource` VALUES (136, '修改', '商业智能:数据大屏:修改', 134, 'bi', 'dashboard', 'modify', 0, 1, '', 1637658899570, 1, 1637658899570, 1);
-INSERT INTO `fs_member_resource` VALUES (137, '删除', '商业智能:数据大屏:删除', 134, 'bi', 'dashboard', 'delete', 0, 1, '', 1637658911014, 1, 1637658911014, 1);
+INSERT INTO `fs_member_resource` VALUES (134, '页面设计', '项目管理:页面设计', 188, 'auto', 'layout', '', 0, 1, '', 1637658872174, 1, 1662455123717, 1);
+INSERT INTO `fs_member_resource` VALUES (135, '添加', '项目管理:页面设计:添加', 134, 'auto', 'layout', 'add', 0, 1, '', 1637658885131, 1, 1662455137977, 1);
+INSERT INTO `fs_member_resource` VALUES (136, '修改', '项目管理:页面设计:修改', 134, 'auto', 'layout', 'modify', 0, 1, '', 1637658899570, 1, 1662455152100, 1);
+INSERT INTO `fs_member_resource` VALUES (137, '删除', '项目管理:页面设计:删除', 134, 'auto', 'layout', 'delete', 0, 1, '', 1637658911014, 1, 1662455164640, 1);
 INSERT INTO `fs_member_resource` VALUES (138, '检索', '商业智能:数据报表:检索', 130, 'bi', 'visualize', 'search', 0, 1, '', 1637741322686, 1, 1637741322686, 1);
 INSERT INTO `fs_member_resource` VALUES (139, '数据矩阵', '商业智能:数据矩阵', 31, 'bi', 'matrix', '', 0, 1, '', 1637886974028, 1, 1637886974028, 1);
 INSERT INTO `fs_member_resource` VALUES (140, '添加', '商业智能:数据矩阵:添加', 139, 'bi', 'matrix', 'add', 0, 1, '', 1637886991599, 1, 1637886991599, 1);
@@ -770,16 +773,17 @@ INSERT INTO `fs_member_resource` VALUES (174, '落地评估', '数据治理:落�
 INSERT INTO `fs_member_resource` VALUES (175, '添加', '数据治理:落地评估:添加', 174, 'govern', 'assess', 'add', 0, 1, '', 1651369470508, 1, 1651369470508, 1);
 INSERT INTO `fs_member_resource` VALUES (176, '修改', '数据治理:落地评估:修改', 174, 'govern', 'assess', 'modify', 0, 1, '', 1651369483410, 1, 1651369483410, 1);
 INSERT INTO `fs_member_resource` VALUES (177, '删除', '数据治理:落地评估:删除', 174, 'govern', 'assess', 'delete', 0, 1, '', 1651369492457, 1, 1651369492457, 1);
-INSERT INTO `fs_member_resource` VALUES (178, '规则类型', '数据治理:规则类型', 157, 'govern', 'qualityType', '', 0, 1, '', 1651369515566, 1, 1660203384444, 1);
-INSERT INTO `fs_member_resource` VALUES (179, '添加', '数据治理:规则类型:添加', 178, 'govern', 'qualityType', 'add', 0, 1, '', 1651369527926, 1, 1660203391233, 1);
-INSERT INTO `fs_member_resource` VALUES (180, '修改', '数据治理:规则类型:修改', 178, 'govern', 'qualityType', 'modify', 0, 1, '', 1651369543376, 1, 1660203395980, 1);
-INSERT INTO `fs_member_resource` VALUES (181, '删除', '数据治理:规则类型:删除', 178, 'govern', 'qualityType', 'delete', 0, 1, '', 1651369553877, 1, 1660203400680, 1);
+INSERT INTO `fs_member_resource` VALUES (178, '规则逻辑', '数据治理:规则逻辑', 157, 'govern', 'qualityLogic', '', 0, 1, '', 1651369515566, 1, 1661738820081, 1);
+INSERT INTO `fs_member_resource` VALUES (179, '添加', '数据治理:规则逻辑:添加', 178, 'govern', 'qualityLogic', 'add', 0, 1, '', 1651369527926, 1, 1661738826574, 1);
+INSERT INTO `fs_member_resource` VALUES (180, '修改', '数据治理:规则逻辑:修改', 178, 'govern', 'qualityLogic', 'modify', 0, 1, '', 1651369543376, 1, 1661738831074, 1);
+INSERT INTO `fs_member_resource` VALUES (181, '删除', '数据治理:规则逻辑:删除', 178, 'govern', 'qualityLogic', 'delete', 0, 1, '', 1651369553877, 1, 1661738836618, 1);
 INSERT INTO `fs_member_resource` VALUES (182, '质检方案', '数据治理:质检方案', 157, 'govern', 'plan', '', 0, 1, '', 1651369579119, 1, 1651369579119, 1);
 INSERT INTO `fs_member_resource` VALUES (183, '添加', '数据治理:质检方案:添加', 182, 'govern', 'plan', 'add', 0, 1, '', 1651369589073, 1, 1651369589073, 1);
 INSERT INTO `fs_member_resource` VALUES (184, '修改', '数据治理:质检方案:修改', 182, 'govern', 'plan', 'modify', 0, 1, '', 1651369599391, 1, 1651369599391, 1);
 INSERT INTO `fs_member_resource` VALUES (185, '删除', '数据治理:质检方案:删除', 182, 'govern', 'plan', 'delete', 0, 1, '', 1651369607940, 1, 1651369607940, 1);
 INSERT INTO `fs_member_resource` VALUES (186, '评估结果', '数据治理:落地评估:评估结果', 174, 'govern', 'assess', 'log', 0, 1, '', 1652748865504, 1, 1652748865504, 1);
 INSERT INTO `fs_member_resource` VALUES (187, '删除日志', '数据治理:落地评估:删除日志', 174, 'govern', 'assess', 'clear', 0, 1, '', 1652748880199, 1, 1652748880199, 1);
+INSERT INTO `fs_member_resource` VALUES (188, '项目管理', '项目管理', 0, 'auto', '', '', 0, 1, '', 1662455086472, 1, 1662455086472, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_role
@@ -867,7 +871,7 @@ CREATE TABLE `fs_member_user`  (
 -- ----------------------------
 -- Records of fs_member_user
 -- ----------------------------
-INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1658892277434, '127.0.0.1', 0);
+INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1661484372567, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (2, 'test', '测试123', '4b361be828611add84453a24f39772a5', '0905', 0, 1, '', 1528081567988, '127.0.0.1', 1, 1542958281919, 1, 1528267171953, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (3, '111', '111', '', '', 6, -1, '', 0, '', 0, 1658215959314, 1, 0, '', 0);
 INSERT INTO `fs_member_user` VALUES (4, '222', '222', '', '', 0, 1, '', 0, '', 0, 1629363081609, 1, 0, '', 1630054276000);

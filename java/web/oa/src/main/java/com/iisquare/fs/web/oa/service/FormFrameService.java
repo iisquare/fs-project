@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.oa.service;
 
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ReflectUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
@@ -18,6 +19,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
@@ -87,7 +89,44 @@ public class FormFrameService extends ServiceBase {
         return info.isPresent() ? info.get() : null;
     }
 
-    public FormFrame save(FormFrame info, int uid) {
+    public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+        int sort = DPUtil.parseInt(param.get("sort"));
+        int status = DPUtil.parseInt(param.get("status"));
+        String storage = DPUtil.parseString(param.get("storage"));
+        String content = DPUtil.parseString(param.get("content"));
+        String description = DPUtil.parseString(param.get("description"));
+        FormFrame info;
+        if(id > 0) {
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
+            info = info(id);
+            if(null == info) return ApiUtil.result(404, null, id);
+            if(param.containsKey("name")) {
+                if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+                info.setName(name);
+            }
+            if(param.containsKey("sort")) info.setSort(sort);
+            if(param.containsKey("status")) {
+                if(!status("default").containsKey(status)) return ApiUtil.result(1002, "状态异常", status);
+                info.setStatus(status);
+            }
+            if(param.containsKey("storage")) info.setStorage(storage);
+            if(param.containsKey("content")) info.setContent(content);
+            if(param.containsKey("description")) info.setDescription(description);
+        } else {
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
+            info = new FormFrame();
+            if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+            info.setName(name);
+            info.setSort(sort);
+            if(!status("default").containsKey(status)) return ApiUtil.result(1002, "状态异常", status);
+            info.setStatus(status);
+            info.setStorage(storage);
+            info.setContent(content);
+            info.setDescription(description);
+        }
+        int uid = rbacService.uid(request);
         long time = System.currentTimeMillis();
         info.setUpdatedTime(time);
         info.setUpdatedUid(uid);
@@ -95,7 +134,8 @@ public class FormFrameService extends ServiceBase {
             info.setCreatedTime(time);
             info.setCreatedUid(uid);
         }
-        return formFrameDao.save(info);
+        info = formFrameDao.save(info);
+        return ApiUtil.result(0, null, info);
     }
 
     public boolean delete(List<Integer> ids, int uid) {

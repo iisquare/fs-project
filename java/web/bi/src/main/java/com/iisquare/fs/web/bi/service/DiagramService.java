@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.bi.service;
 
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
@@ -14,6 +15,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.criteria.Predicate;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
@@ -101,7 +103,44 @@ public class DiagramService extends ServiceBase {
         return info.isPresent() ? info.get() : null;
     }
 
-    public Diagram save(Diagram info, int uid) {
+    public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+        String engine = DPUtil.parseString(param.get("engine"));
+        String model = DPUtil.parseString(param.get("model"));
+        int sort = DPUtil.parseInt(param.get("sort"));
+        int status = DPUtil.parseInt(param.get("status"));
+        String content = DPUtil.parseString(param.get("content"));
+        String description = DPUtil.parseString(param.get("description"));
+        if(param.containsKey("name") || id < 1) {
+            if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+        }
+        if(param.containsKey("engine")) {
+            if(!engines().containsKey(engine)) return ApiUtil.result(1002, "计算引擎参数异常", engine);
+        }
+        if(param.containsKey("model")) {
+            if(!models().containsKey(model)) return ApiUtil.result(1003, "处理模式参数异常", model);
+        }
+        if(param.containsKey("status")) {
+            if(!status("default").containsKey(status)) return ApiUtil.result(1004, "状态参数异常", status);
+        }
+        Diagram info;
+        if(id > 0) {
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
+            info = info(id);
+            if(null == info) return ApiUtil.result(404, null, id);
+        } else {
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
+            info = new Diagram();
+        }
+        if(param.containsKey("name") || null == info.getId()) info.setName(name);
+        if(param.containsKey("engine") || null == info.getId()) info.setEngine(engine);
+        if(param.containsKey("model") || null == info.getId()) info.setModel(model);
+        if(param.containsKey("content") || null == info.getId()) info.setContent(content);
+        if(param.containsKey("description") || null == info.getId()) info.setDescription(description);
+        if(param.containsKey("sort") || null == info.getId()) info.setSort(sort);
+        if(param.containsKey("status") || null == info.getId()) info.setStatus(status);
+        int uid = rbacService.uid(request);
         long time = System.currentTimeMillis();
         info.setUpdatedTime(time);
         info.setUpdatedUid(uid);
@@ -109,7 +148,9 @@ public class DiagramService extends ServiceBase {
             info.setCreatedTime(time);
             info.setCreatedUid(uid);
         }
-        return diagramDao.save(info);
+        info = diagramDao.save(info);
+        return ApiUtil.result(0, null, info);
+
     }
 
     public boolean delete(List<Integer> ids, int uid) {

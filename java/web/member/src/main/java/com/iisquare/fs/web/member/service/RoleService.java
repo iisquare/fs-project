@@ -1,6 +1,7 @@
 package com.iisquare.fs.web.member.service;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
@@ -14,10 +15,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
@@ -27,6 +26,8 @@ public class RoleService extends ServiceBase {
     private RoleDao roleDao;
     @Autowired
     private UserService userService;
+    @Autowired
+    private RbacService rbacService;
 
     public Map<?, ?> status(String level) {
         Map<Integer, String> status = new LinkedHashMap<>();
@@ -63,7 +64,28 @@ public class RoleService extends ServiceBase {
         return info.isPresent() ? info.get() : null;
     }
 
-    public Role save(Role info, int uid) {
+    public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+        if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+        int sort = DPUtil.parseInt(param.get("sort"));
+        int status = DPUtil.parseInt(param.get("status"));
+        if(!status("default").containsKey(status)) return ApiUtil.result(1002, "状态异常", status);
+        String description = DPUtil.parseString(param.get("description"));
+        Role info = null;
+        if(id > 0) {
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
+            info = info(id);
+            if(null == info) return ApiUtil.result(404, null, id);
+        } else {
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
+            info = new Role();
+        }
+        info.setName(name);
+        info.setSort(sort);
+        info.setStatus(status);
+        info.setDescription(description);
+        int uid = rbacService.uid(request);
         long time = System.currentTimeMillis();
         info.setUpdatedTime(time);
         info.setUpdatedUid(uid);
@@ -71,7 +93,8 @@ public class RoleService extends ServiceBase {
             info.setCreatedTime(time);
             info.setCreatedUid(uid);
         }
-        return roleDao.save(info);
+        info = roleDao.save(info);
+        return ApiUtil.result(0, null, info);
     }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> args) {

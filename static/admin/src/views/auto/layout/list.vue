@@ -29,18 +29,18 @@
         >
           <span slot="action" slot-scope="text, record">
             <a-button-group>
-              <a-button type="link" size="small" v-permit="'bi:dashboard:'" @click="show(text, record)">查看</a-button>
-              <a-button v-permit="'bi:dashboard:modify'" type="link" size="small" @click="edit(text, record)">编辑</a-button>
+              <a-button type="link" size="small" v-permit="'auto:layout:'" @click="show(text, record)">查看</a-button>
+              <a-button v-permit="'auto:layout:modify'" type="link" size="small" @click="edit(text, record)">编辑</a-button>
               <a-button type="link" size="small">
-                <router-link :to="'/bi/report/screen?id=' + record.id" target="_blank">模型</router-link>
+                <router-link :to="'/auto/layout/model?id=' + record.id" target="_blank">模型</router-link>
               </a-button>
             </a-button-group>
           </span>
         </a-table>
         <div :class="rows.length > 0 ? 'table-pagination-tools' : 'table-pagination-tools-empty'">
-          <a-button icon="minus-circle" type="danger" @click="batchRemove" v-permit="'bi:dashboard:delete'" :disabled="selection.selectedRows.length === 0">删除</a-button>
-          <a-divider type="vertical" v-permit="'bi:dashboard:add'" />
-          <a-button icon="plus-circle" type="primary" @click="add" v-permit="'bi:dashboard:add'">新增</a-button>
+          <a-button icon="minus-circle" type="danger" @click="batchRemove" v-permit="'auto:layout:delete'" :disabled="selection.selectedRows.length === 0">删除</a-button>
+          <a-divider type="vertical" v-permit="'auto:layout:add'" />
+          <a-button icon="plus-circle" type="primary" @click="add" v-permit="'auto:layout:add'">新增</a-button>
         </div>
       </div>
     </a-card>
@@ -84,7 +84,7 @@
 
 <script>
 import RouteUtil from '@/utils/route'
-import dashboardService from '@/service/bi/dashboard'
+import layoutService from '@/service/auto/layout'
 
 export default {
   data () {
@@ -121,7 +121,7 @@ export default {
     batchRemove () {
       this.$confirm(this.selection.confirm(() => {
         this.loading = true
-        dashboardService.delete(this.selection.selectedRowKeys, { success: true }).then((result) => {
+        layoutService.delete(this.selection.selectedRowKeys, { success: true }).then((result) => {
           if (result.code === 0) {
             this.search(false, true)
           } else {
@@ -139,7 +139,7 @@ export default {
       Object.assign(this.filters, RouteUtil.paginationData(this.pagination, pagination))
       filter2query && RouteUtil.filter2query(this, this.filters)
       this.loading = true
-      dashboardService.list(this.filters).then((result) => {
+      layoutService.list(this.filters).then((result) => {
         this.pagination = Object.assign({}, this.pagination, RouteUtil.result(result))
         if (result.code === 0) {
           this.rows = result.data.rows
@@ -158,7 +158,7 @@ export default {
           status: this.form.status,
           description: this.form.description
         }
-        dashboardService.save(data).then(result => {
+        layoutService.save(data).then(result => {
           if (result.code === 0) {
             this.formVisible = false
             this.search(false, true)
@@ -190,7 +190,7 @@ export default {
   },
   mounted () {
     this.search(false, true)
-    dashboardService.config().then((result) => {
+    layoutService.config().then((result) => {
       this.config.ready = true
       if (result.code === 0) {
         Object.assign(this.config, result.data)

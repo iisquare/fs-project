@@ -17,7 +17,7 @@ import java.io.Serializable;
 @DynamicUpdate
 /**
  * 数据质量检测规则
- * 用于配置质检规则的检测类型和对应的数据集、目标表、字段
+ * 用于配置质检规则采用的逻辑参数和对应的数据集、目标表、字段
  */
 public class QualityRule implements Serializable {
 

@@ -2,6 +2,7 @@ package com.iisquare.fs.web.member.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ReflectUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
@@ -20,6 +21,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
@@ -29,6 +31,8 @@ public class DictionaryService extends ServiceBase {
     private DictionaryDao dictionaryDao;
     @Autowired
     private UserService userService;
+    @Autowired
+    private RbacService rbacService;
 
     public Map<?, ?> status(String level) {
         Map<Integer, String> status = new LinkedHashMap<>();
@@ -52,7 +56,42 @@ public class DictionaryService extends ServiceBase {
         return info.isPresent() ? info.get() : null;
     }
 
-    public Dictionary save(Dictionary info, int uid) {
+    public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+        if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+        int sort = DPUtil.parseInt(param.get("sort"));
+        int status = DPUtil.parseInt(param.get("status"));
+        if(!status("default").containsKey(status)) return ApiUtil.result(1002, "状态异常", status);
+        String description = DPUtil.parseString(param.get("description"));
+        int parentId = DPUtil.parseInt(param.get("parentId"));
+        if(parentId < 0) {
+            return ApiUtil.result(1003, "上级节点异常", name);
+        } else if(parentId > 0) {
+            Dictionary parent = info(parentId);
+            if(null == parent || !status("default").containsKey(parent.getStatus())) {
+                return ApiUtil.result(1004, "上级节点不存在或已删除", name);
+            }
+        }
+        String icon = DPUtil.trim(DPUtil.parseString(param.get("icon")));
+        String url = DPUtil.trim(DPUtil.parseString(param.get("url")));
+        String target = DPUtil.trim(DPUtil.parseString(param.get("target")));
+        Dictionary info = null;
+        if(id > 0) {
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
+            info = info(id);
+            if(null == info) return ApiUtil.result(404, null, id);
+        } else {
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
+            info = new Dictionary();
+        }
+        info.setName(name);
+        info.setParentId(parentId);
+        info.setContent(DPUtil.trim(DPUtil.parseString(param.get("content"))));
+        info.setSort(sort);
+        info.setStatus(status);
+        info.setDescription(description);
+        int uid = rbacService.uid(request);
         long time = System.currentTimeMillis();
         Dictionary parent = info(info.getParentId());
         if (null == parent) {
@@ -66,7 +105,9 @@ public class DictionaryService extends ServiceBase {
             info.setCreatedTime(time);
             info.setCreatedUid(uid);
         }
-        return dictionaryDao.save(info);
+        info = dictionaryDao.save(info);
+        return ApiUtil.result(0, null, info);
+
     }
 
     public <T> List<T> fillInfo(List<T> list, String ...properties) {

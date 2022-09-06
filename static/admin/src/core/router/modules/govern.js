@@ -20,6 +20,10 @@ export const blanks = [{
   path: '/govern/standard/model',
   meta: { title: '评估方案' },
   component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/standard/model')
+}, {
+  path: '/govern/quality/draw',
+  meta: { title: '规则逻辑' },
+  component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/quality/draw')
 }]
 
 export const layouts = [{
@@ -75,9 +79,9 @@ export const layouts = [{
     meta: { title: '评估结果' },
     component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/standard/log')
   }, {
-    path: '/govern/quality/type',
-    meta: { title: '规则类型' },
-    component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/quality/type')
+    path: '/govern/quality/logic',
+    meta: { title: '规则逻辑' },
+    component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/quality/logic')
   }, {
     path: '/govern/quality/rule',
     meta: { title: '质检规则' },

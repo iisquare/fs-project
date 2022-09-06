@@ -4,7 +4,6 @@ import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.web.cms.entity.Article;
-import com.iisquare.fs.web.cms.entity.Catalog;
 import com.iisquare.fs.web.cms.mvc.Configuration;
 import com.iisquare.fs.web.cms.service.ArticleService;
 import com.iisquare.fs.web.cms.service.CatalogService;
@@ -58,56 +57,14 @@ public class ArticleController extends PermitControllerBase {
     @RequestMapping("/save")
     @Permission({"add", "modify"})
     public String saveAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
-        String title = DPUtil.trim(DPUtil.parseString(param.get("title")));
-        if(DPUtil.empty(title)) return ApiUtil.echoResult(1001, "标题异常", title);
-        int status = DPUtil.parseInt(param.get("status"));
-        if(!articleService.status("default").containsKey(status)) return ApiUtil.echoResult(1002, "状态异常", status);
-        Catalog catalog = catalogService.info(DPUtil.parseInt(param.get("catalogId")));
-        if(null == catalog || !catalogService.status("default").containsKey(catalog.getStatus())) {
-            return ApiUtil.echoResult(1004, "所属栏目不存在或已删除", param);
-        }
-        Article info;
-        if(id > 0) {
-            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
-            info = articleService.info(id);
-            if(null == info) return ApiUtil.echoResult(404, null, id);
-        } else {
-            if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
-            info = new Article();
-        }
-        info.setTitle(title);
-        info.setCatalogId(catalog.getId());
-        info.setCover(DPUtil.trim(DPUtil.parseString(param.get("cover"))));
-        info.setKeyword(DPUtil.trim(DPUtil.parseString(param.get("keyword"))));
-        info.setLabel(DPUtil.trim(DPUtil.parseString(param.get("label"))));
-        info.setTag(DPUtil.trim(DPUtil.parseString(param.get("tag"))));
-        info.setCiteName(DPUtil.trim(DPUtil.parseString(param.get("citeName"))));
-        info.setCiteAuthor(DPUtil.trim(DPUtil.parseString(param.get("citeAuthor"))));
-        info.setCiteUrl(DPUtil.trim(DPUtil.parseString(param.get("citeUrl"))));
-        info.setPassword(DPUtil.trim(DPUtil.parseString(param.get("password"))));
-        info.setFormat(DPUtil.trim(DPUtil.parseString(param.get("format"))));
-        info.setContent(DPUtil.trim(DPUtil.parseString(param.get("content"))));
-        info.setPublishTime(DPUtil.dateTime2millis(param.get("publishTime"), configuration.getFormatDate()));
-        info.setSort(DPUtil.parseInt(param.get("sort")));
-        info.setStatus(status);
-        info.setDescription(DPUtil.parseString(param.get("description")));
-        info = articleService.save(info, rbacService.uid(request));
-        if (null != info) {
-            rbacService.fillUserInfo(Arrays.asList(info), "createdUid", "updatedUid");
-        }
-        return ApiUtil.echoResult(null == info ? 500 : 0, null, info);
+        Map<String, Object> result = articleService.save(param, request);
+        return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/delete")
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        List<Integer> ids = null;
-        if(param.get("ids") instanceof List) {
-            ids = DPUtil.parseIntList((List<?>) param.get("ids"));
-        } else {
-            ids = Arrays.asList(DPUtil.parseInt(param.get("ids")));
-        }
+        List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
         boolean result = articleService.delete(ids, rbacService.uid(request));
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }

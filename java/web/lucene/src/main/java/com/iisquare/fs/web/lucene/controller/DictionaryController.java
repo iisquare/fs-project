@@ -18,7 +18,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -60,43 +59,14 @@ public class DictionaryController extends PermitControllerBase {
     @RequestMapping("/save")
     @Permission({"add", "modify"})
     public String saveAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
-        String catalogue = DPUtil.trim(DPUtil.parseString(param.get("catalogue")));
-        if(DPUtil.empty(catalogue)) return ApiUtil.echoResult(1001, "词库目录异常", catalogue);
-        String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
-        if(!dictionaryService.type().containsKey(type)) {
-            return ApiUtil.echoResult(1002, "词库类型异常", type);
-        }
-        String content = DPUtil.trim(DPUtil.parseString(param.get("content")));
-        if(DPUtil.empty(content)) return ApiUtil.echoResult(1003, "词条内容不能为空", content);
-        String source = DPUtil.trim(DPUtil.parseString(param.get("source")));
-        if(DPUtil.empty(source)) return ApiUtil.echoResult(1004, "词条来源不能为空", source);
-        Dictionary info;
-        if(id > 0) {
-            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
-            info = dictionaryService.info(id);
-            if(null == info) return ApiUtil.echoResult(404, null, id);
-        } else {
-            if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
-            info = new Dictionary();
-        }
-        info.setCatalogue(catalogue);
-        info.setType(type);
-        info.setContent(content);
-        info.setSource(source);
-        List<Dictionary> list = dictionaryService.saveAll(info, rbacService.uid(request));
-        return ApiUtil.echoResult(null == list ? 500 : 0, null, list);
+        Map<String, Object> result = dictionaryService.saveAll(param, request);
+        return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/delete")
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param) {
-        List<Integer> ids;
-        if(param.get("ids") instanceof List) {
-            ids = DPUtil.parseIntList(param.get("ids"));
-        } else {
-            ids = Arrays.asList(DPUtil.parseInt(param.get("ids")));
-        }
+        List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
         boolean result = dictionaryService.delete(ids);
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }

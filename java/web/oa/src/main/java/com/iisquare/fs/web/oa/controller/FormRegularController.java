@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -66,56 +65,14 @@ public class FormRegularController extends PermitControllerBase {
     @RequestMapping("/save")
     @Permission({"add", "modify"})
     public String saveAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
-        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-        String label = DPUtil.parseString(param.get("label"));
-        String regex = DPUtil.parseString(param.get("regex"));
-        String tooltip = DPUtil.parseString(param.get("tooltip"));
-        int sort = DPUtil.parseInt(param.get("sort"));
-        int status = DPUtil.parseInt(param.get("status"));
-        String description = DPUtil.parseString(param.get("description"));
-        FormRegular info = null;
-        if(id > 0) {
-            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
-            info = formRegularService.info(id);
-            if(null == info) return ApiUtil.echoResult(404, null, id);
-            if(param.containsKey("name")) {
-                if(DPUtil.empty(name)) return ApiUtil.echoResult(1001, "名称异常", name);
-                info.setName(name);
-            }
-            if(param.containsKey("sort")) info.setSort(sort);
-            if(param.containsKey("status")) {
-                if(!formRegularService.status("default").containsKey(status)) return ApiUtil.echoResult(1002, "状态异常", status);
-                info.setStatus(status);
-            }
-            if(param.containsKey("description")) info.setDescription(description);
-        } else {
-            if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
-            info = new FormRegular();
-            if(DPUtil.empty(name)) return ApiUtil.echoResult(1001, "名称异常", name);
-            info.setName(name);
-            info.setSort(sort);
-            if(!formRegularService.status("default").containsKey(status)) return ApiUtil.echoResult(1002, "状态异常", status);
-            info.setStatus(status);
-            info.setDescription(description);
-        }
-        if (DPUtil.empty(label)) return ApiUtil.echoResult(1005, "标签异常", label);
-        info.setLabel(label);
-        info.setRegex(regex);
-        info.setTooltip(tooltip);
-        info = formRegularService.save(info, rbacService.uid(request));
-        return ApiUtil.echoResult(null == info ? 500 : 0, null, info);
+        Map<String, Object> result = formRegularService.save(param, request);
+        return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/delete")
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        List<Integer> ids = null;
-        if(param.get("ids") instanceof List) {
-            ids = DPUtil.parseIntList((List<?>) param.get("ids"));
-        } else {
-            ids = Arrays.asList(DPUtil.parseInt(param.get("ids")));
-        }
+        List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
         boolean result = formRegularService.delete(ids, rbacService.uid(request));
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }

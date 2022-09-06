@@ -2,7 +2,6 @@ package com.iisquare.fs.web.oa.controller;
 
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.mongodb.MongoCore;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rbac.Permission;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -49,35 +47,14 @@ public class FormDataController extends PermitControllerBase {
     @RequestMapping("/save")
     @Permission({"add", "modify"})
     public String saveAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        String id = DPUtil.trim(DPUtil.parseString(param.get(MongoCore.FIELD_ID)));
-        Integer frameId = ValidateUtil.filterInteger(param.get("frameId"), true, 1, null, 0);
-        if(frameId < 1) return ApiUtil.echoResult(1001, "所属表单参数异常", frameId);
-        String bpmWorkflowId = DPUtil.trim(DPUtil.parseString(param.get("bpmWorkflowId")));
-        String bpmInstanceId = DPUtil.trim(DPUtil.parseString(param.get("bpmInstanceId")));
-        String bpmStartUserId = DPUtil.trim(DPUtil.parseString(param.get("bpmStartUserId")));
-        Document document = Document.parse(DPUtil.stringify(param.get("content")));
-        document.append("frameId", frameId).append("bpmWorkflowId", bpmWorkflowId);
-        document.append("bpmInstanceId", bpmInstanceId).append("bpmStartUserId", bpmStartUserId);
-        if(DPUtil.empty(id)) {
-            if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
-            document.remove(MongoCore.FIELD_ID);
-        } else {
-            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
-            document.put(MongoCore.FIELD_ID, id);
-        }
-        document = formDataService.save(document, rbacService.uid(request));
-        return ApiUtil.echoResult(null == document ? 500 : 0, null, document);
+        Map<String, Object> result = formDataService.save(param, request);
+        return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/delete")
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        List<String> ids = null;
-        if(param.get("ids") instanceof List) {
-            ids = DPUtil.parseStringList(param.get("ids"));
-        } else {
-            ids = Arrays.asList(DPUtil.parseString(param.get("ids")));
-        }
+        List<String> ids = DPUtil.parseStringList(param.get("ids"));
         long result = formDataService.delete(ids, rbacService.uid(request));
         return ApiUtil.echoResult(result >= 0 ? 0 : 500, null, result);
     }

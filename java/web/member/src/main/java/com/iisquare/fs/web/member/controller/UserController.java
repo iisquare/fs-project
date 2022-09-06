@@ -4,11 +4,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
-import com.iisquare.fs.base.web.util.ServletUtil;
-import com.iisquare.fs.web.member.entity.User;
-import com.iisquare.fs.web.member.mvc.Configuration;
 import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
+import com.iisquare.fs.web.member.entity.User;
 import com.iisquare.fs.web.member.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
@@ -28,8 +26,6 @@ public class UserController extends PermitControllerBase {
     @Autowired
     private UserService userService;
     @Autowired
-    private Configuration configuration;
-    @Autowired
     private SettingService settingService;
     @Autowired
     private RelationService relationService;
@@ -47,63 +43,14 @@ public class UserController extends PermitControllerBase {
     @RequestMapping("/save")
     @Permission({"add", "modify"})
     public String saveAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
-        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-        if(DPUtil.empty(name)) return ApiUtil.echoResult(1001, "名称异常", name);
-        if(userService.existsByName("name", id)) return ApiUtil.echoResult(2001, "名称已存在", name);
-        String password = DPUtil.trim(DPUtil.parseString(param.get("password")));
-        User info = null;
-        if(id > 0) {
-            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
-            info = userService.info(id);
-            if(null == info) return ApiUtil.echoResult(404, null, id);
-        } else {
-            if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
-            info = new User();
-            String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
-            if(DPUtil.empty(serial)) return ApiUtil.echoResult(1002, "账号不能为空", serial);
-            if(userService.existsBySerial(serial)) return ApiUtil.echoResult(2002, "账号已存在", serial);
-            info.setSerial(serial);
-            if(DPUtil.empty(password)) return ApiUtil.echoResult(1003, "密码不能为空", password);
-            info.setCreatedIp(ServletUtil.getRemoteAddr(request));
-        }
-        if(!DPUtil.empty(password)) {
-            String salt = DPUtil.random(4);
-            password = userService.password(password, salt);
-            info.setPassword(password);
-            info.setSalt(salt);
-        }
-        int sort = DPUtil.parseInt(param.get("sort"));
-        int status = DPUtil.parseInt(param.get("status"));
-        if(!userService.status("default").containsKey(status)) {
-            return ApiUtil.echoResult(1002, "状态异常", status);
-        }
-        String description = DPUtil.parseString(param.get("description"));
-        info.setName(name);
-        info.setSort(sort);
-        info.setStatus(status);
-        info.setDescription(description);
-        if(param.containsKey("lockedTime")) {
-            String lockedTime =  DPUtil.trim(DPUtil.parseString(param.get("lockedTime")));
-            if(DPUtil.empty(lockedTime)) {
-                info.setLockedTime(0L);
-            } else {
-                info.setLockedTime(DPUtil.dateTime2millis(lockedTime, configuration.getFormatDate()));
-            }
-        }
-        info = userService.save(info, rbacService.uid(request));
-        return ApiUtil.echoResult(null == info ? 500 : 0, null, info);
+        Map<String, Object> result = userService.save(param, request);
+        return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/delete")
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        List<Integer> ids = null;
-        if(param.get("ids") instanceof List) {
-            ids = DPUtil.parseIntList((List<?>) param.get("ids"));
-        } else {
-            ids = Arrays.asList(DPUtil.parseInt(param.get("ids")));
-        }
+        List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
         boolean result = userService.delete(ids, rbacService.uid(request));
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }
@@ -146,67 +93,20 @@ public class UserController extends PermitControllerBase {
 
     @RequestMapping("/password")
     public String passwordAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        String password = DPUtil.trim(DPUtil.parseString(param.get("password")));
-        String passwordNew = DPUtil.trim(DPUtil.parseString(param.get("passwordNew")));
-        String passwordOld = DPUtil.trim(DPUtil.parseString(param.get("passwordOld")));
-        if(DPUtil.empty(passwordOld)) return ApiUtil.echoResult(1001, "请输入原密码", null);
-        if(DPUtil.empty(password)) return ApiUtil.echoResult(1002, "请输入新密码", null);
-        if(!password.equals(passwordNew)) return ApiUtil.echoResult(1003, "两次密码输入不一致", null);
-        User info = userService.info(rbacService.uid(request));
-        if(null == info) return ApiUtil.echoResult(1004, "用户未登录或登录超时", null);
-        if(!info.getPassword().equals(userService.password(passwordOld, info.getSalt()))) {
-            return ApiUtil.echoResult(1005, "原密码错误", null);
-        }
-        String salt = DPUtil.random(4);
-        password = userService.password(password, salt);
-        info.setPassword(password);
-        info.setSalt(salt);
-        userService.save(info, 0);
-        logoutAction(request); // 退出登录
-        return ApiUtil.echoResult(0, null, null);
+        Map<String, Object> result = userService.password(param, request);
+        return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/login")
     public String loginAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        User info = null;
-        Map<String, Object> session = null;
-        String module = DPUtil.parseString(param.get("module"));
-        if(param.containsKey("serial")) {
-            info = userService.infoBySerial(DPUtil.parseString(param.get("serial")));
-            if(null == info) return ApiUtil.echoResult(1001, "账号不存在", null);
-            if(!info.getPassword().equals(userService.password(DPUtil.parseString(param.get("password")), info.getSalt()))) {
-                return ApiUtil.echoResult(1002, "密码错误", null);
-            }
-            if(1 != info.getStatus() || info.getLockedTime() > System.currentTimeMillis()) {
-                return ApiUtil.echoResult(1003, "账号已锁定，请联系管理人员", null);
-            }
-            info.setLoginedTime(System.currentTimeMillis());
-            info.setLoginedIp(ServletUtil.getRemoteAddr(request));
-            userService.save(info, 0);
-            session = rbacService.currentInfo(request, DPUtil.buildMap("uid", info.getId()));
-            if(!rbacService.hasPermit(request, module, null, null)) {
-                logoutAction(request);
-                return ApiUtil.echoResult(403, null, null);
-            }
-        } else {
-            session = rbacService.currentInfo(request, null);
-            info = userService.info(DPUtil.parseInt(session.get("uid")));
-        }
-        if(null != info) {
-            info.setPassword("******");
-            info.setSalt("******");
-        }
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("info", info);
-        result.put("menu", rbacService.menu(request, DPUtil.parseInt(settingService.get(module, "menuParentId"))));
-        result.put("resource", rbacService.resource(request));
-        return ApiUtil.echoResult(0, null, result);
+        Map<String, Object> result = userService.login(param, request);
+        return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/logout")
     public String logoutAction(HttpServletRequest request) {
-        rbacService.currentInfo(request, DPUtil.buildMap("uid", 0));
-        return ApiUtil.echoResult(0, null, null);
+        Map<String, Object> result = userService.logout(request);
+        return ApiUtil.echoResult(result);
     }
 
 }

@@ -16,11 +16,11 @@ import java.io.Serializable;
 @DynamicInsert
 @DynamicUpdate
 /**
- * 数据质量检测类型
+ * 数据质量检测逻辑
  * 用于配置质量检测规则的执行类和参数
  */
-@IdClass(QualityType.IdClass.class)
-public class QualityType implements Serializable {
+@IdClass(QualityLogic.IdClass.class)
+public class QualityLogic implements Serializable {
 
     @Data
     @Builder
@@ -42,7 +42,11 @@ public class QualityType implements Serializable {
     @Column
     private String name; // 名称
     @Column
-    private String content; // 配置内容
+    private String content; // 执行逻辑配置
+    @Column
+    private String arg; // 输入参数配置
+    @Column
+    private String suggest; // 整改建议
     @Column
     private Integer sort; // 排序
     @Column

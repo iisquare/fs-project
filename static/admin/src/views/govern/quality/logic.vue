@@ -43,8 +43,8 @@
           <span slot="action" slot-scope="text, record">
             <a-button-group>
               <a-button v-if="record.mold === 'catalog'" type="link" size="small" @click="forward(record)">进入</a-button>
-              <a-button v-if="record.mold === 'catalog'" v-permit="'govern:standard:modify'" type="link" size="small" @click="catalog(record)">编辑</a-button>
-              <a-button v-if="record.mold !== 'catalog'" v-permit="'govern:standard:modify'" type="link" size="small" @click="draw('', record)">编辑</a-button>
+              <a-button v-if="record.mold === 'catalog'" v-permit="'govern:qualityLogic:modify'" type="link" size="small" @click="catalog(record)">编辑</a-button>
+              <a-button v-if="record.mold !== 'catalog'" v-permit="'govern:qualityLogic:modify'" type="link" size="small" @click="draw('', record)">编辑</a-button>
             </a-button-group>
           </span>
           <a-descriptions slot="expandedRowRender" slot-scope="record">
@@ -66,9 +66,9 @@
         </a-table>
         <div :class="rows.length > 0 ? 'table-pagination-tools' : 'table-pagination-tools-empty'">
           <a-space>
-            <a-button icon="minus-circle" type="danger" @click="batchRemove" v-permit="'govern:standard:delete'" :disabled="selection.selectedRows.length === 0">删除</a-button>
-            <a-button icon="plus-circle" type="primary" @click="catalog" v-permit="'govern:standard:add'">新增目录</a-button>
-            <a-button icon="plus-circle" type="primary" @click="draw('')" v-permit="'govern:standard:add'">新增标准</a-button>
+            <a-button icon="minus-circle" type="danger" @click="batchRemove" v-permit="'govern:qualityLogic:delete'" :disabled="selection.selectedRows.length === 0">删除</a-button>
+            <a-button icon="plus-circle" type="primary" @click="catalog" v-permit="'govern:qualityLogic:add'">新增目录</a-button>
+            <a-button icon="plus-circle" type="primary" @click="draw('')" v-permit="'govern:qualityLogic:add'">新增逻辑</a-button>
           </a-space>
         </div>
       </div>
@@ -104,7 +104,7 @@
 <script>
 import DateUtil from '@/utils/date'
 import RouteUtil from '@/utils/route'
-import standardService from '@/service/govern/standard'
+import qualityLogicService from '@/service/govern/qualityLogic'
 
 export default {
   data () {
@@ -162,7 +162,7 @@ export default {
         this.loading = true
         const record = this.rows[this.selection.selectedRowKeys[0]]
         const param = { catalog: record.catalog, code: record.code }
-        standardService.delete(param, { success: true }).then((result) => {
+        qualityLogicService.delete(param, { success: true }).then((result) => {
           if (result.code === 0) {
             this.search(false, true)
           } else {
@@ -181,7 +181,7 @@ export default {
       if (!this.filters.catalog) this.filters.catalog = '/'
       filter2query && RouteUtil.filter2query(this, this.filters)
       this.loading = true
-      standardService.list(this.filters).then((result) => {
+      qualityLogicService.list(this.filters).then((result) => {
         this.pagination = Object.assign({}, this.pagination, RouteUtil.result(result))
         if (result.code === 0) {
           this.rows = result.data.rows
@@ -199,7 +199,7 @@ export default {
     draw (mode, record = {}) {
       const catalog = record.code ? record.catalog : this.filters.catalog
       this.$router.push({
-        path: '/govern/standard/draw', query: { catalog, code: record.code, mode }
+        path: '/govern/quality/draw', query: { catalog, code: record.code, mode }
       })
     },
     catalog (record = {}) {
@@ -211,7 +211,7 @@ export default {
       this.$refs.form.validate(valid => {
         if (!valid || this.formLoading) return false
         this.formLoading = true
-        standardService.save(this.form).then(result => {
+        qualityLogicService.save(this.form).then(result => {
           if (result.code === 0) {
             this.formVisible = false
             this.search(false, true)
@@ -227,7 +227,7 @@ export default {
   },
   mounted () {
     this.search(false, true)
-    standardService.config().then((result) => {
+    qualityLogicService.config().then((result) => {
       this.config.ready = true
       if (result.code === 0) {
         Object.assign(this.config, result.data)

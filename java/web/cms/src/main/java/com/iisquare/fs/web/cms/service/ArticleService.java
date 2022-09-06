@@ -1,13 +1,14 @@
 package com.iisquare.fs.web.cms.service;
 
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.iisquare.fs.base.core.util.ReflectUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.cms.dao.ArticleDao;
 import com.iisquare.fs.web.cms.entity.Article;
+import com.iisquare.fs.web.cms.entity.Catalog;
 import com.iisquare.fs.web.cms.mvc.Configuration;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
@@ -70,7 +72,42 @@ public class ArticleService extends ServiceBase {
         return info.isPresent() ? info.get() : null;
     }
 
-    public Article save(Article info, int uid) {
+    public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        String title = DPUtil.trim(DPUtil.parseString(param.get("title")));
+        if(DPUtil.empty(title)) return ApiUtil.result(1001, "标题异常", title);
+        int status = DPUtil.parseInt(param.get("status"));
+        if(!status("default").containsKey(status)) return ApiUtil.result(1002, "状态异常", status);
+        Catalog catalog = catalogService.info(DPUtil.parseInt(param.get("catalogId")));
+        if(null == catalog || !catalogService.status("default").containsKey(catalog.getStatus())) {
+            return ApiUtil.result(1004, "所属栏目不存在或已删除", param);
+        }
+        Article info;
+        if(id > 0) {
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
+            info = info(id);
+            if(null == info) return ApiUtil.result(404, null, id);
+        } else {
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
+            info = new Article();
+        }
+        info.setTitle(title);
+        info.setCatalogId(catalog.getId());
+        info.setCover(DPUtil.trim(DPUtil.parseString(param.get("cover"))));
+        info.setKeyword(DPUtil.trim(DPUtil.parseString(param.get("keyword"))));
+        info.setLabel(DPUtil.trim(DPUtil.parseString(param.get("label"))));
+        info.setTag(DPUtil.trim(DPUtil.parseString(param.get("tag"))));
+        info.setCiteName(DPUtil.trim(DPUtil.parseString(param.get("citeName"))));
+        info.setCiteAuthor(DPUtil.trim(DPUtil.parseString(param.get("citeAuthor"))));
+        info.setCiteUrl(DPUtil.trim(DPUtil.parseString(param.get("citeUrl"))));
+        info.setPassword(DPUtil.trim(DPUtil.parseString(param.get("password"))));
+        info.setFormat(DPUtil.trim(DPUtil.parseString(param.get("format"))));
+        info.setContent(DPUtil.trim(DPUtil.parseString(param.get("content"))));
+        info.setPublishTime(DPUtil.dateTime2millis(param.get("publishTime"), configuration.getFormatDate()));
+        info.setSort(DPUtil.parseInt(param.get("sort")));
+        info.setStatus(status);
+        info.setDescription(DPUtil.parseString(param.get("description")));
+        int uid = rbacService.uid(request);
         long time = System.currentTimeMillis();
         info.setUpdatedTime(time);
         info.setUpdatedUid(uid);
@@ -85,7 +122,9 @@ public class ArticleService extends ServiceBase {
         if (info.getPublishTime() < 1) {
             info.setPublishTime(info.getCreatedTime());
         }
-        return articleDao.save(info);
+        info = articleDao.save(info);
+        rbacService.fillUserInfo(Arrays.asList(info), "createdUid", "updatedUid");
+        return ApiUtil.result(0, null, info);
     }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> args) {

@@ -4,10 +4,6 @@ export const blanks = [{
   path: '/bi/diagram/model',
   meta: { title: '清洗规则设计器' },
   component: () => import(/* webpackChunkName: 'bi' */ '@/views/bi/diagram/model')
-}, {
-  path: '/bi/report/screen',
-  meta: { title: '大屏设计器' },
-  component: () => import(/* webpackChunkName: 'bi' */ '@/views/bi/dashboard/model')
 }]
 
 export const layouts = [{
@@ -50,10 +46,6 @@ export const layouts = [{
     path: '/bi/report/aggregate',
     meta: { title: '矩阵设计', hiddenGlobalFooter: true },
     component: () => import(/* webpackChunkName: 'bi' */ '@/views/bi/matrix/model')
-  }, {
-    path: '/bi/report/dashboard',
-    meta: { title: '数据大屏' },
-    component: () => import(/* webpackChunkName: 'bi' */ '@/views/bi/dashboard/list')
   }]
 }]
 

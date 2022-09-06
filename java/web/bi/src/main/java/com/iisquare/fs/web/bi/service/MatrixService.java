@@ -17,6 +17,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.criteria.Predicate;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
@@ -97,7 +98,36 @@ public class MatrixService extends ServiceBase {
         return info.isPresent() ? info.get() : null;
     }
 
-    public Matrix save(Matrix info, int uid) {
+    public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+        int sort = DPUtil.parseInt(param.get("sort"));
+        int status = DPUtil.parseInt(param.get("status"));
+        int datasetId = DPUtil.parseInt(param.get("datasetId"));
+        String content = DPUtil.parseString(param.get("content"));
+        String description = DPUtil.parseString(param.get("description"));
+        if(param.containsKey("name") || id < 1) {
+            if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+        }
+        if(param.containsKey("status")) {
+            if(!status("default").containsKey(status)) return ApiUtil.result(1004, "状态参数异常", status);
+        }
+        Matrix info;
+        if(id > 0) {
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
+            info = info(id);
+            if(null == info) return ApiUtil.result(404, null, id);
+        } else {
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
+            info = new Matrix();
+        }
+        if(param.containsKey("datasetId") || null == info.getId()) info.setDatasetId(datasetId);
+        if(param.containsKey("name") || null == info.getId()) info.setName(name);
+        if(param.containsKey("content") || null == info.getId()) info.setContent(content);
+        if(param.containsKey("description") || null == info.getId()) info.setDescription(description);
+        if(param.containsKey("sort") || null == info.getId()) info.setSort(sort);
+        if(param.containsKey("status") || null == info.getId()) info.setStatus(status);
+        int uid = rbacService.uid(request);
         long time = System.currentTimeMillis();
         info.setUpdatedTime(time);
         info.setUpdatedUid(uid);
@@ -105,7 +135,8 @@ public class MatrixService extends ServiceBase {
             info.setCreatedTime(time);
             info.setCreatedUid(uid);
         }
-        return matrixDao.save(info);
+        info = matrixDao.save(info);
+        return ApiUtil.result(0, null, info);
     }
 
     public boolean delete(List<Integer> ids, int uid) {

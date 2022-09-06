@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -144,43 +143,8 @@ public class WorkflowController extends PermitControllerBase {
     @RequestMapping("/save")
     @Permission({"add", "modify"})
     public String saveAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
-        Integer formId = ValidateUtil.filterInteger(param.get("formId"), true, 1, null, 0);
-        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-        int sort = DPUtil.parseInt(param.get("sort"));
-        int status = DPUtil.parseInt(param.get("status"));
-        String description = DPUtil.parseString(param.get("description"));
-        String content = DPUtil.parseString(param.get("content"));
-        Workflow info = null;
-        if(id > 0) {
-            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
-            info = workflowService.info(id, false, false, false, false);
-            if(null == info) return ApiUtil.echoResult(404, null, id);
-            if(param.containsKey("name")) {
-                if(DPUtil.empty(name)) return ApiUtil.echoResult(1001, "名称异常", name);
-                info.setName(name);
-            }
-            if(param.containsKey("sort")) info.setSort(sort);
-            if(param.containsKey("status")) {
-                if(!workflowService.status("default").containsKey(status)) return ApiUtil.echoResult(1002, "状态异常", status);
-                info.setStatus(status);
-            }
-            if(param.containsKey("description")) info.setDescription(description);
-            if(param.containsKey("formId")) info.setFormId(formId);
-        } else {
-            if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
-            info = new Workflow();
-            if(DPUtil.empty(name)) return ApiUtil.echoResult(1001, "名称异常", name);
-            info.setName(name);
-            info.setSort(sort);
-            if(!workflowService.status("default").containsKey(status)) return ApiUtil.echoResult(1002, "状态异常", status);
-            info.setStatus(status);
-            info.setDescription(description);
-            info.setFormId(formId);
-        }
-        info.setContent(content);
-        info = workflowService.save(info, rbacService.uid(request));
-        return ApiUtil.echoResult(null == info ? 500 : 0, null, info);
+        Map<String, Object> result = workflowService.save(param, request);
+        return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/candidateInfos")
@@ -192,12 +156,7 @@ public class WorkflowController extends PermitControllerBase {
     @RequestMapping("/delete")
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        List<Integer> ids;
-        if(param.get("ids") instanceof List) {
-            ids = DPUtil.parseIntList((List<?>) param.get("ids"));
-        } else {
-            ids = Arrays.asList(DPUtil.parseInt(param.get("ids")));
-        }
+        List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
         boolean result = workflowService.delete(ids, rbacService.uid(request));
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }

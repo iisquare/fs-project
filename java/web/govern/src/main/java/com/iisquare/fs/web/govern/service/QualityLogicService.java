@@ -8,9 +8,9 @@ import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
-import com.iisquare.fs.web.govern.dao.QualityTypeDao;
+import com.iisquare.fs.web.govern.dao.QualityLogicDao;
 import com.iisquare.fs.web.govern.entity.Model;
-import com.iisquare.fs.web.govern.entity.QualityType;
+import com.iisquare.fs.web.govern.entity.QualityLogic;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,10 +23,10 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
-public class QualityTypeService extends ServiceBase {
+public class QualityLogicService extends ServiceBase {
 
     @Autowired
-    private QualityTypeDao qualityTypeDao;
+    private QualityLogicDao qualityLogicDao;
     @Autowired
     private DefaultRbacService rbacService;
 
@@ -43,7 +43,7 @@ public class QualityTypeService extends ServiceBase {
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("catalog", "code", "mold", "type", "sort"));
         if (null == sort) sort = Sort.by(Sort.Order.asc("mold"), Sort.Order.desc("sort"));
-        Page<QualityType> data = qualityTypeDao.findAll((Specification<QualityType>) (root, query, cb) -> {
+        Page<QualityLogic> data = qualityLogicDao.findAll((Specification<QualityLogic>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             String catalog = DPUtil.trim(DPUtil.parseString(param.get("catalog")));
             if(!DPUtil.empty(catalog)) {
@@ -63,7 +63,7 @@ public class QualityTypeService extends ServiceBase {
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         }, PageRequest.of(page - 1, pageSize, sort));
-        List<QualityType> rows = data.getContent();
+        List<QualityLogic> rows = data.getContent();
         if(!DPUtil.empty(config.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
         }
@@ -77,8 +77,8 @@ public class QualityTypeService extends ServiceBase {
         return result;
     }
 
-    public QualityType info(String catalog, String code) {
-        Optional<QualityType> info = qualityTypeDao.findById(QualityType.IdClass.builder().catalog(catalog).code(code).build());
+    public QualityLogic info(String catalog, String code) {
+        Optional<QualityLogic> info = qualityLogicDao.findById(QualityLogic.IdClass.builder().catalog(catalog).code(code).build());
         return info.isPresent() ? info.get() : null;
     }
 
@@ -87,15 +87,18 @@ public class QualityTypeService extends ServiceBase {
         if (DPUtil.empty(catalog)) return ApiUtil.result(1001, "所属目录不能为空", catalog);
         String code = DPUtil.trim(DPUtil.parseString(param.get("code")));
         if (DPUtil.empty(code)) return ApiUtil.result(1002, "规则类型编码不能为空", code);
-        QualityType info = info(catalog, code);
+        QualityLogic info = info(catalog, code);
         if (null == info) return ApiUtil.result(1404, "规则类型信息不存在", null);
         ObjectNode result = DPUtil.toJSON(info, ObjectNode.class);
         if ("catalog".equals(info.getMold())) {
             return ApiUtil.result(0, null, result);
         }
-        JsonNode json = DPUtil.parseJSON(info.getContent());
-        if (null == json || !json.isObject()) json = DPUtil.objectNode();
-        result.replace("content", json);
+        JsonNode content = DPUtil.parseJSON(info.getContent());
+        if (null == content || !content.isObject()) content = DPUtil.objectNode();
+        result.replace("content", content);
+        JsonNode arg = DPUtil.parseJSON(info.getArg());
+        if (null == arg || !arg.isObject()) arg = DPUtil.objectNode();
+        result.replace("arg", arg);
         return ApiUtil.result(0, null, result);
     }
 
@@ -112,10 +115,10 @@ public class QualityTypeService extends ServiceBase {
         boolean isNew = true;
         int uid = rbacService.uid(request);
         long time = System.currentTimeMillis();
-        QualityType info = info(catalog, code);
+        QualityLogic info = info(catalog, code);
         if (null == info) {
             if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
-            info = QualityType.builder().catalog(catalog).code(code).mold(mold)
+            info = QualityLogic.builder().catalog(catalog).code(code).mold(mold)
                     .createdUid(uid).updatedUid(uid).createdTime(time).updatedTime(time).build();
             info.setPath(catalog + code + ("catalog".equals(mold) ? "/" : ""));
         } else {
@@ -127,6 +130,8 @@ public class QualityTypeService extends ServiceBase {
         }
         if (isNew || param.containsKey("name")) info.setName(name);
         info.setContent(DPUtil.stringify(param.get("content")));
+        info.setArg(DPUtil.stringify(param.get("arg")));
+        info.setSuggest(DPUtil.parseString(param.get("suggest")));
         if (isNew || param.containsKey("status")) {
             int status = DPUtil.parseInt(param.get("status"));
             if(!status().containsKey(status)) return ApiUtil.result(1014, "状态参数异常", status);
@@ -134,7 +139,7 @@ public class QualityTypeService extends ServiceBase {
         }
         if (isNew || param.containsKey("sort")) info.setSort(DPUtil.parseInt(param.get("sort")));
         if (isNew || param.containsKey("description")) info.setDescription(DPUtil.parseString(param.get("description")));
-        qualityTypeDao.save(info);
+        qualityLogicDao.save(info);
         return info(DPUtil.buildMap("catalog", catalog, "code", code));
     }
 
@@ -143,14 +148,14 @@ public class QualityTypeService extends ServiceBase {
         String code = DPUtil.trim(DPUtil.parseString(param.get("code")));
         if (DPUtil.empty(code)) return ApiUtil.result(1001, "规则类型编码不能为空", code);
         if(!rbacService.hasPermit(request, "delete")) return ApiUtil.result(9403, null, null);
-        QualityType info = info(catalog, code);
+        QualityLogic info = info(catalog, code);
         if (null == info) return ApiUtil.result(0, null, null);
         Integer result = 1;
         if ("catalog".equals(info.getMold())) {
             String path = info.getPath() + "%";
-            result += qualityTypeDao.deleteByCatalog(path);
+            result += qualityLogicDao.deleteByCatalog(path);
         }
-        qualityTypeDao.delete(info);
+        qualityLogicDao.delete(info);
         return ApiUtil.result(0, null, result);
     }
 

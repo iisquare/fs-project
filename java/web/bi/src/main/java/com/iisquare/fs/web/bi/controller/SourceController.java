@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -58,50 +57,14 @@ public class SourceController extends PermitControllerBase {
     @RequestMapping("/save")
     @Permission({"add", "modify"})
     public String saveAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
-        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-        String type = DPUtil.parseString(param.get("type"));
-        int sort = DPUtil.parseInt(param.get("sort"));
-        int status = DPUtil.parseInt(param.get("status"));
-        String content = DPUtil.parseString(param.get("content"));
-        String description = DPUtil.parseString(param.get("description"));
-        if(param.containsKey("name") || id < 1) {
-            if(DPUtil.empty(name)) return ApiUtil.echoResult(1001, "名称异常", name);
-        }
-        if(param.containsKey("type")) {
-            if(!sourceService.types().containsKey(type)) return ApiUtil.echoResult(1002, "数据类型参数异常", type);
-        }
-        if(param.containsKey("status")) {
-            if(!sourceService.status("default").containsKey(status)) return ApiUtil.echoResult(1004, "状态参数异常", status);
-        }
-        Source info;
-        if(id > 0) {
-            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.echoResult(9403, null, null);
-            info = sourceService.info(id);
-            if(null == info) return ApiUtil.echoResult(404, null, id);
-        } else {
-            if(!rbacService.hasPermit(request, "add")) return ApiUtil.echoResult(9403, null, null);
-            info = new Source();
-        }
-        if(param.containsKey("name") || null == info.getId()) info.setName(name);
-        if(param.containsKey("type") || null == info.getId()) info.setType(type);
-        if(param.containsKey("content") || null == info.getId()) info.setContent(content);
-        if(param.containsKey("description") || null == info.getId()) info.setDescription(description);
-        if(param.containsKey("sort") || null == info.getId()) info.setSort(sort);
-        if(param.containsKey("status") || null == info.getId()) info.setStatus(status);
-        info = sourceService.save(info, rbacService.uid(request));
-        return ApiUtil.echoResult(null == info ? 500 : 0, null, info);
+        Map<String, Object> result = sourceService.save(param, request);
+        return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/delete")
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        List<Integer> ids = null;
-        if(param.get("ids") instanceof List) {
-            ids = DPUtil.parseIntList(param.get("ids"));
-        } else {
-            ids = Arrays.asList(DPUtil.parseInt(param.get("ids")));
-        }
+        List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
         boolean result = sourceService.delete(ids, rbacService.uid(request));
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }

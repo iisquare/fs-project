@@ -35,6 +35,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.criteria.Predicate;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
@@ -540,7 +541,43 @@ public class WorkflowService extends ServiceBase {
         return info;
     }
 
-    public Workflow save(Workflow info, int uid) {
+    public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        Integer formId = ValidateUtil.filterInteger(param.get("formId"), true, 1, null, 0);
+        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+        int sort = DPUtil.parseInt(param.get("sort"));
+        int status = DPUtil.parseInt(param.get("status"));
+        String description = DPUtil.parseString(param.get("description"));
+        String content = DPUtil.parseString(param.get("content"));
+        Workflow info = null;
+        if(id > 0) {
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
+            info = info(id, false, false, false, false);
+            if(null == info) return ApiUtil.result(404, null, id);
+            if(param.containsKey("name")) {
+                if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+                info.setName(name);
+            }
+            if(param.containsKey("sort")) info.setSort(sort);
+            if(param.containsKey("status")) {
+                if(!status("default").containsKey(status)) return ApiUtil.result(1002, "状态异常", status);
+                info.setStatus(status);
+            }
+            if(param.containsKey("description")) info.setDescription(description);
+            if(param.containsKey("formId")) info.setFormId(formId);
+        } else {
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
+            info = new Workflow();
+            if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+            info.setName(name);
+            info.setSort(sort);
+            if(!status("default").containsKey(status)) return ApiUtil.result(1002, "状态异常", status);
+            info.setStatus(status);
+            info.setDescription(description);
+            info.setFormId(formId);
+        }
+        info.setContent(content);
+        int uid = rbacService.uid(request);
         long time = System.currentTimeMillis();
         info.setUpdatedTime(time);
         info.setUpdatedUid(uid);
@@ -550,7 +587,8 @@ public class WorkflowService extends ServiceBase {
             info.setDeploymentId("");
             info.setDeploymentUid(0);
         }
-        return workflowDao.save(info);
+        info = workflowDao.save(info);
+        return ApiUtil.result(0, null, info);
     }
 
     public boolean delete(List<Integer> ids, int uid) {

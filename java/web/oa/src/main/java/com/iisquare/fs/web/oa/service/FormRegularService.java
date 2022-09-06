@@ -1,6 +1,7 @@
 package com.iisquare.fs.web.oa.service;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
@@ -18,6 +19,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
@@ -105,7 +107,45 @@ public class FormRegularService extends ServiceBase {
         return info.isPresent() ? info.get() : null;
     }
 
-    public FormRegular save(FormRegular info, int uid) {
+    public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+        String label = DPUtil.parseString(param.get("label"));
+        String regex = DPUtil.parseString(param.get("regex"));
+        String tooltip = DPUtil.parseString(param.get("tooltip"));
+        int sort = DPUtil.parseInt(param.get("sort"));
+        int status = DPUtil.parseInt(param.get("status"));
+        String description = DPUtil.parseString(param.get("description"));
+        FormRegular info = null;
+        if(id > 0) {
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
+            info = info(id);
+            if(null == info) return ApiUtil.result(404, null, id);
+            if(param.containsKey("name")) {
+                if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+                info.setName(name);
+            }
+            if(param.containsKey("sort")) info.setSort(sort);
+            if(param.containsKey("status")) {
+                if(!status("default").containsKey(status)) return ApiUtil.result(1002, "状态异常", status);
+                info.setStatus(status);
+            }
+            if(param.containsKey("description")) info.setDescription(description);
+        } else {
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
+            info = new FormRegular();
+            if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+            info.setName(name);
+            info.setSort(sort);
+            if(!status("default").containsKey(status)) return ApiUtil.result(1002, "状态异常", status);
+            info.setStatus(status);
+            info.setDescription(description);
+        }
+        if (DPUtil.empty(label)) return ApiUtil.result(1005, "标签异常", label);
+        info.setLabel(label);
+        info.setRegex(regex);
+        info.setTooltip(tooltip);
+        int uid = rbacService.uid(request);
         long time = System.currentTimeMillis();
         info.setUpdatedTime(time);
         info.setUpdatedUid(uid);
@@ -113,7 +153,8 @@ public class FormRegularService extends ServiceBase {
             info.setCreatedTime(time);
             info.setCreatedUid(uid);
         }
-        return formRegularDao.save(info);
+        info = formRegularDao.save(info);
+        return ApiUtil.result(null == info ? 500 : 0, null, info);
     }
 
     public boolean delete(List<Integer> ids, int uid) {

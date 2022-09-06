@@ -1,6 +1,7 @@
 package com.iisquare.fs.web.cms.service;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
@@ -20,6 +21,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
@@ -66,7 +68,26 @@ public class CiteService extends ServiceBase {
         return citeDao.findByName(name);
     }
 
-    public Cite save(Cite info, int uid) {
+    public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
+        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+        if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+        int status = DPUtil.parseInt(param.get("status"));
+        if(!status("default").containsKey(status)) return ApiUtil.result(1002, "状态异常", status);
+        Cite info = info(name);
+        if(null == info) {
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
+            info = new Cite();
+        } else {
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
+        }
+        info.setName(name);
+        info.setCover(DPUtil.trim(DPUtil.parseString(param.get("cover"))));
+        info.setTitle(DPUtil.trim(DPUtil.parseString(param.get("title"))));
+        info.setKeyword(DPUtil.trim(DPUtil.parseString(param.get("keyword"))));
+        info.setSort(DPUtil.parseInt(param.get("sort")));
+        info.setStatus(status);
+        info.setDescription(DPUtil.parseString(param.get("description")));
+        int uid = rbacService.uid(request);
         long time = System.currentTimeMillis();
         info.setUpdatedTime(time);
         info.setUpdatedUid(uid);
@@ -74,7 +95,8 @@ public class CiteService extends ServiceBase {
             info.setCreatedTime(time);
             info.setCreatedUid(uid);
         }
-        return citeDao.save(info);
+        info = citeDao.save(info);
+        return ApiUtil.result(0, null, info);
     }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> args) {

@@ -87,7 +87,11 @@ public abstract class MongoBase {
         for (String id : ids) {
             args.add(new ObjectId(id));
         }
-        return collection().deleteMany(Filters.in(MongoCore.FIELD_ID, args)).getDeletedCount();
+        return delete(Filters.in(MongoCore.FIELD_ID, args));
+    }
+
+    public long delete(Bson filter) {
+        return collection().deleteMany(filter).getDeletedCount();
     }
 
     public abstract Document filtration(Document document);

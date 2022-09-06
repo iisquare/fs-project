@@ -3,12 +3,14 @@ package com.iisquare.fs.web.member.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.CodeUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
+import com.iisquare.fs.base.web.util.ServletUtil;
 import com.iisquare.fs.web.member.dao.RelationDao;
 import com.iisquare.fs.web.member.dao.RoleDao;
 import com.iisquare.fs.web.member.dao.UserDao;
@@ -23,6 +25,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
@@ -31,13 +34,15 @@ public class UserService extends ServiceBase {
     @Autowired
     private UserDao userDao;
     @Autowired
-    private UserService userService;
-    @Autowired
     private Configuration configuration;
     @Autowired
     private RelationDao relationDao;
     @Autowired
     private RoleDao roleDao;
+    @Autowired
+    private RbacService rbacService;
+    @Autowired
+    private SettingService settingService;
 
     public User infoBySerial(String serial) {
         return userDao.findFirstBySerial(serial);
@@ -97,7 +102,114 @@ public class UserService extends ServiceBase {
         return result;
     }
 
-    public User save(User info, int uid) {
+    public Map<String, Object> logout(HttpServletRequest request) {
+        rbacService.currentInfo(request, DPUtil.buildMap("uid", 0));
+        return ApiUtil.result(0, null, null);
+    }
+
+    public Map<String, Object> login(Map<?, ?> param, HttpServletRequest request) {
+        User info = null;
+        Map<String, Object> session = null;
+        String module = DPUtil.parseString(param.get("module"));
+        if(param.containsKey("serial")) {
+            info = infoBySerial(DPUtil.parseString(param.get("serial")));
+            if(null == info) return ApiUtil.result(1001, "账号不存在", null);
+            if(!info.getPassword().equals(password(DPUtil.parseString(param.get("password")), info.getSalt()))) {
+                return ApiUtil.result(1002, "密码错误", null);
+            }
+            if(1 != info.getStatus() || info.getLockedTime() > System.currentTimeMillis()) {
+                return ApiUtil.result(1003, "账号已锁定，请联系管理人员", null);
+            }
+            info.setLoginedTime(System.currentTimeMillis());
+            info.setLoginedIp(ServletUtil.getRemoteAddr(request));
+            userDao.save(info);
+            rbacService.currentInfo(request, DPUtil.buildMap("uid", info.getId()));
+            if(!rbacService.hasPermit(request, module, null, null)) {
+                logout(request);
+                return ApiUtil.result(403, null, null);
+            }
+        } else {
+            session = rbacService.currentInfo(request, null);
+            info = info(DPUtil.parseInt(session.get("uid")));
+        }
+        if(null != info) {
+            info.setPassword("******");
+            info.setSalt("******");
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("info", info);
+        result.put("menu", rbacService.menu(request, DPUtil.parseInt(settingService.get(module, "menuParentId"))));
+        result.put("resource", rbacService.resource(request));
+        return ApiUtil.result(0, null, result);
+    }
+    
+    public Map<String, Object> password(Map<?, ?> param, HttpServletRequest request) {
+        String password = DPUtil.trim(DPUtil.parseString(param.get("password")));
+        String passwordNew = DPUtil.trim(DPUtil.parseString(param.get("passwordNew")));
+        String passwordOld = DPUtil.trim(DPUtil.parseString(param.get("passwordOld")));
+        if(DPUtil.empty(passwordOld)) return ApiUtil.result(1001, "请输入原密码", null);
+        if(DPUtil.empty(password)) return ApiUtil.result(1002, "请输入新密码", null);
+        if(!password.equals(passwordNew)) return ApiUtil.result(1003, "两次密码输入不一致", null);
+        User info = info(rbacService.uid(request));
+        if(null == info) return ApiUtil.result(1004, "用户未登录或登录超时", null);
+        if(!info.getPassword().equals(password(passwordOld, info.getSalt()))) {
+            return ApiUtil.result(1005, "原密码错误", null);
+        }
+        String salt = DPUtil.random(4);
+        password = password(password, salt);
+        info.setPassword(password);
+        info.setSalt(salt);
+        userDao.save(info);
+        logout(request); // 退出登录
+        return ApiUtil.result(0, null, null);
+    }
+    
+    public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+        if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+        if(existsByName("name", id)) return ApiUtil.result(2001, "名称已存在", name);
+        String password = DPUtil.trim(DPUtil.parseString(param.get("password")));
+        User info;
+        if(id > 0) {
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
+            info = info(id);
+            if(null == info) return ApiUtil.result(404, null, id);
+        } else {
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
+            info = new User();
+            String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
+            if(DPUtil.empty(serial)) return ApiUtil.result(1002, "账号不能为空", serial);
+            if(existsBySerial(serial)) return ApiUtil.result(2002, "账号已存在", serial);
+            info.setSerial(serial);
+            if(DPUtil.empty(password)) return ApiUtil.result(1003, "密码不能为空", password);
+            info.setCreatedIp(ServletUtil.getRemoteAddr(request));
+        }
+        if(!DPUtil.empty(password)) {
+            String salt = DPUtil.random(4);
+            password = password(password, salt);
+            info.setPassword(password);
+            info.setSalt(salt);
+        }
+        int sort = DPUtil.parseInt(param.get("sort"));
+        int status = DPUtil.parseInt(param.get("status"));
+        if(!status("default").containsKey(status)) {
+            return ApiUtil.result(1002, "状态异常", status);
+        }
+        String description = DPUtil.parseString(param.get("description"));
+        info.setName(name);
+        info.setSort(sort);
+        info.setStatus(status);
+        info.setDescription(description);
+        if(param.containsKey("lockedTime")) {
+            String lockedTime =  DPUtil.trim(DPUtil.parseString(param.get("lockedTime")));
+            if(DPUtil.empty(lockedTime)) {
+                info.setLockedTime(0L);
+            } else {
+                info.setLockedTime(DPUtil.dateTime2millis(lockedTime, configuration.getFormatDate()));
+            }
+        }
+        int uid = rbacService.uid(request);
         long time = System.currentTimeMillis();
         if(uid > 0) {
             info.setUpdatedTime(time);
@@ -107,7 +219,8 @@ public class UserService extends ServiceBase {
             info.setCreatedTime(time);
             info.setCreatedUid(uid);
         }
-        return userDao.save(info);
+        info = userDao.save(info);
+        return ApiUtil.result(0, null, info);
     }
 
     public List<User> filter(List<User> list) {
@@ -138,7 +251,7 @@ public class UserService extends ServiceBase {
         }, PageRequest.of(page - 1, pageSize, sort));
         List<?> rows = this.filter(data.getContent());
         if(!DPUtil.empty(args.get("withUserInfo"))) {
-            userService.fillInfo(rows, "createdUid", "updatedUid");
+            fillInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
             DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));

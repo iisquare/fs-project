@@ -1,10 +1,11 @@
-package com.iisquare.fs.web.bi.service;
+package com.iisquare.fs.web.auto.service;
 
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.web.bi.dao.DashboardDao;
-import com.iisquare.fs.web.bi.entity.Dashboard;
+import com.iisquare.fs.web.auto.dao.LayoutDao;
+import com.iisquare.fs.web.auto.entity.Layout;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -14,13 +15,14 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.criteria.Predicate;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
-public class DashboardService extends ServiceBase {
+public class LayoutService extends ServiceBase {
 
     @Autowired
-    private DashboardDao dashboardDao;
+    private LayoutDao layoutDao;
     @Autowired
     private DefaultRbacService rbacService;
 
@@ -28,7 +30,7 @@ public class DashboardService extends ServiceBase {
         Map<String, Object> result = new LinkedHashMap<>();
         int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
-        Page<Dashboard> data = dashboardDao.findAll((Specification<Dashboard>) (root, query, cb) -> {
+        Page<Layout> data = layoutDao.findAll((Specification<Layout>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.notEqual(root.get("status"), -1));
             String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
@@ -67,13 +69,40 @@ public class DashboardService extends ServiceBase {
         return status;
     }
 
-    public Dashboard info(Integer id) {
+    public Layout info(Integer id) {
         if(null == id || id < 1) return null;
-        Optional<Dashboard> info = dashboardDao.findById(id);
+        Optional<Layout> info = layoutDao.findById(id);
         return info.isPresent() ? info.get() : null;
     }
 
-    public Dashboard save(Dashboard info, int uid) {
+    public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+        int sort = DPUtil.parseInt(param.get("sort"));
+        int status = DPUtil.parseInt(param.get("status"));
+        String content = DPUtil.parseString(param.get("content"));
+        String description = DPUtil.parseString(param.get("description"));
+        if(param.containsKey("name") || id < 1) {
+            if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+        }
+        if(param.containsKey("status")) {
+            if(!status("default").containsKey(status)) return ApiUtil.result(1004, "状态参数异常", status);
+        }
+        Layout info;
+        if(id > 0) {
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
+            info = info(id);
+            if(null == info) return ApiUtil.result(404, null, id);
+        } else {
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
+            info = new Layout();
+        }
+        if(param.containsKey("name") || null == info.getId()) info.setName(name);
+        if(param.containsKey("content") || null == info.getId()) info.setContent(content);
+        if(param.containsKey("description") || null == info.getId()) info.setDescription(description);
+        if(param.containsKey("sort") || null == info.getId()) info.setSort(sort);
+        if(param.containsKey("status") || null == info.getId()) info.setStatus(status);
+        int uid = rbacService.uid(request);
         long time = System.currentTimeMillis();
         info.setUpdatedTime(time);
         info.setUpdatedUid(uid);
@@ -81,19 +110,20 @@ public class DashboardService extends ServiceBase {
             info.setCreatedTime(time);
             info.setCreatedUid(uid);
         }
-        return dashboardDao.save(info);
+        info = layoutDao.save(info);
+        return ApiUtil.result(0, null, info);
     }
 
     public boolean delete(List<Integer> ids, int uid) {
         if(null == ids || ids.size() < 1) return false;
-        List<Dashboard> list = dashboardDao.findAllById(ids);
+        List<Layout> list = layoutDao.findAllById(ids);
         long time = System.currentTimeMillis();
-        for (Dashboard item : list) {
+        for (Layout item : list) {
             item.setStatus(-1);
             item.setUpdatedTime(time);
             item.setUpdatedUid(uid);
         }
-        dashboardDao.saveAll(list);
+        layoutDao.saveAll(list);
         return true;
     }
 

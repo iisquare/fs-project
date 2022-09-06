@@ -3,6 +3,7 @@ package com.iisquare.fs.web.spider.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
@@ -20,6 +21,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
@@ -110,11 +112,33 @@ public class TemplateService extends ServiceBase {
         return info.isPresent() ? info.get() : null;
     }
 
-    public Template save(Template info, int uid) {
+    public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+        if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+        int sort = DPUtil.parseInt(param.get("sort"));
+        String description = DPUtil.parseString(param.get("description"));
+        String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
+        Template info = null;
+        if(id > 0) {
+            if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
+            info = info(id);
+            if(null == info) return ApiUtil.result(404, null, id);
+        } else {
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
+            info = new Template();
+        }
+        info.setName(name);
+        info.setType(type);
+        info.setContent(DPUtil.parseString(param.get("content")));
+        info.setSort(sort);
+        info.setDescription(description);
+        int uid = rbacService.uid(request);
         long time = System.currentTimeMillis();
         info.setUpdatedTime(time);
         info.setUpdatedUid(uid);
-        return templateDao.save(info);
+        info = templateDao.save(info);
+        return ApiUtil.result(0, null, info);
     }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) {

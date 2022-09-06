@@ -1,4 +1,4 @@
-package com.iisquare.fs.web.bi.entity;
+package com.iisquare.fs.web.auto.entity;
 
 import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
@@ -14,7 +14,7 @@ import javax.persistence.*;
 @AllArgsConstructor
 @DynamicInsert
 @DynamicUpdate
-public class Dashboard {
+public class Layout {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
