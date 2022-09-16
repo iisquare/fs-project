@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 06/09/2022 17:11:08
+ Date: 06/09/2022 17:30:53
 */
 
 SET NAMES utf8mb4;
@@ -126,7 +126,7 @@ INSERT INTO `fs_member_menu` VALUES (31, '数据集', '后台管理:商业智能
 INSERT INTO `fs_member_menu` VALUES (32, '数据矩阵', '后台管理:商业智能:智能报表:数据矩阵', 37, '', '/bi/report/matrix', '', 0, 1, '', 1585661854477, 1, 1634258546289, 1);
 INSERT INTO `fs_member_menu` VALUES (37, '智能报表', '后台管理:商业智能:智能报表', 26, 'radar-chart', '/bi/report', '', 0, 1, '', 1585662611501, 1, 1634258458541, 1);
 INSERT INTO `fs_member_menu` VALUES (38, '数据报表', '后台管理:商业智能:智能报表:数据报表', 37, '', '/bi/report/visualize', '', 0, 1, '', 1585663056291, 1, 1637658388654, 1);
-INSERT INTO `fs_member_menu` VALUES (39, '数据大屏', '后台管理:商业智能:智能报表:数据大屏', 37, '', '/bi/report/dashboard', '', 0, 1, '', 1585663079511, 1, 1634258605522, 1);
+INSERT INTO `fs_member_menu` VALUES (39, '数据大屏', '后台管理:商业智能:智能报表:数据大屏', 37, '', '/auto/layout/list', '', 0, 1, '', 1585663079511, 1, 1662456614598, 1);
 INSERT INTO `fs_member_menu` VALUES (40, '人脸识别', '后台管理:人脸识别', 1, 'smile', '/face/index/index', '', 0, 1, '人脸检测、人脸识别、检索对比', 1597297964946, 1, 1597298791858, 1);
 INSERT INTO `fs_member_menu` VALUES (41, '分组管理', '后台管理:人脸识别:分组管理', 40, 'team', '/face/group', '', 0, 1, '', 1597297984692, 1, 1598260929886, 1);
 INSERT INTO `fs_member_menu` VALUES (42, '人员管理', '后台管理:人脸识别:人员管理', 40, 'user', '/face/user', '', 0, 1, '', 1597298848332, 1, 1598260938414, 1);

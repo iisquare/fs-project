@@ -14,9 +14,7 @@ import com.iisquare.fs.web.cron.entity.FlowStage;
 import com.iisquare.fs.web.cron.service.FlowLogService;
 import org.quartz.*;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class DiagramJob implements Job {
 
@@ -73,10 +71,9 @@ public class DiagramJob implements Job {
                 depend.add(sourceId);
                 continue;
             }
-            if (!"flow-subprocess".equals(shape) && !"flow-group".equals(shape)) { // 更改所属节点
-                if (!node.has("depend")) node.putArray("depend");
-                node.put("parent", parent(cells, node.at("/parent").asText("")));
-            }
+            // 更改所属节点
+            if (!node.has("depend")) node.putArray("depend");
+            node.put("parent", parent(cells, node.at("/parent").asText("")));
         }
         skipped(cells, "", false); // 跳过执行向下传递
         iterator = json.at("/cells").iterator();
@@ -93,6 +90,7 @@ public class DiagramJob implements Job {
                 ((ArrayNode) node.get("depend")).add(parent);
             }
         }
+        changeSubProcessDepend(cells); // 更改子流程被依赖关系
         // 构建执行阶段
         iterator = cells.iterator();
         List<FlowStage> stages = new ArrayList<>();
@@ -115,6 +113,51 @@ public class DiagramJob implements Job {
         }
         // 汇报
         logService.tick(DPUtil.buildMap("logId", flowLog.getId()));
+    }
+
+    public boolean changeSubProcessDepend(ObjectNode cells) {
+        Map<String, Set<String>> levels = new LinkedHashMap<>(); // 层级关系：子流程 -> [流程内的子节点]
+        Map<String, Set<String>> depends = new LinkedHashMap<>(); // 被依赖关系：被依赖节点 -> [依赖节点]
+        Iterator<JsonNode> iterator = cells.iterator();
+        while (iterator.hasNext()) {
+            JsonNode node = iterator.next();
+            String id = node.at("/id").asText();
+            String parent = node.at("/parent").asText();
+            if (!DPUtil.empty(parent)) {
+                Set<String> level = levels.computeIfAbsent(parent, k -> new HashSet<>());
+                level.add(id);
+            }
+            Iterator<JsonNode> it = node.at("/depend").iterator();
+            while (it.hasNext()) {
+                String target = it.next().asText();
+                Set<String> depend = depends.computeIfAbsent(target, k -> new HashSet<>());
+                depend.add(id);
+            }
+        }
+        Map<String, Set<String>> fanout = new LinkedHashMap<>(); // 子流程中出度为零的节点：子流程 -> [扇出节点]
+        for (Map.Entry<String, Set<String>> entry : levels.entrySet()) {
+            String parent = entry.getKey();
+            for (String id : entry.getValue()) {
+                if (depends.containsKey(id)) continue; // 非扇出节点
+                Set<String> out = fanout.computeIfAbsent(parent, k -> new HashSet<>());
+                out.add(id);
+            }
+        }
+        for (Map.Entry<String, Set<String>> entry : levels.entrySet()) { // 处理子流程的被依赖关系
+            String parent = entry.getKey();
+            if (!depends.containsKey(parent)) continue; // 当前子流程未被依赖
+            if (!fanout.containsKey(parent)) continue;; // 当前子流程无扇出节点
+            // 若子流程内存在循环依赖，调度将终止，但目标节点可能会调用
+            for (String id : depends.get(parent)) {
+                JsonNode node = cells.get(id);
+                if (parent.equals(node.at("/parent").asText())) continue; // 忽略子流程内的兄弟节点
+                ArrayNode depend = (ArrayNode) node.at("/depend");
+                for (String d : fanout.get(parent)) { // 将扇出节点作为目标节点的依赖
+                    depend.add(d);
+                }
+            }
+        }
+        return true;
     }
 
     public void skipped(ObjectNode cells, String parent, boolean skipped) {
