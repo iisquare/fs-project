@@ -12,6 +12,7 @@ import org.springframework.context.annotation.ComponentScan;
         "com.iisquare.fs.base.core.*",
         "com.iisquare.fs.base.jpa.*",
         "com.iisquare.fs.base.neo4j.*",
+        "com.iisquare.fs.base.elasticsearch.*",
         "com.iisquare.fs.web.core.*",
         "com.iisquare.fs.web.govern",
 })

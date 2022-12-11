@@ -3,6 +3,7 @@ package com.iisquare.fs.app.spark.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.app.spark.udf.NullIfUDF;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.core.DAGNode;
 import org.apache.spark.sql.*;
@@ -114,6 +115,12 @@ public class SparkUtil {
             data.add(DPUtil.toJSON(iterator.next(), Object.class));
         }
         return row(data);
+    }
+
+    public static SparkSession udf(SparkSession session) {
+        UDFRegistration udf = session.udf();
+        udf.register(NullIfUDF.NAME, new NullIfUDF(), NullIfUDF.TYPE);
+        return session;
     }
 
 }

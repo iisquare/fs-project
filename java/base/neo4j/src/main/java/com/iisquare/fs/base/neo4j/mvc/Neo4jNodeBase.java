@@ -72,4 +72,11 @@ public abstract class Neo4jNodeBase extends Neo4jBase {
         }
     }
 
+    public long deleteAll() {
+        String cql = String.format("MATCH (n:%s) DETACH DELETE n RETURN COUNT(n)", LABEL_NAME);
+        try (Session session = driver.session()) {
+            return Neo4jUtil.singleLong(session.run(cql));
+        }
+    }
+
 }

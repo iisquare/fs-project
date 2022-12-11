@@ -17,6 +17,7 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder;
 import org.apache.spark.sql.catalyst.encoders.RowEncoder;
+import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.bson.Document;
@@ -28,6 +29,7 @@ import java.util.*;
 public class MongoTester implements Serializable {
 
     public static final String INPUT_PREFIX = "spark.mongodb.read.";
+    public static final String OUTPUT_PREFIX = "spark.mongodb.write.";
     public static final String INPUT3_PREFIX = "spark.mongodb.input.";
 
     public String ddl(String database, String collection) {
@@ -71,7 +73,7 @@ public class MongoTester implements Serializable {
         Map<String, String> config = new LinkedHashMap<>();
         String uri = "mongodb://root:admin888@127.0.0.1:27017";
         String database = "fs_project";
-        String collection = "fs.test";
+        String collection = "fs_test";
         config.put(INPUT_PREFIX + "connection.uri", uri);
         config.put(INPUT_PREFIX + "database", database);
         config.put(INPUT_PREFIX + "collection", collection);
@@ -107,7 +109,7 @@ public class MongoTester implements Serializable {
         Map<String, String> config = new LinkedHashMap<>();
         String uri = "mongodb://root:admin888@127.0.0.1:27017";
         String database = "fs_project";
-        String collection = "fs.test";
+        String collection = "fs_test";
         config.put(INPUT3_PREFIX + "uri", uri);
         config.put(INPUT3_PREFIX + "database", database);
         config.put(INPUT3_PREFIX + "collection", collection);
@@ -146,7 +148,7 @@ public class MongoTester implements Serializable {
         Map<String, String> config = new LinkedHashMap<>();
         String uri = "mongodb://root:admin888@127.0.0.1:27017";
         String database = "fs_project";
-        String collection = "fs.test";
+        String collection = "fs_test";
         config.put(INPUT_PREFIX + "connection.uri", uri);
         config.put(INPUT_PREFIX + "database", database);
         config.put(INPUT_PREFIX + "collection", collection);
@@ -175,7 +177,7 @@ public class MongoTester implements Serializable {
         Map<String, String> config = new LinkedHashMap<>();
         String uri = "mongodb://root:admin888@127.0.0.1:27017";
         String database = "fs_project";
-        String collection = "fs.test";
+        String collection = "fs_test";
         config.put(INPUT_PREFIX + "connection.uri", uri);
         config.put(INPUT_PREFIX + "database", database);
         config.put(INPUT_PREFIX + "collection", collection);
@@ -191,6 +193,33 @@ public class MongoTester implements Serializable {
 
         session.close();
         FSMongoTableProvider.release();
+    }
+
+    @Test
+    public void writeTest() {
+        SparkSession session = SparkSession.builder().appName("write-test").master("local").getOrCreate();
+        Map<String, String> config = new LinkedHashMap<>();
+        String uri = "mongodb://root:admin888@127.0.0.1:27017";
+        String database = "fs_project";
+        String collection = "fs_t";
+        config.put(OUTPUT_PREFIX + "connection.uri", uri);
+        config.put(OUTPUT_PREFIX + "database", database);
+        config.put(OUTPUT_PREFIX + "collection", collection);
+
+        long time = System.currentTimeMillis();
+        Dataset<Row> dataset = session.createDataset(Arrays.asList(
+                RowFactory.create(1, "a", time, time),
+                RowFactory.create(2, "b", time, time),
+                RowFactory.create(3, "c", time, time)
+        ), RowEncoder.apply(DataTypes.createStructType(Arrays.asList(
+                DataTypes.createStructField("_id", DataTypes.IntegerType, false),
+                DataTypes.createStructField("name", DataTypes.StringType, false),
+                DataTypes.createStructField("createdTime", DataTypes.LongType, false),
+                DataTypes.createStructField("updatedTime", DataTypes.LongType, false)
+        ))));
+        dataset.show();
+        dataset.write().format("mongodb").mode("append").options(config).save();
+        session.close();
     }
 
 }

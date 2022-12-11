@@ -32,7 +32,7 @@ public class Neo4fConfiguration implements DisposableBean {
     }
 
     @Bean
-    public Driver afterPropertiesSet() throws Exception {
+    public Driver neo4jDriver() throws Exception {
         Config.ConfigBuilder builder = Config.builder();
         builder.withMaxConnectionPoolSize(maxConnectionPoolSize);
         builder.withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS);

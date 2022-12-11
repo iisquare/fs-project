@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<yandex>
+    <remote_servers>
+        <!-- 单分片单副本 -->
+        <fs_cluster>
+            <shard>
+                <internal_replication>true</internal_replication>
+                <replica>
+                    <host>127.0.0.1</host>
+                    <port>9000</port>
+                </replica>
+            </shard>
+        </fs_cluster>
+    </remote_servers>
+
+    <zookeeper>
+        <node index="1">
+            <host>wsl</host>
+            <port>2181</port>
+        </node>
+    </zookeeper>
+
+    <!-- 宏变量 -->
+    <macros>
+        <shard>single</shard>
+        <replica>local</replica>
+    </macros>
+</yandex>

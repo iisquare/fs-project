@@ -2,9 +2,9 @@ package com.iisquare.fs.base.mongodb.mvc;
 
 import com.iisquare.fs.base.mongodb.MongoCore;
 import com.iisquare.fs.base.mongodb.util.MongoUtil;
+import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.*;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.bson.Document;
@@ -73,12 +73,42 @@ public abstract class MongoBase {
     }
 
     public Document upsert(Document document) {
-        if(!document.containsKey(MongoCore.FIELD_ID)) return null;
-        document = filtration(document);
-        Bson filter = Filters.eq(MongoCore.FIELD_ID, document.remove(MongoCore.FIELD_ID));
+        return upsert(document, null);
+    }
+
+    public Document upsert(Document set, Document setOnInsert) {
+        if(!set.containsKey(MongoCore.FIELD_ID)) return null;
+        set = filtration(set);
+        Bson filter = Filters.eq(MongoCore.FIELD_ID, set.remove(MongoCore.FIELD_ID));
         UpdateOptions options = new UpdateOptions().upsert(true);
-        collection().updateOne(filter, new Document("$set", document), options);
-        return MongoUtil.id2string(document);
+        Document update = new Document("$set", set);
+        if (null != setOnInsert) update.put("$setOnInsert", setOnInsert);
+        collection().updateOne(filter, update, options);
+        return MongoUtil.id2string(set);
+    }
+
+    public BulkWriteResult bulkWrite(List<Document> documents, String... insertFields) {
+        List<WriteModel<Document>> list = new ArrayList<>();
+        for (Document document : documents) {
+            document = filtration(MongoUtil.id2object(document, true));
+            if(document.containsKey(MongoCore.FIELD_ID)) {
+                list.add(new InsertOneModel<>(document));
+                continue;
+            }
+            Bson filter = Filters.eq(MongoCore.FIELD_ID, document.remove(MongoCore.FIELD_ID));
+            UpdateOptions options = new UpdateOptions().upsert(true);
+            Document insert = new Document();
+            for (String field : insertFields) {
+                if (document.containsKey(field)) {
+                    insert.put(field, document.remove(field));
+                }
+            }
+            Document update = new Document("$set", document);
+            if (insert.size() > 0) update.put("$setOnInsert", insert);
+            list.add(new UpdateOneModel<>(filter, update, options));
+        }
+
+        return collection().bulkWrite(list);
     }
 
     public long delete(String... ids) {

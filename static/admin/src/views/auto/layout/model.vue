@@ -39,7 +39,7 @@
             <a-slider v-model="zoom" :min="1" />
           </a-space>
         </div>
-        <div class="fs-layout-main" @click="triggerCanvas">
+        <div class="fs-layout-main" ref="workbench" @click="triggerCanvas">
           <div
             class="fs-layout-canvas"
             ref="canvas"
@@ -70,6 +70,7 @@ import config from './design/config'
 import layoutService from '@/service/auto/layout'
 import Property from './design/Property'
 import Element from './design/Element'
+import { Ruler } from '@/components/Ruler'
 
 export default {
   components: { FsProperty: Property, FsElement: Element },
@@ -87,7 +88,8 @@ export default {
       },
       activeItem: null,
       dragWidget: null,
-      items: {}
+      items: {},
+      ruler: null
     }
   },
   watch: {
@@ -164,6 +166,7 @@ export default {
     }
   },
   mounted () {
+    this.ruler = new Ruler(this.$refs.workbench)
     window.onresize = () => { this.resizeCanvas() }
     this.load()
   },
@@ -173,6 +176,8 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import url('../../../components/Ruler/ruler.less');
+
 .fs-bi-element {
   position: absolute;
   border: 1px solid transparent;

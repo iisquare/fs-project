@@ -2,6 +2,7 @@ package com.iisquare.fs.base.jpa.util;
 
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.jpa.mvc.DaoBase;
+import com.zaxxer.hikari.HikariDataSource;
 import org.hibernate.metamodel.spi.MetamodelImplementor;
 import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.springframework.data.domain.Sort;
@@ -47,6 +48,11 @@ public class JPAUtil {
         MetamodelImplementor meta = (MetamodelImplementor) factory.getMetamodel();
         SingleTableEntityPersister persist = (SingleTableEntityPersister) meta.entityPersister(cls);
         return persist.getTableName();
+    }
+
+    public static String driverClassName(EntityManager manager) {
+        HikariDataSource dataSource = (HikariDataSource) dataSource(manager);
+        return dataSource.getDriverClassName();
     }
 
     public static DataSource dataSource(EntityManager manager) {

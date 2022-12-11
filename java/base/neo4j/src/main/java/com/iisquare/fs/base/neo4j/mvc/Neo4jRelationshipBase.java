@@ -52,4 +52,11 @@ public abstract class Neo4jRelationshipBase extends Neo4jBase {
         return relationshipDelete(r);
     }
 
+    public long deleteAll() {
+        String cql = String.format("MATCH ()-[r:%s]->() DELETE r RETURN COUNT(r)", TYPE_NAME);
+        try (Session session = driver.session()) {
+            return Neo4jUtil.singleLong(session.run(cql));
+        }
+    }
+
 }

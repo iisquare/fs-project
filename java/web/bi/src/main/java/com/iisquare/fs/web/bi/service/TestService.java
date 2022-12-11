@@ -6,6 +6,7 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalog.Catalog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +32,9 @@ public class TestService {
             put(MongoSourceNode.INPUT_PREFIX + "collection", "fs_test");
         }}).load().createOrReplaceTempView("test");
         Dataset<Row> dataset = session.sql(DPUtil.parseString(arg.get("sql")));
+        Catalog catalog = session.catalog();
+        catalog.dropTempView("resource");
+        catalog.dropTempView("test");
         dataset.show();
         return ApiUtil.result(0, null, dataset.count());
     }
@@ -52,6 +56,9 @@ public class TestService {
             put("password", "admin888");
         }}).load().createOrReplaceTempView("test");
         Dataset<Row> dataset = session.sql(DPUtil.parseString(arg.get("sql")));
+        Catalog catalog = session.catalog();
+        catalog.dropTempView("resource");
+        catalog.dropTempView("test");
         dataset.show();
         return ApiUtil.result(0, null, dataset.count());
     }
@@ -71,6 +78,9 @@ public class TestService {
             put("password", "admin888");
         }}).load().createOrReplaceTempView("mysql");
         Dataset<Row> dataset = session.sql(DPUtil.parseString(arg.get("sql")));
+        Catalog catalog = session.catalog();
+        catalog.dropTempView("mongodb");
+        catalog.dropTempView("mysql");
         dataset.show();
         return ApiUtil.result(0, null, dataset.count());
     }

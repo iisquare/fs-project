@@ -249,6 +249,8 @@ services:
     volumes:
       - ${DATA_DIR}/clickhouse/data:/var/lib/clickhouse
       - ${DATA_DIR}/clickhouse/logs:/val/log/clickhouse-server
+      - ./service/clickhouse/etc/config.xml:/etc/clickhouse-server/config.xml
+      - ./service/clickhouse/etc/metrika.xml:/etc/clickhouse-server/config.d/metrika.xml
   trino:
     user: root
     build:

@@ -13,6 +13,7 @@ dependencies {
 
     compile group: 'com.ververica', name: 'flink-connector-mysql-cdc', version: cdcVersion
     compile group: 'com.ververica', name: 'flink-connector-postgres-cdc', version: cdcVersion
+    compile group: 'com.ververica', name: 'flink-connector-mongodb-cdc', version: cdcVersion
 
     testCompile group: 'org.apache.flink', name: 'flink-runtime-web_' + scalaVersion, version: flinkVersion
 }

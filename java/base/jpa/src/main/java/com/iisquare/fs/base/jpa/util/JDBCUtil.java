@@ -8,7 +8,9 @@ import org.springframework.jdbc.support.JdbcUtils;
 
 import java.io.*;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class JDBCUtil {
@@ -34,6 +36,15 @@ public class JDBCUtil {
         }
         JdbcUtils.closeResultSet(rs);
         return tables;
+    }
+
+    public static List<String> pks(Connection connection, String table) throws SQLException {
+        List<String> result = new ArrayList<>();
+        ResultSet rs = connection.getMetaData().getPrimaryKeys(null, null, table);
+        while (rs.next()) {
+            result.add(rs.getString("column_name"));
+        }
+        return result;
     }
 
     public static ObjectNode columns(Connection connection, String table) throws SQLException {

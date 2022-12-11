@@ -864,7 +864,7 @@ public class DPUtil {
      * 获取对应字段的值列表
      */
     public static <T> Set<T> values(Collection<?> list, Class<T> tClass, String... properties) {
-        Set<T> valueList = new HashSet<>();
+        Set<T> valueList = new LinkedHashSet<>();
         if (null == list || list.size() < 1 || properties.length < 1) return valueList;
         for (Object object : list) {
             for (String property : properties) {
@@ -889,7 +889,7 @@ public class DPUtil {
     }
 
     public static <T> Set<T> values(JsonNode array, Class<T> tClass, String... properties) {
-        Set<T> valueList = new HashSet<>();
+        Set<T> valueList = new LinkedHashSet<>();
         Iterator<JsonNode> iterator = array.iterator();
         while (iterator.hasNext()) {
             JsonNode node = iterator.next();

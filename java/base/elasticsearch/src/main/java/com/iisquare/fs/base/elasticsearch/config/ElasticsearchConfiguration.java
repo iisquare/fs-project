@@ -43,7 +43,7 @@ public class ElasticsearchConfiguration implements DisposableBean {
     }
 
     @Bean
-    public RestHighLevelClient afterPropertiesSet() throws Exception {
+    public RestHighLevelClient elasticClient() throws Exception {
         List<HttpHost> hosts = new ArrayList<>();
         for (String target : DPUtil.explode(",", nodes, " ", true)) {
             String[] strings = DPUtil.explode(":", target, " ", true);

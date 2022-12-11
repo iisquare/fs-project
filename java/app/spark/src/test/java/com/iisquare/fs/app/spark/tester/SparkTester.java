@@ -10,6 +10,7 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.ForeachPartitionFunction;
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.*;
+import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder;
 import org.apache.spark.sql.catalyst.encoders.RowEncoder;
 import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.types.DataTypes;
@@ -21,10 +22,7 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 public class SparkTester implements Serializable {
 
@@ -113,6 +111,32 @@ public class SparkTester implements Serializable {
                 DataTypes.createStructField("action", DataTypes.StringType, false)
         )))).show();
         session.close();
+    }
+
+    @Test
+    public void memoryTest() {
+        SparkSession spark = SparkSession.builder().appName("write-test").master("local").getOrCreate();
+        ExpressionEncoder<Row> encoder = RowEncoder.apply(DataTypes.createStructType(Arrays.asList(
+                DataTypes.createStructField("t", DataTypes.StringType, false),
+                DataTypes.createStructField("j", DataTypes.IntegerType, false),
+                DataTypes.createStructField("score", DataTypes.DoubleType, false),
+                DataTypes.createStructField("time", DataTypes.LongType, false)
+        )));
+        for (int i = 0; i < 10000; i++) {
+            SparkSession session = spark.newSession();
+            String table = String.format("t_%d", i);
+            List<Row> data = new ArrayList<>();
+            for (int j = 0; j < 1000; j++) {
+                data.add(RowFactory.create(table, j, Math.random(), System.currentTimeMillis()));
+            }
+            Dataset<Row> dataset = session.createDataset(data, encoder);
+            dataset.createOrReplaceTempView(table);
+            String sql = String.format("select t, max(score) from %s group by t", table);
+            dataset = session.sql(sql);
+            session.catalog().dropTempView(table);
+            dataset.show();
+        }
+        spark.close();
     }
 
 }

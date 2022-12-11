@@ -22,7 +22,7 @@ public class MongoConfiguration implements DisposableBean {
     }
 
     @Bean
-    public MongoClient afterPropertiesSet() throws Exception {
+    public MongoClient mongoClient() throws Exception {
         MongoClient client = MongoClients.create(uri);
         return this.client = client;
     }

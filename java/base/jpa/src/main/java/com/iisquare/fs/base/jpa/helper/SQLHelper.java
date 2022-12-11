@@ -1,9 +1,12 @@
 package com.iisquare.fs.base.jpa.helper;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.iisquare.fs.base.core.tool.SQLBuilder;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.core.util.SQLUtil;
 import com.iisquare.fs.base.jpa.core.SQLBatchCallback;
+import com.iisquare.fs.base.jpa.util.JDBCUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import org.springframework.jdbc.support.JdbcUtils;
 
@@ -188,16 +191,23 @@ public class SQLHelper {
     }
 
     public boolean batch(SQLBatchCallback callback) throws Exception {
+        String driverClassName = JPAUtil.driverClassName(manager);
         Connection connection = JPAUtil.connection(manager);
+        if ("org.postgresql.Driver".equals(driverClassName)) {
+            connection.setAutoCommit(false);
+        }
         sql = builder.all();
         PreparedStatement statement = null;
         ResultSet rs = null;
         try {
             statement = statement(connection, sql);
-            statement.setFetchSize(callback.fetchSize);
-            statement.setFetchDirection(ResultSet.FETCH_REVERSE);
-            // 被HikariProxyPreparedStatement代理，不能直接调用enableStreamingResults
-            statement.setFetchSize(Integer.MIN_VALUE);
+            if ("org.postgresql.Driver".equals(driverClassName)) {
+                statement.setFetchSize(callback.fetchSize);
+            } else {
+                statement.setFetchDirection(ResultSet.FETCH_REVERSE);
+                // 被HikariProxyPreparedStatement代理，不能直接调用enableStreamingResults
+                statement.setFetchSize(Integer.MIN_VALUE);
+            }
             rs = statement.executeQuery();
             ResultSetMetaData meta = rs.getMetaData();
             int count = meta.getColumnCount();
@@ -222,6 +232,48 @@ public class SQLHelper {
         } finally {
             JdbcUtils.closeResultSet(rs);
             JdbcUtils.closeStatement(statement);
+            JPAUtil.release(manager, connection);
+        }
+    }
+
+    public boolean step(SQLBatchCallback callback) throws Exception {
+        JsonNode last = null;
+        String table = builder.tableName();
+        ArrayNode result = DPUtil.arrayNode();
+        Connection connection = JPAUtil.connection(manager);
+        try {
+            String[] pks = DPUtil.toArray(String.class, JDBCUtil.pks(connection, table));
+            do {
+                StringBuilder sb = new StringBuilder();
+                sb.append("select * from ").append(table).append(" where ");
+                sb.append(SQLUtil.pkWhere(last, pks));
+                sb.append(" order by ").append(DPUtil.implode(", ", pks)).append(" limit ").append(callback.fetchSize).append(";");
+                String sql = sb.toString();
+                try (Statement statement = connection.createStatement(); ResultSet rs = statement.executeQuery(sql)) {
+                    ResultSetMetaData meta = rs.getMetaData();
+                    int size = 0;
+                    int count = meta.getColumnCount();
+                    while (rs.next()) {
+                        size++;
+                        Map<String, Object> item = new LinkedHashMap<>();
+                        for (int i = 1; i <= count; i++) {
+                            item.put(meta.getColumnName(i), rs.getObject(i));
+                        }
+                        last = DPUtil.toJSON(item);
+                        result.add(last);
+                        if (result.size() >= callback.batchSize) {
+                            if (!callback.call(result)) return false;
+                            result = DPUtil.arrayNode();
+                        }
+                    }
+                    if (0 == size) break;
+                }
+            } while (true);
+            if (result.size() > 0) {
+                return callback.call(result);
+            }
+            return true;
+        } finally {
             JPAUtil.release(manager, connection);
         }
     }
