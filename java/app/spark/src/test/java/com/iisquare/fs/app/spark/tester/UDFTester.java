@@ -20,4 +20,20 @@ public class UDFTester {
         session.close();
     }
 
+    @Test
+    public void implodeTest() {
+        SparkSession session = SparkSession.builder().appName("implode-test").master("local").getOrCreate();
+        String sql = "select id, array_join(array_agg(name), ',') from values" +
+                " (1, 'a')," +
+                " (1, 'b')," +
+                " (2, 'c')," +
+                " (2, 'c')," +
+                " (2, 'a')," +
+                " (3, 'd')" +
+                " as t(id, name) group by id";
+        Dataset<Row> dataset = session.sql(sql);
+        dataset.show();
+        session.close();
+    }
+
 }

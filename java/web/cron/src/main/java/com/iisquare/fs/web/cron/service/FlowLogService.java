@@ -13,6 +13,7 @@ import com.iisquare.fs.web.cron.dao.FlowStageDao;
 import com.iisquare.fs.web.cron.entity.FlowLog;
 import com.iisquare.fs.web.cron.entity.FlowStage;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,9 +24,10 @@ import org.springframework.stereotype.Service;
 
 import javax.persistence.criteria.Predicate;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
-public class FlowLogService extends ServiceBase implements DisposableBean {
+public class FlowLogService extends ServiceBase implements InitializingBean, DisposableBean {
 
     @Autowired
     private NodeService nodeService;
@@ -35,7 +37,44 @@ public class FlowLogService extends ServiceBase implements DisposableBean {
     private FlowStageDao stageDao;
     @Autowired
     private StringRedisTemplate redis;
-    private StagePool pool = new StagePool();
+    private volatile long waitTimeout = 0; // 无可调度流程时，长时间等待
+    private volatile StagePool pool = new StagePool();
+    private final AtomicInteger atomic = new AtomicInteger(0); // 在状态修改并发冲突后，补偿调度一次
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        new Thread(() -> { // 启动时的首次触发，由NodeService.onApplicationEvent在准备完成后进行唤起
+            while (null != pool) {
+                if (atomic.getAndSet(0) < 1) {
+                    synchronized (atomic) {
+                        try {
+                            atomic.wait(waitTimeout);
+                        } catch (InterruptedException e) {
+                            continue;
+                        }
+                    }
+                }
+                waitTimeout = 10000; // 调度流转过程中短时间等待
+                tick(DPUtil.buildMap()); // 拉起待执行的任务
+            }
+        }).start();
+    }
+
+    @Override
+    public void destroy() throws Exception {
+        pool.close();
+        pool = null;
+        notify(DPUtil.buildMap(), false);
+    }
+
+    public void notify(Map<?, ?> param, boolean bForce) {
+        if (bForce) {
+            atomic.incrementAndGet();
+        }
+        synchronized (atomic) {
+            atomic.notifyAll();
+        }
+    }
 
     public Map<String, Object> onNotice(JsonNode notice) {
         String event = notice.at("/event").asText();
@@ -59,16 +98,19 @@ public class FlowLogService extends ServiceBase implements DisposableBean {
             return DPUtil.toJSON(result, Map.class);
         }
         if (!redis.opsForValue().setIfAbsent(RedisKey.cronLogLock(), "", RedisKey.TTL_CRON_LOG_LOCK)) {
+            atomic.incrementAndGet();
             return ApiUtil.result(1502, "主节点正在调度中", param);
         }
         Map<String, Object> result = dispatch(param);
         redis.delete(RedisKey.cronLogLock());
+        notify(param, false);
         return result;
     }
 
     public Map<String, Object> dispatch(Map<?, ?> param) {
         Map<Integer, FlowLog> logs = DPUtil.list2map(logDao.canRun(), Integer.class, "id");
         if (logs.size() == 0) {
+            waitTimeout = 0;
             return ApiUtil.result(0, "暂无可调度流程", param);
         }
         Map<Integer, Map<String, FlowStage>> stages = DPUtil.list2mm(stageDao.findAllByLogId(
@@ -301,9 +343,4 @@ public class FlowLogService extends ServiceBase implements DisposableBean {
         return ApiUtil.result(0, null, json);
     }
 
-    @Override
-    public void destroy() throws Exception {
-        pool.close();
-        pool = null;
-    }
 }

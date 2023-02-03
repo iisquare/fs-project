@@ -70,6 +70,7 @@ public class NodeService extends ServiceBase implements DisposableBean, Applicat
             logger.error("quartz service start error!", e);
             zookeeper.command(WatchListener.CMD_ERROR);
         }
+        flowLogService.notify(DPUtil.buildMap(), false);
     }
 
     public ZooKeeperClient zookeeper() {

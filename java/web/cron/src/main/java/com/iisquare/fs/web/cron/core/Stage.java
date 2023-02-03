@@ -41,7 +41,7 @@ public abstract class Stage implements Runnable {
         int logId = stage.at("/logId").asInt();
         String stageId = stage.at("/stageId").asText();
         FlowLogService logService = CronApplication.context.getBean(FlowLogService.class);
-        logService.tick(DPUtil.buildMap("logId", logId, "stageId", stageId, "code", result.get(ApiUtil.FIELD_CODE)));
+        logService.notify(DPUtil.buildMap("logId", logId, "stageId", stageId, "code", result.get(ApiUtil.FIELD_CODE)), true);
     }
 
     public boolean inSucceed(JsonNode state, String... depends) {

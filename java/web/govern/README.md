@@ -86,8 +86,8 @@
 ### 选型
 - 日志采集：Flume、Logstash、Filebeats。
 - CDC同步：Canal、Maxwall、Debezium、FlinkCDC。
-- 消息队列：kafka、rabbitmq、rocketmq、activemq。
-- 图数据库：neo4j、JanusGraph、NebulaGraph。
+- 消息队列：Kafka、RabbitMQ、RocketMQ、ActiveMQ。
+- 图数据库：Neo4j、JanusGraph、NebulaGraph。
 - 数据湖：Delta、Iceberg、Hudi。
 
 ### 组件
@@ -119,7 +119,6 @@
 | Kylin | 海量数据亚秒级分析响应、可调控的精确去重、SQL原生支持、中文社区支持、原生支持Lambda和Kappa架构 | 不适合即席查询分析（提前定义模型预聚合了）、不支持明细数据查询、预计算量大（批量构建时）、实时构建发布时间不长恐有Bug、外部依赖较多运维繁琐(HBase、Hive)。 |
 | Kudu | 一个存储搞定快速明细数据入库和快速分析 | 扩展能力有限无法支持更大规模数据（单机群300节点为佳）、更大规模数据需要结合Impala＋HDFS实现分层存储架构  |
 | ElasticSearch | 实时全文检索能力强大、体系完备稳定尤其ELK | 不适合更大规模数据处理（不支持预聚合）、组合查询性能欠佳 |
-| Presto | 跨数据源海量数据即席分析（明细数据） | 不支持海量数据实时分析（不支持预聚合） |
+| Presto/Trino | 跨数据源海量数据即席分析（明细数据） | 不支持海量数据实时分析（不支持预聚合） |
 | Impala | 跨部分数据源海量数据即席分析（明细数据） | 不支持海量数据实时分析（不支持预聚合） |
-| Clickhouse | 海量明细数据下的实时分析、SQL支持 | 数据量太大容易出现瓶颈（退而求其次去选择支持预聚合的技术） |
-
+| ClickHouse | 海量明细数据下的实时分析、SQL支持 | 数据量太大容易出现瓶颈（退而求其次去选择支持预聚合的技术） |

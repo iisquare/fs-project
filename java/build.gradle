@@ -42,7 +42,7 @@ subprojects {
         springCloudVersion = '2.2.6.RELEASE'
         feignVersion = '10.10.1' // based on cloud version
         scalaVersion = '2.12' // based on spark and flink version
-        sparkVersion = '3.2.1'
+        sparkVersion = '3.3.1'
         flinkVersion = '1.13.6'
         /**
          * CDC Connectors Supported Flink Versions

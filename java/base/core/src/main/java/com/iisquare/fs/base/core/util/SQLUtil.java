@@ -18,7 +18,7 @@ public class SQLUtil {
         for (int i = 0; i < pks.length; i++) {
             List<String> items = new ArrayList<>();
             for (int j = 0; j <= i; j++) {
-                String text = node.at("/" + pks[j]).asText("");
+                String text = escape(node.at("/" + pks[j]).asText(""));
                 items.add(String.format("%s %s '%s'", pks[j], j == i ? ">" : "=", text));
             }
             list.add(String.format("(%s)", DPUtil.implode(" AND ", items)));
