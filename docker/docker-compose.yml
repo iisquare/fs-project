@@ -27,7 +27,7 @@ services:
       - "${BIND_ADDRESS}${BIND_COLON}${NEO4J_BOLT_PORT}:7687"
     volumes:
       - ${DATA_DIR}/neo4j/data:/data
-      # - ${DATA_DIR}/neo4j/logs:/logs
+      - ${DATA_DIR}/neo4j/logs:/logs
   postgres:
     build:
       context: ./service/postgres

@@ -17,7 +17,6 @@ import java.io.Serializable;
 @DynamicUpdate
 /**
  * 数据质量检测方案
- * 用于组织一批质量检测规则，便于配置执行计划
  */
 public class QualityPlan implements Serializable {
 
@@ -25,34 +24,30 @@ public class QualityPlan implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     @Column
-    private Integer assess; // 落地评估规则
-    @Column
-    private String standard; // 标准路径
+    private String name; // 规则名称
     @Column
     private String source; // 数据源
     @Column
-    private String model; // 表名
+    private String content; // 规则集合，英文逗号分割
     @Column
-    private String code; // 字段名称
+    private Integer sort;
     @Column
-    private String level; // 预警等级
+    private Integer status;
+    @Transient
+    private String statusText;
     @Column
-    private Integer name = 0; // 字段名不一致
+    private String description;
     @Column
-    private Integer type = 0; // 字段类型不一致
+    private Long createdTime;
     @Column
-    private Integer size = 0; // 字段长度不一致
+    private Integer createdUid;
+    @Transient
+    private String createdUidName;
     @Column
-    private Integer digit = 0; // 字段小数位数不一致
+    private Long updatedTime;
     @Column
-    private Integer nullable = 0; // 是否允许为空不一致
-    @Column
-    private String detail; // 明细
-    @Column
-    private Long checkTime; // 检测时间
-
-    public boolean different () {
-        return name + type + size + digit + nullable > 0;
-    }
+    private Integer updatedUid;
+    @Transient
+    private String updatedUidName;
 
 }

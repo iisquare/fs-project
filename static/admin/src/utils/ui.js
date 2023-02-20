@@ -9,7 +9,7 @@ const UIUtil = {
       return store.getters['cache/set'](key, value, ttl)
     }
   },
-  tableTree (rows, parentId, idField = 'id', parentField = 'parentId', childField = 'children') {
+  tableTree (rows, parentId = 0, idField = 'id', parentField = 'parentId', childField = 'children') {
     const result = []
     for (const item of rows) {
       if (item[parentField] !== parentId) continue

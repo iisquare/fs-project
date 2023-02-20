@@ -15,5 +15,8 @@ export default {
   },
   save (param, tips = {}) {
     return base.post('/qualityLogic/save', param, tips)
+  },
+  tree (param, tips = {}) {
+    return base.post('/qualityLogic/tree', param, tips)
   }
 }

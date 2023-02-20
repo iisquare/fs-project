@@ -6,8 +6,8 @@ import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
-import com.iisquare.fs.web.govern.dao.QualityLogicDao;
-import com.iisquare.fs.web.govern.entity.QualityLogic;
+import com.iisquare.fs.web.govern.dao.QualityRuleDao;
+import com.iisquare.fs.web.govern.entity.QualityRule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,12 +20,14 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
-public class QualityLogicService extends ServiceBase {
+public class QualityRuleService extends ServiceBase {
 
     @Autowired
-    private QualityLogicDao logicDao;
+    private QualityRuleDao ruleDao;
     @Autowired
     private DefaultRbacService rbacService;
+    @Autowired
+    private QualityLogicService logicService;
 
     public Map<?, ?> status(String level) {
         Map<Integer, String> status = new LinkedHashMap<>();
@@ -43,9 +45,9 @@ public class QualityLogicService extends ServiceBase {
         return status;
     }
 
-    public QualityLogic info(Integer id) {
+    public QualityRule info(Integer id) {
         if(null == id || id < 1) return null;
-        Optional<QualityLogic> info = logicDao.findById(id);
+        Optional<QualityRule> info = ruleDao.findById(id);
         return info.isPresent() ? info.get() : null;
     }
 
@@ -53,30 +55,40 @@ public class QualityLogicService extends ServiceBase {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
         if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+        String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
+        if(DPUtil.empty(type)) return ApiUtil.result(1002, "类型异常", type);
         int sort = DPUtil.parseInt(param.get("sort"));
         int status = DPUtil.parseInt(param.get("status"));
-        if(!status("default").containsKey(status)) return ApiUtil.result(1002, "状态异常", status);
+        if(!status("default").containsKey(status)) return ApiUtil.result(1003, "状态异常", status);
         String description = DPUtil.parseString(param.get("description"));
-        int parentId = DPUtil.parseInt(param.get("parentId"));
-        if(parentId < 0) {
-            return ApiUtil.result(1003, "上级节点异常", name);
-        } else if(parentId > 0) {
-            QualityLogic parent = info(parentId);
-            if(null == parent || !status("default").containsKey(parent.getStatus())) {
-                return ApiUtil.result(1004, "上级节点不存在或已删除", name);
-            }
+        int logicId = DPUtil.parseInt(param.get("logicId"));
+        if(logicId < 0) {
+            return ApiUtil.result(1004, "请选择所属分类", name);
         }
-        QualityLogic info;
+        QualityRule info;
         if(id > 0) {
             if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
             info = info(id);
             if(null == info) return ApiUtil.result(404, null, id);
         } else {
             if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
-            info = new QualityLogic();
+            info = new QualityRule();
         }
         info.setName(name);
-        info.setParentId(parentId);
+        info.setType(type);
+        info.setLogicId(logicId);
+        info.setCheckTable(DPUtil.parseString(param.get("checkTable")));
+        info.setCheckColumn(DPUtil.parseString(param.get("checkColumn")));
+        info.setCheckMetric(DPUtil.parseString(param.get("checkMetric")));
+        info.setCheckWhere(DPUtil.parseString(param.get("checkWhere")));
+        info.setCheckGroup(DPUtil.parseString(param.get("checkGroup")));
+        info.setReferTable(DPUtil.parseString(param.get("referTable")));
+        info.setReferColumn(DPUtil.parseString(param.get("referColumn")));
+        info.setReferMetric(DPUtil.parseString(param.get("referMetric")));
+        info.setReferWhere(DPUtil.parseString(param.get("referWhere")));
+        info.setReferGroup(DPUtil.parseString(param.get("referGroup")));
+        info.setContent(DPUtil.stringify(param.get("content")));
+        info.setSuggest(DPUtil.parseString(param.get("suggest")));
         info.setSort(sort);
         info.setStatus(status);
         info.setDescription(description);
@@ -88,7 +100,7 @@ public class QualityLogicService extends ServiceBase {
             info.setCreatedTime(time);
             info.setCreatedUid(uid);
         }
-        info = logicDao.save(info);
+        info = ruleDao.save(info);
         return ApiUtil.result(0, null, info);
 
     }
@@ -96,28 +108,24 @@ public class QualityLogicService extends ServiceBase {
     public <T> List<T> fillInfo(List<T> list, String ...properties) {
         Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
         if(ids.size() < 1) return list;
-        Map<Integer, QualityLogic> data = DPUtil.list2map(logicDao.findAllById(ids), Integer.class, "id");
+        Map<Integer, QualityRule> data = DPUtil.list2map(ruleDao.findAllById(ids), Integer.class, "id");
         return DPUtil.fillValues(list, properties, "Name", DPUtil.values(data, String.class, "name"));
     }
 
-    public List<QualityLogic> tree(Map<?, ?> param, Map<?, ?> args) {
-        List<QualityLogic> data = logicDao.findAll((Specification<QualityLogic>) (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            int status = DPUtil.parseInt(param.get("status"));
-            if(!"".equals(DPUtil.parseString(param.get("status")))) {
-                predicates.add(cb.equal(root.get("status"), status));
-            } else {
-                predicates.add(cb.notEqual(root.get("status"), -1));
-            }
-            return cb.and(predicates.toArray(new Predicate[0]));
-        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.asc("id")));
+    public Map<String, Object> infos(Map<?, ?> param, Map<?, ?> args) {
+        List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
+        if (ids.size() < 1) return ApiUtil.result(0, null, new ArrayList<>());
+        List<QualityRule> rows = ruleDao.findAllById(ids);
         if(!DPUtil.empty(args.get("withUserInfo"))) {
-            rbacService.fillUserInfo(data, "createdUid", "updatedUid");
+            rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
-            DPUtil.fillValues(data, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+            DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
         }
-        return DPUtil.formatRelation(data, QualityLogic.class, "parentId", 0, "id", "children");
+        if(!DPUtil.empty(args.get("withLogicInfo"))) {
+            logicService.fillInfo(rows, "logicId");
+        }
+        return ApiUtil.result(0, null, rows);
     }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> args) {
@@ -126,7 +134,7 @@ public class QualityLogicService extends ServiceBase {
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "sort"));
         if (null == sort) sort = Sort.by(Sort.Order.desc("sort"));
-        Page<QualityLogic> data = logicDao.findAll((Specification<QualityLogic>) (root, query, cb) -> {
+        Page<QualityRule> data = ruleDao.findAll((Specification<QualityRule>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             int id = DPUtil.parseInt(param.get("id"));
             if(id > 0) predicates.add(cb.equal(root.get("id"), id));
@@ -140,9 +148,21 @@ public class QualityLogicService extends ServiceBase {
             if(!DPUtil.empty(name)) {
                 predicates.add(cb.like(root.get("name"), "%" + name + "%"));
             }
-            int parentId = DPUtil.parseInt(param.get("parentId"));
-            if(!"".equals(DPUtil.parseString(param.get("parentId")))) {
-                predicates.add(cb.equal(root.get("parentId"), parentId));
+            int logicId = DPUtil.parseInt(param.get("logicId"));
+            if(!"".equals(DPUtil.parseString(param.get("logicId")))) {
+                predicates.add(cb.equal(root.get("logicId"), logicId));
+            }
+            String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
+            if(!DPUtil.empty(type)) {
+                predicates.add(cb.equal(root.get("type"), type));
+            }
+            String checkTable = DPUtil.trim(DPUtil.parseString(param.get("checkTable")));
+            if(!DPUtil.empty(checkTable)) {
+                predicates.add(cb.equal(root.get("checkTable"), checkTable));
+            }
+            String checkColumn = DPUtil.trim(DPUtil.parseString(param.get("checkColumn")));
+            if(!DPUtil.empty(checkColumn)) {
+                predicates.add(cb.equal(root.get("checkColumn"), checkColumn));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         }, PageRequest.of(page - 1, pageSize, sort));
@@ -153,8 +173,8 @@ public class QualityLogicService extends ServiceBase {
         if(!DPUtil.empty(args.get("withStatusText"))) {
             DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
         }
-        if(!DPUtil.empty(args.get("withParentInfo"))) {
-            this.fillInfo(rows, "parentId");
+        if(!DPUtil.empty(args.get("withLogicInfo"))) {
+            logicService.fillInfo(rows, "logicId");
         }
         result.put("page", page);
         result.put("pageSize", pageSize);
@@ -165,20 +185,20 @@ public class QualityLogicService extends ServiceBase {
 
     public boolean remove(List<Integer> ids) {
         if(null == ids || ids.size() < 1) return false;
-        logicDao.deleteInBatch(logicDao.findAllById(ids));
+        ruleDao.deleteInBatch(ruleDao.findAllById(ids));
         return true;
     }
 
     public boolean delete(List<Integer> ids, int uid) {
         if(null == ids || ids.size() < 1) return false;
-        List<QualityLogic> list = logicDao.findAllById(ids);
+        List<QualityRule> list = ruleDao.findAllById(ids);
         long time = System.currentTimeMillis();
-        for (QualityLogic item : list) {
+        for (QualityRule item : list) {
             item.setStatus(-1);
             item.setUpdatedTime(time);
             item.setUpdatedUid(uid);
         }
-        logicDao.saveAll(list);
+        ruleDao.saveAll(list);
         return true;
     }
 

@@ -1,97 +1,73 @@
 <template>
   <section>
     <a-card :bordered="false">
-      <a-breadcrumb style="margin-bottom: 20px;">
-        <a-breadcrumb-item>
-          <a-icon type="home" class="fs-ui-point" @click="forward()" />
-        </a-breadcrumb-item>
-        <a-breadcrumb-item :key="index" v-for="(item, index) in breadcrumb">
-          <span class="fs-ui-point" @click="forward(item)">{{ item.code }}</span>
-        </a-breadcrumb-item>
-      </a-breadcrumb>
+      <template slot="title">
+        <a-button @click="toggleRowKeys" :icon="expandedRowKeys.length === 0 ? 'menu-unfold' : 'menu-fold'"></a-button>
+        <a-divider type="vertical" v-permit="'govern:qualityLogic:delete'" />
+        <a-button icon="minus-circle" type="danger" @click="batchRemove" v-permit="'govern:qualityLogic:delete'" :disabled="selection.selectedRows.length === 0">删除</a-button>
+        <a-divider type="vertical" v-permit="'govern:qualityLogic:add'" />
+        <a-button icon="plus-circle" type="primary" @click="add(0)" v-permit="'govern:qualityLogic:add'">新增</a-button>
+      </template>
       <div class="table-page-search-wrapper">
-        <a-form-model ref="filters" :model="filters" layout="inline">
-          <a-row :gutter="48">
-            <a-col :md="6" :sm="24">
-              <a-form-model-item label="编码" prop="code">
-                <a-input v-model="filters.code" placeholder="" :allowClear="true" />
-              </a-form-model-item>
-            </a-col>
-            <a-col :md="6" :sm="24">
-              <a-form-model-item label="名称" prop="name">
-                <a-input v-model="filters.name" placeholder="" :allowClear="true" />
-              </a-form-model-item>
-            </a-col>
-            <a-col :md="6" :sm="24">
-              <a-space>
-                <a-button type="primary" @click="search(true, false)" :loading="loading">查询</a-button>
-                <a-button @click="() => this.$refs.filters.resetFields()">重置</a-button>
-              </a-space>
-            </a-col>
-          </a-row>
-        </a-form-model>
         <a-table
           :columns="columns"
-          :rowKey="(record, index) => index"
+          :rowKey="record => record.id"
           :dataSource="rows"
-          :pagination="pagination"
+          :pagination="false"
           :loading="loading"
           :rowSelection="selection"
-          @change="tableChange"
           :bordered="true"
+          :expandedRowKeys="expandedRowKeys"
+          @expandedRowsChange="(expandedRows) => this.expandedRowKeys = expandedRows"
+          :scroll="{ x: true }"
         >
+          <span slot="name" slot-scope="text, record">{{ record.name }}/{{ record.parentId }}/{{ record.id }}</span>
           <span slot="action" slot-scope="text, record">
-            <a-button-group>
-              <a-button v-if="record.mold === 'catalog'" type="link" size="small" @click="forward(record)">进入</a-button>
-              <a-button v-if="record.mold === 'catalog'" v-permit="'govern:qualityLogic:modify'" type="link" size="small" @click="catalog(record)">编辑</a-button>
-              <a-button v-if="record.mold !== 'catalog'" v-permit="'govern:qualityLogic:modify'" type="link" size="small" @click="draw('', record)">编辑</a-button>
-            </a-button-group>
+            <a-dropdown>
+              <a-menu slot="overlay">
+                <a-menu-item v-permit="'govern:qualityLogic:'"><a-button :block="true" type="link" size="small" @click="show(text, record)">查看</a-button></a-menu-item>
+                <a-menu-item v-permit="'govern:qualityLogic:modify'"><a-button :block="true" type="link" size="small" @click="edit(text, record)">编辑</a-button></a-menu-item>
+                <a-menu-item v-permit="'govern:qualityLogic:add'"><a-button :block="true" type="link" size="small" @click="sublevel(text, record)">子级</a-button></a-menu-item>
+              </a-menu>
+              <a-button type="link" icon="tool"></a-button>
+            </a-dropdown>
           </span>
-          <a-descriptions slot="expandedRowRender" slot-scope="record">
-            <a-descriptions-item label="全路径" :span="3">{{ record.path }}</a-descriptions-item>
-            <a-descriptions-item label="编码别名" :span="3" v-if="record.mold !== 'catalog'">{{ record.another }}</a-descriptions-item>
-            <a-descriptions-item label="记录标志" :span="3" v-if="record.mold !== 'catalog'">{{ record.flag }}</a-descriptions-item>
-            <a-descriptions-item label="字段类型" v-if="record.mold !== 'catalog'">{{ record.type }}</a-descriptions-item>
-            <a-descriptions-item label="预警等级" v-if="record.mold !== 'catalog'">{{ record.level }}</a-descriptions-item>
-            <a-descriptions-item label="记录类型" v-if="record.mold !== 'catalog'">{{ record.mold }}</a-descriptions-item>
-            <a-descriptions-item label="字段长度" v-if="record.mold !== 'catalog'">{{ record.size }}</a-descriptions-item>
-            <a-descriptions-item label="小数位数" v-if="record.mold !== 'catalog'">{{ record.digit }}</a-descriptions-item>
-            <a-descriptions-item label="允许为空" v-if="record.mold !== 'catalog'">{{ record.nullable ? 'Y' : 'N' }}</a-descriptions-item>
-            <a-descriptions-item label="创建者">{{ record.createdUidName }}</a-descriptions-item>
-            <a-descriptions-item label="创建时间" :span="2">{{ DateUtil.format(record.createdTime) }}</a-descriptions-item>
-            <a-descriptions-item label="修改者">{{ record.updatedUidName }}</a-descriptions-item>
-            <a-descriptions-item label="修改时间" :span="2">{{ DateUtil.format(record.updatedTime) }}</a-descriptions-item>
-            <a-descriptions-item label="描述信息" :span="3">{{ record.description }}</a-descriptions-item>
-          </a-descriptions>
         </a-table>
-        <div :class="rows.length > 0 ? 'table-pagination-tools' : 'table-pagination-tools-empty'">
-          <a-space>
-            <a-button icon="minus-circle" type="danger" @click="batchRemove" v-permit="'govern:qualityLogic:delete'" :disabled="selection.selectedRows.length === 0">删除</a-button>
-            <a-button icon="plus-circle" type="primary" @click="catalog" v-permit="'govern:qualityLogic:add'">新增目录</a-button>
-            <a-button icon="plus-circle" type="primary" @click="draw('')" v-permit="'govern:qualityLogic:add'">新增逻辑</a-button>
-          </a-space>
-        </div>
       </div>
     </a-card>
+    <!--展示界面-->
+    <a-modal :title="'信息查看 - ' + form.id" v-model="infoVisible" :footer="null">
+      <a-form-model :model="form" :loading="infoLoading" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
+        <a-form-model-item label="父级">[{{ form.parentId }}]{{ form.parentId > 0 ? form.parentIdName : '根节点' }}</a-form-model-item>
+        <a-form-model-item label="名称">{{ form.name }}</a-form-model-item>
+        <a-form-model-item label="排序">{{ form.sort }}</a-form-model-item>
+        <a-form-model-item label="状态">{{ form.statusText }}</a-form-model-item>
+        <a-form-model-item label="描述">{{ form.description }}</a-form-model-item>
+        <a-form-model-item label="创建者">{{ form.createdUidName }}</a-form-model-item>
+        <a-form-model-item label="创建时间">{{ form.createdTime|date }}</a-form-model-item>
+        <a-form-model-item label="修改者">{{ form.updatedUidName }}</a-form-model-item>
+        <a-form-model-item label="修改时间">{{ form.updatedTime|date }}</a-form-model-item>
+      </a-form-model>
+    </a-modal>
     <!--编辑界面-->
-    <a-modal :title="(form.id ? ('修改 - ' + form.id) : '新增') + '目录'" v-model="formVisible" :confirmLoading="formLoading" :maskClosable="false" @ok="submit">
+    <a-modal :title="'信息' + (form.id ? ('修改 - ' + form.id) : '添加')" v-model="formVisible" :confirmLoading="formLoading" :maskClosable="false" @ok="submit">
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
-        <a-form-model-item label="所属目录" prop="catalog">
-          <a-input v-model="form.catalog" auto-complete="off" disabled />
+        <a-form-model-item label="父级" prop="parentId">
+          <a-input v-model="form.parentId" auto-complete="off"></a-input>
         </a-form-model-item>
-        <a-form-model-item label="标准编码" prop="code">
-          <a-input v-model="form.code" auto-complete="off"></a-input>
+        <a-form-model-item label="ID" prop="id">
+          <a-input v-model="form.id" auto-complete="off"></a-input>
         </a-form-model-item>
         <a-form-model-item label="名称" prop="name">
           <a-input v-model="form.name" auto-complete="off"></a-input>
+        </a-form-model-item>
+        <a-form-model-item label="排序">
+          <a-input-number v-model="form.sort" :min="0" :max="200"></a-input-number>
         </a-form-model-item>
         <a-form-model-item label="状态" prop="status">
           <a-select v-model="form.status" placeholder="请选择">
             <a-select-option v-for="(value, key) in config.status" :key="key" :value="key">{{ value }}</a-select-option>
           </a-select>
-        </a-form-model-item>
-        <a-form-model-item label="排序">
-          <a-input-number v-model="form.sort" :min="0"></a-input-number>
         </a-form-model-item>
         <a-form-model-item label="描述">
           <a-textarea v-model="form.description" />
@@ -102,67 +78,50 @@
 </template>
 
 <script>
-import DateUtil from '@/utils/date'
 import RouteUtil from '@/utils/route'
-import qualityLogicService from '@/service/govern/qualityLogic'
+import logicService from '@/service/govern/qualityLogic'
 
 export default {
   data () {
     return {
-      DateUtil,
-      advanced: false,
-      filters: {},
       columns: [
-        { title: '编码', dataIndex: 'code' },
-        { title: '名称', dataIndex: 'name' },
-        { title: '类型', dataIndex: 'mold' },
-        { title: '状态', dataIndex: 'statusText' },
+        { title: '名称', dataIndex: 'name', scopedSlots: { customRender: 'name' } },
+        { title: '描述', dataIndex: 'description' },
         { title: '排序', dataIndex: 'sort' },
-        { title: '操作', scopedSlots: { customRender: 'action' }, width: 80 }
+        { title: '状态', dataIndex: 'statusText' },
+        { title: '操作', scopedSlots: { customRender: 'action' } }
       ],
-      selection: RouteUtil.selection({ type: 'radio' }),
-      pagination: {},
+      expandedRowKeys: [],
+      selection: RouteUtil.selection(),
       rows: [],
       loading: false,
       config: {
         ready: false,
-        molds: {},
-        flags: {},
-        levels: {},
-        status: {},
-        columnTypes: []
+        status: []
       },
+      infoVisible: false,
+      infoLoading: false,
       formVisible: false,
       formLoading: false,
       form: {},
       rules: {
-        code: [{ required: true, message: '请输入编码', trigger: 'blur' }],
         name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
         status: [{ required: true, message: '请选择状态', trigger: 'change' }]
       }
     }
   },
-  computed: {
-    breadcrumb () {
-      const catalog = this.filters.catalog || ''
-      const catalogs = catalog.split('/')
-      const result = []
-      for (let i = 1; i < catalogs.length - 1; i++) {
-        result.push({
-          code: catalogs[i],
-          catalog: catalogs.slice(0, i).join('/') + '/'
-        })
-      }
-      return result
-    }
-  },
   methods: {
+    toggleRowKeys () {
+      if (this.expandedRowKeys.length === 0) {
+        this.expandedRowKeys = RouteUtil.expandedRowKeys(this.rows)
+      } else {
+        this.expandedRowKeys = []
+      }
+    },
     batchRemove () {
       this.$confirm(this.selection.confirm(() => {
         this.loading = true
-        const record = this.rows[this.selection.selectedRowKeys[0]]
-        const param = { catalog: record.catalog, code: record.code }
-        qualityLogicService.delete(param, { success: true }).then((result) => {
+        logicService.delete(this.selection.selectedRowKeys, { success: true }).then((result) => {
           if (result.code === 0) {
             this.search(false, true)
           } else {
@@ -171,47 +130,24 @@ export default {
         })
       }))
     },
-    tableChange (pagination, filters, sorter) {
-      this.pagination = RouteUtil.paginationChange(this.pagination, pagination)
-      this.search(true, true)
-    },
-    search (filter2query, pagination) {
+    search () {
       this.selection.clear()
-      Object.assign(this.filters, RouteUtil.paginationData(this.pagination, pagination))
-      if (!this.filters.catalog) this.filters.catalog = '/'
-      filter2query && RouteUtil.filter2query(this, this.filters)
       this.loading = true
-      qualityLogicService.list(this.filters).then((result) => {
-        this.pagination = Object.assign({}, this.pagination, RouteUtil.result(result))
+      logicService.tree().then((result) => {
         if (result.code === 0) {
-          this.rows = result.data.rows
+          this.rows = result.data
+          if (this.expandedRowKeys.length === 0) {
+            this.expandedRowKeys = RouteUtil.expandedRowKeys(result.data)
+          }
         }
         this.loading = false
       })
-    },
-    forward (record = {}) {
-      this.$set(this, 'filters', {
-        pageSize: this.filters.pageSize,
-        catalog: record.code ? record.catalog + record.code + '/' : '/'
-      })
-      this.search(true, false)
-    },
-    draw (mode, record = {}) {
-      const catalog = record.code ? record.catalog : this.filters.catalog
-      this.$router.push({
-        path: '/govern/quality/draw', query: { catalog, code: record.code, mode }
-      })
-    },
-    catalog (record = {}) {
-      this.form = Object.assign({ catalog: this.filters.catalog, mold: 'catalog' }, record)
-      if (this.form.status) this.form.status += ''
-      this.formVisible = true
     },
     submit () {
       this.$refs.form.validate(valid => {
         if (!valid || this.formLoading) return false
         this.formLoading = true
-        qualityLogicService.save(this.form).then(result => {
+        logicService.save(this.form).then(result => {
           if (result.code === 0) {
             this.formVisible = false
             this.search(false, true)
@@ -219,15 +155,30 @@ export default {
           this.formLoading = false
         })
       })
+    },
+    sublevel (text, record) {
+      this.add(record.id)
+    },
+    add (parentId = 0) {
+      this.form = { parentId }
+      this.formVisible = true
+    },
+    edit (text, record) {
+      this.form = Object.assign({}, record, {
+        status: record.status + ''
+      })
+      this.formVisible = true
+    },
+    show (text, record) {
+      this.form = Object.assign({}, record, {
+        description: record.description ? record.description : '暂无'
+      })
+      this.infoVisible = true
     }
   },
-  created () {
-    this.filters = RouteUtil.query2filter(this, { page: 1, pageSize: 100 })
-    this.pagination = Object.assign({}, RouteUtil.pagination(this.filters), this.pagination)
-  },
   mounted () {
-    this.search(false, true)
-    qualityLogicService.config().then((result) => {
+    this.search()
+    logicService.config().then((result) => {
       this.config.ready = true
       if (result.code === 0) {
         Object.assign(this.config, result.data)

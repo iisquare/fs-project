@@ -55,10 +55,17 @@ public class ApiUtil {
         return !failed(result);
     }
 
-    public static  <T> T data(Map<String, Object> result, Class<T> classType) {
+    public static <T> T data(Map<String, Object> result, Class<T> classType) {
         return (T) result.get(FIELD_DATA);
     }
 
+    public static int code(Map<String, Object> result) {
+        return DPUtil.parseInt(result.get(FIELD_CODE));
+    }
+
+    public static String message(Map<String, Object> result) {
+        return DPUtil.parseString(result.get(FIELD_MSG));
+    }
 
     public static String getStackTrace(final Throwable throwable) {
         final StringWriter sw = new StringWriter();

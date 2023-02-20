@@ -12,6 +12,6 @@ dependencies {
     compile group: 'org.mongodb', name: 'mongodb-driver-sync', version: mongodbVersion
     compile group: 'org.elasticsearch', name: 'elasticsearch-spark-30_' + scalaVersion, version: elasticVersion
     compile group: 'org.apache.spark', name: 'spark-sql-kafka-0-10_' + scalaVersion, version: sparkVersion
-    compile group: 'io.delta', name: 'delta-core_' + scalaVersion, version: '1.2.1'
+    compile group: 'io.delta', name: 'delta-core_' + scalaVersion, version: '2.2.0'
     compile group: 'org.postgresql', name: 'postgresql', version: '42.4.0'
 }

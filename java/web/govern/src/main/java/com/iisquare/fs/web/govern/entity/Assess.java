@@ -14,6 +14,9 @@ import javax.persistence.*;
 @AllArgsConstructor
 @DynamicInsert
 @DynamicUpdate
+/**
+ * 标准评估
+ */
 public class Assess {
 
     @Id

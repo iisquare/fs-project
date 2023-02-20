@@ -17,7 +17,6 @@ import java.io.Serializable;
 @DynamicUpdate
 /**
  * 数据质量检测规则
- * 用于配置质检规则采用的逻辑参数和对应的数据集、目标表、字段
  */
 public class QualityRule implements Serializable {
 
@@ -25,34 +24,56 @@ public class QualityRule implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     @Column
-    private Integer assess; // 落地评估规则
+    private String type; // 规则类型
     @Column
-    private String standard; // 标准路径
+    private String name; // 规则名称
     @Column
-    private String source; // 数据源
+    private Integer logicId; // 所属分类
+    @Transient
+    private String logicIdName; // 所属分类名称
     @Column
-    private String model; // 表名
+    private String checkTable; // 检查表名
     @Column
-    private String code; // 字段名称
+    private String checkColumn; // 检查字段
     @Column
-    private String level; // 预警等级
+    private String checkMetric; // 检查字段的聚合方式
     @Column
-    private Integer name = 0; // 字段名不一致
+    private String checkWhere; // 前置过滤条件
     @Column
-    private Integer type = 0; // 字段类型不一致
+    private String checkGroup; // 分组字段，英文逗号分割
     @Column
-    private Integer size = 0; // 字段长度不一致
+    private String referTable; // 引用表名
     @Column
-    private Integer digit = 0; // 字段小数位数不一致
+    private String referColumn; // 引用字段
     @Column
-    private Integer nullable = 0; // 是否允许为空不一致
+    private String referMetric; // 引用字段的聚合方式
     @Column
-    private String detail; // 明细
+    private String referWhere; // 引用表的前置过滤条件
     @Column
-    private Long checkTime; // 检测时间
-
-    public boolean different () {
-        return name + type + size + digit + nullable > 0;
-    }
+    private String referGroup; // 引用表的分组字段，英文逗号分割
+    @Column
+    private String content; // 规则参数
+    @Column
+    private String suggest; // 整改建议
+    @Column
+    private Integer sort;
+    @Column
+    private Integer status;
+    @Transient
+    private String statusText;
+    @Column
+    private String description;
+    @Column
+    private Long createdTime;
+    @Column
+    private Integer createdUid;
+    @Transient
+    private String createdUidName;
+    @Column
+    private Long updatedTime;
+    @Column
+    private Integer updatedUid;
+    @Transient
+    private String updatedUidName;
 
 }

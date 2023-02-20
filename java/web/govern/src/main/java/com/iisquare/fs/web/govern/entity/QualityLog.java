@@ -24,34 +24,34 @@ public class QualityLog implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     @Column
-    private Integer assess; // 落地评估规则
+    private String source; // 数据源编码
     @Column
-    private String standard; // 标准路径
+    private Integer planId; // 所属方案
+    @Transient
+    private String planIdName; // 所属方案名称
     @Column
-    private String source; // 数据源
+    private Integer ruleId; // 所属规则
+    @Transient
+    private String ruleIdName; // 所属规则名称
     @Column
-    private String model; // 表名
+    private Integer logicId; // 所属分类
+    @Transient
+    private String logicIdName; // 所属分类名称
     @Column
-    private String code; // 字段名称
+    private String checkTable; // 检查表名
     @Column
-    private String level; // 预警等级
+    private String checkColumn; // 检查字段
     @Column
-    private Integer name = 0; // 字段名不一致
+    private Integer checkCount; // 检查记录总数
     @Column
-    private Integer type = 0; // 字段类型不一致
+    private Integer hitCount; // 命中记录总数
     @Column
-    private Integer size = 0; // 字段长度不一致
+    private String reason; // 整改原因
     @Column
-    private Integer digit = 0; // 字段小数位数不一致
+    private String expression; // 检查逻辑
     @Column
-    private Integer nullable = 0; // 是否允许为空不一致
+    private Integer state; // 运行状态码，0正常，非0异常
     @Column
-    private String detail; // 明细
-    @Column
-    private Long checkTime; // 检测时间
-
-    public boolean different () {
-        return name + type + size + digit + nullable > 0;
-    }
+    private Long createdTime;
 
 }

@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 06/09/2022 17:30:53
+ Date: 20/02/2023 10:20:37
 */
 
 SET NAMES utf8mb4;
@@ -22,22 +22,22 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------
 DROP TABLE IF EXISTS `fs_member_dictionary`;
 CREATE TABLE `fs_member_dictionary`  (
-  `id` int(0) NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `full_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `parent_id` int(0) NOT NULL DEFAULT 0,
+  `parent_id` int NOT NULL DEFAULT 0,
   `content` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `sort` tinyint(0) NOT NULL DEFAULT 0,
-  `status` tinyint(0) NOT NULL DEFAULT 0,
+  `sort` tinyint NOT NULL DEFAULT 0,
+  `status` tinyint NOT NULL DEFAULT 0,
   `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `created_time` bigint(0) NOT NULL DEFAULT 0,
-  `created_uid` int(0) NOT NULL DEFAULT 0,
-  `updated_time` bigint(0) NOT NULL DEFAULT 0,
-  `updated_uid` int(0) NOT NULL DEFAULT 0,
+  `created_time` bigint NOT NULL DEFAULT 0,
+  `created_uid` int NOT NULL DEFAULT 0,
+  `updated_time` bigint NOT NULL DEFAULT 0,
+  `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_content`(`content`) USING BTREE,
-  INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+  INDEX `idx_content`(`content` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_dictionary
@@ -72,22 +72,22 @@ INSERT INTO `fs_member_dictionary` VALUES (24, '其他', '审核标签:其他', 
 -- ----------------------------
 DROP TABLE IF EXISTS `fs_member_menu`;
 CREATE TABLE `fs_member_menu`  (
-  `id` int(0) NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `full_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `parent_id` int(0) NOT NULL DEFAULT 0,
+  `parent_id` int NOT NULL DEFAULT 0,
   `icon` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `target` varchar(8) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `sort` tinyint(0) NOT NULL DEFAULT 0,
-  `status` tinyint(0) NOT NULL DEFAULT 0,
+  `sort` tinyint NOT NULL DEFAULT 0,
+  `status` tinyint NOT NULL DEFAULT 0,
   `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `created_time` bigint(0) NOT NULL DEFAULT 0,
-  `created_uid` int(0) NOT NULL DEFAULT 0,
-  `updated_time` bigint(0) NOT NULL DEFAULT 0,
-  `updated_uid` int(0) NOT NULL DEFAULT 0,
+  `created_time` bigint NOT NULL DEFAULT 0,
+  `created_uid` int NOT NULL DEFAULT 0,
+  `updated_time` bigint NOT NULL DEFAULT 0,
+  `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 129 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 130 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_menu
@@ -210,7 +210,7 @@ INSERT INTO `fs_member_menu` VALUES (119, '系统设置', '后台管理:数据�
 INSERT INTO `fs_member_menu` VALUES (120, '数据源', '后台管理:数据治理:系统设置:数据源', 119, '', '/govern/system/source', '', 0, 1, '', 1651288324135, 1, 1651288324135, 1);
 INSERT INTO `fs_member_menu` VALUES (121, '标准管理', '后台管理:数据治理:数据标准:标准管理', 111, '', '/govern/standard/list', '', 0, 1, '', 1651369141111, 1, 1651369141111, 1);
 INSERT INTO `fs_member_menu` VALUES (122, '落地评估', '后台管理:数据治理:数据标准:落地评估', 111, '', '/govern/standard/assess', '', 0, 1, '', 1651369188363, 1, 1651369188363, 1);
-INSERT INTO `fs_member_menu` VALUES (123, '规则逻辑', '后台管理:数据治理:数据质量:规则逻辑', 113, '', '/govern/quality/logic', '', 0, 1, '', 1651369714750, 1, 1661737120779, 1);
+INSERT INTO `fs_member_menu` VALUES (123, '质检分类', '后台管理:数据治理:数据质量:质检分类', 113, '', '/govern/quality/logic', '', 0, 1, '', 1651369714750, 1, 1676537824487, 1);
 INSERT INTO `fs_member_menu` VALUES (124, '评估结果', '后台管理:数据治理:数据标准:评估结果', 111, '', '/govern/standard/log', '', 0, 1, '', 1652682411082, 1, 1652682411082, 1);
 INSERT INTO `fs_member_menu` VALUES (125, '调度日志', '后台管理:服务管理:定时任务:调度日志', 104, '', '/server/cron/flowLog', '', 0, 1, '', 1658735846363, 1, 1658735846363, 1);
 INSERT INTO `fs_member_menu` VALUES (126, '质检规则', '后台管理:数据治理:数据质量:质检规则', 113, '', '/govern/quality/rule', '', 0, 1, '', 1660203491808, 1, 1660203491808, 1);
@@ -225,10 +225,10 @@ DROP TABLE IF EXISTS `fs_member_relation`;
 CREATE TABLE `fs_member_relation`  (
   `id` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `type` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `aid` int(0) NOT NULL DEFAULT 0,
-  `bid` int(0) NOT NULL DEFAULT 0,
+  `aid` int NOT NULL DEFAULT 0,
+  `bid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_relation
@@ -469,7 +469,15 @@ INSERT INTO `fs_member_relation` VALUES ('role_resource_1_185', 'role_resource',
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_186', 'role_resource', 1, 186);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_187', 'role_resource', 1, 187);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_188', 'role_resource', 1, 188);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_189', 'role_resource', 1, 189);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_19', 'role_resource', 1, 19);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_190', 'role_resource', 1, 190);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_191', 'role_resource', 1, 191);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_192', 'role_resource', 1, 192);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_193', 'role_resource', 1, 193);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_194', 'role_resource', 1, 194);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_195', 'role_resource', 1, 195);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_196', 'role_resource', 1, 196);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_2', 'role_resource', 1, 2);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_20', 'role_resource', 1, 20);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_21', 'role_resource', 1, 21);
@@ -576,22 +584,22 @@ INSERT INTO `fs_member_relation` VALUES ('user_role_2_2', 'user_role', 2, 2);
 -- ----------------------------
 DROP TABLE IF EXISTS `fs_member_resource`;
 CREATE TABLE `fs_member_resource`  (
-  `id` int(0) NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `full_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `parent_id` int(0) NOT NULL DEFAULT 0,
+  `parent_id` int NOT NULL DEFAULT 0,
   `module` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `controller` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `action` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `sort` tinyint(0) NOT NULL DEFAULT 0,
-  `status` tinyint(0) NOT NULL DEFAULT 0,
+  `sort` tinyint NOT NULL DEFAULT 0,
+  `status` tinyint NOT NULL DEFAULT 0,
   `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `created_time` bigint(0) NOT NULL DEFAULT 0,
-  `created_uid` int(0) NOT NULL DEFAULT 0,
-  `updated_time` bigint(0) NOT NULL DEFAULT 0,
-  `updated_uid` int(0) NOT NULL DEFAULT 0,
+  `created_time` bigint NOT NULL DEFAULT 0,
+  `created_uid` int NOT NULL DEFAULT 0,
+  `updated_time` bigint NOT NULL DEFAULT 0,
+  `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 188 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 197 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_resource
@@ -773,34 +781,42 @@ INSERT INTO `fs_member_resource` VALUES (174, '落地评估', '数据治理:落�
 INSERT INTO `fs_member_resource` VALUES (175, '添加', '数据治理:落地评估:添加', 174, 'govern', 'assess', 'add', 0, 1, '', 1651369470508, 1, 1651369470508, 1);
 INSERT INTO `fs_member_resource` VALUES (176, '修改', '数据治理:落地评估:修改', 174, 'govern', 'assess', 'modify', 0, 1, '', 1651369483410, 1, 1651369483410, 1);
 INSERT INTO `fs_member_resource` VALUES (177, '删除', '数据治理:落地评估:删除', 174, 'govern', 'assess', 'delete', 0, 1, '', 1651369492457, 1, 1651369492457, 1);
-INSERT INTO `fs_member_resource` VALUES (178, '规则逻辑', '数据治理:规则逻辑', 157, 'govern', 'qualityLogic', '', 0, 1, '', 1651369515566, 1, 1661738820081, 1);
-INSERT INTO `fs_member_resource` VALUES (179, '添加', '数据治理:规则逻辑:添加', 178, 'govern', 'qualityLogic', 'add', 0, 1, '', 1651369527926, 1, 1661738826574, 1);
-INSERT INTO `fs_member_resource` VALUES (180, '修改', '数据治理:规则逻辑:修改', 178, 'govern', 'qualityLogic', 'modify', 0, 1, '', 1651369543376, 1, 1661738831074, 1);
-INSERT INTO `fs_member_resource` VALUES (181, '删除', '数据治理:规则逻辑:删除', 178, 'govern', 'qualityLogic', 'delete', 0, 1, '', 1651369553877, 1, 1661738836618, 1);
-INSERT INTO `fs_member_resource` VALUES (182, '质检方案', '数据治理:质检方案', 157, 'govern', 'plan', '', 0, 1, '', 1651369579119, 1, 1651369579119, 1);
-INSERT INTO `fs_member_resource` VALUES (183, '添加', '数据治理:质检方案:添加', 182, 'govern', 'plan', 'add', 0, 1, '', 1651369589073, 1, 1651369589073, 1);
-INSERT INTO `fs_member_resource` VALUES (184, '修改', '数据治理:质检方案:修改', 182, 'govern', 'plan', 'modify', 0, 1, '', 1651369599391, 1, 1651369599391, 1);
-INSERT INTO `fs_member_resource` VALUES (185, '删除', '数据治理:质检方案:删除', 182, 'govern', 'plan', 'delete', 0, 1, '', 1651369607940, 1, 1651369607940, 1);
+INSERT INTO `fs_member_resource` VALUES (178, '质检分类', '数据治理:质检分类', 157, 'govern', 'qualityLogic', '', 0, 1, '', 1651369515566, 1, 1676538075225, 1);
+INSERT INTO `fs_member_resource` VALUES (179, '添加', '数据治理:质检分类:添加', 178, 'govern', 'qualityLogic', 'add', 0, 1, '', 1651369527926, 1, 1676538079211, 1);
+INSERT INTO `fs_member_resource` VALUES (180, '修改', '数据治理:质检分类:修改', 178, 'govern', 'qualityLogic', 'modify', 0, 1, '', 1651369543376, 1, 1676538082296, 1);
+INSERT INTO `fs_member_resource` VALUES (181, '删除', '数据治理:质检分类:删除', 178, 'govern', 'qualityLogic', 'delete', 0, 1, '', 1651369553877, 1, 1676538085082, 1);
+INSERT INTO `fs_member_resource` VALUES (182, '质检规则', '数据治理:质检规则', 157, 'govern', 'qualityRule', '', 0, 1, '', 1651369579119, 1, 1676538112547, 1);
+INSERT INTO `fs_member_resource` VALUES (183, '添加', '数据治理:质检规则:添加', 182, 'govern', 'qualityRule', 'add', 0, 1, '', 1651369589073, 1, 1676538118982, 1);
+INSERT INTO `fs_member_resource` VALUES (184, '修改', '数据治理:质检规则:修改', 182, 'govern', 'qualityRule', 'modify', 0, 1, '', 1651369599391, 1, 1676538123271, 1);
+INSERT INTO `fs_member_resource` VALUES (185, '删除', '数据治理:质检规则:删除', 182, 'govern', 'qualityRule', 'delete', 0, 1, '', 1651369607940, 1, 1676538128949, 1);
 INSERT INTO `fs_member_resource` VALUES (186, '评估结果', '数据治理:落地评估:评估结果', 174, 'govern', 'assess', 'log', 0, 1, '', 1652748865504, 1, 1652748865504, 1);
 INSERT INTO `fs_member_resource` VALUES (187, '删除日志', '数据治理:落地评估:删除日志', 174, 'govern', 'assess', 'clear', 0, 1, '', 1652748880199, 1, 1652748880199, 1);
 INSERT INTO `fs_member_resource` VALUES (188, '项目管理', '项目管理', 0, 'auto', '', '', 0, 1, '', 1662455086472, 1, 1662455086472, 1);
+INSERT INTO `fs_member_resource` VALUES (189, '质检方案', '数据治理:质检方案', 157, 'govern', 'qualityPlan', '', 0, 1, '', 1676855898630, 1, 1676855898630, 1);
+INSERT INTO `fs_member_resource` VALUES (190, '质检报告', '数据治理:质检方案:质检报告', 189, 'govern', 'qualityPlan', 'log', 0, 1, '', 1676855950410, 1, 1676858921681, 1);
+INSERT INTO `fs_member_resource` VALUES (191, '添加', '数据治理:质检方案:添加', 189, 'govern', 'qualityPlan', 'add', 0, 1, '', 1651369589073, 1, 1676538118982, 1);
+INSERT INTO `fs_member_resource` VALUES (192, '修改', '数据治理:质检方案:修改', 189, 'govern', 'qualityPlan', 'modify', 0, 1, '', 1651369599391, 1, 1676538123271, 1);
+INSERT INTO `fs_member_resource` VALUES (193, '删除', '数据治理:质检方案:删除', 189, 'govern', 'qualityPlan', 'delete', 0, 1, '', 1651369607940, 1, 1676538128949, 1);
+INSERT INTO `fs_member_resource` VALUES (194, '删除日志', '数据治理:质检方案:删除日志', 189, 'govern', 'qualityPlan', 'clear', 0, 1, '', 1651369589073, 1, 1676858947132, 1);
+INSERT INTO `fs_member_resource` VALUES (195, '应用设计', '项目管理:应用设计', 188, 'app', 'app', '', 0, 1, '', 1651369599391, 1, 1676859114485, 1);
+INSERT INTO `fs_member_resource` VALUES (196, '管理', '项目管理:应用设计:管理', 195, 'auto', 'app', 'manage', 0, 1, '', 1651369607940, 1, 1676859157557, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_role
 -- ----------------------------
 DROP TABLE IF EXISTS `fs_member_role`;
 CREATE TABLE `fs_member_role`  (
-  `id` int(0) NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `sort` tinyint(0) NOT NULL DEFAULT 0,
-  `status` tinyint(0) NOT NULL DEFAULT 0,
+  `sort` tinyint NOT NULL DEFAULT 0,
+  `status` tinyint NOT NULL DEFAULT 0,
   `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `created_time` bigint(0) NOT NULL DEFAULT 0,
-  `created_uid` int(0) NOT NULL DEFAULT 0,
-  `updated_time` bigint(0) NOT NULL DEFAULT 0,
-  `updated_uid` int(0) NOT NULL DEFAULT 0,
+  `created_time` bigint NOT NULL DEFAULT 0,
+  `created_uid` int NOT NULL DEFAULT 0,
+  `updated_time` bigint NOT NULL DEFAULT 0,
+  `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_role
@@ -815,17 +831,17 @@ INSERT INTO `fs_member_role` VALUES (4, 'aaaxx', 0, 2, '', 1584515454033, 1, 158
 -- ----------------------------
 DROP TABLE IF EXISTS `fs_member_setting`;
 CREATE TABLE `fs_member_setting`  (
-  `id` int(0) NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `type` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `sort` tinyint(0) NOT NULL DEFAULT 0,
+  `sort` tinyint NOT NULL DEFAULT 0,
   `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `updated_time` bigint(0) NOT NULL DEFAULT 0,
-  `updated_uid` int(0) NOT NULL DEFAULT 0,
+  `updated_time` bigint NOT NULL DEFAULT 0,
+  `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uniq_type_name`(`type`, `name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 42 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+  UNIQUE INDEX `uniq_type_name`(`type` ASC, `name` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 42 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_setting
@@ -847,31 +863,31 @@ INSERT INTO `fs_member_setting` VALUES (41, 'carousel', 'cms', '[]', 0, '首页�
 -- ----------------------------
 DROP TABLE IF EXISTS `fs_member_user`;
 CREATE TABLE `fs_member_user`  (
-  `id` int(0) NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `serial` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `password` char(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
   `salt` char(4) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `sort` tinyint(0) NOT NULL DEFAULT 0,
-  `status` tinyint(0) NOT NULL DEFAULT 0,
+  `sort` tinyint NOT NULL DEFAULT 0,
+  `status` tinyint NOT NULL DEFAULT 0,
   `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `created_time` bigint(0) NOT NULL DEFAULT 0,
+  `created_time` bigint NOT NULL DEFAULT 0,
   `created_ip` varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `created_uid` int(0) NOT NULL DEFAULT 0,
-  `updated_time` bigint(0) NOT NULL DEFAULT 0,
-  `updated_uid` int(0) NOT NULL DEFAULT 0,
-  `logined_time` bigint(0) NOT NULL DEFAULT 0,
+  `created_uid` int NOT NULL DEFAULT 0,
+  `updated_time` bigint NOT NULL DEFAULT 0,
+  `updated_uid` int NOT NULL DEFAULT 0,
+  `logined_time` bigint NOT NULL DEFAULT 0,
   `logined_ip` varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `locked_time` bigint(0) NOT NULL DEFAULT 0,
+  `locked_time` bigint NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `unq_serial`(`serial`) USING BTREE,
-  INDEX `idx_name`(`name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+  UNIQUE INDEX `unq_serial`(`serial` ASC) USING BTREE,
+  INDEX `idx_name`(`name` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_user
 -- ----------------------------
-INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1661484372567, '127.0.0.1', 0);
+INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1676452330488, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (2, 'test', '测试123', '4b361be828611add84453a24f39772a5', '0905', 0, 1, '', 1528081567988, '127.0.0.1', 1, 1542958281919, 1, 1528267171953, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (3, '111', '111', '', '', 6, -1, '', 0, '', 0, 1658215959314, 1, 0, '', 0);
 INSERT INTO `fs_member_user` VALUES (4, '222', '222', '', '', 0, 1, '', 0, '', 0, 1629363081609, 1, 0, '', 1630054276000);

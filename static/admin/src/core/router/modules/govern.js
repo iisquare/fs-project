@@ -80,7 +80,7 @@ export const layouts = [{
     component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/standard/log')
   }, {
     path: '/govern/quality/logic',
-    meta: { title: '规则逻辑' },
+    meta: { title: '质检分类' },
     component: () => import(/* webpackChunkName: 'govern' */ '@/views/govern/quality/logic')
   }, {
     path: '/govern/quality/rule',
