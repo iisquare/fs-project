@@ -1,5 +1,5 @@
 
 dependencies {
-    compile project(':base:worker')
-    testCompile project(':web:test')
+    implementation project(':base:worker')
+    testImplementation project(':web:test')
 }

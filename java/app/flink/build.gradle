@@ -1,21 +1,21 @@
 dependencies {
-    compile project(':base:dag')
-    testCompile project(':base:test')
-//    compile group: 'org.glassfish.jersey.core', name: 'jersey-client', version: '2.27'
-    compile group: 'org.apache.flink', name: 'flink-java', version: flinkVersion
-    compile group: 'org.apache.flink', name: 'flink-clients_' + scalaVersion, version: flinkVersion
-    compile group: 'org.apache.flink', name: 'flink-streaming-java_' + scalaVersion, version: flinkVersion
-    compile group: 'org.apache.flink', name: 'flink-table-api-java', version: flinkVersion
-    compile group: 'org.apache.flink', name: 'flink-table-api-java-bridge_' + scalaVersion, version: flinkVersion
+    api project(':base:dag')
+//    api group: 'org.glassfish.jersey.core', name: 'jersey-client', version: '2.27'
+    api group: 'org.apache.flink', name: 'flink-java', version: flinkVersion
+    api group: 'org.apache.flink', name: 'flink-clients_' + scalaVersion, version: flinkVersion
+    api group: 'org.apache.flink', name: 'flink-streaming-java_' + scalaVersion, version: flinkVersion
+    api group: 'org.apache.flink', name: 'flink-table-api-java', version: flinkVersion
+    api group: 'org.apache.flink', name: 'flink-table-api-java-bridge_' + scalaVersion, version: flinkVersion
 
-    compile group: 'org.apache.flink', name: 'flink-connector-kafka_' + scalaVersion, version: flinkVersion
-    compile group: 'org.apache.flink', name: 'flink-connector-elasticsearch7_' + scalaVersion, version: flinkVersion
+    api group: 'org.apache.flink', name: 'flink-connector-kafka_' + scalaVersion, version: flinkVersion
+    api group: 'org.apache.flink', name: 'flink-connector-elasticsearch7_' + scalaVersion, version: flinkVersion
 
-    compile group: 'com.ververica', name: 'flink-connector-mysql-cdc', version: cdcVersion
-    compile group: 'com.ververica', name: 'flink-connector-postgres-cdc', version: cdcVersion
-    compile group: 'com.ververica', name: 'flink-connector-mongodb-cdc', version: cdcVersion
+    api group: 'com.ververica', name: 'flink-connector-mysql-cdc', version: cdcVersion
+    api group: 'com.ververica', name: 'flink-connector-postgres-cdc', version: cdcVersion
+    api group: 'com.ververica', name: 'flink-connector-mongodb-cdc', version: cdcVersion
 
-    testCompile group: 'org.apache.flink', name: 'flink-runtime-web_' + scalaVersion, version: flinkVersion
+    testImplementation project(':base:test')
+    testImplementation group: 'org.apache.flink', name: 'flink-runtime-web_' + scalaVersion, version: flinkVersion
 }
 
 jar {

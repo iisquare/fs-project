@@ -1,5 +1,5 @@
 
 dependencies {
-    compile project(':app:spark')
-    testCompile project(':base:test')
+    implementation project(':app:spark')
+    testImplementation project(':base:test')
 }

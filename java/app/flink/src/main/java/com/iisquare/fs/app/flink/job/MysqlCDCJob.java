@@ -1,18 +1,18 @@
-package com.iisquare.fs.ext.flink.job;
+package com.iisquare.fs.app.flink.job;
 
-import com.iisquare.fs.ext.flink.util.CLIUtil;
-import com.ververica.cdc.connectors.postgres.PostgreSQLSource;
+import com.iisquare.fs.app.flink.util.CLIUtil;
+import com.ververica.cdc.connectors.mysql.source.MySqlSource;
+import com.ververica.cdc.connectors.mysql.source.MySqlSourceBuilder;
+import com.ververica.cdc.connectors.mysql.table.StartupOptions;
 import com.ververica.cdc.debezium.JsonDebeziumDeserializationSchema;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.runtime.state.hashmap.HashMapStateBackend;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
-import java.util.Properties;
-
-public class CDCJob {
-
+public class MysqlCDCJob {
     public static void main(String[] args) throws Exception {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.enableCheckpointing(10000);
@@ -21,17 +21,14 @@ public class CDCJob {
         checkpoint.setCheckpointStorage("file://" + CLIUtil.path() + "checkpoints");
         checkpoint.setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
         checkpoint.setExternalizedCheckpointCleanup(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
-        PostgreSQLSource.Builder<String> builder = PostgreSQLSource.<String>builder()
-                .hostname("127.0.0.1").username("postgres").password("admin888")
-                .database("postgres").schemaList("public").tableList(".*")
-                .decodingPluginName("pgoutput") // could not access file "decoderbufs": No such file or directory
+        MySqlSourceBuilder<String> builder = MySqlSource.<String>builder()
+                .hostname("127.0.0.1").username("root").password("admin888")
+                .databaseList(".*").tableList(".*")
+                .startupOptions(StartupOptions.latest())
                 .deserializer(new JsonDebeziumDeserializationSchema());
-        builder.debeziumProperties(new Properties(){{
-            put("snapshot.mode", args[0]);
-        }});
-        DataStreamSource<String> source = env.addSource(builder.build());
+        DataStreamSource<String> source = env.fromSource(
+                builder.build(), WatermarkStrategy.noWatermarks(), MysqlCDCJob.class.getSimpleName());
         source.print();
-        env.execute("cdc-job");
+        env.execute("mysql-cdc-job");
     }
-
 }

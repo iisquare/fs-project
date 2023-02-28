@@ -1,5 +1,5 @@
 
 dependencies {
-    compile project(':web:core')
-    compile project(':base:view')
+    implementation project(':web:core')
+    implementation project(':base:view')
 }

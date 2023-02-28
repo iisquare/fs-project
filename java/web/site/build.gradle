@@ -1,6 +1,6 @@
 
 dependencies {
-    compile project(':web:core')
-    compile project(':base:view')
-    testCompile project(':web:test')
+    implementation project(':web:core')
+    implementation project(':base:view')
+    testImplementation project(':web:test')
 }

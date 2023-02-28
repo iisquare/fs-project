@@ -11,4 +11,4 @@
 /web/xlab/libs/*.jar
 /web/file/uploads
 
-/ext/flink/checkpoints/**/
+/app/flink/checkpoints/**/

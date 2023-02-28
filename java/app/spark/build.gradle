@@ -1,17 +1,18 @@
 dependencies {
-    compile project(':base:dag')
-    testCompile project(':base:test')
-    compile group: 'org.apache.spark', name: 'spark-core_' + scalaVersion, version: sparkVersion
-    compile group: 'org.apache.spark', name: 'spark-streaming_' + scalaVersion, version: sparkVersion
-    compile group: 'org.apache.spark', name: 'spark-sql_' + scalaVersion, version: sparkVersion
+    api project(':base:dag')
+    api group: 'org.apache.spark', name: 'spark-core_' + scalaVersion, version: sparkVersion
+    api group: 'org.apache.spark', name: 'spark-streaming_' + scalaVersion, version: sparkVersion
+    api group: 'org.apache.spark', name: 'spark-sql_' + scalaVersion, version: sparkVersion
 
-    compile group: 'org.mongodb.spark', name: 'mongo-spark-connector', version: '10.0.4'
-    compile (group: 'org.mongodb.spark', name: 'mongo-spark-connector_' + scalaVersion, version: '3.0.2') {
+    api group: 'org.mongodb.spark', name: 'mongo-spark-connector', version: '10.0.4'
+    api (group: 'org.mongodb.spark', name: 'mongo-spark-connector_' + scalaVersion, version: '3.0.2') {
         exclude group: 'org.mongodb', module: 'mongodb-driver-sync'
     }
-    compile group: 'org.mongodb', name: 'mongodb-driver-sync', version: mongodbVersion
-    compile group: 'org.elasticsearch', name: 'elasticsearch-spark-30_' + scalaVersion, version: elasticVersion
-    compile group: 'org.apache.spark', name: 'spark-sql-kafka-0-10_' + scalaVersion, version: sparkVersion
-    compile group: 'io.delta', name: 'delta-core_' + scalaVersion, version: '2.2.0'
-    compile group: 'org.postgresql', name: 'postgresql', version: '42.4.0'
+    api group: 'org.mongodb', name: 'mongodb-driver-sync', version: mongodbVersion
+    api group: 'org.elasticsearch', name: 'elasticsearch-spark-30_' + scalaVersion, version: elasticVersion
+    api group: 'org.apache.spark', name: 'spark-sql-kafka-0-10_' + scalaVersion, version: sparkVersion
+    api group: 'io.delta', name: 'delta-core_' + scalaVersion, version: '2.2.0'
+    api group: 'org.postgresql', name: 'postgresql', version: '42.4.0'
+
+    testImplementation project(':base:test')
 }

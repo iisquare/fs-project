@@ -1,6 +1,6 @@
 
 dependencies {
-    compile project(':base:jpa')
-    compile project(':web:core')
-    testCompile project(':web:test')
+    implementation project(':base:jpa')
+    implementation project(':web:core')
+    testImplementation project(':web:test')
 }

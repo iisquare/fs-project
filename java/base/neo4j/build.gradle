@@ -1,6 +1,6 @@
 dependencies {
-    compile project(':base:core')
-    testCompile project(':base:test')
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter', version: springBootVersion
-    compile group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: neo4jVersion
+    api project(':base:core')
+    api group: 'org.springframework.boot', name: 'spring-boot-starter', version: springBootVersion
+    api group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: neo4jVersion
+    testImplementation project(':base:test')
 }

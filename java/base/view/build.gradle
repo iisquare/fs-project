@@ -1,4 +1,4 @@
 dependencies {
-    compile project(':base:web')
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-thymeleaf', version: springBootVersion
+    api project(':base:web')
+    api group: 'org.springframework.boot', name: 'spring-boot-starter-thymeleaf', version: springBootVersion
 }

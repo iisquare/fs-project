@@ -1,5 +1,5 @@
 
 dependencies {
-    compile project(':app:flink')
-    testCompile project(':base:test')
+    implementation project(':app:flink')
+    testImplementation project(':base:test')
 }

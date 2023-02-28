@@ -1,5 +1,5 @@
 dependencies {
-    compile project(':base:core')
-    compile group: 'org.yaml', name: 'snakeyaml', version: '1.29'
-    compile group: 'mysql', name: 'mysql-connector-java', version: mysqlVersion
+    api project(':base:core')
+    api group: 'org.yaml', name: 'snakeyaml', version: '1.29'
+    api group: 'mysql', name: 'mysql-connector-java', version: mysqlVersion
 }

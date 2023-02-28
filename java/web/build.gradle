@@ -4,10 +4,6 @@ subprojects {
 
     archivesBaseName = rootProject.name + '-web-' + name
 
-    dependencies {
-        compile project(':base:web')
-    }
-
     bootJar {
         enabled = true
     }

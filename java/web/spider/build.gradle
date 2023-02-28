@@ -1,5 +1,5 @@
 
 dependencies {
-    compile project(':base:jpa')
-    compile project(':web:core')
+    implementation project(':base:jpa')
+    implementation project(':web:core')
 }

@@ -1,8 +1,8 @@
 dependencies {
-    compile project(':base:web')
-    testCompile project(':base:test')
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: springBootVersion
-    compile group: 'com.alibaba', name: 'druid', version: '1.1.21'
-    compile group: 'mysql', name: 'mysql-connector-java', version: mysqlVersion
-    compile group: 'org.apache.commons', name: 'commons-pool2', version: pool2Version
+    api project(':base:web')
+    api group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: springBootVersion
+    api group: 'com.alibaba', name: 'druid', version: '1.1.21'
+    api group: 'mysql', name: 'mysql-connector-java', version: mysqlVersion
+    api group: 'org.apache.commons', name: 'commons-pool2', version: pool2Version
+    testImplementation project(':base:test')
 }

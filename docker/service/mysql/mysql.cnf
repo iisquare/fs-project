@@ -4,6 +4,7 @@ log-bin=mysql-bin
 binlog_format=ROW
 binlog_expire_logs_seconds=604800
 transaction-isolation=READ-COMMITTED
+default-time-zone='+8:00'
 
 binlog-ignore-db=canal-admin
 binlog-ignore-db=canal-tsdb

@@ -1,6 +1,6 @@
 dependencies {
-    testCompile project(':base:test')
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.13.4.2'
-    compile group: 'commons-codec', name: 'commons-codec', version: '1.15'
-    implementation group: 'commons-io', name: 'commons-io', version: '2.11.0'
+    api group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.13.4.2'
+    api group: 'commons-codec', name: 'commons-codec', version: '1.15'
+    api group: 'commons-io', name: 'commons-io', version: '2.11.0'
+    testImplementation project(':base:test')
 }

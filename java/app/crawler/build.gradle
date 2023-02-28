@@ -1,25 +1,26 @@
 apply plugin: 'com.github.johnrengelman.shadow'
 
 dependencies {
-    compile project(':base:core')
-    testCompile project(':base:test')
-    compile group: 'org.apache.commons', name: 'commons-lang3', version: lang3Version
-    compile group: 'org.apache.commons', name: 'commons-pool2', version: pool2Version
-    compile group: 'org.jsoup', name: 'jsoup', version: '1.11.3' // HTML Parser
-    compile group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '3.141.59' // Headless Browser
+    implementation project(':base:core')
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: lang3Version
+    implementation group: 'org.apache.commons', name: 'commons-pool2', version: pool2Version
+    implementation group: 'org.jsoup', name: 'jsoup', version: '1.11.3' // HTML Parser
+    implementation group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '3.141.59' // Headless Browser
     // 版本兼容问题@see(https://curator.apache.org/zk-compatibility.html)
-    compile (group: 'org.apache.curator', name: 'curator-recipes', version: curatorVersion) { // ZooKeeper
+    implementation (group: 'org.apache.curator', name: 'curator-recipes', version: curatorVersion) { // ZooKeeper
         exclude group: 'org.apache.zookeeper', module: 'zookeeper'
     }
-    compile group: 'org.apache.zookeeper', name: 'zookeeper', version: zookeeperVersion
-    compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.8'
-    compile group: 'io.netty', name: 'netty-all', version: nettyVersion
-    compile group: 'org.yaml', name: 'snakeyaml', version: '1.24'
-    compile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.26'
-    compile group: 'commons-cli', name: 'commons-cli', version: cliVersion
-    compile group: 'io.lettuce', name: 'lettuce-core', version: '5.1.6.RELEASE' // Redis
-    compile group: 'mysql', name: 'mysql-connector-java', version: mysqlVersion
-    compile group: 'org.mongodb', name: 'mongodb-driver-sync', version: mongodbVersion
+    implementation group: 'org.apache.zookeeper', name: 'zookeeper', version: zookeeperVersion
+    implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.8'
+    implementation group: 'io.netty', name: 'netty-all', version: nettyVersion
+    implementation group: 'org.yaml', name: 'snakeyaml', version: '1.24'
+    implementation group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.26'
+    implementation group: 'commons-cli', name: 'commons-cli', version: cliVersion
+    implementation group: 'io.lettuce', name: 'lettuce-core', version: '5.1.6.RELEASE' // Redis
+    implementation group: 'mysql', name: 'mysql-connector-java', version: mysqlVersion
+    implementation group: 'org.mongodb', name: 'mongodb-driver-sync', version: mongodbVersion
+
+    testImplementation project(':base:test')
 }
 
 shadowJar {

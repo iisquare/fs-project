@@ -1,8 +1,8 @@
 dependencies {
-    compile project(':web:core')
-    compile project(':base:jpa')
-    compile project(':base:mongodb')
-    compile project(':base:elasticsearch')
-    testCompile project(':web:test')
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-redis', version: springBootVersion
+    implementation project(':web:core')
+    implementation project(':base:jpa')
+    implementation project(':base:mongodb')
+    implementation project(':base:elasticsearch')
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-redis', version: springBootVersion
+    testImplementation project(':web:test')
 }

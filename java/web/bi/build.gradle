@@ -1,13 +1,13 @@
 
 dependencies {
-    compile project(':base:jpa')
-    compile project(':web:core')
-    testCompile project(':web:test')
-    compile (project(':app:spark')) {
+    implementation project(':base:jpa')
+    implementation project(':web:core')
+    implementation (project(':app:spark')) {
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
         exclude group: 'com.google.code.gson', module: 'gson'
         exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
     }
+    testImplementation project(':web:test')
 }
 
 task fsJar(type: Jar) { // 将本项目的模块打包成完整的瘦包
