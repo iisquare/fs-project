@@ -1,5 +1,6 @@
 package com.iisquare.fs.app.flink.tester;
 
+import com.iisquare.fs.app.flink.job.BroadcastJob;
 import com.iisquare.fs.app.flink.job.MysqlCDCJob;
 import com.iisquare.fs.app.flink.util.CLIUtil;
 import org.apache.flink.client.cli.CliFrontend;
@@ -27,6 +28,20 @@ public class SubmitterTest {
                 "--allowNonRestoredState", // 当作业发生变更时，允许保留匹配节点
                 "-c",
                 MysqlCDCJob.class.getName(),
+                CLIUtil.path() + "build/libs/fs-project-app-flink-0.0.1-SNAPSHOT.jar",
+                "never"
+        );
+        CliFrontend.main(params.toArray(new String[0]));
+    }
+
+    @Test
+    public void broadcastTest() {
+        System.out.println("Environment FLINK_CONF_DIR=" + CLIUtil.path() + "conf");
+        List<String> params = Arrays.asList(
+                "run",
+                "--detached",
+                "-c",
+                BroadcastJob.class.getName(),
                 CLIUtil.path() + "build/libs/fs-project-app-flink-0.0.1-SNAPSHOT.jar",
                 "never"
         );

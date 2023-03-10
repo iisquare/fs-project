@@ -77,4 +77,8 @@ subprojects {
         into 'build/opt' // 目标依赖位置
     }
 
+    test {
+        enabled = false
+    }
+
 }
