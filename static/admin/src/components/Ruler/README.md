@@ -1,121 +1,126 @@
-ruler.js
+<p>English<a href="https://github.com/chuxiaoguo/vue-sketch-ruler"> | 简体中文</a></p>
 
-@see(https://github.com/MrFrankel/ruler)
+## vue-sketch-ruler
 
-======
+> 一个vue组件的素描标尺
 
-### Demo
-<a href="https://mrfrankel.github.io/ruler/">Demo Page</a>
+## 在线demo
+[点击这里查看](https://chuxiaoguo.gitee.io/vue-sketch-ruler/)
 
-
-ruler.js is an HTML5 ruler plugin that provides a set of 'photoshop' like rulers to surround the 'stage' of your authoring tools.
-No jquery!
-No dependencies!
-
-###Installation
-<hr>
-<br/>
-
-```terminal
-npm install ruler.js --save
+## 安装
+> 支持全局导入和模块导入
 ```
-
-<br/>
-Then
-<br/>
-
-```html
-<link rel="stylesheet" href="node_modules/ruler.js/dist/ruler.min.css">
-<script src="node_modules/ruler.js//dist/ruler.min.js"></script>
+npm install --save vue-sketch-ruler
 ```
+## 支持的功能
+- [x] 标尺渲染
+- [x] 缩放内容，重绘标尺
+- [x] 滚动内容，重绘标尺
+- [x] 切换标尺状态，显示或隐藏
+- [x] 参考线管理（增加删除）
+- [x] 切换参考线状态，显示或隐藏
 
-<br/>
+## 未来支持的功能
 
-##Getting Started
+- [] 支持标尺的右键菜单
+- [] 标角支持事件
+- [] 分离css样式，支持导入样式
+- [] 国际化
 
-<hr>
-<br/>
-
-```javascript
-var myRuler = new ruler({
-        container: document.querySelector('#stage'),// reference to DOM element to apply rulers on
-        rulerHeight: 15, // thickness of ruler
-        fontFamily: 'arial',// font for points
-        fontSize: '7px', 
-        strokeStyle: 'black',
-        lineWidth: 1,
-        enableMouseTracking: true,
-        enableToolTip: true
-    });
+## 使用
 ```
-### Usage 
-```javascript
-myRuler.api.setPos({x:100, y:100})
-/*
-change the left, top, positions of the rulers
-*/
-myRuler.api.setScale(1.5);
-/*
-change the scale of the points
-*/
-myRuler.api.toggleRulerVisibility(true);
-/*
-hide/show rulers
-*/
-myRuler.api.toggleGuideVisibility(true);
-/*
-hide/show guides
-*/
-myRuler.api.clearGuides(true);
-/*
-get list of guides to store or copy
-*/
-myRuler.api.getGuides(); // => [{dimension: number, poxX: number: posY: number}...]
-/*
-set guides from a pre stored list
-*/
-myRuler.api.setGuides([{dimension: number, poxX: number: posY: number}...]);
-/*
-clear all guides
-*/
-myRuler.api.destory();
-/*
-remove rulers, guides and references;
-*/
+<template>
+    <SketchRule
+        :lang="lang"
+        :thick="thick"
+        :scale="scale"
+        :width="582"
+        :height="482"
+        :startX="startX"
+        :startY="startY"
+        :shadow="shadow"
+        :horLineArr="lines.h"
+        :verLineArr="lines.v"
+        :cornerActive="true"
+        @handleLine="handleLine"
+        @onCornerClick="handleCornerClick"
+    >
+</template>
+<script>
+import Vue from 'vue';
+import SketchRule from "vue-sketch-ruler";
+const rectWidth = 160;
+const rectHeight = 200;
+export default Vue.extend({
+    data() {
+        return {
+            scale: 2, //658813476562495, //1,
+            startX: 0,
+            startY: 0,
+            lines: {
+                h: [100, 200],
+                v: [100, 200]
+            },
+            thick: 20,
+            lang: "zh-CN",
+            isShowRuler: true,
+            isShowReferLine: true
+        }
+    },
+    components: {
+        SketchRule
+    }
+});
+</script>
 ```
+参考一个完整的例子，[点击这里](https://github.com/chuxiaoguo/vue-sketch-ruler/blob/master/docs/src/components/UserRuler.vue)
 
-
-You can also clear a guide line by double clicking on it or dragging it back to the ruler
-
-
-
-### Version
-1.0.0
-
-### Support
-
-All latest browsers
-
-
-### Development
-
-Want to contribute? Great!
-
-ruler.js uses grunt.
-```sh
-$ git clone https://github.com/MrFrankel/ruler.git
-$ npm install
-$ npm run serve
+## api
+### 接口 <TypeScript>
 ```
+interface Lines {
+    h: number[],
+    v:  Array<Number>,
+}
+interface Shadow {
+    x: number,
+    y: number,
+    width: number,
+    height: number
+}
+interface Palette {
+    bgColor: string, // ruler bg color
+    longfgColor: string, // ruler longer mark color
+    shortfgColor: string, // ruler shorter mark color
+    fontColor: string, // ruler font color
+    shadowColor: string, // ruler shadow color
+    lineColor: string,
+    borderColor: string',
+    cornerActiveColor: string,
+}
+```
+### 属性
 
-### Todo's
+|  属性名称|  描述 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| lang | 初始化的语言 | String | zh-CN |
+| scale | 初始化标尺的缩放 | Number | 2 |
+| thick | 标尺的厚度 | Number | 16 |
+| width | 放置标尺窗口的宽度  | Number | - |
+| height | 放置标尺窗口的高度  | Number | - |
+| startX | x轴标尺开始的坐标数值 | Number | 0 |
+| startY | y轴标尺开始的坐标数值 | Number | 0 |
+| shadow |  阴影的参数  | Shadow | 0 |
+| horLineArr | 初始化水平标尺上的参考线 | Array<number> | [] |
+| verLineArr | 初始化垂直标尺上的参考线  | Array<number> | [] |
+| palette | 标尺的样式配置参数 | Palette | {bgColor: 'rgba(225,225,225, 0)',longfgColor: '#BABBBC',shortfgColor: '#C8CDD0',fontColor: '#7D8694', shadowColor: '#E8E8E8',lineColor: '#EB5648', borderColor: '#DADADC',cornerActiveColor: 'rgb(235, 86, 72, 0.6)',} |
 
-Write Tests
 
+### Event
 
-License
-----
+| 事件名称 | 描述 | 回调参数 |
+| --- | --- | --- |
+| handleLine | 在横纵标尺上操作参考线（新增或移除） | Lines  |
 
-MIT
-
-
+## 引用
+一个来自墨刀的react标尺组件 [mb-sketch-ruler](https://github.com/mockingbot/mb-sketch-ruler) .

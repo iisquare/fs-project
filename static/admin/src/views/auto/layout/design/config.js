@@ -18,7 +18,7 @@ const ElementOptions = () => {
 }
 
 const CanvasOptions = () => {
-  return { top: 0, width: 800, height: 600, color: '#0e2a42', url: '' }
+  return { top: 0, width: 800, height: 600, color: '#ffffff', url: '' }
 }
 
 const TextOptions = () => {
@@ -34,17 +34,8 @@ export default Object.assign(config, {
   canvas: {
     options: CanvasOptions, property: () => import('./CanvasProperty')
   },
-  canvasStyle (options, zoom) {
-    const style = {
-      top: `${options.top}px`,
-      width: `${options.width}px`,
-      height: `${options.height}px`
-    }
-    if (zoom < 1) {
-      style.transform = `scale(${window.innerWidth / options.width}, ${window.innerHeight / options.height})`
-    } else {
-      style.transform = `scale(${zoom / 100})`
-    }
+  canvasStyle (options) {
+    const style = {}
     if (options.color) {
       style['background-color'] = options.color
     }
