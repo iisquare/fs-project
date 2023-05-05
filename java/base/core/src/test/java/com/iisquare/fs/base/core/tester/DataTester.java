@@ -69,4 +69,18 @@ public class DataTester {
         }
     }
 
+    @Test
+    public void duplicateTest() {
+        Set<Object> hs = new LinkedHashSet<>();
+        hs.add(DPUtil.objectNode().put("id", 1).put("name", "a"));
+        hs.add(DPUtil.objectNode().put("id", 2).put("name", "b"));
+        hs.add(DPUtil.objectNode().put("id", 1).put("name", "a"));
+        hs.add(DPUtil.objectNode().put("id", 3).put("name", "c"));
+        hs.add(DPUtil.buildMap("id", 2, "name", "b"));
+        hs.add(DPUtil.buildMap("id", 4, "name", "d"));
+        hs.add(DPUtil.buildMap("id", 5, "name", "e"));
+        hs.add(DPUtil.buildMap("id", 4, "name", "d"));
+        System.out.println(hs);
+    }
+
 }

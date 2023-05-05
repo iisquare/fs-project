@@ -45,12 +45,13 @@ public class FlinkTester {
         properties.setProperty("bootstrap.servers", "kafka:9092");
         properties.setProperty("zookeeper.connect", "zookeeper:2181/kafka");
         properties.setProperty("auto.offset.reset", "earliest");
-        properties.setProperty("auto.commit.enable", "true");
+        properties.setProperty("auto.commit.enable", "false");
 //        properties.setProperty("auto.commit.interval.ms", "1000");
         properties.setProperty("group.id", "fs-test");
+        FlinkKafkaConsumer<String> consumer = new FlinkKafkaConsumer<>("fs-access-log", new SimpleStringSchema(), properties);
+        consumer.setCommitOffsetsOnCheckpoints(true);
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        DataStreamSource<String> stream = env.addSource(
-                new FlinkKafkaConsumer<>("fs-access-log", new SimpleStringSchema(), properties), getClass().getSimpleName());
+        DataStreamSource<String> stream = env.addSource(consumer, getClass().getSimpleName());
         stream.print();
         env.execute("stream-test");
     }

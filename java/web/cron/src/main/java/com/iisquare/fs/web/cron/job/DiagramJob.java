@@ -111,7 +111,8 @@ public class DiagramJob implements Job {
         if (stages.size() > 0) {
             flowStageDao.saveAll(stages);
         }
-        // 汇报
+        // 请确保tick方法在事务提交完成后被调用，若未读取到可调度流程，守护线程将持续等待
+        // 参考：TransactionSynchronizationManager.registerSynchronization()
         logService.tick(DPUtil.buildMap("logId", flowLog.getId()));
     }
 
