@@ -12,8 +12,12 @@ import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.RestOptions;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
+import org.apache.flink.streaming.connectors.kafka.KafkaSerializationSchema;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 public class CDCTester {
@@ -21,8 +25,10 @@ public class CDCTester {
     @Test
     public void mysqlTest() throws Exception {
         Configuration config = new Configuration();
-        config.setString(RestOptions.BIND_PORT,"8080-8089");
+        config.set(CoreOptions.DEFAULT_PARALLELISM, 1);
+        config.setString(RestOptions.BIND_PORT, "8080-8089");
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(config);
+        env.enableCheckpointing(30000);
         MySqlSourceBuilder<String> builder = MySqlSource.<String>builder()
                 .hostname("127.0.0.1").username("root").password("admin888")
                 .databaseList(".*").tableList(".*")
@@ -32,6 +38,13 @@ public class CDCTester {
         DataStreamSource<String> source = env.fromSource(
                 builder.build(), WatermarkStrategy.noWatermarks(), getClass().getSimpleName());
         source.print();
+
+        Properties properties = new Properties();
+        properties.setProperty("bootstrap.servers", "kafka:9092");
+        KafkaSerializationSchema<String> schema = (element, timestamp) -> new ProducerRecord<>(
+                "fs_cdc_test", null, null, null, element.getBytes(StandardCharsets.UTF_8));
+        source.addSink(new FlinkKafkaProducer<>(
+                "fs_cdc_test", schema, properties, FlinkKafkaProducer.Semantic.AT_LEAST_ONCE));
         env.execute("cdc-test");
     }
 

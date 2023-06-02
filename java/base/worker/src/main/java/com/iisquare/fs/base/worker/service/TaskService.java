@@ -20,6 +20,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Service;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -50,7 +51,12 @@ public class TaskService extends ServiceBase implements InitializingBean, Dispos
 
     @Override
     public void onApplicationEvent(WebServerInitializedEvent event) {
-        String nodeAddress = InetAddress.getLoopbackAddress().getHostAddress();
+        String nodeAddress;
+        try {
+            nodeAddress = InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            nodeAddress = InetAddress.getLoopbackAddress().getHostAddress();
+        }
         int nodePort = event.getWebServer().getPort();
         String nodeName = nodeAddress + ":" + nodePort;
         zookeeper = new ZooKeeperClient(zhHost, zhTimeout, nodeName);
@@ -132,53 +138,67 @@ public class TaskService extends ServiceBase implements InitializingBean, Dispos
             if (!lock.acquire(30, TimeUnit.MILLISECONDS)) {
                 return ApiUtil.result(1001, "获取锁失败", null);
             }
+            Map<String, Integer> nodeRemains = new LinkedHashMap<>(); // 各节点剩余资源：nodeId -> consumerNum
+            Map<String, Integer> taskStatistics = new LinkedHashMap<>(); // 各任务已分配资源：queueName -> consumerNum
+            Iterator<JsonNode> iterator = nodes.iterator();
+            while (iterator.hasNext()) { // 统计资源情况
+                JsonNode node = iterator.next();
+                String id = node.get("id").asText();
+                int maxConsumer = node.get("maxConsumer").asInt(0); // 节点最大资源
+                Iterator<JsonNode> it = node.at("/containers").iterator();
+                int consumerTotal = 0; // 当前节点已分配资源数量
+                while (it.hasNext()) {
+                    JsonNode container = it.next();
+                    String queueName = container.at("/queueName").asText("");
+                    int consumerCount = container.at("/consumerCount").asInt(0);
+                    taskStatistics.put(queueName, taskStatistics.getOrDefault(queueName, 0) + consumerCount);
+                    consumerTotal += consumerCount;
+                }
+                nodeRemains.put(id, maxConsumer - consumerTotal);
+            }
             ObjectNode result = DPUtil.objectNode();
             for (Map.Entry<String, Task> entry : tasks.entrySet()) {
                 Task task = entry.getValue();
                 String queueName = task.getQueueName();
                 ObjectNode items = result.putObject(queueName);
-                int targetCount = task.getConsumerCount();
-                if (task.isRunning() && targetCount > 0) {
-                    int currentCount = 0;
-                    Map<String, Integer> statistic = new LinkedHashMap<>();
-                    Map<String, Integer> resource = new LinkedHashMap<>();
-                    Iterator<JsonNode> iterator = nodes.iterator();
-                    while (iterator.hasNext()) {
-                        JsonNode node = iterator.next();
-                        String id = node.get("id").asText();
-                        int consumerCount = node.at("/containers/" + queueName + "/consumerCount").asInt(0);
-                        statistic.put(id, consumerCount);
-                        resource.put(id, node.get("maxConsumer").asInt(0));
-                        currentCount += consumerCount;
-                    }
-                    if (currentCount == targetCount) continue;
-                    iterator = nodes.iterator();
-                    while (iterator.hasNext()) {
-                        JsonNode node = iterator.next();
-                        String id = node.get("id").asText();
-                        int count;
-                        if (targetCount > currentCount) { // 增加消费者
-                            if (targetCount - currentCount < 1) break;
-                            int release = Math.min(resource.get(id) - statistic.get(id), targetCount - currentCount);
-                            if (release < 1) continue; // 无可用资源
-                            count = release + statistic.get(id);
-                        } else { // 减少消费者
-                            if (currentCount - targetCount < 1) break;
-                            int release = Math.min(statistic.get(id), currentCount - targetCount);
-                            if (release < 1) continue; // 无可释放资源
-                            count = statistic.get(id) - release;
-                        }
-                        url = "http://" + id + "/container/submit";
-                        ObjectNode data = DPUtil.objectNode()
-                                .put("queueName", queueName)
-                                .put("handlerName", task.getHandlerName())
-                                .put("prefetchCount", task.getPrefetchCount())
-                                .put("consumerCount", count);
-                        String content = HttpUtil.post(url, DPUtil.stringify(data), header);
-                        items.replace(id, DPUtil.parseJSON(content));
-                    }
+                int targetCount = task.getConsumerCount(); // 目标资源
+                int remainCount = targetCount - taskStatistics.getOrDefault(queueName, 0); // 需求资源
+                if (remainCount == 0) continue; // 无需调整
+                List<Map.Entry<String, Integer>> list = new ArrayList<>(nodeRemains.entrySet());
+                if (remainCount > 0) { // 增加消费者
+                    list.sort(Collections.reverseOrder(Map.Entry.comparingByValue())); // 从大到小分配资源
                 } else {
-                    Iterator<JsonNode> iterator = nodes.iterator();
+                    list.sort(Map.Entry.comparingByValue()); // 从小到大释放资源
+                }
+                for (Map.Entry<String, Integer> en : list) {
+                    if (remainCount == 0) break; // 资源调整完成
+                    int count; // 待调整结果
+                    int consumerCount = nodes.at( // 当前节点当前任务已分配的资源数量
+                            String.format("/%s/containers/%s/consumerCount", en.getKey(), queueName)).asInt(0);
+                    if (remainCount > 0) { // 增加消费者
+                        count = Math.min(remainCount, en.getValue());
+                        if (count < 1) continue; // 无可增加资源
+                        remainCount -= count; // 调整需求资源
+                        taskStatistics.put(queueName, taskStatistics.getOrDefault(queueName, 0) + count); // 调整已分配资源
+                        count += consumerCount;
+                    } else { // 减少消费者
+                        count = Math.min(-remainCount, consumerCount); // 本次减少数量
+                        if (count < 1) continue; // 无可释放资源
+                        remainCount += count; // 调整需求资源
+                        taskStatistics.put(queueName, taskStatistics.getOrDefault(queueName, 0) - count); // 调整已分配资源
+                        count = consumerCount - count;
+                    }
+                    url = "http://" + en.getKey() + "/container/submit";
+                    ObjectNode data = DPUtil.objectNode()
+                            .put("queueName", queueName)
+                            .put("handlerName", task.getHandlerName())
+                            .put("prefetchCount", task.getPrefetchCount())
+                            .put("consumerCount", count);
+                    String content = HttpUtil.post(url, DPUtil.stringify(data), header);
+                    items.replace(en.getKey(), DPUtil.parseJSON(content));
+                }
+                if (!task.isRunning() || targetCount <= 0) { // 停止任务
+                    iterator = nodes.iterator();
                     while (iterator.hasNext()) {
                         JsonNode node = iterator.next();
                         String id = node.get("id").asText();
