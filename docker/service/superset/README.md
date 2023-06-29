@@ -6,7 +6,7 @@
 
 - 拉取配置文件
 ```
-https://github.com/apache/superset/blob/1.5.1/superset/config.py
+https://github.com/apache/superset/blob/1.5.3/superset/config.py
 ```
 - 修改config.py配置参数
 ```

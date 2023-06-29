@@ -81,11 +81,12 @@
 
 ### 数仓分层
 
-- 数据运营层(ODS，Operation Data Store)，数据准备区，也称为贴源层，可以是业务端源数据，也可以是缓存源数据的消息队列等。
-- 数据明细层(DWD，Data Warehouse Detail)，或称数据细节层，主要是对ODS数据层做一些数据的清洗和规范化的操作，比如去除空数据、脏数据、离群值等。
-- 数据基础层(DWB，Data Warehouse Base)，按主体存储客观数据，是上层计算的数据来源，可以认为是大量指标的中间数据层。
-- 数据服务层(DWS，Data Warehouse Service)，基于DWB上的基础数据，整合汇总成分析某一个主题域的服务数据，一般是宽表。
+- 数据运营层(ODS，Operation Data Store)，数据准备区，也称为贴源层，数据运营层，是最接近数据源中数据的一层；为了考虑后续可能需要追溯数据问题，可原封不动地记录下来。
+- 数据明细层(DWD，Data Warehouse Detail)，或称数据细节层，存放清洗和规范化后的数据，比如去除空数据、脏数据、离群值等。
+- 数据基础层(DWB，Data Warehouse Base)，存储的是客观数据，一般用作中间层，可以认为是大量指标的数据层。
+- 数据服务层(DWS，Data Warehouse Service)，又称数据集市或宽表，整合汇总成分析某一个主题域的服务数据。
 - 数据应用层（ADS，Application Data Service），该层主要是提供给数据产品和数据分析使用的数据，一般会存放在Elasticsearch、Redis、ClickHouse中供线上系统使用。
+- 维度层（DIM，Dimension），维度表，公共维度层。
 
 ### 数据模型
 

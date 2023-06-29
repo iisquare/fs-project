@@ -193,7 +193,7 @@ public class QualityPlanService extends ServiceBase {
         } catch (SQLException e) {
             return ApiUtil.result(1003, "获取数据库连接失败", e.getMessage());
         }
-        result = ruleService.infos(DPUtil.buildMap("ids", info.getContent()), DPUtil.buildMap());
+        result = ruleService.infos(DPUtil.buildMap("ids", DPUtil.explode(",", info.getContent())), DPUtil.buildMap());
         List<QualityRule> rules = ApiUtil.data(result, List.class);
         for (QualityRule rule : rules) {
             if (1 != rule.getStatus()) continue;

@@ -1,0 +1,5 @@
+tensorflow==1.6
+tensorlayer==1.7
+opencv-python
+mxnet
+sklearn
