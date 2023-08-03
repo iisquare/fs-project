@@ -511,6 +511,13 @@ public class DPUtil {
     }
 
     /**
+     * 将字符串首字母大写
+     */
+    public static String upperCaseFirst(String str) {
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
+    }
+
+    /**
      * 将大写字母转换为下划线加小写字母的形式
      */
     public static String addUnderscores(String name) {

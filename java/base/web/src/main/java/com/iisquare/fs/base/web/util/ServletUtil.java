@@ -188,7 +188,11 @@ public class ServletUtil {
     public static String getWebUrl(HttpServletRequest request, boolean bWithDomain) {
         StringBuilder sb = new StringBuilder();
         if(bWithDomain) {
-            sb.append(request.getScheme()).append("://").append(request.getServerName());
+            String schema = request.getHeader("x-forwarded-proto");
+            if (DPUtil.empty(schema)) {
+                schema = request.getScheme();
+            }
+            sb.append(schema).append("://").append(request.getServerName());
             if(80 != request.getServerPort()) sb.append(":").append(request.getServerPort());
         }
         sb.append(request.getContextPath());

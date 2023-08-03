@@ -14,7 +14,7 @@ class SortTable {
 
   reset (rows) {
     if (Array.isArray(rows)) this.rows = rows
-    this.selectedIndex.selectedRowKeys = []
+    this.selection.selectedRowKeys = []
   }
 
   selectedIndex () {
