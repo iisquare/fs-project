@@ -58,6 +58,12 @@ rpc:
   auto:
     name: fs-auto-service
     rest: http://127.0.0.1:7821
+  spark:
+    name: fs-spark-service
+    rest: http://127.0.0.1:7822
+  flink:
+    name: fs-flink-service
+    rest: http://127.0.0.1:7823
 
 feign:
   hystrix:

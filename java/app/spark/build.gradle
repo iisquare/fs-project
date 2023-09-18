@@ -12,7 +12,7 @@ dependencies {
     api group: 'org.elasticsearch', name: 'elasticsearch-spark-30_' + scalaVersion, version: elasticVersion
     api group: 'org.apache.spark', name: 'spark-sql-kafka-0-10_' + scalaVersion, version: sparkVersion
     api group: 'io.delta', name: 'delta-core_' + scalaVersion, version: '2.2.0'
-    api group: 'org.postgresql', name: 'postgresql', version: '42.4.0'
+    api group: 'org.postgresql', name: 'postgresql', version: '42.4.3'
 
     testImplementation project(':base:test')
 }

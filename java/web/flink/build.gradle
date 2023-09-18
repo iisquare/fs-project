@@ -1,0 +1,8 @@
+
+dependencies {
+    implementation project(':web:core')
+    implementation (project(':app:flink'))
+    implementation group: 'org.apache.flink', name: 'flink-runtime-web_' + scalaVersion, version: flinkVersion
+    testImplementation project(':web:test')
+}
+

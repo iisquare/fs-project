@@ -7,11 +7,13 @@ import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
+import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.bi.dao.DatasetDao;
 import com.iisquare.fs.web.bi.dao.SourceDao;
 import com.iisquare.fs.web.bi.entity.Dataset;
 import com.iisquare.fs.web.bi.entity.Source;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
+import com.iisquare.fs.web.core.rpc.SparkRpc;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,7 +33,7 @@ public class DatasetService extends ServiceBase {
     @Autowired
     private SourceDao sourceDao;
     @Autowired
-    private SparkService sparkService;
+    private SparkRpc sparkRpc;
     @Autowired
     private DefaultRbacService rbacService;
 
@@ -74,7 +76,7 @@ public class DatasetService extends ServiceBase {
         Map<String, Object> result = loadSource(preview);
         if (ApiUtil.failed(result)) return result;
         options.replace("sources", ApiUtil.data(result, ObjectNode.class));
-        return sparkService.dataset(options);
+        return RpcUtil.result(sparkRpc.post("/bi/dataset", options));
     }
 
     public Map<String, Object> columns(JsonNode options) {

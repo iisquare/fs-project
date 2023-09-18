@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.app.flink.core.FlinkCore;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.core.DAGNode;
+import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
+import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.types.Row;
 
@@ -15,8 +17,18 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 public class FlinkUtil {
+
+    public static ObjectNode client(JobClient client) {
+        ObjectNode result = DPUtil.objectNode();
+        result.put("JobId", client.getJobID().toString());
+        CompletableFuture<JobExecutionResult> jobExecutionResult = client.getJobExecutionResult();
+        result.put("isDone", jobExecutionResult.isDone());
+        result.put("isCancelled", jobExecutionResult.isCancelled());
+        return result;
+    }
 
     public static <T> T union(Class<T> classType, Set<DAGNode> nodes) {
         if (null == nodes || 0 == nodes.size()) return null;

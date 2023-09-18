@@ -38,4 +38,10 @@ public class DAGController extends PermitControllerBase {
         return ApiUtil.echoResult(null == frame ? 404 : 0, null, frame);
     }
 
+    @RequestMapping("/run")
+    public String runAction(@RequestParam Map<?, ?> param) {
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        return ApiUtil.echoResult(dagService.run(id));
+    }
+
 }

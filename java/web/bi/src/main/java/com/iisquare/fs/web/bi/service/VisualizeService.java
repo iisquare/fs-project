@@ -6,10 +6,11 @@ import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
+import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.bi.dao.VisualizeDao;
-import com.iisquare.fs.web.bi.entity.Dataset;
 import com.iisquare.fs.web.bi.entity.Visualize;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
+import com.iisquare.fs.web.core.rpc.SparkRpc;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,7 +32,7 @@ public class VisualizeService extends ServiceBase {
     @Autowired
     private DatasetService datasetService;
     @Autowired
-    private SparkService sparkService;
+    private SparkRpc sparkRpc;
 
     public Map<String, Object> search(Integer datasetId, JsonNode preview, JsonNode level) {
         if (null == preview || !preview.isObject()) {
@@ -40,7 +41,11 @@ public class VisualizeService extends ServiceBase {
         Map<String, Object> result = datasetService.dataset(datasetId);
         if (ApiUtil.failed(result)) return result;
         ObjectNode dataset = ApiUtil.data(result, ObjectNode.class);
-        return sparkService.visualize(dataset, preview, level);
+        ObjectNode options = DPUtil.objectNode();
+        options.replace("dataset", dataset);
+        options.replace("preview", preview);
+        options.replace("level", level);
+        return RpcUtil.result(sparkRpc.post("/bi/visualize", options));
     }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) {

@@ -3,23 +3,47 @@ package com.iisquare.fs.web.bi.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
+import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.bi.dao.DiagramDao;
 import com.iisquare.fs.web.bi.entity.Diagram;
+import com.iisquare.fs.web.core.rpc.FlinkRpc;
+import com.iisquare.fs.web.core.rpc.SparkRpc;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class DAGService extends ServiceBase {
 
     @Autowired
     private DiagramDao diagramDao;
+    @Autowired
+    private SparkRpc sparkRpc;
+    @Autowired
+    private FlinkRpc flinkRpc;
+
+    public Map<String, Object> run(Integer id) {
+        ObjectNode frame = diagram(id, DPUtil.objectNode());
+        if (null == frame) {
+            return ApiUtil.result(404, null, id);
+        }
+        switch (frame.at("/engine").asText("")) {
+            case "flink":
+                return RpcUtil.result(flinkRpc.post("/bi/dag", frame));
+            case "spark":
+                return RpcUtil.result(sparkRpc.post("/bi/dag", frame));
+            default:
+                return ApiUtil.result(1500, "计算引擎异常", frame);
+        }
+    }
 
     public ObjectNode diagram(Integer id, ObjectNode cached) {
         if(null == id || id < 1) return null;

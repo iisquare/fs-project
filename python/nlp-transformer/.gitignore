@@ -1,0 +1,6 @@
+/data/sentiment-analysis/**
+/data/bert-ner/**
+/data/cross_model/**
+/data/dual_model/**
+/data/single/**
+!.gitkeep

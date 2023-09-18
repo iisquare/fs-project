@@ -722,6 +722,16 @@ public class DPUtil {
         return result;
     }
 
+    public static List<Object> subarray(Object[] array, int start, int length) {
+        List<Object> result = new ArrayList<>();
+        int size = array.length;
+        int end = Math.min(size, start + length);
+        for (int index = start; index < end; index++) {
+            result.add(array[index]);
+        }
+        return result;
+    }
+
     /**
      * 创建HashMap
      */

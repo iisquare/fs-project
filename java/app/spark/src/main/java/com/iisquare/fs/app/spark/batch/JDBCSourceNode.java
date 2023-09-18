@@ -52,7 +52,7 @@ public class JDBCSourceNode extends AbstractJDBCSource {
                 if (numPartitions > 0) cfg.put("numPartitions", String.valueOf(numPartitions));
             }
             // setFetchSize(Integer.MIN_VALUE) -> ((com.mysql.jdbc.Statement) statement).enableStreamingResults()
-            cfg.put("fetchSize", String.valueOf(options.at("/fetchSize").asInt(0)));
+            cfg.put("fetchsize", String.valueOf(options.at("/fetchSize").asInt(0)));
             this.configs.add(cfg);
         }
         return true;

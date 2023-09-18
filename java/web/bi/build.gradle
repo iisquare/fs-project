@@ -1,35 +1,7 @@
 
 dependencies {
     implementation project(':base:jpa')
+    implementation project(':base:dag')
     implementation project(':web:core')
-    implementation (project(':app:spark')) {
-        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-        exclude group: 'com.google.code.gson', module: 'gson'
-        exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
-    }
     testImplementation project(':web:test')
 }
-
-task fsJar(type: Jar) { // 将本项目的模块打包成完整的瘦包
-    archiveBaseName = rootProject.name + '-thin-' + project.name
-    destinationDirectory = file('build/libs')
-    from zipTree(jar.getArchiveFile())
-    from {
-        fileTree(dir: 'build/opt', include: [rootProject.name + '-*.jar']).collect {
-            it.isDirectory() ? it : zipTree(it)
-        }
-    }
-}
-
-fsJar.dependsOn project.getTasks().getByName('jar')
-fsJar.dependsOn project.getTasks().getByName('jars')
-
-fsJar.doLast { // 移除依赖的项目模块
-    FileTree tree = fileTree(dir: 'build/opt')
-    tree.each {File file ->
-        if(file.getName().startsWith(rootProject.name + '-')){
-            delete file
-        }
-    }
-}
-

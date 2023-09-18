@@ -6,9 +6,11 @@ import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
+import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.bi.dao.MatrixDao;
 import com.iisquare.fs.web.bi.entity.Matrix;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
+import com.iisquare.fs.web.core.rpc.SparkRpc;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,7 +32,7 @@ public class MatrixService extends ServiceBase {
     @Autowired
     private DatasetService datasetService;
     @Autowired
-    private SparkService sparkService;
+    private SparkRpc sparkRpc;
 
     public Map<String, Object> search(Integer datasetId, JsonNode preview) {
         if (null == preview || !preview.isObject()) {
@@ -39,7 +41,10 @@ public class MatrixService extends ServiceBase {
         Map<String, Object> result = datasetService.dataset(datasetId);
         if (ApiUtil.failed(result)) return result;
         ObjectNode dataset = ApiUtil.data(result, ObjectNode.class);
-        return sparkService.matrix(dataset, preview);
+        ObjectNode options = DPUtil.objectNode();
+        options.replace("dataset", dataset);
+        options.replace("preview", preview);
+        return RpcUtil.result(sparkRpc.post("/bi/matrix", options));
     }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) {
