@@ -271,7 +271,12 @@ public class SQLBuilder {
         return "SELECT last_insert_id();";
     }
 
-    private String duplicateUpdate(Collection<String> fields) {
+    public static String duplicateUpdate(Collection<String> fields) {
+        return duplicateUpdate(fields.toArray(new String[0]));
+    }
+
+    public static String duplicateUpdate(String... fields) {
+        if (fields.length == 0) return "";
         List<String> list = new ArrayList<>();
         for (String field : fields) {
             list.add(field + " = VALUES(" + field + ")");
@@ -282,7 +287,7 @@ public class SQLBuilder {
     /**
      * 单条插入
      */
-    public String insert(Map<String, Object> data, boolean needUpdate, String... fieldsUpdate) {
+    public String insert(Map<String, Object> data, String... updateFields) {
         data = prepare(data);
         Map<String, Object> params = new LinkedHashMap<>(); // 字段参数值
         int i = 0;
@@ -294,7 +299,7 @@ public class SQLBuilder {
         sb.append("INSERT INTO ").append(tableName);
         sb.append(" (").append(DPUtil.implode(", ", DPUtil.toArray(String.class, data.keySet()))).append(")");
         sb.append(" VALUES (").append(DPUtil.implode(", ", DPUtil.toArray(String.class, params.keySet()))).append(")");
-        if(needUpdate) sb.append(duplicateUpdate(fieldsUpdate.length > 0 ? Arrays.asList(fieldsUpdate) : data.keySet()));
+        sb.append(duplicateUpdate(updateFields));
         bindValues(params);
         return sb.toString();
     }
@@ -302,7 +307,7 @@ public class SQLBuilder {
     /**
      * 批量插入
      */
-    public String batchInsert(List<Map<String, Object>> data, boolean needUpdate, String... fieldsUpdate) {
+    public String batchInsert(List<Map<String, Object>> data, String... updateFields) {
         Set<String> keys = null;
         List<String> values = new ArrayList<>();
         for (Map<String, Object> item : data) {
@@ -324,7 +329,7 @@ public class SQLBuilder {
         sb.append("INSERT INTO ").append(tableName);
         sb.append(" (").append(DPUtil.implode(", ", DPUtil.toArray(String.class, keys))).append(")");
         sb.append(" VALUES ").append(DPUtil.implode(", ", DPUtil.toArray(String.class, values)));
-        if(needUpdate) sb.append(duplicateUpdate(fieldsUpdate.length > 0 ? Arrays.asList(fieldsUpdate) : keys));
+        sb.append(duplicateUpdate(updateFields));
         return sb.toString();
     }
 

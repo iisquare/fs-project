@@ -42,6 +42,7 @@ MATCH ()-[r]->() WHERE id(r) IN [{ID1}, {ID2}, {ID3}] DELETE r RETURN COUNT(r);
 MATCH (a:{LABEL}), (b:{LABEL}) MERGE (a)-[r:{LABEL} {PROPERTY}]->(b) RETURN r;
 MATCH (:Person {name: 'Jennifer'})-[rel:WORKS_FOR]-(:Company {name: 'Neo4j'}) SET rel.startYear = date({year: 2018}) RETURN rel;
 MATCH (p:Person {name: 'Jennifer'})-[rel:WORKS_FOR]-(c:Company {name: 'Neo4j'}) SET rel.startYear = date({year: 2018}) RETURN p, rel, c;
+MATCH p=(a)-[r*0..2]->(b) RETURN distinct p; // 关系深度
 ```
 - 备份还原
 ```

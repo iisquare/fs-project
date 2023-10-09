@@ -12,6 +12,10 @@ import java.util.Base64;
  */
 public class FileUtil {
 
+    public static URL resource(String name) {
+        return FileUtil.class.getClassLoader().getResource(name);
+    }
+
     public static String toBase64(File file) {
         InputStream in = null;
         try {

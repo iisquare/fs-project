@@ -11,3 +11,4 @@ conda env create -f environment.yml
 - [llama](https://github.com/facebookresearch/llama)
 - [llama.cpp](https://github.com/ggerganov/llama.cpp)
 - [Llama2-Chinese](https://github.com/FlagAlpha/Llama2-Chinese)
+- [排行榜 - C-Eval](https://cevalbenchmark.com/static/leaderboard_zh.html)

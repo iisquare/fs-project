@@ -58,7 +58,7 @@ public class SettingService extends ServiceBase {
                 put("description", "系统更新");
             }});
         }
-        return SQLHelper.build(entityManager, Setting.class).batchInsert(list, true, "content").intValue();
+        return SQLHelper.build(entityManager, Setting.class).batchInsert(list, "content").intValue();
     }
 
     public Map<String, String> get(String type, List<String> include, List<String> exclude) {

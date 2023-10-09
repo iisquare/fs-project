@@ -1,11 +1,19 @@
 package com.iisquare.fs.app.nlp.util;
 
+import com.iisquare.fs.base.core.util.DPUtil;
 import com.mysql.jdbc.Driver;
+import org.apache.spark.SparkConf;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class ConfigUtil {
+
+    public static SparkConf spark() {
+        SparkConf config = new SparkConf();
+        if (DPUtil.empty(System.getenv("spark.master"))) config.setMaster("local[*]");
+        return config;
+    }
 
     public static Map<String, String> neo4j() {
         return new LinkedHashMap<String, String>() {{

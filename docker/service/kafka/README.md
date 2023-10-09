@@ -75,6 +75,18 @@ kafka-consumer-groups.sh --bootstrap-server kafka:9092 --group <group_name> --re
 ```
 
 
+## 最佳实践
+
+### 配置参数
+```
+log.retention.ms/log.retention.minutes/log.retention.ms：消息保留时长，以最小值的参数为准。
+log.retention.bytes：每一个分区下的数据保留大小。
+log.segment.bytes：日志片段大小，到达上限后关闭旧分段，打开新分段。
+log.segment.ms：日志片段时间，日志片段会在大小或时间达到上限时被关闭。
+message.max.bytes：单条消息大小（压缩后），默认1000000（1MB）。
+```
+
+
 ## 注意事项
 
 ### KAFKA_LISTENERS

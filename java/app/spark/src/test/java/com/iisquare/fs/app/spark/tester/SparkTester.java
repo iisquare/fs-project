@@ -75,7 +75,7 @@ public class SparkTester implements Serializable {
         StructType schema = dataset.schema();
         dataset.foreachPartition((ForeachPartitionFunction<Row>) t -> {
             List<Map<String, Object>> data = SparkUtil.row2list(schema, t);
-            String sql = SQLBuilder.build("t_memory").batchInsert(data, true, "score");
+            String sql = SQLBuilder.build("t_memory").batchInsert(data, "score");
             Connection connection = DriverManager.getConnection(url, "root", "admin888");
             Statement statement = connection.createStatement();
             int result = statement.executeUpdate(sql);

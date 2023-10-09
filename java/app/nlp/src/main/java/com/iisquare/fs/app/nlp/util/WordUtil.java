@@ -1,8 +1,13 @@
 package com.iisquare.fs.app.nlp.util;
 
+import com.hankcs.hanlp.HanLP;
+import com.hankcs.hanlp.corpus.dependency.CoNll.CoNLLSentence;
+import com.hankcs.hanlp.corpus.dependency.CoNll.CoNLLWord;
 import com.hankcs.hanlp.corpus.document.sentence.Sentence;
 import com.hankcs.hanlp.corpus.document.sentence.word.IWord;
+import com.hankcs.hanlp.corpus.document.sentence.word.Word;
 import com.hankcs.hanlp.model.crf.CRFLexicalAnalyzer;
+import com.iisquare.fs.app.nlp.bean.WordSDPNode;
 import com.iisquare.fs.app.nlp.bean.WordTitleNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import org.apache.commons.collections.IteratorUtils;
@@ -11,9 +16,8 @@ import org.jsoup.safety.Safelist;
 import scala.Tuple2;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class WordUtil {
 
@@ -34,6 +38,34 @@ public class WordUtil {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static WordSDPNode sdp(String text) {
+        CoNLLSentence sentence = HanLP.parseDependency(text);
+        Iterator<CoNLLWord> iterator = sentence.iterator();
+        Map<Integer, WordSDPNode> map = new LinkedHashMap<>();
+        List<Integer> roots = new ArrayList<>();
+        while (iterator.hasNext()) {
+            CoNLLWord word = iterator.next();
+            WordSDPNode node = new WordSDPNode();
+            node.name = word.LEMMA;
+            node.tag = word.POSTAG;
+            node.relation = word.DEPREL;
+            map.put(word.ID, node);
+        }
+        iterator = sentence.iterator();
+        while (iterator.hasNext()) {
+            CoNLLWord word = iterator.next();
+            if (null == word.HEAD || 0 == word.HEAD.ID) {
+                roots.add(word.ID);
+            } else {
+                map.get(word.HEAD.ID).children.add(map.get(word.ID));
+            }
+        }
+        if (roots.size() != 1) {
+            throw new RuntimeException("too many roots:" + DPUtil.implode(",", roots));
+        }
+        return map.get(roots.get(0));
     }
 
     /**
@@ -106,11 +138,24 @@ public class WordUtil {
         return mount(child, node);
     }
 
+    /**
+     * 挂载段落
+     */
+    public static boolean mount(WordTitleNode ancestor, String paragraph) {
+        int size = ancestor.children.size();
+        if (size == 0) {
+            ancestor.paragraphs.add(paragraph);
+            return true;
+        }
+        WordTitleNode child = ancestor.children.get(size - 1);
+        return mount(child, paragraph);
+    }
+
     public static List<Tuple2<String, Double>> words(String text, int minLength, int maxLength) {
         List<Tuple2<String, Double>> result = new ArrayList<>();
         Sentence sentence = analyzer.analyze(text);
         List words = IteratorUtils.toList(sentence.iterator());
-        // 叹词（啊）,拟声词（哈哈）,助词（的）,连词（和、与）,标点符号,人名,地名,机构团体
+        // 叹词（啊）,拟声词（哈哈）,助词（的）,标点符号,连词（和、与）,人名,地名,机构团体
         List<String> stops = Arrays.asList("e", "o", "u", "w", "c", "nr", "ns", "nt");
         int size = words.size();
         for (int i = 0; i < size; i++) {
@@ -189,6 +234,35 @@ public class WordUtil {
             sum2 += i;
         }
         return (double) sum2 / (double) sum;
+    }
+
+    public static String combine(Map<String, Integer> counts, List<String> stops, Word... words) {
+        StringBuilder sb = new StringBuilder();
+        for (Word word : words) {
+            if (stops.contains(word.getLabel())) return null;
+            String value = word.getValue();
+            if (value.contains(" ")) return null;
+            sb.append(value);
+        }
+        String result = sb.toString();
+        counts.put(result, counts.getOrDefault(result, 0) + 1);
+        return result;
+    }
+
+    public static List<String> combine(List<String> list) {
+        for (int i = 0; i < list.size(); i++) {
+            String a = list.get(i);
+            if (null == a) continue;
+            for (int j = 0; j < list.size(); j++) {
+                if (i == j) continue;
+                String b = list.get(j);
+                if (null == b) continue;
+                if (a.contains(b)) {
+                    list.set(j, null);
+                }
+            }
+        }
+        return list.stream().filter(Objects::nonNull).collect(Collectors.toList());
     }
 
 }

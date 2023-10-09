@@ -37,3 +37,12 @@ tokenizer = BertTokenizer.from_pretrained('bert-base-chinese', cache_dir='./cach
 - [github:huggingface/transformers](https://github.com/huggingface/transformers)
 - [Transformer和BERT的前世今生](https://www.bilibili.com/video/BV11v4y137sN/)
 - [模型量化加速](https://www.bilibili.com/video/BV1xf4y1f7wn/)
+
+### LLM Publicly Available
+![LLM Publicly Available](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/nlp/llm-publicly-available.png)
+
+### LLM Evolutionary Tree
+![LLM Evolutionary Tree](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/nlp/llm-evolutionary-tree.png)
+
+### Fine-Tuning
+![Fine-Tuning](https://raw.githubusercontent.com/iisquare/fs-project-resource/main/static/nlp/fine-tuning.png)

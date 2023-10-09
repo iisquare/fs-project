@@ -16,9 +16,12 @@ import com.hankcs.hanlp.tokenizer.NLPTokenizer;
 import com.hankcs.hanlp.tokenizer.SpeedTokenizer;
 import com.hankcs.hanlp.tokenizer.StandardTokenizer;
 import com.huaban.analysis.jieba.JiebaSegmenter;
+import com.iisquare.fs.app.nlp.bean.WordSDPNode;
 import com.iisquare.fs.app.nlp.bean.WordTitleNode;
 import com.iisquare.fs.app.nlp.core.HanLpConfig;
 import com.iisquare.fs.app.nlp.util.WordUtil;
+import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.core.util.FileUtil;
 import org.apache.spark.sql.Encoder;
 import org.apache.spark.sql.Encoders;
 import org.junit.Test;
@@ -28,6 +31,20 @@ import java.io.IOException;
 import java.util.List;
 
 public class DataTester {
+
+    @Test
+    public void sdpTest() {
+        String text = "#关于印发《南宁市新生儿出生即入户”便民利民¨微改革”工作方案》的通知#各县（市、区）人民政府、开发区管委会，各有关单位：";
+        WordSDPNode sdp = WordUtil.sdp(text);
+        System.out.println(DPUtil.stringify(sdp));
+    }
+
+    @Test
+    public void phraseTest() throws IOException {
+        String text = FileUtil.getContent(FileUtil.resource("t1.txt").getFile());
+        System.out.println(HanLP.segment(text));
+        System.out.println(HanLP.extractKeyword(text, 10)); // 与官方Demo差异较大
+    }
 
     @Test
     public void hlTest() throws IOException {
