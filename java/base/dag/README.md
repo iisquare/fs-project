@@ -7,3 +7,4 @@
 java.io.FileNotFoundException: java.io.FileNotFoundException: HADOOP_HOME and hadoop.home.dir are unset.
 ```
 - [Windows binaries for Hadoop versions](https://github.com/steveloughran/winutils)
+- [Windows binaries for Hadoop versions](https://github.com/cdarlint/winutils)

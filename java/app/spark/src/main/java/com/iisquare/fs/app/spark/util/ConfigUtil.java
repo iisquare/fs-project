@@ -1,7 +1,7 @@
-package com.iisquare.fs.app.nlp.util;
+package com.iisquare.fs.app.spark.util;
 
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.mysql.jdbc.Driver;
+import com.mysql.cj.jdbc.Driver;
 import org.apache.spark.SparkConf;
 
 import java.util.LinkedHashMap;

@@ -2,20 +2,24 @@ dependencies {
     api project(':base:dag')
 //    api group: 'org.glassfish.jersey.core', name: 'jersey-client', version: '2.27'
     api group: 'org.apache.flink', name: 'flink-java', version: flinkVersion
-    api group: 'org.apache.flink', name: 'flink-clients_' + scalaVersion, version: flinkVersion
-    api group: 'org.apache.flink', name: 'flink-streaming-java_' + scalaVersion, version: flinkVersion
+    api group: 'org.apache.flink', name: 'flink-clients', version: flinkVersion
+    api group: 'org.apache.flink', name: 'flink-streaming-java', version: flinkVersion
     api group: 'org.apache.flink', name: 'flink-table-api-java', version: flinkVersion
-    api group: 'org.apache.flink', name: 'flink-table-api-java-bridge_' + scalaVersion, version: flinkVersion
+    api group: 'org.apache.flink', name: 'flink-table-api-java-bridge', version: flinkVersion
 
-    api group: 'org.apache.flink', name: 'flink-connector-kafka_' + scalaVersion, version: flinkVersion
-    api group: 'org.apache.flink', name: 'flink-connector-elasticsearch7_' + scalaVersion, version: flinkVersion
+    api group: 'org.apache.flink', name: 'flink-connector-kafka', version: flinkVersion
+    api group: 'org.apache.flink', name: 'flink-connector-elasticsearch7', version: '3.0.1-1.17'
 
     api group: 'com.ververica', name: 'flink-connector-mysql-cdc', version: cdcVersion
     api group: 'com.ververica', name: 'flink-connector-postgres-cdc', version: cdcVersion
     api group: 'com.ververica', name: 'flink-connector-mongodb-cdc', version: cdcVersion
 
+    api group: 'org.apache.hadoop', name: 'hadoop-common', version: hadoopVersion
+    api group: 'org.apache.hudi', name: 'hudi-flink1.17-bundle', version: hudiVersion
+    testImplementation group: 'org.apache.flink', name: 'flink-table-planner_' + scalaVersion, version: flinkVersion
+
     testImplementation project(':base:test')
-    testImplementation group: 'org.apache.flink', name: 'flink-runtime-web_' + scalaVersion, version: flinkVersion
+    testImplementation group: 'org.apache.flink', name: 'flink-runtime-web', version: flinkVersion
 }
 
 jar {

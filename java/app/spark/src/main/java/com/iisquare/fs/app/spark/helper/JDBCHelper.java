@@ -1,4 +1,4 @@
-package com.iisquare.fs.app.nlp.helper;
+package com.iisquare.fs.app.spark.helper;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -31,7 +31,11 @@ public class JDBCHelper implements Closeable {
         return connection;
     }
 
-    public int batch(String table, ArrayNode arr, int batchSize, String... uk) throws SQLException {
+    public int batch(String table, ArrayNode arr, int batchSize, String... updateFields) throws SQLException {
+        return batch(table, arr, batchSize, updateFields.length == 0, updateFields);
+    }
+
+    public int batch(String table, ArrayNode arr, int batchSize, boolean updateFull, String... updateFields) throws SQLException {
         int count = 0;
         int size = arr.size();
         ArrayNode data = DPUtil.arrayNode();
@@ -39,7 +43,7 @@ public class JDBCHelper implements Closeable {
             data.add(arr.get(i));
             if (data.size() >= batchSize || i + 1 >= size) {
                 count++;
-                batch(table, data, uk);
+                batch(table, data, updateFull, updateFields);
                 data = DPUtil.arrayNode();
             }
         }
@@ -47,6 +51,10 @@ public class JDBCHelper implements Closeable {
     }
 
     public int batch(String table, ArrayNode data, String... updateFields) throws SQLException {
+        return batch(table, data, updateFields.length == 0, updateFields);
+    }
+
+    public int batch(String table, ArrayNode data, boolean updateFull, String... updateFields) throws SQLException {
         Set<String> keys = new LinkedHashSet<>(IteratorUtils.toList(data.get(0).fieldNames()));
         List<String> values = new ArrayList<>();
         for (JsonNode node : data) {
@@ -66,7 +74,7 @@ public class JDBCHelper implements Closeable {
         sb.append("INSERT INTO ").append(table);
         sb.append(" (").append(DPUtil.implode(", ", DPUtil.toArray(String.class, keys))).append(")");
         sb.append(" VALUES ").append(DPUtil.implode(", ", DPUtil.toArray(String.class, values)));
-        sb.append(SQLBuilder.duplicateUpdate(updateFields));
+        sb.append(updateFull ? SQLBuilder.duplicateUpdate(keys) : SQLBuilder.duplicateUpdate(updateFields));
         return update(sb.toString());
     }
 

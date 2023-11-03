@@ -1,10 +1,10 @@
 package com.iisquare.fs.base.core.util;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import sun.security.rsa.RSAPublicKeyImpl;
 
 import javax.crypto.Cipher;
-import java.math.BigInteger;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -14,25 +14,28 @@ import java.util.Base64;
 
 public class RSAUtil {
 
+    // 签名算法名称
+    private static final String RSA = "RSA";
+    // 标准签名算法名称
+    public static final String SHA1 = "SHA1withRSA";
+    public static final String SHA256 = "SHA256withRSA";
+    private static final Charset charset = StandardCharsets.UTF_8;
+
     /**
-     * 随机生成密钥对
+     * 生成密钥对
      * 公钥与私钥可以相互加解密，一般是：
-     * 公钥进行加密，私钥进行解密，用于保护数据传输。
-     * 私钥对签名（如内容的MD5值）进行加密，私钥解密出签名，用于验证数据是否被篡改。
+     * 公钥对内容进行加密，私钥进行解密，用于保护数据传输。
+     * 私钥对签名（如内容的MD5值）进行加密，公钥解密出签名，用于验证数据是否被篡改。
      * RSA,RSA2公钥私钥加密解密@see(https://www.bejson.com/enc/rsa/)
      * RSA公私钥分解 Exponent（指数）、Modulus（模数）分解@see(https://www.oren.net.cn/rsa/info.html)
+     * @param keySize RSA密钥长度,必须是64的倍数，在512到65536位之间,推荐使用2048
      */
-    public static ObjectNode generate(int keySize) {
-        KeyPairGenerator keyPairGen;
-        try {
-            keyPairGen = KeyPairGenerator.getInstance("RSA");
-        } catch (NoSuchAlgorithmException e) {
-            return null;
-        }
+    public static ObjectNode generate(int keySize) throws NoSuchAlgorithmException {
         // 初始化密钥对生成器
-        keyPairGen.initialize(keySize, new SecureRandom());
+        KeyPairGenerator generator = KeyPairGenerator.getInstance(RSA);
+        generator.initialize(keySize, new SecureRandom());
         // 生成一个密钥对，保存在keyPair中
-        KeyPair keyPair = keyPairGen.generateKeyPair();
+        KeyPair keyPair = generator.generateKeyPair();
         // 得到私钥
         RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
         // 得到公钥
@@ -55,57 +58,141 @@ public class RSAUtil {
     }
 
     /**
-     * RSA加密
-     * 默认采用随机方式进行填充，加密结果不固定
+     * 公钥加密(用于数据加密)
      */
-    public static String encrypt(String str, String publicKey) {
-        // Base64编码的密钥
-        byte[] decoded = Base64.getDecoder().decode(publicKey);
-        try {
-            RSAPublicKey pubKey = (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decoded));
-            Cipher cipher = Cipher.getInstance("RSA");
-            cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-            byte[] bytes = cipher.doFinal(str.getBytes("UTF-8"));
-            String outStr = Base64.getEncoder().encodeToString(bytes);
-            return outStr;
-        } catch (Exception e) {
-            return null;
-        }
+    public static String encryptByPublicKey(String data, String publicKeyStr) throws Exception {
+        // Base64编码的公钥
+        byte[] pubKey = Base64.getDecoder().decode(publicKeyStr);
+        // 创建X509编码密钥规范
+        X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(pubKey);
+        // 返回转换指定算法的KeyFactory对象
+        KeyFactory keyFactory = KeyFactory.getInstance(RSA);
+        // 根据X509编码密钥规范产生公钥对象
+        PublicKey publicKey = keyFactory.generatePublic(x509KeySpec);
+        // 根据转换的名称获取密码对象Cipher（转换的名称：算法/工作模式/填充模式）
+        Cipher cipher = Cipher.getInstance(keyFactory.getAlgorithm());
+        // 用公钥初始化此Cipher对象（加密模式）
+        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+        // 对数据加密
+        byte[] encrypt = cipher.doFinal(data.getBytes(charset));
+        // 返回Base64编码后的字符串
+        return Base64.getEncoder().encodeToString(encrypt);
     }
 
     /**
-     * RSA解密
+     * 私钥解密(用于数据解密)
      */
-    public static String decrypt(String str, String privateKey) {
-        //64位解码加密后的字符串
-        byte[] inputByte = Base64.getDecoder().decode(str);
-        //Base64编码的密钥
-        byte[] decoded = Base64.getDecoder().decode(privateKey);
-        try {
-            RSAPrivateKey priKey = (RSAPrivateKey) KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(decoded));
-            Cipher cipher = Cipher.getInstance("RSA");
-            cipher.init(Cipher.DECRYPT_MODE, priKey);
-            String outStr = new String(cipher.doFinal(inputByte));
-            return outStr;
-        } catch (Exception e) {
-            return null;
-        }
+    public static String decryptByPrivateKey(String data, String privateKeyStr) throws Exception {
+        // Base64编码的私钥
+        byte[] priKey = Base64.getDecoder().decode(privateKeyStr);
+        // 创建PKCS8编码密钥规范
+        PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(priKey);
+        // 返回转换指定算法的KeyFactory对象
+        KeyFactory keyFactory = KeyFactory.getInstance(RSA);
+        // 根据PKCS8编码密钥规范产生私钥对象
+        PrivateKey privateKey = keyFactory.generatePrivate(pkcs8KeySpec);
+        // 根据转换的名称获取密码对象Cipher（转换的名称：算法/工作模式/填充模式）
+        Cipher cipher = Cipher.getInstance(keyFactory.getAlgorithm());
+        // 用私钥初始化此Cipher对象（解密模式）
+        cipher.init(Cipher.DECRYPT_MODE, privateKey);
+        // 对数据解密
+        byte[] decrypt = cipher.doFinal(Base64.getDecoder().decode(data));
+        // 返回字符串
+        return new String(decrypt, charset);
     }
 
-    public static ObjectNode generatePublicKey(String modulus, String exponent) {
-        BigInteger n = new BigInteger(modulus, 16);
-        BigInteger e = new BigInteger(exponent, 16);
-        RSAPublicKeyImpl publicKey;
-        try {
-            publicKey = new RSAPublicKeyImpl(n, e);
-        } catch (InvalidKeyException ex) {
-            return null;
-        }
-        String publicKeyString = Base64.getEncoder().encodeToString(publicKey.getEncoded());
-        return DPUtil.objectNode()
-                .put("base64", publicKeyString)
-                .put("modulus", publicKey.getModulus())
-                .put("exponent", publicKey.getPublicExponent());
+    /**
+     * 私钥加密(用于数据签名)
+     */
+    public static String encryptByPrivateKey(String data, String privateKeyStr) throws Exception {
+        // Base64编码的私钥
+        byte[] priKey = Base64.getDecoder().decode(privateKeyStr);
+        // 创建PKCS8编码密钥规范
+        PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(priKey);
+        // 返回转换指定算法的KeyFactory对象
+        KeyFactory keyFactory = KeyFactory.getInstance(RSA);
+        // 根据PKCS8编码密钥规范产生私钥对象
+        PrivateKey privateKey = keyFactory.generatePrivate(pkcs8KeySpec);
+        // 根据转换的名称获取密码对象Cipher（转换的名称：算法/工作模式/填充模式）
+        Cipher cipher = Cipher.getInstance(keyFactory.getAlgorithm());
+        // 用私钥初始化此Cipher对象（加密模式）
+        cipher.init(Cipher.ENCRYPT_MODE, privateKey);
+        // 对数据加密
+        byte[] encrypt = cipher.doFinal(data.getBytes(charset));
+        // 返回Base64编码后的字符串
+        return Base64.getEncoder().encodeToString(encrypt);
+    }
+
+    /**
+     * 公钥解密(用于数据验签)
+     */
+    public static String decryptByPublicKey(String data, String publicKeyStr) throws Exception {
+        // Base64编码的公钥
+        byte[] pubKey = Base64.getDecoder().decode(publicKeyStr);
+        // 创建X509编码密钥规范
+        X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(pubKey);
+        // 返回转换指定算法的KeyFactory对象
+        KeyFactory keyFactory = KeyFactory.getInstance(RSA);
+        // 根据X509编码密钥规范产生公钥对象
+        PublicKey publicKey = keyFactory.generatePublic(x509KeySpec);
+        // 根据转换的名称获取密码对象Cipher（转换的名称：算法/工作模式/填充模式）
+        Cipher cipher = Cipher.getInstance(keyFactory.getAlgorithm());
+        // 用公钥初始化此Cipher对象（解密模式）
+        cipher.init(Cipher.DECRYPT_MODE, publicKey);
+        // 对数据解密
+        byte[] decrypt = cipher.doFinal(Base64.getDecoder().decode(data));
+        // 返回字符串
+        return new String(decrypt, charset);
+    }
+
+    /**
+     * RSA签名
+     */
+    public static String sign(String data, String privateKeyStr, String signType) throws Exception {
+        // Base64编码的私钥
+        byte[] priKey = Base64.getDecoder().decode(privateKeyStr);
+        // 创建PKCS8编码密钥规范
+        PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(priKey);
+        // 返回转换指定算法的KeyFactory对象
+        KeyFactory keyFactory = KeyFactory.getInstance(RSA);
+        // 根据PKCS8编码密钥规范产生私钥对象
+        PrivateKey privateKey = keyFactory.generatePrivate(pkcs8KeySpec);
+        // 标准签名算法名称(RSA还是RSA2)
+        String algorithm = RSA.equals(signType) ? SHA1 : SHA256;
+        // 用指定算法产生签名对象Signature
+        Signature signature = Signature.getInstance(algorithm);
+        // 用私钥初始化签名对象Signature
+        signature.initSign(privateKey);
+        // 将待签名的数据传送给签名对象(须在初始化之后)
+        signature.update(data.getBytes(charset));
+        // 返回签名结果字节数组
+        byte[] sign = signature.sign();
+        // 返回Base64编码后的字符串
+        return Base64.getEncoder().encodeToString(sign);
+    }
+
+    /**
+     * RSA校验数字签名
+     */
+    public static boolean verify(String data, String sign, String publicKeyStr, String signType) throws Exception {
+        // Base64编码的公钥
+        byte[] pubKey = Base64.getDecoder().decode(publicKeyStr);
+        // 返回转换指定算法的KeyFactory对象
+        KeyFactory keyFactory = KeyFactory.getInstance(RSA);
+        // 创建X509编码密钥规范
+        X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(pubKey);
+        // 根据X509编码密钥规范产生公钥对象
+        PublicKey publicKey = keyFactory.generatePublic(x509KeySpec);
+        // 标准签名算法名称(RSA还是RSA2)
+        String algorithm = RSA.equals(signType) ? SHA1 : SHA256;
+        // 用指定算法产生签名对象Signature
+        Signature signature = Signature.getInstance(algorithm);
+        // 用公钥初始化签名对象,用于验证签名
+        signature.initVerify(publicKey);
+        // 更新签名内容
+        signature.update(data.getBytes(charset));
+        // 得到验证结果
+        return signature.verify(Base64.getDecoder().decode(sign));
     }
 
 }

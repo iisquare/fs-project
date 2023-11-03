@@ -1,4 +1,4 @@
-package com.iisquare.fs.app.nlp.helper;
+package com.iisquare.fs.app.spark.helper;
 
 import com.iisquare.fs.base.core.util.FileUtil;
 import org.neo4j.driver.*;

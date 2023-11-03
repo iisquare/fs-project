@@ -3,9 +3,9 @@ package com.iisquare.fs.app.nlp.job;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.iisquare.fs.app.nlp.helper.JDBCHelper;
-import com.iisquare.fs.app.nlp.helper.Neo4jHelper;
-import com.iisquare.fs.app.nlp.util.ConfigUtil;
+import com.iisquare.fs.app.spark.helper.JDBCHelper;
+import com.iisquare.fs.app.spark.helper.Neo4jHelper;
+import com.iisquare.fs.app.spark.util.ConfigUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
 

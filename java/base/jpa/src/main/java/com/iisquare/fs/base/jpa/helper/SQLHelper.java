@@ -115,19 +115,27 @@ public class SQLHelper {
     /**
      * 单条插入
      */
-    public Number insert(Map<String, Object> data, String... updateFields) {
-        sql = builder.insert(data, updateFields);
+    public Number insert(Map<String, Object> data, boolean updateFull, String... updateFields) {
+        sql = builder.insert(data, updateFull, updateFields);
         query(sql, null).executeUpdate();
         return lastInsertId();
+    }
+
+    public Number insert(Map<String, Object> data, String... updateFields) {
+        return insert(data, updateFields.length == 0, updateFields);
     }
 
     /**
      * 批量插入
      */
-    public Number batchInsert(List<Map<String, Object>> data, String... updateFields) {
-        sql = builder.batchInsert(data, updateFields);
+    public Number batchInsert(List<Map<String, Object>> data, boolean updateFull, String... updateFields) {
+        sql = builder.batchInsert(data, updateFull, updateFields);
         query(sql, null).executeUpdate();
         return lastInsertId();
+    }
+
+    public Number batchInsert(List<Map<String, Object>> data, String... updateFields) {
+        return batchInsert(data, updateFields.length == 0, updateFields);
     }
 
     public Number update(Map<String, Object> data) {

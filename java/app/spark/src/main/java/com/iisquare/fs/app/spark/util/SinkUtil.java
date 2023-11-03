@@ -1,4 +1,4 @@
-package com.iisquare.fs.app.nlp.util;
+package com.iisquare.fs.app.spark.util;
 
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;

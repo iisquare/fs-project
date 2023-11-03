@@ -11,12 +11,13 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.table.catalog.Column;
+import org.apache.flink.table.data.StringData;
+import org.apache.flink.table.types.DataType;
 import org.apache.flink.types.Row;
+import org.apache.hudi.util.HoodiePipeline;
 
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 public class FlinkUtil {
@@ -91,6 +92,38 @@ public class FlinkUtil {
             row.setField(i, items[i]);
         }
         return row;
+    }
+
+    public static Map<String, DataType> columns(HoodiePipeline.Builder pipeline) {
+        Map<String, DataType> result = new LinkedHashMap<>();
+        List<Column> columns = pipeline.getTableDescriptor().getResolvedCatalogTable().getResolvedSchema().getColumns();
+        for (Column column : columns) {
+            result.put(column.getName(), column.getDataType());
+        }
+        return result;
+    }
+
+    public static Object[] row(Map<String, DataType> columns, JsonNode data) {
+        List<Object> result = new ArrayList<>();
+        for (Map.Entry<String, DataType> entry : columns.entrySet()) {
+            result.add(row(entry.getValue(), DPUtil.toJSON(data.at("/" + entry.getKey()), Object.class)));
+        }
+        return result.toArray(new Object[0]);
+    }
+
+    public static Object row(DataType type, Object obj) {
+        if (null == obj) return null;
+        Class<?> cls = type.getConversionClass();
+        if (String.class.equals(cls)) {
+            return StringData.fromString(obj.toString());
+        }
+        if (Integer.class.equals(cls)) {
+            return DPUtil.parseInt(obj);
+        }
+        if (Long.class.equals(cls)) {
+            return DPUtil.parseLong(obj);
+        }
+        return obj;
     }
 
 }

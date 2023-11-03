@@ -1,6 +1,12 @@
 # Docker
 项目依赖的基础服务，适用于单机临时测试运行，请勿在线上环境使用。
 
+| 服务 | 入口 | 参数 |
+| :----- | :----- | :----- |
+| docker | ENTRYPOINT | CMD |
+| docker-compose | entrypoint | command |
+| kubernetes | command | args |
+
 ## Compose
 - Start
 ```bash

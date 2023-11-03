@@ -5,7 +5,8 @@ buildscript {
         shadowVersion = '4.0.3'
     }
     repositories {
-        maven { url 'https://maven.aliyun.com/repository/public' }
+        maven { url 'https://maven.aliyun.com/repository/public/' }
+        maven { url 'https://maven.aliyun.com/repository/central' }
         mavenCentral()
         jcenter()
     }
@@ -27,7 +28,8 @@ subprojects {
     [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
     repositories {
-        maven { url 'https://maven.aliyun.com/repository/public' }
+//        maven { url 'https://maven.aliyun.com/repository/public/' }
+//        maven { url 'https://maven.aliyun.com/repository/central' }
         mavenCentral()
         jcenter()
     }
@@ -43,21 +45,22 @@ subprojects {
         springCloudVersion = '2.2.6.RELEASE'
         feignVersion = '10.10.1' // based on cloud version
         scalaVersion = '2.12' // based on spark and flink version
-        sparkVersion = '3.3.1'
-        flinkVersion = '1.14.6'
+        sparkVersion = '3.3.3'
+        flinkVersion = '1.17.1'
         /**
          * CDC Connectors Supported Flink Versions
          * https://ververica.github.io/flink-cdc-connectors/master/content/about.html
          */
-        cdcVersion = '2.3.0'
-        hadoopVersion = '3.3.2' // based on spark version
+        cdcVersion = '2.4.1'
+        hudiVersion = '0.14.0'
+        hadoopVersion = '3.3.6' // based on spark version
         swaggerVersion = '2.9.2'
         torchVersion = '1.10.0'
         tensorflowVersion = '1.12.0'
         zookeeperVersion = '3.5.8'
         curatorVersion = '4.3.0' // with zookeeper compatibility
         mongodbVersion = '4.5.1'
-        mysqlVersion = '5.1.48'
+        mysqlVersion = '8.0.28'
         rabbitmqVersion = '5.10.0'
         elasticVersion = '7.15.1'
         flowableVersion = '6.6.0'

@@ -1,5 +1,9 @@
 dependencies {
     api project(':base:core')
-    api group: 'org.yaml', name: 'snakeyaml', version: '1.29'
+    api group: 'org.yaml', name: 'snakeyaml', version: '2.0'
     api group: 'mysql', name: 'mysql-connector-java', version: mysqlVersion
+
+    api group: 'commons-cli', name: 'commons-cli', version: cliVersion
+
+    testImplementation project(':base:test')
 }

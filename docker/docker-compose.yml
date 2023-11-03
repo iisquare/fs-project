@@ -261,4 +261,5 @@ services:
       - "${BIND_ADDRESS}${BIND_COLON}${TRINO_PORT}:8080"
     volumes:
       - ${DATA_DIR}/trino/data:/data/trino
+      - ./service/trino/jvm.config:/etc/jvm.config
       - ./service/trino/etc/catalog:/etc/trino/catalog

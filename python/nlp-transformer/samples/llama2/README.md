@@ -6,6 +6,12 @@
 ```
 conda env create -f environment.yml
 ```
+- Windows
+```
+pip install https://github.com/jllllll/bitsandbytes-windows-webui/releases/download/wheels/bitsandbytes-0.41.0-py3-none-win_amd64.whl
+pip install --upgrade pip
+pip install SentencePiece
+```
 
 ## 参考链接
 - [llama](https://github.com/facebookresearch/llama)

@@ -287,7 +287,7 @@ public class SQLBuilder {
     /**
      * 单条插入
      */
-    public String insert(Map<String, Object> data, String... updateFields) {
+    public String insert(Map<String, Object> data, boolean updateFull, String... updateFields) {
         data = prepare(data);
         Map<String, Object> params = new LinkedHashMap<>(); // 字段参数值
         int i = 0;
@@ -297,17 +297,22 @@ public class SQLBuilder {
         }
         StringBuilder sb = new StringBuilder();
         sb.append("INSERT INTO ").append(tableName);
-        sb.append(" (").append(DPUtil.implode(", ", DPUtil.toArray(String.class, data.keySet()))).append(")");
+        Set<String> keys = data.keySet();
+        sb.append(" (").append(DPUtil.implode(", ", DPUtil.toArray(String.class, keys))).append(")");
         sb.append(" VALUES (").append(DPUtil.implode(", ", DPUtil.toArray(String.class, params.keySet()))).append(")");
-        sb.append(duplicateUpdate(updateFields));
+        sb.append(updateFull ? duplicateUpdate(keys) : duplicateUpdate(updateFields));
         bindValues(params);
         return sb.toString();
+    }
+
+    public String insert(Map<String, Object> data, String... updateFields) {
+        return insert(data, updateFields.length == 0, updateFields);
     }
 
     /**
      * 批量插入
      */
-    public String batchInsert(List<Map<String, Object>> data, String... updateFields) {
+    public String batchInsert(List<Map<String, Object>> data, boolean updateFull, String... updateFields) {
         Set<String> keys = null;
         List<String> values = new ArrayList<>();
         for (Map<String, Object> item : data) {
@@ -329,8 +334,12 @@ public class SQLBuilder {
         sb.append("INSERT INTO ").append(tableName);
         sb.append(" (").append(DPUtil.implode(", ", DPUtil.toArray(String.class, keys))).append(")");
         sb.append(" VALUES ").append(DPUtil.implode(", ", DPUtil.toArray(String.class, values)));
-        sb.append(duplicateUpdate(updateFields));
+        sb.append(updateFull ? duplicateUpdate(keys) : duplicateUpdate(updateFields));
         return sb.toString();
+    }
+
+    public String batchInsert(List<Map<String, Object>> data, String... updateFields) {
+        return batchInsert(data, updateFields.length == 0, updateFields);
     }
 
     public String update(Map<String, Object> data) {
