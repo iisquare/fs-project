@@ -68,22 +68,21 @@ public class FlinkUtil {
         return row;
     }
 
-    public static RowTypeInfo type(JsonNode json) {
+    public static RowTypeInfo type(Map<String, String> map) {
         LinkedHashMap<String, TypeInformation<?>> result = new LinkedHashMap<>();
-        Iterator<Map.Entry<String, JsonNode>> iterator = json.fields();
-        JSON: while (iterator.hasNext()) {
-            Map.Entry<String, JsonNode> entry = iterator.next();
-            Class<?> cls = DPUtil.toJSON(entry.getValue(), Object.class).getClass();
-            for (Map.Entry<String, Map<String, Object>> types : FlinkCore.clsTypes.entrySet()) {
-                Map<String, Object> type = types.getValue();
-                if (cls.equals(type.get("cls"))) {
-                    result.put(entry.getKey(), (TypeInformation<?>) type.get(FlinkCore.TYPE_FIELD));
-                    continue JSON;
-                }
-            }
-            result.put(entry.getKey(), TypeInformation.of(Object.class));
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            TypeInformation<?> type = FlinkCore.type(entry.getValue());
+            result.put(entry.getKey(), null == type ? TypeInformation.of(Object.class) : type);
         }
         return new RowTypeInfo(result.values().toArray(new TypeInformation[0]), result.keySet().toArray(new String[0]));
+    }
+
+    public static RowTypeInfo type(JsonNode json) {
+        Map<String, String> map = DPUtil.toJSON(json, Map.class);
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            map.put(entry.getKey(), entry.getValue().getClass().getName());
+        }
+        return type(map);
     }
 
     public static Row row(Object... items) {

@@ -24,7 +24,7 @@ public class DAGController extends PermitControllerBase {
 
     @RequestMapping("/config")
     public String configAction(ModelMap model) {
-        model.put("clsTypes", DAGCore.simple(DAGCore.clsTypes, "classname"));
+        model.put("clsTypes", DAGCore.simple(DAGCore.clsTypes, "name"));
         model.put("timezones", DAGCore.simple(DAGCore.timezones, "name"));
         model.put("locales", DAGCore.simple(DAGCore.locales, "name"));
         model.put("jdbcDrivers", DAGCore.simple(DAGCore.jdbcDrivers, "name"));

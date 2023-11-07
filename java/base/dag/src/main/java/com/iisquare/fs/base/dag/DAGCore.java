@@ -20,10 +20,9 @@ public class DAGCore {
                 String.class,
                 Date.class
         )) {
-            String name = cls.getSimpleName();
-            put(name, new LinkedHashMap(){{
+            put(cls.getName(), new LinkedHashMap(){{
                 put(TYPE_FIELD, cls);
-                put("name", name);
+                put("name", cls.getSimpleName());
                 put("classname", cls.getName());
             }});
         }
@@ -31,10 +30,9 @@ public class DAGCore {
                 java.sql.Date.class,
                 java.sql.Timestamp.class
         )) {
-            String name = "SQL" + cls.getSimpleName();
-            put(name, new LinkedHashMap(){{
+            put(cls.getName(), new LinkedHashMap(){{
                 put(TYPE_FIELD, cls);
-                put("name", name);
+                put("name", "SQL" + cls.getSimpleName());
                 put("classname", cls.getName());
             }});
         }

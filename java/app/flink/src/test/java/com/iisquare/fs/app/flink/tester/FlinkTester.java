@@ -7,25 +7,26 @@ import com.iisquare.fs.app.flink.func.ExampleProcessAllWindowFunction;
 import com.iisquare.fs.app.flink.func.ExampleRandomSourceFunction;
 import com.iisquare.fs.app.flink.output.EmptyOutput;
 import com.iisquare.fs.app.flink.trigger.CountTimeoutTrigger;
+import com.iisquare.fs.app.flink.util.FlinkUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.RestOptions;
 import org.apache.flink.streaming.api.datastream.BroadcastStream;
+import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
+import org.apache.flink.types.Row;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 public class FlinkTester {
 
@@ -100,6 +101,27 @@ public class FlinkTester {
         SingleOutputStreamOperator<JsonNode> dataset = source.connect(broadcast).process(new ExampleBroadcastProcessFunction());
         dataset.print();
         env.execute("broadcast-test");
+    }
+
+    @Test
+    public void typeTest() throws Exception {
+        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        DataStream<Row> stream = env.fromCollection(Arrays.asList(
+                FlinkUtil.row(1, "a", 0.5),
+                FlinkUtil.row(2, "b", 0.5),
+                FlinkUtil.row(3, "c", 0.7)
+        ), FlinkUtil.type(new LinkedHashMap<String, String>() {{
+            put("id", Integer.class.getName());
+            put("name", String.class.getName());
+            put("score", Double.class.getName());
+        }}));
+        stream = stream.map((MapFunction<Row, Row>) row -> {
+            double score = row.getFieldAs("score");
+            return FlinkUtil.row(row.getField("id"), row.getField("name"), score * 100);
+        }).returns(stream.getType());
+        System.out.println(stream.getType());
+        stream.print();
+        env.execute();
     }
 
 }
