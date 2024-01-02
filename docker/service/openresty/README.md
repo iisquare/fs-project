@@ -27,6 +27,22 @@ sudo docker-compose exec kafka /bin/bash
 kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic fs-access-log
 ```
 
+## 常见问题
+
+### kafka无法解析域名
+- 异常内容
+```
+no resolver defined to resolve
+```
+- 问题原因：kafka需要同时保障主机名和IP地址可访问
+- 解决方案
+```
+# 修改/etc/hosts本地解析或在Nginx模块中配置DNS解析服务
+http {
+  resolver 8.8.8.8;
+}
+```
+
 ## 参考
 - [lua-resty-kafka](https://github.com/doujiang24/lua-resty-kafka)
 - [docker-openresty](https://github.com/openresty/docker-openresty/blob/master/centos7/Dockerfile)

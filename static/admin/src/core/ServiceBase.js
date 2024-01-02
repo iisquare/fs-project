@@ -22,7 +22,10 @@ export default {
     return new Promise((resolve, reject) => {
       ax.request(config).then((response) => {
         let result = response.data
-        if (!result) { // 请求成功，但服务端未返回内容，可能是序列化失败所致
+        if (!result) {
+          if (tips.error) {
+            notification.error({ message: '获取请求结果异常', description: '请求成功，但服务端未返回内容，可能是序列化失败所致' })
+          }
           result = ApiUtil.result(500, '获取请求结果异常', result)
         }
         if (result[ApiUtil.FIELD_CODE] === 403 && result[ApiUtil.FIELD_MSG] === 'required login') {

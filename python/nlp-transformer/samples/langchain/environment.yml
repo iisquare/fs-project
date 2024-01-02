@@ -1,0 +1,8 @@
+name: langchain
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.10.12
+  - langchain

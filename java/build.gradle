@@ -5,8 +5,7 @@ buildscript {
         shadowVersion = '4.0.3'
     }
     repositories {
-        maven { url 'https://maven.aliyun.com/repository/public/' }
-        maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
         mavenCentral()
         jcenter()
     }
@@ -24,12 +23,13 @@ subprojects {
 
     version = '0.0.1-SNAPSHOT'
 
-    sourceCompatibility = 1.8
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
     [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
     repositories {
-//        maven { url 'https://maven.aliyun.com/repository/public/' }
-//        maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        maven { url 'https://maven.aliyun.com/repository/central' }
         mavenCentral()
         jcenter()
     }
@@ -51,7 +51,7 @@ subprojects {
          * CDC Connectors Supported Flink Versions
          * https://ververica.github.io/flink-cdc-connectors/master/content/about.html
          */
-        cdcVersion = '2.4.1'
+        cdcVersion = '2.4.2'
         hudiVersion = '0.14.0'
         hadoopVersion = '3.3.6' // based on spark version
         swaggerVersion = '2.9.2'

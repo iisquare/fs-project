@@ -34,6 +34,12 @@ const ApiUtil = {
   },
   succeed (result) {
     return !this.failed(result)
+  },
+  code (result) {
+    return result[FIELD_CODE]
+  },
+  message (result) {
+    return result[FIELD_MSG]
   }
 }
 

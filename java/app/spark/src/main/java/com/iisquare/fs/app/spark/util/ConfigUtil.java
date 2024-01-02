@@ -1,7 +1,7 @@
 package com.iisquare.fs.app.spark.util;
 
+import com.clickhouse.jdbc.ClickHouseDriver;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.mysql.cj.jdbc.Driver;
 import org.apache.spark.SparkConf;
 
 import java.util.LinkedHashMap;
@@ -25,14 +25,23 @@ public class ConfigUtil {
 
     public static Map<String, String> mysql() {
         return new LinkedHashMap<String, String>() {{
-            put("driver", Driver.class.getName());
+            put("driver", com.mysql.cj.jdbc.Driver.class.getName());
             put("url", "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true");
             put("user", "root");
             put("password", "admin888");
         }};
     }
 
-    public static Map<String, String> es() {
+    public static Map<String, String> clickhouse() {
+        return new LinkedHashMap<String, String>() {{
+            put("driver", ClickHouseDriver.class.getName());
+            put("url", "jdbc:ch://127.0.0.1:8123");
+            put("user", "root");
+            put("password", "admin888");
+        }};
+    }
+
+    public static Map<String, String> elasticsearch() {
         return new LinkedHashMap<String, String>() {{
             put("es.nodes", "127.0.0.1:9200");
             put("es.nodes.discovery", "false");
@@ -56,6 +65,15 @@ public class ConfigUtil {
         mysql.put("dbtable", table);
         mysql.put("batchsize", String.valueOf(batchSize));
         return mysql;
+    }
+
+    public static Map<String, String> clickhouseSink(String table, int batchSize) {
+        Map<String, String> clickhouse = clickhouse();
+        clickhouse.put("isolationLevel", "NONE");
+        clickhouse.put("truncate", "true");
+        clickhouse.put("dbtable", table);
+        clickhouse.put("batchsize", String.valueOf(batchSize));
+        return clickhouse;
     }
 
 }

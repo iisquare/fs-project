@@ -1,6 +1,8 @@
 package com.iisquare.fs.base.web.util;
 
 import com.iisquare.fs.base.core.util.DPUtil;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 
 import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
@@ -88,15 +90,17 @@ public class ServletUtil {
 
     public static void addCookie(HttpServletRequest request, HttpServletResponse response, String key, String value, int maxAge) throws UnsupportedEncodingException {
         if(null != value) value = URLEncoder.encode(value, cookieEncoding);
-        Cookie cookie = new Cookie(key, value);
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(key, value);
         String host = request.getHeader("host");
-        if(host.indexOf(":") > -1) {
+        if(host.contains(":")) {
             host = host.split(":")[0];
         }
-        cookie.setDomain(host);
-        cookie.setPath("/");
-        cookie.setMaxAge(maxAge);
-        response.addCookie(cookie);
+        builder.domain(host);
+        builder.path("/");
+        builder.maxAge(maxAge);
+        builder.sameSite("None");
+        builder.secure(true);
+        response.setHeader(HttpHeaders.SET_COOKIE, builder.build().toString());
     }
 
     public static String getCookie(HttpServletRequest request, String key) throws UnsupportedEncodingException {

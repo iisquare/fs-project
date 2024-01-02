@@ -33,6 +33,14 @@ import java.util.List;
 public class DataTester {
 
     @Test
+    public void termTest() {
+        String text = "#关于印发《南宁市新生儿出生即入户”便民利民¨微改革”工作方案》的通知#各县（市、区）人民政府、开发区管委会，各有关单位：";
+        Segment segment = HanLP.newSegment().enableAllNamedEntityRecognize(true).enableOffset(true).enableIndexMode(true);
+        List<Term> terms = segment.seg(text);
+        System.out.println(terms);
+    }
+
+    @Test
     public void sdpTest() {
         String text = "#关于印发《南宁市新生儿出生即入户”便民利民¨微改革”工作方案》的通知#各县（市、区）人民政府、开发区管委会，各有关单位：";
         WordSDPNode sdp = WordUtil.sdp(text);

@@ -1,7 +1,7 @@
 dependencies {
     implementation project(':base:core')
-    implementation group: 'org.postgresql', name: 'postgresql', version: '42.4.0'
-    implementation group: 'com.clickhouse', name: 'clickhouse-jdbc', version: '0.3.2-patch11', classifier: 'all'
+    implementation group: 'org.postgresql', name: 'postgresql', version: '42.4.3'
+    implementation group: 'com.clickhouse', name: 'clickhouse-jdbc', version: '0.4.6'
 
     testImplementation project(':base:test')
 }

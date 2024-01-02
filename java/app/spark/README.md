@@ -68,4 +68,6 @@ SparkSession session = SparkSession.builder().config(config).getOrCreate();
 - JarClassLoader会优先加载同一个Jar文件下的父类，请勿将主依赖打包进插件中，否则isAssignableFrom校验不通过。
 
 ## 参考
-- [spark远程调用的几个坑](https://www.cnblogs.com/hanko/p/14086667.html)
+- [Spark远程调用的几个坑](https://www.cnblogs.com/hanko/p/14086667.html)
+- [Data Sources](https://spark.apache.org/docs/latest/sql-data-sources.html)
+- [Elasticsearch for Apache Hadoop](https://www.elastic.co/guide/en/elasticsearch/hadoop/current/configuration.html)
