@@ -20,7 +20,7 @@
     "name": "JDBC数据库",
     "classname": "com.iisquare.fs.app.crawler.output.JDBCOutput",
     "property": [
-      {"name":"驱动","key":"driver","value":"com.mysql.jdbc.Driver","group":"连接设置","editor":"text"},
+      {"name":"驱动","key":"driver","value":"com.mysql.cj.jdbc.Driver","group":"连接设置","editor":"text"},
       {"name":"链接","key":"url","value":"jdbc:mysql://127.0.0.1:3306/mysql?characterEncoding=utf-8","group":"连接设置","editor":"text"},
       {"name":"账号","key":"username","value":"root","group":"连接设置","editor":"text"},
       {"name":"密码","key":"password","value":"root","group":"连接设置","editor":"text"},

@@ -166,7 +166,7 @@ public class ScheduleTester {
     @Test
     public void outputTest() throws Exception {
         ObjectNode parameters = DPUtil.objectNode();
-        parameters.put("driver", "com.mysql.jdbc.Driver");
+        parameters.put("driver", "com.mysql.cj.jdbc.Driver");
         parameters.put("url", "jdbc:mysql://127.0.0.1:3306/spider?characterEncoding=utf-8");
         parameters.put("username", "root");
         parameters.put("password", "admin888");

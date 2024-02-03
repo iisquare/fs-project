@@ -64,7 +64,7 @@ public class SparkTester implements Serializable {
         SparkSession session = SparkSession.builder().appName("sql-test").master("local").getOrCreate();
         String url = "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true";
         Properties properties = new Properties();
-        properties.put("driver", "com.mysql.jdbc.Driver");
+        properties.put("driver", "com.mysql.cj.jdbc.Driver");
         properties.put("user", "root");
         properties.put("password", "admin888");
         Dataset<Row> dataset = session.read().jdbc(url, "t_memory", properties);
@@ -90,7 +90,7 @@ public class SparkTester implements Serializable {
         SparkSession session = SparkSession.builder().appName("sql-test").master("local").getOrCreate();
         String url = "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true";
         Properties properties = new Properties();
-        properties.put("driver", "com.mysql.jdbc.Driver");
+        properties.put("driver", "com.mysql.cj.jdbc.Driver");
         properties.put("user", "root");
         properties.put("password", "admin888");
         Dataset<Row> dataset = session.read().jdbc(url, "fs_member_resource", properties);
@@ -145,7 +145,7 @@ public class SparkTester implements Serializable {
         SparkSession spark = SparkSession.builder().appName("cache-test").master("local").getOrCreate();
         String url = "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true";
         Properties properties = new Properties();
-        properties.put("driver", "com.mysql.jdbc.Driver");
+        properties.put("driver", "com.mysql.cj.jdbc.Driver");
         properties.put("user", "root");
         properties.put("password", "admin888");
         Catalog catalog = spark.catalog();

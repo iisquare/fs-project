@@ -28,7 +28,7 @@ public class ModelCompareService extends ServiceBase {
         String username = DPUtil.parseString(param.get("username"));
         String password = DPUtil.parseString(param.get("password"));
         try {
-            Class.forName("com.mysql.jdbc.Driver");
+            Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (ClassNotFoundException e) {
             return ApiUtil.result(5001, "加载驱动失败", e.getMessage());
         }

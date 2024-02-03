@@ -14,6 +14,10 @@ export const layouts = [{
     path: '/demo/table/merge',
     meta: { title: '合并单元格' },
     component: () => import(/* webpackChunkName: 'demo' */ '@/views/demo/table/merge')
+  }, {
+    path: '/demo/data/sse',
+    meta: { title: 'EventSource' },
+    component: () => import(/* webpackChunkName: 'demo' */ '@/views/demo/data/sse')
   }]
 }]
 

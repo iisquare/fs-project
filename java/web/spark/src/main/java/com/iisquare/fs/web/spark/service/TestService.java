@@ -44,14 +44,14 @@ public class TestService {
         session.read().format("jdbc").options(new LinkedHashMap<String, String>(){{
             put("url", "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true");
             put("dbtable", "fs_member_resource");
-            put("driver", "com.mysql.jdbc.Driver");
+            put("driver", "com.mysql.cj.jdbc.Driver");
             put("user", "root");
             put("password", "admin888");
         }}).load().createOrReplaceTempView("resource");
         session.read().format("jdbc").options(new LinkedHashMap<String, String>(){{
             put("url", "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true");
             put("query", "select * from t_memory");
-            put("driver", "com.mysql.jdbc.Driver");
+            put("driver", "com.mysql.cj.jdbc.Driver");
             put("user", "root");
             put("password", "admin888");
         }}).load().createOrReplaceTempView("test");
@@ -73,7 +73,7 @@ public class TestService {
         session.read().format("jdbc").options(new LinkedHashMap<String, String>(){{
             put("url", "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true");
             put("dbtable", "t_memory");
-            put("driver", "com.mysql.jdbc.Driver");
+            put("driver", "com.mysql.cj.jdbc.Driver");
             put("user", "root");
             put("password", "admin888");
         }}).load().createOrReplaceTempView("mysql");

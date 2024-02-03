@@ -16,12 +16,12 @@ import java.util.*;
 /**
  * @see(https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html)
  * fetchSize参数生效前提：
- *  - MySQL
+ *  - MySQL：启用流式读，即使Spark仅迭代部分记录，在ResultsetRowsStreaming.close()时仍会强制清空其余的记录。
  *      com.mysql.jdbc.Statement.enableStreamingResults() -> {
  *          setFetchSize(Integer.MIN_VALUE);
  *          setResultSetType(ResultSet.TYPE_FORWARD_ONLY);
  *      }
- *  - PostgreSQL@see(https://jdbc.postgresql.org/documentation/head/query.html#fetchsize-example)
+ *  - Postgres：@see(https://jdbc.postgresql.org/documentation/head/query.html#fetchsize-example)
  *      setAutoCommit(false);
  */
 public class JDBCSourceNode extends AbstractJDBCSource {

@@ -7,6 +7,7 @@ import com.iisquare.fs.app.spark.udf.NullIfUDF;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.core.DAGNode;
 import org.apache.spark.sql.*;
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
@@ -67,6 +68,15 @@ public class SparkUtil {
 
     public static Row row(Collection<Object> data) {
         return RowFactory.create(data.toArray(new Object[0]));
+    }
+
+    /**
+     * 指定StructType创建Row
+     * 通过RowFactory.create()方式创建的Row不能使用字段名称获取值
+     * java.lang.UnsupportedOperationException: fieldIndex on a Row without schema is undefined.
+     */
+    public static Row row(StructType struct, Object ... values) {
+        return new GenericRowWithSchema(values, struct);
     }
 
     public static ArrayNode dataset2json(Dataset<Row> dataset) {

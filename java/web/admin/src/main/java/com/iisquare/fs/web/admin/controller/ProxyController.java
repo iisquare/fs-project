@@ -1,31 +1,50 @@
 package com.iisquare.fs.web.admin.controller;
 
 import com.iisquare.fs.base.core.util.ApiUtil;
-import com.iisquare.fs.base.core.util.CodeUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.core.util.FileUtil;
+import com.iisquare.fs.base.web.core.PlainSseEventBuilder;
 import com.iisquare.fs.base.web.mvc.ControllerBase;
 import com.iisquare.fs.web.core.mvc.RpcBase;
 import feign.Response;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @RestController
 @RequestMapping("/proxy")
-public class ProxyController extends ControllerBase {
+public class ProxyController extends ControllerBase implements InitializingBean, DisposableBean {
 
     @Autowired
     private WebApplicationContext context;
+
+    private CloseableHttpClient client;
+    private final ExecutorService pool = Executors.newCachedThreadPool();
 
     @PostMapping("/post")
     public String postAction(@RequestBody Map<?, ?> param) {
@@ -47,6 +66,18 @@ public class ProxyController extends ControllerBase {
         String data = new String(Base64.decodeBase64(DPUtil.parseString(param.get("data"))));
         param.put("data", DPUtil.toJSON(DPUtil.parseJSON(data), Map.class));
         return response(RequestMethod.GET, param, response);
+    }
+
+    @PostMapping("/postSSE")
+    public SseEmitter postSSEAction(@RequestBody Map<?, ?> param) throws Exception {
+        return sse(RequestMethod.POST, param);
+    }
+
+    @GetMapping("/getSSE")
+    public SseEmitter getSSEAction(@RequestParam Map<String, Object> param) throws Exception {
+        String data = new String(Base64.decodeBase64(DPUtil.parseString(param.get("data"))));
+        param.put("data", DPUtil.toJSON(DPUtil.parseJSON(data), Map.class));
+        return sse(RequestMethod.GET, param);
     }
 
     @PostMapping("/upload")
@@ -108,6 +139,58 @@ public class ProxyController extends ControllerBase {
         return IOUtils.toString(result.body().asInputStream());
     }
 
+    private SseEmitter sse(RequestMethod method, Map<?, ?> param) throws Exception {
+        String url = String.format("rpc.%s.rest", DPUtil.parseString(param.get("app"))).toLowerCase();
+        url = context.getEnvironment().getProperty(url);
+        if (DPUtil.empty(url)) return null;
+        url += DPUtil.parseString(param.get("uri"));
+        CloseableHttpResponse response;
+        switch (method) {
+            case POST: {
+                HttpPost request = new HttpPost(url);
+                String data = DPUtil.stringify(param.get("data"));
+                if (!DPUtil.empty(data)) {
+                    request.setEntity(new StringEntity(data));
+                }
+                response = this.client.execute(request);
+                break;
+            }
+            case GET: {
+                HttpGet request = new HttpGet(url);
+                response = this.client.execute(request);
+                break;
+            }
+            default:
+                return null;
+        }
+        SseEmitter emitter = new SseEmitter();
+        emitter.onCompletion(() -> {
+            FileUtil.close(response);
+        });
+        emitter.onError(throwable -> {
+            FileUtil.close(response);
+        });
+        pool.submit(() -> {
+            InputStream stream = null;
+            InputStreamReader reader = null;
+            BufferedReader buffer = null;
+            try {
+                stream = response.getEntity().getContent();
+                reader = new InputStreamReader(stream);
+                buffer = new BufferedReader(reader);
+                String line;
+                while ((line = buffer.readLine()) != null) {
+                    if (DPUtil.empty(line)) continue;
+                    emitter.send(new PlainSseEventBuilder().line(line));
+                }
+            } catch (IOException e) {} finally {
+                emitter.complete();
+                FileUtil.close(buffer, reader, stream);
+            }
+        });
+        return emitter;
+    }
+
     public RpcBase rpc(String name) throws Exception {
         Class<?> rpc = Class.forName("com.iisquare.fs.web.core.rpc." + name + "Rpc");
         Object bean = context.getBean(rpc);
@@ -115,4 +198,14 @@ public class ProxyController extends ControllerBase {
         return (RpcBase) bean;
     }
 
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        this.client = HttpClients.custom().build();
+    }
+
+    @Override
+    public void destroy() throws Exception {
+        pool.shutdown();
+        client.close();
+    }
 }

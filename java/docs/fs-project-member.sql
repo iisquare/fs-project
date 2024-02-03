@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 20/02/2023 10:20:37
+ Date: 22/01/2024 17:31:13
 */
 
 SET NAMES utf8mb4;
@@ -37,7 +37,7 @@ CREATE TABLE `fs_member_dictionary`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_content`(`content` ASC) USING BTREE,
   INDEX `idx_status`(`status` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_dictionary
@@ -87,7 +87,7 @@ CREATE TABLE `fs_member_menu`  (
   `updated_time` bigint NOT NULL DEFAULT 0,
   `updated_uid` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 130 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 132 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of fs_member_menu
@@ -217,6 +217,8 @@ INSERT INTO `fs_member_menu` VALUES (126, '质检规则', '后台管理:数据�
 INSERT INTO `fs_member_menu` VALUES (127, '质检方案', '后台管理:数据治理:数据质量:质检方案', 113, '', '/govern/quality/plan', '', 0, 1, '', 1660203503955, 1, 1660203503955, 1);
 INSERT INTO `fs_member_menu` VALUES (128, '质检报告', '后台管理:数据治理:数据质量:质检报告', 113, '', '/govern/quality/log', '', 0, 1, '', 1660203570855, 1, 1660203570855, 1);
 INSERT INTO `fs_member_menu` VALUES (129, '页面布局', '后台管理:项目管理:页面管理:页面布局', 100, '', '/auto/layout/list', '', 0, 1, '', 1662455306154, 1, 1662455306154, 1);
+INSERT INTO `fs_member_menu` VALUES (130, '数据交互', '后台管理:演示实例:数据交互', 69, 'gold', '/demo/data', '', 0, 1, '', 1705915668277, 1, 1705915739953, 1);
+INSERT INTO `fs_member_menu` VALUES (131, 'EventSource', '后台管理:演示实例:数据交互:EventSource', 130, '', '/demo/data/sse', '', 0, 1, '', 1705915802879, 1, 1705915802879, 1);
 
 -- ----------------------------
 -- Table structure for fs_member_relation
@@ -268,6 +270,8 @@ INSERT INTO `fs_member_relation` VALUES ('role_menu_1_127', 'role_menu', 1, 127)
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_128', 'role_menu', 1, 128);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_129', 'role_menu', 1, 129);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_13', 'role_menu', 1, 13);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_130', 'role_menu', 1, 130);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_131', 'role_menu', 1, 131);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_14', 'role_menu', 1, 14);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_15', 'role_menu', 1, 15);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_16', 'role_menu', 1, 16);
@@ -887,7 +891,7 @@ CREATE TABLE `fs_member_user`  (
 -- ----------------------------
 -- Records of fs_member_user
 -- ----------------------------
-INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1676452330488, '127.0.0.1', 0);
+INSERT INTO `fs_member_user` VALUES (1, 'admin', '管理员', 'fc7911b5108d30e087f8881b90368679', '5231', 0, 1, '', 1528081552985, '127.0.0.1', 1, 1528081552985, 1, 1705915449181, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (2, 'test', '测试123', '4b361be828611add84453a24f39772a5', '0905', 0, 1, '', 1528081567988, '127.0.0.1', 1, 1542958281919, 1, 1528267171953, '127.0.0.1', 0);
 INSERT INTO `fs_member_user` VALUES (3, '111', '111', '', '', 6, -1, '', 0, '', 0, 1658215959314, 1, 0, '', 0);
 INSERT INTO `fs_member_user` VALUES (4, '222', '222', '', '', 0, 1, '', 0, '', 0, 1629363081609, 1, 0, '', 1630054276000);

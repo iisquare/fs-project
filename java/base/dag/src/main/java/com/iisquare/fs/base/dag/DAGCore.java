@@ -167,7 +167,7 @@ public class DAGCore {
     public static Map<String, Map<String, Object>> jdbcDrivers = new LinkedHashMap(){{
         put("MySQL", new LinkedHashMap(){{
             put("name", "MySQL");
-            put("driver", "com.mysql.jdbc.Driver");
+            put("driver", "com.mysql.cj.jdbc.Driver");
         }});
     }};
 

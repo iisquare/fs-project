@@ -64,6 +64,9 @@ rpc:
   flink:
     name: fs-flink-service
     rest: http://127.0.0.1:7823
+  demo:
+    name: fs-demo-service
+    rest: http://127.0.0.1:8033
 
 feign:
   hystrix:
@@ -165,7 +168,7 @@ spring:
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
       max-idle: 10
       max-wait: 10000
       min-idle: 5
@@ -181,7 +184,7 @@ spring:
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
       max-idle: 10
       max-wait: 10000
       min-idle: 5
@@ -197,7 +200,7 @@ spring:
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
       max-idle: 10
       max-wait: 10000
       min-idle: 5
@@ -213,7 +216,7 @@ spring:
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
       max-idle: 10
       max-wait: 10000
       min-idle: 5
@@ -229,7 +232,7 @@ spring:
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
       max-idle: 10
       max-wait: 10000
       min-idle: 5
@@ -245,7 +248,7 @@ spring:
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
       max-idle: 10
       max-wait: 10000
       min-idle: 5
@@ -261,7 +264,7 @@ spring:
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
       max-idle: 10
       max-wait: 10000
       min-idle: 5
@@ -277,7 +280,7 @@ spring:
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
       max-idle: 10
       max-wait: 10000
       min-idle: 5
@@ -293,7 +296,7 @@ spring:
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
       max-idle: 10
       max-wait: 10000
       min-idle: 5
@@ -309,7 +312,7 @@ spring:
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
       max-idle: 10
       max-wait: 10000
       min-idle: 5
@@ -324,7 +327,7 @@ spring:
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
       max-idle: 10
       max-wait: 10000
       min-idle: 5
@@ -340,7 +343,7 @@ spring:
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
       max-idle: 10
       max-wait: 10000
       min-idle: 5
@@ -356,7 +359,7 @@ spring:
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
       max-idle: 10
       max-wait: 10000
       min-idle: 5
@@ -372,7 +375,7 @@ spring:
       type: com.alibaba.druid.pool.DruidDataSource
       username: root
       password: admin888
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
       max-idle: 10
       max-wait: 10000
       min-idle: 5

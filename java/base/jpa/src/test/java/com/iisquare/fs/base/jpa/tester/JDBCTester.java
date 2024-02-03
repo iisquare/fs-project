@@ -12,7 +12,7 @@ public class JDBCTester {
 
     @Test
     public void idTest() throws Exception {
-        Class.forName("com.mysql.jdbc.Driver");
+        Class.forName("com.mysql.cj.jdbc.Driver");
         String url = "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true";
         Connection connection = DriverManager.getConnection(url, "root", "admin888");
         String sql = String.format("insert into t_memory (name) values ('%s')", DPUtil.random(6));
@@ -32,7 +32,7 @@ public class JDBCTester {
 
     @Test
     public void metaTest() throws Exception {
-        Class.forName("com.mysql.jdbc.Driver");
+        Class.forName("com.mysql.cj.jdbc.Driver");
         String url = "jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true";
         Connection connection = DriverManager.getConnection(url, "root", "admin888");
         ObjectNode tables = JDBCUtil.tables(connection);
@@ -42,7 +42,7 @@ public class JDBCTester {
 
     @Test
     public void batchTest() throws Exception {
-        Class.forName("com.mysql.jdbc.Driver");
+        Class.forName("com.mysql.cj.jdbc.Driver");
         String url = "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true";
         Connection connection = DriverManager.getConnection(url, "root", "admin888");
         String sql = "select * from t_memory";
