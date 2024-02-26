@@ -10,6 +10,7 @@
 
 /docker/.env
 /docker/runtime
+/docker/.history
 /static/resources/dest/*/
 
 /java/web/flink/plugins/*/

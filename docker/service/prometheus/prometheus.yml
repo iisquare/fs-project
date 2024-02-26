@@ -27,3 +27,7 @@ scrape_configs:
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ["192.168.0.146:7808"]
+  - job_name: nvidia
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ["172.16.0.233:9400"]
