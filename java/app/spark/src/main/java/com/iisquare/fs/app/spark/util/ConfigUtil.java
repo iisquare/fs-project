@@ -41,6 +41,9 @@ public class ConfigUtil {
         }};
     }
 
+    /**
+     * @see(https://www.elastic.co/guide/en/elasticsearch/hadoop/current/configuration.html)
+     */
     public static Map<String, String> elasticsearch() {
         return new LinkedHashMap<String, String>() {{
             put("es.nodes", "127.0.0.1:9200");

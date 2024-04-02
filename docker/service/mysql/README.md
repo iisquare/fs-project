@@ -31,6 +31,15 @@ mysqlbinlog /var/lib/mysql/mysql-bin.000003
 --stop-datetime='2022-07-11 00:00:00'：时间范围，结束时间。
 ```
 
+### 备份还原
+```
+mysqldump -h127.0.0.1 -P3306 -uroot -p --databases test --tables t1 t2 > /path/to/dump.sql
+# --all-databases, 导出包括系统数据库在内的所有数据库
+# -d, 只导出表结构不导表数据
+# -t, 只导出表数据不导表结构
+mysql> source /path/to/dump.sql
+```
+
 ## 解决方案
 - 配置不生效，检查文件权限，确认配置被正常加载
 ```

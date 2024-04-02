@@ -15,6 +15,7 @@ StructType schema = DataTypes.createStructType(Arrays.asList(
     DataTypes.createStructField("message", DataTypes.StringType, true)
 ));
 ExpressionEncoder<Row> encoder = RowEncoder.apply(schema);
+Encoder<YourBean> encoder = Encoders.bean(YourBean.class);
 ```
 
 ### 修改JDBC连接参数

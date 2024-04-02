@@ -1,0 +1,17 @@
+package com.iisquare.fs.base.core.util;
+
+public class TypeUtil {
+
+    public static <T> T as(Object obj) {
+        return (T) obj;
+    }
+
+    public static String string(String val) {
+        return val;
+    }
+
+    public static String asString(Object obj) {
+        return as(obj);
+    }
+
+}

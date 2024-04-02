@@ -166,7 +166,7 @@ public class WordUtil {
                 word += b.getValue();
                 if (word.length() > maxLength) break;
                 if (word.length() >= minLength) {
-                    result.add(Tuple2.apply(word, 1.0));
+                    result.add(Tuple2.<String, Double>apply(word, 1.0));
                 }
             }
         }
@@ -188,7 +188,7 @@ public class WordUtil {
         for (String s : text.split(" ", -1)) { // 按空格拆分
             if ("".equals(s)) continue;
             if (s.length() <= minLength) {
-                result.add(Tuple2.apply(s, 1.0));
+                result.add(Tuple2.<String, Double>apply(s, 1.0));
                 continue;
             }
             String[] strings = s.split("");
@@ -206,7 +206,7 @@ public class WordUtil {
                 for (int i = 0; i <= strings.length - minLength; i++) {
                     for (int length = minLength; length <= maxLength; length++) { // 词汇长度
                         if (i + length > strings.length) break; // 剩余词汇不满足排列长度
-                        result.add(Tuple2.apply(DPUtil.implode("", DPUtil.subarray(strings, i, length)), 1.0));
+                        result.add(Tuple2.<String, Double>apply(DPUtil.implode("", DPUtil.subarray(strings, i, length)), 1.0));
                     }
                 }
             }
@@ -218,7 +218,7 @@ public class WordUtil {
 //        System.out.println(String.format("%s, %s, %d, %d, %d", Arrays.toString(strings), word, begin, end, length));
         if (1 == length) {
             for (int i = begin; i <= end; i++) {
-                result.add(Tuple2.apply(word + strings[i], score(sum + i -first, word.length() + 1)));
+                result.add(Tuple2.<String, Double>apply(word + strings[i], score(sum + i -first, word.length() + 1)));
             }
         } else {
             for (int i = begin; i <= end; i++) {

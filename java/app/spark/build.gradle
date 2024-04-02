@@ -20,5 +20,7 @@ dependencies {
     api group: 'org.apache.parquet', name: 'parquet-avro', version: '1.13.1'
     api group: 'org.apache.hudi', name: 'hudi-spark3.3.x_' + scalaVersion, version: hudiVersion
 
+    api group: 'com.crealytics', name: 'spark-excel_' + scalaVersion, version: sparkVersion + '_0.20.3'
+
     testImplementation project(':base:test')
 }
