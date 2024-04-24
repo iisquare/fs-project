@@ -16,6 +16,7 @@ StructType schema = DataTypes.createStructType(Arrays.asList(
 ));
 ExpressionEncoder<Row> encoder = RowEncoder.apply(schema);
 Encoder<YourBean> encoder = Encoders.bean(YourBean.class);
+Encoder<JsonNode> encoder = Encoders.javaSerialization(JsonNode.class);
 ```
 
 ### 修改JDBC连接参数

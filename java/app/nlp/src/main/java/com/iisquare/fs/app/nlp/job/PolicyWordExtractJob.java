@@ -50,7 +50,7 @@ public class PolicyWordExtractJob {
                     WordUtil.mount(title, section);
                 }
             }
-            return Tuple2.apply(row.getString(0), node);
+            return Tuple2.<String, WordTitleNode>apply(row.getString(0), node);
         }, Encoders.tuple(Encoders.STRING(), Encoders.javaSerialization(WordTitleNode.class)));
         SinkUtil.mysql(dn.map(
                 (MapFunction<Tuple2<String, WordTitleNode>, Row>) tuple2 -> RowFactory.create(tuple2._1, DPUtil.stringify(tuple2._2))
