@@ -10,6 +10,7 @@ import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -980,11 +981,15 @@ public class DPUtil {
      * 解析JSON字符串
      */
     public static JsonNode parseJSON(String json) {
-        if (null == json) return null;
+        return parseJSON(json, j -> null);
+    }
+
+    public static JsonNode parseJSON(String json, Function<String, ? extends JsonNode> func) {
+        if (null == json) return func.apply(null);
         try {
             return mapper.readTree(json);
         } catch (Exception e) {
-            return null;
+            return func.apply(json);
         }
     }
 

@@ -4,6 +4,12 @@ Flink计算框架，侧重流式处理。
 
 ## 最佳实践
 
+### 结构信息
+
+```
+stream.returns(Types.LIST(Types.STRING));
+```
+
 ### 数据交互
 
 - 批处理算子

@@ -2,11 +2,14 @@ package com.iisquare.fs.app.spark.helper;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.iisquare.fs.app.spark.util.SparkUtil;
 import com.iisquare.fs.base.core.tool.SQLBuilder;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
 import com.iisquare.fs.base.core.util.SQLUtil;
 import org.apache.commons.collections.IteratorUtils;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.types.StructType;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -116,6 +119,30 @@ public class JDBCHelper implements Closeable {
             result.add(DPUtil.toJSON(item));
         }
         return result;
+    }
+
+    public static Row row(ResultSet rs, StructType schema) throws SQLException {
+        ResultSetMetaData meta = rs.getMetaData();
+        int count = meta.getColumnCount();
+        Object[] values = new Object[count];
+        for (int i = 1; i <= count; i++) {
+            values[i - 1] = rs.getObject(i);
+        }
+        return SparkUtil.row(schema, values);
+    }
+
+    public static String pkWhere(Row row, String... pks) {
+        if (null == row) return "1 = 1";
+        List<String> list = new ArrayList<>();
+        for (int i = 0; i < pks.length; i++) {
+            List<String> items = new ArrayList<>();
+            for (int j = 0; j <= i; j++) {
+                String text = SQLUtil.escape(DPUtil.parseString(row.getAs(pks[i])));
+                items.add(String.format("%s %s '%s'", pks[j], j == i ? ">" : "=", text));
+            }
+            list.add(String.format("(%s)", DPUtil.implode(" AND ", items)));
+        }
+        return DPUtil.implode(" OR ", list);
     }
 
 }

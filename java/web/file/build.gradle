@@ -3,4 +3,7 @@ dependencies {
     implementation project(':base:jpa')
     implementation project(':web:core')
     testImplementation project(':web:test')
+
+    implementation group: 'io.minio', name: 'minio', version: '8.5.10'
+
 }
