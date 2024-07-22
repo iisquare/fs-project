@@ -127,6 +127,7 @@ public class SQLHelper {
 
     /**
      * 批量插入
+     * optimize with PreparedStatement.addBatch()
      */
     public Number batchInsert(List<Map<String, Object>> data, boolean updateFull, String... updateFields) {
         sql = builder.batchInsert(data, updateFull, updateFields);
