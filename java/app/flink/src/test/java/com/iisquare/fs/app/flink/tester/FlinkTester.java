@@ -9,6 +9,8 @@ import com.iisquare.fs.app.flink.output.EmptyOutput;
 import com.iisquare.fs.app.flink.trigger.CountTimeoutTrigger;
 import com.iisquare.fs.app.flink.util.FlinkUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.core.util.FileUtil;
+import com.iisquare.fs.base.core.util.TypeUtil;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -23,12 +25,16 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
+import org.apache.flink.table.api.Table;
+import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
+import org.apache.flink.util.CloseableIterator;
 import org.junit.Test;
 
+import java.io.Serializable;
 import java.util.*;
 
-public class FlinkTester {
+public class FlinkTester implements Serializable {
 
     @Test
     public void batchTest() throws Exception {
@@ -58,7 +64,66 @@ public class FlinkTester {
     }
 
     @Test
-    public void sqlTest() throws Exception {}
+    public void noTest() throws Exception {
+        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        DataStreamSource<String> source = env.fromCollection(Arrays.asList("a", "b", "c"));
+        List<String> list = source.executeAndCollect(2);
+        System.out.println(list);
+        env.close();
+    }
+
+    @Test
+    public void sqlTest() throws Exception {
+        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        final StreamTableEnvironment environment = StreamTableEnvironment.create(env);
+        DataStream<Row> stream = env.fromCollection(Arrays.asList(
+                FlinkUtil.row(1, "a", 0.5),
+                FlinkUtil.row(2, "b", 0.5),
+                FlinkUtil.row(3, "c", 0.7)
+        ), FlinkUtil.type(new LinkedHashMap<String, String>() {{
+            put("id", Integer.class.getName());
+            put("name", String.class.getName());
+            put("score", Double.class.getName());
+        }}));
+        environment.createTemporaryView("test", stream);
+        String sql = "select * from test where id > 1";
+        Table table = environment.sqlQuery(sql);
+        DataStream<Row> ds = environment.toDataStream(table);
+        List<Row> rows = ds.executeAndCollect(1);
+        System.out.println(rows);
+        environment.dropTemporaryView("test");
+        env.close();
+    }
+
+    @Test
+    public void m1Test() throws Exception {
+        final StreamExecutionEnvironment env1 = StreamExecutionEnvironment.createLocalEnvironment();
+        final StreamExecutionEnvironment env2 = StreamExecutionEnvironment.createLocalEnvironment();
+        FileUtil.close(env1, env2);
+    }
+
+    @Test
+    public void m2Test() throws Exception {
+        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        final StreamTableEnvironment env1 = StreamTableEnvironment.create(env);
+        final StreamTableEnvironment env2 = StreamTableEnvironment.create(env);
+        DataStream<Row> stream = env.fromCollection(Arrays.asList(
+                FlinkUtil.row(1, "a", 0.5),
+                FlinkUtil.row(2, "b", 0.5),
+                FlinkUtil.row(3, "c", 0.7)
+        ), FlinkUtil.type(new LinkedHashMap<String, String>() {{
+            put("id", Integer.class.getName());
+            put("name", String.class.getName());
+            put("score", Double.class.getName());
+        }}));
+        env1.createTemporaryView("test", stream);
+        CloseableIterator<Row> iterator = env2.sqlQuery("select * from test").execute().collect();
+        while (iterator.hasNext()) {
+            Row row = iterator.next();
+            System.out.println(row);
+        }
+        FileUtil.close(env);
+    }
 
     @Test
     public void restTest() throws Exception {
@@ -70,6 +135,30 @@ public class FlinkTester {
         DataStreamSource<String> source = env.socketTextStream("127.0.0.1", 8888);
         source.print().setParallelism(1);
         env.execute("rest-test");
+    }
+
+    @Test
+    public void remoteTest() throws Exception {
+        final StreamExecutionEnvironment env = StreamExecutionEnvironment.createRemoteEnvironment(
+                "127.0.0.1", 8081
+        );
+        DataStream<Row> stream = env.fromCollection(Arrays.asList(
+                FlinkUtil.row(1, "a", 0.5),
+                FlinkUtil.row(2, "b", 0.5),
+                FlinkUtil.row(3, "c", 0.7)
+        ), FlinkUtil.type(new LinkedHashMap<String, String>() {{
+            put("id", Integer.class.getName());
+            put("name", String.class.getName());
+            put("score", Double.class.getName());
+        }}));
+        CloseableIterator<Row> iterator = stream.map((MapFunction<Row, Row> & Serializable) row -> {
+            row.setField(2, TypeUtil._double(row.getFieldAs(2)) * 10);
+            return row;
+        }).executeAndCollect("remote-test");
+        while (iterator.hasNext()) {
+            Row next = iterator.next();
+            System.out.println(next);
+        }
     }
 
     @Test

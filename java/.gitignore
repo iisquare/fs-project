@@ -9,6 +9,8 @@
 /web/xlab/libs/x64/
 /web/xlab/libs/x86/
 /web/xlab/libs/*.jar
+/web/xlab/libs/*.so
+/web/xlab/libs/*.dll
 /web/file/uploads
 
 /app/flink/checkpoints/**/

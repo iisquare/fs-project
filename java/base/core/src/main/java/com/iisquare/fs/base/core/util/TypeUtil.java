@@ -6,11 +6,19 @@ public class TypeUtil {
         return (T) obj;
     }
 
-    public static String string(String val) {
+    public static String _string(String val) {
         return val;
     }
 
     public static String asString(Object obj) {
+        return as(obj);
+    }
+
+    public static Double _double(Double val) {
+        return val;
+    }
+
+    public static Double asDouble(Object obj) {
         return as(obj);
     }
 

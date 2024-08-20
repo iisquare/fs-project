@@ -505,6 +505,17 @@ public class DPUtil {
     }
 
     /**
+     * 将Iterator转换为List
+     */
+    public static <T> List<T> iterator2list(Iterator<T> iterator) {
+        List<T> list = new ArrayList<T>();
+        while (iterator.hasNext()) {
+            list.add(iterator.next());
+        }
+        return list;
+    }
+
+    /**
      * 将字符串首字母小写
      */
     public static String lowerCaseFirst(String str) {

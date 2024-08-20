@@ -21,7 +21,7 @@ public class MySQL2ESJob {
         Dataset<Row> source = SourceUtil.mysql(session, sql, Integer.MIN_VALUE);
         Dataset<String> dataset = source.map((MapFunction<Row, String>) row -> {
             ObjectNode node = DPUtil.objectNode();
-            node.put("id", TypeUtil.string(row.getAs("base_id")));
+            node.put("id", TypeUtil._string(row.getAs("base_id")));
             String name = row.getAs("base_name");
             node.put("name_text", name);
             node.put("name_keyword", name);

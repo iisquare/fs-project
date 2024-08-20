@@ -37,8 +37,8 @@ public interface CompositeDao extends JpaRepository<Composite, Composite.IdClass
      */
     @Modifying
     @Transactional
-    @Query("delete from Composite where uid=:uid and timestamp<>:timestamp")
-    Integer deleteByUidAndTimestampNot(@Param("uid") Integer uid, @Param("timestamp") Long timestamp);
+    @Query("delete from Composite where aid=:aid and timestamp<>:timestamp")
+    Integer deleteByUidAndTimestampNot(@Param("aid") Integer aid, @Param("timestamp") Long timestamp);
 
     /**
      * 自定义查询方法
