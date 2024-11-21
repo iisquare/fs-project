@@ -17,12 +17,14 @@ import java.io.Serializable;
 public class Relation implements Serializable {
 
     @Id
-    private String id;
+    private String id; // type_aid_bid_cid
     @Column
-    private String type;
+    private String type; // 关联业务，aid所属业务_cid所属业务
     @Column
-    private Integer aid;
+    private Integer aid; // 业务主键
     @Column
-    private Integer bid;
+    private Integer bid; // 业务主键
+    @Column
+    private Integer cid; // 同aid和bid建立联系的中间业务主键，若不存在可不设置
 
 }

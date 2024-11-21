@@ -95,7 +95,7 @@ export default {
     // render
     renderItem (menu) {
       if (!menu.hidden) {
-        return menu.children && !menu.hideChildrenInMenu ? this.renderSubMenu(menu) : this.renderMenuItem(menu)
+        return menu.children && menu.children.length > 0 && !menu.hideChildrenInMenu ? this.renderSubMenu(menu) : this.renderMenuItem(menu)
       }
       return null
     },

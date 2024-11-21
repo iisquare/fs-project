@@ -1,5 +1,7 @@
 package com.iisquare.fs.web.member.entity;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.base.core.util.DPUtil;
 import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
@@ -25,6 +27,10 @@ public class Menu implements Serializable {
     private String name;
     @Column
     private String fullName; // 自动拼接上级名称
+    @Column
+    private Integer applicationId;
+    @Transient
+    private String applicationIdName;
     @Column
     private Integer parentId;
     @Transient
@@ -57,5 +63,18 @@ public class Menu implements Serializable {
     private Integer updatedUid;
     @Transient
     private String updatedUidName;
+
+    public ObjectNode menu() {
+        ObjectNode node = DPUtil.objectNode();
+        node.put("id", id);
+        node.put("parentId", parentId);
+        node.put("name", name);
+        node.put("icon", icon);
+        node.put("url", url);
+        node.put("target", target);
+        node.put("description", description);
+        node.putArray("children");
+        return node;
+    }
 
 }

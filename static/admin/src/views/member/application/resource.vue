@@ -1,69 +1,57 @@
 <template>
   <section>
+    <a-card>
+      <template slot="title">
+        <a-button @click="toggleRowKeys" :icon="expandedRowKeys.length === 0 ? 'menu-unfold' : 'menu-fold'"></a-button>
+        <a-divider type="vertical" v-permit="'member:resource:delete'" />
+        <a-button icon="minus-circle" type="danger" @click="batchRemove" v-permit="'member:resource:delete'" :disabled="selection.selectedRows.length === 0">删除</a-button>
+        <a-divider type="vertical" v-permit="'member:resource:add'" />
+        <a-button icon="plus-circle" type="primary" @click="add(0)" v-permit="'member:resource:add'">新增</a-button>
+      </template>
+      <template slot="extra">
+        <a-button icon="reload" @click="reload">刷新</a-button>
+        <a-divider type="vertical" />
+        <a-button @click.native="$router.go(-1)">返回</a-button>
+      </template>
+      <a-descriptions title="应用信息">
+        <a-descriptions-item label="ID">{{ info.id }}</a-descriptions-item>
+        <a-descriptions-item label="标识">{{ info.serial }}</a-descriptions-item>
+        <a-descriptions-item label="名称">{{ info.name }}</a-descriptions-item>
+      </a-descriptions>
+    </a-card>
     <a-card :bordered="false">
       <div class="table-page-search-wrapper">
-        <a-form-model ref="filters" :model="filters" layout="inline">
-          <a-row :gutter="48">
-            <a-col :md="6" :sm="24">
-              <a-form-model-item label="全称" prop="fullName">
-                <a-input v-model="filters.fullName" placeholder="" :allowClear="true" />
-              </a-form-model-item>
-            </a-col>
-            <a-col :md="3" :sm="24">
-              <a-form-model-item label="应用" prop="applicationId">
-                <a-input v-model="filters.applicationId" placeholder="" :allowClear="true" />
-              </a-form-model-item>
-            </a-col>
-            <a-col :md="3" :sm="24">
-              <a-form-model-item label="父级" prop="parentId">
-                <a-input v-model="filters.parentId" placeholder="" :allowClear="true" />
-              </a-form-model-item>
-            </a-col>
-            <a-col :md="6" :sm="24">
-              <a-form-model-item label="状态" prop="status">
-                <a-select v-model="filters.status" placeholder="请选择" :allowClear="true">
-                  <a-select-option v-for="(value, key) in config.status" :key="key" :value="key">{{ value }}</a-select-option>
-                </a-select>
-              </a-form-model-item>
-            </a-col>
-            <a-col :md="6" :sm="24">
-              <a-button type="primary" @click="search(true, false)" :loading="loading">查询</a-button>
-              <a-button style="margin-left: 8px" @click="() => this.$refs.filters.resetFields()">重置</a-button>
-            </a-col>
-          </a-row>
-        </a-form-model>
         <a-table
           :columns="columns"
           :rowKey="record => record.id"
           :dataSource="rows"
-          :pagination="pagination"
+          :pagination="false"
           :loading="loading"
           :rowSelection="selection"
-          @change="tableChange"
           :bordered="true"
+          :expandedRowKeys="expandedRowKeys"
+          @expandedRowsChange="(expandedRows) => this.expandedRowKeys = expandedRows"
+          :scroll="{ x: true }"
         >
-          <span slot="applicationId" slot-scope="text, record">[{{ record.applicationId }}]{{ record.applicationIdName }}</span>
-          <span slot="parentId" slot-scope="text, record">[{{ record.parentId }}]{{ record.parentId > 0 ? record.parentIdName : '根节点' }}</span>
+          <span slot="name" slot-scope="text, record">{{ record.name }}/{{ record.parentId }}/{{ record.id }}</span>
+          <span slot="permit" slot-scope="text, record">{{ record.module }}:{{ record.controller }}:{{ record.action }}</span>
           <span slot="action" slot-scope="text, record">
-            <a-button-group>
-              <a-button type="link" size="small" v-permit="'member:resource:'" @click="show(text, record)">查看</a-button>
-              <a-button v-permit="'member:resource:modify'" type="link" size="small" @click="edit(text, record)">编辑</a-button>
-              <a-button v-permit="'member:resource:modify'" type="link" size="small" @click="sublevel(text, record)">子级</a-button>
-            </a-button-group>
+            <a-dropdown>
+              <a-menu slot="overlay">
+                <a-menu-item v-permit="'member:resource:'"><a-button :block="true" type="link" size="small" @click="show(text, record)">查看</a-button></a-menu-item>
+                <a-menu-item v-permit="'member:resource:modify'"><a-button :block="true" type="link" size="small" @click="edit(text, record)">编辑</a-button></a-menu-item>
+                <a-menu-item v-permit="'member:resource:add'"><a-button :block="true" type="link" size="small" @click="sublevel(text, record)">子级</a-button></a-menu-item>
+              </a-menu>
+              <a-button type="link" icon="tool"></a-button>
+            </a-dropdown>
           </span>
         </a-table>
-        <div :class="rows.length > 0 ? 'table-pagination-tools' : 'table-pagination-tools-empty'">
-          <a-button icon="minus-circle" type="danger" @click="batchRemove" v-permit="'member:resource:delete'" :disabled="selection.selectedRows.length === 0">删除</a-button>
-          <a-divider type="vertical" v-permit="'member:resource:add'" />
-          <a-button icon="plus-circle" type="primary" @click="add(0)" v-permit="'member:resource:add'">新增</a-button>
-        </div>
       </div>
     </a-card>
     <!--展示界面-->
     <a-modal :title="'信息查看 - ' + form.id" v-model="infoVisible" :footer="null">
       <a-form-model :model="form" :loading="infoLoading" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
-        <a-form-model-item label="应用">[{{ form.applicationId }}]{{ form.applicationIdName }}</a-form-model-item>
-        <a-form-model-item label="父级">[{{ form.parentId }}]{{ form.parentId > 0 ? form.parentIdName : '根节点' }}</a-form-model-item>
+        <a-form-model-item label="父级">{{ form.parentId }}</a-form-model-item>
         <a-form-model-item label="名称">{{ form.name }}</a-form-model-item>
         <a-form-model-item label="全称">{{ form.fullName }}</a-form-model-item>
         <a-form-model-item label="模块">{{ form.module }}</a-form-model-item>
@@ -121,26 +109,24 @@
 <script>
 import RouteUtil from '@/utils/route'
 import resourceService from '@/service/member/resource'
+import applicationService from '@/service/member/application'
+import ApiUtil from '@/utils/api'
 
 export default {
   data () {
     return {
-      filters: {},
       columns: [
-        { title: 'ID', dataIndex: 'id' },
-        { title: '名称', dataIndex: 'name' },
+        { title: '名称', dataIndex: 'name', scopedSlots: { customRender: 'name' } },
         { title: '全称', dataIndex: 'fullName' },
-        { title: '应用', dataIndex: 'applicationId', scopedSlots: { customRender: 'applicationId' } },
-        { title: '父级', dataIndex: 'parentId', scopedSlots: { customRender: 'parentId' } },
-        { title: '模块', dataIndex: 'module' },
-        { title: '控制器', dataIndex: 'controller' },
-        { title: '动作', dataIndex: 'action' },
+        { title: '资源', scopedSlots: { customRender: 'permit' } },
         { title: '排序', dataIndex: 'sort' },
         { title: '状态', dataIndex: 'statusText' },
         { title: '操作', scopedSlots: { customRender: 'action' } }
       ],
+      toggle: false,
+      expandedRowKeys: [],
       selection: RouteUtil.selection(),
-      pagination: {},
+      info: {},
       rows: [],
       loading: false,
       config: {
@@ -153,38 +139,42 @@ export default {
       formLoading: false,
       form: {},
       rules: {
-        applicationId: [{ required: true, message: '请选择所属应用', trigger: 'blur' }],
         name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
         status: [{ required: true, message: '请选择状态', trigger: 'change' }]
       }
     }
   },
   methods: {
+    toggleRowKeys () {
+      this.toggle = !this.toggle
+      if (this.toggle) {
+        this.expandedRowKeys = []
+      } else {
+        this.expandedRowKeys = RouteUtil.expandedRowKeys(this.rows)
+      }
+    },
     batchRemove () {
       this.$confirm(this.selection.confirm(() => {
         this.loading = true
         resourceService.delete(this.selection.selectedRowKeys, { success: true }).then((result) => {
           if (result.code === 0) {
-            this.search(false, true)
+            this.search()
           } else {
             this.loading = false
           }
         })
       }))
     },
-    tableChange (pagination, filters, sorter) {
-      this.pagination = RouteUtil.paginationChange(this.pagination, pagination)
-      this.search(true, true)
-    },
-    search (filter2query, pagination) {
+    search () {
       this.selection.clear()
-      Object.assign(this.filters, RouteUtil.paginationData(this.pagination, pagination))
-      filter2query && RouteUtil.filter2query(this, this.filters)
       this.loading = true
-      resourceService.list(this.filters).then((result) => {
-        this.pagination = Object.assign({}, this.pagination, RouteUtil.result(result))
+      const id = this.$route.query.id
+      resourceService.tree({ applicationId: id }).then((result) => {
         if (result.code === 0) {
-          this.rows = result.data.rows
+          this.rows = result.data
+          if (this.expandedRowKeys.length === 0) {
+            this.expandedRowKeys = RouteUtil.expandedRowKeys(result.data, 1)
+          }
         }
         this.loading = false
       })
@@ -196,17 +186,18 @@ export default {
         resourceService.save(this.form).then(result => {
           if (result.code === 0) {
             this.formVisible = false
-            this.search(false, true)
+            this.search()
           }
           this.formLoading = false
         })
       })
     },
     sublevel (text, record) {
-      this.add(record.id)
+      this.form = { parentId: record.id, applicationId: record.applicationId, module: record.module, controller: record.controller, action: record.action }
+      this.formVisible = true
     },
     add (parentId = 0) {
-      this.form = { parentId }
+      this.form = { parentId, applicationId: this.info.id, module: this.info.serial }
       this.formVisible = true
     },
     edit (text, record) {
@@ -220,14 +211,19 @@ export default {
         description: record.description ? record.description : '暂无'
       })
       this.infoVisible = true
+    },
+    reload () {
+      const id = this.$route.query.id
+      applicationService.info(id).then(result => {
+        if (ApiUtil.succeed(result)) {
+          this.info = result.data
+        }
+      })
+      this.search()
     }
   },
-  created () {
-    this.filters = RouteUtil.query2filter(this, { page: 1, pageSize: 5 })
-    this.pagination = Object.assign({}, RouteUtil.pagination(this.filters), this.pagination)
-  },
   mounted () {
-    this.search(false, true)
+    this.reload()
     resourceService.config().then((result) => {
       this.config.ready = true
       if (result.code === 0) {

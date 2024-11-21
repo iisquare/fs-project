@@ -65,8 +65,7 @@ public class RbacController extends RpcControllerBase {
 
     @PostMapping("/menu")
     public String menuAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        int parentId = ValidateUtil.filterInteger(param.get("parentId"), true, 0, null, 0);
-        return ApiUtil.echoResult(0, null, rbacService.menu(request, parentId));
+        return ApiUtil.echoResult(0, null, rbacService.menu(request));
     }
 
     @PostMapping("/hasPermit")

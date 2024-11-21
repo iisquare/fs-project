@@ -19,6 +19,10 @@ export const layouts = [{
     meta: { title: '角色列表' },
     component: () => import(/* webpackChunkName: 'member' */ '@/views/member/role/list')
   }, {
+    path: '/member/role/application',
+    meta: { title: '权限管理' },
+    component: () => import(/* webpackChunkName: 'member' */ '@/views/member/role/application')
+  }, {
     path: '/member/setting/list',
     meta: { title: '配置列表' },
     component: () => import(/* webpackChunkName: 'member' */ '@/views/member/setting/list')
@@ -27,17 +31,9 @@ export const layouts = [{
     meta: { title: '资源列表' },
     component: () => import(/* webpackChunkName: 'member' */ '@/views/member/resource/list')
   }, {
-    path: '/member/resource/tree',
-    meta: { title: '树形资源' },
-    component: () => import(/* webpackChunkName: 'member' */ '@/views/member/resource/tree')
-  }, {
     path: '/member/menu/list',
     meta: { title: '菜单列表' },
     component: () => import(/* webpackChunkName: 'member' */ '@/views/member/menu/list')
-  }, {
-    path: '/member/menu/tree',
-    meta: { title: '树形菜单' },
-    component: () => import(/* webpackChunkName: 'member' */ '@/views/member/menu/tree')
   }, {
     path: '/member/dictionary/list',
     meta: { title: '字典列表' },
@@ -46,6 +42,18 @@ export const layouts = [{
     path: '/member/dictionary/tree',
     meta: { title: '树形字典' },
     component: () => import(/* webpackChunkName: 'member' */ '@/views/member/dictionary/tree')
+  }, {
+    path: '/member/application/list',
+    meta: { title: '应用列表' },
+    component: () => import(/* webpackChunkName: 'member' */ '@/views/member/application/list')
+  }, {
+    path: '/member/application/resource',
+    meta: { title: '应用资源' },
+    component: () => import(/* webpackChunkName: 'member' */ '@/views/member/application/resource')
+  }, {
+    path: '/member/application/menu',
+    meta: { title: '应用菜单' },
+    component: () => import(/* webpackChunkName: 'member' */ '@/views/member/application/menu')
   }]
 }]
 

@@ -7,9 +7,11 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.web.util.ServletUtil;
 import com.iisquare.fs.web.core.rbac.PermitInterceptor;
 import com.iisquare.fs.web.core.rbac.RbacServiceBase;
+import com.iisquare.fs.web.member.dao.ApplicationDao;
 import com.iisquare.fs.web.member.dao.MenuDao;
 import com.iisquare.fs.web.member.dao.RelationDao;
 import com.iisquare.fs.web.member.dao.ResourceDao;
+import com.iisquare.fs.web.member.entity.Application;
 import com.iisquare.fs.web.member.entity.Menu;
 import com.iisquare.fs.web.member.entity.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,12 +19,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 public class RbacService extends RbacServiceBase {
@@ -37,6 +39,8 @@ public class RbacService extends RbacServiceBase {
     private UserService userService;
     @Autowired
     private SettingService settingService;
+    @Autowired
+    private ApplicationDao applicationDao;
 
     @Override
     public <T> List<T> fillUserInfo(List<T> list, String... properties) {
@@ -72,8 +76,9 @@ public class RbacService extends RbacServiceBase {
     }
 
     @Override
-    public JsonNode menu(HttpServletRequest request, Integer parentId) {
-        return DPUtil.toJSON(loadMenu(request, parentId));
+    public JsonNode menu(HttpServletRequest request) {
+        int uid = DPUtil.parseInt(ServletUtil.getSession(request, "uid"));
+        return loadMenu(uid);
     }
 
     @Override
@@ -100,37 +105,83 @@ public class RbacService extends RbacServiceBase {
         ObjectNode result = DPUtil.objectNode();
         Set<Integer> roleIds = DPUtil.values(relationDao.findAllByTypeAndAid("user_role", uid), Integer.class, "bid");
         if(roleIds.size() < 1) return result;
-        Set<Integer> bids = DPUtil.values(relationDao.findAllByTypeAndAidIn("role_resource", roleIds), Integer.class, "bid");
-        if(bids.size() < 1) return result;
-        List<Resource> data = resourceDao.findAll(new Specification() {
-            @Override
-            public Predicate toPredicate(Root root, CriteriaQuery query, CriteriaBuilder cb) {
-                List<Predicate> predicates = new ArrayList<>();
-                predicates.add(cb.equal(root.get("status"), 1));
-                predicates.add(root.get("id").in(bids));
-                return cb.and(predicates.toArray(new Predicate[0]));
-            }
+        Set<Integer> applicationIds = DPUtil.values(relationDao.findAllByTypeAndAidIn("role_application", roleIds), Integer.class, "bid");
+        if(applicationIds.size() < 1) return result;
+        List<Application> applications = applicationDao.findAll((Specification<Application>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("status"), 1));
+            predicates.add(root.get("id").in(applicationIds));
+            return cb.and(predicates.toArray(new Predicate[0]));
         });
-        for (Resource item : data) {
-            result.put(keyPermit(item.getModule(), item.getController(), item.getAction()), true);
+        applicationIds.clear();
+        for (Application application : applications) {
+            applicationIds.add(application.getId());
+            result.put(keyPermit(application.getSerial(), null, null), true);
+        }
+        if (applicationIds.size() < 1) return result;
+        Set<Integer> resourceIds = DPUtil.values(relationDao.findAllByTypeAndAidInAndCidIn("role_resource", roleIds, applicationIds), Integer.class, "bid");
+        if(resourceIds.size() < 1) return result;
+        List<Resource> resources = resourceDao.findAll((Specification<Resource>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("status"), 1));
+            predicates.add(root.get("id").in(resourceIds));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        });
+        for (Resource resource : resources) {
+            result.put(keyPermit(resource.getModule(), resource.getController(), resource.getAction()), true);
         }
         return result;
     }
 
-    public List<Menu> loadMenu(HttpServletRequest request, Integer parentId) {
-        int uid = DPUtil.parseInt(ServletUtil.getSession(request, "uid"));
-        if(uid < 1) return new ArrayList<>();
+    public ArrayNode loadMenu(int uid) {
+        ArrayNode result = DPUtil.arrayNode();
         Set<Integer> roleIds = DPUtil.values(relationDao.findAllByTypeAndAid("user_role", uid), Integer.class, "bid");
-        if(roleIds.size() < 1) return new ArrayList<>();
-        Set<Integer> bids = DPUtil.values(relationDao.findAllByTypeAndAidIn("role_menu", roleIds), Integer.class, "bid");
-        if(bids.size() < 1) return new ArrayList<>();
-        List<Menu> data = menuDao.findAll((Specification<Menu>) (root, query, cb) -> {
+        if(roleIds.size() < 1) return result;
+        Set<Integer> applicationIds = DPUtil.values(relationDao.findAllByTypeAndAidIn("role_application", roleIds), Integer.class, "bid");
+        if(applicationIds.size() < 1) return result;
+        List<Application> applications = applicationDao.findAll((Specification<Application>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("status"), 1));
-            predicates.add(root.get("id").in(bids));
+            predicates.add(root.get("id").in(applicationIds));
             return cb.and(predicates.toArray(new Predicate[0]));
         }, Sort.by(Sort.Order.desc("sort"), Sort.Order.asc("id")));
-        return DPUtil.formatRelation(data, Menu.class, "parentId", parentId, "id", "children");
+        applicationIds.clear();
+        for (Application application : applications) {
+            if (DPUtil.empty(application.getUrl())) {
+                continue; // 链接为空时不在前台展示
+            }
+            applicationIds.add(application.getId());
+            result.add(application.menu());
+        }
+        if (applicationIds.size() < 1) return result;
+        Set<Integer> menuIds = DPUtil.values(relationDao.findAllByTypeAndAidInAndCidIn("role_menu", roleIds, applicationIds), Integer.class, "bid");
+        if(menuIds.size() < 1) return result;
+        List<Menu> menus = menuDao.findAll((Specification<Menu>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("status"), 1));
+            predicates.add(root.get("id").in(menuIds));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.asc("id")));
+        Map<Integer, List<Menu>> menuMap = DPUtil.list2ml(menus, Integer.class, "applicationId");
+        for (JsonNode app : result) {
+            int applicationId = app.at("/id").asInt();
+            List<Menu> list = menuMap.get(applicationId);
+            if (null == list) continue;
+            ((ObjectNode) app).replace("children", formatMenu(list, 0));
+        }
+        return result;
+    }
+
+    public static ArrayNode formatMenu(List<Menu> list, int parentId) {
+        ArrayNode result = DPUtil.arrayNode();
+        for (Menu menu : list) {
+            if (parentId != menu.getParentId()) continue;
+            ObjectNode node = menu.menu();
+            result.add(node);
+            ArrayNode children = formatMenu(list, menu.getId());
+            node.replace("children", children);
+        }
+        return result;
     }
 
 }

@@ -1,9 +1,21 @@
 # Admin based on ant-design-pro-vue
 
 ## 安装和运行
+- 运行环境
+```
+nvm install 20.18.0
+nvm use 20.18.0
+npm install -g yarn
+# node v20.18.0
+# npm 10.8.2
+# yarn 1.22.22
+```
 - 安装依赖
 ```
 yarn install
+# error @achrinza/node-ipc@9.2.2: The engine "node" is incompatible with this module. Expected version "8 || 10 || 12 || 14 || 16 || 17". Got "20.18.0"
+# error Found incompatible module.
+yarn config set ignore-engines true
 ```
 
 - 开发模式运行

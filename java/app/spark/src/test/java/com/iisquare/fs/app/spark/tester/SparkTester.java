@@ -60,6 +60,19 @@ public class SparkTester implements Serializable {
     }
 
     @Test
+    public void kafkaTest() throws Exception {
+        SparkSession session = SparkSession.builder().appName("kafka-test").master("local").getOrCreate();
+        Map<String, String> options = new LinkedHashMap<>();
+        options.put("kafka.bootstrap.servers", "kafka:9092");
+        options.put("subscribe", "fs_test");
+        options.put("startingOffsets", "earliest");
+        options.put("endingOffsets", "latest");
+        Dataset<Row> dataset = session.read().format("kafka").options(options).load();
+        dataset.show();
+        session.close();
+    }
+
+    @Test
     public void sqlTest() {
         SparkSession session = SparkSession.builder().appName("sql-test").master("local").getOrCreate();
         String url = "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true";

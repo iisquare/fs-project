@@ -37,7 +37,7 @@ public class ResourceController extends PermitControllerBase {
     @Permission("")
     public String listAction(@RequestBody Map<?, ?> param) {
         Map<?, ?> result = resourceService.search(param, DPUtil.buildMap(
-            "withUserInfo", true, "withStatusText", true, "withParentInfo", true
+                "withApplicationInfo", true, "withUserInfo", true, "withStatusText", true, "withParentInfo", true
         ));
         return ApiUtil.echoResult(0, null, result);
     }

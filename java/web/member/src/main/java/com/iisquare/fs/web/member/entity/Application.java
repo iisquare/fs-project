@@ -1,12 +1,13 @@
 package com.iisquare.fs.web.member.entity;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.base.core.util.DPUtil;
 import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.util.List;
 
 @Entity
 @Getter
@@ -16,31 +17,21 @@ import java.util.List;
 @AllArgsConstructor
 @DynamicInsert
 @DynamicUpdate
-public class Resource implements Serializable {
+public class Application implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     @Column
+    private String serial; // 标识（唯一）
+    @Column
     private String name;
     @Column
-    private String fullName; // 自动拼接上级名称
+    private String icon; // 图标
     @Column
-    private Integer applicationId;
-    @Transient
-    private String applicationIdName;
+    private String url; // 为空时不在前台展示
     @Column
-    private Integer parentId;
-    @Transient
-    private String parentIdName;
-    @Transient
-    private List<Menu> children;
-    @Column
-    private String module;
-    @Column
-    private String controller;
-    @Column
-    private String action;
+    private String target; // 打开方式
     @Column
     private Integer sort;
     @Column
@@ -61,5 +52,17 @@ public class Resource implements Serializable {
     private Integer updatedUid;
     @Transient
     private String updatedUidName;
+
+    public ObjectNode menu() {
+        ObjectNode node = DPUtil.objectNode();
+        node.put("id", id);
+        node.put("name", name);
+        node.put("icon", icon);
+        node.put("url", url);
+        node.put("target", target);
+        node.put("description", description);
+        node.putArray("children");
+        return node;
+    }
 
 }

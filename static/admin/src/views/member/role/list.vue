@@ -36,8 +36,7 @@
             <a-button-group>
               <a-button type="link" size="small" v-permit="'member:role:'" @click="show(text, record)">查看</a-button>
               <a-button v-permit="'member:role:modify'" type="link" size="small" @click="edit(text, record)">编辑</a-button>
-              <a-button type="link" size="small" v-permit="'member:role:resource'" @click="editTree('resource', record.id)">资源</a-button>
-              <a-button type="link" size="small" v-permit="'member:role:menu'" @click="editTree('menu', record.id)">菜单</a-button>
+              <a-button type="link" size="small" v-permit="'member:role:application'" @click="application(record.id)">权限</a-button>
             </a-button-group>
           </span>
         </a-table>
@@ -80,28 +79,6 @@
         </a-form-model-item>
       </a-form-model>
     </a-modal>
-    <!--资源菜单-->
-    <a-modal
-      :title="tree.title + '[' + tree.id + ']'"
-      v-model="tree.visible"
-      :confirmLoading="tree.loading"
-      :maskClosable="false"
-      :width="650"
-      @ok="saveTree">
-      <a-table
-        :columns="tree.columns"
-        :rowKey="record => record.id"
-        :dataSource="tree.rows"
-        :pagination="false"
-        :loading="tree.loading"
-        :rowSelection="tree.selection"
-        :bordered="true"
-        size="small"
-        :expandedRowKeys="tree.expandedRowKeys"
-        @expandedRowsChange="(expandedRows) => this.tree.expandedRowKeys = expandedRows"
-      >
-      </a-table>
-    </a-modal>
   </section>
 </template>
 
@@ -136,20 +113,6 @@ export default {
       rules: {
         name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
         status: [{ required: true, message: '请选择状态', trigger: 'change' }]
-      },
-      tree: {
-        id: '',
-        type: '',
-        title: '',
-        visible: false,
-        loading: false,
-        selection: RouteUtil.selection(),
-        rows: [],
-        expandedRowKeys: [],
-        columns: [
-          { title: '名称', dataIndex: 'name' },
-          { title: '全称', dataIndex: 'fullName' }
-        ]
       }
     }
   },
@@ -212,40 +175,8 @@ export default {
       })
       this.infoVisible = true
     },
-    editTree (type, id) {
-      Object.assign(this.tree, {
-        id: id,
-        type: type,
-        title: { resource: '资源分配', menu: '菜单分配' }[type],
-        rows: [],
-        visible: true,
-        loading: true
-      })
-      this.tree.selection.clear()
-      roleService.tree({ id: id, type: type }).then((result) => {
-        if (result.code === 0) {
-          Object.assign(this.tree, {
-            loading: false,
-            rows: result.data.tree,
-            expandedRowKeys: RouteUtil.expandedRowKeys(result.data.tree)
-          })
-          this.tree.selection.selectedRowKeys = result.data.checked
-        }
-      })
-    },
-    saveTree () {
-      if (this.tree.loading) return false
-      this.tree.loading = true
-      roleService.tree({
-        id: this.tree.id,
-        type: this.tree.type,
-        bids: this.tree.selection.selectedRowKeys }).then(result => {
-        if (result.code === 0) {
-          this.tree.visible = false
-          this.search(false, true)
-        }
-        this.tree.loading = true
-      })
+    application (id) {
+      this.$router.push({ path: '/member/role/application', query: { id } })
     }
   },
   created () {

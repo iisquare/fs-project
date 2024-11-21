@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -31,23 +32,40 @@ public class RoleController extends PermitControllerBase {
     @Autowired
     private RelationService relationService;
 
-    @RequestMapping("/tree")
-    @Permission({"", "menu", "resource"})
-    public String treeAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
+    @RequestMapping("/info")
+    @Permission("")
+    public String infoAction(@RequestParam Map<?, ?> param) {
+        int id = DPUtil.parseInt(param.get("id"));
+        Role info = roleService.info(id);
+        if (null == info) {
+            return ApiUtil.echoResult(0, null, DPUtil.objectNode());
+        }
+        return ApiUtil.echoResult(0, null, info);
+    }
+
+    @RequestMapping("/permit")
+    @Permission({"", "application", "menu", "resource"})
+    public String permitAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
         if(id < 1) return ApiUtil.echoResult(1001, "参数异常", id);
         Role info = roleService.info(id);
         if(null == info || -1 == info.getStatus()) return ApiUtil.echoResult(1002, "记录不存在", id);
         Map<String, Object> result = new LinkedHashMap<>();
         String type = DPUtil.parseString(param.get("type"));
+        if(!rbacService.hasPermit(request, type)) return ApiUtil.echoResult(9403, null, null);
+        int applicationId = DPUtil.parseInt(param.get("applicationId"));
         if(param.containsKey("bids")) {
             switch (type) {
+                case "application":
                 case "menu":
                 case "resource":
-                    if(!rbacService.hasPermit(request, type)) return ApiUtil.echoResult(9403, null, null);
                     Set<Integer> bids = new HashSet<>();
-                    bids.addAll((List<Integer>) param.get("bids"));
-                    bids = relationService.relationIds("role_" + type, id, bids);
+                    bids.addAll((Collection<Integer>) param.get("bids"));
+                    if ("application".equals(type)) {
+                        bids = relationService.relationIds("role_" + type, id, bids);
+                    } else {
+                        bids = relationService.relationIds("role_" + type, id, bids, applicationId);
+                    }
                     return ApiUtil.echoResult(null == bids ? 500 : 0, null, bids);
                 default:
                     return ApiUtil.echoResult(1003, "类型异常", id);
@@ -55,15 +73,15 @@ public class RoleController extends PermitControllerBase {
         } else {
             switch (type) {
                 case "menu":
-                    result.put("tree", menuService.tree(param, DPUtil.buildMap()));
+                    result.put("tree", menuService.tree(param, DPUtil.buildMap("applicationId", applicationId)));
                     break;
                 case "resource":
-                    result.put("tree", resourceService.tree(param, DPUtil.buildMap()));
+                    result.put("tree", resourceService.tree(param, DPUtil.buildMap("applicationId", applicationId)));
                     break;
                 default:
                     result.put("tree", new ArrayList<>());
             }
-            result.put("checked", relationService.relationIds("role_" + type, info.getId(), null));
+            result.put("checked", relationService.relationIds("role_" + type, info.getId(), null, applicationId));
             return ApiUtil.echoResult(0, null, result);
         }
     }

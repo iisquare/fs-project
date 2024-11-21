@@ -75,7 +75,7 @@ public abstract class RbacServiceBase extends ServiceBase {
         return result;
     }
 
-    public abstract JsonNode menu(HttpServletRequest request, Integer parentId);
+    public abstract JsonNode menu(HttpServletRequest request);
 
     public abstract Map<String, String> setting(String type, List<String> include, List<String> exclude);
 

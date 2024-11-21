@@ -1,6 +1,9 @@
 import base from './base'
 
 export default {
+  info (id, tips = {}) {
+    return base.get('/role/info', { id }, tips)
+  },
   list (param, tips = {}) {
     return base.post('/role/list', param, tips)
   },
@@ -13,7 +16,7 @@ export default {
   save (param, tips = {}) {
     return base.post('/role/save', param, tips)
   },
-  tree (param, tips = {}) {
-    return base.post('/role/tree', param, tips)
+  permit (param, tips = {}) {
+    return base.post('/role/permit', param, tips)
   }
 }

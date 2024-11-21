@@ -9,7 +9,12 @@
                 <a-input v-model="filters.fullName" placeholder="" :allowClear="true" />
               </a-form-model-item>
             </a-col>
-            <a-col :md="6" :sm="24">
+            <a-col :md="3" :sm="24">
+              <a-form-model-item label="应用" prop="applicationId">
+                <a-input v-model="filters.applicationId" placeholder="" :allowClear="true" />
+              </a-form-model-item>
+            </a-col>
+            <a-col :md="3" :sm="24">
               <a-form-model-item label="父级" prop="parentId">
                 <a-input v-model="filters.parentId" placeholder="" :allowClear="true" />
               </a-form-model-item>
@@ -37,6 +42,7 @@
           @change="tableChange"
           :bordered="true"
         >
+          <span slot="applicationId" slot-scope="text, record">[{{ record.applicationId }}]{{ record.applicationIdName }}</span>
           <span slot="parentId" slot-scope="text, record">[{{ record.parentId }}]{{ record.parentId > 0 ? record.parentIdName : '根节点' }}</span>
           <span slot="url" slot-scope="text, record">
             <a-icon v-if="record.icon" :type="record.icon" />
@@ -60,6 +66,7 @@
     <!--展示界面-->
     <a-modal :title="'信息查看 - ' + form.id" v-model="infoVisible" :footer="null">
       <a-form-model :model="form" :loading="infoLoading" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
+        <a-form-model-item label="应用">[{{ form.applicationId }}]{{ form.applicationIdName }}</a-form-model-item>
         <a-form-model-item label="父级">[{{ form.parentId }}]{{ form.parentId > 0 ? form.parentIdName : '根节点' }}</a-form-model-item>
         <a-form-model-item label="名称">{{ form.name }}</a-form-model-item>
         <a-form-model-item label="全称">{{ form.fullName }}</a-form-model-item>
@@ -78,11 +85,14 @@
     <!--编辑界面-->
     <a-modal :title="'信息' + (form.id ? ('修改 - ' + form.id) : '添加')" v-model="formVisible" :confirmLoading="formLoading" :maskClosable="false" @ok="submit">
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
-        <a-form-model-item label="父级" prop="parentId">
-          <a-input v-model="form.parentId" auto-complete="off"></a-input>
-        </a-form-model-item>
         <a-form-model-item label="ID" prop="id">
           <a-input v-model="form.id" auto-complete="off"></a-input>
+        </a-form-model-item>
+        <a-form-model-item label="应用" prop="applicationId">
+          <a-input v-model="form.applicationId" auto-complete="off"></a-input>
+        </a-form-model-item>
+        <a-form-model-item label="父级" prop="parentId">
+          <a-input v-model="form.parentId" auto-complete="off"></a-input>
         </a-form-model-item>
         <a-form-model-item label="名称" prop="name">
           <a-input v-model="form.name" auto-complete="off"></a-input>
@@ -124,6 +134,7 @@ export default {
         { title: 'ID', dataIndex: 'id' },
         { title: '名称', dataIndex: 'name' },
         { title: '全称', dataIndex: 'fullName' },
+        { title: '应用', dataIndex: 'applicationId', scopedSlots: { customRender: 'applicationId' } },
         { title: '父级', dataIndex: 'parentId', scopedSlots: { customRender: 'parentId' } },
         { title: '链接', dataIndex: 'url', scopedSlots: { customRender: 'url' } },
         { title: '排序', dataIndex: 'sort' },
@@ -144,6 +155,7 @@ export default {
       formLoading: false,
       form: {},
       rules: {
+        applicationId: [{ required: true, message: '请选择所属应用', trigger: 'blur' }],
         name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
         status: [{ required: true, message: '请选择状态', trigger: 'change' }]
       }

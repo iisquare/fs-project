@@ -1,15 +1,15 @@
 package com.iisquare.fs.web.member.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.web.member.dao.RoleDao;
-import com.iisquare.fs.web.member.entity.Role;
+import com.iisquare.fs.web.member.dao.ApplicationDao;
+import com.iisquare.fs.web.member.dao.MenuDao;
+import com.iisquare.fs.web.member.dao.ResourceDao;
+import com.iisquare.fs.web.member.entity.Application;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,16 +22,18 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
-public class RoleService extends ServiceBase {
+public class ApplicationService extends ServiceBase {
 
     @Autowired
-    private RoleDao roleDao;
+    private ApplicationDao applicationDao;
     @Autowired
     private UserService userService;
     @Autowired
     private RbacService rbacService;
     @Autowired
-    private RelationService relationService;
+    private MenuDao menuDao;
+    @Autowired
+    private ResourceDao resourceDao;
 
     public Map<?, ?> status(String level) {
         Map<Integer, String> status = new LinkedHashMap<>();
@@ -52,8 +54,8 @@ public class RoleService extends ServiceBase {
     public ObjectNode infos(List<Integer> ids) {
         ObjectNode result = DPUtil.objectNode();
         if (null == ids || ids.size() < 1) return result;
-        List<Role> list = roleDao.findAllById(ids);
-        for (Role item : list) {
+        List<Application> list = applicationDao.findAllById(ids);
+        for (Application item : list) {
             if (1 != item.getStatus()) continue;
             ObjectNode node = result.putObject(String.valueOf(item.getId()));
             node.put("id", item.getId());
@@ -62,40 +64,50 @@ public class RoleService extends ServiceBase {
         return result;
     }
 
-    public Role info(Integer id) {
+    public Application info(Integer id) {
         if(null == id || id < 1) return null;
-        Optional<Role> info = roleDao.findById(id);
+        Optional<Application> info = applicationDao.findById(id);
         return info.isPresent() ? info.get() : null;
     }
 
-    public ObjectNode infoWithApplication(Integer id) {
-        ObjectNode info = DPUtil.objectNode();
-        Role role = info(id);
-        if (null == role) return info;
-        info.setAll(DPUtil.toJSON(role, ObjectNode.class));
-        Set<Integer> applicationIds = relationService.relationIds("role_application", id, null);
-        info.replace("applicationIds", DPUtil.toJSON(applicationIds, ArrayNode.class));
-        return info;
+    public <T> List<T> fillInfo(List<T> list, String ...properties) {
+        Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
+        if(ids.size() < 1) return list;
+        Map<Integer, Application> data = DPUtil.list2map(applicationDao.findAllById(ids), Integer.class, "id");
+        return DPUtil.fillValues(list, properties, "Name", DPUtil.values(data, String.class, "name"));
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
+        if(DPUtil.empty(serial)) return ApiUtil.result(1001, "标识异常", serial);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-        if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
+        if(DPUtil.empty(name)) return ApiUtil.result(1002, "名称异常", name);
         int sort = DPUtil.parseInt(param.get("sort"));
         int status = DPUtil.parseInt(param.get("status"));
         if(!status("default").containsKey(status)) return ApiUtil.result(1002, "状态异常", status);
         String description = DPUtil.parseString(param.get("description"));
-        Role info = null;
+        String icon = DPUtil.trim(DPUtil.parseString(param.get("icon")));
+        String url = DPUtil.trim(DPUtil.parseString(param.get("url")));
+        String target = DPUtil.trim(DPUtil.parseString(param.get("target")));
+        Application info = null;
         if(id > 0) {
             if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
             info = info(id);
             if(null == info) return ApiUtil.result(404, null, id);
         } else {
             if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
-            info = new Role();
+            info = new Application();
         }
+        int count = applicationDao.exist(serial, DPUtil.parseInt(info.getId()));
+        if (count > 0) {
+            return ApiUtil.result(1003, "标识已存在", serial);
+        }
+        info.setSerial(serial);
         info.setName(name);
+        info.setIcon(icon);
+        info.setUrl(url);
+        info.setTarget(target);
         info.setSort(sort);
         info.setStatus(status);
         info.setDescription(description);
@@ -107,7 +119,7 @@ public class RoleService extends ServiceBase {
             info.setCreatedTime(time);
             info.setCreatedUid(uid);
         }
-        info = roleDao.save(info);
+        info = applicationDao.save(info);
         return ApiUtil.result(0, null, info);
     }
 
@@ -117,7 +129,7 @@ public class RoleService extends ServiceBase {
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, -1, 500, 15);
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "sort"));
         if (null == sort) sort = Sort.by(Sort.Order.desc("sort"));
-        Specification<Role> spec = (Specification<Role>) (root, query, cb) -> {
+        Specification<Application> spec = (Specification<Application>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             int id = DPUtil.parseInt(param.get("id"));
             if(id > 0) predicates.add(cb.equal(root.get("id"), id));
@@ -127,24 +139,28 @@ public class RoleService extends ServiceBase {
             } else {
                 predicates.add(cb.notEqual(root.get("status"), -1));
             }
+            String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
+            if(!DPUtil.empty(serial)) {
+                predicates.add(cb.like(root.get("serial"), "%" + serial + "%"));
+            }
             String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
             if(!DPUtil.empty(name)) {
                 predicates.add(cb.like(root.get("name"), "%" + name + "%"));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
-        List<Role> rows = null;
+        List<Application> rows = null;
         long total = 0;
         switch (pageSize) {
             case 0:
-                total = roleDao.count(spec);
+                total = applicationDao.count(spec);
                 break;
             case -1:
-                total = roleDao.count(spec);
-                rows = roleDao.findAll(spec);
+                total = applicationDao.count(spec);
+                rows = applicationDao.findAll(spec);
                 break;
             default:
-                Page<Role> data = roleDao.findAll(spec, PageRequest.of(page - 1, pageSize, sort));
+                Page<Application> data = applicationDao.findAll(spec, PageRequest.of(page - 1, pageSize, sort));
                 rows = data.getContent();
                 total = data.getTotalElements();
         }
@@ -163,20 +179,22 @@ public class RoleService extends ServiceBase {
 
     public boolean remove(List<Integer> ids) {
         if(null == ids || ids.size() < 1) return false;
-        roleDao.deleteInBatch(roleDao.findAllById(ids));
+        menuDao.deleteByApplicationIds(ids);
+        resourceDao.deleteByApplicationIds(ids);
+        applicationDao.deleteInBatch(applicationDao.findAllById(ids));
         return true;
     }
 
     public boolean delete(List<Integer> ids, int uid) {
         if(null == ids || ids.size() < 1) return false;
-        List<Role> list = roleDao.findAllById(ids);
+        List<Application> list = applicationDao.findAllById(ids);
         long time = System.currentTimeMillis();
-        for (Role item : list) {
+        for (Application item : list) {
             item.setStatus(-1);
             item.setUpdatedTime(time);
             item.setUpdatedUid(uid);
         }
-        roleDao.saveAll(list);
+        applicationDao.saveAll(list);
         return true;
     }
 

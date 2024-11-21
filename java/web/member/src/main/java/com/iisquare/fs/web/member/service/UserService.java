@@ -138,7 +138,7 @@ public class UserService extends ServiceBase {
         }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("info", info);
-        result.put("menu", rbacService.menu(request, DPUtil.parseInt(settingService.get(module, "menuParentId"))));
+        result.put("menu", rbacService.menu(request));
         result.put("resource", rbacService.resource(request));
         return ApiUtil.result(0, null, result);
     }

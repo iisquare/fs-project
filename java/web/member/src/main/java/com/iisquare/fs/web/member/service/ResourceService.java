@@ -6,6 +6,7 @@ import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.member.dao.ResourceDao;
+import com.iisquare.fs.web.member.entity.Application;
 import com.iisquare.fs.web.member.entity.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -29,6 +30,8 @@ public class ResourceService extends ServiceBase {
     @Autowired
     private UserService userService;
     @Autowired
+    private ApplicationService applicationService;
+    @Autowired
     private RbacService rbacService;
 
     public List<Resource> tree(Map<?, ?> param, Map<?, ?> args) {
@@ -39,6 +42,10 @@ public class ResourceService extends ServiceBase {
                 predicates.add(cb.equal(root.get("status"), status));
             } else {
                 predicates.add(cb.notEqual(root.get("status"), -1));
+            }
+            int applicationId = DPUtil.parseInt(param.get("applicationId"));
+            if(!"".equals(DPUtil.parseString(param.get("applicationId")))) {
+                predicates.add(cb.equal(root.get("applicationId"), applicationId));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         }, Sort.by(Sort.Order.desc("sort")));
@@ -81,13 +88,19 @@ public class ResourceService extends ServiceBase {
         int status = DPUtil.parseInt(param.get("status"));
         if(!status("default").containsKey(status)) return ApiUtil.result(1002, "状态异常", status);
         String description = DPUtil.parseString(param.get("description"));
+        int applicationId = DPUtil.parseInt(param.get("applicationId"));
+        Application application = applicationService.info(applicationId);
+        if(null == application) {
+            return ApiUtil.result(1004, "所属应用不存在或已删除", name);
+        }
         int parentId = DPUtil.parseInt(param.get("parentId"));
+        Resource parent = null;
         if(parentId < 0) {
-            return ApiUtil.result(1003, "上级节点异常", name);
+            return ApiUtil.result(1005, "上级节点异常", name);
         } else if(parentId > 0) {
-            Resource parent = info(parentId);
+            parent = info(parentId);
             if(null == parent || !status("default").containsKey(parent.getStatus())) {
-                return ApiUtil.result(1004, "上级节点不存在或已删除", name);
+                return ApiUtil.result(1006, "上级节点不存在或已删除", name);
             }
         }
         String module = DPUtil.trim(DPUtil.parseString(param.get("module")));
@@ -103,6 +116,7 @@ public class ResourceService extends ServiceBase {
             info = new Resource();
         }
         info.setName(name);
+        info.setApplicationId(applicationId);
         info.setParentId(parentId);
         info.setModule(module);
         info.setController(controller);
@@ -112,9 +126,9 @@ public class ResourceService extends ServiceBase {
         info.setDescription(description);
         long time = System.currentTimeMillis();
         int uid = rbacService.uid(request);
-        Resource parent = info(info.getParentId());
+        parent = info(info.getParentId());
         if (null == parent) {
-            info.setFullName(info.getName());
+            info.setFullName(application.getName() + ":" + info.getName());
         } else {
             info.setFullName(parent.getFullName() + ":" + info.getName());
         }
@@ -161,6 +175,10 @@ public class ResourceService extends ServiceBase {
                 if(!DPUtil.empty(fullName)) {
                     predicates.add(cb.like(root.get("fullName"), "%" + fullName + "%"));
                 }
+                int applicationId = DPUtil.parseInt(param.get("applicationId"));
+                if(!"".equals(DPUtil.parseString(param.get("applicationId")))) {
+                    predicates.add(cb.equal(root.get("applicationId"), applicationId));
+                }
                 int parentId = DPUtil.parseInt(param.get("parentId"));
                 if(!"".equals(DPUtil.parseString(param.get("parentId")))) {
                     predicates.add(cb.equal(root.get("parentId"), parentId));
@@ -174,6 +192,9 @@ public class ResourceService extends ServiceBase {
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
             DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+        }
+        if(!DPUtil.empty(args.get("withApplicationInfo"))) {
+            applicationService.fillInfo(rows, "applicationId");
         }
         if(!DPUtil.empty(args.get("withParentInfo"))) {
             this.fillInfo(rows, "parentId");

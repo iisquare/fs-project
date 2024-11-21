@@ -99,8 +99,8 @@ public class DefaultRbacService extends RbacServiceBase {
     }
 
     @Override
-    public JsonNode menu(HttpServletRequest request, Integer parentId) {
-        return post("menu", DPUtil.buildMap("parentId", parentId), false);
+    public JsonNode menu(HttpServletRequest request) {
+        return post("menu", null, false);
     }
 
     @Override

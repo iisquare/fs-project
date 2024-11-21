@@ -32,3 +32,5 @@
 /python/insightface/model
 /java/web/xlab/*.jpg
 /java/web/xlab/*.ttf
+/static/admin/pnpm-lock.yaml
+/static/admin/yarn.lock
