@@ -223,7 +223,7 @@ export default {
     }
   },
   created () {
-    this.filters = RouteUtil.query2filter(this, { page: 1, pageSize: 5 })
+    this.filters = RouteUtil.query2filter(this, { page: 1, pageSize: 100 })
     this.pagination = Object.assign({}, RouteUtil.pagination(this.filters), this.pagination)
   },
   mounted () {

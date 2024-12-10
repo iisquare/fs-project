@@ -42,6 +42,22 @@ export const layouts = [{
     path: '/server/cron/flowStage',
     meta: { title: '调度明细' },
     component: () => import(/* webpackChunkName: 'server' */ '@/views/server/cron/flowStage')
+  }, {
+    path: '/server/elasticsearch/demo',
+    meta: { title: '索引示例' },
+    component: () => import(/* webpackChunkName: 'server' */ '@/views/server/elasticsearch/demo')
+  }, {
+    path: '/server/elasticsearch/reload',
+    meta: { title: '服务重载' },
+    component: () => import(/* webpackChunkName: 'server' */ '@/views/server/elasticsearch/reload')
+  }, {
+    path: '/server/elasticsearch/dictionary',
+    meta: { title: '词库列表' },
+    component: () => import(/* webpackChunkName: 'server' */ '@/views/server/elasticsearch/dictionary')
+  }, {
+    path: '/server/file/archive',
+    meta: { title: '文件列表' },
+    component: () => import(/* webpackChunkName: 'file' */ '@/views/server/file/archive')
   }]
 }]
 
