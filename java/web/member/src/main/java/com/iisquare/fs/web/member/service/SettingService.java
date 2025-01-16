@@ -1,31 +1,26 @@
 package com.iisquare.fs.web.member.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.helper.SQLHelper;
-import com.iisquare.fs.base.jpa.util.JPAUtil;
-import com.iisquare.fs.base.web.mvc.ServiceBase;
+import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.web.member.dao.SettingDao;
 import com.iisquare.fs.web.member.entity.Setting;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
-public class SettingService extends ServiceBase {
+public class SettingService extends JPAServiceBase {
 
     @Autowired
     private SettingDao settingDao;
@@ -91,15 +86,13 @@ public class SettingService extends ServiceBase {
     public Setting info(Integer id) {
         if(null == id || id < 1) return null;
         Optional<Setting> info = settingDao.findById(id);
-        return info.isPresent() ? info.get() : null;
+        return info(settingDao, id);
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
         if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
-        int sort = DPUtil.parseInt(param.get("sort"));
-        String description = DPUtil.parseString(param.get("description"));
         String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
         Setting info = null;
         if(id > 0) {
@@ -113,58 +106,42 @@ public class SettingService extends ServiceBase {
         info.setName(name);
         info.setType(type);
         info.setContent(DPUtil.parseString(param.get("content")));
-        info.setSort(sort);
-        info.setDescription(description);
-        int uid = rbacService.uid(request);
-        long time = System.currentTimeMillis();
-        info.setUpdatedTime(time);
-        info.setUpdatedUid(uid);
+        info.setSort(DPUtil.parseInt(param.get("sort")));
+        info.setDescription(DPUtil.parseString(param.get("description")));
+        info.setUpdatedTime(System.currentTimeMillis());
+        info.setUpdatedUid(rbacService.uid(request));
         info = settingDao.save(info);
         return ApiUtil.result(0, null, info);
     }
 
-    public Map<?, ?> search(Map<?, ?> param, Map<?, ?> args) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
-        int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
-        Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "sort"));
-        if (null == sort) sort = Sort.by(Sort.Order.desc("sort"));
-        Page<?> data = settingDao.findAll(new Specification() {
-            @Override
-            public Predicate toPredicate(Root root, CriteriaQuery query, CriteriaBuilder cb) {
-                List<Predicate> predicates = new ArrayList<>();
-                int id = DPUtil.parseInt(param.get("id"));
-                if(id > 0) predicates.add(cb.equal(root.get("id"), id));
-                String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-                if(!DPUtil.empty(name)) {
-                    predicates.add(cb.like(root.get("name"), "%" + name + "%"));
-                }
-                String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
-                if(!DPUtil.empty(type)) {
-                    predicates.add(cb.equal(root.get("type"), type));
-                }
-                String content = DPUtil.trim(DPUtil.parseString(param.get("content")));
-                if(!DPUtil.empty(content)) {
-                    predicates.add(cb.like(root.get("content"), "%" + content + "%"));
-                }
-                return cb.and(predicates.toArray(new Predicate[0]));
+    public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {
+        ObjectNode result = search(settingDao, param, (Specification<Setting>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            int id = DPUtil.parseInt(param.get("id"));
+            if (id > 0) predicates.add(cb.equal(root.get("id"), id));
+            String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+            if (!DPUtil.empty(name)) {
+                predicates.add(cb.like(root.get("name"), "%" + name + "%"));
             }
-        }, PageRequest.of(page - 1, pageSize, sort));
-        List<?> rows = data.getContent();
+            String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
+            if (!DPUtil.empty(type)) {
+                predicates.add(cb.equal(root.get("type"), type));
+            }
+            String content = DPUtil.trim(DPUtil.parseString(param.get("content")));
+            if (!DPUtil.empty(content)) {
+                predicates.add(cb.like(root.get("content"), "%" + content + "%"));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        });
+        JsonNode rows = ApiUtil.rows(result);
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(rows, "createdUid", "updatedUid");
         }
-        result.put("page", page);
-        result.put("pageSize", pageSize);
-        result.put("total", data.getTotalElements());
-        result.put("rows", rows);
         return result;
     }
 
-    public boolean delete(List<Integer> ids) {
-        if(null == ids || ids.size() < 1) return false;
-        settingDao.deleteInBatch(settingDao.findAllById(ids));
-        return true;
+    public boolean remove(List<Integer> ids) {
+        return remove(settingDao, ids);
     }
 
 }

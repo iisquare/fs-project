@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.member.controller;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
@@ -88,8 +89,8 @@ public class RoleController extends PermitControllerBase {
 
     @RequestMapping("/list")
     @Permission("")
-    public String listAction(@RequestBody Map<?, ?> param) {
-        Map<?, ?> result = roleService.search(param, DPUtil.buildMap("withUserInfo", true, "withStatusText", true));
+    public String listAction(@RequestBody Map<String, Object> param) {
+        ObjectNode result = roleService.search(param, DPUtil.buildMap("withUserInfo", true, "withStatusText", true));
         return ApiUtil.echoResult(0, null, result);
     }
 
@@ -104,14 +105,14 @@ public class RoleController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = roleService.delete(ids, rbacService.uid(request));
+        boolean result = roleService.remove(ids);
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }
 
     @RequestMapping("/config")
     @Permission("")
     public String configAction(ModelMap model) {
-        model.put("status", roleService.status("default"));
+        model.put("status", roleService.status());
         return ApiUtil.echoResult(0, null, model);
     }
 

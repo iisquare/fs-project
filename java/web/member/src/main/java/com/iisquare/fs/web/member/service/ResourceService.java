@@ -1,29 +1,26 @@
 package com.iisquare.fs.web.member.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
-import com.iisquare.fs.base.jpa.util.JPAUtil;
-import com.iisquare.fs.base.web.mvc.ServiceBase;
+import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.web.member.dao.ResourceDao;
 import com.iisquare.fs.web.member.entity.Application;
 import com.iisquare.fs.web.member.entity.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
-public class ResourceService extends ServiceBase {
+public class ResourceService extends JPAServiceBase {
 
     @Autowired
     private ResourceDao resourceDao;
@@ -34,14 +31,12 @@ public class ResourceService extends ServiceBase {
     @Autowired
     private RbacService rbacService;
 
-    public List<Resource> tree(Map<?, ?> param, Map<?, ?> args) {
-        List<Resource> data = resourceDao.findAll((Specification<Resource>) (root, query, cb) -> {
+    public ArrayNode tree(Map<?, ?> param, Map<?, ?> args) {
+        List<Resource> list = resourceDao.findAll((Specification<Resource>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             int status = DPUtil.parseInt(param.get("status"));
             if(!"".equals(DPUtil.parseString(param.get("status")))) {
                 predicates.add(cb.equal(root.get("status"), status));
-            } else {
-                predicates.add(cb.notEqual(root.get("status"), -1));
             }
             int applicationId = DPUtil.parseInt(param.get("applicationId"));
             if(!"".equals(DPUtil.parseString(param.get("applicationId")))) {
@@ -49,45 +44,33 @@ public class ResourceService extends ServiceBase {
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         }, Sort.by(Sort.Order.desc("sort")));
+        ArrayNode data = DPUtil.toJSON(list, ArrayNode.class);
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(data, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
-            DPUtil.fillValues(data, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+            DPUtil.fillValues(data, new String[]{"status"}, new String[]{"statusText"}, DPUtil.toJSON(status()));
         }
-        return DPUtil.formatRelation(data, Resource.class, "parentId", 0, "id", "children");
+        return DPUtil.formatRelation(data, "parentId", 0, "id", "children");
     }
 
-    public Map<?, ?> status(String level) {
+    public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();
         status.put(1, "启用");
         status.put(2, "关闭");
-        switch (level) {
-            case "default":
-                break;
-            case "full":
-                status.put(-1, "已删除");
-                break;
-            default:
-                return null;
-        }
         return status;
     }
 
     public Resource info(Integer id) {
-        if(null == id || id < 1) return null;
-        Optional<Resource> info = resourceDao.findById(id);
-        return info.isPresent() ? info.get() : null;
+        return info(resourceDao, id);
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
         if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
-        int sort = DPUtil.parseInt(param.get("sort"));
         int status = DPUtil.parseInt(param.get("status"));
-        if(!status("default").containsKey(status)) return ApiUtil.result(1002, "状态异常", status);
-        String description = DPUtil.parseString(param.get("description"));
+        if(!status().containsKey(status)) return ApiUtil.result(1002, "状态异常", status);
         int applicationId = DPUtil.parseInt(param.get("applicationId"));
         Application application = applicationService.info(applicationId);
         if(null == application) {
@@ -99,13 +82,10 @@ public class ResourceService extends ServiceBase {
             return ApiUtil.result(1005, "上级节点异常", name);
         } else if(parentId > 0) {
             parent = info(parentId);
-            if(null == parent || !status("default").containsKey(parent.getStatus())) {
+            if(null == parent || !status().containsKey(parent.getStatus())) {
                 return ApiUtil.result(1006, "上级节点不存在或已删除", name);
             }
         }
-        String module = DPUtil.trim(DPUtil.parseString(param.get("module")));
-        String controller = DPUtil.trim(DPUtil.parseString(param.get("controller")));
-        String action = DPUtil.trim(DPUtil.parseString(param.get("action")));
         Resource info;
         if(id > 0) {
             if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
@@ -118,80 +98,59 @@ public class ResourceService extends ServiceBase {
         info.setName(name);
         info.setApplicationId(applicationId);
         info.setParentId(parentId);
-        info.setModule(module);
-        info.setController(controller);
-        info.setAction(action);
-        info.setSort(sort);
+        info.setModule(DPUtil.trim(DPUtil.parseString(param.get("module"))));
+        info.setController(DPUtil.trim(DPUtil.parseString(param.get("controller"))));
+        info.setAction(DPUtil.trim(DPUtil.parseString(param.get("action"))));
+        info.setSort(DPUtil.parseInt(param.get("sort")));
         info.setStatus(status);
-        info.setDescription(description);
-        long time = System.currentTimeMillis();
-        int uid = rbacService.uid(request);
+        info.setDescription(DPUtil.parseString(param.get("description")));
         parent = info(info.getParentId());
         if (null == parent) {
             info.setFullName(application.getName() + ":" + info.getName());
         } else {
             info.setFullName(parent.getFullName() + ":" + info.getName());
         }
-        info.setUpdatedTime(time);
-        info.setUpdatedUid(uid);
-        if(null == info.getId()) {
-            info.setCreatedTime(time);
-            info.setCreatedUid(uid);
-        }
-        info = resourceDao.save(info);
+        info = save(resourceDao, info, rbacService.uid(request));
         return ApiUtil.result(0, null, info);
     }
 
-    public <T> List<T> fillInfo(List<T> list, String ...properties) {
-        Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
-        if(ids.size() < 1) return list;
-        Map<Integer, Resource> data = DPUtil.list2map(resourceDao.findAllById(ids), Integer.class, "id");
-        return DPUtil.fillValues(list, properties, "Name", DPUtil.values(data, String.class, "name"));
+    public JsonNode fillInfo(JsonNode json, String ...properties) {
+        return fillInfo(resourceDao, json, properties);
     }
 
-    public Map<?, ?> search(Map<?, ?> param, Map<?, ?> args) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
-        int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
-        Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "sort"));
-        if (null == sort) sort = Sort.by(Sort.Order.desc("sort"));
-        Page<?> data = resourceDao.findAll(new Specification() {
-            @Override
-            public Predicate toPredicate(Root root, CriteriaQuery query, CriteriaBuilder cb) {
-                List<Predicate> predicates = new ArrayList<>();
-                int id = DPUtil.parseInt(param.get("id"));
-                if(id > 0) predicates.add(cb.equal(root.get("id"), id));
-                int status = DPUtil.parseInt(param.get("status"));
-                if(!"".equals(DPUtil.parseString(param.get("status")))) {
-                    predicates.add(cb.equal(root.get("status"), status));
-                } else {
-                    predicates.add(cb.notEqual(root.get("status"), -1));
-                }
-                String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-                if(!DPUtil.empty(name)) {
-                    predicates.add(cb.like(root.get("name"), "%" + name + "%"));
-                }
-                String fullName = DPUtil.trim(DPUtil.parseString(param.get("fullName")));
-                if(!DPUtil.empty(fullName)) {
-                    predicates.add(cb.like(root.get("fullName"), "%" + fullName + "%"));
-                }
-                int applicationId = DPUtil.parseInt(param.get("applicationId"));
-                if(!"".equals(DPUtil.parseString(param.get("applicationId")))) {
-                    predicates.add(cb.equal(root.get("applicationId"), applicationId));
-                }
-                int parentId = DPUtil.parseInt(param.get("parentId"));
-                if(!"".equals(DPUtil.parseString(param.get("parentId")))) {
-                    predicates.add(cb.equal(root.get("parentId"), parentId));
-                }
-                return cb.and(predicates.toArray(new Predicate[0]));
+    public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {
+        ObjectNode result = search(resourceDao, param, (Specification<Resource>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            int id = DPUtil.parseInt(param.get("id"));
+            if (id > 0) predicates.add(cb.equal(root.get("id"), id));
+            int status = DPUtil.parseInt(param.get("status"));
+            if (!"".equals(DPUtil.parseString(param.get("status")))) {
+                predicates.add(cb.equal(root.get("status"), status));
             }
-        }, PageRequest.of(page - 1, pageSize, sort));
-        List<?> rows = data.getContent();
+            String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+            if (!DPUtil.empty(name)) {
+                predicates.add(cb.like(root.get("name"), "%" + name + "%"));
+            }
+            String fullName = DPUtil.trim(DPUtil.parseString(param.get("fullName")));
+            if (!DPUtil.empty(fullName)) {
+                predicates.add(cb.like(root.get("fullName"), "%" + fullName + "%"));
+            }
+            int applicationId = DPUtil.parseInt(param.get("applicationId"));
+            if (!"".equals(DPUtil.parseString(param.get("applicationId")))) {
+                predicates.add(cb.equal(root.get("applicationId"), applicationId));
+            }
+            int parentId = DPUtil.parseInt(param.get("parentId"));
+            if (!"".equals(DPUtil.parseString(param.get("parentId")))) {
+                predicates.add(cb.equal(root.get("parentId"), parentId));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        });
+        JsonNode rows = ApiUtil.rows(result);
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
-            DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+            DPUtil.fillValues(rows, "status", "statusText", status());
         }
         if(!DPUtil.empty(args.get("withApplicationInfo"))) {
             applicationService.fillInfo(rows, "applicationId");
@@ -199,30 +158,11 @@ public class ResourceService extends ServiceBase {
         if(!DPUtil.empty(args.get("withParentInfo"))) {
             this.fillInfo(rows, "parentId");
         }
-        result.put("page", page);
-        result.put("pageSize", pageSize);
-        result.put("total", data.getTotalElements());
-        result.put("rows", rows);
         return result;
     }
 
     public boolean remove(List<Integer> ids) {
-        if(null == ids || ids.size() < 1) return false;
-        resourceDao.deleteInBatch(resourceDao.findAllById(ids));
-        return true;
-    }
-
-    public boolean delete(List<Integer> ids, int uid) {
-        if(null == ids || ids.size() < 1) return false;
-        List<Resource> list = resourceDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        for (Resource item : list) {
-            item.setStatus(-1);
-            item.setUpdatedTime(time);
-            item.setUpdatedUid(uid);
-        }
-        resourceDao.saveAll(list);
-        return true;
+        return remove(resourceDao, ids);
     }
 
 }

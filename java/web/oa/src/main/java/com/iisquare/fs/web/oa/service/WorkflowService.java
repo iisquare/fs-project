@@ -389,7 +389,7 @@ public class WorkflowService extends ServiceBase {
         long count = query.count();
         ArrayNode rows = historicProcessInstance2node(count > 0 ? query.listPage((page - 1) * pageSize, pageSize) : new ArrayList<>());
         if(!DPUtil.empty(config.get("withUserInfo"))) {
-            rbacService.fillUserInfo(rows, "startUserId");
+            rbacService.fillUserInfo("Id", "Info", rows, "startUserId");
         }
         result.put("page", page);
         result.put("pageSize", pageSize);
@@ -403,7 +403,7 @@ public class WorkflowService extends ServiceBase {
         if (ids.size() < 1) return array;
         ProcessInstanceQuery query = runtimeService.createProcessInstanceQuery().processInstanceIds(ids);
         ObjectNode instances = DPUtil.array2object(processInstance2node(query.list()), "id");
-        return DPUtil.fillValues(array, true, new String[]{"id"}, new String[]{"processInstanceInfo"}, instances);
+        return (ArrayNode) DPUtil.fillValues(array, true, new String[]{"id"}, new String[]{"processInstanceInfo"}, instances);
     }
 
     public Map<?, ?> searchDeployment(Map<?, ?> param, Map<?, ?> config) {

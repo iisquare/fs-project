@@ -784,10 +784,14 @@ public class DPUtil {
         return map;
     }
 
-    public static String[] suffix(String[] array, String suffix) {
+    public static String[] suffix(String[] array) {
+        return suffix(array, "Id", "Info");
+    }
+
+    public static String[] suffix(String[] array, String fromSuffix, String toSuffix) {
         String[] result = new String[array.length];
         for (int i = 0; i < array.length; i++) {
-            result[i] = array[i] + suffix;
+            result[i] = substring(array[i], 0, array[i].length() - fromSuffix.length()) + toSuffix;
         }
         return result;
     }
@@ -821,9 +825,7 @@ public class DPUtil {
 
     public static ObjectNode array2object(JsonNode array, String field) {
         ObjectNode nodes = DPUtil.objectNode();
-        Iterator<JsonNode> iterator = array.iterator();
-        while (iterator.hasNext()) {
-            JsonNode node = iterator.next();
+        for (JsonNode node : array) {
             String key = node.at("/" + field).asText("");
             nodes.replace(key, node);
         }
@@ -833,9 +835,7 @@ public class DPUtil {
     public static Map<String, Integer> indexes(ArrayNode array, String field) {
         Map<String, Integer> map = new LinkedHashMap<>();
         int index = 0;
-        Iterator<JsonNode> iterator = array.iterator();
-        while (iterator.hasNext()) {
-            JsonNode node = iterator.next();
+        for (JsonNode node : array) {
             String key = node.at("/" + field).asText("");
             map.put(key, index++);
         }
@@ -873,16 +873,38 @@ public class DPUtil {
         return list;
     }
 
-    public static <T> List<T> fillValues(List<T> list, String[] properties, String suffix, Map<?, ?> map) {
-        return fillValues(list, properties, suffix(properties, suffix), fillArray(map, properties.length));
+    public static ArrayNode formatRelation(ArrayNode data, String parentKey, Object parentValue, String idKey, String childrenKey) {
+        if (!(parentValue instanceof JsonNode)) parentValue = DPUtil.toJSON(parentValue);
+        ArrayNode result = DPUtil.arrayNode();
+        for (JsonNode item : data) {
+            if (!parentValue.equals(DPUtil.value(item, parentKey))) continue;
+            result.add(item);
+            ArrayNode children = formatRelation(data, parentKey, DPUtil.value(item, idKey), idKey, childrenKey);
+            if (children.size() < 1) continue;
+            ((ObjectNode) item).replace(childrenKey, children);
+        }
+        return result;
     }
 
-    public static <T> List<T> fillValues(List<T> list, String[] froms, String[] tos, Map<?, ?>... maps) {
+    @Deprecated
+    public static <T> List<T> fillValues(List<T> list, String[] froms, String suffix, Map<?, ?> map) {
+        if (null == list) return null;
+        for (Object item : list) {
+            for (int i = 0; i < froms.length; i++) {
+                ReflectUtil.setPropertyValue(item, froms[i] + suffix, null, new Object[]{
+                        map.get(ReflectUtil.getPropertyValue(item, froms[i]))
+                });
+            }
+        }
+        return list;
+    }
+
+    public static <T> List<T> fillValues(List<T> list, String[] froms, String[] tos, Map<?, ?> map) {
         if (null == list) return null;
         for (Object item : list) {
             for (int i = 0; i < froms.length; i++) {
                 ReflectUtil.setPropertyValue(item, tos[i], null, new Object[]{
-                        maps[i].get(ReflectUtil.getPropertyValue(item, froms[i]))
+                        map.get(ReflectUtil.getPropertyValue(item, froms[i]))
                 });
             }
         }
@@ -919,9 +941,7 @@ public class DPUtil {
 
     public static <T> Set<T> values(JsonNode array, Class<T> tClass, String... properties) {
         Set<T> valueList = new LinkedHashSet<>();
-        Iterator<JsonNode> iterator = array.iterator();
-        while (iterator.hasNext()) {
-            JsonNode node = iterator.next();
+        for (JsonNode node : array) {
             for (String property : properties) {
                 if (!node.has(property)) continue;
                 T value = DPUtil.toJSON(node.get(property), tClass);
@@ -932,22 +952,28 @@ public class DPUtil {
         return valueList;
     }
 
-    public static ArrayNode fillValues(ArrayNode array, String[] froms, String[] tos, JsonNode... nodes) {
-        return fillValues(array, false, froms, tos, nodes);
+    public static JsonNode fillValues(JsonNode json, String from, String to, JsonNode data) {
+        return fillValues(json, false, new String[]{from}, new String[]{to}, data);
     }
 
-    public static ArrayNode fillValues(ArrayNode array, boolean withEmptyObject, String[] froms, String[] tos, JsonNode... nodes) {
-        if (null == array) return null;
-        Iterator<JsonNode> iterator = array.iterator();
-        while (iterator.hasNext()) {
-            ObjectNode item = (ObjectNode) iterator.next();
+    public static JsonNode fillValues(JsonNode json, String from, String to, Map<?, ?> data) {
+        return fillValues(json, false, new String[]{from}, new String[]{to}, DPUtil.toJSON(data));
+    }
+
+    public static JsonNode fillValues(JsonNode json, String[] froms, String[] tos, JsonNode data) {
+        return fillValues(json, false, froms, tos, data);
+    }
+
+    public static JsonNode fillValues(JsonNode json, boolean withEmptyObject, String[] froms, String[] tos, JsonNode data) {
+        if (null == json) return null;
+        for (JsonNode item : json) {
             for (int i = 0; i < froms.length; i++) {
-                JsonNode node = nodes[i].at("/" + item.at("/" + froms[i]).asText());
+                JsonNode node = data.at("/" + item.at("/" + froms[i]).asText());
                 if (withEmptyObject && !node.isObject()) node = DPUtil.objectNode();
-                item.replace(tos[i], node);
+                ((ObjectNode) item).replace(tos[i], node);
             }
         }
-        return array;
+        return json;
     }
 
     /**

@@ -1,0 +1,53 @@
+// 基础样式，可被其他项目或独立页面复用
+@use "@/assets/mixin.scss" as *;
+
+html, body, form, div, ul, fieldset, li, table, tr, td, span, em, span, input {
+  margin: 0px;
+  padding: 0px;
+}
+a {
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: none;
+}
+
+.flex-center {
+  @include flex-center();
+}
+
+.flex-end {
+  @include flex-end();
+}
+
+.flex-start {
+  @include flex-start();
+}
+
+.flex-between {
+  @include flex-between();
+}
+
+.flex-start-column {
+  @include flex-start-column();
+}
+
+.flex-end-column {
+  @include flex-end-column();
+}
+
+.flex-column {
+  @include flex-column();
+}
+
+.flex-row {
+  @include flex-row();
+}
+
+.flex-wrap {
+  @include flex-wrap();
+}
+
+.text-wrap {
+  @include text-wrap();
+}

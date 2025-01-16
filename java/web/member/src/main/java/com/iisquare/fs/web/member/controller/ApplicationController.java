@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.member.controller;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.core.rbac.Permission;
@@ -37,8 +38,8 @@ public class ApplicationController extends PermitControllerBase {
 
     @RequestMapping("/list")
     @Permission("")
-    public String listAction(@RequestBody Map<?, ?> param) {
-        Map<?, ?> result = applicationService.search(param, DPUtil.buildMap("withUserInfo", true, "withStatusText", true));
+    public String listAction(@RequestBody Map<String, Object> param) {
+        ObjectNode result = applicationService.search(param, DPUtil.buildMap("withUserInfo", true, "withStatusText", true));
         return ApiUtil.echoResult(0, null, result);
     }
 
@@ -60,7 +61,7 @@ public class ApplicationController extends PermitControllerBase {
     @RequestMapping("/config")
     @Permission("")
     public String configAction(ModelMap model) {
-        model.put("status", applicationService.status("default"));
+        model.put("status", applicationService.status());
         return ApiUtil.echoResult(0, null, model);
     }
 

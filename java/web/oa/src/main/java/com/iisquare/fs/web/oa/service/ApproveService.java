@@ -226,7 +226,7 @@ public class ApproveService extends ServiceBase {
         Set<String> processInstanceIds = DPUtil.values(array, String.class, "processInstanceId");
         ArrayNode rows = workflowService.processInstance2node(runtimeService.createProcessInstanceQuery().processInstanceIds(processInstanceIds).list());
         if(!DPUtil.empty(config.get("withUserInfo"))) {
-            rbacService.fillUserInfo(rows, "startUserId");
+            rbacService.fillUserInfo("Id", "Info", rows, "startUserId");
         }
         ObjectNode instances = DPUtil.array2object(rows, "id");
         Iterator<JsonNode> iterator = array.iterator();
@@ -588,7 +588,7 @@ public class ApproveService extends ServiceBase {
         long count = query.count();
         ArrayNode rows = workflowService.historicProcessInstance2node(count > 0 ? query.listPage((page - 1) * pageSize, pageSize) : new ArrayList<>());
         if(!DPUtil.empty(config.get("withUserInfo"))) {
-            rbacService.fillUserInfo(rows, "startUserId");
+            rbacService.fillUserInfo("Id", "Info", rows, "startUserId");
         }
         result.put("page", page);
         result.put("pageSize", pageSize);

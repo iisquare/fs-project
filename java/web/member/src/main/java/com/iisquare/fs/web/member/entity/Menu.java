@@ -29,14 +29,8 @@ public class Menu implements Serializable {
     private String fullName; // 自动拼接上级名称
     @Column
     private Integer applicationId;
-    @Transient
-    private String applicationIdName;
     @Column
     private Integer parentId;
-    @Transient
-    private String parentIdName;
-    @Transient
-    private List<Menu> children;
     @Column
     private String icon; // 图标
     @Column
@@ -47,22 +41,16 @@ public class Menu implements Serializable {
     private Integer sort;
     @Column
     private Integer status;
-    @Transient
-    private String statusText;
     @Column
     private String description;
     @Column
     private Long createdTime;
     @Column
     private Integer createdUid;
-    @Transient
-    private String createdUidName;
     @Column
     private Long updatedTime;
     @Column
     private Integer updatedUid;
-    @Transient
-    private String updatedUidName;
 
     public ObjectNode menu() {
         ObjectNode node = DPUtil.objectNode();

@@ -46,8 +46,8 @@ public class DictionaryController extends PermitControllerBase {
 
     @RequestMapping("/list")
     @Permission("")
-    public String listAction(@RequestBody Map<?, ?> param) {
-        Map<?, ?> result = dictionaryService.search(param, DPUtil.buildMap(
+    public String listAction(@RequestBody Map<String, Object> param) {
+        ObjectNode result = dictionaryService.search(param, DPUtil.buildMap(
                 "withUserInfo", true, "withStatusText", true, "withParentInfo", true
         ));
         return ApiUtil.echoResult(0, null, result);
@@ -64,14 +64,14 @@ public class DictionaryController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = dictionaryService.delete(ids, rbacService.uid(request));
+        boolean result = dictionaryService.remove(ids);
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }
 
     @RequestMapping("/config")
     @Permission("")
     public String configAction(ModelMap model) {
-        model.put("status", dictionaryService.status("default"));
+        model.put("status", dictionaryService.status());
         return ApiUtil.echoResult(0, null, model);
     }
 

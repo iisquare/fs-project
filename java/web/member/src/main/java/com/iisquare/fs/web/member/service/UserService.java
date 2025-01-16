@@ -8,8 +8,7 @@ import com.iisquare.fs.base.core.util.CodeUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
-import com.iisquare.fs.base.jpa.util.JPAUtil;
-import com.iisquare.fs.base.web.mvc.ServiceBase;
+import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.base.web.util.ServletUtil;
 import com.iisquare.fs.web.member.dao.RelationDao;
 import com.iisquare.fs.web.member.dao.RoleDao;
@@ -19,9 +18,6 @@ import com.iisquare.fs.web.member.entity.Role;
 import com.iisquare.fs.web.member.entity.User;
 import com.iisquare.fs.web.member.mvc.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
-public class UserService extends ServiceBase {
+public class UserService extends JPAServiceBase {
 
     @Autowired
     private UserDao userDao;
@@ -41,8 +37,6 @@ public class UserService extends ServiceBase {
     private RoleDao roleDao;
     @Autowired
     private RbacService rbacService;
-    @Autowired
-    private SettingService settingService;
 
     public User infoBySerial(String serial) {
         return userDao.findFirstBySerial(serial);
@@ -60,26 +54,15 @@ public class UserService extends ServiceBase {
         return CodeUtil.md5(CodeUtil.md5(password) + salt);
     }
 
-    public Map<?, ?> status(String level) {
+    public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();
         status.put(1, "正常");
         status.put(2, "禁用");
-        switch (level) {
-            case "default":
-                break;
-            case "full":
-                status.put(-1, "已删除");
-                break;
-            default:
-                return null;
-        }
         return status;
     }
 
     public User info(Integer id) {
-        if(null == id || id < 1) return null;
-        Optional<User> info = userDao.findById(id);
-        return info.isPresent() ? info.get() : null;
+        return info(userDao, id);
     }
 
     public ObjectNode identity(Integer id) {
@@ -113,7 +96,9 @@ public class UserService extends ServiceBase {
         String module = DPUtil.parseString(param.get("module"));
         if(param.containsKey("serial")) {
             info = infoBySerial(DPUtil.parseString(param.get("serial")));
-            if(null == info) return ApiUtil.result(1001, "账号不存在", null);
+            if(null == info || 0 != info.getDeletedTime()) {
+                return ApiUtil.result(1001, "账号不存在", null);
+            }
             if(!info.getPassword().equals(password(DPUtil.parseString(param.get("password")), info.getSalt()))) {
                 return ApiUtil.result(1002, "密码错误", null);
             }
@@ -175,6 +160,7 @@ public class UserService extends ServiceBase {
             if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
             info = info(id);
             if(null == info) return ApiUtil.result(404, null, id);
+            if(0 != info.getDeletedTime()) return ApiUtil.result(1404, "用户已删除，不允许修改", id);
         } else {
             if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
             info = new User();
@@ -193,7 +179,7 @@ public class UserService extends ServiceBase {
         }
         int sort = DPUtil.parseInt(param.get("sort"));
         int status = DPUtil.parseInt(param.get("status"));
-        if(!status("default").containsKey(status)) {
+        if(!status().containsKey(status)) {
             return ApiUtil.result(1002, "状态异常", status);
         }
         String description = DPUtil.parseString(param.get("description"));
@@ -209,35 +195,30 @@ public class UserService extends ServiceBase {
                 info.setLockedTime(DPUtil.dateTime2millis(lockedTime, configuration.getFormatDate()));
             }
         }
-        int uid = rbacService.uid(request);
-        long time = System.currentTimeMillis();
-        if(uid > 0) {
-            info.setUpdatedTime(time);
-            info.setUpdatedUid(uid);
-        }
-        if(null == info.getId()) {
-            info.setCreatedTime(time);
-            info.setCreatedUid(uid);
-        }
-        info = userDao.save(info);
+        info = save(userDao, info, rbacService.uid(request));
         return ApiUtil.result(0, null, info);
     }
 
-    public List<User> filter(List<User> list) {
-        for (User item : list) {
-            item.setPassword("");
-            item.setSalt("");
+    public JsonNode hide(JsonNode json) {
+        for (JsonNode node : json) {
+            ObjectNode item = (ObjectNode) node;
+            item.remove(Arrays.asList("password", "salt"));
         }
-        return list;
+        return json;
     }
 
-    public ObjectNode search(Map<?, ?> param, Map<?, ?> args) {
-        int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
-        int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
-        Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "sort"));
-        if (null == sort) sort = Sort.by(Sort.Order.desc("sort"));
-        Page<User> data = userDao.findAll((Specification<User>) (root, query, cb) -> {
-            SpecificationHelper helper = SpecificationHelper.newInstance(root, cb, param);
+    @Override
+    public JsonNode filter(JsonNode json) {
+        for (JsonNode node : json) {
+            ObjectNode item = (ObjectNode) node;
+            item.retain("id", "serial", "name", "id");
+        }
+        return json;
+    }
+
+    public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {
+        ObjectNode result = search(userDao, param, (Specification<User>) (root, query, cb) -> {
+            SpecificationHelper<User> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id");
             helper.equalWithIntNotEmpty("status").like("name").equal("serial").equal("createdIp");
             helper.betweenWithDate("createdTime").betweenWithDate("updatedTime").equal("loginedIp");
@@ -245,91 +226,62 @@ public class UserService extends ServiceBase {
             List<Integer> roleIds = helper.listInteger("roleIds");
             if(null != roleIds && roleIds.size() > 0) {
                 helper.add(root.get("id").in(DPUtil.values(
-                    relationDao.findAllByTypeAndBidIn("user_role", roleIds), Integer.class, "aid")));
+                        relationDao.findAllByTypeAndBidIn("user_role", roleIds), Integer.class, "aid")));
             }
             return cb.and(helper.predicates());
-        }, PageRequest.of(page - 1, pageSize, sort));
-        List<?> rows = this.filter(data.getContent());
+        });
+        JsonNode rows = hide(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
-            fillInfo(rows, "createdUid", "updatedUid");
+            fillInfo(rows, "createdUid", "updatedUid", "deletedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
-            DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+            DPUtil.fillValues(rows, "status", "statusText", status());
         }
         if(!DPUtil.empty(args.get("withRoles")) && rows.size() > 0) {
-            Map<Integer, User> rowsMap = DPUtil.list2map(rows, Integer.class, User.class, "id");
-            Set<Integer> ids = rowsMap.keySet();
+            ObjectNode rowsMap = DPUtil.array2object(rows, "id");
+            Set<Integer> ids = DPUtil.values(rowsMap, Integer.class, "id");
             List<Relation> relations = relationDao.findAllByTypeAndAidIn("user_role", ids);
             Set<Integer> roleIds = DPUtil.values(relations, Integer.class, "bid");
             Map<Integer, Role> roleMap = DPUtil.list2map(roleDao.findAllById(roleIds), Integer.class, Role.class, "id");
             for (Relation relation : relations) {
-                User item = rowsMap.get(relation.getAid());
+                ObjectNode item = (ObjectNode) rowsMap.at("/" + relation.getAid());
                 if(null == item) continue;
-                List<Role> roles = item.getRoles();
-                if(null == roles) {
-                    roles = new ArrayList<>();
-                    item.setRoles(roles);
-                }
+                ArrayNode roles = item.has("roles") ? (ArrayNode) item.at("/roles") : item.putArray("roles");
                 Role role = roleMap.get(relation.getBid());
                 if(null == role) continue;
-                roles.add(role);
+                roles.add(DPUtil.toJSON(role));
             }
         }
-        ObjectNode result = DPUtil.objectNode().put("page", page).put("pageSize", pageSize);
-        result.put("total", data.getTotalElements()).putPOJO("rows", rows);
         return result;
-    }
-
-    public boolean remove(List<Integer> ids) {
-        if(null == ids || ids.size() < 1) return false;
-        userDao.deleteInBatch(userDao.findAllById(ids));
-        return true;
     }
 
     public boolean delete(List<Integer> ids, int uid) {
-        if(null == ids || ids.size() < 1) return false;
-        List<User> list = userDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        for (User item : list) {
-            item.setStatus(-1);
-            item.setUpdatedTime(time);
-            item.setUpdatedUid(uid);
-        }
-        userDao.saveAll(list);
-        return true;
+        return delete(userDao, ids, uid);
     }
 
-    public Map<Integer, User> infoByIds(List<Integer> ids) {
-        if (null == ids || ids.size() < 1) return new HashMap<>();
-        List<User> list = userDao.findAllById(ids);
-        return DPUtil.list2map(list, Integer.class, "id");
+    public ObjectNode infoByIds(List<Integer> ids) {
+        return (ObjectNode) filter(infoByIds(userDao, ids));
     }
 
     public ObjectNode infos(List<Integer> ids) {
-        ObjectNode result = DPUtil.objectNode();
-        if (null == ids || ids.size() < 1) return result;
-        List<User> list = userDao.findAllById(ids);
-        for (User item : list) {
-            if (1 != item.getStatus()) continue;
-            ObjectNode node = result.putObject(String.valueOf(item.getId()));
-            node.put("id", item.getId());
-            node.put("name", item.getName());
+        ObjectNode nodes = infoByIds(userDao, ids);
+        List<String> keys = new ArrayList<>();
+        Iterator<Map.Entry<String, JsonNode>> iterator = nodes.fields();
+        while (iterator.hasNext()) {
+            Map.Entry<String, JsonNode> entry = iterator.next();
+            if (entry.getValue().at("/status").asInt() != 1) {
+                keys.add(entry.getKey());
+            }
         }
-        return result;
+        nodes.remove(keys);
+        return (ObjectNode) filter(nodes);
     }
 
-    public <T> List<T> fillInfo(List<T> list, String ...properties) {
-        Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
-        if(ids.size() < 1) return list;
-        Map<Integer, User> data = DPUtil.list2map(userDao.findAllById(ids), Integer.class, "id");
-        return DPUtil.fillValues(list, properties, "Name", DPUtil.values(data, String.class, "name"));
+    public JsonNode fillInfo(JsonNode json, String... properties) {
+        return fillInfo("Uid", "UserInfo", json, properties);
     }
 
-    public ArrayNode fillInfo(ArrayNode array, String[] properties) {
-        Set<Integer> ids = DPUtil.values(array, Integer.class, properties);
-        if(ids.size() < 1) return array;
-        Map<Integer, User> data = DPUtil.list2map(userDao.findAllById(ids), Integer.class, "id");
-        JsonNode reflect = DPUtil.toJSON(DPUtil.values(data, String.class, "name"));
-        return DPUtil.fillValues(array, properties, DPUtil.suffix(properties, "Name"), reflect);
+    public JsonNode fillInfo(String fromSuffix, String toSuffix, JsonNode json, String... properties) {
+        return fillInfo(userDao, Integer.class, "id", fromSuffix, toSuffix, json, properties);
     }
 }

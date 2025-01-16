@@ -54,9 +54,9 @@
         <a-form-model-item label="排序">{{ form.sort }}</a-form-model-item>
         <a-form-model-item label="状态">{{ form.statusText }}</a-form-model-item>
         <a-form-model-item label="描述">{{ form.description }}</a-form-model-item>
-        <a-form-model-item label="创建者">{{ form.createdUidName }}</a-form-model-item>
+        <a-form-model-item label="创建者">{{ form.createdUserInfo?.name }}</a-form-model-item>
         <a-form-model-item label="创建时间">{{ form.createdTime|date }}</a-form-model-item>
-        <a-form-model-item label="修改者">{{ form.updatedUidName }}</a-form-model-item>
+        <a-form-model-item label="修改者">{{ form.updatedUserInfo?.name }}</a-form-model-item>
         <a-form-model-item label="修改时间">{{ form.updatedTime|date }}</a-form-model-item>
       </a-form-model>
     </a-modal>

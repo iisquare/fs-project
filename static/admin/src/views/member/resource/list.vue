@@ -42,8 +42,8 @@
           @change="tableChange"
           :bordered="true"
         >
-          <span slot="applicationId" slot-scope="text, record">[{{ record.applicationId }}]{{ record.applicationIdName }}</span>
-          <span slot="parentId" slot-scope="text, record">[{{ record.parentId }}]{{ record.parentId > 0 ? record.parentIdName : '根节点' }}</span>
+          <span slot="applicationId" slot-scope="text, record">[{{ record.applicationId }}]{{ record.applicationInfo?.name }}</span>
+          <span slot="parentId" slot-scope="text, record">[{{ record.parentId }}]{{ record.parentId > 0 ? record.parentInfo?.name : '根节点' }}</span>
           <span slot="action" slot-scope="text, record">
             <a-button-group>
               <a-button type="link" size="small" v-permit="'member:resource:'" @click="show(text, record)">查看</a-button>
@@ -62,8 +62,8 @@
     <!--展示界面-->
     <a-modal :title="'信息查看 - ' + form.id" v-model="infoVisible" :footer="null">
       <a-form-model :model="form" :loading="infoLoading" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
-        <a-form-model-item label="应用">[{{ form.applicationId }}]{{ form.applicationIdName }}</a-form-model-item>
-        <a-form-model-item label="父级">[{{ form.parentId }}]{{ form.parentId > 0 ? form.parentIdName : '根节点' }}</a-form-model-item>
+        <a-form-model-item label="应用">[{{ form.applicationId }}]{{ form.applicationInfo?.name }}</a-form-model-item>
+        <a-form-model-item label="父级">[{{ form.parentId }}]{{ form.parentId > 0 ? form.parentInfo?.name : '根节点' }}</a-form-model-item>
         <a-form-model-item label="名称">{{ form.name }}</a-form-model-item>
         <a-form-model-item label="全称">{{ form.fullName }}</a-form-model-item>
         <a-form-model-item label="模块">{{ form.module }}</a-form-model-item>
@@ -72,9 +72,9 @@
         <a-form-model-item label="排序">{{ form.sort }}</a-form-model-item>
         <a-form-model-item label="状态">{{ form.statusText }}</a-form-model-item>
         <a-form-model-item label="描述">{{ form.description }}</a-form-model-item>
-        <a-form-model-item label="创建者">{{ form.createdUidName }}</a-form-model-item>
+        <a-form-model-item label="创建者">{{ form.createdUserInfo?.name }}</a-form-model-item>
         <a-form-model-item label="创建时间">{{ form.createdTime|date }}</a-form-model-item>
-        <a-form-model-item label="修改者">{{ form.updatedUidName }}</a-form-model-item>
+        <a-form-model-item label="修改者">{{ form.updatedUserInfo?.name }}</a-form-model-item>
         <a-form-model-item label="修改时间">{{ form.updatedTime|date }}</a-form-model-item>
       </a-form-model>
     </a-modal>

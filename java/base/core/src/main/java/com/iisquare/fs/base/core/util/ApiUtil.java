@@ -1,5 +1,8 @@
 package com.iisquare.fs.base.core.util;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.LinkedHashMap;
@@ -10,6 +13,11 @@ public class ApiUtil {
     public static final String FIELD_CODE = "code";
     public static final String FIELD_MSG = "message";
     public static final String FIELD_DATA = "data";
+
+    public static final String FIELD_DATA_PAGE = "page";
+    public static final String FIELD_DATA_PAGE_SIZE = "pageSize";
+    public static final String FIELD_DATA_TOTAL = "total";
+    public static final String FIELD_DATA_ROWS = "rows";
 
     public static String echoResult(int code, String message, Object data) {
         return echoResult(result(code, message, data));
@@ -72,6 +80,14 @@ public class ApiUtil {
         final PrintWriter pw = new PrintWriter(sw, true);
         throwable.printStackTrace(pw);
         return sw.getBuffer().toString();
+    }
+
+    public static JsonNode rows(Map<String, Object> result) {
+        return rows(data(result, ObjectNode.class));
+    }
+
+    public static JsonNode rows(ObjectNode data) {
+        return DPUtil.value(data, FIELD_DATA_ROWS);
     }
 
 }

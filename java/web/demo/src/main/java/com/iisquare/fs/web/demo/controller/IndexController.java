@@ -6,6 +6,7 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.web.mvc.ControllerBase;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -29,7 +30,7 @@ public class IndexController extends ControllerBase implements DisposableBean {
     }
 
     @RequestMapping("/sse")
-    public SseEmitter sseAction(HttpServletResponse response) throws Exception {
+    public SseEmitter sseAction(@RequestBody String json, HttpServletRequest request, HttpServletResponse response) throws Exception {
         String uuid = UUID.randomUUID().toString();
         SseEmitter emitter = new SseEmitter();
         AtomicBoolean running = new AtomicBoolean(true);
@@ -44,7 +45,7 @@ public class IndexController extends ControllerBase implements DisposableBean {
             throwable.printStackTrace();
         });
         pool.submit(() -> { // 若不直接返回SseEmitter实例，前端请求会一直处于pending状态
-            System.out.printf("[SSE %s] Begin\n", uuid);
+            System.out.printf("[SSE %s] Begin %s\n", uuid, json);
             for (int i = 0; i < 10; i++) {
                 if (!running.get()) break;
                 System.out.printf("[SSE %s] send %d\n", uuid, i);

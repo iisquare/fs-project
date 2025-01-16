@@ -1,14 +1,13 @@
 package com.iisquare.fs.web.core.rbac;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.iisquare.fs.base.core.util.ReflectUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 public abstract class RbacServiceBase extends ServiceBase {
 
@@ -16,9 +15,12 @@ public abstract class RbacServiceBase extends ServiceBase {
         return currentInfo(request).at("/uid").asInt();
     }
 
+    @Deprecated
     public abstract <T> List<T> fillUserInfo(List<T> list, String ...properties);
 
-    public abstract ArrayNode fillUserInfo(ArrayNode array, String ...properties);
+    public abstract JsonNode fillUserInfo(JsonNode json, String... properties);
+
+    public abstract JsonNode fillUserInfo(String fromSuffix, String toSuffix, JsonNode json, String... properties);
 
     public String keyPermit(String module, String controller, String action) {
         if (null == controller) controller = "";

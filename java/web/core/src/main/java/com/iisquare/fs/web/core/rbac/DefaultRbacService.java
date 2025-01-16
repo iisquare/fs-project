@@ -1,8 +1,6 @@
 package com.iisquare.fs.web.core.rbac;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ReflectUtil;
 import com.iisquare.fs.base.web.util.RpcUtil;
@@ -69,23 +67,18 @@ public class DefaultRbacService extends RbacServiceBase {
     }
 
     @Override
-    public ArrayNode fillUserInfo(ArrayNode array, String... properties) {
-        if(null == array || array.size() < 1 || properties.length < 1) return array;
-        Set<Integer> ids = DPUtil.values(array, Integer.class, properties);
-        if(ids.size() < 1) return array;
+    public JsonNode fillUserInfo(JsonNode json, String... properties) {
+        return fillUserInfo("Uid", "UserInfo", json, properties);
+    }
+
+    @Override
+    public JsonNode fillUserInfo(String fromSuffix, String toSuffix, JsonNode json, String... properties) {
+        if(null == json || json.size() < 1 || properties.length < 1) return json;
+        Set<Integer> ids = DPUtil.values(json, Integer.class, properties);
+        if(ids.size() < 1) return json;
         JsonNode userInfos = post("listByIds", DPUtil.buildMap("ids", ids), true);
         if (null == userInfos) return null;
-        if(userInfos.size() < 1) return array;
-        Iterator<JsonNode> iterator = array.iterator();
-        while (iterator.hasNext()) {
-            ObjectNode node = (ObjectNode) iterator.next();
-            for (String property : properties) {
-                JsonNode user = userInfos.get(node.at("/" + property).asText(""));
-                if(null == user) continue;
-                node.put(property + "Name", user.get("name").asText());
-            }
-        }
-        return array;
+        return DPUtil.fillValues(json, true, properties, DPUtil.suffix(properties, fromSuffix, toSuffix), userInfos);
     }
 
     @Override

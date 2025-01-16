@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.member.controller;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.core.rbac.Permission;
@@ -35,8 +36,8 @@ public class ResourceController extends PermitControllerBase {
 
     @RequestMapping("/list")
     @Permission("")
-    public String listAction(@RequestBody Map<?, ?> param) {
-        Map<?, ?> result = resourceService.search(param, DPUtil.buildMap(
+    public String listAction(@RequestBody Map<String, Object> param) {
+        ObjectNode result = resourceService.search(param, DPUtil.buildMap(
                 "withApplicationInfo", true, "withUserInfo", true, "withStatusText", true, "withParentInfo", true
         ));
         return ApiUtil.echoResult(0, null, result);
@@ -53,14 +54,14 @@ public class ResourceController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = resourceService.delete(ids, rbacService.uid(request));
+        boolean result = resourceService.remove(ids);
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }
 
     @RequestMapping("/config")
     @Permission("")
     public String configAction(ModelMap model) {
-        model.put("status", resourceService.status("default"));
+        model.put("status", resourceService.status());
         return ApiUtil.echoResult(0, null, model);
     }
 

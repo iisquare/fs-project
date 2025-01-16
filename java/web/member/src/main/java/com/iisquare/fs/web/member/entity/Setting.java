@@ -34,7 +34,5 @@ public class Setting implements Serializable {
     private Long updatedTime;
     @Column
     private Integer updatedUid;
-    @Transient
-    private String updatedUidName;
 
 }

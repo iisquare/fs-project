@@ -111,6 +111,11 @@ public class SpecificationHelper<T> {
         return this;
     }
 
+    public SpecificationHelper<T> withoutDeleted() {
+        predicates.add(builder.equal(root.get("deletedTime"), 0));
+        return this;
+    }
+
     public SpecificationHelper<T> equal(String key) {
         return equal(key, key);
     }

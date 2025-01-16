@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FS Project - IISquare.com</title>
+    <style>
+      .animbox {
+        padding-top: calc(50vh - 18px);
+        text-align: center;
+      }
+      .animbox > div {
+        background-color: #279fcf;
+        width: 4px;
+        height: 35px;
+        border-radius: 2px;
+        margin: 2px;
+        animation-fill-mode: both;
+        display: inline-block;
+        animation: anim 0.9s 0s infinite cubic-bezier(.11, .49, .38, .78);
+      }
+      .animbox > :nth-child(2), .animbox > :nth-child(4) {
+        animation-delay: 0.25s !important;
+      }
+  
+      .animbox > :nth-child(1), .animbox > :nth-child(5) {
+        animation-delay: 0.5s !important;
+      }
+      @keyframes anim {
+        0% {  transform: scaley(1); }
+        80% {  transform: scaley(0.3); }
+        90% {  transform: scaley(1);   }
+      }
+      .animtip {
+        color: #279fcf;
+        text-align: center;
+        font-size: 12px;
+        margin-top: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div class="animbox">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+      <div class="animtip">正在加载资源...</div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

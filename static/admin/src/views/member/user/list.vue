@@ -159,8 +159,8 @@
           <span slot="action" slot-scope="text, record">
             <a-button-group>
               <a-button type="link" size="small" v-permit="'member:user:'" @click="show(text, record)">查看</a-button>
-              <a-button v-if="record.status != -1" v-permit="'member:user:modify'" type="link" size="small" @click="edit(text, record)">编辑</a-button>
-              <a-button v-if="record.status != -1" v-permit="'member:user:role'" type="link" size="small" @click="editTree('role', record.id)">角色</a-button>
+              <a-button v-if="record.deletedTime == 0" v-permit="'member:user:modify'" type="link" size="small" @click="edit(text, record)">编辑</a-button>
+              <a-button v-if="record.deletedTime == 0" v-permit="'member:user:role'" type="link" size="small" @click="editTree('role', record.id)">角色</a-button>
             </a-button-group>
           </span>
         </a-table>
@@ -179,11 +179,13 @@
         <a-form-model-item label="排序">{{ form.sort }}</a-form-model-item>
         <a-form-model-item label="状态">{{ form.statusText }}</a-form-model-item>
         <a-form-model-item label="描述">{{ form.description }}</a-form-model-item>
-        <a-form-model-item label="创建者">{{ form.createdUidName }}</a-form-model-item>
+        <a-form-model-item label="创建者">{{ form.createdUserInfo?.name }}</a-form-model-item>
         <a-form-model-item label="创建时间">{{ form.createdTime|date }}</a-form-model-item>
         <a-form-model-item label="注册IP">{{ form.createdIp }}</a-form-model-item>
-        <a-form-model-item label="修改者">{{ form.updatedUidName }}</a-form-model-item>
+        <a-form-model-item label="修改者">{{ form.updatedUserInfo?.name }}</a-form-model-item>
         <a-form-model-item label="修改时间">{{ form.updatedTime|date }}</a-form-model-item>
+        <a-form-model-item label="删除者">{{ form.deletedUserInfo?.name }}</a-form-model-item>
+        <a-form-model-item label="删除时间">{{ form.deletedTime|date }}</a-form-model-item>
         <a-form-model-item label="登录IP">{{ form.loginedIp }}</a-form-model-item>
         <a-form-model-item label="登录时间">{{ form.loginedTime|date }}</a-form-model-item>
         <a-form-model-item label="锁定时间">{{ form.lockedTime|date }}</a-form-model-item>

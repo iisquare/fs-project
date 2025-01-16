@@ -34,7 +34,7 @@ public class UserController extends PermitControllerBase {
 
     @RequestMapping("/list")
     @Permission("")
-    public String listAction(@RequestBody Map<?, ?> param) {
+    public String listAction(@RequestBody Map<String, Object> param) {
         ObjectNode result = userService.search(param,
                 DPUtil.buildMap("withUserInfo", true, "withStatusText", true, "withRoles", true));
         return ApiUtil.echoResult(0, null, result);
@@ -58,10 +58,12 @@ public class UserController extends PermitControllerBase {
     @RequestMapping("/config")
     @Permission("")
     public String configAction(ModelMap model) {
-        model.put("status", userService.status("full"));
+        model.put("status", userService.status());
         model.put("defaultPassword", settingService.get("member", "defaultPassword"));
-        Map<?, ?> searchResult = roleService.search(new LinkedHashMap<>(), DPUtil.buildMap("withStatusText", true));
-        model.put("roles", searchResult.get("rows"));
+        ObjectNode result = roleService.search(
+                DPUtil.buildMap(String.class, Object.class, "pageSize", 200),
+                DPUtil.buildMap("withStatusText", true));
+        model.put("roles", result.get("rows"));
         return ApiUtil.echoResult(0, null, model);
     }
 

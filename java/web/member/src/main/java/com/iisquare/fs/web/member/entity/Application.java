@@ -36,22 +36,16 @@ public class Application implements Serializable {
     private Integer sort;
     @Column
     private Integer status;
-    @Transient
-    private String statusText;
     @Column
     private String description;
     @Column
     private Long createdTime;
     @Column
     private Integer createdUid;
-    @Transient
-    private String createdUidName;
     @Column
     private Long updatedTime;
     @Column
     private Integer updatedUid;
-    @Transient
-    private String updatedUidName;
 
     public ObjectNode menu() {
         ObjectNode node = DPUtil.objectNode();

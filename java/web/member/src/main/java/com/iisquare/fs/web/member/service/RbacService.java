@@ -44,12 +44,17 @@ public class RbacService extends RbacServiceBase {
 
     @Override
     public <T> List<T> fillUserInfo(List<T> list, String... properties) {
-        return userService.fillInfo(list, properties);
+        throw new RuntimeException("replace Name to UserInfo");
     }
 
     @Override
-    public ArrayNode fillUserInfo(ArrayNode array, String... properties) {
-        return userService.fillInfo(array, properties);
+    public JsonNode fillUserInfo(JsonNode json, String... properties) {
+        return userService.fillInfo(json, properties);
+    }
+
+    @Override
+    public JsonNode fillUserInfo(String fromSuffix, String toSuffix, JsonNode json, String... properties) {
+        return userService.fillInfo(fromSuffix, toSuffix, json, properties);
     }
 
     @Override

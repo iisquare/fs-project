@@ -1,0 +1,103 @@
+// 应用样式，仅针对当前项目的全局公共样式
+
+@use '@/assets/base.scss';
+
+:root {
+  --fs-layout-aside-width: 220px;
+  --fs-layout-header-height: 56px;
+  --fs-layout-border-color: #e5e7eb;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+}
+
+*:focus {
+  outline: none;
+}
+
+*[aria-hidden="true"] {
+  display: none !important;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  min-width: 600px;
+}
+
+.el-table {
+  --el-table-header-bg-color: #fafafa !important;
+}
+.el-table thead.is-group th.el-table__cell {
+  --el-fill-color-light: #fafafa;
+}
+
+::-webkit-scrollbar {
+	width: 5px;
+  height: 5px;
+	background-color: none;
+}
+::-webkit-scrollbar-thumb {
+	border-radius: 2px;
+	box-shadow: inset 0 0 6px rgba(0,0,0,.3);
+	background-color: none;
+}
+
+.fs-menu-dark {
+  --el-menu-bg-color: hsl(222.34deg, 10.43%, 12.27%);
+  --el-menu-hover-bg-color: hsl(216, 5%, 19%);
+  --el-menu-text-color: hsl(0, 0%, 90%);
+  background-color: hsl(222.34deg, 10.43%, 12.27%);
+  color: var(--el-menu-text-color);
+  a, a:visited {
+    width: 100%;
+    color: var(--el-menu-text-color);
+  }
+  .el-sub-menu.is-active {
+    .el-sub-menu__title {
+      color: hsl(0, 0%, 98%);
+    }
+  }
+  .el-menu-item.is-active {
+    color: var(--el-menu-active-color);
+    a, a:visited {
+      width: 100%;
+      color: var(--el-menu-active-color);
+    }
+  }
+}
+
+.fs-pointer {
+  cursor: pointer;
+}
+
+
+.fs-spin {
+  animation: spin 2s linear infinite;
+}
+ 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.fs-table-search {
+  margin-bottom: 15px;
+}
+.fs-table-card {
+  .el-card__body {
+    padding: 0 var(--el-card-padding);
+  }
+  .el-pagination {
+    height: 60px;
+    justify-content: end;
+  }
+}
+.fs-table-toolbar {
+  height: 60px;
+}
+.fs-table-dropdown {
+  width: 260px;
+}
