@@ -113,7 +113,7 @@ public class MenuService extends JPAServiceBase {
             userService.fillInfo(data, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
-            DPUtil.fillValues(data, new String[]{"status"}, new String[]{"statusText"}, DPUtil.toJSON(status()));
+            fillStatus(data, status());
         }
         return DPUtil.formatRelation(data, "parentId", 0, "id", "children");
     }
@@ -150,7 +150,7 @@ public class MenuService extends JPAServiceBase {
             userService.fillInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
-            DPUtil.fillValues(rows, "status", "statusText", status());
+            fillStatus(rows, status());
         }
         if(!DPUtil.empty(args.get("withApplicationInfo"))) {
             applicationService.fillInfo(rows, "applicationId");

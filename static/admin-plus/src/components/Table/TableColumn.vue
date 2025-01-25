@@ -14,6 +14,7 @@ const render = (columns: Array<any>, keyPrefix: string, context: any) => {
       prop={column.prop}
       width={column.width}
       fixed={column.fixed}
+      formatter={column.formatter}
       key={keyPrefix + '-' + index}
       v-slots={ column.slot && {
         default: context.slots[column.slot]

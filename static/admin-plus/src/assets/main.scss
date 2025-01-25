@@ -85,6 +85,9 @@ body, html {
 
 .fs-table-search {
   margin-bottom: 15px;
+  .el-form-item {
+    margin-bottom: 0;
+  }
 }
 .fs-table-card {
   .el-card__body {

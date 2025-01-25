@@ -1,6 +1,7 @@
 import axios from 'axios'
 import ApiUtil from '@/utils/ApiUtil'
 import { ElNotification, ElMessageBox } from 'element-plus'
+import { useCounterStore } from '@/stores/counter'
 
 const $axios = axios.create({
   baseURL: import.meta.env.VITE_APP_API_URL,
@@ -26,7 +27,7 @@ export default {
           ElMessageBox.confirm('登录状态已失效，是否前往登录页面重新登录？', '操作提示', { type: 'warning', }).then(() => {
             window.location.reload()
           }).catch(() => {})
-        } else if (ApiUtil.code(result) === 0) {
+        } else if (ApiUtil.succeed(result)) {
           tips.success && ElNotification({
             title: '状态：' + ApiUtil.code(result),
             message: '消息：' + ApiUtil.message(result),
@@ -39,19 +40,27 @@ export default {
             type: 'warning',
           })
         }
-        resolve(result)
+        if (ApiUtil.succeed(result)) {
+          resolve(result)
+        } else {
+          reject(result)
+        }
       }).catch((error: any) => {
         tips.error && ElNotification({
           title: '请求异常',
           message: error.message,
           type: 'error',
         })
-        resolve(ApiUtil.result(500, error.message, error))
+        reject(ApiUtil.result(500, error.message, error))
       })
     })
   },
   request(tips: any, config: any) {
-    return this.wrapper($axios, tips, config)
+    const counter = useCounterStore()
+    counter.fetching = true
+    const result = this.wrapper($axios, tips, config)
+    counter.fetching = false
+    return result
   },
   get(url: string, tips = {}, config = {}) {
     return this.request(tips, Object.assign(config, { method: 'get', url }))

@@ -21,73 +21,30 @@ const RouteUtil = {
       option.componentOptions.children[0].text.toLowerCase().indexOf(input.toLowerCase()) >= 0
     )
   },
-  selection (rowSelection = {}) {
-    return Object.assign({
-      selectedRowKeys: [], // 推荐仅采用selectedRowKeys进行整个交互过程的操作
-      selectedRows: [], // 仅通过selectedRowKeys设置选中项，selectedRows中的内容并不会发生变化
-      confirm (onOk: any, onCancel: any) {
-        return {
-          title: '操作提示',
-          content: '确认删除所选记录吗？',
-          onOk () {
-            onOk && onOk()
-          },
-          onCancel () {
-            onCancel && onCancel()
-          }
-        }
-      },
-      clear () {
-        this.selectedRowKeys = []
-        this.selectedRows = []
-      },
-      onChange (selectedRowKeys: any, selectedRows: any) {
-        this.selectedRowKeys = selectedRowKeys
-        this.selectedRows = selectedRows
-      },
-      revertSelected (rows: any, rowKey: any) {
-        const result: any = []
-        for (const index in rows) {
-          const record: any = rows[index]
-          if (this.selectedRowKeys.indexOf(record[rowKey] as never) === -1) {
-            result.push(record[rowKey])
-          }
-        }
-        this.selectedRowKeys = result
-      }
-    }, rowSelection)
-  },
-  paginationPageKey: 'current',
-  paginationChange (oldValue: any, newValue: any) {
-    if (oldValue.pageSize !== newValue.pageSize) {
-      newValue[this.paginationPageKey] = 1
-    }
-    return newValue
-  },
-  paginationData (pagination: any, fromChange: any) {
+  paginationPageKey: 'currentPage',
+  pagination2filter (pagination: any, keepPage: boolean) {
     return {
-      page: fromChange ? pagination[this.paginationPageKey] : 1,
+      page: keepPage ? pagination[this.paginationPageKey] : 1,
       pageSize: pagination.pageSize
     }
   },
-  pagination (filters: any) {
-    return {
-      showQuickJumper: true,
-      showSizeChanger: true,
+  pagination (filters: any, pagination: any = {}) {
+    return Object.assign({
       [this.paginationPageKey]: filters.page,
       pageSize: filters.pageSize,
       total: 0,
-      showTotal: (total: any, range: any) => `共 ${total} 条`,
-      pageSizeOptions: ['5', '10', '15', '20', '25', '30', '35', '45', '50', '60', '100']
-    }
+      background: true,
+      layout: 'total, sizes, prev, pager, next, jumper',
+      pageSizes: [5, 10, 15, 20, 25, 30, 35, 45, 50, 60, 100],
+    }, pagination)
   },
-  result (result: any) {
+  result2pagination (pagination: any, result: any) {
     if (result.code !== 0) return {}
-    return {
+    return Object.assign(pagination, {
       [this.paginationPageKey]: result.data.page,
       pageSize: result.data.pageSize,
       total: result.data.total
-    }
+    })
   },
   encode (filter: any) {
     if (DataUtil.empty(filter)) return ''
@@ -112,12 +69,15 @@ const RouteUtil = {
   hasFilter (obj: any) {
     return !DataUtil.empty(obj.$route.query[this.filterKey])
   },
-  query2filter (obj: any, filters: any) {
-    return Object.assign({}, filters, this.decode(obj.$route.query[this.filterKey]))
+  query2filter (route: any, filters: any = {}) {
+    return Object.assign({
+      [this.paginationPageKey]: 1,
+      pageSize: 15,
+    }, filters, this.decode(route.query[this.filterKey]))
   },
-  filter2query (obj: any, filter: any) {
-    return obj.$router.push({
-      path: obj.$route.fullPath,
+  filter2query (route: any, router: any, filter: any) {
+    return router.push({
+      path: route.fullPath,
       query: {
         [this.filterKey]: this.encode(filter)
       }

@@ -32,9 +32,13 @@ public class LmLog {
     @Column
     private String response; // 响应内容
     @Column
-    private String finishReason; // 完成原因，含客户端停止、敏感词拦截
+    private String requestIp; // 调用端地址
     @Column
-    private Integer requestStream;
+    private String responseState; // 响应状态
+    @Column
+    private String finishReason; // 完成原因，含正常输出完成、输出长度达到限制、客户端停止、敏感词拦截
+    @Column
+    private Integer requestStream; // 是否为流式输出
     @Column
     private String responseId;
     @Column

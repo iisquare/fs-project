@@ -9,10 +9,10 @@ export const layouts = [{
     path: '/member/index/index',
     meta: { title: '工作面板' },
     component: layout.default
-//   }, {
-//     path: '/member/user/list',
-//     meta: { title: '用户列表' },
-//     component: () => import('@/views/member/user/list')
+  }, {
+    path: '/member/user/list',
+    meta: { title: '用户列表' },
+    component: () => import('@/views/member/user/list.vue')
 //   }, {
 //     path: '/member/role/list',
 //     meta: { title: '角色列表' },

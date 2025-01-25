@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import ApiUtil from '@/utils/ApiUtil'
 import RbacApi from '@/api/admin/RbacApi'
+import DataUtil from '@/utils/DataUtil'
 
 export const useUserStore = defineStore('user', () => {
   const USER_DEFAULT_STATE = {
@@ -21,17 +22,16 @@ export const useUserStore = defineStore('user', () => {
   const apps: any = ref({}) // 用于缓存菜单的处理结果
   
   const reload = async () => {
-    const result = await RbacApi.login()
-    if (ApiUtil.succeed(result)) {
+    await RbacApi.login().then(result => {
       ready.value = true
       const data = ApiUtil.data(result)
       Object.assign(info.value, data.info)
       menu.value = data.menu
       resource.value = data.resource
       apps.value = generateApps(menu.value)
-    } else {
+    }).catch(() => {
       ready.value = false
-    }
+    })
     return { ready: ready.value, info: info.value }
   }
 
@@ -61,9 +61,7 @@ export const useUserStore = defineStore('user', () => {
 
   const hasPermit = (value: any) => {
     if (!value) return false
-    if (value instanceof String) {
-      value = [value]
-    }
+    if (!DataUtil.isArray(value)) value = [value]
     for (const index in value) {
       if (resource.value[value[index]]) return true
     }

@@ -104,7 +104,7 @@ public class ApplicationService extends JPAServiceBase {
             userService.fillInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
-            DPUtil.fillValues(rows, "status", "statusText", status());
+            fillStatus(rows, status());
         }
         return result;
     }

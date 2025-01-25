@@ -21,8 +21,8 @@ const router = useRouter()
         <el-form-item label="描述">{{ user.info.description || '暂无' }}</el-form-item>
         <el-form-item label="注册IP">{{ user.info.createdIp }}</el-form-item>
         <el-form-item label="注册时间">{{ DateUtil.format(user.info.createdTime) }}</el-form-item>
-        <el-form-item label="登录IP">{{ user.info.loginedIp }}</el-form-item>
-        <el-form-item label="登录时间">{{ DateUtil.format(user.info.loginedTime) }}</el-form-item>
+        <el-form-item label="登录IP">{{ user.info.loginIp }}</el-form-item>
+        <el-form-item label="登录时间">{{ DateUtil.format(user.info.loginTime) }}</el-form-item>
         <el-form-item>
           <el-button @click="router.go(-1)">返回</el-button>
         </el-form-item>

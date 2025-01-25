@@ -36,12 +36,9 @@ const DateUtil = {
     const time = new Date()
     const hour = time.getHours()
     return hour < 9 ? '早上好' : hour <= 11 ? '上午好' : hour <= 13 ? '中午好' : hour < 20 ? '下午好' : '晚上好'
-  }
-}
-
-Object.assign(DateUtil, { // 拓展UI组件，this指针可能会被修改
-  dateRender (text: any, record: any, index: any) {
-    return DateUtil.format(text)
+  },
+  dateRender (row: any, column: any, cellValue: any, index: number) {
+    return DateUtil.format(cellValue)
   },
   showTime (indexRange: any) {
     return { format: DateUtil.timeMomentFormat(), defaultValue: DateUtil.timeMomentRange()[indexRange] }
@@ -49,6 +46,6 @@ Object.assign(DateUtil, { // 拓展UI组件，this指针可能会被修改
   dateFormat () {
     return DateUtil.dateMomentFormat()
   }
-})
+}
 
 export default DateUtil

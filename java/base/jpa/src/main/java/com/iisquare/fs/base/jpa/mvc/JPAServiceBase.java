@@ -40,6 +40,23 @@ public class JPAServiceBase extends ServiceBase {
         return DPUtil.fillValues(json, true, properties, DPUtil.suffix(properties, fromSuffix, toSuffix), data);
     }
 
+    protected JsonNode fillStatus(JsonNode rows, Map<?, ?> map) {
+        if (null == rows) return null;
+        for (JsonNode row : rows) {
+            ObjectNode item = (ObjectNode) row;
+            long deletedTime = item.at("/deletedTime").asLong(0);
+            if (deletedTime > 0) {
+                item.put("statusText", "已删除");
+                continue;
+            }
+            Object status = DPUtil.toJSON(item.at("/status"), Object.class);
+            if (map.containsKey(status)) {
+                item.replace("statusText", DPUtil.toJSON(map.get(status)));
+            }
+        }
+        return rows;
+    }
+
     protected <T, ID extends Serializable> boolean delete(DaoBase<T, ID> dao, List<ID> ids, int uid) {
         if(null == ids || ids.size() < 1) return false;
         List<T> list = dao.findAllById(ids);
@@ -66,8 +83,12 @@ public class JPAServiceBase extends ServiceBase {
 
     protected <T, ID extends Serializable> ObjectNode search(
             DaoBase<T, ID> dao, Map<String, Object> param, Specification<T> specification) {
-        return search(dao, param, specification,
-                15, Arrays.asList("id", "sort"), Sort.by(Sort.Order.desc("sort")));
+        return search(dao, param, specification, 15, null, null);
+    }
+
+    protected <T, ID extends Serializable> ObjectNode search(
+            DaoBase<T, ID> dao, Map<String, Object> param, Specification<T> specification, Sort defaultSort, String... sorts) {
+        return search(dao, param, specification, 15, DPUtil.array2list(sorts), defaultSort);
     }
 
     protected <T, ID extends Serializable> ObjectNode search(
@@ -76,7 +97,7 @@ public class JPAServiceBase extends ServiceBase {
         int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, defaultPageSize);
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), sorts);
-        if (null == sort) sort = defaultSort;
+        if (null == sort) sort = null == defaultSort ? Sort.unsorted() : defaultSort;
         Page<T> data = dao.findAll(specification, PageRequest.of(page - 1, pageSize, sort));
         ArrayNode rows = DPUtil.toJSON(data.getContent(), ArrayNode.class);
         ObjectNode result = DPUtil.objectNode();

@@ -4,6 +4,7 @@ import demo from './modules/demo'
 import { layout, page } from './config'
 import { useUserStore } from '@/stores/user'
 import DataUtil from '@/utils/DataUtil'
+import { useCounterStore } from '@/stores/counter'
 
 const blanks: any = [] // 独立页面
 const layouts: any = [] // 布局页面
@@ -89,6 +90,7 @@ const router = createRouter({
 const title = document.title
 
 router.beforeEach((to: any, from, next) => {
+  useCounterStore().routing = true
   document.title = (to.meta && to.meta.title) ? title.replace('FS Project', to.meta.title) : title
   const user = useUserStore()
   if (!user.ready) { // 用户状态未同步
@@ -120,6 +122,9 @@ router.beforeEach((to: any, from, next) => {
       next()
     }
   }
+})
+router.afterEach(() => {
+  useCounterStore().routing = false
 })
 
 export default router

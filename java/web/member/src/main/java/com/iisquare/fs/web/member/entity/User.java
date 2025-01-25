@@ -46,9 +46,9 @@ public class User implements Serializable {
     @Column
     private Integer updatedUid;
     @Column
-    private Long loginedTime; // 最后登录时间
+    private Long loginTime; // 最后登录时间
     @Column
-    private String loginedIp; // 最后登录IP
+    private String loginIp; // 最后登录IP
     @Column
     private Long lockedTime; // 锁定时间
     @Column

@@ -7,9 +7,11 @@ import icons from '@/assets/icons';
 import { ElMessageBox } from 'element-plus';
 import RbacApi from '@/api/admin/RbacApi';
 import { useRoute } from 'vue-router';
+import { useCounterStore } from '@/stores/counter';
 
 const user = useUserStore()
 const route = useRoute()
+const counter = useCounterStore()
 const menuCollapse = ref(false)
 const menus = computed(() => {
   const apps: any = user.apps
@@ -67,7 +69,7 @@ const handleLogout = () => {
         <el-header class="logo flex-start">
           <router-link :to="{ path: '/' }" class="flex-start">
             <el-space>
-              <img :src="logoSVG" />
+              <img :src="logoSVG" :class="[counter.routing && 'fs-spin']" />
               <span>FS Project</span>
             </el-space>
           </router-link>

@@ -83,6 +83,10 @@ public class DPUtil {
     }
 
     public static List<Integer> parseIntList(Object object) {
+        return parseIntList(object, ",");
+    }
+
+    public static List<Integer> parseIntList(Object object, String explode) {
         List<Integer> result = new ArrayList<>();
         if (null == object) return result;
         if (object instanceof Collection) {
@@ -100,13 +104,22 @@ public class DPUtil {
             for (Object item : array) {
                 result.add(parseInt(item));
             }
-        } else {
+        } else if (DPUtil.empty(explode)) {
             result.add(parseInt(object));
+        } else {
+            String[] strings = DPUtil.explode(explode, object.toString());
+            for (String item : strings) {
+                result.add(parseInt(item));
+            }
         }
         return result;
     }
 
     public static List<String> parseStringList(Object object) {
+        return parseStringList(object, ",");
+    }
+
+    public static List<String> parseStringList(Object object, String explode) {
         List<String> result = new ArrayList<>();
         if (null == object) return result;
         if (object instanceof Collection) {
@@ -124,8 +137,11 @@ public class DPUtil {
             for (Object item : array) {
                 result.add(parseString(item));
             }
-        } else {
+        } else if (DPUtil.empty(explode)) {
             result.add(object.toString());
+        } else {
+            String[] strings = DPUtil.explode(explode, object.toString());
+            result.addAll(Arrays.asList(strings));
         }
         return result;
     }

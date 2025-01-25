@@ -7,6 +7,8 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    ButtonAdvanced: typeof import('./src/components/Button/ButtonAdvanced.vue')['default']
+    copy: typeof import('./src/components/Form/FormSearchItem copy.vue')['default']
     ElAside: typeof import('element-plus/es')['ElAside']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElBreadcrumb: typeof import('element-plus/es')['ElBreadcrumb']
@@ -17,6 +19,7 @@ declare module 'vue' {
     ElCol: typeof import('element-plus/es')['ElCol']
     ElConfigProvider: typeof import('element-plus/es')['ElConfigProvider']
     ElContainer: typeof import('element-plus/es')['ElContainer']
+    ElDatePicker: typeof import('element-plus/es')['ElDatePicker']
     ElDescriptions: typeof import('element-plus/es')['ElDescriptions']
     ElDescriptionsItem: typeof import('element-plus/es')['ElDescriptionsItem']
     ElDropdown: typeof import('element-plus/es')['ElDropdown']
@@ -32,8 +35,10 @@ declare module 'vue' {
     ElMenu: typeof import('element-plus/es')['ElMenu']
     ElMenuItem: typeof import('element-plus/es')['ElMenuItem']
     ElMenuItemGroup: typeof import('element-plus/es')['ElMenuItemGroup']
+    ElOption: typeof import('element-plus/es')['ElOption']
     ElPagination: typeof import('element-plus/es')['ElPagination']
     ElRow: typeof import('element-plus/es')['ElRow']
+    ElSelect: typeof import('element-plus/es')['ElSelect']
     ElSkeleton: typeof import('element-plus/es')['ElSkeleton']
     ElSpace: typeof import('element-plus/es')['ElSpace']
     ElStatistic: typeof import('element-plus/es')['ElStatistic']
@@ -45,11 +50,23 @@ declare module 'vue' {
     ElText: typeof import('element-plus/es')['ElText']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     ElTree: typeof import('element-plus/es')['ElTree']
+    FormDate: typeof import('./src/components/Form/FormDate.vue')['default']
+    FormDatePicker: typeof import('./src/components/Form/FormDatePicker.vue')['default']
+    FormSearch: typeof import('./src/components/Form/FormSearch.vue')['default']
+    FormSearchCol: typeof import('./src/components/Form/FormSearchCol.vue')['default']
+    FormSearchDate: typeof import('./src/components/Form/FormSearchDate.vue')['default']
+    FormSearchItem: typeof import('./src/components/Form/FormSearchItem.vue')['default']
+    FormSearchRow: typeof import('./src/components/Form/FormSearchRow.vue')['default']
+    FormSelect: typeof import('./src/components/Form/FormSelect.vue')['default']
     LayoutIcon: typeof import('./src/components/Layout/LayoutIcon.vue')['default']
     LayoutMenuItem: typeof import('./src/components/Layout/LayoutMenuItem.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     TableColumn: typeof import('./src/components/Table/TableColumn.vue')['default']
     TableColumnSetting: typeof import('./src/components/Table/TableColumnSetting.vue')['default']
+    TablePagination: typeof import('./src/components/Table/TablePagination.vue')['default']
+  }
+  export interface ComponentCustomProperties {
+    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
   }
 }

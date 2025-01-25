@@ -16,9 +16,7 @@ user.reload().then(() => {
 const completed = () => {
   let url = route.query.redirect
   if (DataUtil.empty(url)) url = '/'
-  router.push({
-    path: (url as string)
-  }).catch(err => err)
+  router.push(url as string).catch(err => err)
 }
 
 watch(() => user.ready, (value) => {

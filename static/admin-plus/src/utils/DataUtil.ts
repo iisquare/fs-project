@@ -1,16 +1,16 @@
 const DataUtil = {
     trim (str: any, charlist = ' ') {
-      if (str == null) return ''
-      if (Object.prototype.toString.call(str) !== '[object String]') return ''
+      if (this.isUndefined(str) || this.isNull(str)) return ''
+      if (!this.isString(str)) return ''
       str = str.replace(new RegExp('^[' + charlist + ']+'), '')
       str = str.replace(new RegExp('[' + charlist + ']+$'), '')
       return str
     },
     empty (data: any) {
-      if (data == null) return true
-      if (data instanceof Array && data.length < 1) return true
-      if (data instanceof Object && Object.getOwnPropertyNames(data).length < 1) return true
-      if (Object.prototype.toString.call(data) === '[object String]' && this.trim(data).length < 1) return true
+      if (this.isUndefined(data) || this.isNull(data)) return true
+      if (this.isArray(data) && data.length < 1) return true
+      if (this.isObject(data) && Object.getOwnPropertyNames(data).length < 1) return true
+      if (this.isString(data) && this.trim(data).length < 1) return true
       return false
     },
     /**
@@ -81,6 +81,33 @@ const DataUtil = {
         result.push(item)
       })
       return result
+    },
+    isString (value: any) {
+      return typeof value === 'string'
+    },
+    isNumber (value: any) {
+      return typeof value === 'number' && !isNaN(value)
+    },
+    isArray (value: any) {
+      return Array.isArray(value)
+    },
+    isObject (value: any) {
+      return value !== null && typeof value === 'object' && !Array.isArray(value)
+    },
+    isBoolean (value: any) {
+      return typeof value === 'boolean'
+    },
+    isFunction (value: any) {
+      return typeof value === 'function'
+    },
+    isUndefined (value: any) {
+      return typeof value === 'undefined'
+    },
+    isNull (value: any) {
+      return value === null
+    },
+    isSymbol (value: any) {
+      return typeof value === 'symbol'
     },
   }
   export default DataUtil

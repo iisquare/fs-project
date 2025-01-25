@@ -29,8 +29,6 @@ public class UserController extends PermitControllerBase {
     private SettingService settingService;
     @Autowired
     private RelationService relationService;
-    @Autowired
-    private RoleService roleService;
 
     @RequestMapping("/list")
     @Permission("")
@@ -60,10 +58,6 @@ public class UserController extends PermitControllerBase {
     public String configAction(ModelMap model) {
         model.put("status", userService.status());
         model.put("defaultPassword", settingService.get("member", "defaultPassword"));
-        ObjectNode result = roleService.search(
-                DPUtil.buildMap(String.class, Object.class, "pageSize", 200),
-                DPUtil.buildMap("withStatusText", true));
-        model.put("roles", result.get("rows"));
         return ApiUtil.echoResult(0, null, model);
     }
 

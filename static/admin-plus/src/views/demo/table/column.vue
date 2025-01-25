@@ -4,7 +4,7 @@ import * as ElementPlusIcons from '@element-plus/icons-vue';
 import TableColumnSetting from '@/components/Table/TableColumnSetting.vue';
 import type { TableInstance } from 'element-plus';
 
-const table = ref<TableInstance>()
+const tableRef = ref<TableInstance>()
 const searchable = ref(true)
 const columns = ref([
   { prop: 'date', label: 'Date', width: '150' },
@@ -91,11 +91,11 @@ const rows = ref([
       <el-space>
         <el-button :icon="ElementPlusIcons.Search" circle title="展示/隐藏搜索栏" @click="searchable = !searchable" />
         <el-button :icon="ElementPlusIcons.Refresh" circle title="重新加载分页数据" />
-        <TableColumnSetting v-model="columns" :table="table" />
+        <TableColumnSetting v-model="columns" :table="tableRef" />
       </el-space>
     </div>
     <el-table
-      ref="table"
+      ref="tableRef"
       :data="rows"
       :row-key="record => record.id"
       :border="true"

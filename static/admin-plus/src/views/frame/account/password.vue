@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user';
 import { useRouter } from 'vue-router';
-import DateUtil from '@/utils/DateUtil';
 import { ref } from 'vue';
 import type { FormInstance } from 'element-plus';
 import UserApi from '@/api/member/UserApi';
-import ApiUtil from '@/utils/ApiUtil';
 
 const user = useUserStore()
 const router = useRouter()
@@ -23,9 +21,8 @@ const handleSubmit = () => {
     if (!valid || loading.value) return
     loading.value = true
     UserApi.password(form.value).then(result => {
-      if (ApiUtil.succeed(result)) {
-        router.go(0)
-      }
+      router.go(0)
+    }).catch(() => {
       loading.value = false
     })
   })

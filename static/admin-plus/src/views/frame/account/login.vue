@@ -30,12 +30,10 @@ const handleSubmit = () => {
     if (!valid || loading.value) return
     loading.value = true
     RbacApi.login(form.value).then(result => {
-      if (ApiUtil.succeed(result)) {
-        user.reset(ApiUtil.data(result))
-        redirect()
-      } else {
-        loading.value = false
-      }
+      user.reset(ApiUtil.data(result))
+      redirect()
+    }).catch(() => {
+      loading.value = false
     })
   })
 }

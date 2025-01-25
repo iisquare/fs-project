@@ -116,6 +116,23 @@ public class SpecificationHelper<T> {
         return this;
     }
 
+    public SpecificationHelper<T> deleted() {
+        return deleted("deleted");
+    }
+
+    public SpecificationHelper<T> deleted(String key) {
+        String deleted = DPUtil.parseString(param.get(key));
+        switch (deleted) {
+            case "only":
+                predicates.add(builder.gt(root.get("deletedTime"), 0));
+                break;
+            case "without":
+                predicates.add(builder.equal(root.get("deletedTime"), 0));
+                break;
+        }
+        return this;
+    }
+
     public SpecificationHelper<T> equal(String key) {
         return equal(key, key);
     }
@@ -217,18 +234,23 @@ public class SpecificationHelper<T> {
     }
 
     public SpecificationHelper<T> in(String key, String field) {
-        Object value = param.get(key);
-        if (DPUtil.empty(value)) return this;
-        if (value instanceof Collection) {
-            Iterator iterator = ((Collection) value).iterator();
-            List<String> list = new ArrayList<>();
-            while (iterator.hasNext()) list.add(DPUtil.parseString(iterator.next()));
-            if (list.size() > 0) predicates.add(root.get(field).in(list));
-            return this;
-        }
-        String[] strings = DPUtil.explode(",", DPUtil.parseString(value));
-        if (strings.length > 0) predicates.add(root.get(field).in(strings));
+        List<String> value = DPUtil.parseStringList(param.get(key));
+        if (value.size() > 0) predicates.add(root.get(field).in(value));
         return this;
+    }
+
+    public SpecificationHelper<T> notIn(String key) {
+        return notIn(key, key);
+    }
+
+    public SpecificationHelper<T> notIn(String key, String field) {
+        List<String> value = DPUtil.parseStringList(param.get(key));
+        if (value.size() > 0) predicates.add(root.get(field).in(value).not());
+        return this;
+    }
+
+    public SpecificationHelper<T> exceptIds() {
+        return notIn("exceptIds", "id");
     }
 
     public SpecificationHelper<T> functionFindInSet(String key) {
@@ -236,14 +258,9 @@ public class SpecificationHelper<T> {
     }
 
     public SpecificationHelper<T> functionFindInSet(String key, String field) {
-        Object value = param.get(key);
-        if (DPUtil.empty(value)) return this;
-        Iterator iterator = value instanceof Collection
-                ? ((Collection) value).iterator()
-                : Arrays.asList(DPUtil.explode(",", DPUtil.parseString(value))).iterator();
+        List<String> value = DPUtil.parseStringList(param.get(key));
         List<Predicate> predicates = new ArrayList<>();
-        while (iterator.hasNext()) {
-            String item = DPUtil.parseString(iterator.next());
+        for (String item : value) {
             Expression<Integer> expression = builder.function("FIND_IN_SET", Integer.class, builder.literal(item), root.get(field));
             predicates.add(builder.gt(expression, 0));
         }
@@ -251,20 +268,6 @@ public class SpecificationHelper<T> {
             this.predicates.add(builder.or(predicates.toArray(new Predicate[0])));
         }
         return this;
-    }
-
-    public List<Integer> listInteger(String key) {
-        Object value = param.get(key);
-        if (DPUtil.empty(value)) return null;
-        List<Integer> list = new ArrayList<>();
-        if (value instanceof Collection) {
-            Iterator iterator = ((Collection) value).iterator();
-            while (iterator.hasNext()) list.add(DPUtil.parseInt(iterator.next()));
-        } else {
-            String[] strings = DPUtil.explode(",", DPUtil.parseString(value));
-            for (String str : strings) list.add(DPUtil.parseInt(str));
-        }
-        return list;
     }
 
     public SpecificationHelper<T> add(Predicate e) {

@@ -8,5 +8,14 @@ export const useCounterStore = defineStore('counter', () => {
     count.value++
   }
 
-  return { count, doubleCount, increment }
+  const routing = ref(false) // 路由正在跳转
+  const fetching = ref(false) // 正在请求接口
+
+  return {
+    count,
+    doubleCount,
+    increment,
+    routing,
+    fetching,
+  }
 })

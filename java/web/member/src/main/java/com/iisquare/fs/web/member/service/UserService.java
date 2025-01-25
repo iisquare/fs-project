@@ -18,6 +18,7 @@ import com.iisquare.fs.web.member.entity.Role;
 import com.iisquare.fs.web.member.entity.User;
 import com.iisquare.fs.web.member.mvc.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -105,8 +106,8 @@ public class UserService extends JPAServiceBase {
             if(1 != info.getStatus() || info.getLockedTime() > System.currentTimeMillis()) {
                 return ApiUtil.result(1003, "账号已锁定，请联系管理人员", null);
             }
-            info.setLoginedTime(System.currentTimeMillis());
-            info.setLoginedIp(ServletUtil.getRemoteAddr(request));
+            info.setLoginTime(System.currentTimeMillis());
+            info.setLoginIp(ServletUtil.getRemoteAddr(request));
             userDao.save(info);
             rbacService.currentInfo(request, DPUtil.buildMap("uid", info.getId()));
             if(!rbacService.hasPermit(request, module, null, null)) {
@@ -221,21 +222,21 @@ public class UserService extends JPAServiceBase {
             SpecificationHelper<User> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id");
             helper.equalWithIntNotEmpty("status").like("name").equal("serial").equal("createdIp");
-            helper.betweenWithDate("createdTime").betweenWithDate("updatedTime").equal("loginedIp");
-            helper.betweenWithDate("loginedTime").betweenWithDate("lockedTime");
-            List<Integer> roleIds = helper.listInteger("roleIds");
+            helper.betweenWithDate("createdTime").betweenWithDate("updatedTime").equal("loginIp");
+            helper.betweenWithDate("loginTime").betweenWithDate("lockedTime").betweenWithDate("deletedTime");
+            List<Integer> roleIds = DPUtil.parseIntList(param.get("roleIds"));
             if(null != roleIds && roleIds.size() > 0) {
                 helper.add(root.get("id").in(DPUtil.values(
                         relationDao.findAllByTypeAndBidIn("user_role", roleIds), Integer.class, "aid")));
             }
             return cb.and(helper.predicates());
-        });
+        }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort");
         JsonNode rows = hide(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             fillInfo(rows, "createdUid", "updatedUid", "deletedUid");
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
-            DPUtil.fillValues(rows, "status", "statusText", status());
+            fillStatus(rows, status());
         }
         if(!DPUtil.empty(args.get("withRoles")) && rows.size() > 0) {
             ObjectNode rowsMap = DPUtil.array2object(rows, "id");
