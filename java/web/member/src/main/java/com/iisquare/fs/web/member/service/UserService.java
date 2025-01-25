@@ -38,6 +38,10 @@ public class UserService extends JPAServiceBase {
     private RoleDao roleDao;
     @Autowired
     private RbacService rbacService;
+    @Autowired
+    private RelationService relationService;
+    @Autowired
+    private SettingService settingService;
 
     public User infoBySerial(String serial) {
         return userDao.findFirstBySerial(serial);
@@ -169,7 +173,9 @@ public class UserService extends JPAServiceBase {
             if(DPUtil.empty(serial)) return ApiUtil.result(1002, "账号不能为空", serial);
             if(existsBySerial(serial)) return ApiUtil.result(2002, "账号已存在", serial);
             info.setSerial(serial);
-            if(DPUtil.empty(password)) return ApiUtil.result(1003, "密码不能为空", password);
+            if(DPUtil.empty(password)) { // 若未设置密码，采用系统配置的默认密码
+                password = settingService.get("member", "defaultPassword");
+            }
             info.setCreatedIp(ServletUtil.getRemoteAddr(request));
         }
         if(!DPUtil.empty(password)) {
@@ -197,6 +203,15 @@ public class UserService extends JPAServiceBase {
             }
         }
         info = save(userDao, info, rbacService.uid(request));
+        // 用户角色，新增时需要先保存用户
+        List<Integer> roleIds = DPUtil.parseIntList(param.get("roleIds"));
+        Set<Integer> permitted = relationService.relationIds("user_role", info.getId(), null);
+        if (!relationService.same(roleIds, permitted)) {
+            if(!rbacService.hasPermit(request, "role")) {
+                return ApiUtil.result(0, "用户保存成功，无角色操作权限", info);
+            }
+            relationService.relationIds("user_role", info.getId(), new HashSet<>(roleIds));
+        }
         return ApiUtil.result(0, null, info);
     }
 

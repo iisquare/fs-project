@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -29,14 +30,17 @@ public class RelationService extends ServiceBase {
             relationDao.deleteAll(list);
             list = new ArrayList<>();
             for (Integer bid : bids) {
-                list.add(
-                        Relation.builder()
-                                .id(type + "_" + aid + "_" + bid + "_" + cid)
-                                .type(type).aid(aid).bid(bid).cid(cid).build());
+                list.add(Relation.builder()
+                        .id(type + "_" + aid + "_" + bid + "_" + cid
+                        ).type(type).aid(aid).bid(bid).cid(cid).build());
             }
             relationDao.saveAll(list);
             return bids;
         }
+    }
+
+    public boolean same(Collection<Integer> a, Collection<Integer> b) {
+        return a.size() == b.size() && a.containsAll(b);
     }
 
 }

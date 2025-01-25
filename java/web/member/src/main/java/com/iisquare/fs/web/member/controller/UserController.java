@@ -3,11 +3,10 @@ package com.iisquare.fs.web.member.controller;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
-import com.iisquare.fs.web.member.entity.User;
-import com.iisquare.fs.web.member.service.*;
+import com.iisquare.fs.web.member.service.RbacService;
+import com.iisquare.fs.web.member.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,7 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/user")
@@ -25,10 +25,6 @@ public class UserController extends PermitControllerBase {
     private RbacService rbacService;
     @Autowired
     private UserService userService;
-    @Autowired
-    private SettingService settingService;
-    @Autowired
-    private RelationService relationService;
 
     @RequestMapping("/list")
     @Permission("")
@@ -57,34 +53,7 @@ public class UserController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", userService.status());
-        model.put("defaultPassword", settingService.get("member", "defaultPassword"));
         return ApiUtil.echoResult(0, null, model);
-    }
-
-    @RequestMapping("/tree")
-    @Permission({"", "role"})
-    public String treeAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
-        if(id < 1) return ApiUtil.echoResult(1001, "参数异常", id);
-        User info = userService.info(id);
-        if(null == info || -1 == info.getStatus()) return ApiUtil.echoResult(1002, "记录不存在或已删除", id);
-        Map<String, Object> result = new LinkedHashMap<>();
-        String type = DPUtil.parseString(param.get("type"));
-        if(param.containsKey("bids")) {
-            switch (type) {
-                case "role":
-                    if(!rbacService.hasPermit(request, type)) return ApiUtil.echoResult(9403, null, null);
-                    Set<Integer> bids = new HashSet<>();
-                    bids.addAll((List<Integer>) param.get("bids"));
-                    bids = relationService.relationIds("user_" + type, id, bids);
-                    return ApiUtil.echoResult(null == bids ? 500 : 0, null, bids);
-                default:
-                    return ApiUtil.echoResult(1003, "类型异常", id);
-            }
-        } else {
-            result.put("checked", relationService.relationIds("user_" + type, info.getId(), null));
-            return ApiUtil.echoResult(0, null, result);
-        }
     }
 
     @RequestMapping("/password")

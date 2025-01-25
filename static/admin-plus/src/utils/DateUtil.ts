@@ -1,5 +1,3 @@
-import moment from 'moment'
-
 const DateUtil = {
   format (time: any, fmt = 'yyyy-MM-dd HH:mm:ss') {
     if (!time) return ''
@@ -25,13 +23,6 @@ const DateUtil = {
   dateMomentFormat () {
     return 'YYYY-MM-DD HH:mm:ss'
   },
-  timeMomentFormat () {
-    return 'HH:mm:ss'
-  },
-  timeMomentRange () {
-    const format = this.timeMomentFormat()
-    return [moment('00:00:00', format), moment('23:59:59', format)]
-  },
   timeFix () {
     const time = new Date()
     const hour = time.getHours()
@@ -39,12 +30,6 @@ const DateUtil = {
   },
   dateRender (row: any, column: any, cellValue: any, index: number) {
     return DateUtil.format(cellValue)
-  },
-  showTime (indexRange: any) {
-    return { format: DateUtil.timeMomentFormat(), defaultValue: DateUtil.timeMomentRange()[indexRange] }
-  },
-  dateFormat () {
-    return DateUtil.dateMomentFormat()
   }
 }
 

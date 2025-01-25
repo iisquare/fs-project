@@ -24,16 +24,16 @@ const columns = ref([
   { prop: 'lockedTime', label: '锁定时间', formatter: DateUtil.dateRender },
   { prop: 'createdTime', label: '创建时间', formatter: DateUtil.dateRender, hide: true },
   { prop: 'updatedTime', label: '修改时间', formatter: DateUtil.dateRender, hide: true },
-  { prop: 'deletedTime', label: '删除时间', formatter: DateUtil.dateRender },
+  { prop: 'deletedTime', label: '删除时间', formatter: DateUtil.dateRender, hide: true },
   { prop: 'loginIp', label: '登录IP', hide: true },
   { prop: 'loginTime', label: '登录时间', formatter: DateUtil.dateRender, hide: true },
   
 ])
 const config = ref({
   ready: false,
-  defaultPassword: '',
   status: [],
 })
+const rows = ref([])
 const filterRef = ref<FormInstance>()
 const filters = ref(RouteUtil.query2filter(route, { advanced: false, roleIds: [] }))
 const pagination = ref(RouteUtil.pagination(filters.value))
@@ -56,8 +56,54 @@ onMounted(() => {
     Object.assign(config.value, { ready: true }, ApiUtil.data(result))
   })
 })
-
-const rows = ref([])
+const infoVisible = ref(false)
+const formVisible = ref(false)
+const formLoading = ref(false)
+const form: any = ref({})
+const formRef: any = ref<FormInstance>()
+const rules = ref({
+  serial: [{ required: true, message: '请输入账号', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
+  status: [{ required: true, message: '请选择状态', trigger: 'change' }]
+})
+const handleAdd = () => {
+  form.value = {
+    status: '1',
+  }
+  formVisible.value = true
+}
+const handleShow = (scope: any) => {
+  form.value = Object.assign({}, scope.row)
+  infoVisible.value = true
+}
+const handleEdit = (scope: any) => {
+  form.value = Object.assign({}, scope.row, {
+    status: scope.row.status + '',
+    lockedTime: DateUtil.format(scope.row.lockedTime),
+    roleIds: scope.row.roles ? scope.row.roles.map((item: any) => item.id) : []
+  })
+  formVisible.value = true
+}
+const handleSubmit = () => {
+  formRef.value?.validate((valid: boolean) => {
+    if (!valid || formLoading.value) return
+    formLoading.value = true
+    UserApi.save(form.value, { success: true }).then(result => {
+      handleRefresh(false, true)
+      formVisible.value = false
+    })
+  }).catch(() => {}).finally(() => {
+    formLoading.value = false
+  })
+}
+const handleDelete = () => {
+  RouteUtil.selection(selection.value).then((ids: any) => {
+    loading.value = true
+    UserApi.delete(ids, { success: true }).then(() => {
+      handleRefresh(false, true)
+    }).catch(() => {})
+  }).catch(() => {})
+}
 </script>
 
 <template>
@@ -128,9 +174,8 @@ const rows = ref([])
   <el-card :bordered="false" shadow="never" class="fs-table-card">
     <div class="fs-table-toolbar flex-between">
       <el-space>
-        <el-button type="success" :icon="ElementPlusIcons.Plus" v-permit="'member:user:add'">新增</el-button>
-        <el-button type="warning" :icon="ElementPlusIcons.Edit" v-permit="'member:user:modify'" :disabled="selection.length !== 1">编辑</el-button>
-        <el-button type="danger" :icon="ElementPlusIcons.Delete" v-permit="'member:user:delete'" :disabled="selection.length === 0">删除</el-button>
+        <el-button type="success" :icon="ElementPlusIcons.Plus" v-permit="'member:user:add'" @click="handleAdd">新增</el-button>
+        <el-button type="danger" :icon="ElementPlusIcons.Delete" v-permit="'member:user:delete'" :disabled="selection.length === 0" @click="handleDelete">删除</el-button>
       </el-space>
       <el-space>
         <el-button :icon="ElementPlusIcons.Search" circle title="展示/隐藏搜索栏" @click="searchable = !searchable" />
@@ -149,12 +194,77 @@ const rows = ref([])
       <el-table-column type="selection" />
       <TableColumn :columns="columns">
         <template #role="scope">
-          <el-tag v-for="item in scope.row.roles" :key="item.id">{{ item.name }}</el-tag>
+          <el-space><el-tag v-for="item in scope.row.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
         </template>
       </TableColumn>
+      <el-table-column label="操作">
+        <template #default="scope">
+          <el-button link @click="handleShow(scope)" v-permit="'member:user:'">查看</el-button>
+          <el-button link @click="handleEdit(scope)" v-if="scope.row.deletedTime == 0" v-permit="'member:user:modify'">编辑</el-button>
+        </template>
+      </el-table-column>
     </el-table>
     <TablePagination v-model="pagination" @change="handleRefresh(true, true)" />
   </el-card>
+  <el-drawer v-model="infoVisible" :title="'信息查看 - ' + form.id">
+    <el-form :model="form" label-width="auto">
+      <el-form-item label="账号">{{ form.serial }}</el-form-item>
+      <el-form-item label="名称">{{ form.name }}</el-form-item>
+      <el-form-item label="排序">{{ form.sort }}</el-form-item>
+      <el-form-item label="状态">{{ form.statusText }}</el-form-item>
+      <el-form-item label="角色">
+        <el-space><el-tag v-for="item in form.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
+      </el-form-item>
+      <el-form-item label="描述">{{ form.description ? form.description : '暂无' }}</el-form-item>
+      <el-form-item label="创建者">{{ form.createdUserInfo?.name }}</el-form-item>
+      <el-form-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-form-item>
+      <el-form-item label="注册IP">{{ form.createdIp }}</el-form-item>
+      <el-form-item label="修改者">{{ form.updatedUserInfo?.name }}</el-form-item>
+      <el-form-item label="修改时间">{{ DateUtil.format(form.updatedTime) }}</el-form-item>
+      <el-form-item label="删除者">{{ form.deletedUserInfo?.name }}</el-form-item>
+      <el-form-item label="删除时间">{{ DateUtil.format(form.deletedTime) }}</el-form-item>
+      <el-form-item label="登录IP">{{ form.loginIp }}</el-form-item>
+      <el-form-item label="登录时间">{{ DateUtil.format(form.loginTime) }}</el-form-item>
+      <el-form-item label="锁定时间">{{ DateUtil.format(form.lockedTime) }}</el-form-item>
+    </el-form>
+  </el-drawer>
+  <el-drawer v-model="formVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true">
+    <template #header="{ close, titleId, titleClass }">
+      <h4 :id="titleId" :class="titleClass">{{ '信息' + (form.id ? ('修改 - ' + form.id) : '添加') }}</h4>
+      <el-space>
+        <el-button type="primary" @click="handleSubmit" :loading="formLoading">确定</el-button>
+        <el-button @click="close">取消</el-button>
+      </el-space>
+    </template>
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="auto">
+      <el-form-item label="账号" prop="serial">
+        <el-input v-model="form.serial" :disabled="form.id ? true : false" />
+      </el-form-item>
+      <el-form-item label="名称" prop="name">
+        <el-input v-model="form.name" />
+      </el-form-item>
+      <el-form-item label="密码">
+        <el-input type="password" v-model="form.password" show-password placeholder="留空时不对密码做任何处理" />
+      </el-form-item>
+      <el-form-item label="排序">
+        <el-input-number v-model="form.sort" :min="0" :max="200" />
+      </el-form-item>
+      <el-form-item label="状态" prop="status">
+        <el-select v-model="form.status" placeholder="请选择">
+          <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="角色" prop="roleIds">
+        <form-select v-model="form.roleIds" :callback="RoleApi.list" multiple clearable />
+      </el-form-item>
+      <el-form-item label="锁定">
+        <form-date-picker v-model="form.lockedTime" placeholder="非空时锁定指定时长" />
+      </el-form-item>
+      <el-form-item label="描述">
+        <el-input type="textarea" v-model="form.description" />
+      </el-form-item>
+    </el-form>
+  </el-drawer>
 </template>
 
 <style lang="scss" scoped>

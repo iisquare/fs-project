@@ -1,5 +1,6 @@
 import DataUtil from './DataUtil'
 import CodeUtil from './CodeUtil'
+import { ElMessageBox } from 'element-plus';
 
 const RouteUtil = {
   filterKey: 'filter',
@@ -20,6 +21,11 @@ const RouteUtil = {
     return (
       option.componentOptions.children[0].text.toLowerCase().indexOf(input.toLowerCase()) >= 0
     )
+  },
+  async selection (selection: any, idField: string = 'id') {
+    return ElMessageBox.confirm('确认删除所选记录吗？', '操作提示', { type: 'warning', }).then(() => {
+      return DataUtil.values(selection, idField)
+    })
   },
   paginationPageKey: 'currentPage',
   pagination2filter (pagination: any, keepPage: boolean) {
