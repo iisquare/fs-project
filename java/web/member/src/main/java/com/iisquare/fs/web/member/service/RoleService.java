@@ -9,6 +9,7 @@ import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.web.member.dao.RoleDao;
 import com.iisquare.fs.web.member.entity.Role;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.criteria.Predicate;
@@ -88,7 +89,7 @@ public class RoleService extends JPAServiceBase {
                 predicates.add(cb.like(root.get("name"), "%" + name + "%"));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        });
+        }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort");
         JsonNode rows = ApiUtil.rows(result);
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(rows, "createdUid", "updatedUid");

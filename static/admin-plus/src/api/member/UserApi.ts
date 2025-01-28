@@ -13,9 +13,6 @@ export default {
   save (param: any, tips = {}) {
     return api.post('/user/save', param, tips)
   },
-  tree (param: any, tips = {}) {
-    return api.post('/user/tree', param, tips)
-  },
   password (param: any, tips = {}) {
     return api.post('/user/password', param, tips)
   }

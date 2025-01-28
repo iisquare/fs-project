@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.member.controller;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
@@ -26,14 +27,10 @@ public class DictionaryController extends PermitControllerBase {
     @Autowired
     private DictionaryService dictionaryService;
 
-    @RequestMapping("/available")
-    public String availableAction(@RequestBody Map<?, ?> param) {
-        String path = DPUtil.trim(DPUtil.parseString(param.get("path")));
-        boolean withChildren = !DPUtil.empty(param.get("withChildren"));
-        ObjectNode available = dictionaryService.available(true);
-        ObjectNode result = dictionaryService.findAvailable(available, path, withChildren);
-        boolean formatArray = !DPUtil.empty(param.get("formatArray"));
-        return ApiUtil.echoResult(0, null, formatArray ? DPUtil.arrayNode(result) : result);
+    @RequestMapping("/options")
+    public String optionsAction(@RequestBody Map<?, ?> param) {
+        ArrayNode result = dictionaryService.options(param);
+        return ApiUtil.echoResult(0, null, result);
     }
 
     @RequestMapping("/tree")

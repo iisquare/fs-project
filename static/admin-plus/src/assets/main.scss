@@ -33,6 +33,12 @@ body, html {
 .el-table thead.is-group th.el-table__cell {
   --el-fill-color-light: #fafafa;
 }
+.el-drawer__header {
+  margin-bottom: 0 !important;
+  padding-top: 15px !important;
+  padding-bottom: 15px !important;
+  border-bottom: solid 1px var(--fs-layout-border-color);
+}
 
 ::-webkit-scrollbar {
 	width: 5px;

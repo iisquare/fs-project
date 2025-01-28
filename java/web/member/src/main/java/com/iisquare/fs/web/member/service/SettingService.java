@@ -10,6 +10,7 @@ import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.web.member.dao.SettingDao;
 import com.iisquare.fs.web.member.entity.Setting;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -132,7 +133,7 @@ public class SettingService extends JPAServiceBase {
                 predicates.add(cb.like(root.get("content"), "%" + content + "%"));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        });
+        }, Sort.by(Sort.Order.desc("sort")), "id", "sort");
         JsonNode rows = ApiUtil.rows(result);
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(rows, "createdUid", "updatedUid");

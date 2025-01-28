@@ -13,8 +13,8 @@ const model: any = defineModel()
     v-model="model"
     type="datetime"
     clearable
-    :format="DateUtil.dateMomentFormat()"
-    :value-format="DateUtil.dateMomentFormat()"
+    :format="DateUtil.moment()"
+    :value-format="DateUtil.moment()"
     :placeholder="placeholder" />
 </template>
 

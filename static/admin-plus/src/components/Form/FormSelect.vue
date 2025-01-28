@@ -47,11 +47,20 @@ const handleParameter = (params: any, query: string) => {
   return Object.assign({}, { pageSize, exceptIds }, params, parameter && parameter(query))
 }
 
-onMounted(async () => {
-  if (!DataUtil.empty(model.value)) {
+const reset = (value: any) => {
+  if (value !== model.value) {
+    model.value = value
+  }
+  if (!DataUtil.empty(value)) {
     const size = Math.max(pageSize, DataUtil.isArray(model.value) ? model.value.length : 1)
     handleCallback(handleParameter({ [fieldValue]: model.value, pageSize: size }, ''))
   }
+}
+
+defineExpose({ reset })
+
+onMounted(async () => {
+  reset(model.value)
 })
 
 const remoteMethod = (query: string) => {

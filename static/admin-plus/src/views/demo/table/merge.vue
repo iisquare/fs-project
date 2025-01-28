@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import UIUtil from '@/utils/UIUtil'
+import TableUtil from '@/utils/TableUtil';
 
 const rows = ref([
   /**
@@ -24,8 +24,8 @@ const rows = ref([
 const table: any = ref({})
 
 onMounted(() => {
-  table.value = UIUtil.tableMatrix(UIUtil.tableTree(rows.value, ''), 3)
-  UIUtil.tablePretty(table.value)
+  table.value = TableUtil.matrix(TableUtil.tree(rows.value, ''), 3)
+  TableUtil.pretty(table.value)
 })
 </script>
 
@@ -35,12 +35,12 @@ onMounted(() => {
       :data="table.leaves"
       :row-key="record => record.id"
       :border="true"
-      :span-method="(data: any) => UIUtil.tableSpan(table, data.rowIndex, data.columnIndex, 1)"
+      :span-method="(data: any) => TableUtil.span(table, data.rowIndex, data.columnIndex, 1)"
     >
       <el-table-column label="LEAF_ID" prop="id" />
-      <el-table-column label="LEVEL_0" :formatter="(row: any, column: any, cellValue: any, index: number) => UIUtil.tableCellValue(table, index, 0)" />
-      <el-table-column label="LEVEL_1" :formatter="(row: any, column: any, cellValue: any, index: number) => UIUtil.tableCellValue(table, index, 1)" />
-      <el-table-column label="LEVEL_2" :formatter="(row: any, column: any, cellValue: any, index: number) => UIUtil.tableCellValue(table, index, 2)" />
+      <el-table-column label="LEVEL_0" :formatter="(row: any, column: any, cellValue: any, index: number) => TableUtil.cellValue(table, index, 0)" />
+      <el-table-column label="LEVEL_1" :formatter="(row: any, column: any, cellValue: any, index: number) => TableUtil.cellValue(table, index, 1)" />
+      <el-table-column label="LEVEL_2" :formatter="(row: any, column: any, cellValue: any, index: number) => TableUtil.cellValue(table, index, 2)" />
       <el-table-column label="LEAF_NAME" prop="name" />
     </el-table>
   </el-card>

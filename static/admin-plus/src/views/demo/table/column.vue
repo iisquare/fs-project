@@ -84,13 +84,13 @@ const rows = ref([
   <el-card :bordered="false" shadow="never" class="fs-table-card">
     <div class="fs-table-toolbar flex-between">
       <el-space>
-        <el-button type="success" :icon="ElementPlusIcons.Plus">新增</el-button>
-        <el-button type="warning" :icon="ElementPlusIcons.Edit">编辑</el-button>
-        <el-button type="danger" :icon="ElementPlusIcons.Delete">删除</el-button>
+        <button-add />
+        <button-edit />
+        <button-delete />
       </el-space>
       <el-space>
-        <el-button :icon="ElementPlusIcons.Search" circle title="展示/隐藏搜索栏" @click="searchable = !searchable" />
-        <el-button :icon="ElementPlusIcons.Refresh" circle title="重新加载分页数据" />
+        <button-search @click="searchable = !searchable" />
+        <button-refresh />
         <TableColumnSetting v-model="columns" :table="tableRef" />
       </el-space>
     </div>
@@ -99,6 +99,7 @@ const rows = ref([
       :data="rows"
       :row-key="record => record.id"
       :border="true"
+      table-layout="auto"
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns">

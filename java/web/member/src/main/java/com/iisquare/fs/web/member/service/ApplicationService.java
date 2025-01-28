@@ -11,6 +11,7 @@ import com.iisquare.fs.web.member.dao.MenuDao;
 import com.iisquare.fs.web.member.dao.ResourceDao;
 import com.iisquare.fs.web.member.entity.Application;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -98,7 +99,7 @@ public class ApplicationService extends JPAServiceBase {
                 predicates.add(cb.like(root.get("name"), "%" + name + "%"));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        });
+        }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort");
         JsonNode rows = ApiUtil.rows(result);
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(rows, "createdUid", "updatedUid");

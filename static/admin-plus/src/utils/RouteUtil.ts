@@ -1,32 +1,8 @@
 import DataUtil from './DataUtil'
 import CodeUtil from './CodeUtil'
-import { ElMessageBox } from 'element-plus';
 
 const RouteUtil = {
   filterKey: 'filter',
-  expandedRowKeys (tree: any, deep = -1, key = 'id', children = 'children') {
-    const result: any = [];
-    (function walk (data, level) {
-      if (!data) return
-      data.forEach((element: any) => {
-        result.push(element[key])
-        if (deep !== -1 && level < deep) {
-          walk(element[children], level + 1)
-        }
-      })
-    })(tree, 1)
-    return result
-  },
-  filterOption (input: any, option: any) {
-    return (
-      option.componentOptions.children[0].text.toLowerCase().indexOf(input.toLowerCase()) >= 0
-    )
-  },
-  async selection (selection: any, idField: string = 'id') {
-    return ElMessageBox.confirm('确认删除所选记录吗？', '操作提示', { type: 'warning', }).then(() => {
-      return DataUtil.values(selection, idField)
-    })
-  },
   paginationPageKey: 'currentPage',
   pagination2filter (pagination: any, keepPage: boolean) {
     return {
@@ -75,11 +51,11 @@ const RouteUtil = {
   hasFilter (obj: any) {
     return !DataUtil.empty(obj.$route.query[this.filterKey])
   },
-  query2filter (route: any, filters: any = {}) {
-    return Object.assign({
+  query2filter (route: any, filters: any = {}, pagination = true) {
+    return Object.assign(pagination ? {
       [this.paginationPageKey]: 1,
       pageSize: 15,
-    }, filters, this.decode(route.query[this.filterKey]))
+    } : {}, filters, this.decode(route.query[this.filterKey]))
   },
   filter2query (route: any, router: any, filter: any) {
     return router.push({

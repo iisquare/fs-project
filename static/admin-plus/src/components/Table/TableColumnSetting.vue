@@ -2,8 +2,8 @@
 import * as ElementPlusIcons from '@element-plus/icons-vue';
 import { onMounted, ref, type PropType } from 'vue';
 import type { DropdownInstance, TreeInstance, TableInstance } from 'element-plus'
-import UIUtil from '@/utils/UIUtil';
 import DataUtil from '@/utils/DataUtil';
+import TreeUtil from '@/utils/TreeUtil';
 
 const model = defineModel()
 const table = defineModel('table', { type: Object as PropType<TableInstance>, required: false })
@@ -26,7 +26,7 @@ const handleSubmit = () => {
 }
 const handleReset = () => {
   treeData.value = JSON.parse(JSON.stringify(treeCache.value))
-  treeCheckedKeys.value = UIUtil.treeIds(treeData.value, (item: any) => !item.checked)
+  treeCheckedKeys.value = TreeUtil.ids(treeData.value, (item: any) => !item.checked)
 }
 const handleCancel = () => {
   dropdown.value?.handleClose()
@@ -78,8 +78,8 @@ onMounted(() => {
     <el-button :icon="ElementPlusIcons.Operation" circle title="设置表头列" />
     <template #dropdown>
       <el-space class="header flex-end" spacer="/">
-        <el-button link @click="tree?.setCheckedKeys(treeCheckedKeys = UIUtil.treeIds(treeData))">全选</el-button>
-        <el-button link @click="tree?.setCheckedKeys(treeCheckedKeys = DataUtil.removeArrayItem(UIUtil.treeIds(treeData), treeCheckedKeys))">反选</el-button>
+        <el-button link @click="tree?.setCheckedKeys(treeCheckedKeys = TreeUtil.ids(treeData))">全选</el-button>
+        <el-button link @click="tree?.setCheckedKeys(treeCheckedKeys = DataUtil.removeArrayItem(TreeUtil.ids(treeData), treeCheckedKeys))">反选</el-button>
         <el-button link @click="handleFixed">取消固定</el-button>
       </el-space>
       <el-tree

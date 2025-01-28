@@ -9,7 +9,7 @@ const user = useUserStore()
     <div class="flex-start left">
       <img src="@/assets/logo.svg" />
       <div class="flex-column">
-        <div class="title">{{ DateUtil.timeFix() }}，{{ user.info.name }}</div>
+        <div class="title">{{ DateUtil.hello() }}，{{ user.info.name }}</div>
         <div class="description">技术中台、数据中台、AI中台、业务中台一体化服务平台</div>
       </div>
     </div>

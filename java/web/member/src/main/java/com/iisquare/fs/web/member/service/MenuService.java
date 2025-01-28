@@ -144,7 +144,7 @@ public class MenuService extends JPAServiceBase {
                 predicates.add(cb.equal(root.get("parentId"), parentId));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        });
+        }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort");
         JsonNode rows = ApiUtil.rows(result);
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(rows, "createdUid", "updatedUid");

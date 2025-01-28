@@ -25,22 +25,22 @@ const ImageUtil = {
     })
   },
   download(name: string, base64: string) {
-      var byteCharacters = atob(
-        base64.replace(/^data:image\/(png|jpeg|jpg);base64,/, "")
-      );
-      var subffix = base64.substring(0, base64.indexOf(';base64,')).replace('data:image/', '')
-      var byteNumbers = new Array(byteCharacters.length);
-      for (var i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      var byteArray = new Uint8Array(byteNumbers);
-      var blob = new Blob([byteArray], {
-        type: undefined,
-      });
-      var aLink = document.createElement("a");
-      aLink.download = name + '.' + subffix;
-      aLink.href = URL.createObjectURL(blob);
-      aLink.click();
+    var byteCharacters = atob(
+      base64.replace(/^data:image\/(png|jpeg|jpg);base64,/, "")
+    );
+    var subffix = base64.substring(0, base64.indexOf(';base64,')).replace('data:image/', '')
+    var byteNumbers = new Array(byteCharacters.length);
+    for (var i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    var byteArray = new Uint8Array(byteNumbers);
+    var blob = new Blob([byteArray], {
+      type: undefined,
+    });
+    var aLink = document.createElement("a");
+    aLink.download = name + '.' + subffix;
+    aLink.href = URL.createObjectURL(blob);
+    aLink.click();
   },
   async loading (img: any, loading: any, type = 'image/jpeg') {
     const icon: any = await this.load(loading)

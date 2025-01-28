@@ -36,15 +36,15 @@ class Item {
   }
 }
 
-export const useCacheStore = defineStore('counter', () => {
+export const useCacheStore = defineStore('cache', () => {
   const cache: any = ref({})
   /**
    * 对异步加载函数进行缓存
    * 提示：key=this或loader=() => {}用于构造唯一标识
-   * UIUtil.cache(this, func()).then(result => {})
-   * UIUtil.cache(null, () => func()).then(result => {})
+   * useCacheStore().load(this, func()).then(result => {})
+   * useCacheStore().load(null, () => func()).then(result => {})
    */
-  const load = (key: any, loader: any, ttl: any) => {
+  const load = (key: any, loader: any, ttl: any = 0) => {
     key = Item.key(key, loader)
     let item = cache.value[key]
     if (item) return item.load(true)
@@ -53,7 +53,7 @@ export const useCacheStore = defineStore('counter', () => {
   }
   /**
    * 获取缓存
-   * UIUtil.kv(this)
+   * useCacheStore().get(this)
    */
   const get = (key: any) => {
     const item = cache.value[key]
@@ -63,16 +63,16 @@ export const useCacheStore = defineStore('counter', () => {
   }
   /**
    * 设置缓存
-   * UIUtil.kv(this, 'value')
+   * useCacheStore().set(this, 'value')
    */
-  const set = (key: any, value: any, ttl: any) => {
+  const set = (key: any, value: any, ttl: any = 0) => {
     const item = new Item(key, null, ttl)
     item.value = value
     cache.value[key] = item
     return item
   }
 
-  const reload = (key: any, loader: any, ttl: any) => {
+  const reload = (key: any, loader: any, ttl: any = 0) => {
     key = Item.key(key, loader)
     const item = new Item(key, loader, ttl)
     cache.value[key] = item
