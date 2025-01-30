@@ -63,6 +63,7 @@ const rules = ref({
 })
 const handleAdd = () => {
   form.value = {
+    ancestorId: filters.value.ancestorId ?? 0,
     status: '1',
   }
   formVisible.value = true
@@ -80,12 +81,20 @@ const handleEdit = (scope: any) => {
 
 const ancestorRef = ref()
 const handleSublevel = (scope: any) => {
-  form.value = {
-    ancestorId: scope.row.ancestorId,
-    parentId: scope.row.id,
-    status: '1',
+  if (scope.row.ancestorId) {
+    form.value = {
+      ancestorId: scope.row.ancestorId,
+      parentId: scope.row.id,
+      status: '1',
+    }
+    formVisible.value = true
+  } else {
+    filters.value = {
+      ancestorId: scope.row.id
+    }
+    handleRefresh(true, false)
+    ancestorRef.value.reset(scope.row.id)
   }
-  formVisible.value = true
 }
 const handleSubmit = () => {
   formRef.value?.validate((valid: boolean) => {
@@ -161,7 +170,7 @@ const handleExpand = () => {
         <template #default="scope">
           <el-button link @click="handleShow(scope)" v-permit="'member:dictionary:'">查看</el-button>
           <el-button link @click="handleEdit(scope)" v-permit="'member:dictionary:modify'">编辑</el-button>
-          <el-button link @click="handleSublevel(scope)" v-if="scope.row.ancestorId" v-permit="'member:dictionary:add'">子级</el-button>
+          <el-button link @click="handleSublevel(scope)" v-permit="'member:dictionary:add'">子级</el-button>
         </template>
       </el-table-column>
     </el-table>

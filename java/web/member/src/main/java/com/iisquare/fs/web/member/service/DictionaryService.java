@@ -113,7 +113,7 @@ public class DictionaryService extends JPAServiceBase {
 
     public ArrayNode tree(Map<?, ?> param, Map<?, ?> args) {
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "name", "pinyin", "sort"));
-        if (null == sort) sort = Sort.by(Sort.Order.desc("sort"), Sort.Order.asc("pinyin"));
+        if (null == sort) sort = Sort.by(Sort.Order.desc("sort"), Sort.Order.asc("pinyin"), Sort.Order.asc("id"));
         List<Dictionary> list = dictionaryDao.findAll((Specification<Dictionary>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             int ancestorId = DPUtil.parseInt(param.get("ancestorId"));
@@ -142,6 +142,7 @@ public class DictionaryService extends JPAServiceBase {
     }
 
     public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {
+        Sort sort = Sort.by(Sort.Order.desc("sort"), Sort.Order.asc("pinyin"), Sort.Order.asc("id"));
         ObjectNode result = search(dictionaryDao, param, (Specification<Dictionary>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             int id = DPUtil.parseInt(param.get("id"));
@@ -166,7 +167,7 @@ public class DictionaryService extends JPAServiceBase {
                 predicates.add(cb.equal(root.get("content"), content));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.asc("pinyin")), "id", "name", "pinyin", "status", "sort");
+        }, sort, "id", "name", "pinyin", "status", "sort");
         JsonNode rows = format(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(rows, "createdUid", "updatedUid");

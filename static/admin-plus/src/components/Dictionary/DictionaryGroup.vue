@@ -48,7 +48,7 @@ onMounted(async () => {
     :placeholder="placeholder"
     :loading="loading"
   >
-    <el-option v-for="item in options" :key="item.key" :label="item.label" :value="item.value" />
+    <DictionaryGroupItem :options="options" />
   </el-select>
 </template>
 

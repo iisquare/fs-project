@@ -1,0 +1,37 @@
+package com.iisquare.fs.web.lm.entity;
+
+import lombok.*;
+import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.DynamicUpdate;
+
+import javax.persistence.*;
+
+@Entity
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@DynamicInsert
+@DynamicUpdate
+public class Chat {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+    @Column
+    private String title; // 会话标题
+    @Column
+    private Long createdTime;
+    @Column
+    private Integer createdUid;
+    @Column
+    private Long updatedTime;
+    @Column
+    private Integer updatedUid;
+    @Column
+    private Long deletedTime;
+    @Column
+    private Integer deletedUid;
+
+}

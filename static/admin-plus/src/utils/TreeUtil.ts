@@ -42,6 +42,16 @@ const TreeUtil = {
     })
     return { tree, expandedKeys }
   },
+  nodes (data: any, keyField = 'id', childField = 'children') {
+    const result: any = {}
+    if (!data) return result
+    for (const index in data) {
+      const item = data[index]
+      result[item[keyField]] = item
+      Object.assign(result, this.nodes(item[childField], keyField, childField))
+    }
+    return result
+  },
   remove (tree: any, node: any) {
     if (!tree || !node) return false
     for (const index in tree) {

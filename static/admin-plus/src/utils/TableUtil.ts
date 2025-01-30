@@ -8,7 +8,7 @@ const TableUtil = {
       if (!data) return
       data.forEach((element: any) => {
         result.push(element[keyField] + '')
-        if (deep !== -1 && level < deep) {
+        if (deep === -1 || level < deep) {
           walk(element[childrenField], level + 1)
         }
       })

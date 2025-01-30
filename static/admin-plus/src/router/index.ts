@@ -1,6 +1,14 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import member from './modules/member'
 import demo from './modules/demo'
+import bi from './modules/bi'
+import cms from './modules/cms'
+import face from './modules/face'
+import govern from './modules/govern'
+import lm from './modules/lm'
+import oa from './modules/oa'
+import server from './modules/server'
+import spider from './modules/spider'
 import { layout, page } from './config'
 import { useUserStore } from '@/stores/user'
 import DataUtil from '@/utils/DataUtil'
@@ -20,7 +28,7 @@ const layouts: any = [] // 布局页面
  */
 const routes: any = []
 
-;([member, demo] as any).forEach((module: any) => {
+;([member, demo, bi, cms, face, govern, lm, oa, server, spider] as any).forEach((module: any) => {
   module.blanks && blanks.push(...module.blanks)
   module.layouts && layouts.push(...module.layouts)
 })

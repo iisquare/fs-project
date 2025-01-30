@@ -3,10 +3,11 @@ import { onMounted, ref } from 'vue';
 import type { FormInstance, TableInstance } from 'element-plus';
 import RouteUtil from '@/utils/RouteUtil'
 import { useRoute, useRouter } from 'vue-router';
-import DictionaryApi from '@/api/member/DictionaryApi';
+import SensitiveApi from '@/api/lm/SensitiveApi';
 import ApiUtil from '@/utils/ApiUtil';
 import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
+import TreeUtil from '@/utils/TreeUtil';
 
 const route = useRoute()
 const router = useRouter()
@@ -15,23 +16,20 @@ const loading = ref(false)
 const searchable = ref(true)
 const columns = ref([
   { prop: 'id', label: 'ID' },
-  { prop: 'name', label: '名称' },
-  { prop: 'pinyin', label: '拼音' },
-  { prop: 'content', label: '内容' },
-  { prop: 'leaf', label: '叶子' },
-  { prop: 'ancestorId', label: '祖级', slot: 'ancestorId' },
-  { prop: 'parentId', label: '父级', slot: 'parentId' },
+  { prop: 'content', label: '关键词' },
+  { prop: 'risk', label: '风险', slot: 'risk' },
   { prop: 'sort', label: '排序' },
   { prop: 'statusText', label: '状态' },
-  { prop: 'description', label: '描述' },
 ])
 const config = ref({
   ready: false,
   status: {},
+  risk: [],
+  riskNodes: {},
 })
 const rows = ref([])
 const filterRef = ref<FormInstance>()
-const filters = ref(RouteUtil.query2filter(route, { advanced: false, roleIds: [] }))
+const filters = ref(RouteUtil.query2filter(route, { advanced: false, sensitiveIds: [] }))
 const pagination = ref(RouteUtil.pagination(filters.value))
 const selection = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
@@ -39,7 +37,7 @@ const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
   Object.assign(filters.value, RouteUtil.pagination2filter(pagination.value, keepPage))
   filter2query && RouteUtil.filter2query(route, router, filters.value)
   loading.value = true
-  DictionaryApi.list(filters.value).then((result: any) => {
+  SensitiveApi.list(filters.value).then((result: any) => {
     RouteUtil.result2pagination(pagination.value, result)
     rows.value = result.data.rows
   }).catch(() => {}).finally(() => {
@@ -48,8 +46,8 @@ const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
 }
 onMounted(() => {
   handleRefresh(false, true)
-  DictionaryApi.config().then(result => {
-    Object.assign(config.value, { ready: true }, ApiUtil.data(result))
+  SensitiveApi.config().then((result: any) => {
+    Object.assign(config.value, { ready: true }, ApiUtil.data(result), { riskNodes: TreeUtil.nodes(result.data.risk) })
   })
 })
 const infoVisible = ref(false)
@@ -58,13 +56,11 @@ const formLoading = ref(false)
 const form: any = ref({})
 const formRef: any = ref<FormInstance>()
 const rules = ref({
-  ancestorId: [{ required: true, message: '请选择所属字典', trigger: 'blur' }],
-  name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
+  content: [{ required: true, message: '请输入关键词', trigger: 'blur' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 })
 const handleAdd = () => {
   form.value = {
-    ancestorId: filters.value.ancestorId ?? 0,
     status: '1',
   }
   formVisible.value = true
@@ -79,25 +75,11 @@ const handleEdit = (scope: any) => {
   })
   formVisible.value = true
 }
-
-const ancestorRef = ref()
-const handleSublevel = (scope: any) => {
-  const params: any = {}
-  if (scope.row.ancestorId) {
-    params.ancestorId = scope.row.ancestorId
-    params.parentId = scope.row.id
-  } else {
-    params.ancestorId = scope.row.id
-  }
-  filters.value = params
-  handleRefresh(true, false)
-  ancestorRef.value.reset(params.ancestorId)
-}
 const handleSubmit = () => {
   formRef.value?.validate((valid: boolean) => {
     if (!valid || formLoading.value) return
     formLoading.value = true
-    DictionaryApi.save(form.value, { success: true }).then(result => {
+    SensitiveApi.save(form.value, { success: true }).then(result => {
       handleRefresh(false, true)
       formVisible.value = false
     })
@@ -108,7 +90,7 @@ const handleSubmit = () => {
 const handleDelete = () => {
   TableUtil.selection(selection.value).then((ids: any) => {
     loading.value = true
-    DictionaryApi.delete(ids, { success: true }).then(() => {
+    SensitiveApi.delete(ids, { success: true }).then(() => {
       handleRefresh(false, true)
     }).catch(() => {})
   }).catch(() => {})
@@ -118,12 +100,14 @@ const handleDelete = () => {
 <template>
   <el-card :bordered="false" shadow="never" class="fs-table-search" v-show="searchable">
     <form-search ref="filterRef" :model="filters">
-      <form-search-item label="字典" prop="ancestorId">
-        <form-select ref="ancestorRef" v-model="filters.ancestorId" :callback="DictionaryApi.list" clearable placeholder="默认为祖级字典列表" />
+      <form-search-item label="关键词" prop="content">
+        <el-input v-model="filters.content" clearable />
       </form-search-item>
-      <form-search-item label="父级" prop="parentId">
-          <el-input v-model="filters.parentId" clearable />
-        </form-search-item>
+      <form-search-item label="风险" prop="risk">
+        <el-select v-model="filters.risk" multiple filterable placeholder="请选择">
+          <DictionaryGroupItem :options="config.risk" />
+        </el-select>
+      </form-search-item>
       <form-search-item label="状态" prop="status">
         <el-select v-model="filters.status" placeholder="请选择" clearable>
           <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
@@ -132,23 +116,14 @@ const handleDelete = () => {
       <form-search-item>
         <el-button type="primary" @click="handleRefresh(true, false)">查询</el-button>
         <el-button @click="filterRef?.resetFields()">重置</el-button>
-        <button-advanced v-model="filters.advanced" />
       </form-search-item>
-      <template v-if="filters.advanced">
-        <form-search-item label="名称" prop="name">
-          <el-input v-model="filters.name" clearable />
-        </form-search-item>
-        <form-search-item label="内容" prop="content">
-          <el-input v-model="filters.content" clearable />
-        </form-search-item>
-      </template>
     </form-search>
   </el-card>
   <el-card :bordered="false" shadow="never" class="fs-table-card">
     <div class="fs-table-toolbar flex-between">
       <el-space>
-        <button-add v-permit="'member:dictionary:add'" @click="handleAdd" />
-        <button-delete v-permit="'member:dictionary:delete'" :disabled="selection.length === 0" @click="handleDelete" />
+        <button-add v-permit="'lm:sensitive:add'" @click="handleAdd" />
+        <button-delete v-permit="'lm:sensitive:delete'" :disabled="selection.length === 0" @click="handleDelete" />
       </el-space>
       <el-space>
         <button-search @click="searchable = !searchable" />
@@ -167,14 +142,14 @@ const handleDelete = () => {
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns">
-        <template #ancestorId="{ row }">[{{ row.ancestorId }}]{{ row.ancestorId > 0 ? row.ancestorInfo?.name : '祖节点' }}</template>
-        <template #parentId="{ row }">[{{ row.parentId }}]{{ row.parentId > 0 ? row.parentInfo?.name : '根节点' }}</template>
+        <template #risk="scope">
+          <dictionary-tag v-model="scope.row.risk" :nodes="config.riskNodes" iteratable />
+        </template>
       </TableColumn>
       <el-table-column label="操作">
         <template #default="scope">
-          <el-button link @click="handleShow(scope)" v-permit="'member:dictionary:'">查看</el-button>
-          <el-button link @click="handleEdit(scope)" v-permit="'member:dictionary:modify'">编辑</el-button>
-          <el-button link @click="handleSublevel(scope)" v-permit="'member:dictionary:add'">子级</el-button>
+          <el-button link @click="handleShow(scope)" v-permit="'lm:sensitive:'">查看</el-button>
+          <el-button link @click="handleEdit(scope)" v-permit="'lm:sensitive:modify'">编辑</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -182,15 +157,13 @@ const handleDelete = () => {
   </el-card>
   <el-drawer v-model="infoVisible" :title="'信息查看 - ' + form.id">
     <el-form :model="form" label-width="auto">
-      <el-form-item label="祖级">{{ form.ancestorId }}</el-form-item>
-      <el-form-item label="父级">{{ form.parentId }}</el-form-item>
-      <el-form-item label="名称">{{ form.name }}</el-form-item>
-      <el-form-item label="拼音">{{ form.pinyin }}</el-form-item>
-      <el-form-item label="内容">{{ form.content }}</el-form-item>
-      <el-form-item label="叶子">{{ form.leaf }}</el-form-item>
+      <el-form-item label="关键词">{{ form.content }}</el-form-item>
+      <el-form-item label="风险">
+        <dictionary-tag v-model="form.risk" :nodes="config.riskNodes" />
+      </el-form-item>
       <el-form-item label="排序">{{ form.sort }}</el-form-item>
       <el-form-item label="状态">{{ form.statusText }}</el-form-item>
-      <el-form-item label="描述">{{ form.description }}</el-form-item>
+      <el-form-item label="描述">{{ form.description ? form.description : '暂无' }}</el-form-item>
       <el-form-item label="创建者">{{ form.createdUserInfo?.name }}</el-form-item>
       <el-form-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-form-item>
       <el-form-item label="修改者">{{ form.updatedUserInfo?.name }}</el-form-item>
@@ -206,26 +179,13 @@ const handleDelete = () => {
       </el-space>
     </template>
     <el-form ref="formRef" :model="form" :rules="rules" label-width="auto">
-      <el-form-item label="ID" prop="id">
-        <el-input v-model="form.id" />
-      </el-form-item>
-      <el-form-item label="祖级" prop="ancestorId">
-        <el-input v-model="form.ancestorId" />
-      </el-form-item>
-      <el-form-item label="父级" prop="parentId">
-        <el-input v-model="form.parentId" />
-      </el-form-item>
-      <el-form-item label="名称" prop="name">
-        <el-input v-model="form.name" />
-      </el-form-item>
-      <el-form-item label="拼音" prop="pinyin">
-        <el-input v-model="form.pinyin" />
-      </el-form-item>
-      <el-form-item label="内容" prop="content">
+      <el-form-item label="关键词" prop="content">
         <el-input v-model="form.content" />
       </el-form-item>
-      <el-form-item label="叶子" prop="leaf">
-        <el-checkbox v-model="form.leaf" />
+      <el-form-item label="风险" prop="risk">
+        <el-select v-model="form.risk" multiple filterable placeholder="请选择">
+          <DictionaryGroupItem :options="config.risk" />
+        </el-select>
       </el-form-item>
       <el-form-item label="排序">
         <el-input-number v-model="form.sort" />

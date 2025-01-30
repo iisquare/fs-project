@@ -28,6 +28,9 @@ onMounted(() => {
       <el-form-item label="标签" prop="multiple">
         <dictionary-select v-model="filters.multiple" dictionary="audit-tag" multiple />
       </el-form-item>
+      <el-form-item label="分组" prop="group">
+        <dictionary-group v-model="filters.group" dictionary="ai-risk" filterable />
+      </el-form-item>
       <el-form-item label="级联单选" prop="cascadeSingle">
         <dictionary-cascader v-model="filters.cascadeSingle" dictionary="cascade" />
       </el-form-item>
