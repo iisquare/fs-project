@@ -1,4 +1,5 @@
 dependencies {
     implementation project(':web:core')
     implementation project(':base:jpa')
+    implementation project(':base:redis')
 }

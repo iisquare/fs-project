@@ -79,7 +79,6 @@ const handleEdit = (scope: any) => {
   formVisible.value = true
 }
 
-const ancestorRef = ref()
 const handleSublevel = (scope: any) => {
   if (scope.row.ancestorId) {
     form.value = {
@@ -93,7 +92,6 @@ const handleSublevel = (scope: any) => {
       ancestorId: scope.row.id
     }
     handleRefresh(true, false)
-    ancestorRef.value.reset(scope.row.id)
   }
 }
 const handleSubmit = () => {
@@ -142,7 +140,7 @@ const handleExpand = () => {
         <el-space>
           <el-form ref="filterRef" :model="filters" inline>
             <el-form-item label="字典" prop="ancestorId">
-              <form-select ref="ancestorRef" v-model="filters.ancestorId" :callback="DictionaryApi.list" clearable placeholder="默认为祖级字典列表" />
+              <form-select v-model="filters.ancestorId" :callback="DictionaryApi.list" clearable placeholder="默认为祖级字典列表" />
             </el-form-item>
             <el-form-item>
               <el-button type="primary" @click="handleRefresh(true, false)">载入</el-button>

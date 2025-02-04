@@ -15,5 +15,12 @@ export default {
   },
   save (param: any, tips = {}) {
     return base.post('/resource/save', param, tips)
+  },
+  action () {
+    return [
+      { value: 'add', label: '添加' },
+      { value: 'modify', label: '修改' },
+      { value: 'delete', label: '删除' },
+    ]
   }
 }

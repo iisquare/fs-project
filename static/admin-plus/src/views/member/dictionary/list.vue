@@ -80,7 +80,6 @@ const handleEdit = (scope: any) => {
   formVisible.value = true
 }
 
-const ancestorRef = ref()
 const handleSublevel = (scope: any) => {
   const params: any = {}
   if (scope.row.ancestorId) {
@@ -91,7 +90,6 @@ const handleSublevel = (scope: any) => {
   }
   filters.value = params
   handleRefresh(true, false)
-  ancestorRef.value.reset(params.ancestorId)
 }
 const handleSubmit = () => {
   formRef.value?.validate((valid: boolean) => {
@@ -119,7 +117,7 @@ const handleDelete = () => {
   <el-card :bordered="false" shadow="never" class="fs-table-search" v-show="searchable">
     <form-search ref="filterRef" :model="filters">
       <form-search-item label="字典" prop="ancestorId">
-        <form-select ref="ancestorRef" v-model="filters.ancestorId" :callback="DictionaryApi.list" clearable placeholder="默认为祖级字典列表" />
+        <form-select v-model="filters.ancestorId" :callback="DictionaryApi.list" clearable placeholder="默认为祖级字典列表" />
       </form-search-item>
       <form-search-item label="父级" prop="parentId">
           <el-input v-model="filters.parentId" clearable />

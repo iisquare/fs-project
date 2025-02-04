@@ -9,7 +9,7 @@ public interface UserDao extends DaoBase<User, Integer> {
 
     boolean existsByNameEqualsAndIdNotIn(String name, Collection<Integer> ids);
 
-    boolean existsBySerial(String serial);
+    boolean existsBySerialEqualsAndIdNotIn(String serial, Collection<Integer> ids);
 
     User findFirstBySerial(String serial);
 

@@ -3,12 +3,12 @@ import { onMounted, ref } from 'vue';
 import type { FormInstance, TableInstance } from 'element-plus';
 import RouteUtil from '@/utils/RouteUtil'
 import { useRoute, useRouter } from 'vue-router';
-import ResourceApi from '@/api/member/ResourceApi';
+import ClientEndpointApi from '@/api/lm/ClientEndpointApi';
 import ApiUtil from '@/utils/ApiUtil';
 import DateUtil from '@/utils/DateUtil';
-import ApplicationApi from '@/api/member/ApplicationApi';
 import TableUtil from '@/utils/TableUtil';
-import UIUtil from '@/utils/UIUtil';
+import ClientApi from '@/api/lm/ClientApi';
+import ServerApi from '@/api/lm/ServerApi';
 
 const route = useRoute()
 const router = useRouter()
@@ -17,13 +17,10 @@ const loading = ref(false)
 const searchable = ref(true)
 const columns = ref([
   { prop: 'id', label: 'ID' },
-  { prop: 'name', label: '名称' },
-  { prop: 'fullName', label: '全称' },
-  { prop: 'applicationId', label: '应用', slot: 'applicationId' },
-  { prop: 'parentId', label: '父级', slot: 'parentId' },
-  { prop: 'module', label: '模块' },
-  { prop: 'controller', label: '控制器' },
-  { prop: 'action', label: '动作' },
+  { prop: 'clientInfo.name', label: '所属客户端' },
+  { prop: 'serverInfo.name', label: '授权服务端' },
+  { prop: 'parallel', label: '并行度' },
+  { prop: 'checkable', label: '敏感词检测' },
   { prop: 'sort', label: '排序' },
   { prop: 'statusText', label: '状态' },
 ])
@@ -33,7 +30,7 @@ const config = ref({
 })
 const rows = ref([])
 const filterRef = ref<FormInstance>()
-const filters = ref(RouteUtil.query2filter(route, { advanced: false, roleIds: [] }))
+const filters = ref(RouteUtil.query2filter(route, { advanced: false, clientEndpointIds: [] }))
 const pagination = ref(RouteUtil.pagination(filters.value))
 const selection = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
@@ -41,7 +38,7 @@ const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
   Object.assign(filters.value, RouteUtil.pagination2filter(pagination.value, keepPage))
   filter2query && RouteUtil.filter2query(route, router, filters.value)
   loading.value = true
-  ResourceApi.list(filters.value).then((result: any) => {
+  ClientEndpointApi.list(filters.value).then((result: any) => {
     RouteUtil.result2pagination(pagination.value, result)
     rows.value = result.data.rows
   }).catch(() => {}).finally(() => {
@@ -50,7 +47,7 @@ const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
 }
 onMounted(() => {
   handleRefresh(false, true)
-  ResourceApi.config().then(result => {
+  ClientEndpointApi.config().then((result: any) => {
     Object.assign(config.value, { ready: true }, ApiUtil.data(result))
   })
 })
@@ -60,8 +57,8 @@ const formLoading = ref(false)
 const form: any = ref({})
 const formRef: any = ref<FormInstance>()
 const rules = ref({
-  applicationId: [{ required: true, message: '请选择所属应用', trigger: 'blur' }],
-  name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
+  clientId: [{ required: true, message: '请选择所属客户端', trigger: 'change' }],
+  serverId: [{ required: true, message: '请选择授权服务端', trigger: 'change' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 })
 const handleAdd = () => {
@@ -80,23 +77,11 @@ const handleEdit = (scope: any) => {
   })
   formVisible.value = true
 }
-const handleSublevel = (scope: any) => {
-  const record = scope.row
-  form.value = {
-    parentId: record.id,
-    applicationId: record.applicationId,
-    module: record.module,
-    controller: record.controller,
-    action: record.action,
-    status: scope.row.status + '',
-  }
-  formVisible.value = true
-}
 const handleSubmit = () => {
   formRef.value?.validate((valid: boolean) => {
     if (!valid || formLoading.value) return
     formLoading.value = true
-    ResourceApi.save(form.value, { success: true }).then(result => {
+    ClientEndpointApi.save(form.value, { success: true }).then(result => {
       handleRefresh(false, true)
       formVisible.value = false
     })
@@ -107,7 +92,7 @@ const handleSubmit = () => {
 const handleDelete = () => {
   TableUtil.selection(selection.value).then((ids: any) => {
     loading.value = true
-    ResourceApi.delete(ids, { success: true }).then(() => {
+    ClientEndpointApi.delete(ids, { success: true }).then(() => {
       handleRefresh(false, true)
     }).catch(() => {})
   }).catch(() => {})
@@ -117,11 +102,11 @@ const handleDelete = () => {
 <template>
   <el-card :bordered="false" shadow="never" class="fs-table-search" v-show="searchable">
     <form-search ref="filterRef" :model="filters">
-      <form-search-item label="全称" prop="fullName">
-        <el-input v-model="filters.fullName" clearable />
+      <form-search-item label="客户端" prop="clientId">
+        <form-select v-model="filters.clientId" :callback="ClientApi.list" clearable />
       </form-search-item>
-      <form-search-item label="应用" prop="applicationId">
-        <form-select v-model="filters.applicationId" :callback="ApplicationApi.list" clearable />
+      <form-search-item label="服务端" prop="serverId">
+        <form-select v-model="filters.serverId" :callback="ServerApi.list" clearable />
       </form-search-item>
       <form-search-item label="状态" prop="status">
         <el-select v-model="filters.status" placeholder="请选择" clearable>
@@ -131,29 +116,15 @@ const handleDelete = () => {
       <form-search-item>
         <el-button type="primary" @click="handleRefresh(true, false)">查询</el-button>
         <el-button @click="filterRef?.resetFields()">重置</el-button>
-        <button-advanced v-model="filters.advanced" />
       </form-search-item>
-      <template v-if="filters.advanced">
-        <form-search-item label="父级" prop="parentId">
-          <el-input v-model="filters.parentId" clearable />
-        </form-search-item>
-        <form-search-item label="模块" prop="module">
-          <el-input v-model="filters.module" clearable />
-        </form-search-item>
-        <form-search-item label="控制器" prop="controller">
-          <el-input v-model="filters.controller" clearable />
-        </form-search-item>
-        <form-search-item label="动作" prop="action">
-          <el-input v-model="filters.parentId" clearable />
-        </form-search-item>
-      </template>
     </form-search>
   </el-card>
   <el-card :bordered="false" shadow="never" class="fs-table-card">
+    <el-alert title="客户端仅可访问经过授权的服务端模型" type="success" show-icon />
     <div class="fs-table-toolbar flex-between">
       <el-space>
-        <button-add v-permit="'member:resource:add'" @click="handleAdd" />
-        <button-delete v-permit="'member:resource:delete'" :disabled="selection.length === 0" @click="handleDelete" />
+        <button-add v-permit="'lm:clientEndpoint:add'" @click="handleAdd" />
+        <button-delete v-permit="'lm:clientEndpoint:delete'" :disabled="selection.length === 0" @click="handleDelete" />
       </el-space>
       <el-space>
         <button-search @click="searchable = !searchable" />
@@ -172,14 +143,11 @@ const handleDelete = () => {
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns">
-        <template #applicationId="{ row }">[{{ row.applicationId }}]{{ row.applicationInfo?.name }}</template>
-        <template #parentId="{ row }">[{{ row.parentId }}]{{ row.parentId > 0 ? row.parentInfo?.name : '根节点' }}</template>
       </TableColumn>
       <el-table-column label="操作">
         <template #default="scope">
-          <el-button link @click="handleShow(scope)" v-permit="'member:resource:'">查看</el-button>
-          <el-button link @click="handleEdit(scope)" v-permit="'member:resource:modify'">编辑</el-button>
-          <el-button link @click="handleSublevel(scope)" v-permit="'member:resource:add'">子级</el-button>
+          <el-button link @click="handleShow(scope)" v-permit="'lm:clientEndpoint:'">查看</el-button>
+          <el-button link @click="handleEdit(scope)" v-permit="'lm:clientEndpoint:modify'">编辑</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -187,16 +155,13 @@ const handleDelete = () => {
   </el-card>
   <el-drawer v-model="infoVisible" :title="'信息查看 - ' + form.id">
     <el-form :model="form" label-width="auto">
-      <el-form-item label="父级">{{ form.parentId }}</el-form-item>
-      <el-form-item label="名称">{{ form.name }}</el-form-item>
-      <el-form-item label="全称">{{ form.fullName }}</el-form-item>
-      <el-form-item label="模块">{{ form.module }}</el-form-item>
-      <el-form-item label="控制器">{{ form.controller }}</el-form-item>
-      <el-form-item label="动作">{{ form.action }}</el-form-item>
-      <el-form-item label="资源">{{ form.module }}:{{ form.controller }}:{{ form.action }}</el-form-item>
+      <el-form-item label="所属客户端">{{ form.clientInfo?.name }}</el-form-item>
+      <el-form-item label="授权服务端">{{ form.serverInfo?.name }}</el-form-item>
+      <el-form-item label="并行度">{{ form.parallel }}</el-form-item>
+      <el-form-item label="敏感词检测">{{ form.checkable }}</el-form-item>
       <el-form-item label="排序">{{ form.sort }}</el-form-item>
       <el-form-item label="状态">{{ form.statusText }}</el-form-item>
-      <el-form-item label="描述">{{ form.description }}</el-form-item>
+      <el-form-item label="描述">{{ form.description ? form.description : '暂无' }}</el-form-item>
       <el-form-item label="创建者">{{ form.createdUserInfo?.name }}</el-form-item>
       <el-form-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-form-item>
       <el-form-item label="修改者">{{ form.updatedUserInfo?.name }}</el-form-item>
@@ -212,26 +177,17 @@ const handleDelete = () => {
       </el-space>
     </template>
     <el-form ref="formRef" :model="form" :rules="rules" label-width="auto">
-      <el-form-item label="ID" prop="id">
-        <el-input v-model="form.id" />
+      <el-form-item label="所属客户端" prop="clientId">
+        <form-select v-model="form.clientId" :callback="ClientApi.list" clearable />
       </el-form-item>
-      <el-form-item label="应用" prop="applicationId">
-        <form-select v-model="form.applicationId" :callback="ApplicationApi.list" />
+      <el-form-item label="授权服务端" prop="serverId">
+        <form-select v-model="form.serverId" :callback="ServerApi.list" clearable />
       </el-form-item>
-      <el-form-item label="父级" prop="parentId">
-        <el-input v-model="form.parentId" />
+      <el-form-item label="并行度" prop="parallel">
+        <el-input-number v-model="form.parallel" :min="0" />
       </el-form-item>
-      <el-form-item label="名称" prop="name">
-        <el-autocomplete v-model="form.name" :fetch-suggestions="query => UIUtil.singleSuggestions(ResourceApi.action(), query, 'label')" />
-      </el-form-item>
-      <el-form-item label="模块" prop="module">
-        <el-input v-model="form.module" />
-      </el-form-item>
-      <el-form-item label="控制器" prop="controller">
-        <el-input v-model="form.controller" />
-      </el-form-item>
-      <el-form-item label="动作" prop="action">
-        <el-autocomplete v-model="form.action" :fetch-suggestions="query => UIUtil.singleSuggestions(ResourceApi.action(), query)" />
+      <el-form-item label="敏感词检测" prop="checkable">
+        <el-checkbox v-model="form.checkable">启用</el-checkbox>
       </el-form-item>
       <el-form-item label="排序">
         <el-input-number v-model="form.sort" />

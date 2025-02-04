@@ -24,6 +24,27 @@ public class SensitiveController extends PermitControllerBase {
     @Autowired
     private SensitiveService sensitiveService;
 
+    @RequestMapping("/window")
+    @Permission("")
+    public String windowAction(@RequestBody Map<String, Object> param) {
+        int size = sensitiveService.window();
+        String sentence = DPUtil.parseString(param.get("sentence"));
+        String window = sensitiveService.window(sentence, size);
+        ObjectNode result = DPUtil.objectNode();
+        result.put("size", size);
+        result.put("window", window);
+        result.put("sentence", sentence);
+        return ApiUtil.echoResult(0, null, result);
+    }
+
+    @RequestMapping("/check")
+    @Permission("")
+    public String checkAction(@RequestBody Map<String, Object> param) {
+        String sentence = DPUtil.parseString(param.get("sentence"));
+        List<String> result = sensitiveService.check(sentence);
+        return ApiUtil.echoResult(0, null, result);
+    }
+
     @RequestMapping("/list")
     @Permission("")
     public String listAction(@RequestBody Map<String, Object> param) {

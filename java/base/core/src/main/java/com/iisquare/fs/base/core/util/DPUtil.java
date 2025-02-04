@@ -115,6 +115,39 @@ public class DPUtil {
         return result;
     }
 
+    public static List<Long> parseLongList(Object object) {
+        return parseLongList(object, ",");
+    }
+
+    public static List<Long> parseLongList(Object object, String explode) {
+        List<Long> result = new ArrayList<>();
+        if (null == object) return result;
+        if (object instanceof Collection) {
+            Collection<?> collection = (Collection<?>) object;
+            for (Object item : collection) {
+                result.add(parseLong(item));
+            }
+        } else if (object instanceof Map) {
+            Map<?, ?> map = (Map<?, ?>) object;
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                result.add(parseLong(entry.getValue()));
+            }
+        } else if (object.getClass().isArray()) {
+            Object[] array = (Object[]) object;
+            for (Object item : array) {
+                result.add(parseLong(item));
+            }
+        } else if (DPUtil.empty(explode)) {
+            result.add(parseLong(object));
+        } else {
+            String[] strings = DPUtil.explode(explode, object.toString());
+            for (String item : strings) {
+                result.add(parseLong(item));
+            }
+        }
+        return result;
+    }
+
     public static List<String> parseStringList(Object object) {
         return parseStringList(object, ",");
     }

@@ -12,26 +12,26 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class DruidConfiguration {
 
-    @Value("${custom.druid.registration:/druid/*}")
+    @Value("${fs.druid.registration:/druid/*}")
     private String registration;
-    @Value("${custom.druid.allow:127.0.0.1}")
+    @Value("${fs.druid.allow:127.0.0.1}")
     private String allow;
-    @Value("${custom.druid.deny:}")
+    @Value("${fs.druid.deny:}")
     private String deny;
-    @Value("${custom.druid.loginUsername:admin}")
+    @Value("${fs.druid.loginUsername:admin}")
     private String loginUsername;
-    @Value("${custom.druid.loginPassword:admin888}")
+    @Value("${fs.druid.loginPassword:admin888}")
     private String loginPassword;
-    @Value("${custom.druid.resetEnable:false}")
+    @Value("${fs.druid.resetEnable:false}")
     private String resetEnable;
-    @Value("${custom.druid.sessionStat:false}")
+    @Value("${fs.druid.sessionStat:false}")
     private String sessionStat;
 
     /**
      * 注册一个StatViewServlet
      */
     @Bean
-    public ServletRegistrationBean DruidStatViewServle2(){
+    public ServletRegistrationBean DruidStatViewServlet2(){
         // org.springframework.boot.context.embedded.ServletRegistrationBean提供类的进行注册.
         ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean(new StatViewServlet(), registration);
         // 添加初始化参数：initParams

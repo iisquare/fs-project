@@ -10,17 +10,22 @@ import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rpc.MemberRpc;
+import com.iisquare.fs.web.lm.core.TrieNode;
 import com.iisquare.fs.web.lm.dao.SensitiveDao;
 import com.iisquare.fs.web.lm.entity.Sensitive;
 import com.iisquare.fs.web.lm.mvc.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.criteria.Predicate;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 
 @Service
 public class SensitiveService extends JPAServiceBase {
@@ -33,6 +38,80 @@ public class SensitiveService extends JPAServiceBase {
     Configuration configuration;
     @Autowired
     MemberRpc memberRpc;
+
+    private TrieNode trie = new TrieNode(); // 敏感词的前缀字典树
+
+    private int trieLevel = 0; // 树的最大层级，可用于截断迭代输出的监测窗口
+
+    private final Semaphore semaphore = new Semaphore(1);
+
+    public boolean rebuild() {
+        if (!semaphore.tryAcquire()) return false;
+        int level = 0;
+        TrieNode root = new TrieNode(); // 根为空节点
+        List<Sensitive> list = sensitiveDao.findAll((Specification<Sensitive>) (root1, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root1.get("status"), 3)); // 仅处理拦截状态的关键词
+            return cb.and(predicates.toArray(new Predicate[0]));
+        });
+        for (Sensitive sensitive : list) {
+            String[] keyword = DPUtil.explode("", sensitive.getContent());
+            if (keyword.length == 0) continue;
+            rebuild(root, keyword);
+            level = Math.max(level, keyword.length);
+        }
+        this.trie = root;
+        this.trieLevel = level;
+        semaphore.release();
+        return true;
+    }
+    
+    private void rebuild(TrieNode parent, String[] keyword) {
+        if (parent.level >= keyword.length) {
+            return;
+        }
+        String world = keyword[parent.level];
+        TrieNode node = parent.children.get(world);
+        if (null == node) {
+            node = new TrieNode();
+            node.world = world;
+            node.level = parent.level + 1;
+            node.composable = node.level >= keyword.length;
+            node.parent = parent;
+            parent.children.put(world, node);
+        } else {
+            node.composable = node.composable || node.level >= keyword.length;
+        }
+        rebuild(node, keyword);
+    }
+
+    public int window() {
+        return trieLevel;
+    }
+
+    /**
+     * 推荐采用树深度+新生成内容长度作为实际输出内容的检测窗口大小
+     */
+    public String window(String sentence, int size) {
+        return DPUtil.substring(sentence, -size);
+    }
+
+    public List<String> check(String sentence) {
+        String[] keyword = DPUtil.explode("", sentence);
+        List<String> result = new ArrayList<>();
+        for (int i = 0; i < keyword.length; i++) {
+            sentence = "";
+            TrieNode node = this.trie;
+            for (int j = i; j < keyword.length; j++) {
+                String word = keyword[j];
+                sentence += word;
+                node = node.children.get(word);
+                if (null == node) break;
+                if (node.composable) result.add(sentence);
+            }
+        }
+        return result;
+    }
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();

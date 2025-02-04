@@ -42,7 +42,7 @@ const handleRefresh = () => {
     rows.value = result.data
     if (expandedRowKeys.value.length === 0) {
       toggle.value = false
-      expandedRowKeys.value = TableUtil.expandedRowKeys(rows.value, 1)
+      expandedRowKeys.value = TableUtil.expandedRowKeys(rows.value)
     }
   }).catch(() => {}).finally(() => {
     loading.value = false

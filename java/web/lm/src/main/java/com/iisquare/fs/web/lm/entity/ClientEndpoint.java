@@ -24,7 +24,9 @@ public class ClientEndpoint {
     @Column
     private Integer serverId;
     @Column
-    private Integer parallel; // 并行度
+    private Integer parallel; // 并行度，0为不限制，但可能受服务端总并行度影响
+    @Column
+    private Integer checkable; // 是否启用敏感词检测
     @Column
     private Integer sort;
     @Column

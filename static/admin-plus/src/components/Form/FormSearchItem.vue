@@ -1,12 +1,15 @@
 <script setup lang="ts">
-defineProps({
+const {
+  layout = { lg: 6, md: 8, sm: 12 },
+} = defineProps({
   label: { type: String, required: false },
   prop: { type: String, required: false },
+  layout: { type: Object, required: false },
 })
 </script>
 
 <template>
-  <el-col :lg="6" :md="8" :sm="12">
+  <el-col v-bind="layout">
     <el-form-item :label="label" :prop="prop">
       <slot></slot>
     </el-form-item>

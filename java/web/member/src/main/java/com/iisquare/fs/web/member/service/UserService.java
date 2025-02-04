@@ -51,8 +51,8 @@ public class UserService extends JPAServiceBase {
         return userDao.existsByNameEqualsAndIdNotIn(name, Arrays.asList(ids));
     }
 
-    public boolean existsBySerial(String serial) {
-        return userDao.existsBySerial(serial);
+    public boolean existsBySerial(String serial, Integer ...ids) {
+        return userDao.existsBySerialEqualsAndIdNotIn(serial, Arrays.asList(ids));
     }
 
     public String password(String password, String salt) {
@@ -96,7 +96,7 @@ public class UserService extends JPAServiceBase {
     }
 
     public Map<String, Object> login(Map<?, ?> param, HttpServletRequest request) {
-        User info = null;
+        User info;
         Map<String, Object> session = null;
         String module = DPUtil.parseString(param.get("module"));
         if(param.containsKey("serial")) {
@@ -158,7 +158,10 @@ public class UserService extends JPAServiceBase {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
         if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
-        if(existsByName("name", id)) return ApiUtil.result(2001, "名称已存在", name);
+        if(existsByName(name, id)) return ApiUtil.result(2001, "名称已存在", name);
+        String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
+        if(DPUtil.empty(serial)) return ApiUtil.result(1002, "账号不能为空", serial);
+        if(existsByName(serial, id)) return ApiUtil.result(2001, "账号已存在", serial);
         String password = DPUtil.trim(DPUtil.parseString(param.get("password")));
         User info;
         if(id > 0) {
@@ -169,9 +172,6 @@ public class UserService extends JPAServiceBase {
         } else {
             if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
             info = new User();
-            String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
-            if(DPUtil.empty(serial)) return ApiUtil.result(1002, "账号不能为空", serial);
-            if(existsBySerial(serial)) return ApiUtil.result(2002, "账号已存在", serial);
             info.setSerial(serial);
             if(DPUtil.empty(password)) { // 若未设置密码，采用系统配置的默认密码
                 password = settingService.get("member", "defaultPassword");

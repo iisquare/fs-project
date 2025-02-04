@@ -7,6 +7,14 @@ const UIUtil = {
       return item[valueField].toLowerCase().indexOf(query.toLowerCase()) !== -1
     }) : suggestions
   },
+  singleSuggestions (suggestions: any, query: string, valueField = 'value') {
+    suggestions = suggestions.map((item: any) => {
+      return { value: item[valueField], data: item }
+    })
+    return query ? suggestions.filter((item: any) => {
+      return item.value.toLowerCase().indexOf(query.toLowerCase()) !== -1
+    }) : suggestions
+  },
   prettyFileSize (size: any) {
     if (Number.isNaN(size)) return ''
     const units = [{

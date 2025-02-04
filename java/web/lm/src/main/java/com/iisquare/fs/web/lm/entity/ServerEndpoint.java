@@ -27,7 +27,7 @@ public class ServerEndpoint {
     @Column
     private String token; // 认证标识
     @Column
-    private Integer parallel; // 并行度
+    private Integer parallel; // 并行度，0为不限制
     @Column
     private Integer sort;
     @Column

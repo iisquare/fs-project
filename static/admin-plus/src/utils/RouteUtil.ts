@@ -58,7 +58,7 @@ const RouteUtil = {
     } : {}, filters, this.decode(route.query[this.filterKey]))
   },
   filter2query (route: any, router: any, filter: any) {
-    return router.push({
+    return router.replace({
       path: route.fullPath,
       query: {
         [this.filterKey]: this.encode(filter)
@@ -68,22 +68,22 @@ const RouteUtil = {
   filter (param: any) { // 返回编码后的请求参数
     return { [this.filterKey]: this.encode(param) }
   },
-  forward (obj: any, event: any, location: any) {
+  forward (route: any, router: any, event: any, location: any) {
     if (!location) { // 刷新当前页面
-      obj.$router.replace({
+      return router.replace({
         path: '/redirect',
         query: {
-          path: obj.$route.path,
-          query: this.encode(obj.$route.query)
+          path: route.path,
+          query: this.encode(route.query)
         }
       }).catch((err: any) => err)
     }
-    if (!location.path) location.path = obj.$route.path
+    if (!location.path) location.path = route.path
     if (!event || event.ctrlKey) { // 忽略事件或按住Ctr键
-      const url = obj.$router.resolve(location)
+      const url = router.resolve(location)
       window.open(url.href) // 新页面打开
     } else { // 当前页面打开
-      obj.$router.push(location).catch((err: any) => err)
+      router.push(location).catch((err: any) => err)
     }
   }
 }

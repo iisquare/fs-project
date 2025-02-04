@@ -8,6 +8,7 @@ import ApiUtil from '@/utils/ApiUtil';
 import ResourceApi from '@/api/member/ResourceApi';
 import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
+import UIUtil from '@/utils/UIUtil';
 
 const spacer = h(ElDivider, { direction: 'vertical' })
 const route = useRoute()
@@ -41,7 +42,7 @@ const handleRefresh = () => {
     rows.value = result.data
     if (expandedRowKeys.value.length === 0) {
       toggle.value = false
-      expandedRowKeys.value = TableUtil.expandedRowKeys(rows.value, 1)
+      expandedRowKeys.value = TableUtil.expandedRowKeys(rows.value)
     }
   }).catch(() => {}).finally(() => {
     loading.value = false
@@ -211,7 +212,7 @@ const handleDelete = () => {
         <el-input v-model="form.parentId" />
       </el-form-item>
       <el-form-item label="名称" prop="name">
-        <el-input v-model="form.name" />
+        <el-autocomplete v-model="form.name" :fetch-suggestions="query => UIUtil.singleSuggestions(ResourceApi.action(), query, 'label')" />
       </el-form-item>
       <el-form-item label="模块" prop="module">
         <el-input v-model="form.module" />
@@ -220,7 +221,7 @@ const handleDelete = () => {
         <el-input v-model="form.controller" />
       </el-form-item>
       <el-form-item label="动作" prop="action">
-        <el-input v-model="form.action" />
+        <el-autocomplete v-model="form.action" :fetch-suggestions="query => UIUtil.singleSuggestions(ResourceApi.action(), query)" />
       </el-form-item>
       <el-form-item label="排序">
         <el-input-number v-model="form.sort" />

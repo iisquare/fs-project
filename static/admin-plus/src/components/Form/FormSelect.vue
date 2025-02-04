@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import DataUtil from '@/utils/DataUtil';
-import { onMounted, ref } from 'vue';
+import { ref, watch } from 'vue';
 
 const {
   multiple = false,
@@ -35,8 +35,7 @@ const handleCallback = async (params: any) => {
   loading.value = true
   options.value = await callback(params).then((result: any) => {
     return result.data.rows.map((item: any) => {
-      return { key: item[fieldKey], value: item[fieldValue], label: item[fieldLabel],
-      }
+      return { key: item[fieldKey], value: item[fieldValue], label: item[fieldLabel], }
     })
   }).catch(() => []).finally(() => {
     loading.value = false
@@ -47,21 +46,11 @@ const handleParameter = (params: any, query: string) => {
   return Object.assign({}, { pageSize, exceptIds }, params, parameter && parameter(query))
 }
 
-const reset = (value: any) => {
-  if (value !== model.value) {
-    model.value = value
-  }
-  if (!DataUtil.empty(value)) {
-    const size = Math.max(pageSize, DataUtil.isArray(model.value) ? model.value.length : 1)
-    handleCallback(handleParameter({ [fieldValue]: model.value, pageSize: size }, ''))
-  }
-}
-
-defineExpose({ reset })
-
-onMounted(async () => {
-  reset(model.value)
-})
+watch(model, (value, oldValue) => {
+  if (value === oldValue || DataUtil.empty(value)) return
+  const size = Math.max(pageSize, DataUtil.isArray(model.value) ? model.value.length : 1)
+  handleCallback(handleParameter({ [fieldValue]: model.value, pageSize: size }, ''))
+}, { immediate: true })
 
 const remoteMethod = (query: string) => {
   handleCallback(handleParameter({ [fieldLabel]: query }, query))

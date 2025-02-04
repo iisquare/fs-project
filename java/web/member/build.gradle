@@ -1,7 +1,7 @@
 
 dependencies {
-    implementation project(':base:jpa')
     implementation project(':web:core')
-    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-redis', version: springBootVersion
+    implementation project(':base:jpa')
+    implementation project(':base:redis')
     implementation group: 'org.springframework.session', name: 'spring-session-data-redis', version: springBootVersion
 }

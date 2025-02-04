@@ -13,4 +13,10 @@ export default {
   save (param: any, tips = {}) {
     return base.post('/sensitive/save', param, tips)
   },
+  window (param: any, tips = {}) {
+    return base.post('/sensitive/window', param, tips)
+  },
+  check (param: any, tips = {}) {
+    return base.post('/sensitive/check', param, tips)
+  },
 }

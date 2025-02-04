@@ -32,6 +32,12 @@ public class ResourceService extends JPAServiceBase {
     private RbacService rbacService;
 
     public ArrayNode tree(Map<?, ?> param, Map<?, ?> args) {
+        Sort sort = Sort.by(
+                Sort.Order.desc("sort"),
+                Sort.Order.asc("module"),
+                Sort.Order.asc("controller"),
+                Sort.Order.asc("action")
+        );
         List<Resource> list = resourceDao.findAll((Specification<Resource>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             int status = DPUtil.parseInt(param.get("status"));
@@ -43,7 +49,7 @@ public class ResourceService extends JPAServiceBase {
                 predicates.add(cb.equal(root.get("applicationId"), applicationId));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, Sort.by(Sort.Order.desc("sort")));
+        }, sort);
         ArrayNode data = DPUtil.toJSON(list, ArrayNode.class);
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(data, "createdUid", "updatedUid");
