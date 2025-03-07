@@ -7,11 +7,13 @@
 - 大数据分析和治理平台，包含数据交换、定时任务、元数据管理、数据标准、数据质量、数据安全、数据资产、生命周期管理等模块。
 
 ## 项目结构
-- docker:项目所需服务的单机测试环境，高可用环境可参考[kubernetes](https://github.com/iisquare/kubernetes)项目。
+- fs-docker:项目所需服务的单机测试环境，参考[docker](https://github.com/iisquare/fs-docker)项目。
+- fs-kubernetes:高可用环境可参考[kubernetes](https://github.com/iisquare/fs-kubernetes)项目。
 - docs:开发说明文档。
-- java:后端项目代码。
-- python:机器学习和神经网络训练模型。
-- static:前端项目代码。
+- fs-java:后端项目代码。
+- fs-admin:前端项目代码。
+- python:机器学习和神经网络训练模型，后期将按照功能独立拆分项目。
+- static:前端项目代码，后期将按照功能独立拆分项目。
 
 ## 架构选型
 - 后端基于SpringBoot2.x云原生方式进行开发，可快速转换为SpringCloud或K8S等微服务运行模式。
