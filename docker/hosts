@@ -1,3 +1,0 @@
-# 非Docker内部环境使用时的配置建议
-
-127.0.0.1 kafka zookeeper

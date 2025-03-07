@@ -1,5 +1,0 @@
-ARG CLICKHOUSE_VERSION
-
-FROM clickhouse/clickhouse-server:${CLICKHOUSE_VERSION}
-
-EXPOSE 8123 9000

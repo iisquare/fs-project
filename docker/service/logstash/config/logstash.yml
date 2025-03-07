@@ -1,4 +1,0 @@
-pipeline.ordered: auto
-pipeline.workers: 1
-
-monitoring.enabled: false

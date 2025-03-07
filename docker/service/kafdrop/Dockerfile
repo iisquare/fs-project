@@ -1,5 +1,0 @@
-ARG KAFDROP_VERSION
-
-FROM obsidiandynamics/kafdrop:${KAFDROP_VERSION}
-
-EXPOSE 9000
