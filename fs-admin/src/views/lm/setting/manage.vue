@@ -37,7 +37,7 @@ const handleCheck = () => {
 
 <template>
   <el-card :bordered="false" shadow="never">
-    <el-form :mode="form" label-width="auto">
+    <el-form :model="form" label-width="auto">
       <el-form-item label="管理">
         <el-space>
           <el-button type="danger" @click="handleSensitive">重建敏感词字典</el-button>

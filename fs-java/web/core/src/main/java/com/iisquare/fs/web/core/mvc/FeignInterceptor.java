@@ -23,6 +23,7 @@ public class FeignInterceptor implements RequestInterceptor {
     public static final String HEADER_APP_NAME = "fs-app-name";
     public static final String HEADER_APP_TIME = "fs-app-time";
     public static final String HEADER_APP_TOKEN = "fs-app-token";
+    public static final List<String> headers = Arrays.asList("x-auth-token", "cookie", "user-agent", "authorization");
 
     @Value("${fs.rpc.secret}")
     public void setSecret(String secret) {
@@ -39,7 +40,7 @@ public class FeignInterceptor implements RequestInterceptor {
         String time = request.getHeader(FeignInterceptor.HEADER_APP_TIME);
         String token = request.getHeader(FeignInterceptor.HEADER_APP_TOKEN);
         if (DPUtil.empty(name) || DPUtil.empty(time)) return false;
-        if (DPUtil.parseLong(time) + 3000 < System.currentTimeMillis()) return false;
+        if (Math.abs(System.currentTimeMillis() - DPUtil.parseLong(time)) > 3000) return false;
         return token(name, time).equals(token);
     }
 
@@ -52,7 +53,6 @@ public class FeignInterceptor implements RequestInterceptor {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (null == attributes) return;
         HttpServletRequest request = attributes.getRequest();
-        List<String> headers = Arrays.asList("token", "cookie", "user-agent");
         for (String name : headers) {
             String header = request.getHeader(name);
             if (!DPUtil.empty(header)) {

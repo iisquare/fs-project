@@ -31,7 +31,7 @@ public class AgentService extends JPAServiceBase {
     @Autowired
     Configuration configuration;
 
-    public ObjectNode listByIdentity(HttpServletRequest request) {
+    public ObjectNode listByIdentity(HttpServletRequest request, boolean check) {
         ObjectNode result = DPUtil.objectNode();
         JsonNode identity = rbacService.identity();
         if (!identity.has("id")) return result;
@@ -49,7 +49,7 @@ public class AgentService extends JPAServiceBase {
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         }, Sort.by(Sort.Order.desc("sort"), Sort.Order.asc("name")));
-        boolean permit = rbacService.hasPermit(request, "lm", "chat", "demo");
+        boolean permit = !check || rbacService.hasPermit(request, "lm", "chat", "demo");
         for (Agent agent : agents) {
             ObjectNode item = result.putObject(String.valueOf(agent.getId()));
             item.put("id", agent.getId());
@@ -59,6 +59,10 @@ public class AgentService extends JPAServiceBase {
             item.put("systemPrompt", agent.getSystemPrompt());
             item.put("maxTokens", agent.getMaxTokens());
             item.put("temperature", agent.getTemperature());
+            item.put("parameter", agent.getParameter());
+            if (check) continue;
+            item.put("model", agent.getModel());
+            item.put("token", agent.getToken());
         }
         return result;
     }
@@ -99,6 +103,7 @@ public class AgentService extends JPAServiceBase {
         info.setSystemPrompt(DPUtil.parseString(param.get("systemPrompt")));
         info.setMaxTokens(DPUtil.parseInt(param.get("maxTokens")));
         info.setTemperature(DPUtil.parseFloat(param.get("temperature")));
+        info.setParameter(DPUtil.parseString(param.get("parameter")));
         info.setRoleIds(DPUtil.implode(",", DPUtil.parseIntList(param.get("roleIds"))));
         info.setSort(DPUtil.parseInt(param.get("sort")));
         info.setStatus(status);

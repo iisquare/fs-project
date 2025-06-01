@@ -5,8 +5,8 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
@@ -18,9 +18,12 @@ import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 
 public class SsePlainRequestPool implements Closeable {
@@ -99,7 +102,7 @@ public class SsePlainRequestPool implements Closeable {
     }
 
     public CloseableHttpResponse execute(SsePlainRequest request) throws Exception {
-        HttpEntityEnclosingRequestBase http = request.request();
+        HttpRequestBase http = request.request(true);
         return this.client.execute(http);
     }
 
@@ -112,6 +115,24 @@ public class SsePlainRequestPool implements Closeable {
             }
         }
         return false;
+    }
+
+    public SseEmitter process(SsePlainRequest request, SsePlainEmitter emitter) {
+        emitter.onError((e) -> {
+            request.abort(); // 中断模型端处理请求
+        }).onTimeout(() -> {
+            request.abort(); // 中断模型端处理请求
+        });
+        CloseableHttpResponse response;
+        try {
+            response = execute(request);
+        } catch (Exception e) {
+            request.onError(null, e, false); // 转交给SsePlainRequest进行异常处理
+            FileUtil.close(request);
+            return emitter.sync();
+        }
+        emitter.setMediaType(response); // 需要在异步返回前，确定请求响应类型
+        return emitter.async(() -> process(request, response));
     }
 
     public boolean process(SsePlainRequest request, CloseableHttpResponse response) {
@@ -128,7 +149,10 @@ public class SsePlainRequestPool implements Closeable {
             while (!request.isAborted() && (line = buffer.readLine()) != null) {
                 if (isStream) {
                     boolean result = request.onMessage(response, line, true);
-                    if (!result) break;
+                    if (!result) {
+                        request.abort(); // 终止请求，断开与后端服务连接
+                        break;
+                    }
                 } else {
                     sb.append(line).append("\n");
                 }
@@ -142,13 +166,19 @@ public class SsePlainRequestPool implements Closeable {
             request.onError(response, e, isStream);
             return false;
         } finally {
-            FileUtil.close(buffer, reader, stream, response);
-            request.onComplete();
+            FileUtil.close(buffer, reader, stream, response, request);
         }
     }
 
     public boolean submit(SsePlainRequest request) throws Exception {
         return process(request, execute(request));
+    }
+
+    public HttpRequestBase applyHeaders(HttpRequestBase http, HttpServletRequest request, List<String> headers) {
+        for (String header : headers) {
+            http.addHeader(header, request.getHeader(header));
+        }
+        return http;
     }
 
 }

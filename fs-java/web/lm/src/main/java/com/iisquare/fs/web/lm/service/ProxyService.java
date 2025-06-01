@@ -14,9 +14,10 @@ import com.iisquare.fs.base.web.util.ServletUtil;
 import com.iisquare.fs.web.lm.core.RedisKey;
 import com.iisquare.fs.web.lm.dao.*;
 import com.iisquare.fs.web.lm.entity.*;
+import com.iisquare.fs.web.lm.util.ChatUtil;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.StringEntity;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
@@ -57,7 +58,8 @@ public class ProxyService extends ServiceBase implements MessageListener, Initia
     LogDao logDao;
 
     private ObjectNode cache = DPUtil.objectNode();
-    private SsePlainRequestPool pool = new SsePlainRequestPool();
+    private final SsePlainRequestPool pool = new SsePlainRequestPool();
+    public final Charset charset = StandardCharsets.UTF_8;
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -86,6 +88,10 @@ public class ProxyService extends ServiceBase implements MessageListener, Initia
                 cache = cache();
                 return;
         }
+    }
+
+    public SsePlainRequestPool pool() {
+        return pool;
     }
 
     public Map<String, Object> notice(Map<String, Object> param) {
@@ -302,13 +308,12 @@ public class ProxyService extends ServiceBase implements MessageListener, Initia
         boolean checkable = clientEndpoint.at("/checkable").asBoolean(false);
         SsePlainRequest req = new SsePlainRequest() { // 处理请求
             @Override
-            public HttpEntityEnclosingRequestBase request() {
+            public HttpRequestBase request() {
                 HttpPost request = new HttpPost(serverEndpoint.at("/url").asText(""));
                 String token = serverEndpoint.at("/token").asText("");
                 if (!DPUtil.empty(token)) {
                     request.addHeader("Authorization", "Bearer " + token);
                 }
-                Charset charset = StandardCharsets.UTF_8;
                 request.addHeader("Content-Type", "application/json;charset=" + charset.name());
                 json.put("model", serverEndpoint.at("/model").asText(""));
                 json.put("stream", stream);
@@ -323,13 +328,21 @@ public class ProxyService extends ServiceBase implements MessageListener, Initia
             }
 
             @Override
-            public void onComplete() {
+            public void onClose() {
                 log.responseTime(System.currentTimeMillis());
                 log.responseBody(responseBody.toString()).responseCompletion(responseCompletion.toString());
                 log.usagePromptTokens(promptTokens).usageCompletionTokens(completionTokens).usageTotalTokens(totalTokens);
                 if (null != finishReason && null == log.build().getFinishReason()) {
                     log.finishReason(finishReason);
                 }
+                if (clientParallel > 0) {
+                    redis.opsForValue().decrement(clientKey);
+                }
+                if (backendParallel > 0) {
+                    redis.opsForValue().decrement(backendKey);
+                }
+                log.endTime(System.currentTimeMillis());
+                logDao.save(log.build());
             }
 
             @Override
@@ -341,7 +354,7 @@ public class ProxyService extends ServiceBase implements MessageListener, Initia
                     prefix = SsePlainEmitter.EVENT_DATA_PREFIX;
                     line = line.substring(SsePlainEmitter.EVENT_DATA_PREFIX.length());
                 }
-                if (line.startsWith("{")) { // 消息体保持单行
+                if (ChatUtil.isJSON(line)) { // 消息体保持单行
                     ObjectNode message = (ObjectNode) DPUtil.parseJSON(line);
                     if (message.has("error")) {
                         log.finishReason("backend_error").finishDetail(line);
@@ -349,7 +362,7 @@ public class ProxyService extends ServiceBase implements MessageListener, Initia
                         return false;
                     } else if (message.has("choices")) {
                         List<String> check = check(message);
-                        if (null != check && check.size() > 0) {
+                        if (null != check && !check.isEmpty()) {
                             log.finishReason("completion_sensitive").finishDetail(DPUtil.implode(check));
                             emitter.error("completion_sensitive", "迷路了", "proxy", null, isStream);
                             return false;
@@ -357,7 +370,7 @@ public class ProxyService extends ServiceBase implements MessageListener, Initia
                         line = message.put("model", model).toString();
                     }
                 }
-                emitter.send(prefix + line, isStream); // 以:冒号开头的注释信息、[DONE]状态信息等需要原样转发，保持连接心跳
+                emitter.send(prefix + line, false); // 以:冒号开头的注释信息、[DONE]状态信息等需要原样转发，保持连接心跳
                 return emitter.isRunning();
             }
 
@@ -400,16 +413,7 @@ public class ProxyService extends ServiceBase implements MessageListener, Initia
                 return sensitiveService.check(sentence);
             }
         };
-        emitter.onCompletion(() -> {
-            if (clientParallel > 0) {
-                redis.opsForValue().decrement(clientKey);
-            }
-            if (backendParallel > 0) {
-                redis.opsForValue().decrement(backendKey);
-            }
-            log.endTime(System.currentTimeMillis());
-            logDao.save(log.build());
-        }).onError((e) -> {
+        emitter.onError((e) -> {
             log.finishReason("client_abort").finishDetail(ApiUtil.getStackTrace(e));
             req.abort(); // 中断模型端处理请求
         }).onTimeout(() -> {
@@ -439,6 +443,7 @@ public class ProxyService extends ServiceBase implements MessageListener, Initia
             log.waitingTime(System.currentTimeMillis());
         } catch (Exception e) {
             log.finishReason("backend_failed").finishDetail(ApiUtil.getStackTrace(e));
+            FileUtil.close(req);
             return emitter.error("connect_backend_failed", "连接模型端服务失败", "proxy", e.getMessage(), false).sync();
         }
         emitter.setMediaType(res); // 需要在异步返回前，确定请求响应类型

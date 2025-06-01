@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 
 public class SsePlainEmitter {
 
-    public static final String EVENT_DATA_PREFIX = "data: ";
+    public static final String EVENT_DATA_PREFIX = "data:";
     SseFixedEmitter emitter;
     AtomicBoolean running = new AtomicBoolean(true);
     Runnable completionCallback = null;
@@ -41,6 +41,9 @@ public class SsePlainEmitter {
 
     private void initialize() {
         emitter.onCompletion(() -> {
+            // 客户端主动断开时，emitter.onCompletion比SsePlainRequest.onComplete优先触发执行
+            // 在服务端正常执行完成时，emitter.onCompletion在SsePlainRequest.onComplete后执行
+            // 无论是客户端主动断开，还是服务端正常断开，该方法只执行一次
             running.set(false);
             if (null != completionCallback) {
                 completionCallback.run();
@@ -144,7 +147,7 @@ public class SsePlainEmitter {
 
     public SseEmitter sync() {
         setMediaType(MediaType.APPLICATION_JSON);
-        emitter.complete();
+        emitter.complete(); // 通知完成，断开与客户端连接
         return emitter;
     }
 
@@ -155,7 +158,8 @@ public class SsePlainEmitter {
                     target.run();
                 }
             } catch (Exception ignored) {} finally {
-                emitter.complete();
+                // 若客户端主动断开连接，emitter.onCompletion()事件回调会先于该通知执行
+                emitter.complete(); // 通知完成，断开与客户端连接
             }
         }).start();
         return emitter;

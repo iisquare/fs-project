@@ -113,9 +113,9 @@ const handleSubmit = () => {
     MenuApi.save(form.value, { success: true }).then(result => {
       handleRefresh()
       formVisible.value = false
+    }).catch(() => {}).finally(() => {
+      formLoading.value = false
     })
-  }).catch(() => {}).finally(() => {
-    formLoading.value = false
   })
 }
 const handleDelete = () => {

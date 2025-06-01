@@ -3,18 +3,17 @@ package com.iisquare.fs.web.admin.controller;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
-import com.iisquare.fs.base.web.sse.SsePlainEventBuilder;
+import com.iisquare.fs.base.web.sse.SsePlainEmitter;
 import com.iisquare.fs.base.web.mvc.ControllerBase;
+import com.iisquare.fs.base.web.sse.SsePlainRequest;
+import com.iisquare.fs.base.web.sse.SsePlainRequestPool;
+import com.iisquare.fs.web.core.mvc.FeignInterceptor;
 import com.iisquare.fs.web.core.mvc.RpcBase;
 import feign.Response;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.*;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,17 +23,11 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 @RestController
 @RequestMapping("/proxy")
@@ -43,8 +36,7 @@ public class ProxyController extends ControllerBase implements InitializingBean,
     @Autowired
     private WebApplicationContext context;
 
-    private CloseableHttpClient client;
-    private final ExecutorService pool = Executors.newCachedThreadPool();
+    private SsePlainRequestPool pool = new SsePlainRequestPool();
 
     @PostMapping("/post")
     public String postAction(@RequestBody Map<?, ?> param) {
@@ -69,15 +61,15 @@ public class ProxyController extends ControllerBase implements InitializingBean,
     }
 
     @PostMapping("/postSSE")
-    public SseEmitter postSSEAction(@RequestBody Map<?, ?> param) throws Exception {
-        return sse(RequestMethod.POST, param);
+    public SseEmitter postSSEAction(HttpServletRequest request, @RequestBody Map<?, ?> param) throws Exception {
+        return sse(request, RequestMethod.POST, param);
     }
 
     @GetMapping("/getSSE")
-    public SseEmitter getSSEAction(@RequestParam Map<String, Object> param) throws Exception {
+    public SseEmitter getSSEAction(HttpServletRequest request, @RequestParam Map<String, Object> param) throws Exception {
         String data = new String(Base64.decodeBase64(DPUtil.parseString(param.get("data"))));
         param.put("data", DPUtil.toJSON(DPUtil.parseJSON(data), Map.class));
-        return sse(RequestMethod.GET, param);
+        return sse(request, RequestMethod.GET, param);
     }
 
     @PostMapping("/upload")
@@ -139,56 +131,51 @@ public class ProxyController extends ControllerBase implements InitializingBean,
         return IOUtils.toString(result.body().asInputStream());
     }
 
-    private SseEmitter sse(RequestMethod method, Map<?, ?> param) throws Exception {
+    private SseEmitter sse(HttpServletRequest r1, RequestMethod method, Map<?, ?> param) throws Exception {
+        SsePlainEmitter emitter = new SsePlainEmitter(0L);
         String url = String.format("rpc.%s.rest", DPUtil.parseString(param.get("app"))).toLowerCase();
         url = context.getEnvironment().getProperty(url);
-        if (DPUtil.empty(url)) return null;
-        url += DPUtil.parseString(param.get("uri"));
-        CloseableHttpResponse response;
-        switch (method) {
-            case POST: {
-                HttpPost request = new HttpPost(url);
-                String data = DPUtil.stringify(param.get("data"));
-                if (!DPUtil.empty(data)) {
-                    request.setEntity(new StringEntity(data));
-                }
-                response = this.client.execute(request);
-                break;
-            }
-            case GET: {
-                HttpGet request = new HttpGet(url);
-                response = this.client.execute(request);
-                break;
-            }
-            default:
-                return null;
+        if (DPUtil.empty(url)) {
+            return emitter.error("app_not_found", "请求应用不存在", "admin", param, false).sync();
         }
-        SseEmitter emitter = new SseEmitter();
-        emitter.onCompletion(() -> {
-            FileUtil.close(response);
-        });
-        emitter.onError(throwable -> {
-            FileUtil.close(response);
-        });
-        pool.submit(() -> {
-            InputStream stream = null;
-            InputStreamReader reader = null;
-            BufferedReader buffer = null;
-            try {
-                stream = response.getEntity().getContent();
-                reader = new InputStreamReader(stream);
-                buffer = new BufferedReader(reader);
-                String line;
-                while ((line = buffer.readLine()) != null) {
-                    if (DPUtil.empty(line)) continue;
-                    emitter.send(new SsePlainEventBuilder().line(line));
+        url += DPUtil.parseString(param.get("uri"));
+        String finalUrl = url;
+        SsePlainRequest request = new SsePlainRequest() { // 处理请求
+            @Override
+            public HttpRequestBase request() throws Exception {
+                switch (method) {
+                    case POST: {
+                        HttpPost r2 = new HttpPost(finalUrl);
+                        Charset charset = StandardCharsets.UTF_8;
+                        r2.addHeader("Content-Type", "application/json;charset=" + charset.name());
+                        String data = DPUtil.stringify(param.get("data"));
+                        if (!DPUtil.empty(data)) {
+                            r2.setEntity(new StringEntity(data, charset));
+                        }
+                        return pool.applyHeaders(r2, r1, FeignInterceptor.headers);
+                    }
+                    case GET: {
+                        HttpGet r3 = new HttpGet(finalUrl);
+                        return pool.applyHeaders(r3, r1, FeignInterceptor.headers);
+                    }
+                    default:
+                        return null;
                 }
-            } catch (IOException ignored) {} finally {
-                FileUtil.close(buffer, reader, stream);
-                emitter.complete();
             }
-        });
-        return emitter;
+
+            @Override
+            public void onError(CloseableHttpResponse response, Throwable throwable, boolean isStream) { // 中断客户端处理请求
+                emitter.error("backend_error", "服务端异常", "admin", throwable.getMessage(), isStream).abort();
+            }
+
+            @Override
+            public boolean onMessage(CloseableHttpResponse response, String line, boolean isStream) {
+                if ("".equals(line)) return emitter.isRunning();
+                emitter.send(line, false);
+                return emitter.isRunning();
+            }
+        };
+        return pool.process(request, emitter);
     }
 
     public RpcBase rpc(String name) throws Exception {
@@ -200,12 +187,10 @@ public class ProxyController extends ControllerBase implements InitializingBean,
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        this.client = HttpClients.custom().build();
     }
 
     @Override
     public void destroy() throws Exception {
-        pool.shutdown();
-        client.close();
+        FileUtil.close(pool);
     }
 }

@@ -29,7 +29,7 @@ const columns = ref([
 const rows = ref([])
 const filterRef = ref<FormInstance>()
 const filters = ref(RouteUtil.query2filter(route, { advanced: false, roleIds: [] }))
-const pagination = ref(RouteUtil.pagination(filters.value))
+const pagination = ref(RouteUtil.pagination(filters.value, { pageSize: 100 }))
 const selection = ref([])
 const permitted: any = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {

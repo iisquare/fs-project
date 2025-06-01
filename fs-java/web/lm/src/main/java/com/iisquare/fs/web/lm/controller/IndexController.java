@@ -1,6 +1,5 @@
 package com.iisquare.fs.web.lm.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
@@ -42,7 +41,7 @@ public class IndexController extends ControllerBase {
 
     @RequestMapping("/v1/agents")
     public String agentAction(HttpServletRequest request) {
-        ObjectNode result = agentService.listByIdentity(request);
+        ObjectNode result = agentService.listByIdentity(request, true);
         return ApiUtil.echoResult(0, null, DPUtil.arrayNode(result));
     }
 

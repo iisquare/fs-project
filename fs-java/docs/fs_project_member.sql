@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 8.0.41, for Linux (x86_64)
+-- MySQL dump 10.13  Distrib 8.0.42, for Linux (x86_64)
 --
 -- Host: wsl    Database: fs_project
 -- ------------------------------------------------------
--- Server version	8.0.21
+-- Server version	8.0.41
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -24,21 +24,21 @@ DROP TABLE IF EXISTS `fs_member_application`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `fs_member_application` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `serial` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `icon` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `target` varchar(8) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `serial` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `icon` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `target` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `sort` tinyint NOT NULL DEFAULT '0',
   `status` tinyint NOT NULL DEFAULT '0',
-  `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `created_time` bigint NOT NULL DEFAULT '0',
   `created_uid` int NOT NULL DEFAULT '0',
   `updated_time` bigint NOT NULL DEFAULT '0',
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `unq_serial` (`serial`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=305 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=307 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -61,7 +61,85 @@ INSERT INTO `fs_member_application` VALUES (157,'govern','数据治理','medicin
 INSERT INTO `fs_member_application` VALUES (301,'server','服务管理','box-plot','/server/index/index','',0,1,'管理项目基础服务',1662455086472,1,1662455086472,1);
 INSERT INTO `fs_member_application` VALUES (302,'demo','演示实例','Opportunity','/demo/index/index','',0,1,'基础组件、功能演示、示例代码',1662455086472,1,1736211445444,1);
 INSERT INTO `fs_member_application` VALUES (304,'lm','大模型','Cpu','/lm/index/index','',0,1,'服务代理、智能体、在线对话',1735010540766,1,1738219216648,1);
+INSERT INTO `fs_member_application` VALUES (305,'kg','知识图谱','layout.knowledgeGraph','/kg/index/index','',0,1,'本体管理、知识抽取、知识融合、知识检索',1741912218196,1,1741912275654,1);
+INSERT INTO `fs_member_application` VALUES (306,'auth','鉴权中心','Promotion','/auth/index/index','',0,2,'资源权限、数据权限、授权日志',1742262571109,1,1744774472388,1);
 /*!40000 ALTER TABLE `fs_member_application` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `fs_member_data`
+--
+
+DROP TABLE IF EXISTS `fs_member_data`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_member_data` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `serial` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `pks` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `fields` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `sort` tinyint NOT NULL DEFAULT '0',
+  `status` tinyint NOT NULL DEFAULT '0',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `unq_serial` (`serial`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=312 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `fs_member_data`
+--
+
+LOCK TABLES `fs_member_data` WRITE;
+/*!40000 ALTER TABLE `fs_member_data` DISABLE KEYS */;
+INSERT INTO `fs_member_data` VALUES (307,'test','测试数据','cccccc','[{\"name\":\"aaaaaaa\",\"title\":\"\",\"type\":\"string\"},{\"name\":\"cccccc\",\"title\":\"\",\"type\":\"\"},{\"name\":\"vvvvvvvvvvvvv\",\"title\":\"\",\"type\":\"\"},{\"name\":\"id\",\"title\":\"\",\"type\":\"\"}]',0,1,'',1745371420491,1,1745371420491,1);
+INSERT INTO `fs_member_data` VALUES (308,'aaaa','aaaaa','','[]',0,1,'',1745548184369,1,1745548184369,1);
+INSERT INTO `fs_member_data` VALUES (309,'bbb','bbbbb','','[]',0,1,'',1745548190250,1,1745548190250,1);
+INSERT INTO `fs_member_data` VALUES (310,'ttcccc','fasfdf','','[]',0,1,'',1745548196364,1,1745548196364,1);
+INSERT INTO `fs_member_data` VALUES (311,'fdgdfg','ewwegg','','[]',0,1,'',1745548202321,1,1745548202321,1);
+/*!40000 ALTER TABLE `fs_member_data` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `fs_member_data_permit`
+--
+
+DROP TABLE IF EXISTS `fs_member_data_permit`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_member_data_permit` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `data_id` int NOT NULL DEFAULT '0',
+  `role_id` int NOT NULL DEFAULT '0',
+  `filters` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `fields` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `sort` tinyint NOT NULL DEFAULT '0',
+  `status` tinyint NOT NULL DEFAULT '0',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_data_id` (`data_id`) USING BTREE,
+  KEY `idx_role_id` (`role_id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=310 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `fs_member_data_permit`
+--
+
+LOCK TABLES `fs_member_data_permit` WRITE;
+/*!40000 ALTER TABLE `fs_member_data_permit` DISABLE KEYS */;
+INSERT INTO `fs_member_data_permit` VALUES (308,307,1,'[{\"type\":\"FILTER\",\"value\":\"\",\"operator\":\"EQUAL\",\"definition\":\"STRING\"},{\"type\":\"FILTER\",\"value\":\"\",\"operator\":\"EQUAL\",\"definition\":\"STRING\"},{\"type\":\"RELATION\",\"value\":\"AND\",\"children\":[{\"type\":\"FILTER\",\"value\":\"\",\"operator\":\"EQUAL\",\"definition\":\"STRING\"},{\"type\":\"FILTER\",\"value\":\"\",\"operator\":\"EQUAL\",\"definition\":\"STRING\"},{\"type\":\"RELATION\",\"value\":\"AND\",\"children\":[{\"type\":\"FILTER\",\"value\":\"\",\"operator\":\"EQUAL\",\"definition\":\"STRING\"},{\"type\":\"FILTER\",\"value\":\"\",\"operator\":\"EQUAL\",\"definition\":\"STRING\"}]},{\"type\":\"FILTER\",\"value\":\"\",\"operator\":\"EQUAL\",\"definition\":\"STRING\"}]}]','aaaaaaa,vvvvvvvvvvvvv,id',0,1,'xx',1745549923186,1,1747991190018,1);
+INSERT INTO `fs_member_data_permit` VALUES (309,307,2,'[]','id,cccccc',0,1,'',1745552082506,1,1745552082506,1);
+/*!40000 ALTER TABLE `fs_member_data_permit` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -73,15 +151,15 @@ DROP TABLE IF EXISTS `fs_member_dictionary`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `fs_member_dictionary` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `pinyin` varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `pinyin` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `ancestor_id` int NOT NULL DEFAULT '0',
   `parent_id` int NOT NULL DEFAULT '0',
-  `content` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `content` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `leaf` tinyint NOT NULL DEFAULT '0',
   `sort` tinyint NOT NULL DEFAULT '0',
   `status` tinyint NOT NULL DEFAULT '0',
-  `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `created_time` bigint NOT NULL DEFAULT '0',
   `created_uid` int NOT NULL DEFAULT '0',
   `updated_time` bigint NOT NULL DEFAULT '0',
@@ -90,7 +168,7 @@ CREATE TABLE `fs_member_dictionary` (
   KEY `idx_content` (`content`) USING BTREE,
   KEY `idx_status` (`status`) USING BTREE,
   KEY `idx_ancestor_id` (`ancestor_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=10064 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=10064 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -4218,23 +4296,23 @@ DROP TABLE IF EXISTS `fs_member_menu`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `fs_member_menu` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `full_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `full_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `application_id` int NOT NULL DEFAULT '0',
   `parent_id` int NOT NULL DEFAULT '0',
-  `icon` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `target` varchar(8) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `icon` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `target` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `sort` tinyint NOT NULL DEFAULT '0',
   `status` tinyint NOT NULL DEFAULT '0',
-  `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `created_time` bigint NOT NULL DEFAULT '0',
   `created_uid` int NOT NULL DEFAULT '0',
   `updated_time` bigint NOT NULL DEFAULT '0',
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_application_id` (`application_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=148 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=158 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -4360,7 +4438,7 @@ INSERT INTO `fs_member_menu` VALUES (132,'应用管理','用户中心:应用管�
 INSERT INTO `fs_member_menu` VALUES (133,'应用列表','后台管理:用户中心:应用管理:应用列表',2,132,'','/member/application/list','',0,1,'',1729752681106,1,1729752681106,1);
 INSERT INTO `fs_member_menu` VALUES (134,'表头设置','演示实例:数据表格:表头设置',302,70,'','/demo/table/column','',20,1,'',1736492888351,1,1736492947263,1);
 INSERT INTO `fs_member_menu` VALUES (135,'字典示例','用户中心:字典管理:字典示例',2,66,'','/member/dictionary/demo','',0,1,'',1737969060945,1,1737969060945,1);
-INSERT INTO `fs_member_menu` VALUES (136,'系统配置','大模型:系统配置',304,0,'','/lm/setting','',0,1,'',1738220733189,1,1738220733189,1);
+INSERT INTO `fs_member_menu` VALUES (136,'系统配置','大模型:系统配置',304,0,'Setting','/lm/setting','',0,1,'',1738220733189,1,1741572210130,1);
 INSERT INTO `fs_member_menu` VALUES (137,'敏感词管理','大模型:系统配置:敏感词管理',304,136,'','/lm/setting/sensitive','',0,1,'',1738220765581,1,1738394092289,1);
 INSERT INTO `fs_member_menu` VALUES (138,'服务端管理','大模型:系统配置:服务端管理',304,136,'','/lm/setting/server','',0,1,'',1738376063877,1,1738376063877,1);
 INSERT INTO `fs_member_menu` VALUES (139,'服务端端点','大模型:系统配置:服务端端点',304,136,'','/lm/setting/serverEndpoint','',0,1,'',1738376104401,1,1738376104401,1);
@@ -4368,10 +4446,20 @@ INSERT INTO `fs_member_menu` VALUES (140,'客户端管理','大模型:系统配�
 INSERT INTO `fs_member_menu` VALUES (141,'客户端端点','大模型:系统配置:客户端端点',304,136,'','/lm/setting/clientEndpoint','',0,1,'',1738376138121,1,1738376138121,1);
 INSERT INTO `fs_member_menu` VALUES (142,'状态管理','大模型:系统配置:状态管理',304,136,'','/lm/setting/manage','',1,1,'',1738392833376,1,1738394105189,1);
 INSERT INTO `fs_member_menu` VALUES (143,'智能体管理','大模型:系统配置:智能体管理',304,136,'','/lm/setting/agent','',1,1,'',1740032541715,1,1740369045141,1);
-INSERT INTO `fs_member_menu` VALUES (144,'模型对话','大模型:模型对话',304,0,'','/lm/chat','',100,1,'',1740451465910,1,1741318697203,1);
-INSERT INTO `fs_member_menu` VALUES (145,'智能体调试','大模型:模型对话:智能体调试',304,144,'','/lm/chat/demo','',0,1,'',1740451485129,1,1740451485129,1);
-INSERT INTO `fs_member_menu` VALUES (146,'运营监控','大模型:运营监控',304,0,'','/lm/manage','',10,1,'',1741318683103,1,1741318705382,1);
+INSERT INTO `fs_member_menu` VALUES (144,'模型对话','大模型:模型对话',304,0,'ChatLineRound','/lm/chat','',100,1,'',1740451465910,1,1741572231326,1);
+INSERT INTO `fs_member_menu` VALUES (145,'模型调试','大模型:模型对话:模型调试',304,144,'','/lm/chat/demo','',0,1,'',1740451485129,1,1741574599116,1);
+INSERT INTO `fs_member_menu` VALUES (146,'运营监控','大模型:运营监控',304,0,'FirstAidKit','/lm/manage','',10,1,'',1741318683103,1,1741572314757,1);
 INSERT INTO `fs_member_menu` VALUES (147,'调用日志','大模型:运营监控:调用日志',304,146,'','/lm/manage/log','',0,1,'',1741318736952,1,1741318736952,1);
+INSERT INTO `fs_member_menu` VALUES (148,'对话历史','大模型:模型对话:对话历史',304,144,'','/lm/chat/history','',0,1,'',1741574566694,1,1741574566694,1);
+INSERT INTO `fs_member_menu` VALUES (149,'新建对话','大模型:模型对话:新建对话',304,144,'','/lm/chat/dialog','',100,1,'',1741574622733,1,1741574636624,1);
+INSERT INTO `fs_member_menu` VALUES (150,'模型对比','大模型:模型对话:模型对比',304,144,'','/lm/chat/compare','',90,1,'',1741574675468,1,1741574675468,1);
+INSERT INTO `fs_member_menu` VALUES (151,'对话日志','大模型:运营监控:对话日志',304,146,'','/lm/manage/chat','',0,1,'',1741574846835,1,1741574846835,1);
+INSERT INTO `fs_member_menu` VALUES (152,'图谱管理','知识图谱:图谱管理',305,0,'Setting','/kg/manage','',0,1,'',1741915476826,1,1741915476826,1);
+INSERT INTO `fs_member_menu` VALUES (153,'本体管理','知识图谱:图谱管理:本体管理',305,152,'','/kg/manage/ontology','',0,1,'',1741915498984,1,1741915498984,1);
+INSERT INTO `fs_member_menu` VALUES (154,'数据权限','用户中心:数据权限',2,0,'Coin','/member/data','',0,1,'',1744772115328,1,1744772115328,1);
+INSERT INTO `fs_member_menu` VALUES (155,'数据模型','用户中心:数据权限:数据模型',2,154,'','/member/data/list','',0,1,'',1744772166387,1,1744772166387,1);
+INSERT INTO `fs_member_menu` VALUES (156,'鉴权日志','用户中心:数据权限:鉴权日志',2,154,'','/member/data/log','',0,1,'',1745484421422,1,1745488377891,1);
+INSERT INTO `fs_member_menu` VALUES (157,'授权管理','用户中心:数据权限:授权管理',2,154,'','/member/data/permit','',0,1,'',1745488339177,1,1745488339177,1);
 /*!40000 ALTER TABLE `fs_member_menu` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -4383,14 +4471,14 @@ DROP TABLE IF EXISTS `fs_member_relation`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `fs_member_relation` (
-  `id` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `type` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `aid` int NOT NULL DEFAULT '0',
   `bid` int NOT NULL DEFAULT '0',
   `cid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_type` (`type`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -4409,6 +4497,8 @@ INSERT INTO `fs_member_relation` VALUES ('role_application_1_2_0','role_applicat
 INSERT INTO `fs_member_relation` VALUES ('role_application_1_301_0','role_application',1,301,0);
 INSERT INTO `fs_member_relation` VALUES ('role_application_1_302_0','role_application',1,302,0);
 INSERT INTO `fs_member_relation` VALUES ('role_application_1_304_0','role_application',1,304,0);
+INSERT INTO `fs_member_relation` VALUES ('role_application_1_305_0','role_application',1,305,0);
+INSERT INTO `fs_member_relation` VALUES ('role_application_1_306_0','role_application',1,306,0);
 INSERT INTO `fs_member_relation` VALUES ('role_application_1_31_0','role_application',1,31,0);
 INSERT INTO `fs_member_relation` VALUES ('role_application_1_44_0','role_application',1,44,0);
 INSERT INTO `fs_member_relation` VALUES ('role_application_1_58_0','role_application',1,58,0);
@@ -4463,7 +4553,17 @@ INSERT INTO `fs_member_relation` VALUES ('role_menu_1_144_304','role_menu',1,144
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_145_304','role_menu',1,145,304);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_146_304','role_menu',1,146,304);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_147_304','role_menu',1,147,304);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_148_304','role_menu',1,148,304);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_149_304','role_menu',1,149,304);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_14_2','role_menu',1,14,2);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_150_304','role_menu',1,150,304);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_151_304','role_menu',1,151,304);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_152_305','role_menu',1,152,305);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_153_305','role_menu',1,153,305);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_154_2','role_menu',1,154,2);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_155_2','role_menu',1,155,2);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_156_2','role_menu',1,156,2);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_157_2','role_menu',1,157,2);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_15_2','role_menu',1,15,2);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_16_2','role_menu',1,16,2);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_17_2','role_menu',1,17,2);
@@ -4702,8 +4802,23 @@ INSERT INTO `fs_member_relation` VALUES ('role_resource_1_234_304','role_resourc
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_235_304','role_resource',1,235,304);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_236_304','role_resource',1,236,304);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_237_304','role_resource',1,237,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_238_304','role_resource',1,238,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_239_305','role_resource',1,239,305);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_23_2','role_resource',1,23,2);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_240_305','role_resource',1,240,305);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_241_305','role_resource',1,241,305);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_242_305','role_resource',1,242,305);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_243_2','role_resource',1,243,2);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_244_2','role_resource',1,244,2);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_245_2','role_resource',1,245,2);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_246_2','role_resource',1,246,2);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_247_2','role_resource',1,247,2);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_248_2','role_resource',1,248,2);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_249_2','role_resource',1,249,2);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_24_2','role_resource',1,24,2);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_250_2','role_resource',1,250,2);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_251_2','role_resource',1,251,2);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_252_304','role_resource',1,252,304);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_25_2','role_resource',1,25,2);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_27_26','role_resource',1,27,26);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_28_26','role_resource',1,28,26);
@@ -4826,23 +4941,23 @@ DROP TABLE IF EXISTS `fs_member_resource`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `fs_member_resource` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `full_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `full_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `application_id` int NOT NULL DEFAULT '0',
   `parent_id` int NOT NULL DEFAULT '0',
-  `module` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `controller` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `action` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `module` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `controller` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `action` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `sort` tinyint NOT NULL DEFAULT '0',
   `status` tinyint NOT NULL DEFAULT '0',
-  `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `created_time` bigint NOT NULL DEFAULT '0',
   `created_uid` int NOT NULL DEFAULT '0',
   `updated_time` bigint NOT NULL DEFAULT '0',
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_application_id` (`application_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=238 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=253 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -5069,9 +5184,24 @@ INSERT INTO `fs_member_resource` VALUES (231,'添加','大模型:智能体:添�
 INSERT INTO `fs_member_resource` VALUES (232,'修改','大模型:智能体:修改',304,230,'lm','agent','modify',0,1,'',1740032600462,1,1740032600462,1);
 INSERT INTO `fs_member_resource` VALUES (233,'删除','大模型:智能体:删除',304,230,'lm','agent','delete',0,1,'',1740032606204,1,1740032606204,1);
 INSERT INTO `fs_member_resource` VALUES (234,'模型对话','大模型:模型对话',304,0,'lm','chat','',0,1,'',1740451421631,1,1740451421631,1);
-INSERT INTO `fs_member_resource` VALUES (235,'智能体调试','大模型:模型对话:智能体调试',304,234,'lm','chat','demo',0,1,'',1740451438830,1,1740451438830,1);
+INSERT INTO `fs_member_resource` VALUES (235,'模型调试','大模型:模型对话:模型调试',304,234,'lm','chat','demo',0,1,'',1740451438830,1,1748746983797,1);
 INSERT INTO `fs_member_resource` VALUES (236,'请求日志','大模型:请求日志',304,0,'lm','log','',0,1,'',1741318219031,1,1741318219031,1);
 INSERT INTO `fs_member_resource` VALUES (237,'审核','大模型:请求日志:审核',304,236,'lm','log','audit',0,1,'',1741318234542,1,1741318234542,1);
+INSERT INTO `fs_member_resource` VALUES (238,'删除','大模型:请求日志:删除',304,236,'lm','log','delete',0,1,'',1741328222836,1,1741328222836,1);
+INSERT INTO `fs_member_resource` VALUES (239,'本体','知识图谱:本体',305,0,'kg','ontology','',0,1,'',1741915934697,1,1741915934697,1);
+INSERT INTO `fs_member_resource` VALUES (240,'添加','知识图谱:本体:添加',305,239,'kg','ontology','add',0,1,'',1741915953156,1,1741915953156,1);
+INSERT INTO `fs_member_resource` VALUES (241,'修改','知识图谱:本体:修改',305,239,'kg','ontology','modify',0,1,'',1741915958911,1,1741915958911,1);
+INSERT INTO `fs_member_resource` VALUES (242,'删除','知识图谱:本体:删除',305,239,'kg','ontology','delete',0,1,'',1741915964837,1,1741915964837,1);
+INSERT INTO `fs_member_resource` VALUES (243,'数据','用户中心:数据',2,0,'member','data','',0,1,'',1744773875998,1,1744773875998,1);
+INSERT INTO `fs_member_resource` VALUES (244,'添加','用户中心:数据:添加',2,243,'member','data','add',0,1,'',1744773890777,1,1744773890777,1);
+INSERT INTO `fs_member_resource` VALUES (245,'修改','用户中心:数据:修改',2,243,'member','data','modify',0,1,'',1744773898138,1,1744773898138,1);
+INSERT INTO `fs_member_resource` VALUES (246,'删除','用户中心:数据:删除',2,243,'member','data','delete',0,1,'',1744773927570,1,1744773927570,1);
+INSERT INTO `fs_member_resource` VALUES (247,'数据','用户中心:角色:数据',2,5,'member','role','data',0,1,'',1744773946453,1,1744773946453,1);
+INSERT INTO `fs_member_resource` VALUES (248,'数据授权','用户中心:数据授权',2,0,'member','dataPermit','',0,1,'',1745496394841,1,1745496394841,1);
+INSERT INTO `fs_member_resource` VALUES (249,'添加','用户中心:数据授权:添加',2,248,'member','dataPermit','add',0,1,'',1745496401015,1,1745496401015,1);
+INSERT INTO `fs_member_resource` VALUES (250,'修改','用户中心:数据授权:修改',2,248,'member','dataPermit','modify',0,1,'',1745496411234,1,1745496411234,1);
+INSERT INTO `fs_member_resource` VALUES (251,'删除','用户中心:数据授权:删除',2,248,'member','dataPermit','delete',0,1,'',1745496419491,1,1745496419491,1);
+INSERT INTO `fs_member_resource` VALUES (252,'模型对比','大模型:模型对话:模型对比',304,234,'lm','chat','compare',0,1,'',1748746971726,1,1748746971726,1);
 /*!40000 ALTER TABLE `fs_member_resource` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -5084,16 +5214,16 @@ DROP TABLE IF EXISTS `fs_member_role`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `fs_member_role` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `sort` tinyint NOT NULL DEFAULT '0',
   `status` tinyint NOT NULL DEFAULT '0',
-  `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `created_time` bigint NOT NULL DEFAULT '0',
   `created_uid` int NOT NULL DEFAULT '0',
   `updated_time` bigint NOT NULL DEFAULT '0',
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -5118,16 +5248,16 @@ DROP TABLE IF EXISTS `fs_member_setting`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `fs_member_setting` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `type` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `sort` tinyint NOT NULL DEFAULT '0',
-  `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `updated_time` bigint NOT NULL DEFAULT '0',
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `uniq_type_name` (`type`,`name`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -5159,27 +5289,27 @@ DROP TABLE IF EXISTS `fs_member_user`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `fs_member_user` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `serial` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `password` char(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-  `salt` char(4) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `serial` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `password` char(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `salt` char(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `sort` tinyint NOT NULL DEFAULT '0',
   `status` tinyint NOT NULL DEFAULT '0',
-  `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `created_time` bigint NOT NULL DEFAULT '0',
-  `created_ip` varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `created_ip` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `created_uid` int NOT NULL DEFAULT '0',
   `updated_time` bigint NOT NULL DEFAULT '0',
   `updated_uid` int NOT NULL DEFAULT '0',
   `login_time` bigint NOT NULL DEFAULT '0',
-  `login_ip` varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `login_ip` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `locked_time` bigint NOT NULL DEFAULT '0',
   `deleted_time` bigint NOT NULL DEFAULT '0',
   `deleted_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `unq_serial` (`serial`) USING BTREE,
   UNIQUE KEY `unq_name` (`name`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -5188,9 +5318,9 @@ CREATE TABLE `fs_member_user` (
 
 LOCK TABLES `fs_member_user` WRITE;
 /*!40000 ALTER TABLE `fs_member_user` DISABLE KEYS */;
-INSERT INTO `fs_member_user` VALUES (1,'admin','管理员','4bd18037cb256efcc6bd6363c558e401','8395',0,1,'',1528081552985,'127.0.0.1',1,1528081552985,1,1739241126888,'127.0.0.1',0,0,0);
+INSERT INTO `fs_member_user` VALUES (1,'admin','管理员','4bd18037cb256efcc6bd6363c558e401','8395',0,1,'',1528081552985,'127.0.0.1',1,1528081552985,1,1747703197334,'127.0.0.1',0,0,0);
 INSERT INTO `fs_member_user` VALUES (26,'test1','test1','04dc197e5e813659aa124599e7d7d4fd','0898',0,1,'',1737797630259,'127.0.0.1',1,1737798171826,1,0,'',0,1737802620607,1);
-INSERT INTO `fs_member_user` VALUES (27,'test2','test2','3dc5e4203e5e4d67b1c08a68136b7879','0605',0,1,'',1737803207126,'127.0.0.1',1,1737803784094,1,0,'',0,0,0);
+INSERT INTO `fs_member_user` VALUES (27,'test2','test2','3dc5e4203e5e4d67b1c08a68136b7879','0605',0,2,'',1737803207126,'127.0.0.1',1,1748757103004,1,0,'',0,0,0);
 INSERT INTO `fs_member_user` VALUES (28,'test3','test3','30cc87d9a433944111623cb1a1a5e3c1','1082',0,1,'',1737803243981,'127.0.0.1',1,1737803243981,1,0,'',0,0,0);
 INSERT INTO `fs_member_user` VALUES (29,'test4','test4','7e689e380d18e5c91193412bd60fbe81','8271',0,1,'',1737803344968,'127.0.0.1',1,1737803753466,1,0,'',0,0,0);
 INSERT INTO `fs_member_user` VALUES (30,'test5','test5','cff8eab2158d8f138c95e0e8c61a98d3','7895',0,1,'',1737803566589,'127.0.0.1',1,1737803566589,1,0,'',0,0,0);
@@ -5206,4 +5336,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-07 14:15:54
+-- Dump completed on 2025-06-01 13:54:37

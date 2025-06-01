@@ -17,14 +17,13 @@ import com.iisquare.fs.web.member.entity.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.session.Session;
+import org.springframework.session.data.redis.RedisIndexedSessionRepository;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.criteria.Predicate;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class RbacService extends RbacServiceBase {
@@ -41,6 +40,8 @@ public class RbacService extends RbacServiceBase {
     private SettingService settingService;
     @Autowired
     private ApplicationDao applicationDao;
+    @Autowired
+    RedisIndexedSessionRepository sessionRepository;
 
     @Override
     public <T> List<T> fillUserInfo(List<T> list, String... properties) {
@@ -103,6 +104,16 @@ public class RbacService extends RbacServiceBase {
             result.put(entry.getKey().toString(), entry.getValue());
         }
         ServletUtil.setSession(request, result);
+        return result;
+    }
+
+    public Map<String, Object> session(String id) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        Session session = sessionRepository.findById(id);
+        if (null == session) return result;
+        for (String name : session.getAttributeNames()) {
+            result.put(name, session.getAttribute(name));
+        }
         return result;
     }
 

@@ -26,7 +26,11 @@ public class JDBCUtil {
 
     public static ObjectNode tables(Connection connection, String pattern, String[] types) throws SQLException {
         ObjectNode tables = DPUtil.objectNode();
-        ResultSet rs = connection.getMetaData().getTables(null, null, pattern, types);
+        String catalog = connection.getCatalog();
+        if ("".equals(catalog)) catalog = null;
+        String schema = connection.getSchema();
+        if ("".equals(schema)) schema = null;
+        ResultSet rs = connection.getMetaData().getTables(catalog, schema, pattern, types);
         while (rs.next()) {
             String table = rs.getString("TABLE_NAME");
             ObjectNode item = tables.putObject(table);
@@ -59,7 +63,7 @@ public class JDBCUtil {
             item.put("size", rs.getInt("COLUMN_SIZE"));
             item.put("digit", rs.getInt("DECIMAL_DIGITS"));
             item.put("nullable", rs.getInt("NULLABLE") != 0);
-            item.put("defaultValue", rs.getInt("COLUMN_DEF"));
+            item.replace("defaultValue", DPUtil.toJSON(rs.getObject("COLUMN_DEF")));
             item.put("position", rs.getInt("ORDINAL_POSITION"));
             item.put("remark", rs.getString("REMARKS"));
         }

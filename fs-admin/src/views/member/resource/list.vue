@@ -99,9 +99,9 @@ const handleSubmit = () => {
     ResourceApi.save(form.value, { success: true }).then(result => {
       handleRefresh(false, true)
       formVisible.value = false
+    }).catch(() => {}).finally(() => {
+      formLoading.value = false
     })
-  }).catch(() => {}).finally(() => {
-    formLoading.value = false
   })
 }
 const handleDelete = () => {
@@ -222,7 +222,7 @@ const handleDelete = () => {
         <el-input v-model="form.parentId" />
       </el-form-item>
       <el-form-item label="名称" prop="name">
-        <el-autocomplete v-model="form.name" :fetch-suggestions="query => UIUtil.singleSuggestions(ResourceApi.action(), query, 'label')" />
+        <el-autocomplete v-model="form.name" :fetch-suggestions="query => UIUtil.fetchSuggestions(ResourceApi.action(), query, 'label')" />
       </el-form-item>
       <el-form-item label="模块" prop="module">
         <el-input v-model="form.module" />
@@ -231,7 +231,7 @@ const handleDelete = () => {
         <el-input v-model="form.controller" />
       </el-form-item>
       <el-form-item label="动作" prop="action">
-        <el-autocomplete v-model="form.action" :fetch-suggestions="query => UIUtil.singleSuggestions(ResourceApi.action(), query)" />
+        <el-autocomplete v-model="form.action" :fetch-suggestions="query => UIUtil.fetchSuggestions(ResourceApi.action(), query)" />
       </el-form-item>
       <el-form-item label="排序">
         <el-input-number v-model="form.sort" />

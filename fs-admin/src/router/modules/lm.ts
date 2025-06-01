@@ -39,11 +39,15 @@ export const layouts = [{
     component: () => import('@/views/lm/setting/agent.vue')
   }, {
     path: '/lm/chat/demo',
-    meta: { title: '智能体调试', fit: true, permit: ['lm:chat:demo'] },
+    meta: { title: '模型调试', fit: true, permit: ['lm:chat:demo'] },
     component: () => import('@/views/lm/chat/demo.vue')
   }, {
+    path: '/lm/chat/compare',
+    meta: { title: '模型对比', permit: ['lm:chat:compare'] },
+    component: () => import('@/views/lm/chat/compare.vue')
+  }, {
     path: '/lm/manage/log',
-    meta: { title: '运营监控', permit: ['lm:log:'] },
+    meta: { title: '调用日志', permit: ['lm:log:'] },
     component: () => import('@/views/lm/manage/log.vue')
   }]
 }]

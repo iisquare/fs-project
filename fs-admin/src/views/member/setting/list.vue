@@ -77,9 +77,9 @@ const handleSubmit = () => {
     SettingApi.save(form.value, { success: true }).then(result => {
       handleRefresh(false, true)
       formVisible.value = false
+    }).catch(() => {}).finally(() => {
+      formLoading.value = false
     })
-  }).catch(() => {}).finally(() => {
-    formLoading.value = false
   })
 }
 const handleDelete = () => {

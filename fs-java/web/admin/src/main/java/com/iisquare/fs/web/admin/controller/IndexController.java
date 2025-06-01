@@ -23,6 +23,11 @@ public class IndexController extends AdminControllerBase {
         return displayTemplate(model, request);
     }
 
+    @GetMapping("/index.html")
+    public String redirectAction(ModelMap model, HttpServletRequest request, HttpServletResponse response) throws Exception {
+        return redirect(response, "/");
+    }
+
     @RequestMapping("/state")
     public String stateAction(HttpServletResponse response) throws Exception {
         return displayText(response, ApiUtil.echoResult(0, null, null));

@@ -122,15 +122,26 @@ public class UserService extends JPAServiceBase {
             session = rbacService.currentInfo(request, null);
             info = info(DPUtil.parseInt(session.get("uid")));
         }
-        if(null != info) {
-            info.setPassword("******");
-            info.setSalt("******");
-        }
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("info", info);
+        result.put("info", info(request, info));
         result.put("menu", rbacService.menu(request));
         result.put("resource", rbacService.resource(request));
         return ApiUtil.result(0, null, result);
+    }
+
+    public ObjectNode info(HttpServletRequest request, User info) {
+        ObjectNode result = DPUtil.objectNode();
+        if (null == info) return result;
+        result.put("id", info.getId());
+        result.put("serial", info.getSerial());
+        result.put("name", info.getName());
+        result.put("description", info.getDescription());
+        result.put("createdIp", info.getCreatedIp());
+        result.put("createdTime", info.getCreatedTime());
+        result.put("loginIp", info.getLoginIp());
+        result.put("loginTime", info.getLoginTime());
+        result.put("token", request.getRequestedSessionId());
+        return result;
     }
     
     public Map<String, Object> password(Map<?, ?> param, HttpServletRequest request) {

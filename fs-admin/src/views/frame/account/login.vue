@@ -45,7 +45,7 @@ const redirect = () => {
   setTimeout(() => {
     ElNotification({
       title: '欢迎',
-      message: `${DateUtil.timeFix()}，欢迎回来`,
+      message: `${DateUtil.hello()}，欢迎回来`,
       type: 'success',
     })
   }, 1000)

@@ -143,7 +143,7 @@ public class ServletUtil {
     public static Map<String, Object> getSessionMap(HttpServletRequest request) {
         HttpSession session = request.getSession();
         Enumeration<String> enumeration = session.getAttributeNames();
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         while (enumeration.hasMoreElements()) {
             String name = enumeration.nextElement().toString();
             map.put(name, session.getAttribute(name));
@@ -229,5 +229,15 @@ public class ServletUtil {
         String webRoot = getWebRoot(request);
         if(webRoot.startsWith("/")) return "/";
         return "\\";
+    }
+
+    public static Map<String, String> headers(HttpServletRequest request) {
+        Map<String, String> headers = new LinkedHashMap<>();
+        Enumeration<String> enumeration = request.getHeaderNames();
+        while (enumeration.hasMoreElements()) {
+            String element = enumeration.nextElement();
+            headers.put(element, request.getHeader(element));
+        }
+        return headers;
     }
 }

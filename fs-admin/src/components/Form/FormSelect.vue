@@ -27,6 +27,9 @@ const {
 })
 
 const model: any = defineModel()
+const data = defineModel('data', { type: Array<Object>, default: [] }) // 最后一次检索结果
+const selected = defineModel('selected', { type: [Object, Array<Object>], default: null }) // 选中项对应的结果条目
+const emit = defineEmits(['change']) // 参数：选中值，选中值对应的结果条目，最后一次检索结果数据
 const options: any = ref([])
 const loading = ref(false)
 
@@ -34,6 +37,15 @@ const handleCallback = async (params: any) => {
   if (!callback) return
   loading.value = true
   options.value = await callback(params).then((result: any) => {
+    data.value = result.data.rows
+    if (multiple) {
+      // 过滤后最后一次检索结果可能不包含已选中内容
+      const map = DataUtil.array2map(result.data.rows.concat(selected.value || []), fieldValue)
+      selected.value = model.value?.map((v: any) => map[v])
+    } else {
+      const map = DataUtil.array2map(result.data.rows, fieldValue)
+      selected.value = map[model.value]
+    }
     return result.data.rows.map((item: any) => {
       return { key: item[fieldKey], value: item[fieldValue], label: item[fieldLabel], }
     })
@@ -55,6 +67,18 @@ watch(model, (value, oldValue) => {
 const remoteMethod = (query: string) => {
   handleCallback(handleParameter({ [fieldLabel]: query }, query))
 }
+
+const handleChange = (value: any) => {
+  if (DataUtil.isArray(value)) {
+    // 过滤后最后一次检索结果可能不包含已选中内容
+    const map = DataUtil.array2map(data.value.concat(selected.value || []), fieldValue)
+    selected.value = value.map((v: any) => map[v])
+  } else {
+    const map = DataUtil.array2map(data.value, fieldValue)
+    selected.value = map[value]
+  }
+  emit('change', value, selected.value, data.value)
+}
 </script>
 
 <template>
@@ -68,6 +92,7 @@ const remoteMethod = (query: string) => {
     remote-show-suffix
     :remote-method="remoteMethod"
     :loading="loading"
+    @change="handleChange"
   >
     <el-option v-for="item in options" :key="item.key" :label="item.label" :value="item.value" />
   </el-select>

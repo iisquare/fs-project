@@ -26,7 +26,7 @@ public class MvcConfiguration extends WebMvcConfiguration implements HandlerExce
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         super.addResourceHandlers(registry);
-        registry.addResourceHandler("/static/**").addResourceLocations("classpath:/static/", "classpath:/public/");
+        registry.addResourceHandler("/**").addResourceLocations("classpath:/static/", "classpath:/public/");
     }
 
     @Override

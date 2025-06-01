@@ -12,8 +12,9 @@ export const useUserStore = defineStore('user', () => {
     description: '',
     createdIp: '',
     createdTime: 0,
-    loginedIp: '',
-    loginedTime: 0
+    loginIp: '',
+    loginTime: 0,
+    token: '', // 用户登录标识
   }
   const ready = ref(false)
   const info: any = ref(Object.assign({}, USER_DEFAULT_STATE))

@@ -67,6 +67,9 @@ rpc:
   lm:
     name: fs-lm-service
     rest: http://127.0.0.1:7824
+  kg:
+    name: fs-kg-service
+    rest: http://127.0.0.1:7825
   demo:
     name: fs-demo-service
     rest: http://127.0.0.1:8033
@@ -389,6 +392,22 @@ spring:
       time-between-eviction-runs-millis: 18800
     lm:
       table-prefix: fs_lm_
+      url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      type: com.alibaba.druid.pool.DruidDataSource
+      username: root
+      password: admin888
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      max-idle: 10
+      max-wait: 10000
+      min-idle: 5
+      initial-size: 5
+      validation-query: SELECT 1
+      test-on-borrow: false
+      test-while-idle: true
+      time-between-eviction-runs-millis: 18800
+    kg:
+      table-prefix: fs_kg_
       url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       jdbc-url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       type: com.alibaba.druid.pool.DruidDataSource

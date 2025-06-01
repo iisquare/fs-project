@@ -32,6 +32,8 @@ public class Agent {
     @Column
     private Float temperature; // 多样性
     @Column
+    private String parameter; // 自定义参数，JSON格式
+    @Column
     private String roleIds; // 授权角色，以逗号分割
     @Column
     private Integer sort;

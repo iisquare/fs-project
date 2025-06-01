@@ -69,8 +69,9 @@ const rules = ref({
 const handleAdd = () => {
   form.value = {
     maxTokens: 0,
-    temperature: 0.6,
+    temperature: 0,
     status: '1',
+    parameter: '{}',
   }
   formVisible.value = true
 }
@@ -91,9 +92,9 @@ const handleSubmit = () => {
     AgentApi.save(form.value, { success: true }).then(result => {
       handleRefresh(false, true)
       formVisible.value = false
+    }).catch(() => {}).finally(() => {
+      formLoading.value = false
     })
-  }).catch(() => {}).finally(() => {
-    formLoading.value = false
   })
 }
 const handleDelete = () => {
@@ -103,6 +104,12 @@ const handleDelete = () => {
       handleRefresh(false, true)
     }).catch(() => {})
   }).catch(() => {})
+}
+const handleCompress = () => {
+  form.value.parameter = JSON.stringify(JSON.parse(form.value.parameter))
+}
+const handleFormat = () => {
+  form.value.parameter = JSON.stringify(JSON.parse(form.value.parameter), null, 4)
 }
 </script>
 
@@ -170,6 +177,9 @@ const handleDelete = () => {
       <el-form-item label="系统提示词">{{ form.systemPrompt }}</el-form-item>
       <el-form-item label="最大输出令牌">{{ form.maxTokens }}</el-form-item>
       <el-form-item label="输出多样性">{{ form.temperature }}</el-form-item>
+      <el-form-item label="自定义参数">
+        <el-input type="textarea" v-model="form.parameter" :rows="5" disabled />
+      </el-form-item>
       <el-form-item label="授权角色">
         <el-space><el-tag v-for="item in form.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
       </el-form-item>
@@ -206,10 +216,17 @@ const handleDelete = () => {
         <el-input type="textarea" v-model="form.systemPrompt" placeholder="留空为不增加系统提示词" />
       </el-form-item>
       <el-form-item label="生成最大令牌数">
-        <el-input-number v-model="form.maxTokens" />
+        <el-input-number v-model="form.maxTokens" placeholder="为0时采用系统默认配置"  />
       </el-form-item>
       <el-form-item label="生成多样性">
-        <el-input-number v-model="form.temperature" :precision="2" :step="0.1" />
+        <el-input-number v-model="form.temperature" :precision="2" :step="0.1" placeholder="为0时采用系统默认配置"  />
+      </el-form-item>
+      <el-form-item label="自定义参数">
+        <el-input type="textarea" v-model="form.parameter" :rows="5" />
+        <el-space class="mt-20">
+          <el-button @click="handleCompress">压缩</el-button>
+          <el-button @click="handleFormat">格式化</el-button>
+        </el-space>
       </el-form-item>
       <el-form-item label="授权角色">
         <form-select v-model="form.roleIds" :callback="RoleApi.list" multiple clearable />

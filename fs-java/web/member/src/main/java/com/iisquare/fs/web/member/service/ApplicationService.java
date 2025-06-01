@@ -111,7 +111,7 @@ public class ApplicationService extends JPAServiceBase {
     }
 
     public boolean remove(List<Integer> ids) {
-        if(null == ids || ids.size() < 1) return false;
+        if(null == ids || ids.isEmpty()) return false;
         menuDao.deleteByApplicationIds(ids);
         resourceDao.deleteByApplicationIds(ids);
         applicationDao.deleteInBatch(applicationDao.findAllById(ids));

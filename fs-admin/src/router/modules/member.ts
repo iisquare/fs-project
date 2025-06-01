@@ -57,6 +57,14 @@ export const layouts = [{
     path: '/member/application/menu',
     meta: { title: '应用菜单', permit: ['member:application:menu'] },
     component: () => import('@/views/member/application/menu.vue')
+  }, {
+    path: '/member/data/list',
+    meta: { title: '数据模型', permit: ['member:data:'] },
+    component: () => import('@/views/member/data/list.vue')
+  }, {
+    path: '/member/data/permit',
+    meta: { title: '授权管理', permit: ['member:dataPermit:'] },
+    component: () => import('@/views/member/data/permit.vue')
   }]
 }]
 

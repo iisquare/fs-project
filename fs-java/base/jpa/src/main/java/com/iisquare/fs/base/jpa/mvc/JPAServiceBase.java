@@ -35,7 +35,7 @@ public class JPAServiceBase extends ServiceBase {
     protected <T, ID extends Serializable> JsonNode fillInfo(
             DaoBase<T, ID> dao, Class<ID> idClass, String idField, String fromSuffix, String toSuffix, JsonNode json, String... properties) {
         Set<ID> ids = DPUtil.values(json, idClass, properties);
-        if(ids.size() < 1) return json;
+        if(ids.isEmpty()) return json;
         ObjectNode data = DPUtil.array2object(filter(DPUtil.toJSON(dao.findAllById(ids), ArrayNode.class)), idField);
         return DPUtil.fillValues(json, true, properties, DPUtil.suffix(properties, fromSuffix, toSuffix), data);
     }
@@ -58,7 +58,7 @@ public class JPAServiceBase extends ServiceBase {
     }
 
     protected <T, ID extends Serializable> boolean delete(DaoBase<T, ID> dao, List<ID> ids, int uid) {
-        if(null == ids || ids.size() < 1) return false;
+        if(null == ids || ids.isEmpty()) return false;
         List<T> list = dao.findAllById(ids);
         long time = System.currentTimeMillis();
         for (T item : list) {
@@ -70,13 +70,13 @@ public class JPAServiceBase extends ServiceBase {
     }
 
     protected <T, ID extends Serializable> boolean remove(DaoBase<T, ID> dao, List<ID> ids) {
-        if(null == ids || ids.size() < 1) return false;
+        if(null == ids || ids.isEmpty()) return false;
         dao.deleteInBatch(dao.findAllById(ids));
         return true;
     }
 
     protected <T, ID extends Serializable> ObjectNode infoByIds(DaoBase<T, ID> dao, List<ID> ids) {
-        if (null == ids || ids.size() < 1) return DPUtil.objectNode();
+        if (null == ids || ids.isEmpty()) return DPUtil.objectNode();
         ArrayNode data = DPUtil.toJSON(dao.findAllById(ids), ArrayNode.class);
         return DPUtil.array2object(data, "id");
     }

@@ -7,6 +7,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+import copy from 'rollup-plugin-copy'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -25,7 +26,9 @@ export default defineConfig({
           }
         }
       }
-    }
+    },
+    emptyOutDir: true,
+    outDir: '../fs-java/web/admin/src/main/resources/static',
   },
   css: {
     preprocessorOptions: {
@@ -44,6 +47,14 @@ export default defineConfig({
     }),
     Components({
       resolvers: [ElementPlusResolver()],
+    }),
+    copy({
+      targets: [{ // 将首页拷贝至模板目录
+        src: '../fs-java/web/admin/src/main/resources/static/index.html',
+        dest: '../fs-java/web/admin/src/main/resources/templates/index/',
+      }],
+      hook: 'writeBundle', // 插件运行在rollup完成打包并将文件写入磁盘之前
+      verbose: true
     }),
   ],
   resolve: {

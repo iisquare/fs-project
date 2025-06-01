@@ -17,8 +17,26 @@ body, html {
   outline: none;
 }
 
-*[aria-hidden="true"] {
-  display: none !important;
+.CodeMirror-hints {
+  z-index: 1000;
+}
+
+// https://www.tailwindcss.cn/
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+.ml-20 {
+  margin-left: 20px;
+}
+
+.mr-20 {
+  margin-right: 20px;
 }
 
 #app {

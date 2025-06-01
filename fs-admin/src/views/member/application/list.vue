@@ -31,7 +31,7 @@ const config = ref({
 const rows = ref([])
 const filterRef = ref<FormInstance>()
 const filters = ref(RouteUtil.query2filter(route, { advanced: false, roleIds: [] }))
-const pagination = ref(RouteUtil.pagination(filters.value))
+const pagination = ref(RouteUtil.pagination(filters.value, { pageSize: 100 }))
 const selection = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
   tableRef.value?.clearSelection()
@@ -86,9 +86,9 @@ const handleSubmit = () => {
     ApplicationApi.save(form.value, { success: true }).then(result => {
       handleRefresh(false, true)
       formVisible.value = false
+    }).catch(() => {}).finally(() => {
+      formLoading.value = false
     })
-  }).catch(() => {}).finally(() => {
-    formLoading.value = false
   })
 }
 const handleDelete = () => {

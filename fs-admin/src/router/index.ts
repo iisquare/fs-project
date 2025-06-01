@@ -1,4 +1,8 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { layout, page } from './config'
+import { useUserStore } from '@/stores/user'
+import DataUtil from '@/utils/DataUtil'
+import { useCounterStore } from '@/stores/counter'
 import member from './modules/member'
 import demo from './modules/demo'
 import bi from './modules/bi'
@@ -9,10 +13,8 @@ import lm from './modules/lm'
 import oa from './modules/oa'
 import server from './modules/server'
 import spider from './modules/spider'
-import { layout, page } from './config'
-import { useUserStore } from '@/stores/user'
-import DataUtil from '@/utils/DataUtil'
-import { useCounterStore } from '@/stores/counter'
+import kg from './modules/kg'
+
 
 const blanks: any = [] // 独立页面
 const layouts: any = [] // 布局页面
@@ -28,7 +30,7 @@ const layouts: any = [] // 布局页面
  */
 const routes: any = []
 
-;([member, demo, bi, cms, face, govern, lm, oa, server, spider] as any).forEach((module: any) => {
+;([member, demo, bi, cms, face, govern, lm, oa, server, spider, kg] as any).forEach((module: any) => {
   module.blanks && blanks.push(...module.blanks)
   module.layouts && layouts.push(...module.layouts)
 })
