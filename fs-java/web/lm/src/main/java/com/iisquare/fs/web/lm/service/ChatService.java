@@ -9,7 +9,6 @@ import com.iisquare.fs.base.web.sse.SsePlainEmitter;
 import com.iisquare.fs.base.web.sse.SsePlainRequest;
 import com.iisquare.fs.base.web.util.ServletUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
-import com.iisquare.fs.web.lm.util.ChatUtil;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -66,7 +65,7 @@ public class ChatService extends ServiceBase {
         ObjectNode agents = agentService.listByIdentity(request, false);
         String agentId = json.at("/agentId").asText();
         if (!agents.has(agentId)) {
-            ChatUtil.message(emitter, "error.agent_not_found", json);
+            message(emitter, "error.agent_not_found", json);
             return null;
         }
         return (ObjectNode) agents.get(agentId);
@@ -83,24 +82,26 @@ public class ChatService extends ServiceBase {
             }
 
             @Override
-            public boolean onMessage(CloseableHttpResponse response, String line, boolean isStream) {
-                ObjectNode message = ChatUtil.parse(line);
-                if (message.isEmpty()) return emitter.isRunning();
-                if (message.has("error")) {
-                    ChatUtil.message(emitter, "error.message", message);
+            public boolean onMessage(ObjectNode message, boolean isEvent, boolean isStream) {
+                if (isComment(message, isEvent)) { // 直接转发心跳包和结束标识
+                    return emitter.message(message, isEvent).isRunning();
+                }
+                ObjectNode data = data(message, isEvent);
+                if (data.has("error")) {
+                    message(emitter, "error.message", data);
                     return false;
                 }
-                if (message.has("choices")) {
-                    ChatUtil.message(emitter, "choices.message", message.at("/choices"));
+                if (data.has("choices")) {
+                    message(emitter, "choices.message", data.at("/choices"));
                     return emitter.isRunning();
                 }
-                ChatUtil.message(emitter, "error.unknown", message);
+                message(emitter, "error.unknown", data);
                 return false;
             }
 
             @Override
             public void onError(CloseableHttpResponse response, Throwable throwable, boolean isStream) {
-                ChatUtil.message(emitter, "error.throwable", throwable.getMessage()).abort();
+                message(emitter, "error.throwable", throwable.getMessage()).abort();
             }
         };
         return proxyService.pool().process(req, emitter);
@@ -132,6 +133,17 @@ public class ChatService extends ServiceBase {
         http.addHeader("Content-Type", "application/json;charset=" + proxyService.charset.name());
         http.setEntity(new StringEntity(json.toString(), proxyService.charset));
         return http;
+    }
+
+    public String message(String action, Object data) {
+        ObjectNode message = DPUtil.objectNode();
+        message.put("action", action);
+        message.replace("data", DPUtil.toJSON(data));
+        return message.toString();
+    }
+
+    public SsePlainEmitter message(SsePlainEmitter emitter, String action, Object data) {
+        return emitter.data(message(action, data));
     }
 
 }

@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.admin.controller;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
@@ -169,10 +170,8 @@ public class ProxyController extends ControllerBase implements InitializingBean,
             }
 
             @Override
-            public boolean onMessage(CloseableHttpResponse response, String line, boolean isStream) {
-                if ("".equals(line)) return emitter.isRunning();
-                emitter.send(line, false);
-                return emitter.isRunning();
+            public boolean onMessage(ObjectNode message, boolean isEvent, boolean isStream) {
+                return emitter.message(message, isEvent).isRunning();
             }
         };
         return pool.process(request, emitter);

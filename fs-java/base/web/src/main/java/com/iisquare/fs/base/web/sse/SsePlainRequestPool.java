@@ -148,7 +148,7 @@ public class SsePlainRequestPool implements Closeable {
             String line;
             while (!request.isAborted() && (line = buffer.readLine()) != null) {
                 if (isStream) {
-                    boolean result = request.onMessage(response, line, true);
+                    boolean result = request.onLine(response, line, true);
                     if (!result) {
                         request.abort(); // 终止请求，断开与后端服务连接
                         break;
@@ -158,7 +158,7 @@ public class SsePlainRequestPool implements Closeable {
                 }
             }
             if (!isStream) {
-                request.onMessage(response, sb.toString(), false);
+                request.onLine(response, sb.toString(), false);
             }
             return true;
         } catch (Exception e) { // 读取响应异常，可能是服务端断开连接

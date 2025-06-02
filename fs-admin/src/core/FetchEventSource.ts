@@ -84,6 +84,7 @@ class FetchEventSource {
         }
       },
       onmessage (msg) {
+        if (!msg.data || '[DONE]' === msg.data) return
         _this.messageCallback(msg)
       },
       onclose () {

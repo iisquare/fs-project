@@ -1,5 +1,6 @@
 package com.iisquare.fs.base.web.sse;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import org.apache.http.Header;
@@ -10,6 +11,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseFixedEmitter;
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -109,6 +112,35 @@ public class SsePlainEmitter {
             emitter.send(event().data(line));
         } catch (IOException ignored) {}
         return this;
+    }
+
+    public SsePlainEmitter message(ObjectNode message, boolean isEvent) {
+        if (!isEvent) return line(DPUtil.stringify(message));
+        SsePlainEventBuilder event = event();
+        Iterator<Map.Entry<String, JsonNode>> iterator = message.fields();
+        while (iterator.hasNext()) {
+            Map.Entry<String, JsonNode> entry = iterator.next();
+            String key = entry.getKey();
+            String value = entry.getValue().asText();
+            switch (key) {
+                case "id":
+                    event.id(value);
+                    break;
+                case "event":
+                    event.name(value);
+                    break;
+                case "retry":
+                    event.reconnectTime(DPUtil.parseLong(value));
+                    break;
+                case "":
+                    event.comment(value);
+                    break;
+                case "data":
+                    event.data(value);
+                    break;
+            }
+        }
+        return send(event);
     }
 
     public SsePlainEmitter error(String code, String message, String type, Object param, boolean eventData) {

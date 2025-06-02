@@ -10,6 +10,7 @@ import { useUserStore } from '@/stores/user';
 const form: any = ref({
   stream: true,
 })
+const formRef: any = ref<FormInstance>()
 const loading = ref(false)
 const agents: any = ref([])
 const active = ref('output')
@@ -91,9 +92,12 @@ const handleSubmit = () => {
     loading.value = false
     sse.abort()
   } else {
-    loading.value = true
-    form.value.output = ''
-    sse.send(form.value)
+    formRef.value?.validate((valid: boolean) => {
+      if (!valid) return
+      loading.value = true
+      form.value.output = ''
+      sse.send(form.value)
+    })
   }
 }
 
@@ -105,7 +109,7 @@ onMounted(() => {
 <template>
   <el-container>
     <el-aside class="aside">
-      <el-form :model="form" :rules="rules" label-position="top">
+      <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
         <el-form-item label="智能体" prop="agentId">
           <el-space>
             <el-select v-model="form.agentId" placeholder="请选择" filterable clearable style="width: 200px;">

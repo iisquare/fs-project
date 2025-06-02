@@ -14,7 +14,6 @@ import com.iisquare.fs.base.web.util.ServletUtil;
 import com.iisquare.fs.web.lm.core.RedisKey;
 import com.iisquare.fs.web.lm.dao.*;
 import com.iisquare.fs.web.lm.entity.*;
-import com.iisquare.fs.web.lm.util.ChatUtil;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -346,36 +345,27 @@ public class ProxyService extends ServiceBase implements MessageListener, Initia
             }
 
             @Override
-            public boolean onMessage(CloseableHttpResponse response, String line, boolean isStream) {
-                if ("".equals(line)) return emitter.isRunning();
-                responseBody.append(line).append("\n");
-                String prefix = "";
-                if (line.startsWith(SsePlainEmitter.EVENT_DATA_PREFIX)) {
-                    prefix = SsePlainEmitter.EVENT_DATA_PREFIX;
-                    line = line.substring(SsePlainEmitter.EVENT_DATA_PREFIX.length());
-                }
-                if (ChatUtil.isJSON(line)) { // 消息体保持单行
-                    ObjectNode message = (ObjectNode) DPUtil.parseJSON(line);
-                    if (message.has("error")) {
-                        log.finishReason("backend_error").finishDetail(line);
-                        emitter.line(prefix + line);
+            public boolean onMessage(ObjectNode message, boolean isEvent, boolean isStream) {
+                responseBody.append(DPUtil.stringify(message)).append("\n");
+                ObjectNode data = data(message, isEvent);
+                if (data.has("error")) {
+                    log.finishReason("backend_error").finishDetail(DPUtil.stringify(data));
+                    emitter.message(data, isEvent);
+                    return false;
+                } else if (data.has("choices")) {
+                    List<String> check = check(data);
+                    if (null != check && !check.isEmpty()) {
+                        log.finishReason("completion_sensitive").finishDetail(DPUtil.implode(check));
+                        emitter.error("completion_sensitive", "迷路了", "proxy", null, isStream);
                         return false;
-                    } else if (message.has("choices")) {
-                        List<String> check = check(message);
-                        if (null != check && !check.isEmpty()) {
-                            log.finishReason("completion_sensitive").finishDetail(DPUtil.implode(check));
-                            emitter.error("completion_sensitive", "迷路了", "proxy", null, isStream);
-                            return false;
-                        }
-                        line = message.put("model", model).toString();
                     }
+                    data.put("model", model); // 替换模型名称
                 }
-                emitter.send(prefix + line, false); // 以:冒号开头的注释信息、[DONE]状态信息等需要原样转发，保持连接心跳
-                return emitter.isRunning();
+                return emitter.message(message, isEvent).isRunning();
             }
 
-            StringBuilder responseBody = new StringBuilder();
-            StringBuilder responseCompletion = new StringBuilder();
+            final StringBuilder responseBody = new StringBuilder();
+            final StringBuilder responseCompletion = new StringBuilder();
             String finishReason = null;
             int promptTokens = 0, completionTokens = 0, totalTokens = 0;
             boolean waitingSuffix = false;
