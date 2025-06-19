@@ -190,7 +190,7 @@ public class AssessService extends ServiceBase {
 
     public Map<String, Object> delete(Map<?, ?> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        if (ids.size() < 1) return ApiUtil.result(0, null, ids.size());
+        if (ids.isEmpty()) return ApiUtil.result(0, null, ids.size());
         List<Assess> list = assessDao.findAllById(ids);
         int uid = rbacService.uid(request);
         long time = System.currentTimeMillis();
@@ -225,7 +225,7 @@ public class AssessService extends ServiceBase {
         List<String> codes = new ArrayList<>();
         Map<String, Standard> standards = standardService.fromPath(
                 codes, DPUtil.explode("\n", assess.at("/code").asText()));
-        if (standards.size() < 1) {
+        if (standards.isEmpty()) {
             return ApiUtil.result(71004, "无可用数据标准", source.at("/code"));
         }
         String[] includes = DPUtil.explode("\n", assess.at("/include").asText());
@@ -233,21 +233,18 @@ public class AssessService extends ServiceBase {
         try (Connection connection = JDBCUtil.connection(source.at("/content"))) {
             JsonNode tables = DPUtil.filterByKey(DPUtil.filterByKey(
                     JDBCUtil.tables(connection), true, includes), false, excludes);
-            if (tables.size() < 1) {
+            if (tables.isEmpty()) {
                 return ApiUtil.result(71005, "无匹配元数据", assess);
             }
             long time = System.currentTimeMillis();
             List<AssessLog> logs = new ArrayList<>();
-            Iterator<JsonNode> iterator = tables.iterator();
-            while (iterator.hasNext()) {
-                JsonNode table = iterator.next();
+            for (JsonNode table : tables) {
                 String model = table.at("/name").asText();
-                Iterator<JsonNode> it = table.at("/columns").iterator();
-                while (it.hasNext()) {
-                    JsonNode column = it.next();
+                for (JsonNode column : table.at("/columns")) {
                     String code = column.at("/name").asText();
                     Standard standard = standards.get(code);
-                    if (null == standard) continue;;
+                    if (null == standard) continue;
+                    ;
                     ObjectNode detail = DPUtil.objectNode();
                     AssessLog.AssessLogBuilder builder = AssessLog.builder().assess(assessId).checkTime(time);
                     builder.standard(standard.getPath()).source(sourceCode).model(model).code(code).level(standard.getLevel());
@@ -268,7 +265,7 @@ public class AssessService extends ServiceBase {
                 }
             }
             logDao.deleteByAssess(assessId);
-            if (logs.size() > 0) logDao.saveAll(logs);
+            if (!logs.isEmpty()) logDao.saveAll(logs);
             return ApiUtil.result(0, null, logs);
         } catch (Exception e) {
             return ApiUtil.result(75001, "执行异常", ApiUtil.getStackTrace(e));

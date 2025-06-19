@@ -6,7 +6,6 @@ import { useRoute, useRouter } from 'vue-router';
 import DataPermitApi from '@/api/member/DataPermitApi';
 import ApiUtil from '@/utils/ApiUtil';
 import TableUtil from '@/utils/TableUtil';
-import DataTable from '@/components/Data/DataTable.vue';
 import DataApi from '@/api/member/DataApi';
 import RoleApi from '@/api/member/RoleApi';
 import DataFilter from '@/components/Data/DataFilter.vue';
@@ -19,8 +18,8 @@ const loading = ref(false)
 const searchable = ref(true)
 const columns = ref([
   { prop: 'id', label: 'ID' },
-  { prop: 'dataInfo.serial', label: '模型' },
   { prop: 'roleInfo.name', label: '角色' },
+  { prop: 'dataInfo.serial', label: '模型' },
   { prop: 'fields', label: '列权限' },
   { prop: 'statusText', label: '状态' },
   { prop: 'description', label: '描述' },

@@ -251,7 +251,7 @@ public class UserService extends JPAServiceBase {
             helper.betweenWithDate("createdTime").betweenWithDate("updatedTime").equal("loginIp");
             helper.betweenWithDate("loginTime").betweenWithDate("lockedTime").betweenWithDate("deletedTime");
             List<Integer> roleIds = DPUtil.parseIntList(param.get("roleIds"));
-            if(null != roleIds && roleIds.size() > 0) {
+            if(!roleIds.isEmpty()) {
                 helper.add(root.get("id").in(DPUtil.values(
                         relationDao.findAllByTypeAndBidIn("user_role", roleIds), Integer.class, "aid")));
             }
@@ -265,7 +265,7 @@ public class UserService extends JPAServiceBase {
             fillStatus(rows, status());
         }
         if(!DPUtil.empty(args.get("withRoles")) && rows.size() > 0) {
-            ObjectNode rowsMap = DPUtil.array2object(rows, "id");
+            ObjectNode rowsMap = DPUtil.json2object(rows, "id");
             Set<Integer> ids = DPUtil.values(rowsMap, Integer.class, "id");
             List<Relation> relations = relationDao.findAllByTypeAndAidIn("user_role", ids);
             Set<Integer> roleIds = DPUtil.values(relations, Integer.class, "bid");

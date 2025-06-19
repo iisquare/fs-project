@@ -6,9 +6,11 @@ import * as ElementPlusIcons from '@element-plus/icons-vue';
 import DataUtil from '@/utils/DataUtil';
 import FetchEventSource from '@/core/FetchEventSource';
 import { useUserStore } from '@/stores/user';
+import type { FormInstance } from 'element-plus';
 
 const form: any = ref({
   stream: true,
+  keep: true,
 })
 const formRef: any = ref<FormInstance>()
 const loading = ref(false)
@@ -25,7 +27,12 @@ watch(() => form.value.agentId, (id) => {
     maxTokens: 0,
     temperature: 0,
     parameter: '',
-  }, map[id] || {})
+  }, map[id] || {}, form.value.keep ? {
+    systemPrompt: form.value.systemPrompt,
+    maxTokens: form.value.maxTokens,
+    temperature: form.value.temperature,
+    parameter: form.value.parameter,
+  } : {})
   Object.assign(form.value, {
     systemPrompt: agent.systemPrompt,
     maxTokens: agent.maxTokens,
@@ -141,6 +148,7 @@ onMounted(() => {
           <el-space>
             <el-button type="primary" @click="handleSubmit" :icon="loading ? ElementPlusIcons.Aim : ElementPlusIcons.Promotion">{{ loading ? '停止' : '发送' }}</el-button>
             <el-checkbox v-model="form.stream">流式输出</el-checkbox>
+            <el-checkbox v-model="form.keep">保持参数</el-checkbox>
           </el-space>
           <el-space>
             <el-icon><ElementPlusIcons.InfoFilled /></el-icon>

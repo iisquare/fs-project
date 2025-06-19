@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.base.web.util.ServletUtil;
 import com.iisquare.fs.web.core.rbac.PermitInterceptor;
 import com.iisquare.fs.web.core.rbac.RbacServiceBase;
@@ -42,6 +43,8 @@ public class RbacService extends RbacServiceBase {
     private ApplicationDao applicationDao;
     @Autowired
     RedisIndexedSessionRepository sessionRepository;
+    @Autowired
+    DataLogService dataLogService;
 
     @Override
     public <T> List<T> fillUserInfo(List<T> list, String... properties) {
@@ -95,6 +98,18 @@ public class RbacService extends RbacServiceBase {
     @Override
     public int setting(String type, Map<String, String> data) {
         return settingService.set(type, data);
+    }
+
+    @Override
+    public JsonNode data(HttpServletRequest request, Object params, String... permits) {
+        Map<String, Object> result = dataLogService.record(
+                request, logParams(request), DPUtil.toJSON(params), Arrays.asList(permits));
+        return RpcUtil.data(result, false);
+    }
+
+    @Override
+    public JsonNode identity(HttpServletRequest request) {
+        return userService.identity(uid(request));
     }
 
     public Map<String, Object> currentInfo(HttpServletRequest request, Map<?, ?> info) {

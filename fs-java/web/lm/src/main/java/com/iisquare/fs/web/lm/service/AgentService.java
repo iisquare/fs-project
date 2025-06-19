@@ -33,7 +33,7 @@ public class AgentService extends JPAServiceBase {
 
     public ObjectNode listByIdentity(HttpServletRequest request, boolean check) {
         ObjectNode result = DPUtil.objectNode();
-        JsonNode identity = rbacService.identity();
+        JsonNode identity = rbacService.identity(request);
         if (!identity.has("id")) return result;
         Set<Integer> roleIds = DPUtil.values(identity.at("/roles"), Integer.class, "id");
         if (roleIds.size() == 0) return result;

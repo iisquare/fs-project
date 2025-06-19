@@ -36,7 +36,7 @@ public class JPAServiceBase extends ServiceBase {
             DaoBase<T, ID> dao, Class<ID> idClass, String idField, String fromSuffix, String toSuffix, JsonNode json, String... properties) {
         Set<ID> ids = DPUtil.values(json, idClass, properties);
         if(ids.isEmpty()) return json;
-        ObjectNode data = DPUtil.array2object(filter(DPUtil.toJSON(dao.findAllById(ids), ArrayNode.class)), idField);
+        ObjectNode data = DPUtil.json2object(filter(DPUtil.toJSON(dao.findAllById(ids), ArrayNode.class)), idField);
         return DPUtil.fillValues(json, true, properties, DPUtil.suffix(properties, fromSuffix, toSuffix), data);
     }
 
@@ -78,7 +78,7 @@ public class JPAServiceBase extends ServiceBase {
     protected <T, ID extends Serializable> ObjectNode infoByIds(DaoBase<T, ID> dao, List<ID> ids) {
         if (null == ids || ids.isEmpty()) return DPUtil.objectNode();
         ArrayNode data = DPUtil.toJSON(dao.findAllById(ids), ArrayNode.class);
-        return DPUtil.array2object(data, "id");
+        return DPUtil.json2object(data, "id");
     }
 
     protected <T, ID extends Serializable> ObjectNode search(

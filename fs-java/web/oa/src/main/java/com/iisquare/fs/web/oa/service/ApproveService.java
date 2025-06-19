@@ -228,7 +228,7 @@ public class ApproveService extends ServiceBase {
         if(!DPUtil.empty(config.get("withUserInfo"))) {
             rbacService.fillUserInfo("Id", "Info", rows, "startUserId");
         }
-        ObjectNode instances = DPUtil.array2object(rows, "id");
+        ObjectNode instances = DPUtil.json2object(rows, "id");
         Iterator<JsonNode> iterator = array.iterator();
         while (iterator.hasNext()) {
             ObjectNode node = (ObjectNode) iterator.next();

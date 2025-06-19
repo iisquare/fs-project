@@ -19,6 +19,11 @@ public class RpcUtil {
         return result.at("/data");
     }
 
+    public static JsonNode data(Map<String, Object> result, boolean nullable) {
+        if (ApiUtil.failed(result)) return nullable(nullable);
+        return DPUtil.toJSON(ApiUtil.data(result, Object.class));
+    }
+
     public static Map<String, Object> result(String json) {
         JsonNode result = DPUtil.parseJSON(json);
         if (null == result) return ApiUtil.result(100403, "解析返回值异常", null);

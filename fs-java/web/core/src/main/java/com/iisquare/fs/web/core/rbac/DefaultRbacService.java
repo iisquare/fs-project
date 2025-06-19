@@ -20,8 +20,11 @@ public class DefaultRbacService extends RbacServiceBase {
     private MemberRpc memberRpc;
 
     private JsonNode post(String uri, Map param, boolean nullable) {
-        if (null == param) param = new HashMap();
         return RpcUtil.data(memberRpc.post("/rbac/" + uri, param), nullable);
+    }
+
+    private JsonNode post(String uri, JsonNode json, boolean nullable) {
+        return RpcUtil.data(memberRpc.post("/rbac/" + uri, json), nullable);
     }
 
     /**
@@ -36,7 +39,8 @@ public class DefaultRbacService extends RbacServiceBase {
      *     }]
      * }
      */
-    public JsonNode identity() {
+    @Override
+    public JsonNode identity(HttpServletRequest request) {
         return RpcUtil.data(memberRpc.post("/rbac/identity", DPUtil.buildMap()), false);
     }
 
@@ -64,7 +68,7 @@ public class DefaultRbacService extends RbacServiceBase {
      */
     @Override
     public <T> List<T> fillUserInfo(List<T> list, String... properties) {
-        if(null == list || list.size() < 1 || properties.length < 1) return list;
+        if(null == list || list.isEmpty() || properties.length < 1) return list;
         Set<Integer> ids = new HashSet<>();
         for (Object item : list) {
             for (String property : properties) {
@@ -73,10 +77,10 @@ public class DefaultRbacService extends RbacServiceBase {
                 ids.add(DPUtil.parseInt(id));
             }
         }
-        if(ids.size() < 1) return list;
+        if(ids.isEmpty()) return list;
         JsonNode userInfos = post("listByIds", DPUtil.buildMap("ids", ids), true);
         if (null == userInfos) return null;
-        if(userInfos.size() < 1) return list;
+        if(userInfos.isEmpty()) return list;
         for (Object item : list) {
             for (String property : properties) {
                 JsonNode user = userInfos.get(DPUtil.parseString(ReflectUtil.getPropertyValue(item, property)));
@@ -100,9 +104,9 @@ public class DefaultRbacService extends RbacServiceBase {
      */
     @Override
     public JsonNode fillUserInfo(String fromSuffix, String toSuffix, JsonNode json, String... properties) {
-        if(null == json || json.size() < 1 || properties.length < 1) return json;
+        if(null == json || json.isEmpty() || properties.length < 1) return json;
         Set<Integer> ids = DPUtil.values(json, Integer.class, properties);
-        if(ids.size() < 1) return json;
+        if(ids.isEmpty()) return json;
         JsonNode userInfos = post("listByIds", DPUtil.buildMap("ids", ids), true);
         if (null == userInfos) return null;
         return DPUtil.fillValues(json, true, properties, DPUtil.suffix(properties, fromSuffix, toSuffix), userInfos);
@@ -129,7 +133,7 @@ public class DefaultRbacService extends RbacServiceBase {
      */
     @Override
     public JsonNode menu(HttpServletRequest request) {
-        return post("menu", null, false);
+        return post("menu", DPUtil.buildMap(), false);
     }
 
     /**
@@ -164,7 +168,7 @@ public class DefaultRbacService extends RbacServiceBase {
      * 根据userIds、roleIds填充users、roles信息
      */
     public JsonNode fillInfos (JsonNode rows) {
-        if (rows.size() == 0) return rows;
+        if (rows.isEmpty()) return rows;
         Set<Integer> userIdSet = new HashSet<>();
         Set<Integer> roleIdSet = new HashSet<>();
         for (JsonNode row : rows) {
@@ -183,7 +187,7 @@ public class DefaultRbacService extends RbacServiceBase {
                 ArrayNode users = node.has("users") ? (ArrayNode) node.at("/users") : node.putArray("users");
                 List<Integer> userIds = DPUtil.parseIntList(DPUtil.toJSON(row.at("/userIds"), Object.class));
                 for (Integer userId : userIds) {
-                    JsonNode user = roleInfos.at("/" + userId);
+                    JsonNode user = userInfos.at("/" + userId);
                     if (user.isNull() || user.isEmpty()) continue;
                     users.add(user);
                 }
@@ -199,6 +203,18 @@ public class DefaultRbacService extends RbacServiceBase {
             }
         }
         return rows;
+    }
+
+    /**
+     * 获取数据权限配置信息
+     */
+    @Override
+    public JsonNode data(HttpServletRequest request, Object params, String... permits) {
+        ObjectNode args = DPUtil.objectNode();
+        args.replace("params", DPUtil.toJSON(params));
+        args.replace("permits", DPUtil.toJSON(permits));
+        args.replace("logParams", logParams(request));
+        return post("data", args, false);
     }
 
 }

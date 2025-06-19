@@ -134,10 +134,11 @@ public class ProxyController extends ControllerBase implements InitializingBean,
 
     private SseEmitter sse(HttpServletRequest r1, RequestMethod method, Map<?, ?> param) throws Exception {
         SsePlainEmitter emitter = new SsePlainEmitter(0L);
+        boolean forceEvent = DPUtil.parseBoolean(param.get("forceEvent")); // 强制采用SSE格式返回
         String url = String.format("rpc.%s.rest", DPUtil.parseString(param.get("app"))).toLowerCase();
         url = context.getEnvironment().getProperty(url);
         if (DPUtil.empty(url)) {
-            return emitter.error("app_not_found", "请求应用不存在", "admin", param, false).sync();
+            return emitter.error("app_not_found", "请求应用不存在", "admin", param, forceEvent).sync();
         }
         url += DPUtil.parseString(param.get("uri"));
         String finalUrl = url;
@@ -166,7 +167,7 @@ public class ProxyController extends ControllerBase implements InitializingBean,
 
             @Override
             public void onError(CloseableHttpResponse response, Throwable throwable, boolean isStream) { // 中断客户端处理请求
-                emitter.error("backend_error", "服务端异常", "admin", throwable.getMessage(), isStream).abort();
+                emitter.error("backend_error", "服务端异常", "admin", throwable.getMessage(), forceEvent || isStream).abort();
             }
 
             @Override

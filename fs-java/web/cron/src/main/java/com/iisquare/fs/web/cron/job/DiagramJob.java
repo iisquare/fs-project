@@ -57,7 +57,7 @@ public class DiagramJob implements Job {
         }
         FlowLog flowLog = flowLogDao.save(logBuilder.build());
         // 解析流程节点
-        ObjectNode cells = DPUtil.array2object(json.at("/cells"), "id");
+        ObjectNode cells = DPUtil.json2object(json.at("/cells"), "id");
         Iterator<JsonNode> iterator = json.at("/cells").iterator();
         while (iterator.hasNext()) {
             ObjectNode node = (ObjectNode) iterator.next();

@@ -31,6 +31,17 @@ public class ChatService extends ServiceBase {
     @Autowired
     ProxyService proxyService;
 
+    public SseEmitter dialog(ObjectNode json, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        SsePlainEmitter emitter = new SsePlainEmitter(0L);
+        ObjectNode agent = agent(json, emitter, request, response);
+        if (null == agent) return emitter.sync();
+        ArrayNode messages = DPUtil.arrayNode();
+        messages.addObject().put("role", "user").put("content", json.at("/input").asText(""));
+        agent.replace("messages", messages);
+        agent.put("stream", true);
+        return completion(agent, emitter, request, response);
+    }
+
     public SseEmitter demo(ObjectNode json, HttpServletRequest request, HttpServletResponse response) throws IOException {
         SsePlainEmitter emitter = new SsePlainEmitter(0L);
         ObjectNode agent = agent(json, emitter, request, response);
@@ -55,10 +66,6 @@ public class ChatService extends ServiceBase {
         agent.replace("messages", messages);
         agent.replace("stream", json.at("/stream"));
         return completion(agent, emitter, request, response);
-    }
-
-    public SseEmitter dialog(ObjectNode json, HttpServletRequest request, HttpServletResponse response) throws IOException {
-        return null;
     }
 
     public ObjectNode agent(ObjectNode json, SsePlainEmitter emitter, HttpServletRequest request, HttpServletResponse response) {

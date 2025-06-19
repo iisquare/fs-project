@@ -52,7 +52,7 @@ public class SourceUnit {
     }
 
     public static Map<String, Object> loadSource(SparkSession session, JsonNode options) {
-        ObjectNode items = DPUtil.array2object(options.at("/relation/items"), "table");
+        ObjectNode items = DPUtil.json2object(options.at("/relation/items"), "table");
         JsonNode sources = options.at("/sources");
         List<Map<String, String>> columns = parseRelationColumn(options.at("/relation/relations"));
         columns.addAll(parseTableColumn(options.at("/table")));

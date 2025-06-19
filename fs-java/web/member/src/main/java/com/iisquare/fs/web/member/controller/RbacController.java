@@ -1,11 +1,12 @@
 package com.iisquare.fs.web.member.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.web.core.rbac.PermitInterceptor;
 import com.iisquare.fs.web.core.rbac.RpcControllerBase;
+import com.iisquare.fs.web.member.service.DataLogService;
 import com.iisquare.fs.web.member.service.RbacService;
 import com.iisquare.fs.web.member.service.RoleService;
 import com.iisquare.fs.web.member.service.UserService;
@@ -24,11 +25,13 @@ import java.util.Map;
 public class RbacController extends RpcControllerBase {
 
     @Autowired
-    private RbacService rbacService;
+    RbacService rbacService;
     @Autowired
-    private UserService userService;
+    UserService userService;
     @Autowired
-    private RoleService roleService;
+    RoleService roleService;
+    @Autowired
+    DataLogService dataLogService;
 
     /**
      * 打包获取用户信息和角色资源
@@ -111,7 +114,7 @@ public class RbacController extends RpcControllerBase {
      */
     @PostMapping("/identity")
     public String identityAction(@RequestBody Map<String, Object> param, HttpServletRequest request) {
-        ObjectNode identity = userService.identity(rbacService.uid(request));
+        JsonNode identity = rbacService.identity(request);
         return ApiUtil.echoResult(0, null, identity);
     }
 
@@ -129,6 +132,17 @@ public class RbacController extends RpcControllerBase {
             Map<String, String> data = (Map<String, String>) param.get("data");
             return ApiUtil.echoResult(0, null, rbacService.setting(type, data));
         }
+    }
+
+    /**
+     * 获取数据权限配置信息
+     */
+    @PostMapping("/data")
+    public String dataAction(@RequestBody JsonNode json, HttpServletRequest request) {
+        List<String> permits = DPUtil.toJSON(json.at("/permits"), List.class);
+        Map<String, Object> result = dataLogService.record(
+                request, json.at("/logParams"), json.at("/params"), permits);
+        return ApiUtil.echoResult(result);
     }
 
 }

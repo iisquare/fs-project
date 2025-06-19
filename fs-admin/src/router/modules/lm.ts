@@ -46,6 +46,10 @@ export const layouts = [{
     meta: { title: '模型对比', permit: ['lm:chat:compare'] },
     component: () => import('@/views/lm/chat/compare.vue')
   }, {
+    path: '/lm/chat/dialog',
+    meta: { title: '模型对话', fit: true, permit: ['lm:chat:dialog'] },
+    component: () => import('@/views/lm/chat/dialog.vue')
+  }, {
     path: '/lm/manage/log',
     meta: { title: '调用日志', permit: ['lm:log:'] },
     component: () => import('@/views/lm/manage/log.vue')

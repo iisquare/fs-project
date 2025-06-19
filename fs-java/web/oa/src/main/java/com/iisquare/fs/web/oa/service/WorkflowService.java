@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.iisquare.fs.base.core.util.ReflectUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
@@ -402,7 +401,7 @@ public class WorkflowService extends ServiceBase {
         Set<String> ids = DPUtil.values(array, String.class, "id");
         if (ids.size() < 1) return array;
         ProcessInstanceQuery query = runtimeService.createProcessInstanceQuery().processInstanceIds(ids);
-        ObjectNode instances = DPUtil.array2object(processInstance2node(query.list()), "id");
+        ObjectNode instances = DPUtil.json2object(processInstance2node(query.list()), "id");
         return (ArrayNode) DPUtil.fillValues(array, true, new String[]{"id"}, new String[]{"processInstanceInfo"}, instances);
     }
 

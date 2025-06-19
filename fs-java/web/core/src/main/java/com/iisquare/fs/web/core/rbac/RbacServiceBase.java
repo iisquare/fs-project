@@ -4,15 +4,25 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
+import com.iisquare.fs.base.web.util.ServletUtil;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class RbacServiceBase extends ServiceBase {
 
+    @Value("${spring.application.name}")
+    public String appName;
+
     public int uid(HttpServletRequest request) {
         return currentInfo(request).at("/uid").asInt();
+    }
+
+    public Set<Integer> roleIds(HttpServletRequest request) {
+        return DPUtil.values(identity(request).at("/roles"), Integer.class, "id");
     }
 
     @Deprecated
@@ -82,5 +92,18 @@ public abstract class RbacServiceBase extends ServiceBase {
     public abstract Map<String, String> setting(String type, List<String> include, List<String> exclude);
 
     public abstract int setting(String type, Map<String, String> data);
+
+    public abstract JsonNode data(HttpServletRequest request, Object params, String... permits);
+
+    public ObjectNode logParams(HttpServletRequest request) {
+        ObjectNode node = DPUtil.objectNode();
+        node.put("appName", appName);
+        node.put("requestIp", ServletUtil.getRemoteAddr(request));
+        node.put("requestUrl", ServletUtil.getFullUrl(request, true, true));
+        node.replace("requestHeaders", DPUtil.toJSON(ServletUtil.headers(request)));
+        return node;
+    }
+
+    public abstract JsonNode identity(HttpServletRequest request);
 
 }

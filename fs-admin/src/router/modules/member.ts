@@ -65,6 +65,14 @@ export const layouts = [{
     path: '/member/data/permit',
     meta: { title: '授权管理', permit: ['member:dataPermit:'] },
     component: () => import('@/views/member/data/permit.vue')
+  }, {
+    path: '/member/data/check',
+    meta: { title: '权限检测', permit: ['member:dataLog:check'] },
+    component: () => import('@/views/member/data/check.vue')
+  }, {
+    path: '/member/data/log',
+    meta: { title: '鉴权日志', permit: ['member:dataLog:'] },
+    component: () => import('@/views/member/data/log.vue')
   }]
 }]
 

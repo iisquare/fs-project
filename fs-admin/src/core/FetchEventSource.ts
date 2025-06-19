@@ -73,7 +73,8 @@ class FetchEventSource {
       body: JSON.stringify({
         app: this.app,
         uri: this.uri,
-        data: data
+        data: data,
+        forceEvent: true
       }),
       signal: this.ctrl.signal,
       openWhenHidden: true,

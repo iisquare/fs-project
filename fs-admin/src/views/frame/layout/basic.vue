@@ -220,7 +220,7 @@ const handleLogout = () => {
 .fs-main {
   height: calc(100vh - var(--fs-layout-header-height));
   overflow: auto;
-  background-color: rgb(247 250 252);
+  background-color: var(--fs-layout-background-color);
 }
 .fs-fit {
   padding: 0;

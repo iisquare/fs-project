@@ -88,7 +88,7 @@ CREATE TABLE `fs_member_data` (
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `unq_serial` (`serial`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=312 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -97,12 +97,38 @@ CREATE TABLE `fs_member_data` (
 
 LOCK TABLES `fs_member_data` WRITE;
 /*!40000 ALTER TABLE `fs_member_data` DISABLE KEYS */;
-INSERT INTO `fs_member_data` VALUES (307,'test','测试数据','cccccc','[{\"name\":\"aaaaaaa\",\"title\":\"\",\"type\":\"string\"},{\"name\":\"cccccc\",\"title\":\"\",\"type\":\"\"},{\"name\":\"vvvvvvvvvvvvv\",\"title\":\"\",\"type\":\"\"},{\"name\":\"id\",\"title\":\"\",\"type\":\"\"}]',0,1,'',1745371420491,1,1745371420491,1);
-INSERT INTO `fs_member_data` VALUES (308,'aaaa','aaaaa','','[]',0,1,'',1745548184369,1,1745548184369,1);
-INSERT INTO `fs_member_data` VALUES (309,'bbb','bbbbb','','[]',0,1,'',1745548190250,1,1745548190250,1);
-INSERT INTO `fs_member_data` VALUES (310,'ttcccc','fasfdf','','[]',0,1,'',1745548196364,1,1745548196364,1);
-INSERT INTO `fs_member_data` VALUES (311,'fdgdfg','ewwegg','','[]',0,1,'',1745548202321,1,1745548202321,1);
+INSERT INTO `fs_member_data` VALUES (2,'fs_data','基础信息','id','[{\"name\":\"id\",\"title\":\"\",\"type\":\"integer\"},{\"name\":\"name\",\"title\":\"\",\"type\":\"string\"},{\"name\":\"status\",\"title\":\"\",\"type\":\"integer\"},{\"name\":\"description\",\"title\":\"\",\"type\":\"string\"}]',0,1,'',1750130990273,1,1750225964757,1);
 /*!40000 ALTER TABLE `fs_member_data` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `fs_member_data_log`
+--
+
+DROP TABLE IF EXISTS `fs_member_data_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_member_data_log` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `permits` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `server_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `client_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `request_url` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `request_ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '',
+  `request_headers` longtext NOT NULL,
+  `request_params` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `request_time` bigint NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `fs_member_data_log`
+--
+
+LOCK TABLES `fs_member_data_log` WRITE;
+/*!40000 ALTER TABLE `fs_member_data_log` DISABLE KEYS */;
+/*!40000 ALTER TABLE `fs_member_data_log` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -128,7 +154,7 @@ CREATE TABLE `fs_member_data_permit` (
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_data_id` (`data_id`) USING BTREE,
   KEY `idx_role_id` (`role_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=310 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -137,9 +163,36 @@ CREATE TABLE `fs_member_data_permit` (
 
 LOCK TABLES `fs_member_data_permit` WRITE;
 /*!40000 ALTER TABLE `fs_member_data_permit` DISABLE KEYS */;
-INSERT INTO `fs_member_data_permit` VALUES (308,307,1,'[{\"type\":\"FILTER\",\"value\":\"\",\"operator\":\"EQUAL\",\"definition\":\"STRING\"},{\"type\":\"FILTER\",\"value\":\"\",\"operator\":\"EQUAL\",\"definition\":\"STRING\"},{\"type\":\"RELATION\",\"value\":\"AND\",\"children\":[{\"type\":\"FILTER\",\"value\":\"\",\"operator\":\"EQUAL\",\"definition\":\"STRING\"},{\"type\":\"FILTER\",\"value\":\"\",\"operator\":\"EQUAL\",\"definition\":\"STRING\"},{\"type\":\"RELATION\",\"value\":\"AND\",\"children\":[{\"type\":\"FILTER\",\"value\":\"\",\"operator\":\"EQUAL\",\"definition\":\"STRING\"},{\"type\":\"FILTER\",\"value\":\"\",\"operator\":\"EQUAL\",\"definition\":\"STRING\"}]},{\"type\":\"FILTER\",\"value\":\"\",\"operator\":\"EQUAL\",\"definition\":\"STRING\"}]}]','aaaaaaa,vvvvvvvvvvvvv,id',0,1,'xx',1745549923186,1,1747991190018,1);
-INSERT INTO `fs_member_data_permit` VALUES (309,307,2,'[]','id,cccccc',0,1,'',1745552082506,1,1745552082506,1);
+INSERT INTO `fs_member_data_permit` VALUES (2,2,1,'[{\"type\":\"RELATION\",\"value\":\"AND\",\"children\":[]}]','id,name',0,1,'',1750131069954,1,1750235274707,1);
+INSERT INTO `fs_member_data_permit` VALUES (3,2,1,'[{\"type\":\"FILTER\",\"value\":\"15\",\"operator\":\"GREATER_THAN\",\"definition\":\"NUMBER\",\"field\":\"id\"},{\"type\":\"FILTER\",\"value\":\"20\",\"operator\":\"LESS_THAN_OR_EQUAL\",\"definition\":\"NUMBER\",\"field\":\"id\"}]','id,description',0,1,'',1750131081074,1,1750233282694,1);
 /*!40000 ALTER TABLE `fs_member_data_permit` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `fs_member_data_permit_log`
+--
+
+DROP TABLE IF EXISTS `fs_member_data_permit_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_member_data_permit_log` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `log_id` bigint NOT NULL DEFAULT '0',
+  `data_id` int NOT NULL DEFAULT '0',
+  `data_serial` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `filters` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `fields` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `fs_member_data_permit_log`
+--
+
+LOCK TABLES `fs_member_data_permit_log` WRITE;
+/*!40000 ALTER TABLE `fs_member_data_permit_log` DISABLE KEYS */;
+/*!40000 ALTER TABLE `fs_member_data_permit_log` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -4312,7 +4365,7 @@ CREATE TABLE `fs_member_menu` (
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_application_id` (`application_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=158 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=159 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -4451,7 +4504,7 @@ INSERT INTO `fs_member_menu` VALUES (145,'模型调试','大模型:模型对话:
 INSERT INTO `fs_member_menu` VALUES (146,'运营监控','大模型:运营监控',304,0,'FirstAidKit','/lm/manage','',10,1,'',1741318683103,1,1741572314757,1);
 INSERT INTO `fs_member_menu` VALUES (147,'调用日志','大模型:运营监控:调用日志',304,146,'','/lm/manage/log','',0,1,'',1741318736952,1,1741318736952,1);
 INSERT INTO `fs_member_menu` VALUES (148,'对话历史','大模型:模型对话:对话历史',304,144,'','/lm/chat/history','',0,1,'',1741574566694,1,1741574566694,1);
-INSERT INTO `fs_member_menu` VALUES (149,'新建对话','大模型:模型对话:新建对话',304,144,'','/lm/chat/dialog','',100,1,'',1741574622733,1,1741574636624,1);
+INSERT INTO `fs_member_menu` VALUES (149,'模型对话','大模型:模型对话:模型对话',304,144,'','/lm/chat/dialog','',100,1,'',1741574622733,1,1749000980826,1);
 INSERT INTO `fs_member_menu` VALUES (150,'模型对比','大模型:模型对话:模型对比',304,144,'','/lm/chat/compare','',90,1,'',1741574675468,1,1741574675468,1);
 INSERT INTO `fs_member_menu` VALUES (151,'对话日志','大模型:运营监控:对话日志',304,146,'','/lm/manage/chat','',0,1,'',1741574846835,1,1741574846835,1);
 INSERT INTO `fs_member_menu` VALUES (152,'图谱管理','知识图谱:图谱管理',305,0,'Setting','/kg/manage','',0,1,'',1741915476826,1,1741915476826,1);
@@ -4460,6 +4513,7 @@ INSERT INTO `fs_member_menu` VALUES (154,'数据权限','用户中心:数据权�
 INSERT INTO `fs_member_menu` VALUES (155,'数据模型','用户中心:数据权限:数据模型',2,154,'','/member/data/list','',0,1,'',1744772166387,1,1744772166387,1);
 INSERT INTO `fs_member_menu` VALUES (156,'鉴权日志','用户中心:数据权限:鉴权日志',2,154,'','/member/data/log','',0,1,'',1745484421422,1,1745488377891,1);
 INSERT INTO `fs_member_menu` VALUES (157,'授权管理','用户中心:数据权限:授权管理',2,154,'','/member/data/permit','',0,1,'',1745488339177,1,1745488339177,1);
+INSERT INTO `fs_member_menu` VALUES (158,'权限检测','用户中心:数据权限:权限检测',2,154,'','/member/data/check','',0,1,'',1750233877567,1,1750233877567,1);
 /*!40000 ALTER TABLE `fs_member_menu` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -4564,6 +4618,7 @@ INSERT INTO `fs_member_relation` VALUES ('role_menu_1_154_2','role_menu',1,154,2
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_155_2','role_menu',1,155,2);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_156_2','role_menu',1,156,2);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_157_2','role_menu',1,157,2);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_158_2','role_menu',1,158,2);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_15_2','role_menu',1,15,2);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_16_2','role_menu',1,16,2);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_17_2','role_menu',1,17,2);
@@ -4819,6 +4874,10 @@ INSERT INTO `fs_member_relation` VALUES ('role_resource_1_24_2','role_resource',
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_250_2','role_resource',1,250,2);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_251_2','role_resource',1,251,2);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_252_304','role_resource',1,252,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_253_304','role_resource',1,253,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_254_2','role_resource',1,254,2);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_255_2','role_resource',1,255,2);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_256_2','role_resource',1,256,2);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_25_2','role_resource',1,25,2);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_27_26','role_resource',1,27,26);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_28_26','role_resource',1,28,26);
@@ -4957,7 +5016,7 @@ CREATE TABLE `fs_member_resource` (
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_application_id` (`application_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=253 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=257 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -5202,6 +5261,10 @@ INSERT INTO `fs_member_resource` VALUES (249,'添加','用户中心:数据授权
 INSERT INTO `fs_member_resource` VALUES (250,'修改','用户中心:数据授权:修改',2,248,'member','dataPermit','modify',0,1,'',1745496411234,1,1745496411234,1);
 INSERT INTO `fs_member_resource` VALUES (251,'删除','用户中心:数据授权:删除',2,248,'member','dataPermit','delete',0,1,'',1745496419491,1,1745496419491,1);
 INSERT INTO `fs_member_resource` VALUES (252,'模型对比','大模型:模型对话:模型对比',304,234,'lm','chat','compare',0,1,'',1748746971726,1,1748746971726,1);
+INSERT INTO `fs_member_resource` VALUES (253,'模型对话','大模型:模型对话:模型对话',304,234,'lm','chat','dialog',0,1,'',1749000959475,1,1749000959475,1);
+INSERT INTO `fs_member_resource` VALUES (254,'鉴权日志','用户中心:鉴权日志',2,0,'member','dataLog','',0,1,'',1750233941422,1,1750233941422,1);
+INSERT INTO `fs_member_resource` VALUES (255,'检测','用户中心:鉴权日志:检测',2,254,'member','dataLog','check',0,1,'',1750233963548,1,1750233963548,1);
+INSERT INTO `fs_member_resource` VALUES (256,'删除','用户中心:鉴权日志:删除',2,254,'member','dataLog','delete',0,1,'',1750294202423,1,1750294202423,1);
 /*!40000 ALTER TABLE `fs_member_resource` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -5318,7 +5381,7 @@ CREATE TABLE `fs_member_user` (
 
 LOCK TABLES `fs_member_user` WRITE;
 /*!40000 ALTER TABLE `fs_member_user` DISABLE KEYS */;
-INSERT INTO `fs_member_user` VALUES (1,'admin','管理员','4bd18037cb256efcc6bd6363c558e401','8395',0,1,'',1528081552985,'127.0.0.1',1,1528081552985,1,1747703197334,'127.0.0.1',0,0,0);
+INSERT INTO `fs_member_user` VALUES (1,'admin','管理员','4bd18037cb256efcc6bd6363c558e401','8395',0,1,'',1528081552985,'127.0.0.1',1,1528081552985,1,1750295564716,'127.0.0.1',0,0,0);
 INSERT INTO `fs_member_user` VALUES (26,'test1','test1','04dc197e5e813659aa124599e7d7d4fd','0898',0,1,'',1737797630259,'127.0.0.1',1,1737798171826,1,0,'',0,1737802620607,1);
 INSERT INTO `fs_member_user` VALUES (27,'test2','test2','3dc5e4203e5e4d67b1c08a68136b7879','0605',0,2,'',1737803207126,'127.0.0.1',1,1748757103004,1,0,'',0,0,0);
 INSERT INTO `fs_member_user` VALUES (28,'test3','test3','30cc87d9a433944111623cb1a1a5e3c1','1082',0,1,'',1737803243981,'127.0.0.1',1,1737803243981,1,0,'',0,0,0);
@@ -5336,4 +5399,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-06-01 13:54:37
+-- Dump completed on 2025-06-19  9:28:15

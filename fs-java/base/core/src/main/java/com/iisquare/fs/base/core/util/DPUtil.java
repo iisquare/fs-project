@@ -52,9 +52,11 @@ public class DPUtil {
         if (object.getClass().isArray()) {
             return 0 == Array.getLength(object);
         }
+        if (object instanceof JsonNode) {
+            return ((JsonNode) object).isEmpty();
+        }
         String str = object.toString();
-        if (str.length() < 1) return true;
-        return false;
+        return str.isEmpty();
     }
 
     public static boolean parseBoolean(Object object) {
@@ -501,18 +503,19 @@ public class DPUtil {
     }
 
     public static JsonNode filterByKey(JsonNode json, boolean in2exclude, String... filters) {
-        if (filters.length == 0) return json;
+        return filterByKey(json, in2exclude, Arrays.asList(filters));
+    }
+
+    public static JsonNode filterByKey(JsonNode json, boolean in2exclude, Collection<String> filters) {
+        if (filters.isEmpty()) return json;
         ObjectNode result = DPUtil.objectNode();
         Iterator<Map.Entry<String, JsonNode>> iterator = json.fields();
         while (iterator.hasNext()) {
             Map.Entry<String, JsonNode> entry = iterator.next();
             String key = entry.getKey();
             JsonNode value = entry.getValue();
-            for (String filter : filters) {
-                if (key.matches(filter) == in2exclude) {
-                    result.replace(key, value);
-                    break;
-                }
+            if (filters.contains(key) == in2exclude) {
+                result.replace(key, value);
             }
         }
         return result;
@@ -880,11 +883,41 @@ public class DPUtil {
         return array;
     }
 
-    public static ObjectNode array2object(JsonNode array, String field) {
+    /**
+     * 将 [{ k: v }]转换为{ [v]: {...} }
+     */
+    public static ObjectNode json2object(JsonNode json, String field) {
         ObjectNode nodes = DPUtil.objectNode();
-        for (JsonNode node : array) {
+        for (JsonNode node : json) {
             String key = node.at("/" + field).asText("");
             nodes.replace(key, node);
+        }
+        return nodes;
+    }
+
+    /**
+     * 将 [{ k: v }]转换为{ [v]: [{...}] }
+     */
+    public static ObjectNode json2ol(JsonNode json, String field) {
+        ObjectNode nodes = DPUtil.objectNode();
+        for (JsonNode node : json) {
+            String key = node.at("/" + field).asText("");
+            ArrayNode array = nodes.has(key) ? (ArrayNode) nodes.get(key) : nodes.putArray(key);
+            array.add(node);
+        }
+        return nodes;
+    }
+
+    /**
+     * 将 [{ k: v }]转换为{ [v1]: { [v2]: {...} } }
+     */
+    public static ObjectNode json2oo(JsonNode json, String field1, String field2) {
+        ObjectNode nodes = DPUtil.objectNode();
+        for (JsonNode node : json) {
+            String key1 = node.at("/" + field1).asText("");
+            String key2 = node.at("/" + field2).asText("");
+            ObjectNode obj = nodes.has(key1) ? (ObjectNode) nodes.get(key1) : nodes.putObject(key1);
+            obj.replace(key2, node);
         }
         return nodes;
     }
@@ -918,18 +951,24 @@ public class DPUtil {
         return list;
     }
 
+    /**
+     * 将数组格式化为树形结构
+     */
     public static <T> List<T> formatRelation(List<?> data, Class<T> requiredType, String parentKey, Object parentValue, String idKey, String childrenKey) {
         List<T> list = new ArrayList<>();
         for (Object item : data) {
             if (!parentValue.equals(ReflectUtil.getPropertyValue(item, parentKey))) continue;
             list.add((T) item);
             List<T> children = formatRelation(data, requiredType, parentKey, ReflectUtil.getPropertyValue(item, idKey), idKey, childrenKey);
-            if (children.size() < 1) continue;
+            if (children.isEmpty()) continue;
             ReflectUtil.setPropertyValue(item, childrenKey, new Class[]{List.class}, new Object[]{children});
         }
         return list;
     }
 
+    /**
+     * 将数组格式化为树形结构
+     */
     public static ArrayNode formatRelation(ArrayNode data, String parentKey, Object parentValue, String idKey, String childrenKey) {
         if (!(parentValue instanceof JsonNode)) parentValue = DPUtil.toJSON(parentValue);
         ArrayNode result = DPUtil.arrayNode();
@@ -937,10 +976,23 @@ public class DPUtil {
             if (!parentValue.equals(DPUtil.value(item, parentKey))) continue;
             result.add(item);
             ArrayNode children = formatRelation(data, parentKey, DPUtil.value(item, idKey), idKey, childrenKey);
-            if (children.size() < 1) continue;
+            if (children.isEmpty()) continue;
             ((ObjectNode) item).replace(childrenKey, children);
         }
         return result;
+    }
+
+    /**
+     * 将children作为子元素填充到data数据中
+     */
+    public static JsonNode formatRelation(JsonNode data, JsonNode children, String idField, String parentIdField, String childrenKey) {
+        ObjectNode nodes = json2ol(children, parentIdField);
+        for (JsonNode item : data) {
+            ObjectNode node = (ObjectNode) item;
+            String key = node.at("/" + idField).asText("");
+            node.replace(childrenKey, nodes.has(key) ? nodes.get(key) : DPUtil.arrayNode());
+        }
+        return data;
     }
 
     @Deprecated
@@ -973,7 +1025,7 @@ public class DPUtil {
      */
     public static <T> Set<T> values(Collection<?> list, Class<T> tClass, String... properties) {
         Set<T> valueList = new LinkedHashSet<>();
-        if (null == list || list.size() < 1 || properties.length < 1) return valueList;
+        if (null == list || list.isEmpty() || properties.length < 1) return valueList;
         for (Object object : list) {
             for (String property : properties) {
                 Object value = ReflectUtil.getPropertyValue(object, property);
@@ -1021,6 +1073,9 @@ public class DPUtil {
         return fillValues(json, false, froms, tos, data);
     }
 
+    /**
+     * 将froms值对应的data数据，按照指定的tos字段附加到json数据中
+     */
     public static JsonNode fillValues(JsonNode json, boolean withEmptyObject, String[] froms, String[] tos, JsonNode data) {
         if (null == json) return null;
         for (JsonNode item : json) {
@@ -1098,34 +1153,46 @@ public class DPUtil {
         return mapper.convertValue(obj, JsonNode.class);
     }
 
+    /**
+     * 获取指定路径下元素值
+     */
     public static JsonNode value(JsonNode json, String path) {
         String[] paths = DPUtil.explode("\\.",path, null, false);
         return value(json, new LinkedList<>(Arrays.asList(paths)));
     }
 
+    /**
+     * 获取指定路径下元素值
+     */
     public static JsonNode value(JsonNode json, LinkedList<String> paths) {
         if (null == json) return toJSON(null);
-        if (json.isNull() || paths.size() < 1) return json;
+        if (json.isNull() || paths.isEmpty()) return json;
         return value(json.at("/" + paths.poll()), paths);
     }
 
+    /**
+     * 将指定路径的元素设置为value值
+     */
     public static boolean value(JsonNode json, String path, JsonNode value) {
         String[] paths = DPUtil.explode("\\.",path, null, false);
         return value(json, new LinkedList<>(Arrays.asList(paths)), value);
     }
 
+    /**
+     * 将指定路径的元素设置为value值
+     */
     public static boolean value(JsonNode json, LinkedList<String> paths, JsonNode value) {
-        if (null == json || json.isNull() || paths.size() < 1) return false;
+        if (null == json || json.isNull() || paths.isEmpty()) return false;
         String field = paths.poll();
         JsonNode node = json.at("/" + field);
-        if (paths.size() > 0) return value(node, paths, value);
+        if (!paths.isEmpty()) return value(node, paths, value);
         if (json.isObject()) {
             ((ObjectNode) json).replace(field, value);
             return true;
         }
         if (json.isArray()) {
             if (!field.matches("\\d+")) return false;
-            ((ArrayNode) json).set(Integer.valueOf(field), value);
+            ((ArrayNode) json).set(Integer.parseInt(field), value);
         }
         return false;
     }
