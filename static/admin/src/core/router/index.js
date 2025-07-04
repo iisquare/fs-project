@@ -127,7 +127,7 @@ router.beforeEach((to, from, next) => {
         query: { redirect: to.fullPath }
       })
     }
-  } else if (DataUtil.empty(user.data) || DataUtil.empty(user.data.info)) { // 用户未登陆
+  } else if (DataUtil.empty(user.data) || DataUtil.empty(user.data.info.id)) { // 用户未登陆
     if (to.path === page.login || to.path === page.e404) {
       next()
     } else {
