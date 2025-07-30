@@ -4,7 +4,7 @@ import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.Arrays;
 
@@ -47,8 +47,6 @@ public class FlowStage implements Serializable {
     private String type; // 任务类型
     @Column
     private String name; // 任务名称
-    @Column
-    private String title; // 任务标题
     @Column
     private Integer skipped; // 是否跳过执行
     @Column

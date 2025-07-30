@@ -31,8 +31,8 @@ public class FlowLogController extends PermitControllerBase {
 
     @RequestMapping("/list")
     @Permission("flow:")
-    public String listAction(@RequestBody Map<?, ?> param) {
-        Map<String, Object> result = logService.search(param, DPUtil.buildMap());
+    public String listAction(@RequestBody Map<String, Object> param) {
+        ObjectNode result = logService.search(param, DPUtil.buildMap("withFlowInfo", true));
         return ApiUtil.echoResult(0, null, result);
     }
 

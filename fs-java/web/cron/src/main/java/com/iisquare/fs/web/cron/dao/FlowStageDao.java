@@ -35,7 +35,8 @@ public interface FlowStageDao extends DaoBase<FlowStage, FlowStage.IdClass> {
 
     @Modifying
     @Transactional
-    @Query(value = "update FlowStage set updatedTime=:time, state='TERMINATED' where logId=:logId and state in ('WAITING', 'RUNNING')")
+    @Query(value = "update FlowStage set runTime = CASE WHEN runTime = 0 THEN :time ELSE runTime END" +
+            ", updatedTime=:time, state='TERMINATED' where logId=:logId and state in ('WAITING', 'RUNNING')")
     Integer terminal(@Param("logId") Integer logId, @Param("time") Long time);
 
 }

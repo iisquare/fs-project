@@ -9,8 +9,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.orm.jpa.EntityManagerFactoryInfo;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.*;

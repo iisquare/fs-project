@@ -5,7 +5,7 @@ import com.iisquare.fs.web.site.core.Assets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 public abstract class SiteControllerBase extends ControllerBase {
 

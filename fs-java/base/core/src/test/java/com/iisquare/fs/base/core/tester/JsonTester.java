@@ -7,8 +7,25 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import org.junit.Test;
 
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 public class JsonTester {
+
+    @Test
+    public void concurrentTest() throws Exception {
+        int count = 100;
+        CountDownLatch latch = new CountDownLatch(count);
+        for (int i = 0; i < count; i++) {
+            String key = "i" + i;
+            new Thread(() -> {
+                ObjectNode node = DPUtil.objectNode();
+                node.put(key, UUID.randomUUID().toString());
+                System.out.println(node);
+                latch.countDown();
+            }).start();
+        }
+        latch.await();
+    }
 
     @Test
     public void emptyTest() {

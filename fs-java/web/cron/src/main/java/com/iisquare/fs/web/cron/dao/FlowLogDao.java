@@ -11,8 +11,8 @@ import java.util.List;
 
 public interface FlowLogDao extends DaoBase<FlowLog, Integer> {
 
-    @Query("select count(state) from FlowLog where project=:project and name=:name and state=:state")
-    int countByState(@Param("project") String project, @Param("name") String name, @Param("state") String state);
+    @Query("select count(state) from FlowLog where flowId=:flowId and state=:state")
+    int countByState(@Param("flowId") Integer flowId, @Param("state") String state);
 
     @Query("from FlowLog where state in ('RUNNING')")
     List<FlowLog> canRun();

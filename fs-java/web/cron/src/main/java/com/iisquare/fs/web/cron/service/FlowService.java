@@ -1,27 +1,26 @@
 package com.iisquare.fs.web.cron.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
-import com.iisquare.fs.base.web.mvc.ServiceBase;
+import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.cron.dao.FlowDao;
 import com.iisquare.fs.web.cron.entity.Flow;
 import com.iisquare.fs.web.cron.job.DiagramJob;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.criteria.Predicate;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
-public class FlowService extends ServiceBase {
+public class FlowService extends JPAServiceBase {
 
     @Autowired
     private FlowDao flowDao;
@@ -30,79 +29,95 @@ public class FlowService extends ServiceBase {
     @Autowired
     private NodeService nodeService;
 
-    public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) throws Exception {
+    public String group() {
+        return this.getClass().getName();
+    }
+
+    public Map<?, ?> status() {
+        Map<Integer, String> status = new LinkedHashMap<>();
+        status.put(1, "启用");
+        status.put(2, "禁用");
+        return status;
+    }
+
+    public ObjectNode search(Map<String, Object> param, Map<?, ?> args) throws Exception {
         Scheduler scheduler = nodeService.scheduler();
-        Map<String, Object> result = new LinkedHashMap<>();
-        int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
-        int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
-        Page<Flow> data = flowDao.findAll((Specification<Flow>) (root, query, cb) -> {
+        ObjectNode result = search(flowDao, param, (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            String project = DPUtil.trim(DPUtil.parseString(param.get("project")));
-            if(!DPUtil.empty(project)) {
-                predicates.add(cb.like(root.get("project"), project));
+            int id = DPUtil.parseInt(param.get("id"));
+            if (id > 0) predicates.add(cb.equal(root.get("id"), id));
+            int status = DPUtil.parseInt(param.get("status"));
+            if (!"".equals(DPUtil.parseString(param.get("status")))) {
+                predicates.add(cb.equal(root.get("status"), status));
             }
             String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
             if(!DPUtil.empty(name)) {
-                predicates.add(cb.like(root.get("name"), name));
+                predicates.add(cb.like(root.get("name"), "%" + name + "%"));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"))));
-        List<Flow> rows = data.getContent();
-        if(!DPUtil.empty(config.get("withTriggerInfo"))) {
-            for (Flow flow : rows) {
-                fillTrigger(scheduler, flow);
+        }, Sort.by(Sort.Order.desc("sort")), "id", "name", "sort", "status");
+        JsonNode rows = format(ApiUtil.rows(result));
+        if(!DPUtil.empty(args.get("withTriggerInfo"))) {
+            for (JsonNode flow : rows) {
+                fillTrigger(scheduler, (ObjectNode) flow);
             }
         }
-        if(!DPUtil.empty(config.get("withUserInfo"))) {
+        if(!DPUtil.empty(args.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
         }
-        result.put("page", page);
-        result.put("pageSize", pageSize);
-        result.put("total", data.getTotalElements());
-        result.put("rows", rows);
+        if(!DPUtil.empty(args.get("withStatusText"))) {
+            fillStatus(rows, status());
+        }
         return result;
     }
 
-    public boolean fillTrigger(Scheduler scheduler, Flow flow) throws SchedulerException {
+    public JsonNode format(JsonNode rows) {
+        for (JsonNode row : rows) {
+            ObjectNode node = (ObjectNode) row;
+            node.replace("content", DPUtil.parseJSON(node.at("/content").asText()));
+            node.replace("notify", DPUtil.parseJSON(node.at("/notify").asText()));
+        }
+        return rows;
+    }
+
+    public boolean fillTrigger(Scheduler scheduler, ObjectNode flow) throws SchedulerException {
         if (null == flow) return false;
-        Trigger trigger = scheduler.getTrigger(TriggerKey.triggerKey(flow.getName(), flow.getProject()));
+        int id = flow.at("/id").asInt();
+        Trigger trigger = scheduler.getTrigger(TriggerKey.triggerKey(String.valueOf(id), group()));
         if (null == trigger) return false;
-        flow.setState(scheduler.getTriggerState(trigger.getKey()).name());
-        flow.setStartTime(trigger.getStartTime());
-        flow.setEndTime(trigger.getEndTime());
-        flow.setPreviousFireTime(trigger.getPreviousFireTime());
-        flow.setNextFireTime(trigger.getNextFireTime());
-        flow.setFinalFireTime(trigger.getFinalFireTime());
+        flow.put("state", scheduler.getTriggerState(trigger.getKey()).name());
+        flow.put("startTime", DPUtil.parseLong(trigger.getStartTime()));
+        flow.put("endTime", DPUtil.parseLong(trigger.getEndTime()));
+        flow.put("previousFireTime", DPUtil.parseLong(trigger.getPreviousFireTime()));
+        flow.put("nextFireTime", DPUtil.parseLong(trigger.getNextFireTime()));
+        flow.put("finalFireTime", DPUtil.parseLong(trigger.getFinalFireTime()));
         return true;
     }
 
-    public Flow info(String project, String name) {
-        Optional<Flow> info = flowDao.findById(Flow.IdClass.builder().project(project).name(name).build());
-        return info.isPresent() ? info.get() : null;
+    public Flow info(Integer id) {
+        return info(flowDao, id);
     }
 
     public Map<String, Object> info(Map<?, ?> param) {
         Scheduler scheduler = nodeService.scheduler();
-        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-        if (DPUtil.empty(name)) return ApiUtil.result(1001, "流程名称不能为空", name);
-        String project = DPUtil.trim(DPUtil.parseString(param.get("project")));
-        if (DPUtil.empty(project)) return ApiUtil.result(1002, "项目名称不能为空", project);
-        Flow flow = info(project, name);
+        Flow flow = info(DPUtil.parseInt(param.get("id")));
         if (null == flow) return ApiUtil.result(1404, "流程信息不存在", null);
+        JsonNode node = DPUtil.firstNode(format(DPUtil.toArrayNode(flow)));
         try {
-            fillTrigger(scheduler, flow);
+            fillTrigger(scheduler, (ObjectNode) node);
         } catch (SchedulerException e) {
             return ApiUtil.result(5001, "获取触发器信息失败", e.getMessage());
         }
-        return ApiUtil.result(0, null, flow);
+        return ApiUtil.result(0, null, node);
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
         Scheduler scheduler = nodeService.scheduler();
+        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
         if (DPUtil.empty(name)) return ApiUtil.result(1001, "流程名称不能为空", name);
-        String project = DPUtil.trim(DPUtil.parseString(param.get("project")));
-        if (DPUtil.empty(project)) return ApiUtil.result(1002, "项目名称不能为空", project);
+        int status = DPUtil.parseInt(param.get("status"));
+        if(!status().containsKey(status)) return ApiUtil.result(1003, "状态异常", status);
         String expression = DPUtil.trim(DPUtil.parseString(param.get("expression")));
         CronScheduleBuilder cron = null;
         if (!DPUtil.empty(expression)) {
@@ -112,39 +127,37 @@ public class FlowService extends ServiceBase {
                 return ApiUtil.result(5001, "构建表达式失败", e.getMessage());
             }
         }
-
-        boolean isNew = true;
-        int uid = rbacService.uid(request);
-        long time = System.currentTimeMillis();
-        Flow flow = info(project, name);
-        if (null == flow) {
-            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
-            flow = Flow.builder().project(project).name(name)
-                    .createdUid(uid).updatedUid(uid).createdTime(time).updatedTime(time).build();
-        } else {
+        Flow info;
+        if(id > 0) {
             if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
-            isNew = false;
-            flow.setUpdatedUid(uid);
-            flow.setUpdatedTime(time);
+            info = info(id);
+            if(null == info) return ApiUtil.result(404, null, id);
+        } else {
+            if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
+            info = new Flow();
         }
-        if (isNew || param.containsKey("expression")) flow.setExpression(expression);
-        if (isNew || param.containsKey("data")) flow.setData(DPUtil.parseString(param.get("data")));
-        if (isNew || param.containsKey("notify")) flow.setNotify(DPUtil.parseString(param.get("notify")));
-        if (isNew || param.containsKey("content")) flow.setContent(DPUtil.parseString(param.get("content")));
-        if (isNew || param.containsKey("sort")) flow.setSort(DPUtil.parseInt(param.get("sort")));
-        if (isNew || param.containsKey("description")) flow.setDescription(DPUtil.parseString(param.get("description")));
-
+        info.setName(name);
+        info.setExpression(expression);
+        info.setConcurrent(DPUtil.parseInt(param.get("concurrent")));
+        info.setConcurrency(DPUtil.parseString(param.get("concurrency")));
+        info.setFailure(DPUtil.parseString(param.get("failure")));
+        info.setData(DPUtil.parseString(param.get("data")));
+        info.setNotify(DPUtil.stringify(param.get("notify")));
+        info.setContent(DPUtil.stringify(param.get("content")));
+        info.setSort(DPUtil.parseInt(param.get("sort")));
+        info.setStatus(status);
+        info.setDescription(DPUtil.parseString(param.get("description")));
+        info = save(flowDao, info, rbacService.uid(request));
         JobDetail detail = JobBuilder.newJob(DiagramJob.class) // Flow标识与Job保持一致
-                .withIdentity(JobKey.jobKey(name, project)).storeDurably().build();
+                .withIdentity(JobKey.jobKey(String.valueOf(info.getId()), group())).storeDurably().build();
         try {
             scheduler.addJob(detail, true); // 添加或替换作业
         } catch (Exception e) {
-            return ApiUtil.result(5003, "保存作业信息失败", e.getMessage());
+            return ApiUtil.result(5003, "提交作业调度信息失败", e.getMessage());
         }
-
         Trigger trigger;
         try {
-            trigger = scheduler.getTrigger(TriggerKey.triggerKey(name, project));
+            trigger = scheduler.getTrigger(TriggerKey.triggerKey(String.valueOf(info.getId()), group()));
         } catch (SchedulerException e) {
             return ApiUtil.result(5004, "获取触发器信息失败", e.getMessage());
         }
@@ -158,7 +171,7 @@ public class FlowService extends ServiceBase {
             }
         } else {
             TriggerBuilder<CronTrigger> builder = TriggerBuilder.newTrigger()
-                    .withIdentity(name, project).withSchedule(cron).forJob(detail);
+                    .withIdentity(String.valueOf(info.getId()), group()).withSchedule(cron).forJob(detail);
             try {
                 if (null == trigger) {
                     scheduler.scheduleJob(builder.build());
@@ -174,25 +187,28 @@ public class FlowService extends ServiceBase {
             }
 
         }
-        flowDao.save(flow);
-        return ApiUtil.result(0, null, flow);
+        return info(DPUtil.buildMap("id", info.getId()));
     }
 
     public Map<String, Object> delete(Map<?, ?> param, HttpServletRequest request) {
         Scheduler scheduler = nodeService.scheduler();
-        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-        if (DPUtil.empty(name)) return ApiUtil.result(1001, "流程名称不能为空", name);
-        String project = DPUtil.trim(DPUtil.parseString(param.get("project")));
-        if (DPUtil.empty(project)) return ApiUtil.result(1002, "项目名称不能为空", project);
-        if(!rbacService.hasPermit(request, "delete")) return ApiUtil.result(9403, null, null);
+        Flow info = info(DPUtil.parseInt(param.get("id")));
+        if (null == info) return ApiUtil.result(1001, "流程不存在或已被删除", null);
+        if(!rbacService.hasPermit(request, "delete")) {
+            return ApiUtil.result(9403, null, null);
+        }
         boolean result;
         try {
-            result = scheduler.deleteJob(JobKey.jobKey(name, project));
+            result = scheduler.deleteJob(JobKey.jobKey(String.valueOf(info.getId()), group()));
         } catch (SchedulerException e) {
             return ApiUtil.result(5001, "移除调度作业失败", e.getMessage());
         }
-        flowDao.deleteById(Flow.IdClass.builder().project(project).name(name).build());
+        flowDao.delete(info);
         return ApiUtil.result(0, null, result);
+    }
+
+    public JsonNode fillInfo(JsonNode json, String ...properties) {
+        return fillInfo(flowDao, json, properties);
     }
 
 }

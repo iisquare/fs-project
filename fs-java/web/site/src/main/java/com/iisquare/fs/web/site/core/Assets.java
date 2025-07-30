@@ -7,18 +7,18 @@ import com.iisquare.fs.base.core.util.FileUtil;
 import com.iisquare.fs.web.site.mvc.SiteConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ResourceUtils;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Iterator;
 import java.util.Map;
 
 @Component
-public class Assets {
+public class Assets implements InitializingBean {
 
     @Autowired
     protected SiteConfiguration siteConfiguration;
@@ -28,8 +28,8 @@ public class Assets {
     private ObjectNode assets;
     protected final static Logger logger = LoggerFactory.getLogger(Assets.class);
 
-    @PostConstruct
-    public boolean reload() {
+    @Override
+    public void afterPropertiesSet() throws Exception {
         fileUrl = siteConfiguration.getUrls().get("file");
         staticUrl = siteConfiguration.getUrls().get("static");
         try {
@@ -46,10 +46,8 @@ public class Assets {
                 }
             }
             this.assets = assets;
-            return true;
         } catch (FileNotFoundException e) {
             logger.error("load assets.json failed!", e);
-            return false;
         }
     }
 

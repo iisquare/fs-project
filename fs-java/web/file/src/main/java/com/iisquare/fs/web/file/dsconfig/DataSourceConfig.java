@@ -2,12 +2,13 @@ package com.iisquare.fs.web.file.dsconfig;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.jdbc.DataSourceBuilder;
+import com.iisquare.fs.base.jpa.config.DruidConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 import javax.sql.DataSource;
+import java.sql.SQLException;
 
 @Configuration
 public class DataSourceConfig {
@@ -16,8 +17,8 @@ public class DataSourceConfig {
     @Qualifier("fileDataSource")
     @ConfigurationProperties(prefix="spring.datasource.file")
     @Primary
-    public DataSource fileDataSource() {
-        return DataSourceBuilder.create().build();
+    public DataSource fileDataSource() throws SQLException {
+        return DruidConfiguration.createDataSource();
     }
 
 }

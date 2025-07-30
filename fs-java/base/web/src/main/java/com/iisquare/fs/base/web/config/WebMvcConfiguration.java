@@ -40,7 +40,7 @@ public abstract class WebMvcConfiguration extends WebMvcConfigurationSupport {
     protected void addCorsMappings(CorsRegistry registry) {
         super.addCorsMappings(registry);
         registry.addMapping("/**")
-                .allowedOrigins("*")
+                .allowedOriginPatterns("*")
                 .allowCredentials(true)
                 .allowedMethods("GET", "POST", "DELETE", "PUT")
                 .maxAge(3600);

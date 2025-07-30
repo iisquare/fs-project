@@ -10,8 +10,8 @@ import com.iisquare.fs.base.jpa.util.JDBCUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import org.springframework.jdbc.support.JdbcUtils;
 
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

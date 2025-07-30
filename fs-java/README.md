@@ -1,8 +1,8 @@
 # JAVA代码
 
 ## 运行环境
-- JDK1.8
-- Gradle7.5.1
+- JDK17
+- Gradle7.6.5
 
 ### 指令
 - compileOnly：自java插件，适用于编译期需要而不需要打包的情况。

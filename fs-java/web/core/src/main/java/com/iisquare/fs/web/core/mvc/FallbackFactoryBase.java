@@ -1,17 +1,20 @@
 package com.iisquare.fs.web.core.mvc;
 
-import feign.hystrix.FallbackFactory;
+import org.springframework.cloud.openfeign.FallbackFactory;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
-public abstract class FallbackFactoryBase extends FallbackBase implements FallbackFactory {
+/**
+ * @see(https://docs.spring.io/spring-cloud-openfeign/docs/current/reference/html/)
+ */
+public abstract class FallbackFactoryBase<T> extends FallbackBase implements FallbackFactory<T> {
 
     @Override
-    public Object create(Throwable cause) {
+    public T create(Throwable cause) {
         Object that = this;
         Class<? extends FallbackFactoryBase> cls = getClass();
-        return Proxy.newProxyInstance(cls.getClassLoader(), cls.getInterfaces(), (proxy, method, args) -> {
+        return (T) Proxy.newProxyInstance(cls.getClassLoader(), cls.getInterfaces(), (proxy, method, args) -> {
             String name = method.getName();
             Class<?>[] names = method.getParameterTypes();
             Class<?>[] targets = new Class[names.length + 1];

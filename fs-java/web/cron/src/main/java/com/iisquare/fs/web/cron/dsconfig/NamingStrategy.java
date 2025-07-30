@@ -3,11 +3,11 @@ package com.iisquare.fs.web.cron.dsconfig;
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy;
+import com.iisquare.fs.base.jpa.mvc.PhysicalNamingStrategy;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class NamingStrategy extends SpringPhysicalNamingStrategy {
+public class NamingStrategy extends PhysicalNamingStrategy {
 
     @Value("${spring.datasource.cron.table-prefix}")
     private String tablePrefix;

@@ -74,38 +74,10 @@ rpc:
     name: fs-demo-service
     rest: http://127.0.0.1:8033
 
-feign:
-  hystrix:
-    enabled: true # Enable Fallback
-  client:
-    config:
-      default:
-        connectTimeout: 1000
-        readTimeout: 15000
-      fs-dag-service:
-        connectTimeout: 1000
-        readTimeout: 60000
-      fs-xlab-service:
-        connectTimeout: 1000
-        readTimeout: 60000
-      fs-face-service:
-        connectTimeout: 1000
-        readTimeout: 60000
-      fs-lucene-service:
-        connectTimeout: 1000
-        readTimeout: 60000
-
-hystrix:
-  command:
-    default:
-      execution:
-        timeout:
-          enabled: false
-        isolation:
-          thread:
-            timeoutInMilliseconds: 5000
-
 management:
+  health:
+    neo4j:
+      enabled: false
   endpoints:
     web:
       exposure:
@@ -117,6 +89,29 @@ server:
       charset: UTF-8
 
 spring:
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true # Enable Fallback
+      client:
+        config:
+          default:
+            connectTimeout: 1000
+            readTimeout: 15000
+          fs-dag-service:
+            connectTimeout: 1000
+            readTimeout: 60000
+          fs-xlab-service:
+            connectTimeout: 1000
+            readTimeout: 60000
+          fs-face-service:
+            connectTimeout: 1000
+            readTimeout: 60000
+          fs-lucene-service:
+            connectTimeout: 1000
+            readTimeout: 60000
+  main:
+    allow-circular-references: true
   servlet:
     multipart:
       maxFileSize: 128MB
@@ -134,18 +129,19 @@ spring:
           batch_versioned_data: true
         order_inserts: true
         order_updates: true
-  redis:
-    database: 1
-    host: 127.0.0.1
-    port: 6379
-    password:
-    timeout: 5000
-    lettuce:
-      pool:
-        max-active: 8 # 连接池最大连接数（使用负值表示没有限制）
-        max-wait: -1 # 连接池最大阻塞等待时间（使用负值表示没有限制）
-        max-idle: 10 # 连接池中的最大空闲连接
-        min-idle: 5 # 连接池中的最小空闲连接
+  data:
+    redis:
+      database: 1
+      host: 127.0.0.1
+      port: 6379
+      password:
+      timeout: 5000
+      lettuce:
+        pool:
+          max-active: 8 # 连接池最大连接数（使用负值表示没有限制）
+          max-wait: -1 # 连接池最大阻塞等待时间（使用负值表示没有限制）
+          max-idle: 10 # 连接池中的最大空闲连接
+          min-idle: 5 # 连接池中的最小空闲连接
   rabbitmq:
     host: 127.0.0.1
     port: 5672
@@ -175,14 +171,14 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800
     member:
       table-prefix: fs_member_
       url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
@@ -191,14 +187,14 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800
     spider:
       table-prefix: fs_spider_
       url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
@@ -207,14 +203,14 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800
     face:
       table-prefix: fs_face_
       url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
@@ -223,14 +219,14 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800
     lucene:
       table-prefix: fs_lucene_
       url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
@@ -239,14 +235,14 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800
     file:
       table-prefix: fs_file_
       url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
@@ -255,14 +251,14 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800
     bi:
       table-prefix: fs_bi_
       url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
@@ -271,14 +267,14 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800
     oa:
       table-prefix: fs_oa_
       url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
@@ -287,14 +283,14 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800
     cms:
       table-prefix: fs_cms_
       url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
@@ -303,14 +299,14 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800
     shop:
       table-prefix: fs_shop_
       url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
@@ -319,14 +315,14 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800
     workflow:
       url: jdbc:mysql://127.0.0.1:3306/fs_workflow?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
       jdbc-url: jdbc:mysql://127.0.0.1:3306/fs_workflow?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
@@ -334,14 +330,14 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800
     cron:
       table-prefix: fs_cron_
       url: jdbc:mysql://127.0.0.1:3306/fs_quartz?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
@@ -350,14 +346,14 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800
     govern:
       table-prefix: fs_govern_
       url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
@@ -366,14 +362,14 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800
     auto:
       table-prefix: fs_auto_
       url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
@@ -382,14 +378,14 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800
     lm:
       table-prefix: fs_lm_
       url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
@@ -398,14 +394,14 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800
     kg:
       table-prefix: fs_kg_
       url: jdbc:mysql://127.0.0.1:3306/fs_project?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
@@ -414,11 +410,11 @@ spring:
       username: root
       password: admin888
       driver-class-name: com.mysql.cj.jdbc.Driver
-      max-idle: 10
-      max-wait: 10000
-      min-idle: 5
-      initial-size: 5
-      validation-query: SELECT 1
-      test-on-borrow: false
-      test-while-idle: true
-      time-between-eviction-runs-millis: 18800
+      druid:
+        max-wait: 10000
+        min-idle: 5
+        initial-size: 5
+        validation-query: SELECT 1
+        test-on-borrow: false
+        test-while-idle: true
+        time-between-eviction-runs-millis: 18800

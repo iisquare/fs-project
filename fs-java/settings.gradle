@@ -12,6 +12,7 @@ include 'base:mongodb'
 include 'base:worker'
 include 'base:dag'
 include 'base:neo4j'
+include 'base:calcite'
 
 include 'app:crawler'
 include 'app:spark'

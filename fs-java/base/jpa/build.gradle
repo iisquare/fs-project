@@ -1,8 +1,7 @@
 dependencies {
     api project(':base:web')
     api group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: springBootVersion
-    api group: 'com.alibaba', name: 'druid', version: '1.2.24'
-    api group: 'mysql', name: 'mysql-connector-java', version: mysqlVersion
-    api group: 'org.apache.commons', name: 'commons-pool2', version: pool2Version
+    api group: 'com.alibaba', name: 'druid-spring-boot-3-starter', version: '1.2.25'
+    api group: 'com.mysql', name: 'mysql-connector-j', version: mysqlVersion
     testImplementation project(':base:test')
 }

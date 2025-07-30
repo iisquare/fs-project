@@ -4,6 +4,6 @@ import com.iisquare.fs.web.core.mvc.FallbackFactoryBase;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CronFallback extends FallbackFactoryBase implements CronRpc {
+public class CronFallback extends FallbackFactoryBase<CronFallback> implements CronRpc {
 
 }

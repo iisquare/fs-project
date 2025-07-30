@@ -3,11 +3,9 @@ package com.iisquare.fs.web.cron.entity;
 import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
-import org.quartz.JobKey;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
-import java.util.Date;
 
 @Entity
 @Getter
@@ -17,28 +15,21 @@ import java.util.Date;
 @AllArgsConstructor
 @DynamicInsert
 @DynamicUpdate
-@IdClass(Flow.IdClass.class)
 public class Flow implements Serializable {
 
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class IdClass implements Serializable {
-        private String project;
-        private String name;
-
-        public static IdClass byJobKey(JobKey jobKey) {
-            return Flow.IdClass.builder().project(jobKey.getGroup()).name(jobKey.getName()).build();
-        }
-    }
-
     @Id
-    private String project; // 项目名称
-    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id; // 项目名称
+    @Column
     private String name; // 流程名称
     @Column
     private String expression; // Cron表达式
+    @Column
+    Integer concurrent; // 并发度
+    @Column
+    private String concurrency; // 并发策略
+    @Column
+    private String failure; // 失败策略
     @Column
     private String data; // 默认参数
     @Column
@@ -48,31 +39,15 @@ public class Flow implements Serializable {
     @Column
     private Integer sort;
     @Column
+    private Integer status;
+    @Column
     private String description;
     @Column
     private Long createdTime;
     @Column
     private Integer createdUid;
-    @Transient
-    private String createdUidName;
     @Column
     private Long updatedTime;
     @Column
     private Integer updatedUid;
-    @Transient
-    private String updatedUidName;
-
-    @Transient
-    private String state;
-    @Transient
-    private Date startTime;
-    @Transient
-    private Date endTime;
-    @Transient
-    private Date previousFireTime;
-    @Transient
-    private Date nextFireTime;
-    @Transient
-    private Date finalFireTime;
-
 }

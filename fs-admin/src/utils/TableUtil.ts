@@ -16,9 +16,12 @@ const TableUtil = {
     return result
   },
   async selection (selection: any, idField: string = 'id') {
-    return ElMessageBox.confirm('确认删除所选记录吗？', '操作提示', { type: 'warning', }).then(() => {
+    return TableUtil.confirm().then(() => {
       return DataUtil.values(selection, idField)
     })
+  },
+  async confirm () {
+    return ElMessageBox.confirm('确认删除所选记录吗？', '操作提示', { type: 'warning', })
   },
   toggleRowSelection (table: TableInstance | undefined, selection: any, selected = true, idField = 'id', childrenField = 'children') {
     this.toggleRow(table, selection, idField, childrenField, (row: any) => {

@@ -71,7 +71,7 @@ public class JPAServiceBase extends ServiceBase {
 
     protected <T, ID extends Serializable> boolean remove(DaoBase<T, ID> dao, List<ID> ids) {
         if(null == ids || ids.isEmpty()) return false;
-        dao.deleteInBatch(dao.findAllById(ids));
+        dao.deleteAllByIdInBatch(ids);
         return true;
     }
 

@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
+import java.sql.SQLException;
+
 @Configuration
 public class WorkflowConfiguration {
 
@@ -19,12 +21,12 @@ public class WorkflowConfiguration {
 
     @Bean(name = "workflowTransactionManager")
     @Qualifier("workflowTransactionManager")
-    public DataSourceTransactionManager workflowTransactionManager() {
+    public DataSourceTransactionManager workflowTransactionManager() throws SQLException {
         return new DataSourceTransactionManager(dataSourceConfig.workflowDataSource());
     }
 
     @Bean
-    public SpringProcessEngineConfiguration springProcessEngineConfiguration() {
+    public SpringProcessEngineConfiguration springProcessEngineConfiguration() throws SQLException {
         SpringProcessEngineConfiguration springProcessEngineConfiguration = new SpringProcessEngineConfiguration();
         springProcessEngineConfiguration.setDataSource(dataSourceConfig.workflowDataSource());
         springProcessEngineConfiguration.setTransactionManager(workflowTransactionManager());

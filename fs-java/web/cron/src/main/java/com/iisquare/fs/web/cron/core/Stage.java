@@ -83,7 +83,7 @@ public abstract class Stage implements Runnable {
         } catch (Exception e) {
             result = ApiUtil.result(3511, "执行任务回调异常", ApiUtil.getStackTrace(e));
         }
-        String content = ApiUtil.data(result, String.class);
+        String content = DPUtil.parseString(ApiUtil.data(result, Object.class));
         if (ApiUtil.succeed(result)) {
             if (isConfigStage()) {
                 String data = DPUtil.stringify(config.setAll((ObjectNode) DPUtil.parseJSON(content)));

@@ -1,10 +1,10 @@
 package com.iisquare.fs.base.web.mvc;
 
 import com.iisquare.fs.base.core.util.DPUtil;
+import jakarta.servlet.ServletOutputStream;
 import org.springframework.beans.factory.annotation.Value;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 
 public abstract class ControllerBase {

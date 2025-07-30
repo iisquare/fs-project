@@ -15,7 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,14 +37,14 @@ public class JobService extends ServiceBase {
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
         Page<QuartzJob> data = jobDao.findAll((Specification<QuartzJob>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.like(root.get("schedule"), schedule)); // 仅获取当前实例下的作业
+            predicates.add(cb.equal(root.get("schedule"), schedule)); // 仅获取当前实例下的作业
             String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
             if(!DPUtil.empty(name)) {
-                predicates.add(cb.like(root.get("name"), name));
+                predicates.add(cb.like(root.get("name"), "%" + name + "%"));
             }
             String group = DPUtil.trim(DPUtil.parseString(param.get("group")));
             if(!DPUtil.empty(group)) {
-                predicates.add(cb.like(root.get("group"), group));
+                predicates.add(cb.like(root.get("group"), "%" + group + "%"));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "name"))));

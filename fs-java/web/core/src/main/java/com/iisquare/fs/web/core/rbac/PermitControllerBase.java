@@ -4,7 +4,7 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.web.mvc.ControllerBase;
 import org.springframework.ui.ModelMap;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 public abstract class PermitControllerBase extends ControllerBase {
 

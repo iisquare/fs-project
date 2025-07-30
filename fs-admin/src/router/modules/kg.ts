@@ -15,7 +15,7 @@ export const layouts = [{
     component: () => import('@/views/kg/manage/ontology.vue')
   }, {
     path: '/kg/manage/er',
-    meta: { title: '实体关系', permit: ['kg:ontology:add', 'kg:ontology:modify'] },
+    meta: { title: '实体关系', fit: true, permit: ['kg:ontology:add', 'kg:ontology:modify'] },
     component: () => import('@/views/kg/manage/er.vue')
   }]
 }]

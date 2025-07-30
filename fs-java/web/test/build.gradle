@@ -1,4 +1,5 @@
 dependencies {
     api project(':base:core')
+    api project(':base:test')
     api group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: springBootVersion
 }

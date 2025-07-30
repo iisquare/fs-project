@@ -10,6 +10,7 @@ import DataApi from '@/api/member/DataApi';
 import RoleApi from '@/api/member/RoleApi';
 import DataFilter from '@/components/Data/DataFilter.vue';
 import DataSelect from '@/components/Data/DataSelect.vue';
+import DateUtil from '@/utils/DateUtil';
 
 const route = useRoute()
 const router = useRouter()
@@ -166,7 +167,9 @@ const fields = computed(() => {
       <el-descriptions-item label="模型名称">{{ form.dataInfo?.name }}</el-descriptions-item>
       <el-descriptions-item label="模型编码">{{ form.dataInfo?.serial }}</el-descriptions-item>
       <el-descriptions-item label="状态">{{ form.statusText }}</el-descriptions-item>
-      <el-descriptions-item label="角色名称" :span="2">{{ form.roleInfo?.name }}</el-descriptions-item>
+      <el-descriptions-item label="角色名称" :span="3">{{ form.roleInfo?.name }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-descriptions-item>
+      <el-descriptions-item label="修改时间">{{ DateUtil.format(form.updatedTime) }}</el-descriptions-item>
       <el-descriptions-item label="排序">{{ form.sort }}</el-descriptions-item>
       <el-descriptions-item label="描述" :span="3">{{ form.description }}</el-descriptions-item>
     </el-descriptions>

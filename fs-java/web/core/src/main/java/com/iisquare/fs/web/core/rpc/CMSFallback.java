@@ -4,6 +4,6 @@ import com.iisquare.fs.web.core.mvc.FallbackFactoryBase;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CMSFallback extends FallbackFactoryBase implements CMSRpc {
+public class CMSFallback extends FallbackFactoryBase<CMSFallback> implements CMSRpc {
 
 }

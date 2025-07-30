@@ -161,9 +161,11 @@ const active = ref('table')
       <el-descriptions-item label="标识">{{ form.serial }}</el-descriptions-item>
       <el-descriptions-item label="名称">{{ form.name }}</el-descriptions-item>
       <el-descriptions-item label="状态">{{ form.statusText }}</el-descriptions-item>
-      <el-descriptions-item label="描述" :span="3">{{ form.description }}</el-descriptions-item>
-      <el-descriptions-item label="主键" :span="2">{{ form.pks }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-descriptions-item>
+      <el-descriptions-item label="修改时间">{{ DateUtil.format(form.updatedTime) }}</el-descriptions-item>
       <el-descriptions-item label="排序">{{ form.sort }}</el-descriptions-item>
+      <el-descriptions-item label="描述" :span="3">{{ form.description }}</el-descriptions-item>
+      <el-descriptions-item label="主键" :span="3">{{ form.pks }}</el-descriptions-item>
     </el-descriptions>
     <DataTable v-model="form.fields" :types="config.types" />
   </el-drawer>

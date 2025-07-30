@@ -4,6 +4,6 @@ import com.iisquare.fs.web.core.mvc.FallbackFactoryBase;
 import org.springframework.stereotype.Component;
 
 @Component
-public class MemberFallback extends FallbackFactoryBase implements MemberRpc {
+public class MemberFallback extends FallbackFactoryBase<MemberFallback> implements MemberRpc {
 
 }

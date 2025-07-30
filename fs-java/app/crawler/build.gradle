@@ -17,7 +17,7 @@ dependencies {
     implementation group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.26'
     implementation group: 'commons-cli', name: 'commons-cli', version: cliVersion
     implementation group: 'io.lettuce', name: 'lettuce-core', version: '5.1.6.RELEASE' // Redis
-    implementation group: 'mysql', name: 'mysql-connector-java', version: mysqlVersion
+    implementation group: 'com.mysql', name: 'mysql-connector-j', version: mysqlVersion
     implementation group: 'org.mongodb', name: 'mongodb-driver-sync', version: mongodbVersion
 
     testImplementation project(':base:test')

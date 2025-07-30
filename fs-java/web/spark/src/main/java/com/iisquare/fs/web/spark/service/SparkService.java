@@ -5,13 +5,11 @@ import com.iisquare.fs.web.spark.SparkApplication;
 import io.delta.sql.DeltaSparkSessionExtension;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.delta.catalog.DeltaCatalog;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PreDestroy;
-import java.io.Closeable;
-import java.io.IOException;
 import java.io.Serializable;
 
 /**
@@ -19,7 +17,7 @@ import java.io.Serializable;
  * 每次请求创建新的Session，避免Session之间数据冲突。
  */
 @Service
-public class SparkService implements InitializingBean, Closeable, Serializable {
+public class SparkService implements InitializingBean, DisposableBean, Serializable {
 
     private SparkSession session = null;
     @Value("${spark.master:local}")
@@ -46,8 +44,7 @@ public class SparkService implements InitializingBean, Closeable, Serializable {
     }
 
     @Override
-    @PreDestroy
-    public void close() throws IOException {
+    public void destroy() throws Exception {
         if (null != session) session.close();
     }
 

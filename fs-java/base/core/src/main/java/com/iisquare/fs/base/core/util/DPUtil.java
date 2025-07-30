@@ -191,6 +191,9 @@ public class DPUtil {
 
     public static Long parseLong(Object object, Long defaultValue) {
         if (null == object) return defaultValue;
+        if (object instanceof Date) {
+            return ((Date) object).getTime();
+        }
         String str = object.toString();
         if ("".equals(str)) return defaultValue;
         str = firstMatcher(regexLong, str);
@@ -873,6 +876,30 @@ public class DPUtil {
         return mapper.createArrayNode();
     }
 
+    /**
+     * 将元素附加到JSON数组中
+     */
+    public static ArrayNode toArrayNode(Object... nodes) {
+        ArrayNode result = DPUtil.arrayNode();
+        for (Object node : nodes) {
+            result.add(toJSON(node));
+        }
+        return result;
+    }
+
+    /**
+     * 获取JSON中的第一个元素
+     */
+    public static JsonNode firstNode(JsonNode json) {
+        for (JsonNode node : json) {
+            return node;
+        }
+        return null;
+    }
+
+    /**
+     * 将JSON对象转换为JSON数组
+     */
     public static ArrayNode arrayNode(JsonNode nodes) {
         if (nodes.isArray()) return (ArrayNode) nodes;
         ArrayNode array = arrayNode();
@@ -941,6 +968,9 @@ public class DPUtil {
         return total;
     }
 
+    /**
+     * 获取JSON的所有键
+     */
     public static List<String> fields(JsonNode json) {
         List<String> list = new ArrayList<>();
         if (null == json || !json.isObject()) return list;

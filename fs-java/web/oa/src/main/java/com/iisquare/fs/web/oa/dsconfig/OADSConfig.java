@@ -11,7 +11,9 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
+
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,7 +30,7 @@ public class OADSConfig extends DSConfigBase {
     private NamingStrategy namingStrategy;
 
     @Bean(name = "oaEntityManager")
-    public EntityManager oaEntityManager(EntityManagerFactoryBuilder builder) {
+    public EntityManager oaEntityManager(EntityManagerFactoryBuilder builder) throws SQLException {
         return oaEntityManagerFactory(builder).getObject().createEntityManager();
     }
 
@@ -39,7 +41,7 @@ public class OADSConfig extends DSConfigBase {
     }
 
     @Bean(name = "oaEntityManagerFactory")
-    public LocalContainerEntityManagerFactoryBean oaEntityManagerFactory(EntityManagerFactoryBuilder builder) {
+    public LocalContainerEntityManagerFactoryBean oaEntityManagerFactory(EntityManagerFactoryBuilder builder) throws SQLException {
         return builder
             .dataSource(dataSourceConfig.oaDataSource())
             .packages("com.iisquare.fs.web.oa.entity") //设置实体类所在位置
@@ -48,7 +50,7 @@ public class OADSConfig extends DSConfigBase {
 
     @Primary
     @Bean(name = "oaTransactionManager")
-    public PlatformTransactionManager oaTransactionManager(EntityManagerFactoryBuilder builder) {
+    public PlatformTransactionManager oaTransactionManager(EntityManagerFactoryBuilder builder) throws SQLException {
         return new JpaTransactionManager(oaEntityManagerFactory(builder).getObject());
     }
 

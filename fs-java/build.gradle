@@ -1,7 +1,7 @@
 
 buildscript {
     ext {
-        springBootVersion = '2.3.2.RELEASE'
+        springBootVersion = '3.5.0'
         shadowVersion = '4.0.3'
     }
     repositories {
@@ -23,8 +23,8 @@ subprojects {
 
     version = '0.0.1-SNAPSHOT'
 
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
     [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
     repositories {
@@ -36,14 +36,15 @@ subprojects {
 
     // 定义版本号
     ext {
-        lombokVersion = '1.18.12'
+        lombokVersion = '1.18.38'
         cliVersion = '1.4'
         nettyVersion = '4.1.36.Final'
-        lang3Version = '3.9'
-        pool2Version = '2.6.2'
-        springBootVersion = '2.3.2.RELEASE'
-        springCloudVersion = '2.2.6.RELEASE'
-        feignVersion = '10.10.1' // based on cloud version
+        lang3Version = '3.17.0'
+        pool2Version = '2.12.1'
+        springBootVersion = '3.5.0'
+        springCloudVersion = '4.3.0'
+        feignVersion = '13.6' // based on cloud version
+        resilience4jVersion = '3.3.0' // based on cloud version
         scalaVersion = '2.12' // based on spark and flink version
         sparkVersion = '3.3.3'
         flinkVersion = '1.17.1'
@@ -60,12 +61,12 @@ subprojects {
         zookeeperVersion = '3.5.8'
         curatorVersion = '4.3.0' // with zookeeper compatibility
         mongodbVersion = '4.5.1'
-        mysqlVersion = '8.0.33'
+        mysqlVersion = '9.3.0'
         rabbitmqVersion = '5.10.0'
         elasticVersion = '7.15.1'
-        flowableVersion = '6.6.0'
+        flowableVersion = '7.1.0'
         quartzVersion = '2.3.2'
-        neo4jVersion = '4.4.5'
+        neo4jVersion = '5.28.5'
     }
 
     dependencies {

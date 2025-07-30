@@ -4,6 +4,6 @@ import com.iisquare.fs.web.core.mvc.FallbackFactoryBase;
 import org.springframework.stereotype.Component;
 
 @Component
-public class XlabFallback extends FallbackFactoryBase implements XlabRpc {
+public class XlabFallback extends FallbackFactoryBase<XlabFallback> implements XlabRpc {
 
 }

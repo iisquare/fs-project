@@ -1,13 +1,18 @@
 package com.iisquare.fs.base.jpa.config;
 
-import com.alibaba.druid.support.http.StatViewServlet;
-import com.alibaba.druid.support.http.WebStatFilter;
+import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.druid.spring.boot3.autoconfigure.DruidDataSourceBuilder;
+import com.alibaba.druid.support.jakarta.StatViewServlet;
+import com.alibaba.druid.support.jakarta.WebStatFilter;
 import com.iisquare.fs.base.core.util.DPUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import javax.sql.DataSource;
+import java.sql.SQLException;
 
 @Configuration
 public class DruidConfiguration {
@@ -24,44 +29,48 @@ public class DruidConfiguration {
     private String loginPassword;
     @Value("${fs.druid.resetEnable:false}")
     private String resetEnable;
-    @Value("${fs.druid.sessionStat:false}")
+    @Value("${fs.druid.sessionStat:true}")
     private String sessionStat;
 
     /**
-     * 注册一个StatViewServlet
+     * 注册 StatViewServlet（监控页面）
      */
     @Bean
-    public ServletRegistrationBean DruidStatViewServlet2(){
-        // org.springframework.boot.context.embedded.ServletRegistrationBean提供类的进行注册.
-        ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean(new StatViewServlet(), registration);
+    public ServletRegistrationBean<StatViewServlet> druidStatViewServlet() {
+        ServletRegistrationBean<StatViewServlet> bean =
+                new ServletRegistrationBean<>(new StatViewServlet(), registration);
         // 添加初始化参数：initParams
-        if (!DPUtil.empty(allow)) servletRegistrationBean.addInitParameter("allow", allow); // 白名单
-        if (!DPUtil.empty(deny)) servletRegistrationBean.addInitParameter("deny", deny); // IP黑名单 (存在共同时，deny优先于allow)
+        if (!DPUtil.empty(allow)) bean.addInitParameter("allow", allow); // 白名单
+        if (!DPUtil.empty(deny)) bean.addInitParameter("deny", deny); // IP黑名单 (存在共同时，deny优先于allow)
         // 登录查看信息的账号密码.
-        servletRegistrationBean.addInitParameter("loginUsername", loginUsername);
-        servletRegistrationBean.addInitParameter("loginPassword", loginPassword);
+        bean.addInitParameter("loginUsername", loginUsername);
+        bean.addInitParameter("loginPassword", loginPassword);
         // 是否能够重置数据.
-        servletRegistrationBean.addInitParameter("resetEnable", resetEnable);
-        return servletRegistrationBean;
+        bean.addInitParameter("resetEnable", resetEnable);
+        return bean;
     }
 
     /**
-     * 注册一个：filterRegistrationBean
+     * 注册 WebStatFilter（监控采集）
      */
     @Bean
-    public FilterRegistrationBean druidStatFilter2(){
-
-        FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean(new WebStatFilter());
-
+    public FilterRegistrationBean<WebStatFilter> druidWebStatFilter() {
+        FilterRegistrationBean<WebStatFilter> bean =
+                new FilterRegistrationBean<>(new WebStatFilter());
         // 添加过滤规则
-        filterRegistrationBean.addUrlPatterns("/*");
-
+        bean.addUrlPatterns("/*");
         // 忽略过滤格式
-        filterRegistrationBean.addInitParameter("exclusions","*.js,*.gif,*.jpg,*.png,*.css,*.ico," + registration);
-
+        bean.addInitParameter("exclusions","*.js,*.gif,*.jpg,*.png,*.css,*.ico," + registration);
         // 是否监控session
-        filterRegistrationBean.addInitParameter("sessionStatEnable", sessionStat);
-        return filterRegistrationBean;
+        bean.addInitParameter("sessionStatEnable", sessionStat);
+        return bean;
+    }
+
+    public static DataSource createDataSource() throws SQLException {
+        DruidDataSource source = DruidDataSourceBuilder.create().build();
+        source.setUseGlobalDataSourceStat(true);
+        source.setFilters("stat");
+        return source;
     }
 
 }

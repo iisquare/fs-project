@@ -15,7 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Predicate;
 import java.util.*;
 
 @Service
@@ -34,22 +34,22 @@ public class TriggerService extends ServiceBase {
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
         Page<QuartzTrigger> data = triggerDao.findAll((Specification<QuartzTrigger>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.like(root.get("schedule"), schedule)); // 仅获取当前实例下的作业
+            predicates.add(cb.equal(root.get("schedule"), schedule)); // 仅获取当前实例下的作业
             String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
             if(!DPUtil.empty(name)) {
-                predicates.add(cb.like(root.get("name"), name));
+                predicates.add(cb.like(root.get("name"), "%" + name + "%"));
             }
             String group = DPUtil.trim(DPUtil.parseString(param.get("group")));
             if(!DPUtil.empty(group)) {
-                predicates.add(cb.like(root.get("group"), group));
+                predicates.add(cb.like(root.get("group"), "%" + group + "%"));
             }
             String jobName = DPUtil.trim(DPUtil.parseString(param.get("jobName")));
             if(!DPUtil.empty(jobName)) {
-                predicates.add(cb.like(root.get("jobName"), jobName));
+                predicates.add(cb.like(root.get("jobName"), "%" + jobName + "%"));
             }
             String jobGroup = DPUtil.trim(DPUtil.parseString(param.get("jobGroup")));
             if(!DPUtil.empty(jobGroup)) {
-                predicates.add(cb.like(root.get("jobGroup"), jobGroup));
+                predicates.add(cb.like(root.get("jobGroup"), "%" + jobGroup + "%"));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "name"))));

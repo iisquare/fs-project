@@ -108,11 +108,11 @@ const handleDelete = () => {
     <el-table
       ref="tableRef"
       :data="rows"
-      :row-key="record => record.id"
+      :row-key="(record: any) => record.id"
       :border="true"
       v-loading="loading"
       table-layout="auto"
-      @selection-change="newSelection => selection = newSelection"
+      @selection-change="(newSelection: any) => selection = newSelection"
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns">
@@ -122,7 +122,7 @@ const handleDelete = () => {
       </TableColumn>
       <el-table-column label="操作">
         <template #default="scope">
-          <el-button link @click="e => handleEdit(scope, e)" v-permit="'kg:ontology:modify'">编辑</el-button>
+          <el-button link @click="(e: any) => handleEdit(scope, e)" v-permit="'kg:ontology:modify'">编辑</el-button>
         </template>
       </el-table-column>
     </el-table>

@@ -38,3 +38,7 @@ pnpm build
 - [Pinia](https://pinia.vuejs.org/zh/introduction.html)
 - [Vue Router](https://router.vuejs.org/zh/introduction.html)
 - [Element Plus](https://element-plus.org/zh-CN/component/overview.html)
+
+- [CodeMirror](https://codemirror.net/)
+- [vue-draggable](https://github.com/SortableJS/vue.draggable.next)
+- [Antv X6](https://x6.antv.antgroup.com/tutorial/getting-started)

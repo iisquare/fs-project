@@ -12,6 +12,7 @@ import com.iisquare.fs.web.cron.entity.Flow;
 import com.iisquare.fs.web.cron.entity.FlowLog;
 import com.iisquare.fs.web.cron.entity.FlowStage;
 import com.iisquare.fs.web.cron.service.FlowLogService;
+import com.iisquare.fs.web.cron.service.FlowService;
 import org.quartz.*;
 
 import java.util.*;
@@ -26,10 +27,15 @@ public class DiagramJob implements Job {
         FlowDao flowDao = CronApplication.context.getBean(FlowDao.class);
         FlowLogDao flowLogDao = CronApplication.context.getBean(FlowLogDao.class);
         FlowStageDao flowStageDao = CronApplication.context.getBean(FlowStageDao.class);
+        FlowService flowService = CronApplication.context.getBean(FlowService.class);
         FlowLogService logService = CronApplication.context.getBean(FlowLogService.class);
         // 读取流程配置
-        Flow flow = flowDao.findById(Flow.IdClass.byJobKey(detail.getKey())).orElse(null);
-        if (null == flow) {
+        JobKey jobKey = detail.getKey();
+        if (!flowService.group().equals(jobKey.getGroup())) {
+            return;
+        }
+        Flow flow = flowDao.findById(DPUtil.parseInt(jobKey.getName())).orElse(null);
+        if (null == flow || 1 != flow.getStatus()) {
             flowLogDao.save(FlowLog.missing(detail.getKey(), time));
             return;
         }
@@ -42,14 +48,14 @@ public class DiagramJob implements Job {
         JsonNode json = DPUtil.parseJSON(flow.getContent());
         if (null == json) json = DPUtil.objectNode();
         FlowLog.FlowLogBuilder logBuilder = FlowLog.builder();
-        logBuilder.project(flow.getProject()).name(flow.getName());
-        logBuilder.concurrent(Math.max(1, json.at("/concurrent").asInt(0)));
-        logBuilder.concurrency(json.at("/concurrency").asText(""));
-        logBuilder.failure(json.at("/failure").asText(""));
-        logBuilder.data(flow.getData()).content(DPUtil.stringify(json.at("/cells")));
+        logBuilder.flowId(flow.getId());
+        logBuilder.concurrent(Math.max(1, flow.getConcurrent()));
+        logBuilder.concurrency(flow.getConcurrency());
+        logBuilder.failure(flow.getFailure());
+        logBuilder.data(flow.getData()).content(flow.getContent());
         logBuilder.state(FlowLog.State.RUNNING.name()).createdTime(time).updatedTime(time);
-        if ("SkipExecution".equals(json.at("/concurrency").asText())) {
-            int count = flowLogDao.countByState(flow.getProject(), flow.getName(), FlowLog.State.RUNNING.name());
+        if ("SkipExecution".equals(flow.getConcurrency())) {
+            int count = flowLogDao.countByState(flow.getId(), FlowLog.State.RUNNING.name());
             if (count > 0) {
                 logBuilder.state(FlowLog.State.SKIPPED.name());
                 ((ObjectNode) json).putArray("cells"); // 清空执行节点
@@ -102,9 +108,8 @@ public class DiagramJob implements Job {
             stageBuilder.depend(DPUtil.implode(",", DPUtil.toJSON(node.at("/depend"), List.class)));
             stageBuilder.type(node.at("/data/type").asText(""));
             stageBuilder.name(node.at("/data/name").asText(""));
-            stageBuilder.title(node.at("/data/title").asText(""));
             stageBuilder.skipped(node.at("/data/skipped").asBoolean(false) ? 1 : 0);
-            stageBuilder.data(DPUtil.stringify(node.at("/data/options"))).content("");
+            stageBuilder.data(DPUtil.stringify(node.at("/data"))).content("");
             stageBuilder.state(FlowStage.State.WAITING.name()).createdTime(time).runTime(0L).updatedTime(time);
             stages.add(stageBuilder.build());
         }

@@ -1,11 +1,12 @@
 package com.iisquare.fs.web.cron.entity;
 
+import com.iisquare.fs.base.core.util.DPUtil;
 import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.quartz.JobKey;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.Arrays;
 
@@ -32,9 +33,7 @@ public class FlowLog implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     @Column
-    private String project; // 项目名称
-    @Column
-    private String name; // 流程名称
+    private Integer flowId; // 流程标识
     @Column
     private Integer concurrent; // 并发数量
     @Column
@@ -52,14 +51,9 @@ public class FlowLog implements Serializable {
     @Column
     private Long updatedTime;
 
-    @Transient
-    private Long duration; // 持续时间
-    @Transient
-    private String durationPretty; // 持续时间美化
-
     public static FlowLog missing(JobKey jobKey, long time) {
         return FlowLog.builder()
-                .project(jobKey.getGroup()).name(jobKey.getName())
+                .flowId(DPUtil.parseInt(jobKey.getName()))
                 .concurrent(0).concurrency("").failure("")
                 .data("").content("").state(State.MISSING.name())
                 .createdTime(time).updatedTime(time)

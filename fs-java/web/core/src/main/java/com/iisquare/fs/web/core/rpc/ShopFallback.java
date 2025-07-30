@@ -4,6 +4,6 @@ import com.iisquare.fs.web.core.mvc.FallbackFactoryBase;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ShopFallback extends FallbackFactoryBase implements ShopRpc {
+public class ShopFallback extends FallbackFactoryBase<ShopFallback> implements ShopRpc {
 
 }

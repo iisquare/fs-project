@@ -6,4 +6,5 @@ dependencies {
     api group: 'org.springframework.cloud', name: 'spring-cloud-starter-openfeign', version: springCloudVersion
     // fixed:Incomplete output stream, version dependencied on cloud openfeign
     api group: 'io.github.openfeign', name: 'feign-httpclient', version: feignVersion
+    api group: 'org.springframework.cloud', name: 'spring-cloud-starter-circuitbreaker-resilience4j', version: resilience4jVersion
 }

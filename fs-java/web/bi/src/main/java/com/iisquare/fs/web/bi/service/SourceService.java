@@ -19,8 +19,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.criteria.Predicate;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.servlet.http.HttpServletRequest;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;

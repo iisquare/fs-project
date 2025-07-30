@@ -2,6 +2,25 @@
 
 Spark计算框架，侧重离线计算。
 
+## JDK17
+
+Spark runs on Java 17/21, Scala 2.13, Python 3.9+, and R 3.5+ (Deprecated).
+When using the Scala API, it is necessary for applications to use the same version of Scala that Spark was compiled for.
+Since Spark 4.0.0, it’s Scala 2.13.
+
+由于周边生态组件暂未适配Spark4.x，故短期内暂不升级Spark版本，通过兼容JDK8的方式运行。
+
+### VM options
+
+- Run/Debug Configurations > Add Run Options > Add VM options
+```
+-Dfile.encoding=UTF-8
+# fixed: module java.base does not "opens java.io" to unnamed module
+--add-opens java.base/java.io=ALL-UNNAMED
+# fixed: module java.base does not export sun.nio.ch to unnamed module
+--add-exports java.base/sun.nio.ch=ALL-UNNAMED
+```
+
 ## 最佳实践
 
 ### 结构信息

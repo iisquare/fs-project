@@ -9,9 +9,7 @@ import com.iisquare.fs.web.core.rbac.PermitControllerBase;
 import com.iisquare.fs.web.file.entity.Archive;
 import com.iisquare.fs.web.file.service.ArchiveService;
 import com.iisquare.fs.web.file.service.OSSService;
-import com.sun.image.codec.jpeg.JPEGCodec;
-import com.sun.image.codec.jpeg.JPEGEncodeParam;
-import com.sun.image.codec.jpeg.JPEGImageEncoder;
+import jakarta.servlet.ServletOutputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Controller;
@@ -20,14 +18,20 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 
@@ -62,12 +66,29 @@ public class IndexController extends PermitControllerBase {
         if (0 != (int) result.get("code")) return displayJSON(response, result);
         BufferedImage image = (BufferedImage) result.get("data");
         ServletOutputStream out = response.getOutputStream();
-        JPEGImageEncoder encoder = JPEGCodec.createJPEGEncoder(out);
-        JPEGEncodeParam param = encoder.getDefaultJPEGEncodeParam(image);
         float quality = ValidateUtil.filterFloat(args.at("/quality").asDouble(0.75f), true, 0.0f, 1.0f, 0.75f);
-        param.setQuality(quality, true);
-        encoder.encode(image, param);
-        return null;
+        try {
+            // 获取 JPEG 图片写入器
+            Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpeg");
+            if (!writers.hasNext()) {
+                return displayJSON(response, ApiUtil.result(1502, "No JPEG writers found", null));
+            }
+            ImageWriter writer = writers.next();
+            // 配置编码参数
+            ImageWriteParam params = writer.getDefaultWriteParam();
+            params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            params.setCompressionQuality(quality); // quality 范围 0.0f ~ 1.0f
+            // 创建图片输出流
+            response.setContentType("image/jpeg");
+            try (ImageOutputStream ios = ImageIO.createImageOutputStream(out)) {
+                writer.setOutput(ios);
+                writer.write(null, new IIOImage(image, null, null), params);
+            }
+            writer.dispose();
+            return null;
+        } catch (IOException e) {
+            return displayJSON(response, ApiUtil.result(1500, "JPEG encoding failed", e));
+        }
     }
 
     @GetMapping("/file/{filename:.+}")
@@ -128,7 +149,7 @@ public class IndexController extends PermitControllerBase {
             }
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            return displayText(out, ApiUtil.echoResult(1503, "读取文件异常", e.getMessage()));
+            return displayText(out, displayJSON(response, ApiUtil.result(1503, "读取文件异常", e.getMessage())));
         } finally {
             FileUtil.close(out, in);
         }

@@ -3,19 +3,17 @@ package com.iisquare.fs.web.cms.dsconfig;
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy;
+import com.iisquare.fs.base.jpa.mvc.PhysicalNamingStrategy;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class NamingStrategy extends SpringPhysicalNamingStrategy {
+public class NamingStrategy extends PhysicalNamingStrategy {
 
     @Value("${spring.datasource.cms.table-prefix}")
     private String tablePrefix;
 
     @Override
     public Identifier toPhysicalTableName(Identifier name, JdbcEnvironment jdbcEnvironment) {
-        name = super.toPhysicalTableName(name, jdbcEnvironment);
-        if(null == tablePrefix) return name;
-        return getIdentifier(tablePrefix + name.getText(), name.isQuoted(), jdbcEnvironment);
+        return toPhysicalTableName(name, jdbcEnvironment, tablePrefix);
     }
 }

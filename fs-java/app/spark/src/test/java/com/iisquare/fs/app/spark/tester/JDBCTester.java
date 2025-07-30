@@ -16,6 +16,28 @@ import java.util.Properties;
 public class JDBCTester {
 
     @Test
+    public void partitionTest() {
+        SparkSession session = SparkSession.builder().appName("partition-test").master("local[*]").getOrCreate();
+        Map<String, String> options = new LinkedHashMap<>();
+        options.put("url", "jdbc:mysql://127.0.0.1:3306/fs_test?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true");
+        options.put("driver", Driver.class.getName());
+        options.put("user", "root");
+        options.put("password", "admin888");
+        options.put("dbtable", "t_1"); // Options 'query' and 'partitionColumn' can not be specified together.
+        options.put("partitionColumn", "id");
+        options.put("lowerBound", "1");
+        options.put("upperBound", "10");
+        options.put("numPartitions", "10");
+        Dataset<Row> dataset = session.read().format("jdbc").options(options).load();
+        dataset = dataset.map((MapFunction<Row, Row>) row -> {
+            Thread.sleep(10000);
+            return row;
+        }, dataset.encoder());
+        dataset.show();
+        session.close();
+    }
+
+    @Test
     public void sql1Test() {
         SparkSession session = SparkSession.builder().appName("sql-test").master("local").getOrCreate();
         Map<String, String> options = new LinkedHashMap<>();

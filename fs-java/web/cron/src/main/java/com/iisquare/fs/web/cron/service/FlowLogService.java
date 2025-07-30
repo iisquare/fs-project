@@ -3,8 +3,7 @@ package com.iisquare.fs.web.cron.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.*;
-import com.iisquare.fs.base.jpa.util.JPAUtil;
-import com.iisquare.fs.base.web.mvc.ServiceBase;
+import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.web.core.RedisKey;
 import com.iisquare.fs.web.cron.core.StagePool;
 import com.iisquare.fs.web.cron.core.ZooKeeperClient;
@@ -15,19 +14,16 @@ import com.iisquare.fs.web.cron.entity.FlowStage;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Predicate;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
-public class FlowLogService extends ServiceBase implements InitializingBean, DisposableBean {
+public class FlowLogService extends JPAServiceBase implements InitializingBean, DisposableBean {
 
     @Autowired
     private NodeService nodeService;
@@ -40,6 +36,10 @@ public class FlowLogService extends ServiceBase implements InitializingBean, Dis
     private volatile long waitTimeout = 0; // 无可调度流程时，长时间等待
     private volatile StagePool pool = new StagePool();
     private final AtomicInteger atomic = new AtomicInteger(0); // 在状态修改并发冲突后，补偿调度一次
+    @Autowired
+    private FlowService flowService;
+    @Autowired
+    private FlowLogDao flowLogDao;
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -86,6 +86,9 @@ public class FlowLogService extends ServiceBase implements InitializingBean, Dis
     }
 
     public Map<String, Object> tick(Map<?, ?> param) {
+        if (null == pool) {
+            return ApiUtil.result(1500, "服务已关闭", param);
+        }
         ZooKeeperClient zookeeper = nodeService.zookeeper();
         String nodeId = zookeeper.nodeId();
         String leaderId = zookeeper.leaderId();
@@ -203,7 +206,7 @@ public class FlowLogService extends ServiceBase implements InitializingBean, Dis
                 data.replace("stage", DPUtil.toJSON(stages.get(logId).get(stageId)));
                 HttpUtil.post(url, DPUtil.stringify(data), HttpUtil.JSON_HEADERS);
             }
-            if (available.size() == 0) { // 无可执行任务，当前流程调度结束
+            if (available.isEmpty()) { // 无可执行任务，当前流程调度结束
                 int total = stages.get(logId).size(); // 总任务数
                 int finished = 0; // 执行完成的任务数量
                 int succeed = 0; // 执行成功的任务数量
@@ -229,17 +232,20 @@ public class FlowLogService extends ServiceBase implements InitializingBean, Dis
     }
 
     public ObjectNode config(FlowLog log, Map<Integer, Map<String, String>> stateMap) {
-        ObjectNode config = (ObjectNode) DPUtil.parseJSON(log.getData());
+        ObjectNode config = DPUtil.objectNode();
+        if (!DPUtil.empty(log.getData())) {
+            config = (ObjectNode) DPUtil.parseJSON(log.getData());
+        }
         ObjectNode flow = DPUtil.objectNode();
         flow.put("id", log.getId());
-        flow.put("project", log.getProject());
-        flow.put("name", log.getName());
+        flow.put("flowId", log.getFlowId());
         flow.put("concurrent", log.getConcurrent());
         flow.put("concurrency", log.getConcurrency());
         flow.put("failure", log.getFailure());
         flow.put("state", log.getState());
         config.replace("flow", flow);
         config.replace("state", DPUtil.toJSON(stateMap.get(log.getId()), ObjectNode.class));
+        flowService.fillInfo(DPUtil.toArrayNode(config), "flowId");
         return config;
     }
 
@@ -266,45 +272,37 @@ public class FlowLogService extends ServiceBase implements InitializingBean, Dis
         return state;
     }
 
-    public Map<String, Object> search(Map<?, ?> param, Map<?, ?> config) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
-        int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
-        Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("project", "name", "state", "createdTime", "updatedTime"));
-        if (null == sort) sort = Sort.by(Sort.Order.desc("createdTime"));
-        Page<FlowLog> data = logDao.findAll((Specification<FlowLog>) (root, query, cb) -> {
+    public ObjectNode search(Map<String, Object> param, Map<?, ?> config) {
+        ObjectNode result = search(flowLogDao, param, (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            String project = DPUtil.trim(DPUtil.parseString(param.get("project")));
-            if(!DPUtil.empty(project)) {
-                predicates.add(cb.like(root.get("project"), project));
-            }
-            String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-            if(!DPUtil.empty(name)) {
-                predicates.add(cb.like(root.get("name"), name));
-            }
+            int flowId = DPUtil.parseInt(param.get("flowId"));
+            if (flowId > 0) predicates.add(cb.equal(root.get("flowId"), flowId));
             String state = DPUtil.trim(DPUtil.parseString(param.get("state")));
             if(!DPUtil.empty(state)) {
                 predicates.add(cb.equal(root.get("state"), state));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, PageRequest.of(page - 1, pageSize, sort));
-        List<FlowLog> rows = data.getContent();
-        long time = System.currentTimeMillis();
-        for (FlowLog row : rows) {
-            format(row, time);
+        }, Sort.by(Sort.Order.desc("createdTime")), "id", "flowId", "state", "createdTime", "updatedTime");
+        JsonNode rows = format(ApiUtil.rows(result));
+        if (!DPUtil.empty(config.get("withFlowInfo"))) {
+            flowService.fillInfo(rows, "flowId");
         }
-        result.put("page", page);
-        result.put("pageSize", pageSize);
-        result.put("total", data.getTotalElements());
-        result.put("rows", rows);
         return result;
     }
 
-    public FlowLog format(FlowLog row, long time) {
-        long duration = (FlowLog.isFinished(row.getState()) ? row.getUpdatedTime() : time) - row.getCreatedTime();
-        row.setDuration(duration);
-        row.setDurationPretty(BeautifyUtil.duration(duration));
-        return row;
+    public JsonNode format(JsonNode rows) {
+        long time = System.currentTimeMillis();
+        for (JsonNode row : rows) {
+            ObjectNode node = (ObjectNode) row;
+            node.replace("content", DPUtil.parseJSON(node.at("/content").asText()));
+            String state = node.at("/state").asText();
+            long createdTime = node.at("/createdTime").asLong();
+            long updatedTime = node.at("/updatedTime").asLong();
+            long duration = (FlowLog.isFinished(state) ? updatedTime : time) - createdTime;
+            node.put("duration", duration);
+            node.put("durationPretty", BeautifyUtil.duration(duration));
+        }
+        return rows;
     }
 
     public FlowStage format(FlowStage row, long time) {
@@ -327,7 +325,8 @@ public class FlowLogService extends ServiceBase implements InitializingBean, Dis
             return ApiUtil.result(1404, "日志信息不存在", logId);
         }
         long time = System.currentTimeMillis();
-        ObjectNode json = DPUtil.toJSON(format(flowLog, time), ObjectNode.class);
+        ObjectNode json = (ObjectNode) DPUtil.firstNode(format(
+                flowService.fillInfo(DPUtil.toArrayNode(flowLog), "flowId")));
         List<FlowStage> stages = stageDao.findAllByLogId(flowLog.getId());
         for (FlowStage row : stages) {
             format(row, time);
@@ -336,6 +335,7 @@ public class FlowLogService extends ServiceBase implements InitializingBean, Dis
         Iterator<JsonNode> iterator = json.at("/stages").iterator();
         while (iterator.hasNext()) {
             ObjectNode node = (ObjectNode) iterator.next();
+            node.put("skipped", DPUtil.parseBoolean(node.at("/skipped").asText()));
             JsonNode data = DPUtil.parseJSON(node.at("/data").asText());
             if (data == null || !data.isObject()) data = DPUtil.objectNode();
             node.replace("data", data);
