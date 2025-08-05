@@ -6,7 +6,6 @@ import { useRoute, useRouter } from 'vue-router';
 import DataApi from '@/api/member/DataApi';
 import ApiUtil from '@/utils/ApiUtil';
 import DateUtil from '@/utils/DateUtil';
-import LayoutIcon from '@/components/Layout/LayoutIcon.vue';
 import TableUtil from '@/utils/TableUtil';
 import DataTable from '@/components/Data/DataTable.vue';
 import DataSchema from '@/components/Data/DataSchema.vue';

@@ -43,12 +43,12 @@ class Flow {
       connecting: {
         router: { name: 'manhattan', args: { padding: 25 } },
         connector: { name: 'rounded', args: { radius: 15 } },
-        allowBlank: false,
-        allowMulti: false,
-        allowPort: true,
-        allowEdge: false,
-        allowNode: false,
-        allowLoop: false,
+        allowBlank: this.options.allowBlank,
+        allowMulti: this.options.allowMulti,
+        allowPort: this.options.allowPort,
+        allowEdge: this.options.allowEdge,
+        allowNode: this.options.allowNode,
+        allowLoop: this.options.allowLoop,
         snap: { radius: 15 },
         createEdge () {
           return new FlowEdge()
@@ -169,6 +169,7 @@ class Flow {
     if (!item || !item.shape) return false
     const cell: any = this.graph.getCellById(item.id)
     if (!cell) return false
+    cell.removeData() // fixed: 事件change:data无法深度监听的问题
     cell.setData(item.data)
     return true
   }
@@ -408,7 +409,7 @@ class Flow {
       cell.removeTools()
     })
     this.graph.on('edge:connected', (data: any) => {
-      data.isNew && data.edge.setData({ name: '', description: '', options: {} })
+      data.isNew && data.edge.setData({ name: '', description: '' })
       this.options.onEdgeConnected(data)
     })
     this.graph.on('node:added', (data: any) => {
@@ -476,30 +477,36 @@ class Flow {
 }
 
 const NodeShapes: any = {
+  'kg-node': {
+    width: 260,
+    height: 88,
+    offsetX: 130,
+    offsetY: 40,
+  },
   'flow-node': {
     width: 60,
     height: 60,
     offsetX: 30,
-    offsetY: 30
+    offsetY: 30,
   },
   'flow-group': {
     width: 300,
     height: 300,
     offsetX: 150,
-    offsetY: 150
+    offsetY: 150,
   },
   'flow-subprocess': {
     width: 300,
     height: 300,
     offsetX: 150,
-    offsetY: 150
+    offsetY: 150,
   },
   'flow-gateway': {
     width: 120,
     height: 80,
     offsetX: 60,
-    offsetY: 40
-  }
+    offsetY: 40,
+  },
 }
 
 const CircleAttr = {
@@ -561,6 +568,12 @@ const defaults = {
   selection: true,
   history: true,
   scroller: false,
+  allowBlank: false,
+  allowMulti: false,
+  allowPort: true,
+  allowEdge: false,
+  allowNode: false,
+  allowLoop: false,
   onCellClick ({ e, x, y, cell, view } = {} as any) {},
   onCellDoubleClick ({ e, x, y, cell, view } = {} as any) {},
   onCellContextmenu ({ e, x, y, cell, view } = {} as any) {},

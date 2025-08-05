@@ -1,3 +1,4 @@
+import DesignUtil from '@/utils/DesignUtil'
 import { Node } from '@antv/x6'
 
 export default class FlowSubprocess extends Node {
@@ -12,10 +13,10 @@ export default class FlowSubprocess extends Node {
   }
 
   postprocess () {
-    this.on('change:data', ({ current }) => {
+    this.on('change:data', DesignUtil.fixedFlowChangeData(({ current } = {} as any) => {
       Object.assign(this.meta, { data: current })
       this.attr('label/text', this.meta.data.name)
-    })
+    }))
     this.toggleCollapse(false)
   }
 

@@ -97,7 +97,7 @@ CREATE TABLE `fs_member_data` (
 
 LOCK TABLES `fs_member_data` WRITE;
 /*!40000 ALTER TABLE `fs_member_data` DISABLE KEYS */;
-INSERT INTO `fs_member_data` VALUES (2,'fs_data','基础信息','id','[{\"name\":\"id\",\"title\":\"\",\"type\":\"integer\"},{\"name\":\"name\",\"title\":\"\",\"type\":\"string\"},{\"name\":\"status\",\"title\":\"\",\"type\":\"integer\"},{\"name\":\"description\",\"title\":\"\",\"type\":\"string\"}]',0,1,'',1750130990273,1,1750225964757,1);
+INSERT INTO `fs_member_data` VALUES (2,'fs_data','基础信息','id','[{\"name\":\"id\",\"title\":\"\",\"type\":\"integer\"},{\"name\":\"name\",\"title\":\"\",\"type\":\"string\"},{\"name\":\"status\",\"title\":\"\",\"type\":\"integer\"},{\"name\":\"description\",\"title\":\"\",\"type\":\"string\"}]',0,1,'',1750130990273,1,1750832756621,1);
 /*!40000 ALTER TABLE `fs_member_data` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -119,7 +119,7 @@ CREATE TABLE `fs_member_data_log` (
   `request_params` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `request_time` bigint NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -128,6 +128,8 @@ CREATE TABLE `fs_member_data_log` (
 
 LOCK TABLES `fs_member_data_log` WRITE;
 /*!40000 ALTER TABLE `fs_member_data_log` DISABLE KEYS */;
+INSERT INTO `fs_member_data_log` VALUES (1,'fs_data,fs_test','fs-member-service','1','http://127.0.0.1:7801/dataLog/check','127.0.0.1','{\"content-type\":\"application/json\",\"cookie\":\"_ga=GA1.1.294156188.1742115095; ajs_anonymous_id=21b54a9f-617f-484e-b409-2580a66ffe3c; uk=2025032714274205db0e1127777297680834621; _gcl_au=1.1.1407131483.1750138398; _ga_SYM38D71Y2=GS2.1.s1750138397$o31$g1$t1750138949$j60$l0$h0; SESSION=ZjE2ZDhmYjMtN2ZhNS00NzA2LWFjNDYtYWRjOTkyZTYwMDk1\",\"fs-app-name\":\"fs-admin-service\",\"fs-app-time\":\"1750296513793\",\"fs-app-token\":\"5cb814\",\"user-agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36\",\"accept\":\"*/*\",\"content-length\":\"29\",\"host\":\"127.0.0.1:7801\",\"connection\":\"Keep-Alive\"}','{\"permits\":\"fs_data,fs_test\"}',1750296513831);
+INSERT INTO `fs_member_data_log` VALUES (2,'fs_data','fs-member-service','1','http://127.0.0.1:7801/dataLog/check','127.0.0.1','{\"content-type\":\"application/json\",\"cookie\":\"_ga=GA1.1.294156188.1742115095; ajs_anonymous_id=21b54a9f-617f-484e-b409-2580a66ffe3c; uk=2025032714274205db0e1127777297680834621; _gcl_au=1.1.1407131483.1750138398; _ga_SYM38D71Y2=GS2.1.s1750138397$o31$g1$t1750138949$j60$l0$h0; SESSION=MTg0NjYxN2QtYjBjZC00NWUwLTk2NDUtNTI0Y2JhYTUxY2Rk\",\"fs-app-name\":\"fs-admin-service\",\"fs-app-time\":\"1750833113054\",\"fs-app-token\":\"96db80\",\"user-agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36\",\"accept\":\"*/*\",\"host\":\"127.0.0.1:7801\",\"connection\":\"keep-alive\",\"content-length\":\"21\"}','{\"permits\":\"fs_data\"}',1750833113091);
 /*!40000 ALTER TABLE `fs_member_data_log` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -183,7 +185,7 @@ CREATE TABLE `fs_member_data_permit_log` (
   `filters` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `fields` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -192,6 +194,8 @@ CREATE TABLE `fs_member_data_permit_log` (
 
 LOCK TABLES `fs_member_data_permit_log` WRITE;
 /*!40000 ALTER TABLE `fs_member_data_permit_log` DISABLE KEYS */;
+INSERT INTO `fs_member_data_permit_log` VALUES (1,1,2,'fs_data','[[{\"type\":\"RELATION\",\"value\":\"AND\",\"children\":[]}],[{\"type\":\"FILTER\",\"value\":\"15\",\"operator\":\"GREATER_THAN\",\"definition\":\"NUMBER\",\"field\":\"id\"},{\"type\":\"FILTER\",\"value\":\"20\",\"operator\":\"LESS_THAN_OR_EQUAL\",\"definition\":\"NUMBER\",\"field\":\"id\"}]]','name,description,id');
+INSERT INTO `fs_member_data_permit_log` VALUES (2,2,2,'fs_data','[[{\"type\":\"RELATION\",\"value\":\"AND\",\"children\":[]}],[{\"type\":\"FILTER\",\"value\":\"15\",\"operator\":\"GREATER_THAN\",\"definition\":\"NUMBER\",\"field\":\"id\"},{\"type\":\"FILTER\",\"value\":\"20\",\"operator\":\"LESS_THAN_OR_EQUAL\",\"definition\":\"NUMBER\",\"field\":\"id\"}]]','name,description,id');
 /*!40000 ALTER TABLE `fs_member_data_permit_log` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -4365,7 +4369,7 @@ CREATE TABLE `fs_member_menu` (
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_application_id` (`application_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=159 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=165 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -4507,13 +4511,19 @@ INSERT INTO `fs_member_menu` VALUES (148,'对话历史','大模型:模型对话:
 INSERT INTO `fs_member_menu` VALUES (149,'模型对话','大模型:模型对话:模型对话',304,144,'','/lm/chat/dialog','',100,1,'',1741574622733,1,1749000980826,1);
 INSERT INTO `fs_member_menu` VALUES (150,'模型对比','大模型:模型对话:模型对比',304,144,'','/lm/chat/compare','',90,1,'',1741574675468,1,1741574675468,1);
 INSERT INTO `fs_member_menu` VALUES (151,'对话日志','大模型:运营监控:对话日志',304,146,'','/lm/manage/chat','',0,1,'',1741574846835,1,1741574846835,1);
-INSERT INTO `fs_member_menu` VALUES (152,'图谱管理','知识图谱:图谱管理',305,0,'Setting','/kg/manage','',0,1,'',1741915476826,1,1741915476826,1);
+INSERT INTO `fs_member_menu` VALUES (152,'图谱管理','知识图谱:图谱管理',305,0,'layout.knowledgeGraph','/kg/manage','',0,1,'',1741915476826,1,1754027087931,1);
 INSERT INTO `fs_member_menu` VALUES (153,'本体管理','知识图谱:图谱管理:本体管理',305,152,'','/kg/manage/ontology','',0,1,'',1741915498984,1,1741915498984,1);
 INSERT INTO `fs_member_menu` VALUES (154,'数据权限','用户中心:数据权限',2,0,'Coin','/member/data','',0,1,'',1744772115328,1,1744772115328,1);
 INSERT INTO `fs_member_menu` VALUES (155,'数据模型','用户中心:数据权限:数据模型',2,154,'','/member/data/list','',0,1,'',1744772166387,1,1744772166387,1);
 INSERT INTO `fs_member_menu` VALUES (156,'鉴权日志','用户中心:数据权限:鉴权日志',2,154,'','/member/data/log','',0,1,'',1745484421422,1,1745488377891,1);
 INSERT INTO `fs_member_menu` VALUES (157,'授权管理','用户中心:数据权限:授权管理',2,154,'','/member/data/permit','',0,1,'',1745488339177,1,1745488339177,1);
 INSERT INTO `fs_member_menu` VALUES (158,'权限检测','用户中心:数据权限:权限检测',2,154,'','/member/data/check','',0,1,'',1750233877567,1,1750233877567,1);
+INSERT INTO `fs_member_menu` VALUES (159,'知识抽取','知识图谱:知识抽取',305,0,'algorithm.extraction','/kg/manage','',0,1,'',1754026984502,1,1754027698416,1);
+INSERT INTO `fs_member_menu` VALUES (160,'知识融合','知识图谱:知识融合',305,0,'algorithm.fusion','/kg/manage','',0,1,'',1754026992222,1,1754027730543,1);
+INSERT INTO `fs_member_menu` VALUES (161,'知识评估','知识图谱:知识评估',305,0,'algorithm.assess','/kg/manage','',0,1,'',1754027006542,1,1754027722129,1);
+INSERT INTO `fs_member_menu` VALUES (162,'知识检索','知识图谱:知识检索',305,0,'algorithm.retrieval','/kg/manage','',0,1,'',1754027019933,1,1754027741370,1);
+INSERT INTO `fs_member_menu` VALUES (163,'索引管理','知识图谱:图谱管理:索引管理',305,152,'','/kg/manage/indexs','',0,1,'',1754041250535,1,1754041250535,1);
+INSERT INTO `fs_member_menu` VALUES (164,'约束管理','知识图谱:图谱管理:约束管理',305,152,'','/kg/manage/constraints','',0,1,'',1754041278040,1,1754041278040,1);
 /*!40000 ALTER TABLE `fs_member_menu` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -4619,7 +4629,13 @@ INSERT INTO `fs_member_relation` VALUES ('role_menu_1_155_2','role_menu',1,155,2
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_156_2','role_menu',1,156,2);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_157_2','role_menu',1,157,2);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_158_2','role_menu',1,158,2);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_159_305','role_menu',1,159,305);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_15_2','role_menu',1,15,2);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_160_305','role_menu',1,160,305);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_161_305','role_menu',1,161,305);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_162_305','role_menu',1,162,305);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_163_305','role_menu',1,163,305);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_164_305','role_menu',1,164,305);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_16_2','role_menu',1,16,2);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_17_2','role_menu',1,17,2);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_18_1','role_menu',1,18,1);
@@ -4878,6 +4894,7 @@ INSERT INTO `fs_member_relation` VALUES ('role_resource_1_253_304','role_resourc
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_254_2','role_resource',1,254,2);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_255_2','role_resource',1,255,2);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_256_2','role_resource',1,256,2);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_257_305','role_resource',1,257,305);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_25_2','role_resource',1,25,2);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_27_26','role_resource',1,27,26);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_28_26','role_resource',1,28,26);
@@ -5016,7 +5033,7 @@ CREATE TABLE `fs_member_resource` (
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_application_id` (`application_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=257 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=258 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -5265,6 +5282,7 @@ INSERT INTO `fs_member_resource` VALUES (253,'模型对话','大模型:模型对
 INSERT INTO `fs_member_resource` VALUES (254,'鉴权日志','用户中心:鉴权日志',2,0,'member','dataLog','',0,1,'',1750233941422,1,1750233941422,1);
 INSERT INTO `fs_member_resource` VALUES (255,'检测','用户中心:鉴权日志:检测',2,254,'member','dataLog','check',0,1,'',1750233963548,1,1750233963548,1);
 INSERT INTO `fs_member_resource` VALUES (256,'删除','用户中心:鉴权日志:删除',2,254,'member','dataLog','delete',0,1,'',1750294202423,1,1750294202423,1);
+INSERT INTO `fs_member_resource` VALUES (257,'维护','知识图谱:维护',305,0,'kg','neo4j','',0,1,'',1754031855669,1,1754031855669,1);
 /*!40000 ALTER TABLE `fs_member_resource` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -5381,7 +5399,7 @@ CREATE TABLE `fs_member_user` (
 
 LOCK TABLES `fs_member_user` WRITE;
 /*!40000 ALTER TABLE `fs_member_user` DISABLE KEYS */;
-INSERT INTO `fs_member_user` VALUES (1,'admin','管理员','4bd18037cb256efcc6bd6363c558e401','8395',0,1,'',1528081552985,'127.0.0.1',1,1528081552985,1,1750295564716,'127.0.0.1',0,0,0);
+INSERT INTO `fs_member_user` VALUES (1,'admin','管理员','4bd18037cb256efcc6bd6363c558e401','8395',0,1,'',1528081552985,'127.0.0.1',1,1528081552985,1,1754040660191,'127.0.0.1',0,0,0);
 INSERT INTO `fs_member_user` VALUES (26,'test1','test1','04dc197e5e813659aa124599e7d7d4fd','0898',0,1,'',1737797630259,'127.0.0.1',1,1737798171826,1,0,'',0,1737802620607,1);
 INSERT INTO `fs_member_user` VALUES (27,'test2','test2','3dc5e4203e5e4d67b1c08a68136b7879','0605',0,2,'',1737803207126,'127.0.0.1',1,1748757103004,1,0,'',0,0,0);
 INSERT INTO `fs_member_user` VALUES (28,'test3','test3','30cc87d9a433944111623cb1a1a5e3c1','1082',0,1,'',1737803243981,'127.0.0.1',1,1737803243981,1,0,'',0,0,0);
@@ -5399,4 +5417,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-06-19  9:28:15
+-- Dump completed on 2025-08-01 17:41:50

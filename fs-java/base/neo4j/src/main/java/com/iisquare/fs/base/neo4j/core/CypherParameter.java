@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.neo4j.util.Neo4jUtil;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
 
 import java.util.*;
 
@@ -25,12 +24,7 @@ public class CypherParameter {
     }
 
     public Value parameters() {
-        List<Object> parameters = new ArrayList<>();
-        for (Map.Entry<String, Object> entry : this.parameters.entrySet()) {
-            parameters.add(entry.getKey());
-            parameters.add(entry.getValue());
-        }
-        return Values.parameters(parameters.toArray(new Object[0]));
+        return Neo4jUtil.parameters(this.parameters);
     }
 
     public String variable(Object value) {

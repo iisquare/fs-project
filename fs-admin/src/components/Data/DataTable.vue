@@ -81,17 +81,17 @@ const handleBottom = () => {
       <el-table-column type="selection" />
       <el-table-column label="字段">
         <template #default="scope">
-          <el-input v-model="scope.row.name" />
+          <el-input v-model="scope.row.name" placeholder="必填，字段名称" />
         </template>
       </el-table-column>
       <el-table-column label="名称">
         <template #default="scope">
-          <el-input v-model="scope.row.title" :placeholder="scope.row.name" />
+          <el-input v-model="scope.row.title" :placeholder="scope.row.name || '选填，默认为字段名称'" />
         </template>
       </el-table-column>
       <el-table-column label="类型">
         <template #default="scope">
-          <el-autocomplete v-model="scope.row.type" :fetch-suggestions="query => UIUtil.arraySuggestions(types, query)" />
+          <el-autocomplete v-model="scope.row.type" :fetch-suggestions="query => UIUtil.arraySuggestions(types, query)" placeholder="必填，数据类型" />
         </template>
       </el-table-column>
     </el-table>

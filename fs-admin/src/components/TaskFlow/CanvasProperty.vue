@@ -37,7 +37,7 @@ const handleExpression = () => {
     <el-tab-pane label="流程属性" name="property">
       <el-form :model="model">
         <el-form-item label="" class="title">基础信息</el-form-item>
-        <el-form-item label="流程标识">{{ model.id }}</el-form-item>
+        <el-form-item label="流程标识" v-if="model.id">{{ model.id }}</el-form-item>
         <el-form-item label="流程名称">
           <el-input v-model="model.name" />
         </el-form-item>

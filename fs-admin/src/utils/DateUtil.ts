@@ -30,7 +30,10 @@ const DateUtil = {
   },
   render (row: any, column: any, cellValue: any, index: number) {
     return DateUtil.format(cellValue)
-  }
+  },
+  second (row: any, column: any, cellValue: any, index: number) {
+    return DateUtil.format(cellValue ? cellValue * 1000 : null)
+  },
 }
 
 export default DateUtil

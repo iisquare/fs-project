@@ -23,6 +23,13 @@ public class OntologyController extends PermitControllerBase {
     @Autowired
     private OntologyService ontologyService;
 
+    @RequestMapping("/info")
+    @Permission("")
+    public String infoAction(@RequestBody Map<?, ?> param) {
+        Map<String, Object> result = ontologyService.info(param);
+        return ApiUtil.echoResult(result);
+    }
+
     @RequestMapping("/list")
     @Permission("")
     public String listAction(@RequestBody Map<String, Object> param) {

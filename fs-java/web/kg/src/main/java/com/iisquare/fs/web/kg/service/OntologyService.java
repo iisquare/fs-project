@@ -39,6 +39,13 @@ public class OntologyService extends JPAServiceBase {
         return info(ontologyDao, id);
     }
 
+    public Map<String, Object> info(Map<?, ?> param) {
+        Ontology info = info(DPUtil.parseInt(param.get("id")));
+        if (null == info) return ApiUtil.result(1404, "流程信息不存在", null);
+        JsonNode node = DPUtil.firstNode(format(DPUtil.toArrayNode(info)));
+        return ApiUtil.result(0, null, node);
+    }
+
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
@@ -54,13 +61,28 @@ public class OntologyService extends JPAServiceBase {
             if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
             info = new Ontology();
         }
+        int entityCount = 0, relationshipCount = 0;
+        JsonNode json = DPUtil.toJSON(param.get("content"));
+        for (JsonNode cell : json.at("/cells")) {
+            String shape = cell.at("/shape").asText();
+            switch (shape) {
+                case "kg-node":
+                    entityCount++;
+                    break;
+                case "flow-edge":
+                    relationshipCount++;
+                    break;
+            }
+        }
         info.setName(name);
-        info.setContent(DPUtil.stringify(param.get("content")));
+        info.setEntityCount(entityCount);
+        info.setRelationshipCount(relationshipCount);
+        info.setContent(DPUtil.stringify(json));
         info.setSort(DPUtil.parseInt(param.get("sort")));
         info.setStatus(status);
         info.setDescription(DPUtil.parseString(param.get("description")));
         info = save(ontologyDao, info, rbacService.uid(request));
-        return ApiUtil.result(0, null, info);
+        return info(DPUtil.buildMap("id", info.getId()));
     }
 
     public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {

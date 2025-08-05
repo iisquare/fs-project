@@ -4,9 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
+import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.*;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
@@ -16,6 +15,7 @@ import org.neo4j.driver.util.Pair;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class Neo4jUtil {
 
@@ -97,6 +97,7 @@ public class Neo4jUtil {
     }
 
     public static JsonNode value2json(Object value) {
+        if (value instanceof NullValue) return DPUtil.toJSON(null);
         if (value instanceof BooleanValue) return DPUtil.toJSON(((BooleanValue) value).asBoolean());
         if (value instanceof FloatValue) return DPUtil.toJSON(((FloatValue) value).asFloat());
         if (value instanceof IntegerValue) return DPUtil.toJSON(((IntegerValue) value).asInt());
@@ -108,12 +109,15 @@ public class Neo4jUtil {
         if (value instanceof RelationshipValue) return relationship2json(((RelationshipValue) value).asRelationship());
         if (value instanceof Path) return path2json((Path) value);
         if (value instanceof PathValue) return path2json(((PathValue) value).asPath());
-        if (!(value instanceof ListValue)) return null;
-        ArrayNode list = DPUtil.arrayNode();
-        for (Object item : ((ListValue) value).asList()) {
-            list.add(value2json(item));
+        if (value instanceof DateTimeValue) return DPUtil.toJSON(((DateTimeValue) value).asZonedDateTime().toEpochSecond());
+        if (value instanceof ListValue) {
+            ArrayNode list = DPUtil.arrayNode();
+            for (Object item : ((ListValue) value).asList()) {
+                list.add(value2json(item));
+            }
+            return list;
         }
-        return list;
+        return DPUtil.toJSON(value);
     }
 
     public static ObjectNode record2json(Record record) {
@@ -182,6 +186,15 @@ public class Neo4jUtil {
     public static long singleLong(Result result) {
         if (!result.hasNext()) return -1;
         return result.single().get(0).asLong();
+    }
+
+    public static Value parameters(Map<String, Object> args) {
+        List<Object> parameters = new ArrayList<>();
+        for (Map.Entry<String, Object> entry : args.entrySet()) {
+            parameters.add(entry.getKey());
+            parameters.add(entry.getValue());
+        }
+        return Values.parameters(parameters.toArray(new Object[0]));
     }
 
 }

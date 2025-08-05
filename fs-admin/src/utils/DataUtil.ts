@@ -102,12 +102,12 @@ const DataUtil = {
     return result
   },
   removeArrayItem (arr: any, items: any) {
-    const result: any = []
-    arr.map((item: any) => {
-      if (items.includes(item)) return
-      result.push(item)
-    })
-    return result
+    for (let index = arr.length - 1; index >= 0; index--) {
+      if (items.includes(arr[index])) {
+        arr.splice(index, 1)
+      }
+    }
+    return arr
   },
 }
 export default DataUtil

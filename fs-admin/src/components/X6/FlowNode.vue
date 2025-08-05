@@ -2,14 +2,15 @@
 import { inject, onMounted, ref } from 'vue'
 import * as X6 from '@antv/x6'
 import LayoutIcon from '../Layout/LayoutIcon.vue'
+import DesignUtil from '@/utils/DesignUtil'
 
 const node = (inject('getNode') as any)() as X6.Node
 const data: any = ref(node.getData())
 
 onMounted(() => {
-  node.on('change:data', ({ current } = {} as any) => {
+  node.on('change:data', DesignUtil.fixedFlowChangeData(({ current } = {} as any) => {
     data.value = current
-  })
+  }))
 })
 </script>
 

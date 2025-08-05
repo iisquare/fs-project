@@ -17,6 +17,14 @@ export const layouts = [{
     path: '/kg/manage/er',
     meta: { title: '实体关系', fit: true, permit: ['kg:ontology:add', 'kg:ontology:modify'] },
     component: () => import('@/views/kg/manage/er.vue')
+  }, {
+    path: '/kg/manage/indexs',
+    meta: { title: '索引管理', permit: ['kg:neo4j:'] },
+    component: () => import('@/views/kg/manage/indexs.vue')
+  }, {
+    path: '/kg/manage/constraints',
+    meta: { title: '约束管理', permit: ['kg:neo4j:'] },
+    component: () => import('@/views/kg/manage/constraints.vue')
   }]
 }]
 

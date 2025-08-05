@@ -137,7 +137,7 @@ const handleDelete = () => {
             <el-descriptions-item label="描述信息" :span="3">{{ scope.row.description }}</el-descriptions-item>
           </el-descriptions>
         </template>
-        </el-table-column>
+      </el-table-column>
       <TableColumn :columns="columns">
         <template #role="scope">
           <el-space><el-tag v-for="item in scope.row.roles" :key="item.id">{{ item.name }}</el-tag></el-space>

@@ -1,3 +1,4 @@
+import DesignUtil from '@/utils/DesignUtil'
 import { Shape, Node } from '@antv/x6'
 
 export default class FlowGateway extends Shape.Polygon {
@@ -11,10 +12,10 @@ export default class FlowGateway extends Shape.Polygon {
   }
 
   postprocess () {
-    this.on('change:data', ({ current }) => {
+    this.on('change:data', DesignUtil.fixedFlowChangeData(({ current } = {} as any) => {
       Object.assign(this.meta, { data: current })
       this.attr('label/text', this.meta.data.name)
-    })
+    }))
   }
 }
 

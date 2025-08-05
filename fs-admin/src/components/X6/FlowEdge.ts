@@ -1,3 +1,4 @@
+import DesignUtil from '@/utils/DesignUtil'
 import { Shape, Edge } from '@antv/x6'
 
 export default class FlowEdge extends Shape.Edge {
@@ -11,10 +12,10 @@ export default class FlowEdge extends Shape.Edge {
   }
 
   postprocess () {
-    this.on('change:data', ({ current }) => {
+    this.on('change:data', DesignUtil.fixedFlowChangeData(({ current } = {} as any) => {
       Object.assign(this.meta, { data: current })
       this.setLabels(this.meta.data?.name ?? '')
-    })
+    }))
   }
 
 }

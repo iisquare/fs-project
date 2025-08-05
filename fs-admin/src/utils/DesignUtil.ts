@@ -37,6 +37,11 @@ const DesignUtil = {
     return DesignUtil.widgetByType(activeItem.data.type, config, widgetTypeField).property
   },
   uuid: () => { return new Date().getTime() + ('' + Math.random()).slice(-6) },
+  fixedFlowChangeData: (callback: Function) => {
+    return (event: any) => { // Antv X6无法深度监听data数组，通过remove后set进行解决
+      if (event.current) callback(event) // 忽略remove后data为undefined的情况
+    }
+  },
 }
 
 export default DesignUtil

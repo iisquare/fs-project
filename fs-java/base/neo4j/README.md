@@ -60,3 +60,4 @@ LOAD CSV WITH HEADERS FROM "file:///path/to/file.csv" AS line {statement line.xx
 ## 参考
 - [Using Neo4j from Java](https://neo4j.com/developer/java/)
 - [The Neo4j Java Driver Manual v4.4](https://neo4j.com/docs/java-manual/current/)
+- [Cypher 手册](https://neo4j.ac.cn/docs/cypher-manual/current/introduction/)
