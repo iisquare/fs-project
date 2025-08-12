@@ -34,24 +34,25 @@ public class FormFrameService extends ServiceBase {
         Map<String, Object> result = new LinkedHashMap<>();
         int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
-        Page<?> data = formFrameDao.findAll(new Specification() {
-            @Override
-            public Predicate toPredicate(Root root, CriteriaQuery query, CriteriaBuilder cb) {
-                List<Predicate> predicates = new ArrayList<>();
-                int id = DPUtil.parseInt(param.get("id"));
-                if(id > 0) predicates.add(cb.equal(root.get("id"), id));
-                int status = DPUtil.parseInt(param.get("status"));
-                if(!"".equals(DPUtil.parseString(param.get("status")))) {
-                    predicates.add(cb.equal(root.get("status"), status));
-                } else {
-                    predicates.add(cb.notEqual(root.get("status"), -1));
-                }
-                String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-                if(!DPUtil.empty(name)) {
-                    predicates.add(cb.like(root.get("name"), "%" + name + "%"));
-                }
-                return cb.and(predicates.toArray(new Predicate[0]));
+        Page<?> data = formFrameDao.findAll((Specification) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            int id = DPUtil.parseInt(param.get("id"));
+            if(id > 0) predicates.add(cb.equal(root.get("id"), id));
+            int status = DPUtil.parseInt(param.get("status"));
+            if(!"".equals(DPUtil.parseString(param.get("status")))) {
+                predicates.add(cb.equal(root.get("status"), status));
+            } else {
+                predicates.add(cb.notEqual(root.get("status"), -1));
             }
+            String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+            if(!DPUtil.empty(name)) {
+                predicates.add(cb.like(root.get("name"), "%" + name + "%"));
+            }
+            String content = DPUtil.trim(DPUtil.parseString(param.get("content")));
+            if(!DPUtil.empty(content)) {
+                predicates.add(cb.like(root.get("content"), "%" + content + "%"));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
         }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"))));
         List<?> rows = data.getContent();
         if(!DPUtil.empty(config.get("withUserInfo"))) {

@@ -4518,10 +4518,10 @@ INSERT INTO `fs_member_menu` VALUES (155,'数据模型','用户中心:数据权�
 INSERT INTO `fs_member_menu` VALUES (156,'鉴权日志','用户中心:数据权限:鉴权日志',2,154,'','/member/data/log','',0,1,'',1745484421422,1,1745488377891,1);
 INSERT INTO `fs_member_menu` VALUES (157,'授权管理','用户中心:数据权限:授权管理',2,154,'','/member/data/permit','',0,1,'',1745488339177,1,1745488339177,1);
 INSERT INTO `fs_member_menu` VALUES (158,'权限检测','用户中心:数据权限:权限检测',2,154,'','/member/data/check','',0,1,'',1750233877567,1,1750233877567,1);
-INSERT INTO `fs_member_menu` VALUES (159,'知识抽取','知识图谱:知识抽取',305,0,'algorithm.extraction','/kg/manage','',0,1,'',1754026984502,1,1754027698416,1);
-INSERT INTO `fs_member_menu` VALUES (160,'知识融合','知识图谱:知识融合',305,0,'algorithm.fusion','/kg/manage','',0,1,'',1754026992222,1,1754027730543,1);
-INSERT INTO `fs_member_menu` VALUES (161,'知识评估','知识图谱:知识评估',305,0,'algorithm.assess','/kg/manage','',0,1,'',1754027006542,1,1754027722129,1);
-INSERT INTO `fs_member_menu` VALUES (162,'知识检索','知识图谱:知识检索',305,0,'algorithm.retrieval','/kg/manage','',0,1,'',1754027019933,1,1754027741370,1);
+INSERT INTO `fs_member_menu` VALUES (159,'知识抽取','知识图谱:知识抽取',305,0,'algorithm.extraction','/kg/extraction','',0,1,'',1754026984502,1,1754379384932,1);
+INSERT INTO `fs_member_menu` VALUES (160,'知识融合','知识图谱:知识融合',305,0,'algorithm.fusion','/kg/fusion','',0,1,'',1754026992222,1,1754379391210,1);
+INSERT INTO `fs_member_menu` VALUES (161,'知识评估','知识图谱:知识评估',305,0,'algorithm.assess','/kg/assess','',0,1,'',1754027006542,1,1754379396877,1);
+INSERT INTO `fs_member_menu` VALUES (162,'知识检索','知识图谱:知识检索',305,0,'algorithm.retrieval','/kg/retrieval','',0,1,'',1754027019933,1,1754379402761,1);
 INSERT INTO `fs_member_menu` VALUES (163,'索引管理','知识图谱:图谱管理:索引管理',305,152,'','/kg/manage/indexs','',0,1,'',1754041250535,1,1754041250535,1);
 INSERT INTO `fs_member_menu` VALUES (164,'约束管理','知识图谱:图谱管理:约束管理',305,152,'','/kg/manage/constraints','',0,1,'',1754041278040,1,1754041278040,1);
 /*!40000 ALTER TABLE `fs_member_menu` ENABLE KEYS */;
@@ -5399,7 +5399,7 @@ CREATE TABLE `fs_member_user` (
 
 LOCK TABLES `fs_member_user` WRITE;
 /*!40000 ALTER TABLE `fs_member_user` DISABLE KEYS */;
-INSERT INTO `fs_member_user` VALUES (1,'admin','管理员','4bd18037cb256efcc6bd6363c558e401','8395',0,1,'',1528081552985,'127.0.0.1',1,1528081552985,1,1754040660191,'127.0.0.1',0,0,0);
+INSERT INTO `fs_member_user` VALUES (1,'admin','管理员','4bd18037cb256efcc6bd6363c558e401','8395',0,1,'',1528081552985,'127.0.0.1',1,1528081552985,1,1754384537540,'127.0.0.1',0,0,0);
 INSERT INTO `fs_member_user` VALUES (26,'test1','test1','04dc197e5e813659aa124599e7d7d4fd','0898',0,1,'',1737797630259,'127.0.0.1',1,1737798171826,1,0,'',0,1737802620607,1);
 INSERT INTO `fs_member_user` VALUES (27,'test2','test2','3dc5e4203e5e4d67b1c08a68136b7879','0605',0,2,'',1737803207126,'127.0.0.1',1,1748757103004,1,0,'',0,0,0);
 INSERT INTO `fs_member_user` VALUES (28,'test3','test3','30cc87d9a433944111623cb1a1a5e3c1','1082',0,1,'',1737803243981,'127.0.0.1',1,1737803243981,1,0,'',0,0,0);
@@ -5417,4 +5417,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-08-01 17:41:50
+-- Dump completed on 2025-08-05 17:03:11

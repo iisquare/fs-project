@@ -86,6 +86,7 @@ const DataUtil = {
     return result
   },
   value (obj: any, field: string) {
+    if (!field) return undefined
     const fields = field.split('.')
     let value = obj
     for (const key of fields) {

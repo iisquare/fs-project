@@ -18,11 +18,16 @@ export default defineConfig({
           if (id.includes('/node_modules/')) {
             if (id.includes('lodash')) return 'lodash'
             if (id.includes('element')) return 'element'
+            if (id.includes('echarts')) return 'echarts'
+            if (id.includes('codemirror')) return 'codemirror'
+            if (id.includes('cron-parser')) return 'cron-parser'
+            if (id.includes('antv')) return 'antv'
             if (id.includes('vue') || id.includes('pinia')) return 'vue'
             return 'vender'
           } else if (id.includes('/src/')) {
             if (id.includes('/api/')) return 'api'
-            if (id.includes('/views/')) return id.split('/views/')[1].split('/')[0]
+            if (id.includes('/views/')) return 'views-' + id.split('/views/')[1].split('/')[0]
+            if (id.includes('/designer/')) return 'designer-' + id.split('/designer/')[1].split('/')[0]
           }
         }
       }

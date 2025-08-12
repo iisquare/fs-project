@@ -8,7 +8,7 @@ const {
   instance,
   multiSelect = false,
 } = defineProps({
-  toolbars: { type: Array<any> }, // [{ type: '类型', label: '标签', icon: '图标', selectable: true, selected: true, callback (toolbar: any, flow: any, event: any) {} }]
+  toolbars: { type: Array<any> }, // [{ type: '类型', label: '标签', icon: '图标', selectable: true, selected: true, callback (toolbar: any, instance: any, event: any) {} }]
   instance: { type: null, required: false },
   multiSelect: { type: Boolean, required: false }, // 是否允许多选
 })
@@ -26,7 +26,7 @@ const handleClick = (event: any, toolbar: any) => {
     }
     toolbar.selected = true
   }
-  toolbar.callback && toolbar.callback(toolbar, instance.flow, event)
+  toolbar.callback && toolbar.callback(toolbar, instance, event)
 }
 </script>
 

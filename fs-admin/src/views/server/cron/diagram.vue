@@ -2,55 +2,30 @@
 import LayoutDesigner from '@/components/Layout/LayoutDesigner.vue';
 import LayoutProperty from '@/components/Layout/LayoutProperty.vue';
 import LayoutWidget from '@/components/Layout/LayoutWidget.vue';
-import X6Container from '@/components/X6/X6Container.vue';
-import { computed, onMounted, ref, watch } from 'vue';
+import X6Container from '@/designer/X6/X6Container.vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import config from '@/components/TaskFlow/config'
+import config from '@/designer/TaskFlow/config'
 import LayoutToolbar from '@/components/Layout/LayoutToolbar.vue';
 import LayoutIcon from '@/components/Layout/LayoutIcon.vue';
-import DesignUtil from '@/utils/DesignUtil';
 import CronApi from '@/api/server/CronApi';
 import ApiUtil from '@/utils/ApiUtil';
+import DesignUtil from '@/utils/DesignUtil';
 
 const route = useRoute()
 const router = useRouter()
 const flowRef = ref()
-const tips = ref('')
+const tips: any = ref({})
 const diagram:any = ref(Object.assign(config.canvas.options(), { status: '1', notify: {} }))
-const activeItem: any = ref(diagram.value)
+const activeItem: any = ref(({}))
 const property = computed(() => {
   return DesignUtil.widgetFlowProperty(activeItem.value, config)
 })
 
+const options: any = {
+}
 const handleDragStart = (event: any, widget: any) => {
    flowRef.value.flow.startDrag(event, widget)
-}
-
-watch(activeItem, (cell: any) => {
-  flowRef.value.flow.updateCell(cell)
-}, { deep: true })
-
-const options: any = {
-  onBlankClick () {
-    activeItem.value = diagram.value
-    tips.value = '选中画布'
-    flowRef.value.flow.select()
-  },
-  onCellClick (data: any) {
-    activeItem.value = flowRef.value.flow.cell2meta(data.cell)
-    tips.value = `选中 ${activeItem.value.shape} ${activeItem.value.data.name}, ID: ${activeItem.value.id}`
-    flowRef.value.flow.select(data.cell)
-  },
-  onNodeAdded (data: any) {
-    activeItem.value = flowRef.value.flow.cell2meta(data.node)
-    tips.value = `选中 ${activeItem.value.shape} ${activeItem.value.data.name}, ID: ${activeItem.value.id}`
-    flowRef.value.flow.select(data.node)
-  },
-  onEdgeConnected (data: any) {
-    activeItem.value = flowRef.value.flow.cell2meta(data.edge)
-    tips.value = `选中 ${activeItem.value.shape} ${activeItem.value.data.name}, ID: ${activeItem.value.id}`
-    flowRef.value.flow.select(data.edge)
-  }
 }
 
 const loading = ref(false)
@@ -102,15 +77,15 @@ onMounted(() => {
       </el-space>
     </template>
     <template #default>
-      <X6Container ref="flowRef" v-bind="options" />
+      <X6Container ref="flowRef" v-model="diagram" :active-item="activeItem" :tips="tips" :options="options" @update:active-item="v => activeItem = v" />
     </template>
     <template #right>
-      <LayoutProperty v-model="activeItem" :instance="flowRef" :property="property" :config="config" :tips="tips" />
+      <LayoutProperty v-model="diagram" :active-item="activeItem" :instance="flowRef" :config="config" :tips="tips" :property="property"  />
     </template>
     <template #footer>
       <el-space>
         <LayoutIcon name="Opportunity" color="#409eff" />
-        <div>{{ tips }}</div>
+        <div>{{ tips.text }}</div>
       </el-space>
     </template>
   </LayoutDesigner>

@@ -4,7 +4,6 @@
  */
 import { ref } from 'vue';
 import DataTable from './DataTable.vue';
-import CodeEditor from '../Editor/CodeEditor.vue';
 
 const model: any = defineModel()
 const types = defineModel('types', { type: Array<String>, default: [] })

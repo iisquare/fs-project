@@ -1,3 +1,5 @@
+import DataUtil from "./DataUtil"
+
 const DesignUtil = {
   widgets: (widgets: any) => {
     for (let i in widgets) {
@@ -26,6 +28,12 @@ const DesignUtil = {
       config[widgetTypeField] = DesignUtil.widgetMap(config.widgets, 'type')
     }
     return config[widgetTypeField][type]
+  },
+  widgetFormProperty: (activeItem: any, config: any, widgetTypeField = 'widgetTransientTypes') => {
+    if (DataUtil.empty(activeItem)) {
+      return config.canvas.property
+    }
+    return DesignUtil.widgetByType(activeItem.type, config, widgetTypeField).property
   },
   widgetFlowProperty: (activeItem: any, config: any, widgetTypeField = 'widgetTransientTypes') => {
     if (!activeItem || !activeItem.shape) {

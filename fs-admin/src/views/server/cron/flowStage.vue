@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 import CronApi from '@/api/server/CronApi';
 import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
-import Flow from '@/components/X6/flow'
+import Flow from '@/designer/X6/flow'
 
 const route = useRoute()
 const router = useRouter()
