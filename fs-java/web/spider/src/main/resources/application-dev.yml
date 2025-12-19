@@ -1,2 +1,15 @@
 server:
   port: 7806
+
+fs:
+  spider:
+    zookeeper:
+      host: 127.0.0.1:2181/fs-spider
+      timeout: 2000
+      nodeId: 127.0.0.1:7806:spider
+    redis:
+      keyPrefix: "fs:spider:"
+    worker:
+      minIdle: 1
+      maxIdle: 3
+      maxTotal: 15

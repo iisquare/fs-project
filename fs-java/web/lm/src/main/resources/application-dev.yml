@@ -1,2 +1,15 @@
 server:
   port: 7824
+spring:
+  ai:
+    mcp:
+      server:
+        name: fs-mcp-server
+        version: 1.0.0
+        type: SYNC
+        instructions: "MCP Server 示例"
+        capabilities:
+          tool: true
+          resource: true
+          prompt: true
+          completion: true

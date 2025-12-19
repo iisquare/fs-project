@@ -52,7 +52,17 @@ a:hover {
   @include text-wrap();
 }
 
+.multiline-text { white-space: pre-line; }
+
 // https://www.tailwindcss.cn/
+
+.w-full {
+  width: 100%;
+}
+
+.w-screen {
+  width: 100vw;
+}
 
 .m-20 {
   margin: 20px;

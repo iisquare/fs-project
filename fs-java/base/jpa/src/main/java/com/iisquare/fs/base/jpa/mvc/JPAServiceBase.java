@@ -75,6 +75,11 @@ public class JPAServiceBase extends ServiceBase {
         return true;
     }
 
+    protected <T, ID extends Serializable> long removeByParentId(DaoBase<T, ID> dao, String field, List<ID> ids) {
+        if(null == ids || ids.isEmpty()) return 0;
+        return dao.delete((Specification<T>) (root, query, cb) -> root.get(field).in(ids));
+    }
+
     protected <T, ID extends Serializable> ObjectNode infoByIds(DaoBase<T, ID> dao, List<ID> ids) {
         if (null == ids || ids.isEmpty()) return DPUtil.objectNode();
         ArrayNode data = DPUtil.toJSON(dao.findAllById(ids), ArrayNode.class);

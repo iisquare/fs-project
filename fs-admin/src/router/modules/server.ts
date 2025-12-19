@@ -37,6 +37,10 @@ export const layouts = [{
     path: '/server/cron/diagram',
     meta: { title: '任务编排', permit: ['cron:flow:add', 'cron:flow:modify'], fit: true },
     component: () => import('@/views/server/cron/diagram.vue')
+  }, {
+    path: '/server/file/archive',
+    meta: { title: '文件管理', permit: ['file:archive:'] },
+    component: () => import('@/views/server/file/archive.vue')
   }]
 }]
 

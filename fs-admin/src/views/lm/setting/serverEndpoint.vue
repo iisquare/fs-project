@@ -48,7 +48,7 @@ onMounted(() => {
   handleRefresh(false, true)
   ServerEndpointApi.config().then((result: any) => {
     Object.assign(config.value, { ready: true }, ApiUtil.data(result))
-  })
+  }).catch(() => {})
 })
 const infoVisible = ref(false)
 const formVisible = ref(false)

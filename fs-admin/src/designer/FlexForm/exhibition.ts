@@ -1,3 +1,4 @@
+import DesignUtil from "@/utils/DesignUtil"
 
 const exhibition = {
   config: null,
@@ -15,6 +16,18 @@ const exhibition = {
     addable: false, // 子表单可添加新纪录
     removable: false, // 子表单可删除已有记录
     changeable: false // 子表单可编辑已有记录
+  },
+  authorityEmpty () {
+    return { fields: [], view: {}, edit: {} }
+  },
+  authorityGrantAll (widgets: any) {
+    const authority = this.authorityEmpty()
+    authority.fields = this.authorityFields(widgets)
+    authority.view = this.authority(authority.fields, {}, { viewable: true })
+    authority.edit = this.authority(authority.fields, {}, Object.fromEntries(new Map(
+      Object.entries(this.authorityDefaults).map(item => [item[0], true])
+    )))
+    return authority
   },
   authority (fields: any, refer: any, defaults: any) {
     const result: any = {}
@@ -52,7 +65,7 @@ const exhibition = {
       }
       const field = widget.options.field
       const label = widget.label
-      const wc = this.config.widgetByType(widget.type)
+      const wc = DesignUtil.widgetByType(widget.type, this.config)
       if (widget.type === 'subform') {
         if (!widget.options.formInfo) return
         expandedRowKeys.push(widget.id)
@@ -70,7 +83,7 @@ const exhibition = {
     if (!Array.isArray(widgets)) return result
     widgets.forEach(widget => {
       if (Object.keys(widget).indexOf(useField) === -1) {
-        if (!this.config.widgetByType(widget.type)[useField]) return
+        if (!DesignUtil.widgetByType(widget.type, this.config)[useField]) return
       } else {
         if (!widget[useField]) return
       }

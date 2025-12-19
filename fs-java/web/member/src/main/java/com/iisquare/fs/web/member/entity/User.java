@@ -28,6 +28,10 @@ public class User implements Serializable {
     @Column
     private String password;
     @Column
+    private String email;
+    @Column
+    private String phone;
+    @Column
     private String salt; // 密码盐
     @Column
     private Integer sort;

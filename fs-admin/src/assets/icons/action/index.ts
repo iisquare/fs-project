@@ -7,6 +7,7 @@ import lasso from './lasso.svg?raw'
 import sameSize from './same-size.svg?raw'
 import space from './space.svg?raw'
 import clean from './clean.svg?raw'
+import play from './play.svg?raw'
 
 export default {
   alignHorizontal,
@@ -18,4 +19,5 @@ export default {
   sameSize,
   space,
   clean,
+  play,
 }

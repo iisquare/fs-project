@@ -39,7 +39,7 @@ subprojects {
         lombokVersion = '1.18.38'
         cliVersion = '1.4'
         nettyVersion = '4.1.36.Final'
-        lang3Version = '3.17.0'
+        lang3Version = '3.20.0'
         pool2Version = '2.12.1'
         springBootVersion = '3.5.0'
         springCloudVersion = '4.3.0'
@@ -58,8 +58,8 @@ subprojects {
         swaggerVersion = '2.9.2'
         torchVersion = '1.10.0'
         tensorflowVersion = '1.12.0'
-        zookeeperVersion = '3.5.8'
-        curatorVersion = '4.3.0' // with zookeeper compatibility
+        zookeeperVersion = '3.9.4'
+        curatorVersion = '5.9.0' // with zookeeper compatibility
         mongodbVersion = '4.5.1'
         mysqlVersion = '9.3.0'
         rabbitmqVersion = '5.10.0'

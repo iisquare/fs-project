@@ -18,6 +18,8 @@ const router = useRouter()
       <el-form label-width="130px" label-suffix=":">
         <el-form-item label="账号">{{ user.info.serial }}</el-form-item>
         <el-form-item label="名称">{{ user.info.name }}</el-form-item>
+        <el-form-item label="邮箱地址">{{ user.info.email }}</el-form-item>
+        <el-form-item label="手机号码">{{ user.info.phone }}</el-form-item>
         <el-form-item label="描述">{{ user.info.description || '暂无' }}</el-form-item>
         <el-form-item label="注册IP">{{ user.info.createdIp }}</el-form-item>
         <el-form-item label="注册时间">{{ DateUtil.format(user.info.createdTime) }}</el-form-item>

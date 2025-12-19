@@ -8,6 +8,8 @@ import org.springframework.session.web.http.HttpSessionIdResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -19,7 +21,10 @@ public class SessionIdResolver implements HttpSessionIdResolver {
     private static final String WRITTEN_SESSION_ID_ATTR = CookieHttpSessionIdResolver.class.getName().concat(".WRITTEN_SESSION_ID_ATTR");
     private final CookieSerializer cookieSerializer = new DefaultCookieSerializer();
 
-    public SessionIdResolver() {
+    private Duration maxAge;
+
+    public SessionIdResolver(Duration maxAge) {
+        this.maxAge = maxAge;
     }
 
     @Override
@@ -45,7 +50,9 @@ public class SessionIdResolver implements HttpSessionIdResolver {
     public void setSessionId(HttpServletRequest request, HttpServletResponse response, String sessionId) {
         if (!sessionId.equals(request.getAttribute(WRITTEN_SESSION_ID_ATTR))) {
             request.setAttribute(WRITTEN_SESSION_ID_ATTR, sessionId);
-            this.cookieSerializer.writeCookieValue(new CookieSerializer.CookieValue(request, response, sessionId));
+            CookieSerializer.CookieValue cookie = new CookieSerializer.CookieValue(request, response, sessionId);
+            cookie.setCookieMaxAge((int) maxAge.toSeconds());
+            this.cookieSerializer.writeCookieValue(cookie);
         }
     }
 

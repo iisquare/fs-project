@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onMounted } from 'vue';
+
 
 const model: any = defineModel()
 const tips: any = defineModel('tips', { type: null })
@@ -10,6 +12,14 @@ const props = defineProps<{
 const handleDelete = () => {
   props.instance.removeItem(model.value)
 }
+
+onMounted(() => {
+  if (Object.keys(model.value.options).indexOf('field') !== -1) {
+    if (!model.value.options.field) {
+      model.value.options.field = model.value.id
+    }
+  }
+})
 </script>
 
 <template>

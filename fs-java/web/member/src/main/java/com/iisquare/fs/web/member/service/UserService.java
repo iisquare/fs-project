@@ -17,6 +17,7 @@ import com.iisquare.fs.web.member.entity.Relation;
 import com.iisquare.fs.web.member.entity.Role;
 import com.iisquare.fs.web.member.entity.User;
 import com.iisquare.fs.web.member.mvc.Configuration;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -42,18 +43,6 @@ public class UserService extends JPAServiceBase {
     private RelationService relationService;
     @Autowired
     private SettingService settingService;
-
-    public User infoBySerial(String serial) {
-        return userDao.findFirstBySerial(serial);
-    }
-
-    public boolean existsByName(String name, Integer ...ids) {
-        return userDao.existsByNameEqualsAndIdNotIn(name, Arrays.asList(ids));
-    }
-
-    public boolean existsBySerial(String serial, Integer ...ids) {
-        return userDao.existsBySerialEqualsAndIdNotIn(serial, Arrays.asList(ids));
-    }
 
     public String password(String password, String salt) {
         return CodeUtil.md5(CodeUtil.md5(password) + salt);
@@ -97,15 +86,21 @@ public class UserService extends JPAServiceBase {
 
     public Map<String, Object> login(Map<?, ?> param, HttpServletRequest request) {
         User info;
-        Map<String, Object> session = null;
+        Map<String, Object> session;
+        String serial = DPUtil.parseString(param.get("serial"));
         String module = DPUtil.parseString(param.get("module"));
-        if(param.containsKey("serial")) {
-            info = infoBySerial(DPUtil.parseString(param.get("serial")));
+        if(DPUtil.empty(serial)) {
+            session = rbacService.currentInfo(request, null);
+            info = info(DPUtil.parseInt(session.get("uid")));
+        } else {
+            info = userDao.findOne((Specification<User>) (root, query, cb) -> {
+                return cb.equal(root.get("serial"), serial);
+            }).orElse(null);
             if(null == info || 0 != info.getDeletedTime()) {
-                return ApiUtil.result(1001, "账号不存在", null);
+                return ApiUtil.result(1001, "账号不存在或密码错误", null);
             }
             if(!info.getPassword().equals(password(DPUtil.parseString(param.get("password")), info.getSalt()))) {
-                return ApiUtil.result(1002, "密码错误", null);
+                return ApiUtil.result(1002, "账号不存在或密码错误", null);
             }
             if(1 != info.getStatus() || info.getLockedTime() > System.currentTimeMillis()) {
                 return ApiUtil.result(1003, "账号已锁定，请联系管理人员", null);
@@ -118,9 +113,6 @@ public class UserService extends JPAServiceBase {
                 logout(request);
                 return ApiUtil.result(403, null, null);
             }
-        } else {
-            session = rbacService.currentInfo(request, null);
-            info = info(DPUtil.parseInt(session.get("uid")));
         }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("info", info(request, info));
@@ -135,6 +127,8 @@ public class UserService extends JPAServiceBase {
         result.put("id", info.getId());
         result.put("serial", info.getSerial());
         result.put("name", info.getName());
+        result.put("email", info.getEmail());
+        result.put("phone", info.getPhone());
         result.put("description", info.getDescription());
         result.put("createdIp", info.getCreatedIp());
         result.put("createdTime", info.getCreatedTime());
@@ -167,12 +161,46 @@ public class UserService extends JPAServiceBase {
     
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
-        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-        if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
-        if(existsByName(name, id)) return ApiUtil.result(2001, "名称已存在", name);
         String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
-        if(DPUtil.empty(serial)) return ApiUtil.result(1002, "账号不能为空", serial);
-        if(existsByName(serial, id)) return ApiUtil.result(2001, "账号已存在", serial);
+        if(DPUtil.empty(serial) || !ValidateUtil.isUsername(serial)) {
+            return ApiUtil.result(1001, "账号格式异常", serial);
+        }
+        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+        if(DPUtil.empty(name) || !ValidateUtil.isNickname(name)) {
+            return ApiUtil.result(1002, "昵称格式异常", name);
+        }
+        String email = DPUtil.trim(DPUtil.parseString(param.get("email")));
+        if (!DPUtil.empty(email) && !ValidateUtil.isEmail(email)) {
+            return ApiUtil.result(1003, "邮箱地址异常", name);
+        }
+        String phone = DPUtil.trim(DPUtil.parseString(param.get("phone")));
+        if (!DPUtil.empty(phone) && !ValidateUtil.isMobilePhone(phone)) {
+            return ApiUtil.result(1004, "手机号码异常", phone);
+        }
+        List<User> list = userDao.findAll((Specification<User>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("serial"), serial));
+            predicates.add(cb.equal(root.get("name"), name));
+            if (!DPUtil.empty(email)) {
+                predicates.add(cb.equal(root.get("email"), email));
+            }
+            if (!DPUtil.empty(phone)) {
+                predicates.add(cb.equal(root.get("phone"), phone));
+            }
+            return cb.and(cb.or(predicates.toArray(new Predicate[0])), cb.notEqual(root.get("id"), id));
+        });
+        if (DPUtil.list2map(list, String.class, "serial").containsKey(serial)) {
+            return ApiUtil.result(2001, "账号已存在", name);
+        }
+        if (DPUtil.list2map(list, String.class, "name").containsKey(name)) {
+            return ApiUtil.result(2002, "昵称已存在", name);
+        }
+        if (!DPUtil.empty(email) && DPUtil.list2map(list, String.class, "email").containsKey(email)) {
+            return ApiUtil.result(2003, "邮箱地址已存在", email);
+        }
+        if (!DPUtil.empty(phone) && DPUtil.list2map(list, String.class, "phone").containsKey(phone)) {
+            return ApiUtil.result(2004, "手机号码已存在", phone);
+        }
         String password = DPUtil.trim(DPUtil.parseString(param.get("password")));
         User info;
         if(id > 0) {
@@ -183,7 +211,7 @@ public class UserService extends JPAServiceBase {
         } else {
             if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
             info = new User();
-            info.setSerial(serial);
+            info.setSerial(serial); // 账号不允许修改
             if(DPUtil.empty(password)) { // 若未设置密码，采用系统配置的默认密码
                 password = settingService.get("member", "defaultPassword");
             }
@@ -198,10 +226,12 @@ public class UserService extends JPAServiceBase {
         int sort = DPUtil.parseInt(param.get("sort"));
         int status = DPUtil.parseInt(param.get("status"));
         if(!status().containsKey(status)) {
-            return ApiUtil.result(1002, "状态异常", status);
+            return ApiUtil.result(1012, "状态异常", status);
         }
         String description = DPUtil.parseString(param.get("description"));
         info.setName(name);
+        info.setEmail(email);
+        info.setPhone(phone);
         info.setSort(sort);
         info.setStatus(status);
         info.setDescription(description);
@@ -238,7 +268,7 @@ public class UserService extends JPAServiceBase {
     public JsonNode filter(JsonNode json) {
         for (JsonNode node : json) {
             ObjectNode item = (ObjectNode) node;
-            item.retain("id", "serial", "name", "id");
+            item.retain("id", "serial", "name");
         }
         return json;
     }
@@ -247,8 +277,9 @@ public class UserService extends JPAServiceBase {
         ObjectNode result = search(userDao, param, (Specification<User>) (root, query, cb) -> {
             SpecificationHelper<User> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id");
-            helper.equalWithIntNotEmpty("status").like("name").equal("serial").equal("createdIp");
-            helper.betweenWithDate("createdTime").betweenWithDate("updatedTime").equal("loginIp");
+            helper.likeExp("serial").likeExp("name").likeExp("email").likeExp("phone");
+            helper.equalWithIntNotEmpty("status").equal("createdIp").equal("loginIp");
+            helper.betweenWithDate("createdTime").betweenWithDate("updatedTime");
             helper.betweenWithDate("loginTime").betweenWithDate("lockedTime").betweenWithDate("deletedTime");
             List<Integer> roleIds = DPUtil.parseIntList(param.get("roleIds"));
             if(!roleIds.isEmpty()) {

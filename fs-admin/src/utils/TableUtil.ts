@@ -1,5 +1,6 @@
-import { ElMessageBox, type TableInstance } from 'element-plus';
+import { type TableInstance } from 'element-plus';
 import DataUtil from './DataUtil';
+import ElementUtil from './ElementUtil';
 
 const TableUtil = {
   expandedRowKeys (tree: any, deep = -1, keyField = 'id', childrenField = 'children') {
@@ -21,7 +22,7 @@ const TableUtil = {
     })
   },
   async confirm () {
-    return ElMessageBox.confirm('确认删除所选记录吗？', '操作提示', { type: 'warning', })
+    return ElementUtil.confirm('确认删除所选记录吗？')
   },
   toggleRowSelection (table: TableInstance | undefined, selection: any, selected = true, idField = 'id', childrenField = 'children') {
     this.toggleRow(table, selection, idField, childrenField, (row: any) => {

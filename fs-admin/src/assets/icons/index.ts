@@ -5,6 +5,7 @@ import action from "./action";
 import algorithm from "./algorithm";
 import device from "./device";
 import form from "./form";
+import ai from "./ai";
 
 export default {
   layout,
@@ -14,4 +15,5 @@ export default {
   algorithm,
   device,
   form,
+  ai,
 }

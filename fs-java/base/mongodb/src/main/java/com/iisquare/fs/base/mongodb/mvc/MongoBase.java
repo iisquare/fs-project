@@ -16,7 +16,7 @@ import java.util.*;
 
 @Setter
 @Getter
-public abstract class MongoBase {
+public abstract class MongoBase extends MongoCore {
 
     @Autowired
     protected MongoClient client;
@@ -42,8 +42,15 @@ public abstract class MongoBase {
     }
 
     public Document one(String id) {
-        MongoCursor<Document> cursor = collection().find(Filters.eq(MongoCore.FIELD_ID, new ObjectId(id))).limit(1).cursor();
-        return cursor.hasNext() ? MongoUtil.id2string(cursor.next()) : null;
+        return one(Filters.eq(FIELD_ID, new ObjectId(id)));
+    }
+
+    public Document one(Bson filter) {
+        try (MongoCursor<Document> cursor = collection().find(filter).limit(1).cursor()) {
+            return cursor.hasNext() ? MongoUtil.id2string(cursor.next()) : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public List<Document> all(Bson filter, Bson sort, Integer page, Integer pageSize) {
@@ -64,25 +71,33 @@ public abstract class MongoBase {
 
     public Document save(Document document) {
         document = filtration(MongoUtil.id2object(document, true));
-        if(document.containsKey(MongoCore.FIELD_ID)) {
-            collection().updateOne(Filters.eq(MongoCore.FIELD_ID, document.get(MongoCore.FIELD_ID)), new Document("$set", document));
+        if(document.containsKey(FIELD_ID)) {
+            collection().updateOne(Filters.eq(FIELD_ID, document.get(FIELD_ID)), new Document("$set", document));
         } else {
             collection().insertOne(document);
         }
         return MongoUtil.id2string(document);
     }
 
-    public Document upsert(Document document) {
-        return upsert(document, null);
+    public Document upsert(Document document, String... insertFields) {
+        Document insert = new Document();
+        for (String field : insertFields) {
+            if (document.containsKey(field)) {
+                insert.put(field, document.remove(field));
+            }
+        }
+        return upsert(document, insert);
     }
 
     public Document upsert(Document set, Document setOnInsert) {
-        if(!set.containsKey(MongoCore.FIELD_ID)) return null;
+        if(!set.containsKey(FIELD_ID)) return null;
         set = filtration(set);
-        Bson filter = Filters.eq(MongoCore.FIELD_ID, set.remove(MongoCore.FIELD_ID));
+        Bson filter = Filters.eq(FIELD_ID, set.remove(FIELD_ID));
         UpdateOptions options = new UpdateOptions().upsert(true);
         Document update = new Document("$set", set);
-        if (null != setOnInsert) update.put("$setOnInsert", setOnInsert);
+        if (null != setOnInsert && !setOnInsert.isEmpty()) {
+            update.put("$setOnInsert", setOnInsert);
+        }
         collection().updateOne(filter, update, options);
         return MongoUtil.id2string(set);
     }
@@ -91,11 +106,11 @@ public abstract class MongoBase {
         List<WriteModel<Document>> list = new ArrayList<>();
         for (Document document : documents) {
             document = filtration(MongoUtil.id2object(document, true));
-            if(document.containsKey(MongoCore.FIELD_ID)) {
+            if(document.containsKey(FIELD_ID)) {
                 list.add(new InsertOneModel<>(document));
                 continue;
             }
-            Bson filter = Filters.eq(MongoCore.FIELD_ID, document.remove(MongoCore.FIELD_ID));
+            Bson filter = Filters.eq(FIELD_ID, document.remove(FIELD_ID));
             UpdateOptions options = new UpdateOptions().upsert(true);
             Document insert = new Document();
             for (String field : insertFields) {
@@ -104,7 +119,7 @@ public abstract class MongoBase {
                 }
             }
             Document update = new Document("$set", document);
-            if (insert.size() > 0) update.put("$setOnInsert", insert);
+            if (!insert.isEmpty()) update.put("$setOnInsert", insert);
             list.add(new UpdateOneModel<>(filter, update, options));
         }
 
@@ -117,7 +132,7 @@ public abstract class MongoBase {
         for (String id : ids) {
             args.add(new ObjectId(id));
         }
-        return delete(Filters.in(MongoCore.FIELD_ID, args));
+        return delete(Filters.in(FIELD_ID, args));
     }
 
     public long delete(Bson filter) {

@@ -9,6 +9,8 @@ export const useUserStore = defineStore('user', () => {
     id: 0,
     serial: '',
     name: '',
+    email: '',
+    phone: '',
     description: '',
     createdIp: '',
     createdTime: 0,

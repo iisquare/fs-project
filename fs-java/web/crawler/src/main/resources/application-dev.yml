@@ -1,0 +1,17 @@
+server:
+  port: 7826
+
+fs:
+  crawler:
+    zookeeper:
+      host: 127.0.0.1:2181/fs-spider
+      timeout: 2000
+      nodeId: 127.0.0.1:7826:crawler
+    fetcher:
+      minIdle: 2
+      maxIdle: 8
+      maxTotal: 800
+    worker:
+      minIdle: 1
+      maxIdle: 5
+      maxTotal: 500

@@ -42,7 +42,7 @@ CREATE TABLE `fs_lm_agent` (
   PRIMARY KEY (`id`),
   KEY `idx_name` (`name`) USING BTREE,
   KEY `idx_model` (`model`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -66,7 +66,7 @@ CREATE TABLE `fs_lm_client` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unq_token` (`token`),
   KEY `idx_name` (`name`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -90,7 +90,114 @@ CREATE TABLE `fs_lm_client_endpoint` (
   `updated_time` bigint NOT NULL DEFAULT '0',
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_lm_knowledge`
+--
+
+DROP TABLE IF EXISTS `fs_lm_knowledge`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_lm_knowledge` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `embedding_id` int NOT NULL DEFAULT '0',
+  `reranker_id` int NOT NULL DEFAULT '0',
+  `top_k` int NOT NULL DEFAULT '0',
+  `score` float NOT NULL DEFAULT '0',
+  `split_type` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `split_separator` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `split_segment_tokens` int NOT NULL DEFAULT '0',
+  `split_chunk_tokens` int NOT NULL DEFAULT '0',
+  `split_overlay_tokens` int NOT NULL DEFAULT '0',
+  `sort` tinyint NOT NULL DEFAULT '0',
+  `status` tinyint NOT NULL DEFAULT '0',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_lm_knowledge_chunk`
+--
+
+DROP TABLE IF EXISTS `fs_lm_knowledge_chunk`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_lm_knowledge_chunk` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `knowledge_id` int NOT NULL DEFAULT '0',
+  `document_id` int NOT NULL DEFAULT '0',
+  `segment_id` int NOT NULL DEFAULT '0',
+  `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `embedding` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `sort` tinyint NOT NULL DEFAULT '0',
+  `status` tinyint NOT NULL DEFAULT '0',
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_document_id` (`document_id`) USING BTREE,
+  KEY `idx_knowledge_id` (`knowledge_id`) USING BTREE,
+  KEY `idx_segment_id` (`segment_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_lm_knowledge_document`
+--
+
+DROP TABLE IF EXISTS `fs_lm_knowledge_document`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_lm_knowledge_document` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `knowledge_id` int NOT NULL DEFAULT '0',
+  `filepath` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `sort` tinyint NOT NULL DEFAULT '0',
+  `status` tinyint NOT NULL DEFAULT '0',
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_knowledge_id` (`knowledge_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_lm_knowledge_segment`
+--
+
+DROP TABLE IF EXISTS `fs_lm_knowledge_segment`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_lm_knowledge_segment` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `knowledge_id` int NOT NULL DEFAULT '0',
+  `document_id` int NOT NULL DEFAULT '0',
+  `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `sort` tinyint NOT NULL DEFAULT '0',
+  `status` tinyint NOT NULL DEFAULT '0',
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_knowledge_id` (`knowledge_id`) USING BTREE,
+  KEY `idx_document_id` (`document_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -147,7 +254,79 @@ CREATE TABLE `fs_lm_log` (
   KEY `idx_end_time` (`end_time`) USING BTREE,
   KEY `idx_audit_time` (`audit_time`) USING BTREE,
   KEY `idx_audit_uid` (`audit_uid`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=322 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_lm_mcp`
+--
+
+DROP TABLE IF EXISTS `fs_lm_mcp`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_lm_mcp` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `sort` tinyint NOT NULL DEFAULT '0',
+  `status` tinyint NOT NULL DEFAULT '0',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_lm_model`
+--
+
+DROP TABLE IF EXISTS `fs_lm_model`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_lm_model` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `provider_id` int NOT NULL DEFAULT '0',
+  `name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `sort` tinyint NOT NULL DEFAULT '0',
+  `status` tinyint NOT NULL DEFAULT '0',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_provider_id` (`provider_id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_lm_provider`
+--
+
+DROP TABLE IF EXISTS `fs_lm_provider`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_lm_provider` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `endpoint` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `token` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `sort` tinyint NOT NULL DEFAULT '0',
+  `status` tinyint NOT NULL DEFAULT '0',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -171,7 +350,7 @@ CREATE TABLE `fs_lm_sensitive` (
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_content` (`content`) USING BTREE,
   KEY `idx_risk` (`risk`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -195,7 +374,7 @@ CREATE TABLE `fs_lm_server` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unq_model` (`model`) USING BTREE,
   KEY `idx_name` (`name`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -220,7 +399,26 @@ CREATE TABLE `fs_lm_server_endpoint` (
   `updated_time` bigint NOT NULL DEFAULT '0',
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_lm_tool`
+--
+
+DROP TABLE IF EXISTS `fs_lm_tool`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_lm_tool` (
+  `name` varbinary(255) NOT NULL DEFAULT '',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `status` tinyint NOT NULL DEFAULT '0',
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -232,4 +430,4 @@ CREATE TABLE `fs_lm_server_endpoint` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-05-30 13:43:22
+-- Dump completed on 2025-09-06 11:27:31

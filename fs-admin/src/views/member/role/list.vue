@@ -44,7 +44,7 @@ onMounted(() => {
   handleRefresh(false, true)
   RoleApi.config().then(result => {
     Object.assign(config.value, { ready: true }, ApiUtil.data(result))
-  })
+  }).catch(() => {})
 })
 const infoVisible = ref(false)
 const formVisible = ref(false)

@@ -48,7 +48,7 @@ onMounted(() => {
   handleRefresh(false, true)
   OntologyApi.config().then((result: any) => {
     Object.assign(config.value, { ready: true }, ApiUtil.data(result))
-  })
+  }).catch(() => {})
 })
 const handleAdd = (env: Event) => {
   RouteUtil.forward(route, router, env, {

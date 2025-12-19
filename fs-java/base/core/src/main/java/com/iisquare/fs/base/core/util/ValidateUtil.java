@@ -11,12 +11,15 @@ public class ValidateUtil {
     public static final String regexChinese = "^[\u4E00-\u9FA5]+$";
     public static final String regexWord = "^\\w+$";
     public static final String regexSimpleString = "^[\u4E00-\u9FA5\\w]+$";
+    public static final String regexUsername = "^[a-zA-Z][a-zA-Z0-9]{1,15}$";
+    public static final String regexNickname = "^[\u4E00-\u9FA5a-zA-Z][\u4E00-\u9FA5a-zA-Z0-9]{1,15}$";
     public static final String regexEmail = "^\\w+@(\\w+.)+[a-z]{2,3}$";
     public static final String regexDomain = "^(\\w+.)+[a-z]{2,3}$";
     public static final String regexUrl = "^[a-zA-Z]+://(((\\w+.)+[a-z]{2,3})|((\\d{1,3}.){3}\\d{1,3})){1}(/?\\S*)$";
     public static final String regexIPv4 = "^(\\d{1,3}.){3}\\d{1,3}$";
     public static final String regexMobile = "^((\\+86)|(86))?1\\d{10}$";
     public static final String regexPhone = "^((\\d{7,8})|(\\d{4}|\\d{3})-(\\d{7,8})|(\\d{4}|\\d{3})-(\\d{7,8})-(\\d{4}|\\d{3}|\\d{2}|\\d{1})|(\\d{7,8})-(\\d{4}|\\d{3}|\\d{2}|\\d{1}))$";
+    public static final String regexMobilePhone = "^1\\d{10}$";
     public static final String regexIdCard = "^(([1-9]\\d{7}((0\\d)|(1[0-2]))(([0|1|2]\\d)|3[0-1])\\d{3})|([1-9]\\d{5}[1-9]\\d{3}((0\\d)|(1[0-2]))(([0|1|2]\\d)|3[0-1])\\d{3}([0-9]|[xX]))){1}$";
     public static final String regexPostCode = "^[1-9]\\d{5}(?!\\d)$";
 
@@ -38,6 +41,14 @@ public class ValidateUtil {
 
     public static boolean isSimpleString(String object) {
         return DPUtil.isMatcher(regexSimpleString, object);
+    }
+
+    public static boolean isUsername(String object) {
+        return DPUtil.isMatcher(regexUsername, object);
+    }
+
+    public static boolean isNickname(String object) {
+        return DPUtil.isMatcher(regexNickname, object);
     }
 
     public static boolean isEmail(String object) {
@@ -62,6 +73,10 @@ public class ValidateUtil {
 
     public static boolean isPhone(String object) {
         return DPUtil.isMatcher(regexPhone, object);
+    }
+
+    public static boolean isMobilePhone(String object) {
+        return DPUtil.isMatcher(regexMobilePhone, object);
     }
 
     public static boolean isIdCard(String object) {

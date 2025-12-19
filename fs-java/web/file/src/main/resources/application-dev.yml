@@ -1,2 +1,6 @@
 server:
   port: 7812
+
+fs:
+  file:
+    shareKey: fs-share

@@ -1,0 +1,8 @@
+
+dependencies {
+    api project(':base:core')
+    api group: 'org.apache.zookeeper', name: 'zookeeper', version: zookeeperVersion
+    api group: 'org.apache.curator', name: 'curator-recipes', version: curatorVersion
+
+    testImplementation project(':base:test')
+}

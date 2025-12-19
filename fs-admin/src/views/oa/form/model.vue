@@ -66,8 +66,11 @@ onMounted(() => {
     <template #top>
       <LayoutToolbar :toolbars="config.toolbars" :instance="formRef" />
       <el-space>
-        <el-button type="primary" @click="handleSubmit" :loading="loading">保存</el-button>
-        <el-button @click="router.go(-1)">返回</el-button>
+        <el-button type="danger" @click="() => formRef.handleClear()" link><LayoutIcon name="Delete" /><span>清空</span></el-button>
+        <el-button @click="() => formRef.handlePreview()" link><LayoutIcon name="action.play" /><span>预览</span></el-button>
+        <el-divider direction="vertical" />
+        <el-button type="primary" @click="handleSubmit" :loading="loading" link>保存</el-button>
+        <el-button @click="router.go(-1)" link>返回</el-button>
       </el-space>
     </template>
     <template #default>

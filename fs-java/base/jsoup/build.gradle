@@ -1,0 +1,7 @@
+
+dependencies {
+    api project(':base:core')
+    api group: 'org.jsoup', name: 'jsoup', version: '1.21.2' // HTML Parser
+
+    testImplementation project(':base:test')
+}

@@ -51,4 +51,7 @@ const handleClick = (event: any, toolbar: any) => {
 .selected {
   color: #409eff;
 }
+.el-divider {
+  margin: 0 auto;
+}
 </style>

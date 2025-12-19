@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue';
+import { ref } from 'vue';
 
 const active = ref('property')
 const model: any = defineModel()
@@ -9,7 +9,7 @@ defineProps<{
   instance: any,
 }>()
 
-const marks: any = reactive(Object.fromEntries([0, 6, 12, 18, 24].map(item => [item + '', item + ''])))
+const labelPositions = [{ value: 'left', label: '左对齐' }, { value: 'right', label: '右对齐' }, { value: 'top', label: '顶对齐' }]
 </script>
 
 <template>
@@ -35,7 +35,7 @@ const marks: any = reactive(Object.fromEntries([0, 6, 12, 18, 24].map(item => [i
         <el-form-item label="" class="title">标签配置</el-form-item>
         <el-form-item label="对齐方式">
           <el-radio-group v-model="model.content.labelPosition">
-            <el-radio-button :label="item.label" :value="item.value" v-for="item in config.labelPositions" :key="item.value" />
+            <el-radio-button :label="item.label" :value="item.value" v-for="item in labelPositions" :key="item.value" />
           </el-radio-group>
         </el-form-item>
         <el-form-item label="标签宽度">

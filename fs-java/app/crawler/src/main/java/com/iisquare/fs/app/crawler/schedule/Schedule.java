@@ -13,11 +13,11 @@ public class Schedule {
 
     private String id;
     private String name;
-    private String group; // 所属分组
+    private String group; // 所属分组（并发数量）
     private String description;
     private long priority; // Token优先级，停顿时无效
     private int maxThread; // 最大执行线程数(申请资源)
-    private int maxPerNode; // 每个节点最大接收资源个数
+    private int maxPerNode; // 每个节点最大接收资源个数（并行度）
     private long minHalt; // 最小停顿间隔
     private long maxHalt; // 最大停顿间隔
     private boolean dealRequestHeader; // 是否处理请求头

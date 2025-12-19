@@ -39,7 +39,7 @@ const PasswordOptions = () => {
 }
 
 const NumberOptions = () => {
-  return { field: '', value: 0, placeholder: '' }
+  return { field: '', value: 0, placeholder: '', controls: true, controlsPosition: '' }
 }
 
 const RadioOptions = () => {
@@ -47,15 +47,15 @@ const RadioOptions = () => {
 }
 
 const CheckboxOptions = () => {
-  return { field: '', value: '', items: [], display: 'inline' }
+  return { field: '', value: [], items: [], display: 'inline' }
 }
 
 const SwitchOptions = () => {
-  return { field: '', value: false, txtChecked: '', txtUnChecked: '' }
+  return { field: '', value: false, active: '', inactive: '' }
 }
 
 const SelectOptions = () => {
-  return { field: '', value: '', mode: 'default', items: [], allowClear: false }
+  return { field: '', value: '', mode: 'default', items: [], multiple: false, clearable: false, filterable: false, allowCreate: false, reserveKeyword: false }
 }
 
 const TxtOptions = () => {
@@ -71,11 +71,11 @@ const SubFormOptions = () => {
 }
 
 const GridOptions = () => {
-  return { items: [ config.generateGridItem(), config.generateGridItem() ] }
+  return { gutter: 0, justify: 'start', align: 'top', items: [ config.generateGridItem(), config.generateGridItem() ] }
 }
 
 const DividerOptions = () => {
-  return { dashed: false, orientation: 'left', type: 'horizontal' }
+  return { direction: 'horizontal', position: 'center', border: 'solid' }
 }
 
 const CanvasOptions = () => {
@@ -91,7 +91,7 @@ export default Object.assign(config, {
     }, {
       type: 'textarea', label: '多行文本', icon: 'form.textarea', filterable: true, viewable: true, sortable: false, editable: true, options: TextareaOptions, property: () => import('./TextareaProperty.vue')
     }, {
-      type: 'password', label: '密码', icon: 'form.password', filterable: true, viewable: true, sortable: true, editable: true, options: PasswordOptions, property: () => import('./TextProperty.vue')
+      type: 'password', label: '密码', icon: 'form.password', filterable: true, viewable: true, sortable: true, editable: true, options: PasswordOptions, property: () => import('./PasswordProperty.vue')
     }, {
       type: 'number', label: '数值', icon: 'form.number', filterable: true, viewable: true, sortable: true, editable: true, options: NumberOptions, property: () => import('./NumberProperty.vue')
     }, {
@@ -126,6 +126,9 @@ export default Object.assign(config, {
     type: 'tablet', label: '平板', icon: 'device.tablet', selectable: true, selected: true, callback (toolbar: any, instance: any, event: any) { instance.width = '770px' }
   }, {
     type: 'mobile', label: '手机', icon: 'device.mobile', selectable: true, callback (toolbar: any, instance: any, event: any) { instance.width = '375px' }
+  }, {
+    type: 'divider'
+  }, {
+    type: 'form', label: '表单', icon: 'Aim', callback (toolbar: any, instance: any, event: any) { instance.handleClick() }
   }],
-  labelPositions: [{ value: 'left', label: '左对齐' }, { value: 'right', label: '右对齐' }, { value: 'top', label: '顶对齐' }]
 })

@@ -19,6 +19,7 @@ public class ServerEndpoint {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+    @Column
     private Integer serverId;
     @Column
     private String url; // 服务地址

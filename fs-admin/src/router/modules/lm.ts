@@ -53,6 +53,42 @@ export const layouts = [{
     path: '/lm/manage/log',
     meta: { title: '调用日志', permit: ['lm:log:'] },
     component: () => import('@/views/lm/manage/log.vue')
+  }, {
+    path: '/lm/agentic/list',
+    meta: { title: '智能体', permit: ['lm:agentic:'] },
+    component: () => import('@/views/lm/agentic/list.vue')
+  }, {
+    path: '/lm/knowledge/list',
+    meta: { title: '知识库', permit: ['lm:knowledge:'] },
+    component: () => import('@/views/lm/knowledge/list.vue')
+  }, {
+    path: '/lm/knowledge/document',
+    meta: { title: '文档管理', permit: ['lm:knowledge:'] },
+    component: () => import('@/views/lm/knowledge/document.vue')
+  }, {
+    path: '/lm/knowledge/segment',
+    meta: { title: '分段管理', permit: ['lm:knowledge:'] },
+    component: () => import('@/views/lm/knowledge/segment.vue')
+  }, {
+    path: '/lm/knowledge/chunk',
+    meta: { title: '分块管理', permit: ['lm:knowledge:'] },
+    component: () => import('@/views/lm/knowledge/chunk.vue')
+  }, {
+    path: '/lm/model/provider',
+    meta: { title: '供应商配置', permit: ['lm:provider:'] },
+    component: () => import('@/views/lm/model/provider.vue')
+  }, {
+    path: '/lm/model/list',
+    meta: { title: '模型配置', permit: ['lm:model:'] },
+    component: () => import('@/views/lm/model/list.vue')
+  }, {
+    path: '/lm/tool/list',
+    meta: { title: '工具配置', permit: ['lm:tool:'], fit: true },
+    component: () => import('@/views/lm/tool/list.vue')
+  }, {
+    path: '/lm/mcp/list',
+    meta: { title: 'MCP服务', permit: ['lm:mcp:'] },
+    component: () => import('@/views/lm/mcp/list.vue')
   }]
 }]
 

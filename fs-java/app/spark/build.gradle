@@ -1,8 +1,11 @@
 dependencies {
     api project(':base:dag')
     api group: 'org.apache.spark', name: 'spark-core_' + scalaVersion, version: sparkVersion
-    api group: 'org.apache.spark', name: 'spark-streaming_' + scalaVersion, version: sparkVersion
     api group: 'org.apache.spark', name: 'spark-sql_' + scalaVersion, version: sparkVersion
+
+    api group: 'org.apache.spark', name: 'spark-streaming_' + scalaVersion, version: sparkVersion
+    api group: 'org.apache.spark', name: 'spark-streaming-kafka-0-10_' + scalaVersion, version: sparkVersion
+
 
     api group: 'org.mongodb.spark', name: 'mongo-spark-connector', version: '10.0.4'
     api (group: 'org.mongodb.spark', name: 'mongo-spark-connector_' + scalaVersion, version: '3.0.2') {

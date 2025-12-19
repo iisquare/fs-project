@@ -2,7 +2,7 @@
 --
 -- Host: wsl    Database: fs_project
 -- ------------------------------------------------------
--- Server version	8.0.41
+-- Server version	9.5.0
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -14,6 +14,14 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+SET @MYSQLDUMP_TEMP_LOG_BIN = @@SESSION.SQL_LOG_BIN;
+SET @@SESSION.SQL_LOG_BIN= 0;
+
+--
+-- GTID state at the beginning of the backup 
+--
+
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-10485';
 
 --
 -- Table structure for table `fs_member_application`
@@ -49,11 +57,11 @@ LOCK TABLES `fs_member_application` WRITE;
 /*!40000 ALTER TABLE `fs_member_application` DISABLE KEYS */;
 INSERT INTO `fs_member_application` VALUES (1,'admin','后台管理','home','/','',0,1,'是否可访问后台',1528081670164,1,1584590104125,1);
 INSERT INTO `fs_member_application` VALUES (2,'member','用户中心','User','/member/index/index','',0,1,'帐号、角色、资源、菜单、配置',1528081670164,1,1736157706223,1);
-INSERT INTO `fs_member_application` VALUES (26,'spider','数据采集','bug','/spider/index/index','',0,1,'网页爬虫、节点信息、模板管理',1585195421330,1,1738219151949,1);
+INSERT INTO `fs_member_application` VALUES (26,'spider','数据采集','layout.spider','/spider/index/index','',0,1,'网页爬虫、节点信息、模板管理',1585195421330,1,1764317952329,1);
 INSERT INTO `fs_member_application` VALUES (31,'bi','商业智能','cluster','/bi/index/index','',0,1,'数据清洗、规则引擎、智能报表',1585384071227,1,1631754471053,1);
 INSERT INTO `fs_member_application` VALUES (44,'face','人脸识别','smile','/face/index/index','',0,1,'人脸检测、人脸识别、检索对比',1597299393466,1,1597299393466,1);
 INSERT INTO `fs_member_application` VALUES (58,'lucene','搜索引擎','','','',0,1,'',1607333327044,1,1732159710326,1);
-INSERT INTO `fs_member_application` VALUES (63,'oa','在线办公','snippets','/oa/index/index','',0,1,'表单设计、流程设计、在线审批',1618446294833,1,1618446294833,1);
+INSERT INTO `fs_member_application` VALUES (63,'oa','在线办公','Checked','/oa/index/index','',0,1,'表单设计、流程设计、在线审批',1618446294833,1,1754526550347,1);
 INSERT INTO `fs_member_application` VALUES (96,'cms','内容管理','solution','/cms/index/index','',0,1,'CMS内容管理系统',1627462111659,1,1627462111659,1);
 INSERT INTO `fs_member_application` VALUES (100,'file','文件存储','','','',0,1,'文件存储、图库图床、对象存储',1627547763814,1,1732160136155,1);
 INSERT INTO `fs_member_application` VALUES (148,'cron','定时任务','','','',0,1,'',1662455086472,1,1662455086472,1);
@@ -4369,7 +4377,7 @@ CREATE TABLE `fs_member_menu` (
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_application_id` (`application_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=165 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=182 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -4503,7 +4511,7 @@ INSERT INTO `fs_member_menu` VALUES (140,'客户端管理','大模型:系统配�
 INSERT INTO `fs_member_menu` VALUES (141,'客户端端点','大模型:系统配置:客户端端点',304,136,'','/lm/setting/clientEndpoint','',0,1,'',1738376138121,1,1738376138121,1);
 INSERT INTO `fs_member_menu` VALUES (142,'状态管理','大模型:系统配置:状态管理',304,136,'','/lm/setting/manage','',1,1,'',1738392833376,1,1738394105189,1);
 INSERT INTO `fs_member_menu` VALUES (143,'智能体管理','大模型:系统配置:智能体管理',304,136,'','/lm/setting/agent','',1,1,'',1740032541715,1,1740369045141,1);
-INSERT INTO `fs_member_menu` VALUES (144,'模型对话','大模型:模型对话',304,0,'ChatLineRound','/lm/chat','',100,1,'',1740451465910,1,1741572231326,1);
+INSERT INTO `fs_member_menu` VALUES (144,'模型对话','大模型:模型对话',304,0,'ChatLineRound','/lm/chat','',10,1,'',1740451465910,1,1755586155860,1);
 INSERT INTO `fs_member_menu` VALUES (145,'模型调试','大模型:模型对话:模型调试',304,144,'','/lm/chat/demo','',0,1,'',1740451485129,1,1741574599116,1);
 INSERT INTO `fs_member_menu` VALUES (146,'运营监控','大模型:运营监控',304,0,'FirstAidKit','/lm/manage','',10,1,'',1741318683103,1,1741572314757,1);
 INSERT INTO `fs_member_menu` VALUES (147,'调用日志','大模型:运营监控:调用日志',304,146,'','/lm/manage/log','',0,1,'',1741318736952,1,1741318736952,1);
@@ -4524,6 +4532,23 @@ INSERT INTO `fs_member_menu` VALUES (161,'知识评估','知识图谱:知识评�
 INSERT INTO `fs_member_menu` VALUES (162,'知识检索','知识图谱:知识检索',305,0,'algorithm.retrieval','/kg/retrieval','',0,1,'',1754027019933,1,1754379402761,1);
 INSERT INTO `fs_member_menu` VALUES (163,'索引管理','知识图谱:图谱管理:索引管理',305,152,'','/kg/manage/indexs','',0,1,'',1754041250535,1,1754041250535,1);
 INSERT INTO `fs_member_menu` VALUES (164,'约束管理','知识图谱:图谱管理:约束管理',305,152,'','/kg/manage/constraints','',0,1,'',1754041278040,1,1754041278040,1);
+INSERT INTO `fs_member_menu` VALUES (165,'智能体','大模型:智能体',304,0,'ai.robot','/lm/agentic','',100,1,'',1755586084051,1,1755650248787,1);
+INSERT INTO `fs_member_menu` VALUES (166,'知识库','大模型:知识库',304,0,'Collection','/lm/knowledge','',100,1,'',1755586105626,1,1755650342585,1);
+INSERT INTO `fs_member_menu` VALUES (167,'模型配置','大模型:模型配置',304,0,'ai.model','/lm/model','',100,1,'',1755586213838,1,1755650418904,1);
+INSERT INTO `fs_member_menu` VALUES (168,'工具配置','大模型:工具配置',304,0,'ai.tool','/lm/tool','',100,1,'',1755586228750,1,1755650597422,1);
+INSERT INTO `fs_member_menu` VALUES (169,'MCP服务','大模型:MCP服务',304,0,'ai.mcp','/lm/mcp','',100,1,'',1755586253459,1,1755650844727,1);
+INSERT INTO `fs_member_menu` VALUES (170,'应用管理','大模型:智能体:应用管理',304,165,'','/lm/agentic/list','',0,1,'',1755586335268,1,1755596217696,1);
+INSERT INTO `fs_member_menu` VALUES (171,'知识管理','大模型:知识库:知识管理',304,166,'','/lm/knowledge/list','',0,1,'',1755586375605,1,1755586375605,1);
+INSERT INTO `fs_member_menu` VALUES (172,'供应商管理','大模型:模型配置:供应商管理',304,167,'','/lm/model/provider','',0,1,'',1755596210727,1,1755672745884,1);
+INSERT INTO `fs_member_menu` VALUES (173,'工具管理','大模型:工具配置:工具管理',304,168,'','/lm/tool/list','',0,1,'',1755596243894,1,1755596243894,1);
+INSERT INTO `fs_member_menu` VALUES (174,'服务管理','大模型:MCP服务:服务管理',304,169,'','/lm/mcp/list','',0,1,'',1755596261141,1,1755596261141,1);
+INSERT INTO `fs_member_menu` VALUES (175,'采集配置','数据采集:采集配置',26,0,'Setting','/spider/setting','',0,1,'',1764317298298,1,1764635121792,1);
+INSERT INTO `fs_member_menu` VALUES (176,'模板管理','数据采集:采集配置:模板管理',26,175,'','/spider/setting/template','',0,1,'',1764317331167,1,1764635150816,1);
+INSERT INTO `fs_member_menu` VALUES (177,'采集调度','数据采集:采集调度',26,0,'Connection','/spider/schedule','',0,1,'',1764317475890,1,1764726988239,1);
+INSERT INTO `fs_member_menu` VALUES (178,'作业管理','数据采集:采集调度:作业管理',26,177,'','/spider/schedule/job','',0,1,'',1764317501226,1,1764921547843,1);
+INSERT INTO `fs_member_menu` VALUES (179,'节点状态','数据采集:采集调度:节点状态',26,177,'','/spider/schedule/node','',0,1,'',1764317519184,1,1764921553553,1);
+INSERT INTO `fs_member_menu` VALUES (180,'黑名单','数据采集:泛采集:黑名单',26,177,'','/spider/pan/blacklist','',0,1,'',1764317531047,1,1764317531047,1);
+INSERT INTO `fs_member_menu` VALUES (181,'请求频率','数据采集:采集配置:请求频率',26,175,'','/spider/setting/rate','',0,1,'',1764317604259,1,1765077223092,1);
 /*!40000 ALTER TABLE `fs_member_menu` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -4636,8 +4661,25 @@ INSERT INTO `fs_member_relation` VALUES ('role_menu_1_161_305','role_menu',1,161
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_162_305','role_menu',1,162,305);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_163_305','role_menu',1,163,305);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_164_305','role_menu',1,164,305);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_165_304','role_menu',1,165,304);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_166_304','role_menu',1,166,304);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_167_304','role_menu',1,167,304);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_168_304','role_menu',1,168,304);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_169_304','role_menu',1,169,304);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_16_2','role_menu',1,16,2);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_170_304','role_menu',1,170,304);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_171_304','role_menu',1,171,304);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_172_304','role_menu',1,172,304);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_173_304','role_menu',1,173,304);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_174_304','role_menu',1,174,304);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_175_26','role_menu',1,175,26);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_176_26','role_menu',1,176,26);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_177_26','role_menu',1,177,26);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_178_26','role_menu',1,178,26);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_179_26','role_menu',1,179,26);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_17_2','role_menu',1,17,2);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_180_26','role_menu',1,180,26);
+INSERT INTO `fs_member_relation` VALUES ('role_menu_1_181_26','role_menu',1,181,26);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_18_1','role_menu',1,18,1);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_19_1','role_menu',1,19,1);
 INSERT INTO `fs_member_relation` VALUES ('role_menu_1_20_1','role_menu',1,20,1);
@@ -4895,10 +4937,54 @@ INSERT INTO `fs_member_relation` VALUES ('role_resource_1_254_2','role_resource'
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_255_2','role_resource',1,255,2);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_256_2','role_resource',1,256,2);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_257_305','role_resource',1,257,305);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_258_304','role_resource',1,258,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_259_304','role_resource',1,259,304);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_25_2','role_resource',1,25,2);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_260_304','role_resource',1,260,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_261_304','role_resource',1,261,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_262_304','role_resource',1,262,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_263_304','role_resource',1,263,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_264_304','role_resource',1,264,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_265_304','role_resource',1,265,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_266_304','role_resource',1,266,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_267_304','role_resource',1,267,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_268_304','role_resource',1,268,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_269_304','role_resource',1,269,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_270_304','role_resource',1,270,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_271_304','role_resource',1,271,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_272_304','role_resource',1,272,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_273_304','role_resource',1,273,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_274_304','role_resource',1,274,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_275_304','role_resource',1,275,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_276_304','role_resource',1,276,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_277_304','role_resource',1,277,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_278_304','role_resource',1,278,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_279_304','role_resource',1,279,304);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_27_26','role_resource',1,27,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_280_304','role_resource',1,280,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_281_304','role_resource',1,281,304);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_282_26','role_resource',1,282,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_283_26','role_resource',1,283,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_284_26','role_resource',1,284,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_285_26','role_resource',1,285,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_286_26','role_resource',1,286,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_287_26','role_resource',1,287,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_288_26','role_resource',1,288,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_289_26','role_resource',1,289,26);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_28_26','role_resource',1,28,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_290_26','role_resource',1,290,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_291_26','role_resource',1,291,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_292_26','role_resource',1,292,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_293_26','role_resource',1,293,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_294_26','role_resource',1,294,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_295_26','role_resource',1,295,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_296_26','role_resource',1,296,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_297_26','role_resource',1,297,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_298_26','role_resource',1,298,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_299_26','role_resource',1,299,26);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_29_26','role_resource',1,29,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_300_26','role_resource',1,300,26);
+INSERT INTO `fs_member_relation` VALUES ('role_resource_1_301_26','role_resource',1,301,26);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_30_26','role_resource',1,30,26);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_32_31','role_resource',1,32,31);
 INSERT INTO `fs_member_relation` VALUES ('role_resource_1_33_31','role_resource',1,33,31);
@@ -5033,7 +5119,7 @@ CREATE TABLE `fs_member_resource` (
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_application_id` (`application_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=258 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=302 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -5283,6 +5369,50 @@ INSERT INTO `fs_member_resource` VALUES (254,'鉴权日志','用户中心:鉴权
 INSERT INTO `fs_member_resource` VALUES (255,'检测','用户中心:鉴权日志:检测',2,254,'member','dataLog','check',0,1,'',1750233963548,1,1750233963548,1);
 INSERT INTO `fs_member_resource` VALUES (256,'删除','用户中心:鉴权日志:删除',2,254,'member','dataLog','delete',0,1,'',1750294202423,1,1750294202423,1);
 INSERT INTO `fs_member_resource` VALUES (257,'维护','知识图谱:维护',305,0,'kg','neo4j','',0,1,'',1754031855669,1,1754031855669,1);
+INSERT INTO `fs_member_resource` VALUES (258,'智能体','大模型:智能体',304,0,'lm','agentic','',0,1,'',1755650958130,1,1755650958130,1);
+INSERT INTO `fs_member_resource` VALUES (259,'添加','大模型:智能体:添加',304,258,'lm','agentic','add',0,1,'',1755650967309,1,1755650967309,1);
+INSERT INTO `fs_member_resource` VALUES (260,'修改','大模型:智能体:修改',304,258,'lm','agentic','modify',0,1,'',1755650973250,1,1755650973250,1);
+INSERT INTO `fs_member_resource` VALUES (261,'删除','大模型:智能体:删除',304,258,'lm','agentic','delete',0,1,'',1755650978957,1,1755650978957,1);
+INSERT INTO `fs_member_resource` VALUES (262,'知识库','大模型:知识库',304,0,'lm','knowledge','',0,1,'',1755651017744,1,1755651017744,1);
+INSERT INTO `fs_member_resource` VALUES (263,'添加','大模型:知识库:添加',304,262,'lm','knowledge','add',0,1,'',1755651028068,1,1755651028068,1);
+INSERT INTO `fs_member_resource` VALUES (264,'修改','大模型:知识库:修改',304,262,'lm','knowledge','modify',0,1,'',1755651035582,1,1755651035582,1);
+INSERT INTO `fs_member_resource` VALUES (265,'删除','大模型:知识库:删除',304,262,'lm','knowledge','delete',0,1,'',1755651041587,1,1755651041587,1);
+INSERT INTO `fs_member_resource` VALUES (266,'模型','大模型:模型',304,0,'lm','model','',0,1,'',1755651072535,1,1755651072535,1);
+INSERT INTO `fs_member_resource` VALUES (267,'添加','大模型:模型:添加',304,266,'lm','model','add',0,1,'',1755651083578,1,1755651083578,1);
+INSERT INTO `fs_member_resource` VALUES (268,'修改','大模型:模型:修改',304,266,'lm','model','modify',0,1,'',1755651090541,1,1755651090541,1);
+INSERT INTO `fs_member_resource` VALUES (269,'删除','大模型:模型:删除',304,266,'lm','model','delete',0,1,'',1755651099505,1,1755651099505,1);
+INSERT INTO `fs_member_resource` VALUES (270,'工具','大模型:工具',304,0,'lm','tool','',0,1,'',1755651115714,1,1755651115714,1);
+INSERT INTO `fs_member_resource` VALUES (271,'添加','大模型:工具:添加',304,270,'lm','tool','add',0,1,'',1755651124650,1,1755651124650,1);
+INSERT INTO `fs_member_resource` VALUES (272,'修改','大模型:工具:修改',304,270,'lm','tool','modify',0,1,'',1755651129992,1,1755651129992,1);
+INSERT INTO `fs_member_resource` VALUES (273,'删除','大模型:工具:删除',304,270,'lm','tool','delete',0,1,'',1755651135605,1,1755651135605,1);
+INSERT INTO `fs_member_resource` VALUES (274,'MCP服务','大模型:MCP服务',304,0,'lm','mcp','',0,1,'',1755651151736,1,1755651151736,1);
+INSERT INTO `fs_member_resource` VALUES (275,'添加','大模型:MCP服务:添加',304,274,'lm','mcp','add',0,1,'',1755651161148,1,1755651161148,1);
+INSERT INTO `fs_member_resource` VALUES (276,'修改','大模型:MCP服务:修改',304,274,'lm','mcp','modify',0,1,'',1755651167570,1,1755651167570,1);
+INSERT INTO `fs_member_resource` VALUES (277,'删除','大模型:MCP服务:删除',304,274,'lm','mcp','delete',0,1,'',1755651173304,1,1755651173304,1);
+INSERT INTO `fs_member_resource` VALUES (278,'提供商','大模型:提供商',304,0,'lm','provider','',0,1,'',1755672303474,1,1755672303474,1);
+INSERT INTO `fs_member_resource` VALUES (279,'添加','大模型:提供商:添加',304,278,'lm','provider','add',0,1,'',1755672314574,1,1755672314574,1);
+INSERT INTO `fs_member_resource` VALUES (280,'修改','大模型:提供商:修改',304,278,'lm','provider','modify',0,1,'',1755672320610,1,1755672320610,1);
+INSERT INTO `fs_member_resource` VALUES (281,'删除','大模型:提供商:删除',304,278,'lm','provider','delete',0,1,'',1755672327873,1,1755672327873,1);
+INSERT INTO `fs_member_resource` VALUES (282,'请求频率','数据采集:请求频率',26,0,'spider','rate','',0,1,'',1764317026256,1,1764317026256,1);
+INSERT INTO `fs_member_resource` VALUES (283,'添加','数据采集:请求频率:添加',26,282,'spider','rate','add',0,1,'',1764317038713,1,1764317038713,1);
+INSERT INTO `fs_member_resource` VALUES (284,'修改','数据采集:请求频率:修改',26,282,'spider','rate','modify',0,1,'',1764317047067,1,1764317047067,1);
+INSERT INTO `fs_member_resource` VALUES (285,'删除','数据采集:请求频率:删除',26,282,'spider','rate','delete',0,1,'',1764317053882,1,1764317053882,1);
+INSERT INTO `fs_member_resource` VALUES (286,'泛采站点','数据采集:泛采站点',26,0,'spider','site','',0,1,'',1764317092280,1,1764317092280,1);
+INSERT INTO `fs_member_resource` VALUES (287,'添加','数据采集:泛采站点:添加',26,286,'spider','site','add',0,1,'',1764317098873,1,1764317098873,1);
+INSERT INTO `fs_member_resource` VALUES (288,'修改','数据采集:泛采站点:修改',26,286,'spider','site','modify',0,1,'',1764317107131,1,1764317107131,1);
+INSERT INTO `fs_member_resource` VALUES (289,'删除','数据采集:泛采站点:删除',26,286,'spider','site','delete',0,1,'',1764317113537,1,1764317113537,1);
+INSERT INTO `fs_member_resource` VALUES (290,'泛采白名单','数据采集:泛采白名单',26,0,'spider','whitelist','',0,1,'',1764317148800,1,1764317148800,1);
+INSERT INTO `fs_member_resource` VALUES (291,'添加','数据采集:泛采白名单:添加',26,290,'spider','whitelist','add',0,1,'',1764317158534,1,1764317158534,1);
+INSERT INTO `fs_member_resource` VALUES (292,'修改','数据采集:泛采白名单:修改',26,290,'spider','whitelist','modify',0,1,'',1764317165158,1,1764317165158,1);
+INSERT INTO `fs_member_resource` VALUES (293,'删除','数据采集:泛采白名单:删除',26,290,'spider','whitelist','delete',0,1,'',1764317171730,1,1764317171730,1);
+INSERT INTO `fs_member_resource` VALUES (294,'泛采黑名单','数据采集:泛采黑名单',26,0,'spider','blacklist','',0,1,'',1764317194112,1,1764317194112,1);
+INSERT INTO `fs_member_resource` VALUES (295,'添加','数据采集:泛采黑名单:添加',26,294,'spider','blacklist','add',0,1,'',1764317203286,1,1764317203286,1);
+INSERT INTO `fs_member_resource` VALUES (296,'修改','数据采集:泛采黑名单:修改',26,294,'spider','blacklist','modify',0,1,'',1764317212256,1,1764317212256,1);
+INSERT INTO `fs_member_resource` VALUES (297,'删除','数据采集:泛采黑名单:删除',26,294,'spider','blacklist','delete',0,1,'',1764317218303,1,1764317218303,1);
+INSERT INTO `fs_member_resource` VALUES (298,'发布','网页爬虫:模板:发布',26,27,'spider','template','publish',0,1,'',1764919089604,1,1764919089604,1);
+INSERT INTO `fs_member_resource` VALUES (299,'采集调度','数据采集:采集调度',26,0,'spider','node','',0,1,'',1764921463262,1,1764921463262,1);
+INSERT INTO `fs_member_resource` VALUES (300,'作业','数据采集:采集调度:作业',26,299,'spider','node','job',0,1,'',1764921483551,1,1764921483551,1);
+INSERT INTO `fs_member_resource` VALUES (301,'发布','数据采集:请求频率:发布',26,282,'spider','rate','publish',0,1,'',1765089033444,1,1765089033444,1);
 /*!40000 ALTER TABLE `fs_member_resource` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -5373,6 +5503,8 @@ CREATE TABLE `fs_member_user` (
   `serial` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `password` char(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `phone` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `salt` char(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `sort` tinyint NOT NULL DEFAULT '0',
   `status` tinyint NOT NULL DEFAULT '0',
@@ -5388,8 +5520,10 @@ CREATE TABLE `fs_member_user` (
   `deleted_time` bigint NOT NULL DEFAULT '0',
   `deleted_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE KEY `unq_serial` (`serial`) USING BTREE,
-  UNIQUE KEY `unq_name` (`name`) USING BTREE
+  UNIQUE KEY `unq_name` (`name`) USING BTREE,
+  UNIQUE KEY `unq_serial` (`serial`),
+  KEY `idx_email` (`email`) USING BTREE,
+  KEY `idx_phone` (`phone`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -5399,14 +5533,15 @@ CREATE TABLE `fs_member_user` (
 
 LOCK TABLES `fs_member_user` WRITE;
 /*!40000 ALTER TABLE `fs_member_user` DISABLE KEYS */;
-INSERT INTO `fs_member_user` VALUES (1,'admin','管理员','4bd18037cb256efcc6bd6363c558e401','8395',0,1,'',1528081552985,'127.0.0.1',1,1528081552985,1,1754384537540,'127.0.0.1',0,0,0);
-INSERT INTO `fs_member_user` VALUES (26,'test1','test1','04dc197e5e813659aa124599e7d7d4fd','0898',0,1,'',1737797630259,'127.0.0.1',1,1737798171826,1,0,'',0,1737802620607,1);
-INSERT INTO `fs_member_user` VALUES (27,'test2','test2','3dc5e4203e5e4d67b1c08a68136b7879','0605',0,2,'',1737803207126,'127.0.0.1',1,1748757103004,1,0,'',0,0,0);
-INSERT INTO `fs_member_user` VALUES (28,'test3','test3','30cc87d9a433944111623cb1a1a5e3c1','1082',0,1,'',1737803243981,'127.0.0.1',1,1737803243981,1,0,'',0,0,0);
-INSERT INTO `fs_member_user` VALUES (29,'test4','test4','7e689e380d18e5c91193412bd60fbe81','8271',0,1,'',1737803344968,'127.0.0.1',1,1737803753466,1,0,'',0,0,0);
-INSERT INTO `fs_member_user` VALUES (30,'test5','test5','cff8eab2158d8f138c95e0e8c61a98d3','7895',0,1,'',1737803566589,'127.0.0.1',1,1737803566589,1,0,'',0,0,0);
+INSERT INTO `fs_member_user` VALUES (1,'admin','管理员','4bd18037cb256efcc6bd6363c558e401','test@iisquare.com','12345678901','8395',0,1,'默认账户',1528081552985,'127.0.0.1',1,1765162310668,1,1764904312897,'127.0.0.1',0,0,0);
+INSERT INTO `fs_member_user` VALUES (26,'test1','test1','04dc197e5e813659aa124599e7d7d4fd','','','0898',0,1,'',1737797630259,'127.0.0.1',1,1737798171826,1,0,'',0,1737802620607,1);
+INSERT INTO `fs_member_user` VALUES (27,'test2','test2','3dc5e4203e5e4d67b1c08a68136b7879','','','0605',0,2,'',1737803207126,'127.0.0.1',1,1748757103004,1,0,'',0,0,0);
+INSERT INTO `fs_member_user` VALUES (28,'test3','test3','30cc87d9a433944111623cb1a1a5e3c1','','','1082',0,1,'',1737803243981,'127.0.0.1',1,1737803243981,1,0,'',0,0,0);
+INSERT INTO `fs_member_user` VALUES (29,'test4','test4','7e689e380d18e5c91193412bd60fbe81','','','8271',0,1,'',1737803344968,'127.0.0.1',1,1737803753466,1,0,'',0,0,0);
+INSERT INTO `fs_member_user` VALUES (30,'test5','test5','cff8eab2158d8f138c95e0e8c61a98d3','','','7895',0,1,'',1737803566589,'127.0.0.1',1,1737803566589,1,0,'',0,0,0);
 /*!40000 ALTER TABLE `fs_member_user` ENABLE KEYS */;
 UNLOCK TABLES;
+SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -5417,4 +5552,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-08-05 17:03:11
+-- Dump completed on 2025-12-08 10:53:09

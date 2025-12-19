@@ -12,5 +12,6 @@ spring:
 server:
   servlet:
     session:
+      timeout: 30d
       cookie:
-        max-age: 2592000
+        max-age: 30d

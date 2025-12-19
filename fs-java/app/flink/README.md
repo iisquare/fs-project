@@ -2,6 +2,16 @@
 
 Flink计算框架，侧重流式处理。
 
+## JDK17
+
+### VM options
+
+- Run/Debug Configurations > Add Run Options > Add VM options
+```
+--add-opens java.base/java.util=ALL-UNNAMED
+--add-exports java.base/sun.reflect.annotation=ALL-UNNAMED
+```
+
 ## 最佳实践
 
 ### 结构信息

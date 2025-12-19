@@ -18,6 +18,8 @@ const columns = ref([
   { prop: 'id', label: 'ID' },
   { prop: 'serial', label: '账号' },
   { prop: 'name', label: '名称' },
+  { prop: 'email', label: '邮箱' },
+  { prop: 'phone', label: '手机' },
   { prop: 'sort', label: '排序' },
   { prop: 'statusText', label: '状态' },
   { prop: 'role', label: '角色', slot: 'role' },
@@ -27,6 +29,7 @@ const columns = ref([
   { prop: 'deletedTime', label: '删除时间', formatter: DateUtil.render, hide: true },
   { prop: 'loginIp', label: '登录IP', hide: true },
   { prop: 'loginTime', label: '登录时间', formatter: DateUtil.render, hide: true },
+  { prop: 'description', label: '描述', hide: true },
 ])
 const config = ref({
   ready: false,
@@ -53,7 +56,7 @@ onMounted(() => {
   handleRefresh(false, true)
   UserApi.config().then(result => {
     Object.assign(config.value, { ready: true }, ApiUtil.data(result))
-  })
+  }).catch(() => {})
 })
 const infoVisible = ref(false)
 const formVisible = ref(false)
@@ -62,7 +65,7 @@ const form: any = ref({})
 const formRef: any = ref<FormInstance>()
 const rules = ref({
   serial: [{ required: true, message: '请输入账号', trigger: 'blur' }],
-  name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入账号名称', trigger: 'blur' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 })
 const handleAdd = () => {
@@ -125,11 +128,17 @@ const handleDelete = () => {
         <button-advanced v-model="filters.advanced" />
       </form-search-item>
       <template v-if="filters.advanced">
-        <form-search-item label="ID" prop="id">
-          <el-input v-model="filters.id" clearable />
+        <form-search-item label="邮箱" prop="email">
+          <el-input v-model="filters.email" clearable />
+        </form-search-item>
+        <form-search-item label="手机" prop="phone">
+          <el-input v-model="filters.phone" clearable />
         </form-search-item>
         <form-search-item label="角色" prop="roleIds">
           <form-select v-model="filters.roleIds" :callback="RoleApi.list" multiple clearable />
+        </form-search-item>
+        <form-search-item label="ID" prop="id">
+          <el-input v-model="filters.id" clearable />
         </form-search-item>
         <form-search-item label="注册IP" prop="createdIp">
           <el-input v-model="filters.createdIp" clearable />
@@ -210,12 +219,17 @@ const handleDelete = () => {
     <el-form :model="form" label-width="auto">
       <el-form-item label="账号">{{ form.serial }}</el-form-item>
       <el-form-item label="名称">{{ form.name }}</el-form-item>
+      <el-form-item label="邮箱">{{ form.email }}</el-form-item>
+      <el-form-item label="手机">{{ form.phone }}</el-form-item>
       <el-form-item label="排序">{{ form.sort }}</el-form-item>
       <el-form-item label="状态">{{ form.statusText }}</el-form-item>
       <el-form-item label="角色">
         <el-space><el-tag v-for="item in form.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
       </el-form-item>
       <el-form-item label="描述">{{ form.description ? form.description : '暂无' }}</el-form-item>
+      <el-form-item label="锁定时间">{{ DateUtil.format(form.lockedTime) }}</el-form-item>
+      <el-form-item label="登录IP">{{ form.loginIp }}</el-form-item>
+      <el-form-item label="登录时间">{{ DateUtil.format(form.loginTime) }}</el-form-item>
       <el-form-item label="创建者">{{ form.createdUserInfo?.name }}</el-form-item>
       <el-form-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-form-item>
       <el-form-item label="注册IP">{{ form.createdIp }}</el-form-item>
@@ -223,9 +237,6 @@ const handleDelete = () => {
       <el-form-item label="修改时间">{{ DateUtil.format(form.updatedTime) }}</el-form-item>
       <el-form-item label="删除者">{{ form.deletedUserInfo?.name }}</el-form-item>
       <el-form-item label="删除时间">{{ DateUtil.format(form.deletedTime) }}</el-form-item>
-      <el-form-item label="登录IP">{{ form.loginIp }}</el-form-item>
-      <el-form-item label="登录时间">{{ DateUtil.format(form.loginTime) }}</el-form-item>
-      <el-form-item label="锁定时间">{{ DateUtil.format(form.lockedTime) }}</el-form-item>
     </el-form>
   </el-drawer>
   <el-drawer v-model="formVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true">
@@ -242,6 +253,12 @@ const handleDelete = () => {
       </el-form-item>
       <el-form-item label="名称" prop="name">
         <el-input v-model="form.name" />
+      </el-form-item>
+      <el-form-item label="邮箱" prop="email">
+        <el-input v-model="form.email" />
+      </el-form-item>
+      <el-form-item label="手机" prop="phone">
+        <el-input v-model="form.phone" />
       </el-form-item>
       <el-form-item label="密码">
         <el-input type="password" v-model="form.password" show-password placeholder="留空时不对密码做任何处理" />

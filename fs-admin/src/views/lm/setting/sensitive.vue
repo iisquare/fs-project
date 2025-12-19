@@ -48,7 +48,7 @@ onMounted(() => {
   handleRefresh(false, true)
   SensitiveApi.config().then((result: any) => {
     Object.assign(config.value, { ready: true }, ApiUtil.data(result), { riskNodes: TreeUtil.nodes(result.data.risk) })
-  })
+  }).catch(() => {})
 })
 const infoVisible = ref(false)
 const formVisible = ref(false)

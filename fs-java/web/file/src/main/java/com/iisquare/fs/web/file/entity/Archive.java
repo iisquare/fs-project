@@ -8,7 +8,7 @@ import org.hibernate.annotations.DynamicUpdate;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Transient;
+
 import java.util.UUID;
 
 @Entity
@@ -26,9 +26,9 @@ public class Archive {
     @Column
     private String name; // 文件名称
     @Column
-    private String bucket; // 存储分类
+    private String bucket; // 存储桶
     @Column
-    private String dir; // 存储目录
+    private String filepath; // 存储路径
     @Column
     private String suffix; // 文件后缀
     @Column
@@ -41,31 +41,21 @@ public class Archive {
     private String hash; // MD5校验值
     @Column
     private Integer status;
-    @Transient
-    private String statusText;
     @Column
     private Long createdTime;
     @Column
     private Integer createdUid;
-    @Transient
-    private String createdUidName;
     @Column
     private Long updatedTime;
     @Column
     private Integer updatedUid;
-    @Transient
-    private String updatedUidName;
+    @Column
+    private Long deletedTime;
+    @Column
+    private Integer deletedUid;
 
     public static String uuid() {
         return UUID.randomUUID().toString().replaceAll("-", "");
-    }
-
-    public static String dir(String uuid) {
-        return DPUtil.substring(uuid, -2, 2) + "/" + DPUtil.substring(uuid, -4, 2);
-    }
-
-    public String path() {
-        return dir + "/" + id + suffix;
     }
 
     public static String suffix(String filename) {

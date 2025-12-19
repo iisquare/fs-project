@@ -4,10 +4,10 @@ import * as ElementPlusIcons from '@element-plus/icons-vue';
 import logoSVG from '@/assets/logo.svg';
 import { useUserStore } from '@/stores/user';
 import icons from '@/assets/icons';
-import { ElMessageBox } from 'element-plus';
 import RbacApi from '@/api/admin/RbacApi';
 import { useRoute } from 'vue-router';
 import { useCounterStore } from '@/stores/counter';
+import ElementUtil from '@/utils/ElementUtil';
 
 const user = useUserStore()
 const route = useRoute()
@@ -52,7 +52,7 @@ const breadcrumb = computed(() => {
   return result
 })
 const handleLogout = () => {
-  ElMessageBox.confirm('确定要退出登录吗？', '操作提示', { type: 'info', }).then(() => {
+  ElementUtil.confirm('确定要退出登录吗？').then(() => {
     RbacApi.logout().then(() => {
       setTimeout(() => {
         window.location.reload()

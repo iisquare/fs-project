@@ -5,7 +5,6 @@ import RouteUtil from '@/utils/RouteUtil'
 import { useRoute, useRouter } from 'vue-router';
 import ApiUtil from '@/utils/ApiUtil';
 import TableUtil from '@/utils/TableUtil';
-import { useUserStore } from '@/stores/user';
 import FormFrameApi from '@/api/oa/FormFrameApi';
 
 const route = useRoute()
@@ -26,7 +25,7 @@ const config = ref({
 })
 const rows = ref([])
 const filterRef = ref<FormInstance>()
-const filters = ref(RouteUtil.query2filter(route, { advanced: false, agentIds: [] }))
+const filters = ref(RouteUtil.query2filter(route, {}))
 const pagination = ref(RouteUtil.pagination(filters.value))
 const selection = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
@@ -45,7 +44,7 @@ onMounted(() => {
   handleRefresh(false, true)
   FormFrameApi.config().then((result: any) => {
     Object.assign(config.value, { ready: true }, ApiUtil.data(result))
-  })
+  }).catch(() => {})
 })
 const handleAdd = (env: Event) => {
   RouteUtil.forward(route, router, env, {

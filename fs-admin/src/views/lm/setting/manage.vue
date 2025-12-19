@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import ManageApi from '@/api/lm/ManageApi';
 import SensitiveApi from '@/api/lm/SensitiveApi';
-import { ElMessageBox } from 'element-plus';
+import ElementUtil from '@/utils/ElementUtil';
 import { ref } from 'vue';
 
 const loading = ref(false)
 const form: any = ref({})
 const handleProxy = () => {
-  ElMessageBox.confirm('确定重新构建模型代理吗', '操作提示', { type: 'warning', }).then(() => {
+  ElementUtil.confirm('确定重新构建模型代理吗').then(() => {
     ManageApi.notice({ type: 'model' }, { success: true })
   }).catch(() => {})
 }
 const handleSensitive = () => {
-  ElMessageBox.confirm('确定重新构建敏感词字典吗', '操作提示', { type: 'warning', }).then(() => {
+  ElementUtil.confirm('确定重新构建敏感词字典吗').then(() => {
     ManageApi.notice({ type: 'sensitive' }, { success: true })
   }).catch(() => {})
 }

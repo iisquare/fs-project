@@ -18,7 +18,7 @@ const props = defineProps<{
       <el-form :model="model">
         <NodeSlice v-model="model" :instance="instance" :config="config" :tips="tips" />
         <el-form-item label="名称"><el-input v-model="model.label" /></el-form-item>
-        <el-form-item label="字段"><el-input v-model="model.options.field" :placeholder="model.id" /></el-form-item>
+        <el-form-item label="字段"><el-input v-model="model.options.field" placeholder="必填" /></el-form-item>
         <el-form-item label="默认值"><el-input v-model="model.options.value" /></el-form-item>
         <el-form-item label="占位符"><el-input v-model="model.options.placeholder" /></el-form-item>
       </el-form>

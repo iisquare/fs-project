@@ -1,7 +1,8 @@
 import axios from 'axios'
 import ApiUtil from '@/utils/ApiUtil'
-import { ElNotification, ElMessageBox } from 'element-plus'
+import { ElNotification } from 'element-plus'
 import { useCounterStore } from '@/stores/counter'
+import ElementUtil from '@/utils/ElementUtil'
 
 const $axios = axios.create({
   baseURL: import.meta.env.VITE_APP_API_URL,
@@ -24,7 +25,7 @@ export default {
           result = ApiUtil.result(500, '获取请求结果异常', result)
         }
         if (ApiUtil.code(result) === 403 && ApiUtil.message(result) === 'required login') {
-          ElMessageBox.confirm('登录状态已失效，是否前往登录页面重新登录？', '操作提示', { type: 'warning', }).then(() => {
+          ElementUtil.confirm('登录状态已失效，是否前往登录页面重新登录？').then(() => {
             window.location.reload()
           }).catch(() => {})
         } else if (ApiUtil.succeed(result)) {

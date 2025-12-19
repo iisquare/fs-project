@@ -9,6 +9,7 @@ import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.lm.dao.ClientDao;
+import com.iisquare.fs.web.lm.dao.ClientEndpointDao;
 import com.iisquare.fs.web.lm.entity.Client;
 import com.iisquare.fs.web.lm.mvc.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,8 @@ public class ClientService extends JPAServiceBase {
 
     @Autowired
     private ClientDao clientDao;
+    @Autowired
+    ClientEndpointDao clientEndpointDao;
     @Autowired
     DefaultRbacService rbacService;
     @Autowired
@@ -92,6 +95,7 @@ public class ClientService extends JPAServiceBase {
     }
 
     public boolean remove(List<Integer> ids) {
+        removeByParentId(clientEndpointDao, "clientId", ids);
         return remove(clientDao, ids);
     }
 

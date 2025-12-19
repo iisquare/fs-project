@@ -7,10 +7,6 @@ fs:
     urls:
       file: //127.0.0.1:7812
       static: //127.0.0.1/fs-project-vip/static/resources
-  app:
-    file:
-      dir: web/file/uploads
-      secret: fs-project
 
 rpc:
   member:
@@ -70,6 +66,9 @@ rpc:
   kg:
     name: fs-kg-service
     rest: http://127.0.0.1:7825
+  crawler:
+    name: fs-kg-service
+    rest: http://127.0.0.1:7826
   demo:
     name: fs-demo-service
     rest: http://127.0.0.1:8033
@@ -131,6 +130,8 @@ spring:
         order_updates: true
   data:
     redis:
+      repositories:
+        enabled: false # 禁用仓库功能
       database: 1
       host: 127.0.0.1
       port: 6379
@@ -161,6 +162,10 @@ spring:
     uri: neo4j://127.0.0.1:7687
     username: neo4j
     password: admin888
+  minio:
+    endpoint: http://127.0.0.1:9000
+    accessKey: fs-project
+    secretKet: full-policy
 
   datasource:
     primary:
