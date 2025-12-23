@@ -34,7 +34,7 @@ const pagination = ref(RouteUtil.pagination(filters.value))
 const selection = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
   tableRef.value?.clearSelection()
-  Object.assign(filters.value, RouteUtil.pagination2filter(pagination.value, keepPage))
+  Object.assign(filters.value, RouteUtil.pagination2filter(pagination.value, keepPage), { templateId: model.value.id })
   filter2query && RouteUtil.filter2query(route, router, filters.value)
   loading.value = true
   BlacklistApi.list(filters.value).then((result: any) => {

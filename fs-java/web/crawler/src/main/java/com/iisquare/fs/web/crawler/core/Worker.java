@@ -5,14 +5,21 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.crawler.service.NodeService;
+import io.minio.ObjectWriteResponse;
+import io.minio.PutObjectArgs;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.Header;
-import org.apache.http.HttpHeaders;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
 
+import java.net.URI;
+import java.nio.charset.Charset;
+import java.nio.charset.UnsupportedCharsetException;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -43,9 +50,99 @@ public class Worker implements Runnable {
         return headers;
     }
 
+    public String bucket(ZooJob job, URI uri){
+        if (null == job) return "fs-spider";
+        JsonNode sites = job.template.at("/sites");
+        String domain = uri.getHost();
+        if (!sites.has(domain)) domain = "*";
+        String collection = sites.at("/" + domain + "/bucket").asText();
+        return DPUtil.empty(collection) ? "fs-spider" : collection;
+    }
+
+    public Charset charset(ZooJob job, URI uri) {
+        if (null == job) return HttpFetcher.DEFAULT_CHARSET;
+        JsonNode sites = job.template.at("/sites");
+        String domain = uri.getHost();
+        if (!sites.has(domain)) domain = "*";
+        String charset = sites.at("/" + domain + "/charset").asText();
+        if (DPUtil.empty(charset)) return HttpFetcher.DEFAULT_CHARSET;
+        try {
+            return Charset.forName(charset);
+        } catch (UnsupportedCharsetException e) {
+            return HttpFetcher.DEFAULT_CHARSET;
+        }
+    }
+
+    public int connectTimeout(ZooJob job, URI uri){
+        if (null == job) return 0;
+        JsonNode sites = job.template.at("/sites");
+        String domain = uri.getHost();
+        if (!sites.has(domain)) domain = "*";
+        return sites.at("/" + domain + "/connectTimeout").asInt(0);
+    }
+
+    public int socketTimeout(ZooJob job, URI uri){
+        if (null == job) return 0;
+        JsonNode sites = job.template.at("/sites");
+        String domain = uri.getHost();
+        if (!sites.has(domain)) domain = "*";
+        return sites.at("/" + domain + "/socketTimeout").asInt(0);
+    }
+
+    public int retryCount(ZooJob job, URI uri){
+        if (null == job) return 0;
+        JsonNode sites = job.template.at("/sites");
+        String domain = uri.getHost();
+        if (!sites.has(domain)) domain = "*";
+        return sites.at("/" + domain + "/retryCount").asInt(0);
+    }
+
     private Map<String, Object> process(HttpFetcher fetcher) {
+        ZooJob job = nodeService.zookeeper().job(data.at("/task/jobId").asText());
+        if (null == job) {
+            return ApiUtil.result(1401, "load job failed", data);
+        }
         ObjectNode storage = data.putObject("storage");
         String url = data.at("/task/url").asText();
+        URI uri;
+        try {
+            uri = URI.create(url);
+        } catch (Exception e) {
+            storage.put("exception", e.getMessage());
+            return ApiUtil.result(0, "create url failed:" + e.getMessage(), data);
+        }
+        int socketTimeout = socketTimeout(job, uri);
+        int connectTimeout = connectTimeout(job, uri);
+        if (connectTimeout > 0 && socketTimeout > 0) {
+            RequestConfig.Builder builder = RequestConfig.custom()
+                    .setConnectTimeout(connectTimeout).setSocketTimeout(socketTimeout);
+            fetcher.config(builder.build());
+        }
+        fetcher.charset(charset(job, uri)).downloader(new HttpDownloader() {
+            @Override
+            public String download(HttpFetcher fetcher, CloseableHttpResponse response) throws Exception {
+                String bucket = bucket(job, uri);
+                String object = String.format("/%s/%s", DPUtil.dateTime("yyyy-MM-dd"), UUID.randomUUID());
+                PutObjectArgs.Builder builder = PutObjectArgs.builder();
+                builder.bucket(bucket);
+                builder.object(object);
+                if (!DPUtil.empty(fetcher.getLastResponseContentType())) {
+                    builder.contentType(fetcher.getLastResponseContentType());
+                }
+                builder.stream(response.getEntity().getContent(), response.getEntity().getContentLength(), -1);
+                ObjectWriteResponse result = nodeService.minio().putObject(builder.build());
+                ObjectNode data = DPUtil.objectNode();
+                data.put("bucket", bucket);
+                data.put("object", object);
+                if (null != result) {
+                    data.put("bucket", result.bucket());
+                    data.put("object", result.object());
+                    data.put("region", result.region());
+                    data.put("etag", result.etag());
+                }
+                return DPUtil.stringify(data);
+            }
+        });
         String referer = data.at("/task/referer").asText();
         Map<String, String> headers = defaultHeaders();
         if (!DPUtil.empty(referer)) {
@@ -58,17 +155,16 @@ public class Worker implements Runnable {
         String html = fetcher.getLastResult();
         storage.put("status", status);
         storage.put("location", fetcher.getLastLocation());
-        for (Header header : fetcher.getLastResponseHeaders()) {
-            if (header.getName().equals(HttpHeaders.CONTENT_TYPE)) {
-                storage.put("media", header.getValue());
-                break;
-            }
-        }
+        storage.put("media", fetcher.getLastResponseContentType());
         Exception exception = fetcher.getLastException();
         if (null != exception) {
             storage.put("exception", exception.getMessage());
         }
         storage.put("html", html);
+        int retryCount = data.at("/task/retryCount").asInt();
+        if (!Arrays.asList(200, 404).contains(fetcher.getLastStatus()) && retryCount < retryCount(job, uri)) {
+            return ApiUtil.result(1402, "fetcher task failed, retry " + retryCount + " times", data);
+        }
         return ApiUtil.result(0, null, data);
     }
 

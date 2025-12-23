@@ -12,7 +12,8 @@ const data: any = ref({
     job: {},
   },
   storage: {
-    top: {},
+    first: {},
+    last: {},
   },
   nodes: [],
   spiders: [],
@@ -83,9 +84,25 @@ const storageVisible = ref(false)
       </div>
     </template>
     <el-descriptions>
-      <el-descriptions-item label="队列积压：">{{ data.storage.size }}</el-descriptions-item>
-      <el-descriptions-item label="链接地址：">{{ data.storage.top.task?.url }}</el-descriptions-item>
-      <el-descriptions-item label="采集节点：">{{ data.storage.top.nodeId }}</el-descriptions-item>
+      <el-descriptions-item label="队列积压：" :span="3">{{ data.storage.size }}</el-descriptions-item>
+      <el-descriptions-item label="最新入队：" :span="3">
+        <el-space>
+          <a target="_blank" ref="noopener noreferrer nofollow" :href="data.storage.first.task?.url">{{ data.storage.first.task?.url }}</a>
+          <el-tag>{{ data.storage.first.storage?.status }}</el-tag>
+        </el-space>
+      </el-descriptions-item>
+      <el-descriptions-item label="采集节点：">{{ data.storage.first.nodeId }}</el-descriptions-item>
+      <el-descriptions-item label="作业标识：">{{ data.storage.first.task?.jobId }}</el-descriptions-item>
+      <el-descriptions-item label="分发时间：">{{ DateUtil.format(data.storage.first.time) }}</el-descriptions-item>
+      <el-descriptions-item label="最先消费：" :span="3">
+        <el-space>
+          <a target="_blank" ref="noopener noreferrer nofollow" :href="data.storage.last.task?.url">{{ data.storage.last.task?.url }}</a>
+          <el-tag>{{ data.storage.last.storage?.status }}</el-tag>
+        </el-space>
+      </el-descriptions-item>
+      <el-descriptions-item label="采集节点：">{{ data.storage.last.nodeId }}</el-descriptions-item>
+      <el-descriptions-item label="作业标识：">{{ data.storage.last.task?.jobId }}</el-descriptions-item>
+      <el-descriptions-item label="分发时间：">{{ DateUtil.format(data.storage.last.time) }}</el-descriptions-item>
     </el-descriptions>
     <el-input type="textarea" :model-value="JSON.stringify(data.storage, null, 4)" :rows="12" v-if="storageVisible" />
   </el-card>

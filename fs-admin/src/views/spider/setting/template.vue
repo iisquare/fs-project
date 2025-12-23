@@ -115,7 +115,8 @@ const handleSubmit = () => {
   formRef.value?.validate((valid: boolean) => {
     if (!valid || formLoading.value) return
     formLoading.value = true
-    TemplateApi.save(form.value, { success: true }).then(result => {
+    TemplateApi.save(form.value, { success: true }).then((result: any) => {
+      form.value = result.data
       handleRefresh(false, true)
     }).catch(() => {}).finally(() => {
       formLoading.value = false

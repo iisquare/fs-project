@@ -48,6 +48,7 @@ public class TemplateService extends JPAServiceBase {
     public Map<String, String> types() {
         Map<String, String> types = new LinkedHashMap<>();
         types.put("pan", "泛采集");
+        types.put("pan_single", "单页采集");
         types.put("target", "定向采集");
         return types;
     }
@@ -86,7 +87,7 @@ public class TemplateService extends JPAServiceBase {
         info.setStatus(status);
         info.setDescription(DPUtil.parseString(param.get("description")));
         info = save(templateDao, info, rbacService.uid(request));
-        return ApiUtil.result(0, null, info);
+        return ApiUtil.result(0, null, DPUtil.firstNode(format(DPUtil.toArrayNode(info))));
     }
 
     public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {
@@ -156,7 +157,7 @@ public class TemplateService extends JPAServiceBase {
         node.put("maxHalt", template.getMaxHalt());
         node.replace("params", DPUtil.parseJSON(template.getParams(), j -> DPUtil.objectNode()));
         int templateId = template.getId();
-        if (template.getType().equals("pan")) {
+        if (Arrays.asList("pan", "pan_single").contains(template.getType())) {
             ObjectNode sites = node.putObject("sites");
             List<Site> siteList = siteDao.findAll((Specification<Site>) (root, query, cb) -> cb.and(
                     cb.equal(root.get("templateId"), templateId),
@@ -169,6 +170,10 @@ public class TemplateService extends JPAServiceBase {
                 item.put("charset", site.getCharset());
                 item.put("collection", site.getCollection());
                 item.put("bucket", site.getBucket());
+                item.put("connectTimeout", site.getConnectTimeout());
+                item.put("socketTimeout", site.getSocketTimeout());
+                item.put("iterateCount", site.getIterateCount());
+                item.put("retryCount", site.getRetryCount());
                 sites.replace(site.getDomain(), item);
             }
             ObjectNode whitelists = node.putObject("whitelists");

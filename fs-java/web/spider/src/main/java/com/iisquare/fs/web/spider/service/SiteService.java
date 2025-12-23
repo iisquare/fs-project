@@ -72,6 +72,10 @@ public class SiteService extends JPAServiceBase {
         info.setCharset(DPUtil.parseString(param.get("charset")));
         info.setCollection(DPUtil.parseString(param.get("collection")));
         info.setBucket(DPUtil.parseString(param.get("bucket")));
+        info.setConnectTimeout(DPUtil.parseInt(param.get("connectTimeout")));
+        info.setSocketTimeout(DPUtil.parseInt(param.get("socketTimeout")));
+        info.setIterateCount(DPUtil.parseInt(param.get("iterateCount")));
+        info.setRetryCount(DPUtil.parseInt(param.get("retryCount")));
         info.setSort(DPUtil.parseInt(param.get("sort")));
         info.setStatus(status);
         info.setDescription(DPUtil.parseString(param.get("description")));
@@ -82,10 +86,9 @@ public class SiteService extends JPAServiceBase {
     public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {
         ObjectNode result = search(siteDao, param, (Specification<Site>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("templateId"), DPUtil.parseInt(param.get("templateId"))));
             int id = DPUtil.parseInt(param.get("id"));
             if (id > 0) predicates.add(cb.equal(root.get("id"), id));
-            int templateId = DPUtil.parseInt(param.get("templateId"));
-            if (templateId > 0) predicates.add(cb.equal(root.get("templateId"), id));
             int status = DPUtil.parseInt(param.get("status"));
             if (!"".equals(DPUtil.parseString(param.get("status")))) {
                 predicates.add(cb.equal(root.get("status"), status));

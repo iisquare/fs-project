@@ -96,9 +96,3 @@
 - 获得授权仅代表可商业使用本项目下的全部源代码，但不包含售后和问答支持。
 - 本项目提供有偿问答和定制化服务，可[联系作者](mailto:iisquare@163.com)商讨具体事宜。
 - 本项目接收个人或商业赞助，赞助者的提案或反馈将优先被采纳和处理。
-
-## 赞助方式
-
-- 支付宝或微信（Ouyang）
-
-![Ouyang](./static/resources/images/sponsor/alipay-and-wechat.jpg)

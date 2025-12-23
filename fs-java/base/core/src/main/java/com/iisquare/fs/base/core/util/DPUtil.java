@@ -319,7 +319,8 @@ public class DPUtil {
      * @return
      */
     public static List<String> matcher(String regex, String str, boolean bGroup) {
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
+        if (DPUtil.empty(regex) || DPUtil.empty(str)) return list;
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
         while (matcher.find()) {
@@ -339,6 +340,7 @@ public class DPUtil {
      * 获取第一个匹配的字符串
      */
     public static String firstMatcher(String regex, String str) {
+        if (DPUtil.empty(regex) || DPUtil.empty(str)) return null;
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
         while (matcher.find()) {
@@ -351,6 +353,7 @@ public class DPUtil {
      * 判断字符串是否与表达式匹配
      */
     public static boolean isMatcher(String regex, String str) {
+        if (DPUtil.empty(regex) || DPUtil.empty(str)) return false;
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
         return matcher.find();
@@ -1164,7 +1167,7 @@ public class DPUtil {
     }
 
     public static JsonNode parseJSON(String json, Function<String, ? extends JsonNode> func) {
-        if (null == json) return func.apply(null);
+        if (DPUtil.empty(json)) return func.apply(null);
         try {
             return mapper.readTree(json);
         } catch (Exception e) {

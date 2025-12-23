@@ -36,6 +36,14 @@ public class Site implements Serializable {
     @Column
     private String bucket; // 附件存储到MinIO中的桶名称
     @Column
+    private Integer connectTimeout; // 连接超时
+    @Column
+    private Integer socketTimeout; // 执行超时
+    @Column
+    private Integer iterateCount; // 翻页深度
+    @Column
+    private Integer retryCount; // 重试次数
+    @Column
     private Integer sort;
     @Column
     private Integer status;

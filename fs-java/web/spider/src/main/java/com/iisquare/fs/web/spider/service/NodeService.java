@@ -91,9 +91,6 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
     @Override
     public void destroy() throws Exception {
         this.stop();
-        synchronized (idleLock) {
-            idleLock.notifyAll(); // 唤醒空闲等待线程
-        }
         while (workerPool.getNumActive() > 0 || runningCounter.get() > 0) {
             log.info("still {} workers and {} schedule are running, please wait...", workerPool.getNumActive(), runningCounter.get());
             try {
@@ -220,11 +217,17 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         }
         ObjectNode storage = data.putObject("storage");
         storage.put("size", channel.sizeStorage());
-        JsonNode topStorage = channel.topStorage();
-        if (null == topStorage) {
-            storage.putObject("top");
+        JsonNode firstStorage = channel.firstStorage();
+        if (null == firstStorage) {
+            storage.putObject("first");
         } else {
-            storage.replace("top", topStorage);
+            storage.replace("first", firstStorage);
+        }
+        JsonNode lastStorage = channel.lastStorage();
+        if (null == lastStorage) {
+            storage.putObject("last");
+        } else {
+            storage.replace("last", lastStorage);
         }
         return ApiUtil.result(0, null, data);
     }
@@ -296,9 +299,6 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
             return ApiUtil.result(1403, "作业已停止，暂不允许提交任务", job);
         }
         // 将任务提交到执行队列
-        if (!"pan".equals(job.getTemplate().at("/type").asText())) {
-            return ApiUtil.result(1401, "当前仅支持泛采集作业", job);
-        }
         boolean force = json.at("/params/force").asBoolean();
         String referer = json.at("/params/referer").asText();
         String[] urls = DPUtil.explode("\n", json.at("/params/urls").asText());
@@ -314,7 +314,7 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
                 item.put("result", false);
             }
         }
-        if (job.status == ZooJob.Status.PAUSE || job.status == ZooJob.Status.RUNNING) {
+        if (job.status.equals(ZooJob.Status.PAUSE) || job.status.equals(ZooJob.Status.RUNNING)) {
             return ApiUtil.result(0, null, result);
         }
         // 更新作业状态
@@ -429,7 +429,9 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         }
         if (denied) return false;
         if (task.force) return true;
-        long count = htmlMongo.count(Filters.eq(MongoCore.FIELD_ID, task.url));
+        long count = htmlMongo.count(Filters.and(
+                Filters.eq(MongoCore.FIELD_ID, task.url),
+                Filters.eq("response_status", 200)));
         return count == 0;
     }
 
@@ -476,7 +478,7 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         data.putPOJO("token", token);
         data.putPOJO("task", task);
         String rateId = job.getTemplate().at("/rateId").asText();
-        if (DPUtil.empty(rateId)) {
+        if (DPUtil.parseInt(rateId) < 1) {
             channel.putAck(token.getId(), data); // 放入待确认队列
             return ApiUtil.result(0, null, data);
         }
@@ -547,6 +549,9 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
 
     public void stop() {
         this.isRunning = false;
+        synchronized (idleLock) {
+            idleLock.notifyAll(); // 唤醒空闲等待线程
+        }
     }
 
     public Map<String, Object> process(ObjectNode storage) {
@@ -555,8 +560,8 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
     }
 
     public ObjectNode checkSynchronousQueue() {
-        long interval = 300;
-        long await = 30000;
+        long interval = 30;
+        long await = 100;
         for (long time = interval; time <= await && isRunning; time += interval) {
             ObjectNode data;
             try { // 多次循环读，避免阻塞时间过长，导致关闭过程缓慢
@@ -573,7 +578,13 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
     public void run() {
         runningCounter.incrementAndGet();
         while (this.isRunning) {
-            ObjectNode data = channel.takeStorage();
+            ObjectNode data;
+            try {
+                data = channel.takeStorage();
+            } catch (Exception e) {
+                log.error("node service take storage failed", e);
+                break;
+            }
             if (null == data) {
                 synchronized (idleLock) {
                     try {

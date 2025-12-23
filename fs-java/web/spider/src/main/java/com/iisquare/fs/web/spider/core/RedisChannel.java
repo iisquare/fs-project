@@ -205,6 +205,9 @@ public class RedisChannel {
         return result == 1;
     }
 
+    /**
+     * 队列从左到右排列，左进右出，第一个在左边为最新入队，最后一个在右边为最先消费
+     */
     public String keyStorage() {
         return keyPrefix + "channel:storage";
     }
@@ -214,9 +217,14 @@ public class RedisChannel {
         return result == null ? -1 : result;
     }
 
-    public JsonNode topStorage() {
+    public JsonNode lastStorage() {
         String last = redis().opsForList().getLast(keyStorage());
         return DPUtil.parseJSON(last);
+    }
+
+    public JsonNode firstStorage() {
+        String first = redis().opsForList().getFirst(keyStorage());
+        return DPUtil.parseJSON(first);
     }
 
     public ObjectNode takeStorage() {

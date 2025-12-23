@@ -3,6 +3,7 @@ package com.iisquare.fs.web.crawler.core;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
+import com.iisquare.fs.base.jsoup.util.JsoupUtil;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
@@ -17,6 +18,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustStrategy;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultRedirectStrategy;
@@ -24,6 +26,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 import javax.net.ssl.SSLContext;
 import java.io.Closeable;
@@ -40,10 +44,11 @@ public class HttpFetcher implements Closeable {
         new String[]{"^", "|"},
         new String[]{"%5E", "%7C"}
     };
-    private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
+    public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
     private static final int DEFAULT_STATUS = 0;
     private final CloseableHttpClient client;
     private String url;
+    private HttpDownloader downloader;
     private Map<String, String> headers;
     private int lastStatus = DEFAULT_STATUS;
     private String lastResult;
@@ -52,6 +57,7 @@ public class HttpFetcher implements Closeable {
     private Exception lastException;
     private Header[] lastRequestHeaders;
     private Header[] lastResponseHeaders;
+    private String lastResponseContentType;
     private RequestConfig config;
     private final RequestConfig defaultConfig;
 
@@ -62,7 +68,7 @@ public class HttpFetcher implements Closeable {
         client = HttpClients.custom()
                 .setSSLSocketFactory(new SSLConnectionSocketFactory(sslContext, NoopHostnameVerifier.INSTANCE))
                 .setRedirectStrategy(redirectStrategy()).build();
-        RequestConfig.Builder builder = RequestConfig.custom().setConnectTimeout(3000).setSocketTimeout(60000);
+        RequestConfig.Builder builder = RequestConfig.custom().setConnectTimeout(3000).setSocketTimeout(15000);
         defaultConfig = builder.build();
     }
 
@@ -86,6 +92,7 @@ public class HttpFetcher implements Closeable {
         this.headers = null;
         this.charset = DEFAULT_CHARSET;
         this.config = null;
+        this.downloader = null;
     }
 
     public HttpFetcher clear() {
@@ -95,6 +102,7 @@ public class HttpFetcher implements Closeable {
         this.lastException = null;
         this.lastRequestHeaders = new Header[]{};
         this.lastResponseHeaders = new Header[]{};
+        this.lastResponseContentType = "";
         return this;
     }
 
@@ -105,6 +113,11 @@ public class HttpFetcher implements Closeable {
 
     public HttpFetcher url(String url) {
         this.url = autoUrl(url);
+        return this;
+    }
+
+    public HttpFetcher downloader(HttpDownloader downloader) {
+        this.downloader = downloader;
         return this;
     }
 
@@ -130,7 +143,7 @@ public class HttpFetcher implements Closeable {
         CloseableHttpResponse response;
         try {
             response = client.execute(request);
-        } catch (IOException e) {
+        } catch (Exception e) {
             this.lastException = e;
             return this;
         }
@@ -139,15 +152,50 @@ public class HttpFetcher implements Closeable {
         this.lastResponseHeaders = response.getAllHeaders();
         if (200 == this.lastStatus) {
             HttpEntity entity = response.getEntity();
-            try {
-                this.lastResult = EntityUtils.toString(entity, charset);
-            } catch (IOException e) {
-                this.lastException = e;
-                return this;
+            Header contentType = entity.getContentType();
+            if (null != contentType) {
+                this.lastResponseContentType = contentType.getValue();
+            }
+            if (null == this.downloader || isPlainContent(this.lastResponseContentType)) {
+                try {
+                    ContentType type = ContentType.get(entity);
+                    byte[] bytes = EntityUtils.toByteArray(entity);
+                    if (null != type.getCharset()) { // 以响应头中的类型为准
+                        this.lastResult = new String(bytes, type.getCharset());
+                    } else {
+                        this.lastResult = new String(bytes, this.charset); // 尝试采用指定编码进行解析
+                        Document document = Jsoup.parse(this.lastResult, this.url);
+                        String jcs = JsoupUtil.charset(document);
+                        if (!DPUtil.empty(jcs)) {
+                            try {
+                                Charset cs = Charset.forName(jcs);
+                                if (!this.charset.equals(cs)) { // 页面编码与指定编码不一致
+                                    this.lastResult = new String(bytes, cs); // 采用页面编码重新解析
+                                }
+                            } catch (Exception ignored) {} // 忽略此处编码异常
+                        }
+                    }
+                } catch (Exception e) {
+                    this.lastException = e;
+                }
+            } else {
+                try {
+                    this.lastResult = this.downloader.download(this, response);
+                } catch (Exception e) {
+                    this.lastException = e;
+                }
             }
         }
         FileUtil.close(response);
         return this;
+    }
+
+    public boolean isPlainContent(String responseContentType) {
+        if (responseContentType.contains("text")) return true;
+        if (responseContentType.contains("json")) return true;
+        if (responseContentType.contains("html")) return true;
+        if (responseContentType.contains("xml")) return true;
+        return false;
     }
 
     public HttpFetcher post(JsonNode body) {

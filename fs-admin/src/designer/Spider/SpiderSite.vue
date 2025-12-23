@@ -21,6 +21,10 @@ const columns = ref([
   { prop: 'charset', label: '页面编码' },
   { prop: 'collection', label: '数据存储' },
   { prop: 'bucket', label: '文件存储' },
+  { prop: 'connectTimeout', label: '连接超时' },
+  { prop: 'socketTimeout', label: '执行超时' },
+  { prop: 'iterateCount', label: '翻页深度' },
+  { prop: 'retryCount', label: '重试次数' },
   { prop: 'description', label: '描述', hide: true },
   { prop: 'sort', label: '排序' },
   { prop: 'statusText', label: '状态' },
@@ -36,7 +40,7 @@ const pagination = ref(RouteUtil.pagination(filters.value))
 const selection = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
   tableRef.value?.clearSelection()
-  Object.assign(filters.value, RouteUtil.pagination2filter(pagination.value, keepPage))
+  Object.assign(filters.value, RouteUtil.pagination2filter(pagination.value, keepPage), { templateId: model.value.id })
   filter2query && RouteUtil.filter2query(route, router, filters.value)
   loading.value = true
   SiteApi.list(filters.value).then((result: any) => {
@@ -185,6 +189,24 @@ const handleDelete = () => {
       </el-form-item>
       <el-form-item label="文件存储" prop="bucket">
         <el-input v-model="form.bucket" placeholder="附件存储到MinIO中的桶名称" />
+      </el-form-item>
+      <el-form-item label="连接超时">
+        <el-space>
+          <el-input-number v-model="form.connectTimeout" />
+          <span>毫秒</span>
+        </el-space>
+      </el-form-item>
+      <el-form-item label="执行超时">
+        <el-space>
+          <el-input-number v-model="form.socketTimeout" />
+          <span>毫秒</span>
+        </el-space>
+      </el-form-item>
+      <el-form-item label="翻页深度">
+        <el-input-number v-model="form.iterateCount" />
+      </el-form-item>
+      <el-form-item label="重试次数">
+        <el-input-number v-model="form.retryCount" />
       </el-form-item>
       <el-form-item label="排序">
         <el-input-number v-model="form.sort" />

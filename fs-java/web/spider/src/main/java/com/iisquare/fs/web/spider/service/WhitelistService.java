@@ -78,10 +78,9 @@ public class WhitelistService extends JPAServiceBase {
     public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {
         ObjectNode result = search(whitelistDao, param, (Specification<Whitelist>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("templateId"), DPUtil.parseInt(param.get("templateId"))));
             int id = DPUtil.parseInt(param.get("id"));
             if (id > 0) predicates.add(cb.equal(root.get("id"), id));
-            int templateId = DPUtil.parseInt(param.get("templateId"));
-            if (templateId > 0) predicates.add(cb.equal(root.get("templateId"), id));
             int status = DPUtil.parseInt(param.get("status"));
             if (!"".equals(DPUtil.parseString(param.get("status")))) {
                 predicates.add(cb.equal(root.get("status"), status));

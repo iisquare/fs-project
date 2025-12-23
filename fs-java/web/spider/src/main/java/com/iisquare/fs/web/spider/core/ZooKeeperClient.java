@@ -155,6 +155,14 @@ public class ZooKeeperClient implements Closeable {
     public void open() {
         FileUtil.close(this);
         ZooNode node = ZooNode.record(nodeId);
+        client.getConnectionStateListenable().addListener((client, state) -> {
+            switch (state) {
+                case CONNECTED:
+                case RECONNECTED:
+                    register(node);
+                    break;
+            }
+        });
         client.start();
         try {
             client.blockUntilConnected();
@@ -167,15 +175,23 @@ public class ZooKeeperClient implements Closeable {
             log.warn("latch start failed", e);
         }
         try {
-            client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL)
-                    .forPath("/runtime/spiders/" + node.id, ZooNode.encode(node).getBytes(charset));
-        } catch (Exception e) {
-            log.warn("register spider failed", e);
-        }
-        try {
             cache.start();
         } catch (Exception e) {
             log.warn("watch start failed", e);
+        }
+    }
+
+    public boolean register(ZooNode node) {
+        String path = "/runtime/spiders/" + node.id;
+        try {
+            Stat stat = client.checkExists().forPath(path);
+            if (null != stat) return true;
+            client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL)
+                    .forPath(path, ZooNode.encode(node).getBytes(charset));
+            return true;
+        } catch (Exception e) {
+            log.warn("register spider failed", e);
+            return false;
         }
     }
 

@@ -10,6 +10,6 @@ fs:
     redis:
       keyPrefix: "fs:spider:"
     worker:
-      minIdle: 1
+      minIdle: 0
       maxIdle: 3
-      maxTotal: 15
+      maxTotal: 25

@@ -112,12 +112,15 @@ const handleSubmit = () => {
       <el-table-column type="expand">
         <template #default="scope">
           <el-descriptions border>
+            <el-descriptions-item label="任务标识">{{ scope.row.channel.top.id }}</el-descriptions-item>
+            <el-descriptions-item label="迭代次数">{{ scope.row.channel.top.iterateCount }}</el-descriptions-item>
+            <el-descriptions-item label="重试次数">{{ scope.row.channel.top.retryCount }}</el-descriptions-item>
             <el-descriptions-item label="强制重采">{{ scope.row.channel.top.force }}</el-descriptions-item>
             <el-descriptions-item label="分派时间">{{ DateUtil.format(scope.row.channel.top.dispatchTime) }}</el-descriptions-item>
             <el-descriptions-item label="放置时间">{{ DateUtil.format(scope.row.channel.top.lastTime) }}</el-descriptions-item>
             <el-descriptions-item label="链接地址" :span="3">{{ scope.row.channel.top.url }}</el-descriptions-item>
           </el-descriptions>
-          <el-input type="textarea" :model-value="JSON.stringify(scope.row.template, null, 4)" :rows="12" />
+          <el-input type="textarea" :model-value="JSON.stringify(scope.row, null, 4)" :rows="12" />
         </template>
       </el-table-column>
       <TableColumn :columns="columns">

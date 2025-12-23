@@ -4,6 +4,7 @@ dependencies {
     implementation project(':base:zookeeper')
     implementation project(':base:minio')
     testImplementation project(':web:test')
+    implementation project(':base:jsoup')
 
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: lang3Version
     implementation group: 'org.apache.commons', name: 'commons-pool2', version: pool2Version

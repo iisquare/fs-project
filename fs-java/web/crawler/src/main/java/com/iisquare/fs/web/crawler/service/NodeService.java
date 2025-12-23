@@ -7,12 +7,14 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.crawler.core.*;
+import io.minio.MinioClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -45,6 +47,8 @@ public class NodeService extends ServiceBase implements Runnable, DisposableBean
     private Integer workerMaxIdle;
     @Value("${fs.crawler.worker.maxTotal}")
     private Integer workerMaxTotal;
+    @Autowired
+    MinioClient minioClient;
 
 
     private ZooKeeperClient zookeeper;
@@ -78,12 +82,6 @@ public class NodeService extends ServiceBase implements Runnable, DisposableBean
     @Override
     public void destroy() throws Exception {
         this.stop();
-        synchronized (idleLock) {
-            idleLock.notifyAll(); // 唤醒空闲等待线程
-            try {
-                Thread.sleep(10); // 等待空闲线程响应完成
-            } catch (InterruptedException ignored) {}
-        }
         while (workerPool.getNumActive() > 0 || runningCounter.get() > 0) {
             log.info("still {} workers and {} schedule are running, please wait...", workerPool.getNumActive(), runningCounter.get());
             try {
@@ -96,6 +94,10 @@ public class NodeService extends ServiceBase implements Runnable, DisposableBean
         zookeeper = null;
         workerPool = null;
         fetcherPool = null;
+    }
+
+    public MinioClient minio() {
+        return this.minioClient;
     }
 
     public ZooKeeperClient zookeeper() {
@@ -144,6 +146,9 @@ public class NodeService extends ServiceBase implements Runnable, DisposableBean
 
     public void stop() {
         this.isRunning = false;
+        synchronized (idleLock) {
+            idleLock.notifyAll(); // 唤醒空闲等待线程
+        }
     }
 
     private boolean obtain(HttpFetcher fetcher) {
@@ -161,10 +166,14 @@ public class NodeService extends ServiceBase implements Runnable, DisposableBean
         ObjectNode body = DPUtil.objectNode();
         body.put("nodeId", zhNodeId);
         fetcher.url(url).post(body);
+        log.info("obtain task: {}", fetcher.getLastResult());
         return true;
     }
 
     public boolean report(HttpFetcher fetcher, Map<String, Object> result) {
+        if (ApiUtil.failed(result)) {
+            log.info("report task: {}", DPUtil.stringify(result));
+        }
         List<ZooNode> spiders = zookeeper.spiders().values().stream().toList();
         if (spiders.isEmpty()) { // 无可用服务端
             log.info("spiders is empty, retry after {} milliseconds", 30000);
@@ -180,8 +189,8 @@ public class NodeService extends ServiceBase implements Runnable, DisposableBean
     }
 
     public ObjectNode checkSynchronousQueue() {
-        long interval = 300;
-        long await = 30000;
+        long interval = 30;
+        long await = 100;
         for (long time = interval; time <= await && isRunning; time += interval) {
             ObjectNode data;
             try { // 多次循环读，避免阻塞时间过长，导致关闭过程缓慢
@@ -211,10 +220,18 @@ public class NodeService extends ServiceBase implements Runnable, DisposableBean
             if (0 != code) {
                 synchronized (idleLock) {
                     try {
-                        if (1002 == code) {
-                            idleLock.wait(35000); // 无可用令牌
-                        } else if (1005 == code) {
-                            idleLock.wait(15000); // 无可用任务
+                        if (1002 == code) { // 无可用令牌
+                            if (workerPool.getNumActive() > 0) {
+                                idleLock.wait(300); // 短暂等待
+                            } else {
+                                idleLock.wait(35000); // 工作者也闲置，等待时间长一些
+                            }
+                        } else if (1005 == code) { // 无可用任务
+                            if (workerPool.getNumActive() > 0) {
+                                idleLock.wait(50); // 短暂等待
+                            } else {
+                                idleLock.wait(15000); // 工作者也闲置，等待时间长一些
+                            }
                         }
                     } catch (InterruptedException ignored) {}
                 }
