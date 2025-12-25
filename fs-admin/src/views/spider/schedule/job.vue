@@ -21,7 +21,10 @@ const columns = ref([
   { prop: 'template.minHalt', label: '最小停顿间隔', hide: true },
   { prop: 'template.maxHalt', label: '最大停顿间隔', hide: true },
   { prop: 'statusText', label: '状态' },
-  { prop: 'channel.size', label: '任务积压' },
+  { prop: 'overstock', label: '积压', headerAlign: 'center', children: [
+    { prop: 'channel.sizeRank', label: 'ZSet', headerAlign: 'center' },
+    { prop: 'channel.sizeDetail', label: 'Hash', headerAlign: 'center' },
+  ] },
   { prop: 'channel.top.score', label: '下次调度时间', formatter: DateUtil.render },
   { prop: 'createdTime', label: '创建时间', formatter: DateUtil.render, hide: true },
   { prop: 'updatedTime', label: '修改时间', formatter: DateUtil.render, hide: true },
@@ -123,8 +126,7 @@ const handleSubmit = () => {
           <el-input type="textarea" :model-value="JSON.stringify(scope.row, null, 4)" :rows="12" />
         </template>
       </el-table-column>
-      <TableColumn :columns="columns">
-      </TableColumn>
+      <TableColumn :columns="columns"></TableColumn>
       <el-table-column label="操作" width="250px">
         <template #default="scope">
           <el-button link @click="handleExecute(scope)">执行</el-button>

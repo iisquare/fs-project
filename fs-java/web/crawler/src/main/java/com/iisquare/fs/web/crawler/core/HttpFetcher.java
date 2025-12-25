@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
 import com.iisquare.fs.base.jsoup.util.JsoupUtil;
+import com.iisquare.fs.web.crawler.util.HttpClientUtil;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
@@ -152,6 +153,7 @@ public class HttpFetcher implements Closeable {
         this.lastResponseHeaders = response.getAllHeaders();
         if (200 == this.lastStatus) {
             HttpEntity entity = response.getEntity();
+            entity = HttpClientUtil.decode(entity);
             Header contentType = entity.getContentType();
             if (null != contentType) {
                 this.lastResponseContentType = contentType.getValue();

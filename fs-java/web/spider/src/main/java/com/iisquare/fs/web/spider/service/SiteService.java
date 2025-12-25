@@ -72,6 +72,8 @@ public class SiteService extends JPAServiceBase {
         info.setCharset(DPUtil.parseString(param.get("charset")));
         info.setCollection(DPUtil.parseString(param.get("collection")));
         info.setBucket(DPUtil.parseString(param.get("bucket")));
+        info.setRetainQuery(DPUtil.parseBoolean(param.get("retainQuery")) ? 1 : 0);
+        info.setRetainAnchor(DPUtil.parseBoolean(param.get("retainAnchor")) ? 1 : 0);
         info.setConnectTimeout(DPUtil.parseInt(param.get("connectTimeout")));
         info.setSocketTimeout(DPUtil.parseInt(param.get("socketTimeout")));
         info.setIterateCount(DPUtil.parseInt(param.get("iterateCount")));
@@ -103,7 +105,7 @@ public class SiteService extends JPAServiceBase {
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort");
-        JsonNode rows = ApiUtil.rows(result);
+        JsonNode rows = format(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
         }
@@ -111,6 +113,15 @@ public class SiteService extends JPAServiceBase {
             fillStatus(rows, status());
         }
         return result;
+    }
+
+    public JsonNode format(JsonNode rows) {
+        for (JsonNode row : rows) {
+            ObjectNode node = (ObjectNode) row;
+            node.put("retainQuery", DPUtil.parseBoolean(node.at("/retainQuery").asInt()));
+            node.put("retainAnchor", DPUtil.parseBoolean(node.at("/retainAnchor").asInt()));
+        }
+        return rows;
     }
 
     public boolean remove(List<Integer> ids) {

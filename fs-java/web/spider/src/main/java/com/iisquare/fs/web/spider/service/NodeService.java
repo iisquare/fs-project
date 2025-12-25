@@ -11,6 +11,7 @@ import com.iisquare.fs.base.mongodb.MongoCore;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.spider.core.*;
 import com.iisquare.fs.web.spider.mongo.HtmlMongo;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import org.apache.catalina.connector.Connector;
 import org.apache.commons.pool2.ObjectPool;
@@ -19,6 +20,8 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.coyote.http11.Http11NioProtocol;
 import org.apache.curator.framework.recipes.leader.Participant;
 import org.apache.tomcat.util.threads.ThreadPoolExecutor;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -32,7 +35,7 @@ import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -280,7 +283,8 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
                 template.putPOJO("rateInfo", rate);
             }
             ObjectNode channel = item.putObject("channel");
-            channel.put("size", this.channel.sizeTask(job.getId()));
+            channel.put("sizeRank", this.channel.sizeTaskRank(job.getId()));
+            channel.put("sizeDetail", this.channel.sizeTaskDetail(job.getId()));
             RedisTask topTask = this.channel.topTask(job.getId());
             if (null == topTask) {
                 channel.putObject("top");
@@ -290,6 +294,57 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
             data.replace(entry.getKey(), item);
         }
         return data;
+    }
+
+    /**
+     * 检测链接是否需要进行处理
+     */
+    public Map<String, Boolean> checkUrl(ZooJob job, boolean force, String... urls) {
+        Map<String, Boolean> result = new LinkedHashMap<>();
+        Map<String, Collection<String>> domains = new LinkedHashMap<>();
+        for (String url : urls) {
+            URI uri;
+            try {
+                uri = URI.create(url);
+            } catch (Exception e) {
+                result.put(url, false); // 链接不合法，忽略采集
+                continue;
+            }
+            if (!Worker.retainAnchor(job, uri.getHost())) { // 去除锚点信息
+                url = DPUtil.explode("#", url)[0];
+            }
+            if (!Worker.retainQuery(job, uri.getHost())) { // 去除请求参数
+                url = DPUtil.explode("\\?", url)[0];
+            }
+            result.put(url, true); // 默认全部进行采集
+            if (!checkUrl(job, uri)) {
+                result.put(url, false); // 链接不满足作业要求，忽略采集
+                continue;
+            }
+            if (url.startsWith("http://") || url.startsWith("https://")) { // 待检测
+                domains.computeIfAbsent(uri.getHost(), k -> new LinkedHashSet<>()).add(url);
+            } else {
+                result.put(url, false); // 非HTTP链接，忽略采集
+            }
+        }
+        if (force) return result; // 强制处理，不再检测是否已采集
+        for (Map.Entry<String, Collection<String>> entry : domains.entrySet()) {
+            Bson filters = Filters.and(
+                    Filters.in(MongoCore.FIELD_ID, entry.getValue()),
+                    Filters.eq("response_status", 200)
+            );
+            Document projection = new Document();
+            projection.put(MongoCore.FIELD_ID, 1);
+            projection.put("response_status", 1);
+            htmlMongo.switchTable(Worker.collection(job, entry.getKey()));
+            try (MongoCursor<Document> iterator = htmlMongo.collection().find(filters).projection(projection).iterator()) {
+                while (iterator.hasNext()) { // 已处理，忽略采集
+                    Document document = iterator.next();
+                    result.put(document.getString(MongoCore.FIELD_ID), 200 != document.getInteger("response_status"));
+                }
+            }
+        }
+        return result;
     }
 
     public Map<String, Object> execute(ObjectNode json) {
@@ -302,12 +357,13 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         boolean force = json.at("/params/force").asBoolean();
         String referer = json.at("/params/referer").asText();
         String[] urls = DPUtil.explode("\n", json.at("/params/urls").asText());
+        Map<String, Boolean> checkedUrls = checkUrl(job, force, urls);
         ArrayNode result = DPUtil.arrayNode();
-        for (String url : urls) {
-            url = DPUtil.explode("#", url)[0]; // 去除锚点信息
+        for (Map.Entry<String, Boolean> entry : checkedUrls.entrySet()) {
+            String url = entry.getKey();
             ObjectNode item = result.addObject();
             item.put("url", url);
-            if (url.startsWith("http://") || url.startsWith("https://")) {
+            if (entry.getValue()) {
                 RedisTask task = RedisTask.record(job, url, force, referer);
                 item.put("result", channel.putTask(task));
             } else {
@@ -401,13 +457,10 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         return ApiUtil.result(0, null, removed);
     }
 
-    public boolean checkUrl(ZooJob job, RedisTask task) {
-        URI uri;
-        try {
-            uri = new URI(task.url);
-        } catch (URISyntaxException e) {
-            return false;
-        }
+    /**
+     * 检测链接是否符合作业黑白名单要求
+     */
+    public boolean checkUrl(ZooJob job, URI uri) {
         boolean allowed = false;
         for (JsonNode whitelist : job.template.at("/whitelists")) {
             if (DPUtil.isMatcher(whitelist.at("/regexDomain").asText(), uri.getHost())) {
@@ -428,6 +481,20 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
             }
         }
         if (denied) return false;
+        return true;
+    }
+
+    /**
+     * 检测任务是否需要处理
+     */
+    public boolean checkUrl(ZooJob job, RedisTask task) {
+        URI uri;
+        try {
+            uri = new URI(task.url);
+        } catch (URISyntaxException e) {
+            return false;
+        }
+        if (!checkUrl(job, uri)) return false;
         if (task.force) return true;
         long count = htmlMongo.count(Filters.and(
                 Filters.eq(MongoCore.FIELD_ID, task.url),
@@ -532,11 +599,12 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
                 channel.decrRateParallel(rate, token, job, task, nodeId, "");
             }
         }
-        if (0 != json.at("/code").asInt(-1)) {
+        if (0 == json.at("/code").asInt(-1)) {
+            if (!channel.putStorage(data)) {
+                return ApiUtil.result(1005, "写入存储队列失败", json);
+            }
+        } else {
             channel.putTask(task.back(job)); // 归还任务
-        }
-        if (!channel.putStorage(data)) {
-            return ApiUtil.result(1005, "写入存储队列失败", json);
         }
         return ApiUtil.result(0, null, null);
     }

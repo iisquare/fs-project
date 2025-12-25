@@ -4,27 +4,22 @@
 db.getCollection("fs_spider_html").drop();
 db.createCollection("fs_spider_html");
 db.getCollection("fs_spider_html").createIndex({
-    frameId: NumberInt("1")
-}, {
-    name: "idx_frame_id"
-});
-db.getCollection("fs_spider_html").createIndex({
-    content_type: NumberInt("1")
+    content_type: 1
 }, {
     name: "idx_content_type"
 });
 db.getCollection("fs_spider_html").createIndex({
-    created_time: NumberInt("1")
+    updated_time: 1
 }, {
-    name: "idx_created_time"
+    name: "idx_updated_time"
 });
 db.getCollection("fs_spider_html").createIndex({
-    domain: NumberInt("1")
+    domain: 1
 }, {
     name: "idx_domain"
 });
 db.getCollection("fs_spider_html").createIndex({
-    response_status: NumberInt("1")
+    response_status: 1
 }, {
     name: "idx_response_status"
 });

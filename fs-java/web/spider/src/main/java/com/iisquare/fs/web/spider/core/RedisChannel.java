@@ -5,9 +5,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.spider.service.NodeService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.scripting.support.ResourceScriptSource;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -16,6 +21,21 @@ public class RedisChannel {
 
     final String keyPrefix;
     final NodeService nodeService;
+    private static final DefaultRedisScript<List> luaTaskTop;
+    private static final DefaultRedisScript<Long> luaTaskPut;
+    private static final DefaultRedisScript<List> luaTaskTake;
+
+    static {
+        luaTaskTop = new DefaultRedisScript<>();
+        luaTaskTop.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/task-top.lua")));
+        luaTaskTop.setResultType(List.class);
+        luaTaskPut = new DefaultRedisScript<>();
+        luaTaskPut.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/task-put.lua")));
+        luaTaskPut.setResultType(Long.class);
+        luaTaskTake = new DefaultRedisScript<>();
+        luaTaskTake.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/task-take.lua")));
+        luaTaskTake.setResultType(List.class);
+    }
 
     public RedisChannel(String keyPrefix, NodeService nodeService) {
         this.keyPrefix = keyPrefix;
@@ -28,16 +48,6 @@ public class RedisChannel {
 
     public String keyToken() {
         return keyPrefix + "channel:token";
-    }
-
-    public long sizeTask(String jobId) {
-        Long result = redis().opsForZSet().zCard(keyTask(jobId));
-        return result == null ? -1 : result;
-    }
-
-    public boolean clearTask(String jobId) {
-        Boolean result = redis().delete(keyTask(jobId));
-        return result != null && result;
     }
 
     public long sizeToken() {
@@ -80,40 +90,69 @@ public class RedisChannel {
         return result != null && result;
     }
 
-    public String keyTask(String jobId) {
-        return keyPrefix + "task:job-" + jobId;
+    /**
+     * 采用zset+hash组合的方式存放任务，便于对执行中的连接进行去重
+     * keyTaskRank用于存储zset链接的排序（url->score）
+     * keyTaskDetail用于存储hash链接的任务明细（url->json）
+     */
+    public String keyTaskRank(String jobId) {
+        return keyPrefix + "task:rank-" + jobId;
+    }
+
+    public String keyTaskDetail(String jobId) {
+        return keyPrefix + "task:detail-" + jobId;
+    }
+
+    public long sizeTaskRank(String jobId) {
+        Long result = redis().opsForZSet().zCard(keyTaskRank(jobId));
+        return result == null ? -1 : result;
+    }
+
+    public long sizeTaskDetail(String jobId) {
+        return redis().opsForHash().size(keyTaskDetail(jobId));
+    }
+
+    public boolean clearTask(String jobId) {
+        String keyTaskRank = keyTaskRank(jobId);
+        String keyTaskDetail = keyTaskDetail(jobId);
+        Long result = redis().delete(Arrays.asList(keyTaskRank, keyTaskDetail));
+        return result != null;
     }
 
     /**
      * 查看最近一次任务
      */
     public RedisTask topTask(String jobId) {
-        String keyTask = keyTask(jobId);
-        Set<ZSetOperations.TypedTuple<String>> tuples = redis().opsForZSet().rangeWithScores(keyTask, 0, 0);
-        if (null == tuples || tuples.size() != 1) return null;
-        ZSetOperations.TypedTuple<String> item = tuples.iterator().next();
-        return RedisTask.decode(item.getValue());
+        String keyTaskRank = keyTaskRank(jobId);
+        String keyTaskDetail = keyTaskDetail(jobId);
+        List<Object> objects = redis().execute(luaTaskTop, Arrays.asList(keyTaskRank, keyTaskDetail));
+        if (null == objects || objects.size() != 3) return null;
+        return RedisTask.decode(DPUtil.parseString(objects.get(1)));
     }
 
     /**
      * 获取任务
      */
     public RedisTask takeTask(String jobId) {
-        String keyTask = keyTask(jobId);
-        Set<String> items = redis().opsForZSet().rangeByScore(keyTask, 0, System.currentTimeMillis(), 0, 1);
-        if (null == items || items.size() != 1) return null;
-        String item = items.iterator().next();
-        Long result = redis().opsForZSet().remove(keyTask, item);
-        if (null == result || result != 1) return null;
-        return RedisTask.decode(item);
+        String keyTaskRank = keyTaskRank(jobId);
+        String keyTaskDetail = keyTaskDetail(jobId);
+        long score = System.currentTimeMillis();
+        List<Object> objects = redis().execute(
+                luaTaskTake, Arrays.asList(keyTaskRank, keyTaskDetail), String.valueOf(score));
+        if (null == objects || objects.size() != 3) return null;
+        return RedisTask.decode(DPUtil.parseString(objects.get(1)));
     }
 
     /**
      * 放置任务
      */
     public boolean putTask(RedisTask task) {
-        Boolean result = redis().opsForZSet().add(keyTask(task.getJobId()), RedisTask.encode(task), task.score);
-        return result != null && result;
+        String keyTaskRank = keyTaskRank(task.getJobId());
+        String keyTaskDetail = keyTaskDetail(task.getJobId());
+        Long result = redis().execute(
+                luaTaskPut, Arrays.asList(keyTaskRank, keyTaskDetail),
+                task.url, RedisTask.encode(task), String.valueOf(task.score));
+        return null != result && 1 == result;
     }
 
     public String keyRate(String prefix, ZooRate rate, ZooJob job, RedisTask task, String nodeId, String proxyIP) {

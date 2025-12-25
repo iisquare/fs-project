@@ -170,6 +170,9 @@ public class TemplateService extends JPAServiceBase {
                 item.put("charset", site.getCharset());
                 item.put("collection", site.getCollection());
                 item.put("bucket", site.getBucket());
+                item.put("bucket", site.getBucket());
+                item.put("retainQuery", DPUtil.parseBoolean(site.getRetainQuery()));
+                item.put("retainAnchor", DPUtil.parseBoolean(site.getRetainAnchor()));
                 item.put("connectTimeout", site.getConnectTimeout());
                 item.put("socketTimeout", site.getSocketTimeout());
                 item.put("iterateCount", site.getIterateCount());

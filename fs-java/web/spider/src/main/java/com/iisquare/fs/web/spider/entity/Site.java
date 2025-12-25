@@ -36,6 +36,10 @@ public class Site implements Serializable {
     @Column
     private String bucket; // 附件存储到MinIO中的桶名称
     @Column
+    private Integer retainQuery; // 保留请求参数
+    @Column
+    private Integer retainAnchor; // 保留链接锚点
+    @Column
     private Integer connectTimeout; // 连接超时
     @Column
     private Integer socketTimeout; // 执行超时

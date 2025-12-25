@@ -40,8 +40,8 @@ public class Worker implements Runnable {
 
     public static Map<String, String> defaultHeaders() {
         Map<String, String> headers = new LinkedHashMap<>();
-        headers.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
-        headers.put("Accept-Encoding", "gzip, deflate, br");
+        headers.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
+        headers.put("Accept-Encoding", "gzip, deflate");
         headers.put("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8");
         headers.put("Cache-Control", "no-cache");
         headers.put("Connection", "keep-alive");

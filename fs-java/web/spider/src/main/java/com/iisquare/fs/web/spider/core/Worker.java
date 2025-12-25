@@ -17,9 +17,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @Getter
 @Setter
@@ -78,7 +76,7 @@ public class Worker implements Runnable {
         if (200 != info.getInteger("response_status")) return true;
         if (null == job) return true;
         if (!"pan".equals(job.getTemplate().at("/type").asText())) return true;
-        List<String> links = new ArrayList<>();
+        Set<String> links = new HashSet<>();
         for (Element element : document.select("a[href]")) {
             String href = element.attr("abs:href");
             if (!DPUtil.empty(href)) {
@@ -102,12 +100,26 @@ public class Worker implements Runnable {
         return true;
     }
 
-    public String collection(ZooJob job, String domain) {
+    public static String collection(ZooJob job, String domain) {
         if (null == job) return "fs_spider_html";
         JsonNode sites = job.template.at("/sites");
         if (!sites.has(domain)) domain = "*";
         String collection = sites.at("/" + domain + "/collection").asText();
         return DPUtil.empty(collection) ? "fs_spider_html" : collection;
+    }
+
+    public static boolean retainQuery(ZooJob job, String domain) {
+        if (null == job) return false;
+        JsonNode sites = job.template.at("/sites");
+        if (!sites.has(domain)) domain = "*";
+        return sites.at("/" + domain + "/retainQuery").asBoolean();
+    }
+
+    public static boolean retainAnchor(ZooJob job, String domain) {
+        if (null == job) return false;
+        JsonNode sites = job.template.at("/sites");
+        if (!sites.has(domain)) domain = "*";
+        return sites.at("/" + domain + "/retainAnchor").asBoolean();
     }
 
     @Override

@@ -25,8 +25,7 @@ public abstract class MongoBase extends MongoCore {
 
     public MongoCollection<Document> collection(String database, String collection) {
         MongoDatabase db = client.getDatabase(database);
-        MongoCollection<Document> table = db.getCollection(collection);
-        return table;
+        return db.getCollection(collection);
     }
 
     public MongoCollection<Document> collection(String collection) {
@@ -62,9 +61,10 @@ public abstract class MongoBase extends MongoCore {
             documents.limit(pageSize);
         }
         List<Document> result = new ArrayList<>();
-        MongoCursor<Document> cursor = documents.cursor();
-        while (cursor.hasNext()) {
-            result.add(MongoUtil.id2string(cursor.next()));
+        try (MongoCursor<Document> cursor = documents.cursor()) {
+            while (cursor.hasNext()) {
+                result.add(MongoUtil.id2string(cursor.next()));
+            }
         }
         return result;
     }

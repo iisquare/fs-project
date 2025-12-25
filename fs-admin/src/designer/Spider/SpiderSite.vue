@@ -21,6 +21,8 @@ const columns = ref([
   { prop: 'charset', label: '页面编码' },
   { prop: 'collection', label: '数据存储' },
   { prop: 'bucket', label: '文件存储' },
+  { prop: 'retainQuery', label: '保留参数' },
+  { prop: 'retainAnchor', label: '保留锚点' },
   { prop: 'connectTimeout', label: '连接超时' },
   { prop: 'socketTimeout', label: '执行超时' },
   { prop: 'iterateCount', label: '翻页深度' },
@@ -189,6 +191,12 @@ const handleDelete = () => {
       </el-form-item>
       <el-form-item label="文件存储" prop="bucket">
         <el-input v-model="form.bucket" placeholder="附件存储到MinIO中的桶名称" />
+      </el-form-item>
+      <el-form-item label="保留参数">
+        <el-checkbox v-model="form.retainQuery">保留链接中的请求参数</el-checkbox>
+      </el-form-item>
+      <el-form-item label="保留锚点">
+        <el-checkbox v-model="form.retainAnchor">保留链接中的锚点信息</el-checkbox>
       </el-form-item>
       <el-form-item label="连接超时">
         <el-space>

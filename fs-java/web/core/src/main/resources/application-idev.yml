@@ -109,6 +109,9 @@ spring:
           fs-lucene-service:
             connectTimeout: 1000
             readTimeout: 60000
+          fs-spider-service:
+            connectTimeout: 1000
+            readTimeout: 60000
   main:
     allow-circular-references: true
   servlet:

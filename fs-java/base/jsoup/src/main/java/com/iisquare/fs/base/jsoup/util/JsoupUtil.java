@@ -10,6 +10,9 @@ public class JsoupUtil {
     public static String title(Document doc) {
         String title = doc.title();
         if (DPUtil.empty(title)) {
+            title = doc.select("title").text();
+        }
+        if (DPUtil.empty(title)) {
             Elements meta = doc.select("meta[property=og:title]");
             if (!meta.isEmpty()) {
                 title = meta.attr("content");
