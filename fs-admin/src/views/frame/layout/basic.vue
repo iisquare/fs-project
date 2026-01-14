@@ -187,7 +187,7 @@ const handleLogout = () => {
   }
 }
 :deep(.el-header) {
-  height: var(--fs-layout-header-height);
+  --el-header-height: var(--fs-layout-header-height);
   padding: 0;
   box-sizing: border-box;
 }

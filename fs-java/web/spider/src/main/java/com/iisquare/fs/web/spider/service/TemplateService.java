@@ -9,6 +9,7 @@ import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.spider.dao.*;
 import com.iisquare.fs.web.spider.entity.*;
+import jakarta.persistence.Column;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -32,6 +33,10 @@ public class TemplateService extends JPAServiceBase {
     @Autowired
     BlacklistDao blacklistDao;
     @Autowired
+    PageDao pageDao;
+    @Autowired
+    InterceptDao interceptDao;
+    @Autowired
     private DefaultRbacService rbacService;
     @Autowired
     NodeService nodeService;
@@ -47,9 +52,9 @@ public class TemplateService extends JPAServiceBase {
 
     public Map<String, String> types() {
         Map<String, String> types = new LinkedHashMap<>();
-        types.put("pan", "泛采集");
-        types.put("pan_single", "单页采集");
-        types.put("target", "定向采集");
+        types.put("broad", "泛采集");
+        types.put("single", "单页采集");
+        types.put("plan", "定向采集");
         return types;
     }
 
@@ -157,7 +162,7 @@ public class TemplateService extends JPAServiceBase {
         node.put("maxHalt", template.getMaxHalt());
         node.replace("params", DPUtil.parseJSON(template.getParams(), j -> DPUtil.objectNode()));
         int templateId = template.getId();
-        if (Arrays.asList("pan", "pan_single").contains(template.getType())) {
+        if (Arrays.asList("broad", "single").contains(template.getType())) {
             ObjectNode sites = node.putObject("sites");
             List<Site> siteList = siteDao.findAll((Specification<Site>) (root, query, cb) -> cb.and(
                     cb.equal(root.get("templateId"), templateId),
@@ -207,6 +212,50 @@ public class TemplateService extends JPAServiceBase {
                 item.put("regexPath", regexPath(blacklist.getPath()));
                 blacklists.replace(String.valueOf(blacklist.getId()), item);
             }
+        }
+        if (Arrays.asList("plan").contains(template.getType())) {
+            ObjectNode pages = node.putObject("pages");
+            List<Page> pageList = pageDao.findAll((Specification<Page>) (root, query, cb) -> cb.and(
+                    cb.equal(root.get("templateId"), templateId),
+                    cb.equal(root.get("status"), 1)
+            ));
+            for (Page page : pageList) {
+                ObjectNode item = DPUtil.objectNode();
+                item.put("id", page.getId());
+                item.put("code", page.getCode());
+                item.put("name", page.getName());
+                item.put("force", DPUtil.parseBoolean(page.getForceMode()));
+                item.put("priority", page.getPriority());
+                item.put("url", page.getUrl());
+                item.put("charset", page.getCharset());
+                item.put("collection", page.getCollection());
+                item.put("bucket", page.getBucket());
+                item.put("connectTimeout", page.getConnectTimeout());
+                item.put("socketTimeout", page.getSocketTimeout());
+                item.put("iterateCount", page.getIterateCount());
+                item.put("retryCount", page.getRetryCount());
+                item.replace("headers", DPUtil.parseJSON(page.getHeaders(), j -> DPUtil.objectNode()));
+                item.put("parser", page.getParser());
+                item.put("mapper", page.getMapper());
+                pages.replace(page.getCode(), item);
+            }
+        }
+        ObjectNode intercepts = node.putObject("intercepts");
+        List<Intercept> interceptList = interceptDao.findAll((Specification<Intercept>) (root, query, cb) -> cb.and(
+                cb.equal(root.get("templateId"), templateId),
+                cb.equal(root.get("status"), 1)
+        ));
+        for (Intercept intercept : interceptList) {
+            ObjectNode item = DPUtil.objectNode();
+            item.put("id", intercept.getId());
+            item.put("code", intercept.getCode());
+            item.put("name", intercept.getName());
+            item.put("charset", intercept.getCharset());
+            item.put("collection", intercept.getCollection());
+            item.put("parser", intercept.getParser());
+            item.put("assistant", intercept.getAssistant());
+            item.put("mapper", intercept.getMapper());
+            intercepts.replace(String.valueOf(intercept.getId()), item);
         }
         template.setContent(DPUtil.stringify(node));
         template.setPublishedTime(System.currentTimeMillis());

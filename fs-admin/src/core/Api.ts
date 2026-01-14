@@ -1,6 +1,6 @@
 import axios from 'axios'
 import ApiUtil from '@/utils/ApiUtil'
-import { ElNotification } from 'element-plus'
+import { ElMessage, ElNotification } from 'element-plus'
 import { useCounterStore } from '@/stores/counter'
 import ElementUtil from '@/utils/ElementUtil'
 
@@ -29,11 +29,7 @@ export default {
             window.location.reload()
           }).catch(() => {})
         } else if (ApiUtil.succeed(result)) {
-          tips.success && ElNotification({
-            title: '状态：' + ApiUtil.code(result),
-            message: '消息：' + ApiUtil.message(result),
-            type: 'success',
-          })
+          tips.success && ElMessage.success(ApiUtil.message(result))
         } else if (tips.warning) {
           ElNotification({
             title: '状态：' + ApiUtil.code(result),

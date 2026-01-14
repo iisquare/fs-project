@@ -29,6 +29,10 @@ export const layouts = [{
     path: '/spider/schedule/ack',
     meta: { title: '确认队列', permit: ['spider:node:job'] },
     component: () => import('@/views/spider/schedule/ack.vue')
+  }, {
+    path: '/spider/tool/parse',
+    meta: { title: '页面解析' },
+    component: () => import('@/views/spider/tool/parse.vue')
   }]
 }]
 

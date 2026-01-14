@@ -16,6 +16,8 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -50,7 +52,7 @@ public class FileController extends PermitControllerBase {
         String action = DPUtil.parseString(param.get("action"));
         if ("config".equals(action)) {
             String json = FileUtil.getContent(
-                    getClass().getClassLoader().getResource("ueditor.config.json"), true, "utf-8"
+                    getClass().getClassLoader().getResource("ueditor.config.json"), true, StandardCharsets.UTF_8
             );
             json = json.replaceAll("\\/\\*[\\s\\S]+?\\*\\/", "");
             JsonNode config = DPUtil.parseJSON(json);

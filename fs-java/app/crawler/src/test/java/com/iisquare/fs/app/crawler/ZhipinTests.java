@@ -103,9 +103,9 @@ public class ZhipinTests {
                 "24岁以下", "25岁-29岁", "30岁-34岁", "35岁-39岁", "40岁-44岁", "45岁以上"
         );
         if (checkpoint <= 0) {
-            FileUtil.putContent(output, DPUtil.implode(separator, title) + "\n", true, false, "utf-8");
+            FileUtil.putContent(output, DPUtil.implode(separator, title) + "\n", true, false, StandardCharsets.UTF_8);
         }
-        String content = FileUtil.getContent(getClass().getClassLoader().getResource("zhipin-position.json"), false, "UTF-8");
+        String content = FileUtil.getContent(getClass().getClassLoader().getResource("zhipin-position.json"), false, StandardCharsets.UTF_8);
         JsonNode json = DPUtil.parseJSON(content);
         for (JsonNode l1 : json.at("/zpData")) {
             String p1 = l1.at("/name").asText();
@@ -156,7 +156,7 @@ public class ZhipinTests {
                             }
                             data.add(text);
                         }
-                        FileUtil.putContent(output, DPUtil.implode(separator, data) + "\n", false, true, "utf-8");
+                        FileUtil.putContent(output, DPUtil.implode(separator, data) + "\n", false, true, StandardCharsets.UTF_8);
                         Thread.sleep(3000);
                     } catch (Exception e) {
                         System.out.println(url);

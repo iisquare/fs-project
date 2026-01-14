@@ -16,7 +16,6 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -27,6 +26,14 @@ import java.util.UUID;
 public class Worker implements Runnable {
 
     private Thread thread;
+    /**
+     * 参数格式：{
+     *     time: 任务拉取时间,
+     *     nodeId: '认证节点标识',
+     *     token: {},
+     *     task: {},
+     * }
+     */
     private ObjectNode data;
     private NodeService nodeService;
 
@@ -50,21 +57,51 @@ public class Worker implements Runnable {
         return headers;
     }
 
-    public String bucket(ZooJob job, URI uri){
+    public static String bucket(ZooJob job, JsonNode task, URI uri){
         if (null == job) return "fs-spider";
-        JsonNode sites = job.template.at("/sites");
-        String domain = uri.getHost();
-        if (!sites.has(domain)) domain = "*";
-        String collection = sites.at("/" + domain + "/bucket").asText();
-        return DPUtil.empty(collection) ? "fs-spider" : collection;
+        String bucket = null;
+        switch (job.template.at("/type").asText()) {
+            case "broad":
+            case "single": {
+                JsonNode sites = job.template.at("/sites");
+                String domain = uri.getHost();
+                bucket = sites.at("/" + domain + "/bucket").asText();
+                if (DPUtil.empty(bucket)) {
+                    domain = "*";
+                    bucket = sites.at("/" + domain + "/bucket").asText();
+                }
+                break;
+            }
+            case "plan": {
+                String pageCode = task.at("/pageCode").asText();
+                bucket = job.template.at("/pages/" + pageCode + "/bucket").asText();
+                break;
+            }
+        }
+        return DPUtil.empty(bucket) ? "fs-spider" : bucket;
     }
 
-    public Charset charset(ZooJob job, URI uri) {
+    public static Charset charset(ZooJob job, JsonNode task, URI uri) {
         if (null == job) return HttpFetcher.DEFAULT_CHARSET;
-        JsonNode sites = job.template.at("/sites");
-        String domain = uri.getHost();
-        if (!sites.has(domain)) domain = "*";
-        String charset = sites.at("/" + domain + "/charset").asText();
+        String charset = null;
+        switch (job.template.at("/type").asText()) {
+            case "broad":
+            case "single": {
+                JsonNode sites = job.template.at("/sites");
+                String domain = uri.getHost();
+                charset = sites.at("/" + domain + "/charset").asText();
+                if (DPUtil.empty(charset)) {
+                    domain = "*";
+                    charset = sites.at("/" + domain + "/charset").asText();
+                }
+                break;
+            }
+            case "plan": {
+                String pageCode = task.at("/pageCode").asText();
+                charset = job.template.at("/pages/" + pageCode + "/charset").asText();
+                break;
+            }
+        }
         if (DPUtil.empty(charset)) return HttpFetcher.DEFAULT_CHARSET;
         try {
             return Charset.forName(charset);
@@ -73,37 +110,62 @@ public class Worker implements Runnable {
         }
     }
 
-    public int connectTimeout(ZooJob job, URI uri){
+    public static int connectTimeout(ZooJob job, JsonNode task, URI uri){
         if (null == job) return 0;
-        JsonNode sites = job.template.at("/sites");
-        String domain = uri.getHost();
-        if (!sites.has(domain)) domain = "*";
-        return sites.at("/" + domain + "/connectTimeout").asInt(0);
+        int timeout = 0;
+        switch (job.template.at("/type").asText()) {
+            case "broad":
+            case "single": {
+                JsonNode sites = job.template.at("/sites");
+                String domain = uri.getHost();
+                timeout = sites.at("/" + domain + "/connectTimeout").asInt(0);
+                if (0 == timeout) {
+                    domain = "*";
+                    timeout = sites.at("/" + domain + "/connectTimeout").asInt(0);
+                }
+                break;
+            }
+            case "plan": {
+                String pageCode = task.at("/pageCode").asText();
+                timeout = job.template.at("/pages/" + pageCode + "/connectTimeout").asInt();
+                break;
+            }
+        }
+        return timeout;
     }
 
-    public int socketTimeout(ZooJob job, URI uri){
+    public static int socketTimeout(ZooJob job, JsonNode task, URI uri){
         if (null == job) return 0;
-        JsonNode sites = job.template.at("/sites");
-        String domain = uri.getHost();
-        if (!sites.has(domain)) domain = "*";
-        return sites.at("/" + domain + "/socketTimeout").asInt(0);
-    }
-
-    public int retryCount(ZooJob job, URI uri){
-        if (null == job) return 0;
-        JsonNode sites = job.template.at("/sites");
-        String domain = uri.getHost();
-        if (!sites.has(domain)) domain = "*";
-        return sites.at("/" + domain + "/retryCount").asInt(0);
+        int timeout = 0;
+        switch (job.template.at("/type").asText()) {
+            case "broad":
+            case "single": {
+                JsonNode sites = job.template.at("/sites");
+                String domain = uri.getHost();
+                timeout = sites.at("/" + domain + "/socketTimeout").asInt(0);
+                if (0 == timeout) {
+                    domain = "*";
+                    timeout = sites.at("/" + domain + "/socketTimeout").asInt(0);
+                }
+                break;
+            }
+            case "plan": {
+                String pageCode = task.at("/pageCode").asText();
+                timeout = job.template.at("/pages/" + pageCode + "/socketTimeout").asInt();
+                break;
+            }
+        }
+        return timeout;
     }
 
     private Map<String, Object> process(HttpFetcher fetcher) {
-        ZooJob job = nodeService.zookeeper().job(data.at("/task/jobId").asText());
+        JsonNode task = data.at("/task");
+        ZooJob job = nodeService.zookeeper().job(task.at("/jobId").asText());
         if (null == job) {
             return ApiUtil.result(1401, "load job failed", data);
         }
         ObjectNode storage = data.putObject("storage");
-        String url = data.at("/task/url").asText();
+        String url = task.at("/url").asText();
         URI uri;
         try {
             uri = URI.create(url);
@@ -111,17 +173,17 @@ public class Worker implements Runnable {
             storage.put("exception", e.getMessage());
             return ApiUtil.result(0, "create url failed:" + e.getMessage(), data);
         }
-        int socketTimeout = socketTimeout(job, uri);
-        int connectTimeout = connectTimeout(job, uri);
+        int socketTimeout = socketTimeout(job, task, uri);
+        int connectTimeout = connectTimeout(job, task, uri);
         if (connectTimeout > 0 && socketTimeout > 0) {
             RequestConfig.Builder builder = RequestConfig.custom()
                     .setConnectTimeout(connectTimeout).setSocketTimeout(socketTimeout);
             fetcher.config(builder.build());
         }
-        fetcher.charset(charset(job, uri)).downloader(new HttpDownloader() {
+        fetcher.charset(charset(job, task, uri)).downloader(new HttpDownloader() {
             @Override
             public String download(HttpFetcher fetcher, CloseableHttpResponse response) throws Exception {
-                String bucket = bucket(job, uri);
+                String bucket = bucket(job, task, uri);
                 String object = String.format("/%s/%s", DPUtil.dateTime("yyyy-MM-dd"), UUID.randomUUID());
                 PutObjectArgs.Builder builder = PutObjectArgs.builder();
                 builder.bucket(bucket);
@@ -143,7 +205,7 @@ public class Worker implements Runnable {
                 return DPUtil.stringify(data);
             }
         });
-        String referer = data.at("/task/referer").asText();
+        String referer = task.at("/referer").asText();
         Map<String, String> headers = defaultHeaders();
         if (!DPUtil.empty(referer)) {
             headers.put("Referer", referer);
@@ -158,13 +220,9 @@ public class Worker implements Runnable {
         storage.put("media", fetcher.getLastResponseContentType());
         Exception exception = fetcher.getLastException();
         if (null != exception) {
-            storage.put("exception", exception.getMessage());
+            storage.put("exception", ApiUtil.getStackTrace(exception));
         }
         storage.put("html", html);
-        int retryCount = data.at("/task/retryCount").asInt();
-        if (!Arrays.asList(200, 404).contains(fetcher.getLastStatus()) && retryCount < retryCount(job, uri)) {
-            return ApiUtil.result(1402, "fetcher task failed, retry " + retryCount + " times", data);
-        }
         return ApiUtil.result(0, null, data);
     }
 

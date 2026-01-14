@@ -11,6 +11,9 @@ a {
 a:hover {
   text-decoration: none;
 }
+textarea {
+  box-sizing: border-box;
+}
 
 .flex-center {
   @include flex-center();
@@ -62,6 +65,24 @@ a:hover {
 
 .w-screen {
   width: 100vw;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.h-screen {
+  height: 100vh;
+}
+
+.wh-full {
+  width: 100%;
+  height: 100%;
+}
+
+.wh-screen {
+  width: 100vw;
+  height: 100vh;
 }
 
 .m-20 {

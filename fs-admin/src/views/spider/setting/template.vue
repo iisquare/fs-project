@@ -13,6 +13,9 @@ import SpiderWhitelist from '@/designer/Spider/SpiderWhitelist.vue';
 import SpiderBlacklist from '@/designer/Spider/SpiderBlacklist.vue';
 import RateApi from '@/api/spider/RateApi';
 import ElementUtil from '@/utils/ElementUtil';
+import SpiderPlanParams from '@/designer/Spider/SpiderPlanParams.vue';
+import SpiderPage from '@/designer/Spider/SpiderPage.vue';
+import SpiderIntercept from '@/designer/Spider/SpiderIntercept.vue';
 
 const route = useRoute()
 const router = useRouter()
@@ -237,16 +240,23 @@ const handleClear = (scope: any) => {
     </el-form>  
     <el-tabs v-model="active">
       <el-tab-pane label="运行参数" name="params">
-        <SpiderPanParams v-model="form.params" />
+        <SpiderPanParams v-model="form.params" v-if="['broad', 'single'].includes(form.type)" />
+        <SpiderPlanParams v-model="form.params" :form="form" v-if="['plan'].includes(form.type)" />
       </el-tab-pane>
-      <el-tab-pane label="渠道站点" name="site">
+      <el-tab-pane label="渠道站点" name="site" v-if="['broad', 'single'].includes(form.type)">
         <SpiderSite v-model="form" />
       </el-tab-pane>
-      <el-tab-pane label="白名单" name="whitelist">
+      <el-tab-pane label="白名单" name="whitelist" v-if="['broad', 'single'].includes(form.type)">
         <SpiderWhitelist v-model="form" />
       </el-tab-pane>
-      <el-tab-pane label="黑名单" name="blacklist">
+      <el-tab-pane label="黑名单" name="blacklist" v-if="['broad', 'single'].includes(form.type)">
         <SpiderBlacklist v-model="form" />
+      </el-tab-pane>
+      <el-tab-pane label="流程页面" name="page" v-if="['plan'].includes(form.type)">
+        <SpiderPage v-model="form" />
+      </el-tab-pane>
+      <el-tab-pane label="拦截器" name="intercept">
+        <SpiderIntercept v-model="form" />
       </el-tab-pane>
     </el-tabs>
   </el-drawer>

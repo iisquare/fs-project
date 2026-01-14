@@ -5,6 +5,7 @@ import NodeApi from '@/api/spider/NodeApi';
 import DateUtil from '@/utils/DateUtil';
 import SpiderPanParams from '@/designer/Spider/SpiderPanParams.vue';
 import ElementUtil from '@/utils/ElementUtil';
+import SpiderPlanParams from '@/designer/Spider/SpiderPlanParams.vue';
 
 const tableRef = ref<TableInstance>()
 const loading = ref(false)
@@ -139,7 +140,8 @@ const handleSubmit = () => {
     </el-table>
   </el-card>
   <el-dialog v-model="formVisible" :title="`执行作业 - ${form.name}`" :close-on-click-modal="false" draggable>
-    <SpiderPanParams v-model="form.params" />
+    <SpiderPanParams v-model="form.params" v-if="['broad', 'single'].includes(form.type)" />
+    <SpiderPlanParams v-model="form.params" :form="form" v-if="['plan'].includes(form.type)" />
     <el-table
       :data="executed"
       :border="true"

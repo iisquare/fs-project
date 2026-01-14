@@ -87,6 +87,18 @@ server:
     encoding:
       charset: UTF-8
 
+# https://springdoc.cn/spring-cloud-circuitbreaker/
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      registerHealthIndicator: true
+      slidingWindowSize: 50
+resilience4j.timelimiter:
+  configs:
+    default:
+      timeoutDuration: 30s
+      cancelRunningFuture: true
+
 spring:
   cloud:
     openfeign:
@@ -107,9 +119,6 @@ spring:
             connectTimeout: 1000
             readTimeout: 60000
           fs-lucene-service:
-            connectTimeout: 1000
-            readTimeout: 60000
-          fs-spider-service:
             connectTimeout: 1000
             readTimeout: 60000
   main:

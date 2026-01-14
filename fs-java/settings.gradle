@@ -49,3 +49,8 @@ include 'web:flink'
 include 'web:lm'
 include 'web:kg'
 include 'web:crawler'
+
+include 'site:core'
+include 'site:api'
+include 'site:frontend'
+include 'site:backend'

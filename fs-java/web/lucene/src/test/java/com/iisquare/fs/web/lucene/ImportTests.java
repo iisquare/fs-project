@@ -5,6 +5,7 @@ import com.iisquare.fs.base.core.util.FileUtil;
 import org.junit.Test;
 
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class ImportTests {
@@ -13,7 +14,7 @@ public class ImportTests {
     public void synonymTest() {
         // @see(http://www.360doc.com/content/11/0803/19/268489_137740482.shtml)
         URL url = getClass().getClassLoader().getResource("suggest_synonym.txt");
-        String content = FileUtil.getContent(url, false, "UTF-8");
+        String content = FileUtil.getContent(url, false, StandardCharsets.UTF_8);
         Set<String> result = new LinkedHashSet<>();
         for (String line : DPUtil.explode("\n", content)) {
             System.out.println(line);
@@ -45,7 +46,7 @@ public class ImportTests {
     public void pinyinTest() throws Exception {
         // @see(http://xh.5156edu.com/pinyi.php)
         URL url = getClass().getClassLoader().getResource("suggest_pinyi.txt");
-        String content = FileUtil.getContent(url, false, "UTF-8");
+        String content = FileUtil.getContent(url, false, StandardCharsets.UTF_8);
         Set<String> result = new LinkedHashSet<>();
         for (String line : DPUtil.explode("\n", content)) {
             line = line.replaceAll("[\\s　\\t]+", " ");

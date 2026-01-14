@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -28,7 +29,7 @@ public class VerifyAssist extends Assist {
 
     public static boolean headless;
     public static String codeSlideAnjuke = FileUtil.getContent(
-            VerifyAssist.class.getClassLoader().getResource("verify-slide-anjuke.txt"), false, "UTF-8");
+            VerifyAssist.class.getClassLoader().getResource("verify-slide-anjuke.txt"), false, StandardCharsets.UTF_8);
     protected final static Logger logger = LoggerFactory.getLogger(VerifyAssist.class);
     private static Hashtable<String, ReentrantLock> toggleLockTable = new Hashtable<>();
     private static Hashtable<String, AtomicInteger> toggleCounterTable = new Hashtable<>();

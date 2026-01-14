@@ -37,4 +37,8 @@ public class ZooNode {
         return node;
     }
 
+    public String endpoint() {
+        return "http://" + host + ":" + port;
+    }
+
 }

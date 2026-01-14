@@ -4,6 +4,7 @@ import org.apache.commons.codec.binary.Hex;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Base64;
 
@@ -101,15 +102,15 @@ public class FileUtil {
         return new String(fileContent);
     }
 
-    public static String getContent(URL url, boolean bDislodgeLine, String encoding) {
-        if (null == encoding) return null;
+    public static String getContent(URL url, boolean bDislodgeLine, Charset charset) {
+        if (null == charset) return null;
         InputStream inputStream = null;
         InputStreamReader inputReader = null;
         BufferedReader bufferReader = null;
         String output = "";
         try {
             inputStream = url.openStream();
-            inputReader = new InputStreamReader(inputStream, encoding);
+            inputReader = new InputStreamReader(inputStream, charset);
             bufferReader = new BufferedReader(inputReader);
             StringBuilder sb = new StringBuilder();
             String text;
@@ -126,12 +127,12 @@ public class FileUtil {
         return output;
     }
 
-    public static String getContent(String filePath, boolean bDislodgeLine, String encoding) {
-        return getContent(new File(filePath), bDislodgeLine, encoding);
+    public static String getContent(String filePath, boolean bDislodgeLine, Charset charset) {
+        return getContent(new File(filePath), bDislodgeLine, charset);
     }
 
-    public static String getContent(File file, boolean bDislodgeLine, String encoding) {
-        if (null == encoding) return null;
+    public static String getContent(File file, boolean bDislodgeLine, Charset charset) {
+        if (null == charset) return null;
         if (!file.exists()) return null;
         if (!file.isFile()) return null;
         if (!file.canRead()) return null;
@@ -141,7 +142,7 @@ public class FileUtil {
         String output = "";
         try {
             inputStream = new FileInputStream(file);
-            inputReader = new InputStreamReader(inputStream, encoding);
+            inputReader = new InputStreamReader(inputStream, charset);
             bufferReader = new BufferedReader(inputReader);
             StringBuilder sb = new StringBuilder();
             String text;
@@ -174,12 +175,12 @@ public class FileUtil {
         }
     }
 
-    public static boolean putContent(String filePath, String content, String encoding) {
-        return putContent(filePath, content, true, false, encoding);
+    public static boolean putContent(String filePath, String content, Charset charset) {
+        return putContent(filePath, content, true, false, charset);
     }
 
-    public static boolean putContent(String filePath, String content, boolean bCreate, boolean bAppend, String encoding) {
-        if (null == encoding) return false;
+    public static boolean putContent(String filePath, String content, boolean bCreate, boolean bAppend, Charset charset) {
+        if (null == charset) return false;
         File file = new File(filePath);
         OutputStream outputStream = null;
         OutputStreamWriter outputWriter = null;
@@ -192,7 +193,7 @@ public class FileUtil {
             if (!file.isFile()) return false;
             if (!file.canWrite()) return false;
             outputStream = new FileOutputStream(file, bAppend);
-            outputWriter = new OutputStreamWriter(outputStream, encoding);
+            outputWriter = new OutputStreamWriter(outputStream, charset);
             bufferedWriter = new BufferedWriter(outputWriter);
             bufferedWriter.write(content);
             bufferedWriter.flush();

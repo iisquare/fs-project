@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -30,7 +31,7 @@ public class Worker implements Runnable {
     protected final static Logger logger = LoggerFactory.getLogger(Worker.class);
     protected final static Tracer tracer = Tracer.tracer();
     private static final String SCRIPT_CODE =
-        FileUtil.getContent(Worker.class.getClassLoader().getResource("crawler-script.js"), false, "UTF-8");
+        FileUtil.getContent(Worker.class.getClassLoader().getResource("crawler-script.js"), false, StandardCharsets.UTF_8);
     private Thread thread;
     private Job job;
 

@@ -51,11 +51,10 @@ public class CorpusClassifyJob {
             return item;
         }, Encoders.javaSerialization(JsonNode.class));
         dataset.foreachPartition((ForeachPartitionFunction<JsonNode>) iterator -> {
-            String charset = StandardCharsets.UTF_8.name();
-            FileUtil.putContent(jsonPath, "", charset);
+            FileUtil.putContent(jsonPath, "", StandardCharsets.UTF_8);
             while (iterator.hasNext()) {
                 JsonNode node = iterator.next();
-                FileUtil.putContent(jsonPath, node.toString() + "\n", true, true, charset);
+                FileUtil.putContent(jsonPath, node.toString() + "\n", true, true, StandardCharsets.UTF_8);
             }
         });
         session.close();

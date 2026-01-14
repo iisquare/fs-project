@@ -26,6 +26,10 @@ public class ZooNode {
         return DPUtil.toJSON(DPUtil.parseJSON(node), ZooNode.class);
     }
 
+    public String endpoint() {
+        return "http://" + host + ":" + port;
+    }
+
     public static ZooNode record(String nodeId) {
         ZooNode node = new ZooNode();
         List<String> strings = DPUtil.matcher("^([0-9\\.\\-a-z]+):(\\d+):([a-z]+)$", nodeId, true);

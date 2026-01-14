@@ -11,6 +11,8 @@ import com.iisquare.fs.base.mongodb.MongoCore;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.spider.core.*;
 import com.iisquare.fs.web.spider.mongo.HtmlMongo;
+import com.iisquare.fs.web.spider.parser.Parser;
+import com.iisquare.fs.web.spider.parser.ParserFactory;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import org.apache.catalina.connector.Connector;
@@ -33,6 +35,8 @@ import org.springframework.boot.web.servlet.context.ServletWebServerApplicationC
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -67,6 +71,8 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
     // 使用空容量同步队列复用线程，非阻塞写，半阻塞读
     private final SynchronousQueue<ObjectNode> storageSynchronousQueue = new SynchronousQueue<>();
     private final Object idleLock = new Object(); // 用于空闲等待，便于在进程退出时及时唤醒
+    private final ParserFactory parserFactory = new ParserFactory();
+    private final ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
 
     @Autowired
     public HtmlMongo htmlMongo;
@@ -126,6 +132,14 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         return this.workerPool;
     }
 
+    public Parser parser(String name, String template) throws Exception {
+        return parserFactory.parser(name, template);
+    }
+
+    public ScriptEngine scriptEngine() {
+        return scriptEngineManager.getEngineByName("js");
+    }
+
     public ObjectNode state() throws Exception {
         ObjectNode state = DPUtil.objectNode();
         state.put("nodeId", zookeeper.nodeId());
@@ -172,8 +186,8 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
     }
 
     public ObjectNode fetch(ZooNode node, Map<String, String> param) {
-        String url = "http://" + node.host + ":" + node.port;
-        String content = HttpUtil.get(url + "/node/state", param);
+        String url = node.endpoint() + "/node/state";
+        String content = HttpUtil.get(url, param);
         if (null == content) return null;
         JsonNode json = DPUtil.parseJSON(content);
         if (null != json && 0 == json.at("/code").asInt()) {
@@ -299,7 +313,7 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
     /**
      * 检测链接是否需要进行处理
      */
-    public Map<String, Boolean> checkUrl(ZooJob job, boolean force, String... urls) {
+    public Map<String, Boolean> checkUrl(ZooJob job, String pageCode, boolean force, String... urls) {
         Map<String, Boolean> result = new LinkedHashMap<>();
         Map<String, Collection<String>> domains = new LinkedHashMap<>();
         for (String url : urls) {
@@ -336,7 +350,7 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
             Document projection = new Document();
             projection.put(MongoCore.FIELD_ID, 1);
             projection.put("response_status", 1);
-            htmlMongo.switchTable(Worker.collection(job, entry.getKey()));
+            htmlMongo.switchTable(Worker.collection(job, pageCode, entry.getKey()));
             try (MongoCursor<Document> iterator = htmlMongo.collection().find(filters).projection(projection).iterator()) {
                 while (iterator.hasNext()) { // 已处理，忽略采集
                     Document document = iterator.next();
@@ -354,21 +368,48 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
             return ApiUtil.result(1403, "作业已停止，暂不允许提交任务", job);
         }
         // 将任务提交到执行队列
-        boolean force = json.at("/params/force").asBoolean();
-        String referer = json.at("/params/referer").asText();
-        String[] urls = DPUtil.explode("\n", json.at("/params/urls").asText());
-        Map<String, Boolean> checkedUrls = checkUrl(job, force, urls);
         ArrayNode result = DPUtil.arrayNode();
-        for (Map.Entry<String, Boolean> entry : checkedUrls.entrySet()) {
-            String url = entry.getKey();
-            ObjectNode item = result.addObject();
-            item.put("url", url);
-            if (entry.getValue()) {
-                RedisTask task = RedisTask.record(job, url, force, referer);
-                item.put("result", channel.putTask(task));
-            } else {
-                item.put("result", false);
+        String type = job.template.at("/type").asText();
+        String referer = json.at("/params/referer").asText();
+        switch (type) {
+            case "broad":
+            case "single": {
+                boolean force = json.at("/params/force").asBoolean();
+                String[] urls = DPUtil.explode("\n", json.at("/params/urls").asText());
+                Map<String, Boolean> checkedUrls = checkUrl(job, null, force, urls);
+                for (Map.Entry<String, Boolean> entry : checkedUrls.entrySet()) {
+                    String url = entry.getKey();
+                    ObjectNode item = result.addObject();
+                    item.put("url", url);
+                    if (entry.getValue()) {
+                        RedisTask task = RedisTask.record(job, url, force, referer);
+                        item.put("result", channel.putTask(task));
+                    } else {
+                        item.put("result", false);
+                    }
+                }
+                break;
             }
+            case "plan":{
+                String page = json.at("/params/page").asText();
+                if (DPUtil.empty(page)) {
+                    return ApiUtil.result(1001, "页面编码不能为空", json);
+                }
+                JsonNode args = DPUtil.parseJSON(json.at("/params/args").asText(), j -> DPUtil.objectNode());
+                for (JsonNode arg : args) {
+                    ObjectNode item = result.addObject();
+                    RedisTask task = RedisTask.record(job, page, arg, referer);
+                    item.put("url", task.url);
+                    if (DPUtil.empty(task.url)) {
+                        item.put("result", false);
+                    } else {
+                        item.put("result", channel.putTask(task));
+                    }
+                }
+                break;
+            }
+            default:
+                return ApiUtil.result(1401, "当前作业类型暂未支持", job);
         }
         if (job.status.equals(ZooJob.Status.PAUSE) || job.status.equals(ZooJob.Status.RUNNING)) {
             return ApiUtil.result(0, null, result);
@@ -393,6 +434,20 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         int maxThreads = Math.max(1, job.template.at("/maxThreads").asInt());
         for (int i = 0; i < maxThreads; i++) {
             channel.putToken(RedisToken.record(job));
+        }
+        return ApiUtil.result(0, null, job);
+    }
+
+    public Map<String, Object> haltJob(ZooJob job, long halt) {
+        if (null == job) return ApiUtil.result(1301, "作业不存在", null);
+        job.operatingTime = System.currentTimeMillis();
+        if (!zookeeper.save(job)) {
+            return ApiUtil.result(1501, "更改作业状态失败", job);
+        }
+        // 重新生成令牌Token
+        int maxThreads = Math.max(1, job.template.at("/maxThreads").asInt());
+        for (int i = 0; i < maxThreads; i++) {
+            channel.putToken(RedisToken.record(job).halt(halt));
         }
         return ApiUtil.result(0, null, job);
     }
@@ -461,6 +516,8 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
      * 检测链接是否符合作业黑白名单要求
      */
     public boolean checkUrl(ZooJob job, URI uri) {
+        String jobType = job.template.at("/type").asText();
+        if (!Arrays.asList("broad", "single").contains(jobType)) return true;
         boolean allowed = false;
         for (JsonNode whitelist : job.template.at("/whitelists")) {
             if (DPUtil.isMatcher(whitelist.at("/regexDomain").asText(), uri.getHost())) {
@@ -604,7 +661,7 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
                 return ApiUtil.result(1005, "写入存储队列失败", json);
             }
         } else {
-            channel.putTask(task.back(job)); // 归还任务
+            channel.putTask(task.back(job)); // 采集端执行异常，归还任务
         }
         return ApiUtil.result(0, null, null);
     }

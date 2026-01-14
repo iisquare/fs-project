@@ -162,7 +162,7 @@ public class NodeService extends ServiceBase implements Runnable, DisposableBean
             return false;
         }
         ZooNode node = spiders.get((int) (pollingCounter.incrementAndGet() % spiders.size()));
-        String url = String.format("http://%s:%d/node/obtain", node.getHost(), node.getPort());
+        String url = node.endpoint() + "/node/obtain";
         ObjectNode body = DPUtil.objectNode();
         body.put("nodeId", zhNodeId);
         fetcher.url(url).post(body);
@@ -183,7 +183,7 @@ public class NodeService extends ServiceBase implements Runnable, DisposableBean
             return report(fetcher, result);
         }
         ZooNode node = spiders.get((int) (pollingCounter.incrementAndGet() % spiders.size()));
-        String url = String.format("http://%s:%d/node/report", node.getHost(), node.getPort());
+        String url = node.endpoint() + "/node/report";
         fetcher.url(url).post(DPUtil.toJSON(result));
         return true;
     }

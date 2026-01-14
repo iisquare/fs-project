@@ -1,13 +1,14 @@
 package com.iisquare.fs.web.spider.core;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -23,8 +24,8 @@ public class RedisTask {
     public Long lastTime; // 最后调度时间
     public Long score; // Task优先级
     public Boolean force; // 强制重新采集
-    public String pageId; // 定向采集所属页面标识
-    public ObjectNode args; // 定向采集任务执行参数
+    public String pageCode; // 定向采集所属页面编码
+    public JsonNode args; // 定向采集任务执行参数
     public Integer retryCount; // 失败重试次数
     public Integer iterateCount; // 翻页迭代次数
     @JsonIgnore
@@ -46,7 +47,7 @@ public class RedisTask {
         task.url = url;
         task.force = force;
         task.referer = referer;
-        task.pageId = "";
+        task.pageCode = "";
         task.args = DPUtil.objectNode();
         return task;
     }
@@ -54,20 +55,29 @@ public class RedisTask {
     /**
      * 定向集任务
      */
-    public static RedisTask record(ZooJob job, String pageId, ObjectNode args, String referer) {
+    public static RedisTask record(ZooJob job, String pageCode, JsonNode args, String referer) {
         RedisTask task = record(job);
-        task.pageId = pageId;
+        task.pageCode = pageCode;
         task.args = args;
-        task.url = url(job, pageId, args);
+        task.url = url(job.template.at("/pages/" + pageCode + "/url").asText(), args);
         task.referer = referer;
+        task.force = job.template.at("/pages/" + pageCode + "/force").asBoolean();
         return task;
     }
 
     /**
-     * 获取定向采集页面链接
+     * 替换链接中参数变量
      */
-    public static String url(ZooJob job, String pageId, ObjectNode args) {
-        return "";
+    public static String url(String url, JsonNode args) {
+        List<String> names = DPUtil.matcher("\\{(.*?)\\}", url, true);
+        int size = names.size();
+        if (size % 2 != 0) return "";
+        for (int i = 0; i < size; i += 2) {
+            String text = args.at("/" + names.get(i + 1)).asText();
+            if (DPUtil.empty(text)) return ""; // 存在异常变量
+            url = url.replace(names.get(i), text);
+        }
+        return url;
     }
 
     public String domain() {

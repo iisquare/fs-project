@@ -38,6 +38,9 @@ public class HtmlMongo extends MongoBase {
         if (document.containsKey("job_id")) { // 作业标识
             info.put("job_id", document.getString("job_id"));
         }
+        if (document.containsKey("job_type")) { // 作业类型
+            info.put("job_type", document.getString("job_type"));
+        }
         if (document.containsKey("url")) { // 实际响应链接，任务链接或301跳转后的真实链接
             info.put("url", document.getString("url"));
         }
@@ -55,6 +58,18 @@ public class HtmlMongo extends MongoBase {
         }
         if (document.containsKey("uris")) { // 拆分后的路径数组
             info.put("uris", document.getList("uris", String.class));
+        }
+        if (document.containsKey("page_code")) { // 页面编码
+            info.put("page_code", document.getString("page_code"));
+        }
+        if (document.containsKey("task_args")) { // 任务参数
+            info.put("task_args", document.get("task_args"));
+        }
+        if (document.containsKey("intercept")) { // 拦截器详情
+            info.put("intercept", document.get("intercept"));
+        }
+        if (document.containsKey("collect")) { // 定采收集到的数据
+            info.put("collect", document.get("collect"));
         }
         if (document.containsKey("title")) {
             info.put("title", document.getString("title"));

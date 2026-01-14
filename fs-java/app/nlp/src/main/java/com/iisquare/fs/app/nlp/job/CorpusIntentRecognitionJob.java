@@ -53,7 +53,7 @@ public class CorpusIntentRecognitionJob {
             return prompt;
         }, Encoders.javaSerialization(JsonNode.class));
         String content = DPUtil.arrayNode().addAll(dataset.collectAsList()).toPrettyString();
-        FileUtil.putContent(jsonPath, content, StandardCharsets.UTF_8.name());
+        FileUtil.putContent(jsonPath, content, StandardCharsets.UTF_8);
         session.close();
     }
 }

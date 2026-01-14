@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import 'codemirror/lib/codemirror.css'
 import 'codemirror/theme/ayu-dark.css'
+import 'codemirror/theme/base16-light.css'
 import CodeMirror from 'codemirror'
 
 import 'codemirror/addon/scroll/annotatescrollbar.js'
@@ -16,6 +17,12 @@ import 'codemirror/addon/search/search.js'
 import 'codemirror/addon/hint/show-hint.css'
 import 'codemirror/addon/hint/show-hint.js'
 
+import 'codemirror/addon/fold/foldgutter.css'
+import 'codemirror/addon/fold/foldcode.js'
+import 'codemirror/addon/fold/foldgutter.js'
+import 'codemirror/addon/fold/brace-fold.js'
+import 'codemirror/addon/fold/comment-fold.js'
+
 import 'codemirror/mode/javascript/javascript'
 import 'codemirror/mode/sql/sql'
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -24,19 +31,21 @@ const model: any = defineModel()
 const {
   mode = 'null',
   height = 500,
-  theme = 'ayu-dark',
+  theme = 'base16-light',
+  foldGutter = false,
   lineNumbers = true,
   lineWrapping = true,
   hints = [],
-  volatile = null,
+  volatile,
 } = defineProps({
   mode: { type: String, required: false },
   height: { type: Number, required: false },
   theme: { type: String, required: false },
+  foldGutter: { type: Boolean, required: false },
   lineNumbers: { type: Boolean, required: false },
   lineWrapping: { type: Boolean, required: false },
   hints: { type: Array<Object>, required: false }, // { className: 'li的类名', displayText: '联想展示内容', text: '实际插入内容' }
-  volatile: { type: Boolean, required: false },
+  volatile: { required: false },
 })
 
 watch(() => volatile, () => {
@@ -84,12 +93,14 @@ const load = () => {
     value: model.value,
     mode: mode,
     theme: theme,
+    foldGutter: foldGutter,
     lineNumbers: lineNumbers,
     lineWrapping: lineWrapping,
     hintOptions: {
       completeSingle: false,
       hint: handleHint
-    }
+    },
+    gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
   })
   editor.setSize('auto', height + 'px')
   editor.on('change', () => {
@@ -115,6 +126,7 @@ defineExpose({ getContent, setContent })
 
 <style lang="scss" scoped>
 .fs-code-editor {
+  width: 100%;
   line-height: normal;
 }
 </style>

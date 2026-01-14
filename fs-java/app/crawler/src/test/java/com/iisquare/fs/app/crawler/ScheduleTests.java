@@ -29,6 +29,7 @@ import javax.script.ScriptEngineFactory;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,8 +118,8 @@ public class ScheduleTests {
                 factory.getMimeTypes(),
                 factory.getNames());
         }
-        String code = FileUtil.getContent(Worker.class.getClassLoader().getResource("crawler-script.js"), false, "UTF-8");
-        String base64 = FileUtil.getContent(getClass().getClassLoader().getResource("ttf-base64.txt"), false, "UTF-8");
+        String code = FileUtil.getContent(Worker.class.getClassLoader().getResource("crawler-script.js"), false, StandardCharsets.UTF_8);
+        String base64 = FileUtil.getContent(getClass().getClassLoader().getResource("ttf-base64.txt"), false, StandardCharsets.UTF_8);
         code += "var decoder = Java.type(\"java.net.URLDecoder\");\n" +
                 "var encoder = Java.type(\"java.net.URLEncoder\");\n" +
                 "encoder.encode(decoder.decode(\"%d3%e0%b5%a4521\", \"gb2312\"), \"UTF-8\");\n" +
@@ -130,8 +131,8 @@ public class ScheduleTests {
 
     @Test
     public void parserTest() throws Exception {
-        String html = FileUtil.getContent(getClass().getClassLoader().getResource("spider-test.html"), false, "UTF-8");
-        String expression = FileUtil.getContent(getClass().getClassLoader().getResource("expression-jsoup.txt"), false, "UTF-8");
+        String html = FileUtil.getContent(getClass().getClassLoader().getResource("spider-test.html"), false, StandardCharsets.UTF_8);
+        String expression = FileUtil.getContent(getClass().getClassLoader().getResource("expression-jsoup.txt"), false, StandardCharsets.UTF_8);
         expression = expression.replaceFirst(JsoupParser.PROTOCOL, "");
         Parser parser = new JsoupParser().load(expression);
         System.out.println(parser.parse(html));
@@ -139,9 +140,9 @@ public class ScheduleTests {
 
     @Test
     public void mapperTest() throws Exception {
-        String html = FileUtil.getContent(getClass().getClassLoader().getResource("spider-test.html"), false, "UTF-8");
-        String expression = FileUtil.getContent(getClass().getClassLoader().getResource("expression-jsoup.txt"), false, "UTF-8");
-        String code = FileUtil.getContent(getClass().getClassLoader().getResource("expression-mapper.txt"), false, "UTF-8");
+        String html = FileUtil.getContent(getClass().getClassLoader().getResource("spider-test.html"), false, StandardCharsets.UTF_8);
+        String expression = FileUtil.getContent(getClass().getClassLoader().getResource("expression-jsoup.txt"), false, StandardCharsets.UTF_8);
+        String code = FileUtil.getContent(getClass().getClassLoader().getResource("expression-mapper.txt"), false, StandardCharsets.UTF_8);
         expression = expression.replaceFirst(JsoupParser.PROTOCOL, "");
         Parser parser = new JsoupParser().load(expression);
         JsonNode data = parser.parse(html);
@@ -157,7 +158,7 @@ public class ScheduleTests {
 
     @Test
     public void jsoupTest() throws Exception {
-        String html = FileUtil.getContent(getClass().getClassLoader().getResource("spider-test.html"), false, "UTF-8");
+        String html = FileUtil.getContent(getClass().getClassLoader().getResource("spider-test.html"), false, StandardCharsets.UTF_8);
         Document document = Jsoup.parse(html);
         String result = document.select("script").eq(0).html();
         System.out.println(result);

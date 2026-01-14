@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 
 public abstract class Output {
@@ -39,7 +40,7 @@ public abstract class Output {
     }
 
     private static JsonNode load() {
-        String json = FileUtil.getContent(Output.class.getClassLoader().getResource(CONFIG_FILE), false, "UTF-8");
+        String json = FileUtil.getContent(Output.class.getClassLoader().getResource(CONFIG_FILE), false, StandardCharsets.UTF_8);
         return DPUtil.parseJSON(json);
     }
 

@@ -9,6 +9,7 @@ dependencies {
 
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: lang3Version
     implementation group: 'org.apache.commons', name: 'commons-pool2', version: pool2Version
+    implementation group: 'org.openjdk.nashorn', name: 'nashorn-core', version: '15.7'
 
     testImplementation project(':base:test')
 }

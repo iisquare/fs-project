@@ -6,11 +6,11 @@ import com.iisquare.fs.web.crawler.core.Worker;
 import org.junit.After;
 import org.junit.Test;
 
-public class FetchTestCase implements AutoCloseable {
+public class FetchTests implements AutoCloseable {
 
     HttpFetcher fetcher;
 
-    public FetchTestCase() throws Exception {
+    public FetchTests() throws Exception {
         fetcher = new HttpFetcher();
     }
 
