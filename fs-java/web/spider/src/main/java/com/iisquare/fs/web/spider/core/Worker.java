@@ -136,6 +136,8 @@ public class Worker implements Runnable {
 
     public JsonNode intercept(ZooJob job, JsonNode task, JsonNode storage, Document info) {
         ObjectNode result = DPUtil.objectNode();
+        result.replace("retryCount", task.at("/retryCount"));
+        result.replace("iterateCount", task.at("/iterateCount"));
         int status = storage.at("/status").asInt();
         for (JsonNode intercept : job.template.at("/intercepts")) {
             if (status != intercept.at("/code").asInt()) continue;
@@ -164,7 +166,7 @@ public class Worker implements Runnable {
                     return result;
                 case "halt":
                     retry(job, task, storage, info);
-                    nodeService.haltJob(job, mapped.at("/halt").asLong(30000));
+                    nodeService.channel().putHalt(job);
                     return result;
                 case "discard":
                     return result;

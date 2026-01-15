@@ -6,14 +6,17 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.spider.service.NodeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.connection.zset.Tuple;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.scripting.support.ResourceScriptSource;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -279,6 +282,46 @@ public class RedisChannel {
     public boolean backStorage(JsonNode data) {
         Long result = redis().opsForList().rightPush(keyStorage(), data.toString());
         return null != result;
+    }
+
+    /**
+     * 通过ZSet缓存待停顿作业
+     * 并发处理时，避免生成作业版本号一致，导致重复生成有效Token令牌
+     * 任务集中大批量异常时，避免无效重复更新同一作业，导致生成大量无效Token令牌
+     * 由主节点定期拉取所有待停顿作业，进行单线程统一处理
+     */
+    public String keyHalt() {
+        return keyPrefix + "channel:halt";
+    }
+
+    /**
+     * 获取待停顿作业
+     */
+    public Map<String, Double> takeHalt() {
+        String keyHalt = keyHalt();
+        Map<String, Double> scores = new LinkedHashMap<>();
+        Boolean exist = redis().hasKey(keyHalt);
+        if (null == exist || !exist) return scores;
+        List<Object> list = redis().execute((RedisCallback<List<Object>>) connection -> {
+            connection.multi();
+            connection.zSetCommands().zRangeWithScores(keyHalt.getBytes(StandardCharsets.UTF_8), 0, -1);
+            connection.keyCommands().del(keyHalt.getBytes(StandardCharsets.UTF_8));
+            return connection.exec();
+        });
+        if (null == list || list.isEmpty()) return scores;
+        List<Tuple> tuples = (List<Tuple>) list.get(0);
+        for (Tuple tuple : tuples) {
+            scores.put(new String(tuple.getValue(), StandardCharsets.UTF_8), tuple.getScore());
+        }
+        return scores;
+    }
+
+    /**
+     * 放置待停顿作业
+     */
+    public boolean putHalt(ZooJob job) {
+        Boolean result = redis().opsForZSet().add(keyHalt(), job.id, job.operatingTime);
+        return result != null && result;
     }
 
 }

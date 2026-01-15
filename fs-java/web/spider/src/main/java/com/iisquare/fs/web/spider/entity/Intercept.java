@@ -67,7 +67,6 @@ public class Intercept implements Serializable {
      * return: { // 返回结果
      *     collect: [{}], // 输出结果
      *     next: '', // 下步动作，retry - 重试任务，halt - 停顿令牌并重试，discard - 丢弃任务
-     *     halt: 30000, // 停顿时长，默认30秒
      * }
      */
     @Column

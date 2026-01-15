@@ -1,5 +1,6 @@
 package com.iisquare.fs.base.jpa.util;
 
+import com.alibaba.druid.pool.DruidDataSource;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.jpa.mvc.DaoBase;
 import com.zaxxer.hikari.HikariDataSource;
@@ -51,8 +52,14 @@ public class JPAUtil {
     }
 
     public static String driverClassName(EntityManager manager) {
-        HikariDataSource dataSource = (HikariDataSource) dataSource(manager);
-        return dataSource.getDriverClassName();
+        DataSource ds = dataSource(manager);
+        if (ds instanceof HikariDataSource) {
+            return ((HikariDataSource) ds).getDriverClassName();
+        }
+        if (ds instanceof DruidDataSource) {
+            return ((DruidDataSource) ds).getDriverClassName();
+        }
+        return null;
     }
 
     public static DataSource dataSource(EntityManager manager) {

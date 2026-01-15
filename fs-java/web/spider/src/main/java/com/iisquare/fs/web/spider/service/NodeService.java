@@ -438,20 +438,6 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         return ApiUtil.result(0, null, job);
     }
 
-    public Map<String, Object> haltJob(ZooJob job, long halt) {
-        if (null == job) return ApiUtil.result(1301, "作业不存在", null);
-        job.operatingTime = System.currentTimeMillis();
-        if (!zookeeper.save(job)) {
-            return ApiUtil.result(1501, "更改作业状态失败", job);
-        }
-        // 重新生成令牌Token
-        int maxThreads = Math.max(1, job.template.at("/maxThreads").asInt());
-        for (int i = 0; i < maxThreads; i++) {
-            channel.putToken(RedisToken.record(job).halt(halt));
-        }
-        return ApiUtil.result(0, null, job);
-    }
-
     public Map<String, Object> startJob(ObjectNode json) {
         ZooJob job = zookeeper.job(json.at("/id").asText());
         return startJob(job);
@@ -701,8 +687,26 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
 
     @Override
     public void run() {
-        runningCounter.incrementAndGet();
+        int incremented = runningCounter.incrementAndGet();
         while (this.isRunning) {
+            if (zookeeper.isLeader() && 1 == incremented) { // 仅由主节点1号线程进行该代码块处理
+                try {
+                    Map<String, Double> scores = channel.takeHalt(); // 处理待停顿作业
+                    for (Map.Entry<String, Double> entry : scores.entrySet()) {
+                        ZooJob job = zookeeper.job(entry.getKey());
+                        if (null == job) continue;
+                        if (entry.getValue() < job.operatingTime) continue; // 停顿请求已过期
+                        job.operatingTime = System.currentTimeMillis();
+                        if (!zookeeper.save(job)) continue; // 同步缓存失败
+                        int maxThreads = Math.max(1, job.template.at("/maxThreads").asInt());
+                        for (int i = 0; i < maxThreads; i++) { // 重新生成令牌Token
+                            channel.putToken(RedisToken.record(job).halt(30000)); // 停顿30秒，后续可以通过配置进行维护
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("process halt job error", e);
+                }
+            }
             ObjectNode data;
             try {
                 data = channel.takeStorage();
