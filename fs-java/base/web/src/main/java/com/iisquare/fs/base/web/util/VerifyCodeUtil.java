@@ -4,11 +4,9 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Random;
 
 public class VerifyCodeUtil {
@@ -103,6 +101,21 @@ public class VerifyCodeUtil {
             fos.close();
         } catch (IOException e) {
             throw e;
+        }
+    }
+
+    /**
+     * 生成指定验证码图像为Base64格式
+     *
+     * @param w
+     * @param h
+     * @param code
+     * @throws IOException
+     */
+    public static String outputImage(int w, int h, String code) throws IOException {
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            outputImage(w, h, os, code);
+            return "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(os.toByteArray());
         }
     }
 

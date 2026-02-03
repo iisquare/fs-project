@@ -75,11 +75,7 @@ public class RbacService extends RbacServiceBase {
         JsonNode resource = (JsonNode) request.getAttribute(PermitInterceptor.ATTRIBUTE_RESOURCE);
         if (null != resource) return resource;
         int uid = DPUtil.parseInt(ServletUtil.getSession(request, "uid"));
-        if(uid < 1) {
-            resource = DPUtil.objectNode();
-        } else {
-            resource = loadResource(uid);
-        }
+        resource = loadResource(uid);
         request.setAttribute(PermitInterceptor.ATTRIBUTE_RESOURCE, resource);
         return resource;
     }
@@ -134,10 +130,11 @@ public class RbacService extends RbacServiceBase {
 
     private ObjectNode loadResource(int uid) {
         ObjectNode result = DPUtil.objectNode();
+        if (uid < 1) return result;
         Set<Integer> roleIds = DPUtil.values(relationDao.findAllByTypeAndAid("user_role", uid), Integer.class, "bid");
-        if(roleIds.size() < 1) return result;
+        if(roleIds.isEmpty()) return result;
         Set<Integer> applicationIds = DPUtil.values(relationDao.findAllByTypeAndAidIn("role_application", roleIds), Integer.class, "bid");
-        if(applicationIds.size() < 1) return result;
+        if(applicationIds.isEmpty()) return result;
         List<Application> applications = applicationDao.findAll((Specification<Application>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("status"), 1));
@@ -149,9 +146,9 @@ public class RbacService extends RbacServiceBase {
             applicationIds.add(application.getId());
             result.put(keyPermit(application.getSerial(), null, null), true);
         }
-        if (applicationIds.size() < 1) return result;
+        if (applicationIds.isEmpty()) return result;
         Set<Integer> resourceIds = DPUtil.values(relationDao.findAllByTypeAndAidInAndCidIn("role_resource", roleIds, applicationIds), Integer.class, "bid");
-        if(resourceIds.size() < 1) return result;
+        if(resourceIds.isEmpty()) return result;
         List<Resource> resources = resourceDao.findAll((Specification<Resource>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("status"), 1));
@@ -166,10 +163,11 @@ public class RbacService extends RbacServiceBase {
 
     public ArrayNode loadMenu(int uid) {
         ArrayNode result = DPUtil.arrayNode();
+        if (uid < 1) return result;
         Set<Integer> roleIds = DPUtil.values(relationDao.findAllByTypeAndAid("user_role", uid), Integer.class, "bid");
-        if(roleIds.size() < 1) return result;
+        if(roleIds.isEmpty()) return result;
         Set<Integer> applicationIds = DPUtil.values(relationDao.findAllByTypeAndAidIn("role_application", roleIds), Integer.class, "bid");
-        if(applicationIds.size() < 1) return result;
+        if(applicationIds.isEmpty()) return result;
         List<Application> applications = applicationDao.findAll((Specification<Application>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("status"), 1));
@@ -184,9 +182,9 @@ public class RbacService extends RbacServiceBase {
             applicationIds.add(application.getId());
             result.add(application.menu());
         }
-        if (applicationIds.size() < 1) return result;
+        if (applicationIds.isEmpty()) return result;
         Set<Integer> menuIds = DPUtil.values(relationDao.findAllByTypeAndAidInAndCidIn("role_menu", roleIds, applicationIds), Integer.class, "bid");
-        if(menuIds.size() < 1) return result;
+        if(menuIds.isEmpty()) return result;
         List<Menu> menus = menuDao.findAll((Specification<Menu>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("status"), 1));

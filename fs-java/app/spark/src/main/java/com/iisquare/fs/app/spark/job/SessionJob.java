@@ -1,7 +1,7 @@
 package com.iisquare.fs.app.spark.job;
 
-import com.iisquare.fs.app.spark.util.ConfigUtil;
-import com.iisquare.fs.app.spark.util.SourceUtil;
+import com.iisquare.fs.app.spark.demo.DemoConfig;
+import com.iisquare.fs.app.spark.demo.DemoSource;
 import org.apache.spark.SparkConf;
 import org.apache.spark.sql.*;
 
@@ -15,13 +15,13 @@ public class SessionJob {
                 "select * from t limit 2",
                 "select * from fs_member_user u join t t on u.id=t.id limit 2"
         );
-        SparkConf config = ConfigUtil.spark().setAppName(SessionJob.class.getSimpleName());
+        SparkConf config = DemoConfig.spark().setAppName(SessionJob.class.getSimpleName());
         SparkSession session = SparkSession.builder().config(config).getOrCreate();
         SQLContext sqlContext = session.sqlContext();
-        sqlContext.registerDataFrameAsTable(SourceUtil.mysql(session,
+        sqlContext.registerDataFrameAsTable(DemoSource.mysql(session,
                 "select * from fs_project.fs_member_user"
                 , Integer.MIN_VALUE), "fs_member_user");
-        sqlContext.registerDataFrameAsTable(SourceUtil.mysql(session,
+        sqlContext.registerDataFrameAsTable(DemoSource.mysql(session,
                 "select * from fs_test.t"
                 , Integer.MIN_VALUE), "t");
         for (String sql : sqlList) {

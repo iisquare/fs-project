@@ -8,15 +8,18 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.core.DAGNode;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema;
+import org.apache.spark.sql.types.ArrayType;
+import org.apache.spark.sql.types.DataType;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import scala.collection.Seq;
 
 import java.util.*;
 
 public class SparkUtil {
 
     public static Dataset<Row> agg(RelationalGroupedDataset dataset, Collection<Column> columns) {
-        if (null == columns || columns.size() < 1) return null;
+        if (null == columns || columns.isEmpty()) return null;
         Iterator<Column> iterator = columns.iterator();
         Column column = iterator.next();
         List<Column> list = new ArrayList<>();
@@ -36,7 +39,7 @@ public class SparkUtil {
     }
 
     public static <T> T union(Class<T> classType, Set<DAGNode> nodes) {
-        if (null == nodes || 0 == nodes.size()) return null;
+        if (null == nodes || nodes.isEmpty()) return null;
         Iterator<DAGNode> iterator = nodes.iterator();
         T result = iterator.next().result(classType);
         while (iterator.hasNext()) {
@@ -92,24 +95,91 @@ public class SparkUtil {
         return result;
     }
 
+    public static JsonNode row2json(Row row) {
+        return DPUtil.parseJSON(row.json()); // Row自身需要包含Schema
+    }
+
+    public static ArrayNode seq2json(DataType elementType, Seq<Object> seq) {
+        ArrayNode array = DPUtil.arrayNode();
+        int size = seq.size();
+        for (int i = 0; i < size; i++) {
+            switch (elementType.typeName()) {
+                case "struct":
+                    array.add(row2json((StructType) elementType, (Row) seq.apply(i)));
+                    break;
+                case "array":
+                    array.add(seq2json(((ArrayType) elementType).elementType(), (Seq<Object>) seq.apply(i)));
+                    break;
+                default:
+                    array.add(DPUtil.toJSON(seq.apply(i)));
+            }
+        }
+        return array;
+    }
+
     public static ObjectNode row2json(StructType schema, Row row) {
         StructField[] fields = schema.fields();
         ObjectNode result = DPUtil.objectNode();
         for (int i = 0; i < fields.length; i++) {
-            result.replace(fields[i].name(), DPUtil.toJSON(row.get(i)));
+            StructField field = fields[i];
+            String name = field.name();
+            DataType type = field.dataType();
+            switch (type.typeName()) {
+                case "struct":
+                    result.replace(name, row2json((StructType) type, row.getStruct(i)));
+                    break;
+                case "array":
+                    result.replace(name, seq2json(((ArrayType) type).elementType(), row.getSeq(i)));
+                    break;
+                default:
+                    result.replace(name, DPUtil.toJSON(row.get(i)));
+            }
         }
         return result;
+    }
+
+    public static List<Object> seq2list(DataType elementType, Seq<Object> seq) {
+        List<Object> array = new ArrayList<>();
+        int size = seq.size();
+        for (int i = 0; i < size; i++) {
+            switch (elementType.typeName()) {
+                case "struct":
+                    array.add(row2map((StructType) elementType, (Row) seq.apply(i)));
+                    break;
+                case "array":
+                    array.add(seq2list(((ArrayType) elementType).elementType(), (Seq<Object>) seq.apply(i)));
+                    break;
+                default:
+                    array.add(seq.apply(i));
+            }
+        }
+        return array;
     }
 
     public static Map<String, Object> row2map(StructType schema, Row row) {
         StructField[] fields = schema.fields();
         Map<String, Object> result = new LinkedHashMap<>();
         for (int i = 0; i < fields.length; i++) {
-            result.put(fields[i].name(), row.get(i));
+            StructField field = fields[i];
+            String name = field.name();
+            DataType type = field.dataType();
+            switch (type.typeName()) {
+                case "struct":
+                    result.put(name, row2map((StructType) type, row.getStruct(i)));
+                    break;
+                case "array":
+                    result.put(name, seq2list(((ArrayType) type).elementType(), row.getSeq(i)));
+                    break;
+                default:
+                    result.put(name, row.get(i));
+            }
         }
         return result;
     }
 
+    /**
+     * 将Row迭代器转换为List数组
+     */
     public static List<Map<String, Object>> row2list(StructType schema, Iterator<Row> iterator) {
         List<Map<String, Object>> result = new ArrayList<>();
         while (iterator.hasNext()) {
@@ -118,13 +188,52 @@ public class SparkUtil {
         return result;
     }
 
-    public static Row json2row(JsonNode json) {
-        List<Object> data = new ArrayList<>();
-        Iterator<JsonNode> iterator = json.iterator();
-        while (iterator.hasNext()) {
-            data.add(DPUtil.toJSON(iterator.next(), Object.class));
+    /**
+     * 根据DataType将JSON转换为Seq序列
+     */
+    public static Seq<Object> json2seq(DataType elementType, JsonNode json) {
+        List<Object> array = new ArrayList<>();
+        for (JsonNode item : json) {
+            switch (elementType.typeName()) {
+                case "struct":
+                    array.add(json2row((StructType) elementType, item));
+                    break;
+                case "array":
+                    array.add(json2seq(((ArrayType) elementType).elementType(), item));
+                    break;
+                default:
+                    array.add(DPUtil.toJSON(item, Object.class));
+            }
         }
-        return row(data);
+        return ScalaUtil.seq(array);
+    }
+
+    /**
+     * 根据Schema将JSON转换为Row
+     */
+    public static Row json2row(StructType schema, JsonNode json) {
+        StructField[] fields = schema.fields();
+        Map<String, Object> result = new LinkedHashMap<>();
+        for (StructField field : fields) {
+            String name = field.name();
+            if (!json.has(name)) {
+                result.put(name, null);
+                continue;
+            }
+            JsonNode value = json.at("/" + name);
+            DataType type = field.dataType();
+            switch (type.typeName()) {
+                case "struct":
+                    result.put(name, json2row((StructType) type, value));
+                    break;
+                case "array":
+                    result.put(name, json2seq(((ArrayType) type).elementType(), value));
+                    break;
+                default:
+                    result.put(name, DPUtil.toJSON(value, Object.class));
+            }
+        }
+        return row(schema, result.values().toArray(new Object[0]));
     }
 
     public static SparkSession udf(SparkSession session) {

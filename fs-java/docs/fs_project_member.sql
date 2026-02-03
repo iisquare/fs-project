@@ -21,7 +21,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-10809';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-22232';
 
 --
 -- Table structure for table `fs_member_application`
@@ -4426,7 +4426,7 @@ INSERT INTO `fs_member_menu` VALUES (47,'控制面板','后台管理:人脸识�
 INSERT INTO `fs_member_menu` VALUES (48,'人脸对比','后台管理:人脸识别:控制面板:人脸对比',44,47,'','/face/dashboard/compare','',0,1,'',1598405279275,1,1598405279275,1);
 INSERT INTO `fs_member_menu` VALUES (49,'人脸检索','后台管理:人脸识别:控制面板:人脸检索',44,47,'','/face/dashboard/search','',0,1,'',1598405321956,1,1598405321956,1);
 INSERT INTO `fs_member_menu` VALUES (50,'人脸检测','后台管理:人脸识别:控制面板:人脸检测',44,47,'','/face/dashboard/detect','',1,1,'',1598408189380,1,1598408189380,1);
-INSERT INTO `fs_member_menu` VALUES (52,'Elasticsearch','服务管理:Elasticsearch',301,0,'deployment-unit','/server/elasticsearch','',0,1,'',1600481694000,1,1732160008175,1);
+INSERT INTO `fs_member_menu` VALUES (52,'搜索引擎','服务管理:搜索引擎',301,0,'deployment-unit','/server/elasticsearch','',0,1,'',1600481694000,1,1768457284971,1);
 INSERT INTO `fs_member_menu` VALUES (53,'索引示例','服务管理:Elasticsearch:索引示例',301,52,'','/server/elasticsearch/demo','',0,1,'',1600481950656,1,1732160015732,1);
 INSERT INTO `fs_member_menu` VALUES (54,'词典管理','后台管理:搜索引擎:Elasticsearch:词典管理',301,52,'','/lucene/elasticsearch/dict','',0,-1,'',1600481985836,1,1607514726426,1);
 INSERT INTO `fs_member_menu` VALUES (55,'服务重载','服务管理:Elasticsearch:服务重载',301,52,'','/server/elasticsearch/reload','',0,1,'',1600482059381,1,1732160020099,1);
@@ -5549,7 +5549,7 @@ CREATE TABLE `fs_member_user` (
 
 LOCK TABLES `fs_member_user` WRITE;
 /*!40000 ALTER TABLE `fs_member_user` DISABLE KEYS */;
-INSERT INTO `fs_member_user` VALUES (1,'admin','管理员','4bd18037cb256efcc6bd6363c558e401','test@iisquare.com','12345678901','8395',0,1,'默认账户',1528081552985,'127.0.0.1',1,1765162310668,1,1765787375691,'127.0.0.1',0,0,0);
+INSERT INTO `fs_member_user` VALUES (1,'admin','管理员','4bd18037cb256efcc6bd6363c558e401','test@iisquare.com','12345678901','8395',0,1,'默认账户',1528081552985,'127.0.0.1',1,1765162310668,1,1768379463251,'127.0.0.1',0,0,0);
 INSERT INTO `fs_member_user` VALUES (26,'test1','test1','04dc197e5e813659aa124599e7d7d4fd','','','0898',0,1,'',1737797630259,'127.0.0.1',1,1737798171826,1,0,'',0,1737802620607,1);
 INSERT INTO `fs_member_user` VALUES (27,'test2','test2','3dc5e4203e5e4d67b1c08a68136b7879','','','0605',0,2,'',1737803207126,'127.0.0.1',1,1748757103004,1,0,'',0,0,0);
 INSERT INTO `fs_member_user` VALUES (28,'test3','test3','30cc87d9a433944111623cb1a1a5e3c1','','','1082',0,1,'',1737803243981,'127.0.0.1',1,1737803243981,1,0,'',0,0,0);
@@ -5568,4 +5568,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-01-14 11:20:41
+-- Dump completed on 2026-01-16 10:45:49

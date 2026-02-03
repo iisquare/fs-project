@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册验证码邮件</title>
+    <style>
+        /* 重置样式确保邮件客户端兼容性 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            padding: 20px;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4a6fa5 0%, #3a5980 100%);
+            padding: 30px 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px 30px;
+            border: solid 1px #f7f9fc;
+        }
+
+        .verification-code {
+            background-color: #f0f7ff;
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            margin: 30px 0;
+            border: 1px dashed #4a6fa5;
+        }
+
+        .code {
+            font-size: 42px;
+            font-weight: 700;
+            letter-spacing: 10px;
+            color: #2c5282;
+            padding: 10px 0;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .expiry-notice {
+            color: #e53e3e;
+            font-weight: 600;
+            margin-top: 10px;
+            font-size: 16px;
+        }
+
+        .instructions {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 30px;
+            font-size: 15px;
+        }
+
+        .instructions h3 {
+            color: #2d3748;
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+            margin: 15px 0;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .footer {
+            background-color: #f1f5f9;
+            padding: 25px 30px;
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .security-notice {
+            background-color: #fff5f5;
+            border-left: 4px solid #fc8181;
+            padding: 15px;
+            margin: 25px 0;
+            font-size: 14px;
+        }
+
+        .action {
+            width: 100%;
+            text-align: center;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #4a6fa5;
+            color: white !important;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 4px;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+
+        .brand {
+            font-weight: 700;
+            color: #4a6fa5;
+        }
+
+        @media screen and (max-width: 600px) {
+            .content {
+                padding: 25px 20px;
+            }
+
+            .code {
+                font-size: 36px;
+                letter-spacing: 8px;
+            }
+        }
+
+        /* 针对邮件客户端的特殊样式 */
+        .outlook-specific {
+            display: none;
+            max-height: 0;
+            overflow: hidden;
+            mso-hide: all;
+        }
+    </style>
+</head>
+<body>
+<!-- Outlook条件注释 -->
+<!--[if mso]>
+<style>
+    .outlook-specific {
+        display: block !important;
+        max-height: none !important;
+    }
+</style>
+<![endif]-->
+
+<div class="email-container">
+    <!-- 邮件头部 -->
+    <div class="header">
+        <h1>账号注册验证码</h1>
+        <p>请使用以下验证码完成注册流程</p>
+    </div>
+
+    <!-- 邮件内容 -->
+    <div class="content">
+        <p>尊敬的 <strong>用户</strong>，您好！</p>
+
+        <p>感谢您注册 <span class="brand">平方域数据服务平台</span>！为了确保您的账户安全，请使用以下验证码完成注册：</p>
+        <!-- 验证码区域 -->
+        <div class="verification-code">
+            <p>您的注册验证码为：</p>
+            <div class="code">{code}</div>
+            <p>请在注册页面输入此验证码以完成验证。</p>
+            <p class="expiry-notice">此验证码将于 <strong>5分钟</strong> 后失效</p>
+        </div>
+
+        <!-- 安全提示 -->
+        <div class="security-notice">
+            <strong>安全提示：</strong> 请勿将验证码透露给任何人，包括自称平台客服的人员。<br>
+            <span class="brand">平方域数据服务平台</span> 工作人员不会向您索取此验证码。
+        </div>
+
+        <!-- 使用说明 -->
+        <div class="instructions">
+            <h3>使用说明：</h3>
+            <ul>
+                <li>返回注册页面，输入上方验证码</li>
+                <li>验证码有效期5分钟，请尽快使用</li>
+                <li>如非本人操作，请忽略此邮件</li>
+                <li>如果您没有请求此验证码，请确保您的账户安全</li>
+            </ul>
+            <p>如有任何问题，请随时联系我们的客服团队。祝您使用愉快！<br>
+            <div class="action"><a href="https://www.iisquare.com/" class="button">前往平台官网</a></div>
+        </div>
+    </div>
+
+    <!-- 邮件底部 -->
+    <div class="footer">
+        <p>此邮件为系统自动发送，请勿直接回复。</p>
+        <p>如果您没有注册 <span class="brand">平方域数据服务平台</span> 的账户，请忽略此邮件。</p>
+        <p>©IISquare.com 平方域数据服务平台 版权所有</p>
+    </div>
+</div>
+
+<!-- 针对Outlook的兼容性内容 -->
+<div class="outlook-specific">
+    <!-- 这些元素仅在Outlook中显示，用于解决兼容性问题 -->
+</div>
+</body>
+</html>

@@ -54,8 +54,16 @@ routes.push({
   component: () => import('@/views/frame/page/redirect.vue')
 }, {
   path: '/login',
-  meta: { title: '登录页面' },
+  meta: { title: '用户登录' },
   component: () => import('@/views/frame/account/login.vue')
+}, {
+  path: '/signup',
+  meta: { title: '用户注册' },
+  component: () => import('@/views/frame/account/signup.vue')
+}, {
+  path: '/forgot',
+  meta: { title: '重置密码' },
+  component: () => import('@/views/frame/account/forgot.vue')
 }, ...blanks)
 
 // layout pages
@@ -113,7 +121,7 @@ router.beforeEach((to: any, from, next) => {
       })
     }
   } else if (user.info.id < 1) { // 用户未登陆
-    if ([page.login, page.e403, page.e404].includes(to.path)) {
+    if ([page.login, page.signup, page.forgot, page.e403, page.e404].includes(to.path)) {
       next()
     } else {
       next({
@@ -122,7 +130,7 @@ router.beforeEach((to: any, from, next) => {
       })
     }
   } else { // 用户已登陆
-    if ([page.startup, page.login].includes(to.path)) {
+    if ([page.startup, page.login, page.signup, page.forgot].includes(to.path)) {
       let url = to.query.redirect
       if (DataUtil.empty(url)) url = page.root
       next(url)

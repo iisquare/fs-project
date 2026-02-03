@@ -131,7 +131,8 @@ public class JPAServiceBase extends ServiceBase {
             ReflectUtil.setPropertyValue(info, "updatedUid", new Class[]{Integer.class}, new Object[]{uid});
         }
         Object createdUid = ReflectUtil.getPropertyValue(info, "createdUid");
-        if(createdUid == null || Integer.valueOf(0).equals(createdUid)) {
+        long createdTime = DPUtil.parseLong(ReflectUtil.getPropertyValue(info, "createdTime"));
+        if((createdUid == null || Integer.valueOf(0).equals(createdUid) & createdTime < 1)) {
             ReflectUtil.setPropertyValue(info, "createdTime", new Class[]{Long.class}, new Object[]{time});
             ReflectUtil.setPropertyValue(info, "createdUid", new Class[]{Integer.class}, new Object[]{uid});
         }

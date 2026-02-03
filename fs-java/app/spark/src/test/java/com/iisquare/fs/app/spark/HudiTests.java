@@ -1,7 +1,7 @@
 package com.iisquare.fs.app.spark;
 
-import com.iisquare.fs.app.spark.util.ConfigUtil;
-import com.iisquare.fs.app.spark.util.SourceUtil;
+import com.iisquare.fs.app.spark.demo.DemoConfig;
+import com.iisquare.fs.app.spark.demo.DemoSource;
 import com.iisquare.fs.base.core.util.DPUtil;
 import org.apache.hudi.DataSourceWriteOptions;
 import org.apache.hudi.common.table.HoodieTableConfig;
@@ -27,7 +27,7 @@ public class HudiTests implements Closeable {
     final String basePath = "file:///D:/htdocs/static/hudi";
 
     public HudiTests() {
-        SparkConf config = ConfigUtil.spark().setAppName(HudiTests.class.getSimpleName());
+        SparkConf config = DemoConfig.spark().setAppName(HudiTests.class.getSimpleName());
         config.set("spark.serializer", KryoSerializer.class.getName());
         session = SparkSession.builder().config(config).getOrCreate();
     }
@@ -46,7 +46,7 @@ public class HudiTests implements Closeable {
         }};
         for (Map.Entry<String, List<String>> entry : tables.entrySet()) {
             String sql = String.format("select %s, '' as ts from %s", DPUtil.implode(", ", entry.getValue()), entry.getKey());
-            Dataset<Row> dataset = SourceUtil.mysql(session, sql, 500);
+            Dataset<Row> dataset = DemoSource.mysql(session, sql, 500);
             upsert(dataset, entry.getKey(), "name");
         }
     }
@@ -62,7 +62,7 @@ public class HudiTests implements Closeable {
         }};
         for (Map.Entry<String, List<String>> entry : tables.entrySet()) {
             String sql = String.format("select %s, '' as ts from %s", DPUtil.implode(", ", entry.getValue()), entry.getKey());
-            Dataset<Row> dataset = SourceUtil.mysql(session, sql, 500);
+            Dataset<Row> dataset = DemoSource.mysql(session, sql, 500);
             dataset.createOrReplaceTempView(entry.getKey());
         }
         String sql = "select acc.name, acc.score, acc.word_count, gram.title, '' as ts" +
@@ -83,7 +83,7 @@ public class HudiTests implements Closeable {
         }};
         for (Map.Entry<String, List<String>> entry : tables.entrySet()) {
             String sql = String.format("select %s, '' as ts from %s", DPUtil.implode(", ", entry.getValue()), entry.getKey());
-            Dataset<Row> dataset = SourceUtil.mysql(session, sql, 500);
+            Dataset<Row> dataset = DemoSource.mysql(session, sql, 500);
             upsert(dataset, "fs_word", "name");
         }
     }

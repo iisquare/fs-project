@@ -1,6 +1,6 @@
 package com.iisquare.fs.app.spark.job;
 
-import com.iisquare.fs.app.spark.util.ConfigUtil;
+import com.iisquare.fs.app.spark.demo.DemoConfig;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRollRelationProvider;
 import com.mysql.cj.jdbc.Driver;
@@ -29,7 +29,7 @@ public class JDBCRollJob {
         dataset.show(5);
         List<Row> rows = dataset.limit(3).collectAsList();
         System.out.println(rows);
-        Map<String, String> smap = ConfigUtil.mysqlSink("fs_member_user", 3);
+        Map<String, String> smap = DemoConfig.mysqlSink("fs_member_user", 3);
         smap.put("roll", "id");
         dataset.write().mode(SaveMode.Append).format(JDBCRollRelationProvider.class.getName()).options(smap).save();
         session.close();

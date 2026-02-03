@@ -23,7 +23,7 @@ public class ClientEndpoint {
     private Integer clientId;
     @Column
     private Integer serverId;
-    @Column
+    @Column(name = "parallel_by_client")
     private Integer parallel; // 并行度，0为不限制，但可能受服务端总并行度影响
     @Column
     private Integer checkable; // 是否启用敏感词检测

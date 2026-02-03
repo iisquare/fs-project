@@ -2,101 +2,109 @@
 import RbacApi from '@/api/admin/RbacApi';
 import FormCaptch from '@/components/Form/FormCaptch.vue';
 import LayoutIcon from '@/components/Layout/LayoutIcon.vue';
-import { useUserStore } from '@/stores/user';
-import ApiUtil from '@/utils/ApiUtil';
-import DataUtil from '@/utils/DataUtil';
-import DateUtil from '@/utils/DateUtil';
 import * as ElementPlusIcons from '@element-plus/icons-vue';
-import { ElNotification, type FormInstance } from 'element-plus';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { type FormInstance } from 'element-plus';
+import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 const captchRef: any = ref(null)
 
-const form: any = ref({
-  serial: '',
-  password: '',
-  remember: false,
-})
+const form: any = ref({})
 
 const rules = {
   serial: [{ required: true, message: '请输入帐号名称', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
   password: [{ required: true, message: '请输入帐号密码', trigger: 'blur' }],
-  captcha: [{ required: true, message: '请输入验证码', trigger: 'blur' }],
+  confirm: [{ required: true, message: '请确认帐号密码', trigger: 'blur' }],
+  captcha: [{ required: true, message: '请输入图形验证码', trigger: 'blur' }],
+  email: [{ required: true, message: '请输入邮箱地址', trigger: 'blur' }],
 }
 
-const user = useUserStore()
+const time = ref(0)
 const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
 const formRef = ref<FormInstance>()
+const handleTime = (tick: number) => {
+  time.value = Math.max(0, tick)
+  if (time.value > 0) {
+    setTimeout(() => {
+      handleTime(time.value - 1)
+    }, 1000)
+  }
+}
+const handleEmail = () => {
+  formRef.value && formRef.value.validate(valid => {
+    if (!valid || loading.value || time.value > 0) return
+    loading.value = true
+    const param = Object.assign({}, form.value, { action: 'email' })
+    RbacApi.signup(param, { success: true }).then(result => {
+      form.value.verify = ''
+      handleTime(120)
+    }).catch(() => {
+      captchRef.value?.reload()
+    }).finally(() => {
+      loading.value = false
+    })
+  })
+}
 const handleSubmit = () => {
   formRef.value && formRef.value.validate(valid => {
     if (!valid || loading.value) return
     loading.value = true
-    RbacApi.login(form.value).then(result => {
-      user.reset(ApiUtil.data(result))
-      redirect()
+    RbacApi.signup(form.value, { success: true }).then(result => {
+      router.push({
+        path: '/login',
+        query: route.query,
+      })
     }).catch(() => {
       loading.value = false
-      captchRef.value?.reload()
     })
   })
 }
 
-const redirect = () => {
-  let url = route.query.redirect
-  if (DataUtil.empty(url)) url = '/'
-  router.push(url as string)
-  setTimeout(() => {
-    ElNotification({
-      title: '欢迎',
-      message: `${DateUtil.hello()}，欢迎回来`,
-      type: 'success',
-    })
-  }, 1000)
-}
-
-const keyDown = (e: KeyboardEvent) => {
-  if (e.key === 'Enter') {
-    handleSubmit()
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('keydown', keyDown)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', keyDown, false)
-})
 </script>
 
 <template>
   <div class="container">
     <div class="header">
       <img src="@/assets/logo.svg" class="logo" alt="logo">
-      <span class="title">FS Project</span>
+      <span class="title">用户注册</span>
     </div>
     <el-form ref="formRef" :model="form" :rules="rules" size="large" class="login-form">
       <el-form-item prop="serial">
         <el-input v-model="form.serial" :prefix-icon="ElementPlusIcons.User" placeholder="账号" />
       </el-form-item>
+      <el-form-item prop="name">
+        <el-input v-model="form.name" :prefix-icon="ElementPlusIcons.Postcard" placeholder="昵称" />
+      </el-form-item>
       <el-form-item prop="password">
         <el-input v-model="form.password" :prefix-icon="ElementPlusIcons.Lock" placeholder="密码" type="password" show-password />
       </el-form-item>
+      <el-form-item prop="confirm">
+        <el-input v-model="form.confirm" :prefix-icon="ElementPlusIcons.Lock" placeholder="确认密码" type="password" show-password />
+      </el-form-item>
       <el-form-item prop="captcha">
-        <el-input v-model="form.captcha" placeholder="验证码">
+        <el-input v-model="form.captcha" placeholder="图形验证码">
           <template #prefix><layout-icon name="layout.captcha" /></template>
           <template #suffix><form-captch ref="captchRef" v-model="form.uuid" /></template>
         </el-input>
       </el-form-item>
+      <el-form-item prop="email">
+        <el-input v-model="form.email" :prefix-icon="ElementPlusIcons.Message" placeholder="邮箱地址" />
+      </el-form-item>
+      <el-form-item prop="verify">
+        <el-input v-model="form.verify" placeholder="邮箱验证码">
+          <template #prefix><layout-icon name="form.number" /></template>
+          <template #suffix><el-button link :loading="loading" :disabled="time > 0" @click="handleEmail">{{ time > 0 ? `${time} 秒后可重发` : '获取邮箱验证码' }}</el-button></template>
+        </el-input>
+      </el-form-item>
       <el-form-item>
-        <el-button type="primary" :loading="loading" @click="handleSubmit" class="login-button">登录</el-button>
+        <el-button type="primary" :loading="loading" @click="handleSubmit" class="login-button" :disabled="!form.verify">注册</el-button>
       </el-form-item>
       <el-form-item class="login-ctl">
-        <router-link :to="{ path: '/signup', query: route.query }">注册账号</router-link>
-        <router-link :to="{ path: '/forgot', query: route.query }">忘记密码</router-link>
+        <router-link :to="{ path: '/login', query: route.query }">返回登录</router-link>
+        <router-link :to="{ path: '/forgot', query: route.query }">找回密码</router-link>
       </el-form-item>
     </el-form>
   </div>

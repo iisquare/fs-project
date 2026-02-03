@@ -3,6 +3,7 @@ import fixedLeft from './fixed-left.svg?raw'
 import fixedRight from './fixed-right.svg?raw'
 import knowledgeGraph from './knowledge-graph.svg?raw'
 import spider from './spider.svg?raw'
+import captcha from './captcha.svg?raw'
 
 export default {
   github,
@@ -10,4 +11,5 @@ export default {
   fixedRight,
   knowledgeGraph,
   spider,
+  captcha,
 }

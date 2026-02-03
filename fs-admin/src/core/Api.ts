@@ -59,8 +59,8 @@ export default {
     counter.fetching = false
     return result
   },
-  get(url: string, tips = {}, config = {}) {
-    return this.request(tips, Object.assign(config, { method: 'get', url }))
+  get(url: string, params = {}, tips = {}, config = {}) {
+    return this.request(tips, Object.assign(config, { method: 'get', url, params }))
   },
   post(url: string, data: any = null, tips = {}, config = {}) {
     return this.request(tips, Object.assign(config, { method: 'post', url, data }))

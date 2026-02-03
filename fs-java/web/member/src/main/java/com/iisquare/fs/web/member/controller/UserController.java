@@ -72,4 +72,16 @@ public class UserController extends PermitControllerBase {
         return ApiUtil.echoResult(result);
     }
 
+    @RequestMapping("/signup")
+    public String signupAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
+        Map<String, Object> result = userService.signup(param, request);
+        return ApiUtil.echoResult(result);
+    }
+
+    @RequestMapping("/forgot")
+    public String forgotAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
+        Map<String, Object> result = userService.forgot(param, request);
+        return ApiUtil.echoResult(result);
+    }
+
 }

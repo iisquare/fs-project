@@ -11,7 +11,7 @@ public class ValidateUtil {
     public static final String regexChinese = "^[\u4E00-\u9FA5]+$";
     public static final String regexWord = "^\\w+$";
     public static final String regexSimpleString = "^[\u4E00-\u9FA5\\w]+$";
-    public static final String regexUsername = "^[a-zA-Z][a-zA-Z0-9]{1,15}$";
+    public static final String regexUsername = "^[a-zA-Z][a-zA-Z0-9]{5,15}$";
     public static final String regexNickname = "^[\u4E00-\u9FA5a-zA-Z][\u4E00-\u9FA5a-zA-Z0-9]{1,15}$";
     public static final String regexEmail = "^\\w+@(\\w+.)+[a-z]{2,3}$";
     public static final String regexDomain = "^(\\w+.)+[a-z]{2,3}$";

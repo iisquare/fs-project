@@ -4,4 +4,6 @@ dependencies {
     implementation project(':base:jpa')
     implementation project(':base:redis')
     implementation group: 'org.springframework.session', name: 'spring-session-data-redis', version: springBootVersion
+    implementation group: 'jakarta.mail', name: 'jakarta.mail-api', version: '2.0.2'
+    implementation group: 'com.sun.mail', name: 'jakarta.mail', version: '2.0.2'
 }

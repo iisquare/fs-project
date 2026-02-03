@@ -10,6 +10,7 @@ import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.base.web.util.ServletUtil;
+import com.iisquare.fs.web.member.core.RedisKey;
 import com.iisquare.fs.web.member.dao.RelationDao;
 import com.iisquare.fs.web.member.dao.RoleDao;
 import com.iisquare.fs.web.member.dao.UserDao;
@@ -21,9 +22,12 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.time.Duration;
 import java.util.*;
 
 @Service
@@ -43,6 +47,14 @@ public class UserService extends JPAServiceBase {
     private RelationService relationService;
     @Autowired
     private SettingService settingService;
+    @Autowired
+    CaptchaService captchaService;
+    @Autowired
+    StringRedisTemplate redis;
+    @Autowired
+    EmailService emailService;
+
+    public static final Integer LOGIN_TRY_TIMES = 6;
 
     public String password(String password, String salt) {
         return CodeUtil.md5(CodeUtil.md5(password) + salt);
@@ -59,6 +71,173 @@ public class UserService extends JPAServiceBase {
         return info(userDao, id);
     }
 
+    public Map<String, Object> signup(Map<?, ?> param, HttpServletRequest request) {
+        String action = DPUtil.parseString(param.get("action"));
+        String captchaCode = DPUtil.parseString(param.get("captcha")); // 图形验证码
+        String verifyCode = DPUtil.parseString(param.get("verify")); // 邮箱验证码
+        if ("email".equals(action)) { // 发送邮箱验证码前，先校验图形验证码
+            Map<String, Object> result = captchaService.verify(DPUtil.buildMap(
+                    String.class, Object.class,
+                    "uuid", DPUtil.parseString(param.get("uuid")),
+                    "code", captchaCode
+            ));
+            if (ApiUtil.failed(result)) return result;
+        } else {
+            if (DPUtil.empty(captchaCode)) {
+                return ApiUtil.result(1411, "请输入图形验证码", captchaCode);
+            }
+            if (DPUtil.empty(verifyCode)) {
+                return ApiUtil.result(1412, "请输入邮箱验证码", verifyCode);
+            }
+        }
+        String serial = DPUtil.parseString(param.get("serial"));
+        if (!ValidateUtil.isUsername(serial)) {
+            return ApiUtil.result(1001, "用户名不合法", serial);
+        }
+        String name = DPUtil.parseString(param.get("name"));
+        if (!ValidateUtil.isNickname(name)) {
+            return ApiUtil.result(1002, "昵称不合法", name);
+        }
+        String password = DPUtil.parseString(param.get("password"));
+        if (DPUtil.empty(password)) {
+            return ApiUtil.result(1003, "密码不能为空", password);
+        }
+        String confirm = DPUtil.parseString(param.get("confirm"));
+        if (!password.equals(confirm)) {
+            return ApiUtil.result(1004, "两次密码输入不一致", confirm);
+        }
+        String email = DPUtil.parseString(param.get("email"));
+        if (!ValidateUtil.isEmail(email)) {
+            return ApiUtil.result(1005, "邮箱地址不合法", email);
+        }
+        String redisKey = RedisKey.signup(email);
+        ObjectNode verify = (ObjectNode) DPUtil.parseJSON(redis.opsForValue().get(redisKey), k -> DPUtil.objectNode());
+        if ("email".equals(action)) { // 校验操作频率
+            long time = verify.at("/time").asLong(0);
+            if (time > 0 && Math.abs(System.currentTimeMillis() - time) < 120000) {
+                return ApiUtil.result(12401, "当前验证码尚在有效期内，请稍后再试", time);
+            }
+        } else { // 校验图形验证码是否一致
+            if (DPUtil.empty(captchaCode) || !captchaCode.equals(verify.at("/captcha").asText())) {
+                return ApiUtil.result(13401, "图形验证码错误或已过期，请重新输入", captchaCode);
+            }
+        }
+        List<User> users = userDao.findAll((Specification<User>) (root, query, cb) -> cb.or(
+                cb.equal(root.get("serial"), serial),
+                cb.equal(root.get("name"), name),
+                cb.equal(root.get("email"), email)
+        ));
+        if (DPUtil.values(users, String.class, "serial").contains(serial)) {
+            return ApiUtil.result(1011, "用户名已存在", serial);
+        }
+        if (DPUtil.values(users, String.class, "name").contains(name)) {
+            return ApiUtil.result(1012, "昵称已存在", name);
+        }
+        if (DPUtil.values(users, String.class, "email").contains(email)) {
+            return ApiUtil.result(1013, "邮箱地址已存在", email);
+        }
+        if ("email".equals(action)) { // 发送邮箱验证码
+            String code = DPUtil.random(6);
+            verify.put("time", System.currentTimeMillis());
+            verify.put("email", email);
+            verify.put("captcha", captchaCode);
+            verify.put("code", code);
+            redis.opsForValue().set(redisKey, verify.toString(), Duration.ofMinutes(5));
+            return emailService.signup(email, code);
+        }
+        if (DPUtil.empty(verifyCode) || !verifyCode.equals(verify.at("/code").asText())) {
+            return ApiUtil.result(13402, "邮箱验证码错误或已过期，请重新输入", param.get("verify"));
+        }
+        redis.delete(redisKey); // 清理验证码
+        String salt = DPUtil.random(4);
+        User.UserBuilder builder = User.builder().serial(serial).name(name).email(email);
+        builder.createdIp(ServletUtil.getRemoteAddr(request));
+        builder.password(password(password, salt)).salt(salt).status(1).description("自主注册");
+        try {
+            logout(request);
+            User user = save(userDao, builder.build(), 0);
+            return ApiUtil.result(0, "注册成功", DPUtil.firstNode(filter(DPUtil.toArrayNode(user))));
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "注册失败，请稍后再试", e.getMessage());
+        }
+    }
+
+    public Map<String, Object> forgot(Map<?, ?> param, HttpServletRequest request) {
+        String action = DPUtil.parseString(param.get("action"));
+        String captchaCode = DPUtil.parseString(param.get("captcha")); // 图形验证码
+        String verifyCode = DPUtil.parseString(param.get("verify")); // 邮箱验证码
+        if ("email".equals(action)) { // 发送邮箱验证码前，先校验图形验证码
+            Map<String, Object> result = captchaService.verify(DPUtil.buildMap(
+                    String.class, Object.class,
+                    "uuid", DPUtil.parseString(param.get("uuid")),
+                    "code", captchaCode
+            ));
+            if (ApiUtil.failed(result)) return result;
+        } else {
+            if (DPUtil.empty(captchaCode)) {
+                return ApiUtil.result(1411, "请输入图形验证码", captchaCode);
+            }
+            if (DPUtil.empty(verifyCode)) {
+                return ApiUtil.result(1412, "请输入邮箱验证码", verifyCode);
+            }
+        }
+        String password = DPUtil.parseString(param.get("password"));
+        if (DPUtil.empty(password)) {
+            return ApiUtil.result(1003, "密码不能为空", password);
+        }
+        String confirm = DPUtil.parseString(param.get("confirm"));
+        if (!password.equals(confirm)) {
+            return ApiUtil.result(1004, "两次密码输入不一致", confirm);
+        }
+        String email = DPUtil.parseString(param.get("email"));
+        if (!ValidateUtil.isEmail(email)) {
+            return ApiUtil.result(1005, "邮箱地址不合法", email);
+        }
+        String redisKey = RedisKey.forgot(email);
+        ObjectNode verify = (ObjectNode) DPUtil.parseJSON(redis.opsForValue().get(redisKey), k -> DPUtil.objectNode());
+        if ("email".equals(action)) { // 校验操作频率
+            long time = verify.at("/time").asLong(0);
+            if (time > 0 && Math.abs(System.currentTimeMillis() - time) < 120000) {
+                return ApiUtil.result(12401, "当前验证码尚在有效期内，请稍后再试", time);
+            }
+        } else { // 校验图形验证码是否一致
+            if (DPUtil.empty(captchaCode) || !captchaCode.equals(verify.at("/captcha").asText())) {
+                return ApiUtil.result(13401, "图形验证码错误或已过期，请重新输入", captchaCode);
+            }
+        }
+        User user = userDao.findOne((Specification<User>) (root, query, cb) -> cb.and(
+                cb.equal(root.get("email"), email),
+                cb.equal(root.get("status"), 1)
+        )).orElse(null);
+        if (null == user) {
+            return ApiUtil.result(1404, "邮箱地址不存在或用户状态异常", email);
+        }
+        if ("email".equals(action)) { // 发送邮箱验证码
+            String code = DPUtil.random(6);
+            verify.put("time", System.currentTimeMillis());
+            verify.put("email", email);
+            verify.put("captcha", captchaCode);
+            verify.put("code", code);
+            redis.opsForValue().set(redisKey, verify.toString(), Duration.ofMinutes(5));
+            return emailService.forgot(email, code);
+        }
+        if (DPUtil.empty(verifyCode) || !verifyCode.equals(verify.at("/code").asText())) {
+            return ApiUtil.result(13402, "邮箱验证码错误或已过期，请重新输入", param.get("verify"));
+        }
+        redis.delete(redisKey); // 清理验证码
+        String salt = DPUtil.random(4);
+        password = password(password, salt);
+        user.setPassword(password);
+        user.setSalt(salt);
+        try {
+            logout(request);
+            user = userDao.save(user);
+            return ApiUtil.result(0, "密码重置成功", DPUtil.firstNode(filter(DPUtil.toArrayNode(user))));
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "密码重置失败，请稍后再试", e.getMessage());
+        }
+    }
+
     public ObjectNode identity(Integer id) {
         ObjectNode result = DPUtil.objectNode();
         User info = info(id);
@@ -68,7 +247,7 @@ public class UserService extends JPAServiceBase {
         result.put("status", info.getStatus());
         ObjectNode roles = result.putObject("roles");
         Set<Integer> roleIds = DPUtil.values(relationDao.findAllByTypeAndAid("user_role", info.getId()), Integer.class, "bid");
-        if (roleIds.size() > 0) {
+        if (!roleIds.isEmpty()) {
             for (Role item : roleDao.findAllById(roleIds)) {
                 if (1 != item.getStatus()) continue;
                 ObjectNode role = roles.putObject(String.valueOf(item.getId()));
@@ -92,15 +271,33 @@ public class UserService extends JPAServiceBase {
         if(DPUtil.empty(serial)) {
             session = rbacService.currentInfo(request, null);
             info = info(DPUtil.parseInt(session.get("uid")));
+            if (null != info && (1 != info.getStatus() || info.getLockedTime() > System.currentTimeMillis())) {
+                info = null;
+                logout(request);
+            }
         } else {
+            Map<String, Object> result = captchaService.verify(DPUtil.buildMap(
+                    String.class, Object.class,
+                    "uuid", DPUtil.parseString(param.get("uuid")),
+                    "code", DPUtil.parseString(param.get("captcha"))
+            ));
+            if (ApiUtil.failed(result)) return result;
             info = userDao.findOne((Specification<User>) (root, query, cb) -> {
                 return cb.equal(root.get("serial"), serial);
             }).orElse(null);
             if(null == info || 0 != info.getDeletedTime()) {
                 return ApiUtil.result(1001, "账号不存在或密码错误", null);
             }
+            String redisKey = RedisKey.login(info.getId());
+            if (DPUtil.parseInt(redis.opsForValue().get(redisKey)) > LOGIN_TRY_TIMES) {
+                return ApiUtil.result(1401, "登录失败次数过多，请稍后再试", info.getId());
+            }
             if(!info.getPassword().equals(password(DPUtil.parseString(param.get("password")), info.getSalt()))) {
-                return ApiUtil.result(1002, "账号不存在或密码错误", null);
+                long increment = DPUtil.parseLong(redis.opsForValue().increment(redisKey, 1));
+                if (1 == increment) {
+                    redis.expire(redisKey, Duration.ofMinutes(30));
+                }
+                return ApiUtil.result(1002, String.format("登录失败，剩余%d次机会", LOGIN_TRY_TIMES - increment), null);
             }
             if(1 != info.getStatus() || info.getLockedTime() > System.currentTimeMillis()) {
                 return ApiUtil.result(1003, "账号已锁定，请联系管理人员", null);
@@ -108,16 +305,19 @@ public class UserService extends JPAServiceBase {
             info.setLoginTime(System.currentTimeMillis());
             info.setLoginIp(ServletUtil.getRemoteAddr(request));
             userDao.save(info);
+            // Session中仅存储标识信息，详情数据需单独存取，避免缓存不同步
             rbacService.currentInfo(request, DPUtil.buildMap("uid", info.getId()));
-            if(!rbacService.hasPermit(request, module, null, null)) {
-                logout(request);
-                return ApiUtil.result(403, null, null);
-            }
         }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("info", info(request, info));
-        result.put("menu", rbacService.menu(request));
-        result.put("resource", rbacService.resource(request));
+        if ("admin".equals(module)) { // 非管理后台不加载权限和菜单配置，但仍具备单独访问授权资源的权限
+            if(null != info && !rbacService.hasPermit(request, module, null, null)) {
+                logout(request);
+                return ApiUtil.result(403, null, null);
+            }
+            result.put("menu", rbacService.menu(request));
+            result.put("resource", rbacService.resource(request));
+        }
         return ApiUtil.result(0, null, result);
     }
 

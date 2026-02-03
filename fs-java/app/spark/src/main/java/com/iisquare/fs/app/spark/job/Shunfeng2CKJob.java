@@ -1,7 +1,7 @@
 package com.iisquare.fs.app.spark.job;
 
-import com.iisquare.fs.app.spark.util.ConfigUtil;
-import com.iisquare.fs.app.spark.util.SinkUtil;
+import com.iisquare.fs.app.spark.demo.DemoConfig;
+import com.iisquare.fs.app.spark.demo.DemoSink;
 import com.iisquare.fs.base.core.util.DPUtil;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.function.FilterFunction;
@@ -15,7 +15,7 @@ import java.util.List;
 
 public class Shunfeng2CKJob {
     public static void main(String[] args) {
-        SparkConf config = ConfigUtil.spark().setAppName(Shunfeng2CKJob.class.getSimpleName());
+        SparkConf config = DemoConfig.spark().setAppName(Shunfeng2CKJob.class.getSimpleName());
         SparkSession session = SparkSession.builder().config(config).getOrCreate();
         Dataset<Row> data = session.read().text("E:\\BaiduNetdiskDownload\\leakage\\shunfeng.2020.sql");
         data = data.filter((FilterFunction<Row>) row -> row.getString(0).startsWith("INSERT "));
@@ -30,7 +30,7 @@ public class Shunfeng2CKJob {
                 DataTypes.createStructField("dist", DataTypes.StringType, false),
                 DataTypes.createStructField("addr", DataTypes.StringType, false)
         ))));
-        SinkUtil.clickhouse(data, SaveMode.Append, "leakage.t_shunfeng", 2000);
+        DemoSink.clickhouse(data, SaveMode.Append, "leakage.t_shunfeng", 2000);
         session.close();
     }
 }

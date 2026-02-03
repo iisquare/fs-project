@@ -27,7 +27,7 @@ public class ServerEndpoint {
     private String model; // 模型标识
     @Column
     private String token; // 认证标识
-    @Column
+    @Column(name = "parallel_by_server")
     private Integer parallel; // 并行度，0为不限制
     @Column
     private Integer sort;

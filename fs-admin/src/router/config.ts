@@ -13,6 +13,8 @@ export const page = {
   e404: '/404',
   home: '/dashboard/workplace',
   login: '/login',
+  signup: '/signup',
+  forgot: '/forgot',
   startup: '/startup'
 }
 

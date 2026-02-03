@@ -1,7 +1,7 @@
 package com.iisquare.fs.app.spark.job;
 
-import com.iisquare.fs.app.spark.util.ConfigUtil;
-import com.iisquare.fs.app.spark.util.SinkUtil;
+import com.iisquare.fs.app.spark.demo.DemoConfig;
+import com.iisquare.fs.app.spark.demo.DemoSink;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.*;
@@ -12,7 +12,7 @@ import java.util.Arrays;
 
 public class JD2CKJob {
     public static void main(String[] args) {
-        SparkConf config = ConfigUtil.spark().setAppName(JD2CKJob.class.getSimpleName());
+        SparkConf config = DemoConfig.spark().setAppName(JD2CKJob.class.getSimpleName());
         SparkSession session = SparkSession.builder().config(config).getOrCreate();
         Dataset<Row> data = session.read().text("E:\\BaiduNetdiskDownload\\leakage\\jd.2020.txt");
         data = data.map((MapFunction<Row, Row>) row -> {
@@ -33,7 +33,7 @@ public class JD2CKJob {
                 DataTypes.createStructField("phone", DataTypes.StringType, false),
                 DataTypes.createStructField("original", DataTypes.StringType, false)
         ))));
-        SinkUtil.clickhouse(data, SaveMode.Append, "leakage.t_jd", 3000);
+        DemoSink.clickhouse(data, SaveMode.Append, "leakage.t_jd", 3000);
         session.close();
     }
 }

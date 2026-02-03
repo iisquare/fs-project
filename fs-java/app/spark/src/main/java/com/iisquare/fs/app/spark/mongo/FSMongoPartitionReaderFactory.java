@@ -3,7 +3,6 @@ package com.iisquare.fs.app.spark.mongo;
 import com.mongodb.spark.sql.connector.assertions.Assertions;
 import com.mongodb.spark.sql.connector.config.ReadConfig;
 import com.mongodb.spark.sql.connector.read.MongoInputPartition;
-import com.mongodb.spark.sql.connector.read.MongoPartitionReader;
 import com.mongodb.spark.sql.connector.read.MongoPartitionReaderFactory;
 import com.mongodb.spark.sql.connector.schema.BsonDocumentToRowConverter;
 import org.apache.spark.sql.catalyst.InternalRow;
