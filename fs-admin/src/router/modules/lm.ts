@@ -14,9 +14,41 @@ export const layouts = [{
     meta: { title: '状态管理', permit: ['lm:manage:'] },
     component: () => import('@/views/lm/setting/manage.vue')
   }, {
-    path: '/lm/setting/sensitive',
-    meta: { title: '敏感词管理', permit: ['lm:sensitive:'] },
-    component: () => import('@/views/lm/setting/sensitive.vue')
+    path: '/lm/security/sensitive',
+    meta: { title: '拦截关键词', permit: ['lm:sensitive:'] },
+    component: () => import('@/views/lm/security/sensitive.vue')
+  }, {
+    path: '/lm/plugin/tool',
+    meta: { title: '工具配置', permit: ['lm:tool:'], fit: true },
+    component: () => import('@/views/lm/plugin/tool.vue')
+  }, {
+    path: '/lm/plugin/mcp',
+    meta: { title: 'MCP服务', permit: ['lm:mcp:'] },
+    component: () => import('@/views/lm/plugin/mcp.vue')
+  }, {
+    path: '/lm/operation/log',
+    meta: { title: '调用日志', permit: ['lm:log:'] },
+    component: () => import('@/views/lm/operation/log.vue')
+  }, {
+    path: '/lm/operation/rate',
+    meta: { title: '速率限制', permit: ['lm:rate:'] },
+    component: () => import('@/views/lm/operation/rate.vue')
+  }, {
+    path: '/lm/operation/credit',
+    meta: { title: '用户积分', permit: ['lm:credit:'] },
+    component: () => import('@/views/lm/operation/credit.vue')
+  }, {
+    path: '/lm/operation/auth',
+    meta: { title: '授权密钥', permit: ['lm:auth:'] },
+    component: () => import('@/views/lm/operation/auth.vue')
+  }, {
+    path: '/lm/setting/provider',
+    meta: { title: '供应商配置', permit: ['lm:provider:'] },
+    component: () => import('@/views/lm/setting/provider.vue')
+  }, {
+    path: '/lm/setting/model',
+    meta: { title: '模型配置', permit: ['lm:model:'] },
+    component: () => import('@/views/lm/setting/model.vue')
   }, {
     path: '/lm/setting/server',
     meta: { title: '服务端管理', permit: ['lm:server:'] },
@@ -50,10 +82,6 @@ export const layouts = [{
     meta: { title: '模型对话', fit: true, permit: ['lm:chat:dialog'] },
     component: () => import('@/views/lm/chat/dialog.vue')
   }, {
-    path: '/lm/manage/log',
-    meta: { title: '调用日志', permit: ['lm:log:'] },
-    component: () => import('@/views/lm/manage/log.vue')
-  }, {
     path: '/lm/agentic/list',
     meta: { title: '智能体', permit: ['lm:agentic:'] },
     component: () => import('@/views/lm/agentic/list.vue')
@@ -73,22 +101,6 @@ export const layouts = [{
     path: '/lm/knowledge/chunk',
     meta: { title: '分块管理', permit: ['lm:knowledge:'] },
     component: () => import('@/views/lm/knowledge/chunk.vue')
-  }, {
-    path: '/lm/model/provider',
-    meta: { title: '供应商配置', permit: ['lm:provider:'] },
-    component: () => import('@/views/lm/model/provider.vue')
-  }, {
-    path: '/lm/model/list',
-    meta: { title: '模型配置', permit: ['lm:model:'] },
-    component: () => import('@/views/lm/model/list.vue')
-  }, {
-    path: '/lm/tool/list',
-    meta: { title: '工具配置', permit: ['lm:tool:'], fit: true },
-    component: () => import('@/views/lm/tool/list.vue')
-  }, {
-    path: '/lm/mcp/list',
-    meta: { title: 'MCP服务', permit: ['lm:mcp:'] },
-    component: () => import('@/views/lm/mcp/list.vue')
   }]
 }]
 

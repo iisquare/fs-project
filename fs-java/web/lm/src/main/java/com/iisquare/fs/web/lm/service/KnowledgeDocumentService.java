@@ -96,8 +96,8 @@ public class KnowledgeDocumentService extends JPAServiceBase {
         return remove(documentDao, ids);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(documentDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(documentDao, rows, properties);
     }
 
 }

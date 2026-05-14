@@ -99,8 +99,8 @@ public class ClientService extends JPAServiceBase {
         return remove(clientDao, ids);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(clientDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(clientDao, rows, properties);
     }
 
 }

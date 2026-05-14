@@ -37,7 +37,7 @@ const config = ref({
 })
 const rows = ref([])
 const filterRef = ref<FormInstance>()
-const filters = ref(RouteUtil.query2filter(route, { advanced: false, roleIds: [] }))
+const filters = ref(RouteUtil.query2filter(route, { advanced: false, roleIds: [], deleted: '' }))
 const pagination = ref(RouteUtil.pagination(filters.value))
 const selection = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
@@ -111,16 +111,14 @@ const handleDelete = () => {
 <template>
   <el-card :bordered="false" shadow="never" class="fs-table-search" v-show="searchable">
     <form-search ref="filterRef" :model="filters">
+      <form-search-item label="" prop="deleted">
+        <form-deleted v-model="filters.deleted" @change="handleRefresh(true, false)" />
+      </form-search-item>
       <form-search-item label="帐号" prop="serial">
         <el-input v-model="filters.serial" clearable />
       </form-search-item>
       <form-search-item label="名称" prop="name">
         <el-input v-model="filters.name" clearable />
-      </form-search-item>
-      <form-search-item label="状态" prop="status">
-        <el-select v-model="filters.status" placeholder="请选择" clearable>
-          <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
-        </el-select>
       </form-search-item>
       <form-search-item>
         <el-button type="primary" @click="handleRefresh(true, false)">查询</el-button>
@@ -137,14 +135,19 @@ const handleDelete = () => {
         <form-search-item label="角色" prop="roleIds">
           <form-select v-model="filters.roleIds" :callback="RoleApi.list" multiple clearable />
         </form-search-item>
-        <form-search-item label="ID" prop="id">
-          <el-input v-model="filters.id" clearable />
+        <form-search-item label="状态" prop="status">
+          <el-select v-model="filters.status" placeholder="请选择" clearable>
+            <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
+          </el-select>
         </form-search-item>
         <form-search-item label="注册IP" prop="createdIp">
           <el-input v-model="filters.createdIp" clearable />
         </form-search-item>
         <form-search-item label="登录IP" prop="loginIp">
           <el-input v-model="filters.loginIp" clearable />
+        </form-search-item>
+        <form-search-item label="ID" prop="id" :span="12">
+          <el-input v-model="filters.id" clearable />
         </form-search-item>
         <form-search-item label="创建开始时间" prop="createdTimeBegin">
           <form-date-picker v-model="filters.createdTimeBegin" placeholder="开始时间" />

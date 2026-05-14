@@ -54,8 +54,8 @@ public class DataService extends JPAServiceBase {
         return info(dataDao, id);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(dataDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(dataDao, rows, properties);
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {

@@ -120,8 +120,8 @@ public class ResourceService extends JPAServiceBase {
         return ApiUtil.result(0, null, info);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(resourceDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(resourceDao, rows, properties);
     }
 
     public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {

@@ -43,8 +43,8 @@ public class InterceptService extends JPAServiceBase {
         return info(interceptDao, id);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(interceptDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(interceptDao, rows, properties);
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {

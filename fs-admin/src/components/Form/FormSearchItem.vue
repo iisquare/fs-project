@@ -1,10 +1,22 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+
 const {
-  layout = { lg: 6, md: 8, sm: 12 },
+  span = 6,
+  offset = 0,
+  push = 0,
+  pull = 0,
 } = defineProps({
   label: { type: String, required: false },
   prop: { type: String, required: false },
-  layout: { type: Object, required: false },
+  span: { type: Number, required: false },
+  offset: { type: Number, required: false },
+  push: { type: Number, required: false },
+  pull: { type: Number, required: false },
+})
+
+const layout = computed(() => {
+  return Object.assign({}, { span, offset, push, pull })
 })
 </script>
 

@@ -119,8 +119,8 @@ public class KnowledgeService extends JPAServiceBase {
         return remove(knowledgeDao, ids);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(knowledgeDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(knowledgeDao, rows, properties);
     }
 
 }

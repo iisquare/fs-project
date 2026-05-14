@@ -99,7 +99,7 @@ public class ServerService extends JPAServiceBase {
         return remove(serverDao, ids);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(serverDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(serverDao, rows, properties);
     }
 }

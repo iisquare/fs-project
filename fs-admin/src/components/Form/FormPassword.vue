@@ -4,11 +4,26 @@ import * as ElementPlusIcons from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 
 const model: any = defineModel()
+const {
+  level = '',
+} = defineProps({
+  level: { type: String, required: false },
+})
 
 const hide = ref(true)
 const copied = ref(false)
+const mask = (text: string, keep: number) => {
+  if (!text || text.length <= keep * 2) return '*'.repeat(text?.length || 6)
+  return text.slice(0, keep) + '*'.repeat(text.length - keep * 2) + text.slice(-keep)
+}
 const password = computed(() => {
-  return hide.value ? '******' : model.value
+  if (!hide.value) return model.value
+  const val = model.value || ''
+  switch (level) {
+    case 'high': return mask(val, 2)
+    case 'medium': return mask(val, 4)
+    default: return '*'.repeat(val.length || 6)
+  }
 })
 const handleCopy = () => {
   navigator.clipboard.writeText(model.value).then(() => {

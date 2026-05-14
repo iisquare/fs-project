@@ -19,6 +19,7 @@ import com.iisquare.fs.web.member.entity.Role;
 import com.iisquare.fs.web.member.entity.User;
 import com.iisquare.fs.web.member.mvc.Configuration;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -259,8 +260,13 @@ public class UserService extends JPAServiceBase {
     }
 
     public Map<String, Object> logout(HttpServletRequest request) {
-        rbacService.currentInfo(request, DPUtil.buildMap("uid", 0));
-        return ApiUtil.result(0, null, null);
+        HttpSession session = request.getSession();
+        session.invalidate();
+        Long deleted = redis.delete(Arrays.asList( // 也可使用SessionStatus.setComplete()清理
+                "spring:session:sessions:" + session.getId(),
+                "spring:session:sessions:expires:" + session.getId()
+        ));
+        return ApiUtil.result(0, null, deleted);
     }
 
     public Map<String, Object> login(Map<?, ?> param, HttpServletRequest request) {
@@ -334,7 +340,7 @@ public class UserService extends JPAServiceBase {
         result.put("createdTime", info.getCreatedTime());
         result.put("loginIp", info.getLoginIp());
         result.put("loginTime", info.getLoginTime());
-        result.put("token", request.getRequestedSessionId());
+        result.put("token", request.getSession().getId());
         return result;
     }
     
@@ -476,7 +482,7 @@ public class UserService extends JPAServiceBase {
     public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {
         ObjectNode result = search(userDao, param, (Specification<User>) (root, query, cb) -> {
             SpecificationHelper<User> helper = SpecificationHelper.newInstance(root, cb, param);
-            helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id");
+            helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id").deleted();
             helper.likeExp("serial").likeExp("name").likeExp("email").likeExp("phone");
             helper.equalWithIntNotEmpty("status").equal("createdIp").equal("loginIp");
             helper.betweenWithDate("createdTime").betweenWithDate("updatedTime");
@@ -535,8 +541,8 @@ public class UserService extends JPAServiceBase {
         return (ObjectNode) filter(nodes);
     }
 
-    public JsonNode fillInfo(JsonNode json, String... properties) {
-        return fillInfo("Uid", "UserInfo", json, properties);
+    public JsonNode fillInfo(JsonNode rows, String... properties) {
+        return fillInfo("Uid", "UserInfo", rows, properties);
     }
 
     public JsonNode fillInfo(String fromSuffix, String toSuffix, JsonNode json, String... properties) {

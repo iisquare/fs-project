@@ -21,6 +21,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.bouncycastle.asn1.x500.style.RFC4519Style.c;
+
 @Service
 public class ModelService extends JPAServiceBase {
 
@@ -34,6 +36,63 @@ public class ModelService extends JPAServiceBase {
     Configuration configuration;
     @Autowired
     AIService aiService;
+
+    private static final ObjectNode plans = DPUtil.objectNode();
+
+    static {
+        ObjectNode item = plans.putObject("chat");
+        item.put("name", "对话");
+        ObjectNode parameters = item.putObject("parameters");
+        parameters.replace("max_position_embeddings", parameter("输入长度", "number", "Tokens"));
+        parameters.replace("rpm", parameter("每分钟请求数", "number", "RPM"));
+        parameters.replace("tpm", parameter("每分钟词元数", "number", "TPM"));
+        parameters.replace("prompt_cache_hit_credits", parameter("命中缓存输入消耗积分数", "number", "积分/百万词元"));
+        parameters.replace("prompt_cache_miss_credits", parameter("未命中缓存输入消耗积分数", "number", "积分/百万词元"));
+        parameters.replace("completion_credits", parameter("输出消耗积分数", "number", "积分/百万词元"));
+        item = plans.putObject("embedding");
+        item.put("name", "词嵌入");
+        parameters = item.putObject("parameters");
+        parameters.replace("max_position_embeddings", parameter("输入长度", "number", "Tokens"));
+        parameters.replace("dimension", parameter("输出维度", "number", "维"));
+        parameters.replace("rpm", parameter("每分钟请求数", "number", "RPM"));
+        parameters.replace("tpm", parameter("每分钟词元数", "number", "TPM"));
+        parameters.replace("credits", parameter("消耗积分数", "number", "积分/百万词元"));
+        item = plans.putObject("reranker");
+        item.put("name", "重排序");
+        parameters = item.putObject("parameters");
+        parameters.replace("max_position_embeddings", parameter("输入长度", "number", "Tokens"));
+        parameters.replace("rpm", parameter("每分钟请求数", "number", "RPM"));
+        parameters.replace("tpm", parameter("每分钟词元数", "number", "TPM"));
+        parameters.replace("credits", parameter("消耗积分数", "number", "积分/百万词元"));
+        parameters.putObject("");
+    }
+
+    public static ObjectNode parameter(String name, String type, String unit) {
+        ObjectNode parameter = DPUtil.objectNode();
+        parameter.put("name", name);
+        parameter.put("type", type);
+        parameter.put("unit", unit);
+        return parameter;
+    }
+
+    public ObjectNode plans() {
+        return plans;
+    }
+
+    public Map<?, ?> status() {
+        Map<Integer, String> status = new LinkedHashMap<>();
+        status.put(1, "启用");
+        status.put(2, "禁用");
+        return status;
+    }
+
+    public Map<String, String> types() {
+        Map<String, String> types = new LinkedHashMap<>();
+        types.put("chat", "对话");
+        types.put("embedding", "词嵌入");
+        types.put("reranker", "重排序");
+        return types;
+    }
 
     public Map<String, Object> embedding(Integer id, List<String> inputs) {
         if (inputs.isEmpty()) return ApiUtil.result(16101, "待生成内容不能为空", inputs);
@@ -61,21 +120,6 @@ public class ModelService extends JPAServiceBase {
         return aiService.post(url, body, aiService.authorization(provider.getToken()));
     }
 
-    public Map<?, ?> status() {
-        Map<Integer, String> status = new LinkedHashMap<>();
-        status.put(1, "启用");
-        status.put(2, "禁用");
-        return status;
-    }
-
-    public Map<String, String> types() {
-        Map<String, String> types = new LinkedHashMap<>();
-        types.put("chat", "对话");
-        types.put("embedding", "嵌入");
-        types.put("reranker", "重排序");
-        return types;
-    }
-
     public Model info(Integer id) {
         return info(modelDao, id);
     }
@@ -86,8 +130,12 @@ public class ModelService extends JPAServiceBase {
         if(DPUtil.empty(name)) return ApiUtil.result(1001, "模型名称不能为空", name);
         String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
         if(!types().containsKey(type)) return ApiUtil.result(1002, "类型异常", type);
+        String alias = DPUtil.trim(DPUtil.parseString(param.get("alias")));
+        if(!DPUtil.empty(alias) && !ValidateUtil.isLabel(alias)) return ApiUtil.result(1003, "别名格式不正确", alias);
+        String plan = DPUtil.trim(DPUtil.parseString(param.get("plan")));
+        if(!plans.has(plan)) return ApiUtil.result(1004, "计费方案异常", plan);
         int status = DPUtil.parseInt(param.get("status"));
-        if(!status().containsKey(status)) return ApiUtil.result(1003, "状态异常", status);
+        if(!status().containsKey(status)) return ApiUtil.result(1005, "状态异常", status);
         Model info;
         if(id > 0) {
             if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
@@ -104,6 +152,12 @@ public class ModelService extends JPAServiceBase {
         info.setProviderId(provider.getId());
         info.setName(name);
         info.setType(type);
+        info.setAlias(alias);
+        info.setRoleIds(DPUtil.implode(",", DPUtil.parseIntList(param.get("roleIds"))));
+        info.setExplorable(DPUtil.parseBoolean(param.get("explorable")) ? 1 : 0);
+        info.setAllVisible(DPUtil.parseBoolean(param.get("allVisible")) ? 1 : 0);
+        info.setSecurityDetectable(DPUtil.parseBoolean(param.get("securityDetectable")) ? 1 : 0);
+        info.setPlan(plan);
         info.setContent(DPUtil.stringify(param.get("content")));
         info.setSort(DPUtil.parseInt(param.get("sort")));
         info.setStatus(status);
@@ -130,6 +184,9 @@ public class ModelService extends JPAServiceBase {
         if(!DPUtil.empty(args.get("withStatusText"))) {
             fillStatus(rows, status());
         }
+        if (!DPUtil.empty(args.get("withRoles"))) {
+            rbacService.fillInfos(rows);
+        }
         return result;
     }
 
@@ -137,11 +194,20 @@ public class ModelService extends JPAServiceBase {
         Map<String, String> types = types();
         for (JsonNode row : rows) {
             ObjectNode node = (ObjectNode) row;
+            List<Integer> ids = DPUtil.parseIntList(node.at("/roleIds").asText(""));
+            node.replace("roleIds", DPUtil.toJSON(ids));
             node.replace("content", DPUtil.parseJSON(node.at("/content").asText()));
             String type = node.at("/type").asText();
             node.put("typeText", types.getOrDefault(type, ""));
+            String plan = node.at("/plan").asText();
+            node.put("planText", plans.at("/" + plan + "/name").asText());
+            int explorable = node.at("/explorable").asInt(0);
+            node.put("explorable", 1 == explorable);
+            int allVisible = node.at("/allVisible").asInt(0);
+            node.put("allVisible", 1 == allVisible);
+            int securityDetectable = node.at("/securityDetectable").asInt(0);
+            node.put("securityDetectable", 1 == securityDetectable);
         }
-
         return rows;
     }
 
@@ -149,8 +215,12 @@ public class ModelService extends JPAServiceBase {
         return remove(modelDao, ids);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(modelDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(modelDao, rows, properties);
+    }
+
+    public JsonNode fillInfos(JsonNode rows, String ...properties) {
+        return fillInfos(modelDao, rows, properties);
     }
 
 }

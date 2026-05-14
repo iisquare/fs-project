@@ -68,8 +68,8 @@ public class DictionaryService extends JPAServiceBase {
         return ApiUtil.result(0, null, info);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(dictionaryDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(dictionaryDao, rows, properties);
     }
 
     public ArrayNode formatOptions(ArrayNode list) {

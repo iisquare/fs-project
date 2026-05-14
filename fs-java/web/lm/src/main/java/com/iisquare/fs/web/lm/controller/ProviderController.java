@@ -26,7 +26,8 @@ public class ProviderController extends PermitControllerBase {
     @RequestMapping("/list")
     @Permission("")
     public String listAction(@RequestBody Map<String, Object> param) {
-        ObjectNode result = providerService.search(param, DPUtil.buildMap("withUserInfo", true, "withStatusText", true));
+        ObjectNode result = providerService.search(param, DPUtil.buildMap(
+                "withUserInfo", true, "withStatusText", true, "withTypeText", true));
         return ApiUtil.echoResult(0, null, result);
     }
 
@@ -48,6 +49,7 @@ public class ProviderController extends PermitControllerBase {
     @RequestMapping("/config")
     @Permission("")
     public String configAction(ModelMap model) {
+        model.put("types", providerService.types());
         model.put("status", providerService.status());
         return ApiUtil.echoResult(0, null, model);
     }

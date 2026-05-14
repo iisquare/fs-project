@@ -105,26 +105,14 @@ public class FileUtil {
     public static String getContent(URL url, boolean bDislodgeLine, Charset charset) {
         if (null == charset) return null;
         InputStream inputStream = null;
-        InputStreamReader inputReader = null;
-        BufferedReader bufferReader = null;
-        String output = "";
         try {
             inputStream = url.openStream();
-            inputReader = new InputStreamReader(inputStream, charset);
-            bufferReader = new BufferedReader(inputReader);
-            StringBuilder sb = new StringBuilder();
-            String text;
-            while ((text = bufferReader.readLine()) != null) {
-                sb.append(text);
-                if (!bDislodgeLine) sb.append("\n");
-            }
-            output = sb.toString();
+            return getContent(inputStream, bDislodgeLine, charset);
         } catch (IOException ioException) {
             return null;
         } finally {
-            close(bufferReader, inputReader, inputStream);
+            close(inputStream);
         }
-        return output;
     }
 
     public static String getContent(String filePath, boolean bDislodgeLine, Charset charset) {
@@ -137,11 +125,26 @@ public class FileUtil {
         if (!file.isFile()) return null;
         if (!file.canRead()) return null;
         InputStream inputStream = null;
+        try {
+            inputStream = new FileInputStream(file);
+            return getContent(inputStream, bDislodgeLine, charset);
+        } catch (IOException ioException) {
+            return null;
+        } finally {
+            close(inputStream);
+        }
+    }
+
+    public static String getContent(InputStream inputStream, Charset charset) throws IOException {
+        return new String(inputStream.readAllBytes(), charset);
+    }
+
+    public static String getContent(InputStream inputStream, boolean bDislodgeLine, Charset charset) {
+        if (null == charset) return null;
         InputStreamReader inputReader = null;
         BufferedReader bufferReader = null;
         String output = "";
         try {
-            inputStream = new FileInputStream(file);
             inputReader = new InputStreamReader(inputStream, charset);
             bufferReader = new BufferedReader(inputReader);
             StringBuilder sb = new StringBuilder();
@@ -155,7 +158,7 @@ public class FileUtil {
         } catch (IOException ioException) {
             return null;
         } finally {
-            close(bufferReader, inputReader, inputStream);
+            close(bufferReader, inputReader);
         }
         return output;
     }

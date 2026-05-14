@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import type { FormInstance, TableInstance } from 'element-plus';
 import RouteUtil from '@/utils/RouteUtil'
 import { useRoute, useRouter } from 'vue-router';
@@ -8,6 +8,8 @@ import ApiUtil from '@/utils/ApiUtil';
 import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
 import ProviderApi from '@/api/lm/ProviderApi';
+import RoleApi from '@/api/member/RoleApi';
+import { el } from 'element-plus/es/locales.mjs';
 
 const route = useRoute()
 const router = useRouter()
@@ -18,15 +20,31 @@ const columns = ref([
   { prop: 'id', label: 'ID' },
   { prop: 'providerInfo.name', label: '供应商' },
   { prop: 'name', label: '模型名称' },
+  { prop: 'alias', label: '模型别名', slot: 'alias' },
   { prop: 'typeText', label: '模型类型' },
-  { prop: 'content', label: '配置参数', slot: 'content' },
+  { prop: 'explorable', label: '模型广场' },
+  { prop: 'allVisible', label: '全部可见' },
+  { prop: 'securityDetectable', label: '安全围栏' },
+  { prop: 'planText', label: '计费方案' },
+  { prop: 'role', label: '授权角色', slot: 'role' },
   { prop: 'sort', label: '排序' },
   { prop: 'statusText', label: '状态' },
 ])
-const config = ref({
+const config: any = ref({
   ready: false,
   status: {},
   types: {},
+  plans: {},
+})
+const parameters = computed(() => {
+  const plans = config.value.plans[form.value.plan]
+  if (!plans) return []
+  return Object.entries(plans.parameters || {}).map(([key, item]) => {
+    return {
+      key,
+      ...item as any,
+    }
+  })
 })
 const rows = ref([])
 const filterRef = ref<FormInstance>()
@@ -60,6 +78,7 @@ const rules = ref({
   providerId: [{ required: true, message: '请选择所属供应商', trigger: 'change' }],
   name: [{ required: true, message: '请输入模型名称', trigger: 'blur' }],
   type: [{ required: true, message: '请选择类型', trigger: 'change' }],
+  plan: [{ required: true, message: '请选择计费方案', trigger: 'change' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 })
 const handleAdd = () => {
@@ -144,19 +163,15 @@ const handleDelete = () => {
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns">
-        <template #content="scope">
-          <el-space>
-            <el-tag v-if="scope.row.content.thinking">推理模型</el-tag>
-            <el-tag v-if="scope.row.content.dimension">{{ scope.row.content.dimension }}维</el-tag>
-            <el-tag v-if="scope.row.content.maxContextLength >= 1024">{{ Math.floor(scope.row.content.maxContextLength / 1024) }}K</el-tag>
-            <el-tag v-if="scope.row.content.maxContextLength > 0 && scope.row.content.maxContextLength < 1024">{{ scope.row.content.maxContextLength }}</el-tag>
-          </el-space>
+        <template #alias="scope">{{ scope.row.alias ? scope.row.alias : (scope.row.providerInfo?.serial + '/' + scope.row.name) }}</template>
+        <template #role="scope">
+          <el-space><el-tag v-for="item in scope.row.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
         </template>
       </TableColumn>
       <el-table-column label="操作">
         <template #default="scope">
-          <el-button link @click="handleShow(scope)" v-permit="'lm:serverEndpoint:'">查看</el-button>
-          <el-button link @click="handleEdit(scope)" v-permit="'lm:serverEndpoint:modify'">编辑</el-button>
+          <el-button link @click="handleShow(scope)" v-permit="'lm:model:'">查看</el-button>
+          <el-button link @click="handleEdit(scope)" v-permit="'lm:model:modify'">编辑</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -166,7 +181,18 @@ const handleDelete = () => {
     <el-form :model="form" label-width="auto">
       <el-form-item label="所属供应商">{{ form.providerInfo?.name }}</el-form-item>
       <el-form-item label="模型名称">{{ form.name }}</el-form-item>
+      <el-form-item label="模型别名">{{ form.alias }}</el-form-item>
       <el-form-item label="模型类型">{{ form.typeText }}</el-form-item>
+      <el-form-item label="模型广场">{{ form.explorable }}</el-form-item>
+      <el-form-item label="全部可见">{{ form.allVisible }}</el-form-item>
+      <el-form-item label="安全围栏">{{ form.securityDetectable }}</el-form-item>
+      <el-form-item label="计费方案">{{ form.planText }}</el-form-item>
+      <el-form-item label="授权角色">
+        <el-space><el-tag v-for="item in form.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
+      </el-form-item>
+      <el-form-item label="配置参数">
+         <el-input type="textarea" :value="JSON.stringify(form.content, null, 4)" :rows="5" />
+      </el-form-item>
       <el-form-item label="排序">{{ form.sort }}</el-form-item>
       <el-form-item label="状态">{{ form.statusText }}</el-form-item>
       <el-form-item label="描述">{{ form.description ? form.description : '暂无' }}</el-form-item>
@@ -176,7 +202,7 @@ const handleDelete = () => {
       <el-form-item label="修改时间">{{ DateUtil.format(form.updatedTime) }}</el-form-item>
     </el-form>
   </el-drawer>
-  <el-drawer v-model="formVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true">
+  <el-drawer v-model="formVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true" size="80%">
     <template #header="{ close, titleId, titleClass }">
       <h4 :id="titleId" :class="titleClass">{{ '信息' + (form.id ? ('修改 - ' + form.id) : '添加') }}</h4>
       <el-space>
@@ -185,49 +211,63 @@ const handleDelete = () => {
       </el-space>
     </template>
     <el-form ref="formRef" :model="form" :rules="rules" label-width="auto">
-      <el-form-item label="所属供应商" prop="providerId">
-        <form-select v-model="form.providerId" :callback="ProviderApi.list" clearable />
-      </el-form-item>
-      <el-form-item label="模型名称" prop="name">
-        <el-input v-model="form.name" />
-      </el-form-item>
-      <el-form-item label="模型类型" prop="type">
-        <el-select v-model="form.type" placeholder="请选择">
-          <el-option v-for="(value, key) in config.types" :key="key" :value="key" :label="value" />
-        </el-select>
-      </el-form-item>
-      <template v-if="form.type === 'chat'">
-        <el-form-item label="推理模型">
-          <el-switch v-model="form.content.thinking" />
-        </el-form-item>
-        <el-form-item label="上下文长度">
-          <el-input-number v-model="form.content.maxContextLength" :min="0" />
-        </el-form-item>
-      </template>
-      <template v-else-if="form.type === 'embedding'">
-        <el-form-item label="输出维度">
-          <el-input-number v-model="form.content.dimension" :min="0" />
-        </el-form-item>
-        <el-form-item label="上下文长度">
-          <el-input-number v-model="form.content.maxContextLength" :min="0" />
-        </el-form-item>
-      </template>
-      <template v-else-if="form.type === 'reranker'">
-        <el-form-item label="上下文长度">
-          <el-input-number v-model="form.content.maxContextLength" :min="0" />
-        </el-form-item>
-      </template>
-      <el-form-item label="排序">
-        <el-input-number v-model="form.sort" />
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="form.status" placeholder="请选择">
-          <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="描述">
-        <el-input type="textarea" v-model="form.description" />
-      </el-form-item>
+      <el-descriptions border>
+        <el-descriptions-item label="所属供应商">
+          <form-select v-model="form.providerId" :callback="ProviderApi.list" clearable />
+        </el-descriptions-item>
+        <el-descriptions-item label="模型名称" prop="name">
+          <el-input v-model="form.name" />
+        </el-descriptions-item>
+        <el-descriptions-item label="模型别名" prop="alias">
+          <el-input v-model="form.alias" placeholder="默认为：供应商标识/模型名称" />
+        </el-descriptions-item>
+        <el-descriptions-item label="模型类型" prop="type">
+          <el-select v-model="form.type" placeholder="请选择">
+            <el-option v-for="(value, key) in config.types" :key="key" :value="key" :label="value" />
+          </el-select>
+        </el-descriptions-item>
+        <el-descriptions-item label="计费方案" prop="plan">
+          <el-select v-model="form.plan" placeholder="请选择">
+            <el-option v-for="(item, key) in config.plans" :key="key" :value="key" :label="item.name" />
+          </el-select>
+        </el-descriptions-item>
+        <el-descriptions-item label="状态" prop="status">
+          <el-select v-model="form.status" placeholder="请选择">
+            <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
+          </el-select>
+        </el-descriptions-item>
+        <el-descriptions-item label="模型广场">
+           <el-checkbox v-model="form.explorable">在模型广场展示</el-checkbox>
+        </el-descriptions-item>
+        <el-descriptions-item label="可见范围">
+          <el-checkbox v-model="form.allVisible">无授权用户也可见</el-checkbox>
+        </el-descriptions-item>
+        <el-descriptions-item label="安全围栏">
+          <el-checkbox v-model="form.securityDetectable">启用安全围栏</el-checkbox>
+        </el-descriptions-item>
+        <el-descriptions-item label="排序">
+          <el-input-number v-model="form.sort" />
+        </el-descriptions-item>
+        <el-descriptions-item label="授权角色" :span="3">
+          <form-select v-model="form.roleIds" :callback="RoleApi.list" multiple clearable />
+        </el-descriptions-item>
+        <el-descriptions-item label="描述信息" :span="3">
+          <el-input type="textarea" v-model="form.description" />
+        </el-descriptions-item>
+      </el-descriptions>
+      <el-divider content-position="left">计费方案详细配置</el-divider>
+      <el-table :data="parameters">
+        <el-table-column prop="name" label="参数名称" />
+        <el-table-column label="参数值">
+          <template #default="scope">
+            <el-input-number v-model="form.content[scope.row.key]" disabled-scientific style="width: 300px;" v-if="scope.row.type === 'number'" />
+            <el-input v-model="form.content[scope.row.key]" v-else-if="scope.row.type === 'string'" />
+            <el-checkbox v-model="form.content[scope.row.key]"  v-else-if="scope.row.type === 'boolean'" />
+            <el-alert :title="`未知参数类型：${scope.row.type}`" type="warning" show-icon v-else />
+          </template>
+        </el-table-column>
+        <el-table-column prop="unit" label="单位" />
+      </el-table>
     </el-form>
   </el-drawer>
 </template>

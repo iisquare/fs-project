@@ -19,11 +19,17 @@ public class Provider {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     @Column
+    private String type; // 供应商渠道类型
+    @Column
+    private String serial; // 唯一标识
+    @Column
     private String name; // 供应商名称
     @Column
     private String endpoint; // 调用地址
     @Column
     private String token; // 认证标识
+    @Column
+    private String website; // 官网链接
     @Column
     private String content; // 配置信息
     @Column

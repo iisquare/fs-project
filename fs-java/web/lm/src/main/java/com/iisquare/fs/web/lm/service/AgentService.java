@@ -145,8 +145,8 @@ public class AgentService extends JPAServiceBase {
         return remove(agentDao, ids);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(agentDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(agentDao, rows, properties);
     }
 
 }

@@ -43,8 +43,8 @@ public class PageService extends JPAServiceBase {
         return info(pageDao, id);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(pageDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(pageDao, rows, properties);
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {

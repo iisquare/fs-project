@@ -33,6 +33,18 @@ public class ProviderService extends JPAServiceBase {
     @Autowired
     Configuration configuration;
 
+    public Map<String, String> types() {
+        Map<String, String> types = new LinkedHashMap<>();
+        types.put("vllm", "vLLM");
+        types.put("sglang", "SGLang");
+        types.put("deepseek", "DeepSeek");
+        types.put("volcengine", "火山引擎");
+        types.put("siliconflow", "硅基流动");
+        types.put("aliyun", "阿里云百炼");
+        types.put("openai-compatible", "OpenAI Compatible");
+        types.put("anthropic-compatible", "Anthropic Compatible");
+        return types;
+    }
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();
@@ -47,12 +59,18 @@ public class ProviderService extends JPAServiceBase {
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
+        if(DPUtil.empty(type)) return ApiUtil.result(1001, "供应商类型不能为空", type);
+        String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
+        if(DPUtil.empty(serial)) return ApiUtil.result(1002, "唯一标识不能为空", serial);
+        if(!ValidateUtil.isLabel(serial)) return ApiUtil.result(1003, "唯一标识格式不正确", serial);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-        if(DPUtil.empty(name)) return ApiUtil.result(1001, "服务商名称不能为空", name);
+        if(DPUtil.empty(name)) return ApiUtil.result(1004, "供应商名称不能为空", name);
         String endpoint = DPUtil.trim(DPUtil.parseString(param.get("endpoint")));
-        if(DPUtil.empty(endpoint)) return ApiUtil.result(1002, "调用地址不能为空", endpoint);
+        if(DPUtil.empty(endpoint)) return ApiUtil.result(1005, "调用地址不能为空", endpoint);
         int status = DPUtil.parseInt(param.get("status"));
-        if(!status().containsKey(status)) return ApiUtil.result(1003, "状态异常", status);
+        if(!status().containsKey(status)) return ApiUtil.result(1006, "状态异常", status);
+        if(!types().containsKey(type)) return ApiUtil.result(1007, "供应商类型异常", type);
         Provider info;
         if(id > 0) {
             if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
@@ -62,9 +80,16 @@ public class ProviderService extends JPAServiceBase {
             if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
             info = new Provider();
         }
+        int count = providerDao.exist(serial, DPUtil.parseInt(info.getId()));
+        if (count > 0) {
+            return ApiUtil.result(1501, "标识已存在", serial);
+        }
+        info.setType(type);
+        info.setSerial(serial);
         info.setName(name);
         info.setEndpoint(endpoint);
         info.setToken(DPUtil.parseString(param.get("token")));
+        info.setWebsite(DPUtil.parseString(param.get("website")));
         info.setContent(DPUtil.stringify(param.get("content")));
         info.setSort(DPUtil.parseInt(param.get("sort")));
         info.setStatus(status);
@@ -77,12 +102,16 @@ public class ProviderService extends JPAServiceBase {
         ObjectNode result = search(providerDao, param, (root, query, cb) -> {
             SpecificationHelper<Provider> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id");
+            helper.equal("type").equal("serial").like("site");
             helper.equalWithIntNotEmpty("status").like("name").like("endpoint");
             return cb.and(helper.predicates());
-        }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort");
+        }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort", "serial");
         JsonNode rows = format(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
+        }
+        if(!DPUtil.empty(args.get("withTypeText"))) {
+            DPUtil.fillValues(rows, "type", "typeText", types());
         }
         if(!DPUtil.empty(args.get("withStatusText"))) {
             fillStatus(rows, status());
@@ -103,7 +132,7 @@ public class ProviderService extends JPAServiceBase {
         return remove(providerDao, ids);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(providerDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(providerDao, rows, properties);
     }
 }

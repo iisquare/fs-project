@@ -91,8 +91,8 @@ public class MenuService extends JPAServiceBase {
 
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(menuDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(menuDao, rows, properties);
     }
 
     public ArrayNode tree(Map<?, ?> param, Map<?, ?> args) {

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Properties;
@@ -33,11 +34,13 @@ public class EmailService {
     public static final String HTML_FORGOT;
 
     static {
-        try {
-            HTML_SIGNUP = FileUtil.getContent(
-                    new ClassPathResource("/email/signup.html").getFile(), false, StandardCharsets.UTF_8);
-            HTML_FORGOT = FileUtil.getContent(
-                    new ClassPathResource("/email/forgot.html").getFile(), false, StandardCharsets.UTF_8);
+        try (InputStream input = new ClassPathResource("/email/signup.html").getInputStream()) {
+            HTML_SIGNUP = FileUtil.getContent(input, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        try (InputStream input = new ClassPathResource("/email/forgot.html").getInputStream()) {
+            HTML_FORGOT = FileUtil.getContent(input, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

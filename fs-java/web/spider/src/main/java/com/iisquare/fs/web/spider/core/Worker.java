@@ -21,6 +21,7 @@ import org.springframework.core.io.ClassPathResource;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
@@ -55,9 +56,8 @@ public class Worker implements Runnable {
     public static final String SCRIPT_MAPPER;
 
     static {
-        try {
-            SCRIPT_MAPPER = FileUtil.getContent(
-                    new ClassPathResource("/scripts/worker-mapper.js").getFile(), false, DEFAULT_CHARSET);
+        try (InputStream input = new ClassPathResource("/scripts/worker-mapper.js").getInputStream()) {
+            SCRIPT_MAPPER = FileUtil.getContent(input, DEFAULT_CHARSET);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

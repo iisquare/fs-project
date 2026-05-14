@@ -43,8 +43,8 @@ public class SiteService extends JPAServiceBase {
         return info(siteDao, id);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(siteDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(siteDao, rows, properties);
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {

@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 public class DPUtil {
 
     public static final String regexLong = "^-?\\d+";
-    public static final String regexDouble = "^-?\\d+(\\.\\d+)*";
+    public static final String regexDouble = "^-?\\d+(\\.\\d+(E\\d+)?)*";
     public static final String regexSafeImplode = "^[\\w_]+$";
     public static final ObjectMapper mapper = new ObjectMapper();
 
@@ -659,6 +659,7 @@ public class DPUtil {
      * 安全获取数组中对应下标的值
      */
     public static Object byIndex(Object[] array, int index) {
+        if (index < 0) index = array.length + index;
         if (isIndexExist(array, index)) return array[index];
         return null;
     }
@@ -667,6 +668,7 @@ public class DPUtil {
      * 安全获取集合中对应下标的值
      */
     public static Object byIndex(Collection<?> collection, int index) {
+        if (index < 0) index = collection.size() + index;
         if (isIndexExist(collection, index)) {
             Iterator<?> iterator = collection.iterator();
             for (int i = 0; i < index; i++) {
@@ -857,7 +859,12 @@ public class DPUtil {
     public static String[] suffix(String[] array, String fromSuffix, String toSuffix) {
         String[] result = new String[array.length];
         for (int i = 0; i < array.length; i++) {
-            result[i] = substring(array[i], 0, array[i].length() - fromSuffix.length()) + toSuffix;
+            int index = array[i].lastIndexOf(fromSuffix);
+            if (index == -1) {
+                result[i] = array[i] + toSuffix;
+            } else {
+                result[i] = substring(array[i], 0, index) + toSuffix;
+            }
         }
         return result;
     }

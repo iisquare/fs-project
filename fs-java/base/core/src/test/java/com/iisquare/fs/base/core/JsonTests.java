@@ -39,11 +39,22 @@ public class JsonTests {
             System.out.println("[null == node]:" + (null == node));
             System.out.println("[node.isNull()]:" + node.isNull());
             System.out.println("[node.isEmpty()]:" + node.isEmpty());
+            System.out.println("[node.isObject()]:" + node.isObject());
+            System.out.println("[node.isArray()]:" + node.isArray());
             System.out.println("[node.asText()]:" + node.asText());
             System.out.println("[node.asText(null)]:" + node.asText(null));
             System.out.println("[node.asInt()]:" + node.asInt());
             System.out.println("[node.asInt(0)]:" + node.asInt(0));
         }
+    }
+
+    @Test
+    public void arrayTest() {
+        ObjectNode json = DPUtil.objectNode();
+        ArrayNode arr = json.putArray("arr");
+        arr.add("a").add(2).add("b");
+        arr.addObject().put("c", 3).put("d", "4");
+        System.out.println(json.at("/arr/3/d"));
     }
 
     @Test

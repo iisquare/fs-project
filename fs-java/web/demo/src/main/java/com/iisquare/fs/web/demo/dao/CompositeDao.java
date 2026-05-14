@@ -27,6 +27,10 @@ public interface CompositeDao extends JpaRepository<Composite, Composite.IdClass
 
     /**
      * 自定义修改语句
+     * 在 JPA 中，默认的 Flush 模式为 AUTO。
+     * 实体修改需要在更新操作之后，托管实体的任何属性变更都会被JPA跟踪（脏检查）。
+     * 若Composite.name字段在CompositeDao.modifyName方法前被修改，可能导致影响行数为0行。
+     * 在执行查询（尤其是 JPQL 查询）之前，持久化提供者（如 Hibernate）会先刷新持久化上下文，将未同步的变更同步到数据库，以保证查询结果的准确性。
      */
     @Modifying
     @Query(value = "update Composite set name=:after where name=:before")

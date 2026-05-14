@@ -207,8 +207,8 @@ public class FlowService extends JPAServiceBase {
         return ApiUtil.result(0, null, result);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(flowDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(flowDao, rows, properties);
     }
 
 }

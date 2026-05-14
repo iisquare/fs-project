@@ -7,12 +7,12 @@ import { ref } from 'vue';
 const loading = ref(false)
 const form: any = ref({})
 const handleProxy = () => {
-  ElementUtil.confirm('确定重新构建模型代理吗').then(() => {
+  ElementUtil.confirm('确定重新构建模型网关吗').then(() => {
     ManageApi.notice({ type: 'model' }, { success: true })
   }).catch(() => {})
 }
 const handleSensitive = () => {
-  ElementUtil.confirm('确定重新构建敏感词字典吗').then(() => {
+  ElementUtil.confirm('确定重新构建安全围栏吗').then(() => {
     ManageApi.notice({ type: 'sensitive' }, { success: true })
   }).catch(() => {})
 }
@@ -40,8 +40,8 @@ const handleCheck = () => {
     <el-form :model="form" label-width="auto">
       <el-form-item label="管理">
         <el-space>
-          <el-button type="danger" @click="handleSensitive">重建敏感词字典</el-button>
-          <el-button type="danger" @click="handleProxy">重建模型代理</el-button>
+          <el-button type="danger" @click="handleSensitive">重建安全围栏</el-button>
+          <el-button type="danger" @click="handleProxy">重建模型网关</el-button>
         </el-space>
       </el-form-item>
       <el-form-item label="语句">

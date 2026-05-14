@@ -7,6 +7,7 @@ import ProviderApi from '@/api/lm/ProviderApi';
 import ApiUtil from '@/utils/ApiUtil';
 import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
+import MarkdownEditor from '@/components/Editor/MarkdownEditor.vue';
 
 const route = useRoute()
 const router = useRouter()
@@ -15,13 +16,16 @@ const loading = ref(false)
 const searchable = ref(true)
 const columns = ref([
   { prop: 'id', label: 'ID' },
+  { prop: 'typeText', label: '供应商类型' },
   { prop: 'name', label: '供应商名称' },
+  { prop: 'serial', label: '唯一标识' },
   { prop: 'endpoint', label: '调用地址' },
   { prop: 'sort', label: '排序' },
   { prop: 'statusText', label: '状态' },
 ])
 const config = ref({
   ready: false,
+  types: {},
   status: {},
 })
 const rows = ref([])
@@ -53,6 +57,8 @@ const formLoading = ref(false)
 const form: any = ref({})
 const formRef: any = ref<FormInstance>()
 const rules = ref({
+  type: [{ required: true, message: '请输入供应商类型', trigger: 'change' }],
+  serial: [{ required: true, message: '请输入唯一标识', trigger: 'blur' }],
   name: [{ required: true, message: '请输入供应商名称', trigger: 'blur' }],
   endpoint: [{ required: true, message: '请输入调用地址', trigger: 'blur' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
@@ -96,7 +102,7 @@ const handleDelete = () => {
 }
 const handleModel = (scope: any, env: any) => {
   RouteUtil.forward(route, router, env, {
-    path: '/lm/model/list',
+    path: '/lm/setting/model',
     query: RouteUtil.filter({ providerId: scope.row.id })
   })
 }
@@ -108,8 +114,8 @@ const handleModel = (scope: any, env: any) => {
       <form-search-item label="名称" prop="name">
         <el-input v-model="filters.name" clearable />
       </form-search-item>
-      <form-search-item label="地址" prop="endpoint">
-        <el-input v-model="filters.endpoint" clearable />
+      <form-search-item label="标识" prop="serial">
+        <el-input v-model="filters.serial" clearable />
       </form-search-item>
       <form-search-item label="状态" prop="status">
         <el-select v-model="filters.status" placeholder="请选择" clearable>
@@ -156,20 +162,26 @@ const handleModel = (scope: any, env: any) => {
     </el-table>
     <TablePagination v-model="pagination" @change="handleRefresh(true, true)" />
   </el-card>
-  <el-drawer v-model="infoVisible" :title="'信息查看 - ' + form.id">
+  <el-drawer v-model="infoVisible" :title="'信息查看 - ' + form.id" size="80%">
     <el-form :model="form" label-width="auto">
-      <el-form-item label="供应商名称">{{ form.name }}</el-form-item>
-      <el-form-item label="调用地址">{{ form.endpoint }}</el-form-item>
-      <el-form-item label="排序">{{ form.sort }}</el-form-item>
-      <el-form-item label="状态">{{ form.statusText }}</el-form-item>
-      <el-form-item label="描述">{{ form.description ? form.description : '暂无' }}</el-form-item>
-      <el-form-item label="创建者">{{ form.createdUserInfo?.name }}</el-form-item>
-      <el-form-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-form-item>
-      <el-form-item label="修改者">{{ form.updatedUserInfo?.name }}</el-form-item>
-      <el-form-item label="修改时间">{{ DateUtil.format(form.updatedTime) }}</el-form-item>
+      <el-descriptions border>
+        <el-descriptions-item label="供应商类型">{{ form.typeText }}</el-descriptions-item>
+        <el-descriptions-item label="供应商名称">{{ form.name }}</el-descriptions-item>
+        <el-descriptions-item label="供应商标识">{{ form.serial }}</el-descriptions-item>
+        <el-descriptions-item label="调用地址" :span="3">{{ form.endpoint }}</el-descriptions-item>
+        <el-descriptions-item label="认证标识"><form-password v-model="form.token" level="medium" /></el-descriptions-item>
+        <el-descriptions-item label="排序">{{ form.sort }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{ form.statusText }}</el-descriptions-item>
+        <el-descriptions-item label="官网地址" :span="3">{{ form.website }}</el-descriptions-item>
+        <el-descriptions-item label="创建者">{{ form.createdUserInfo?.name }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间" :span="2">{{ DateUtil.format(form.createdTime) }}</el-descriptions-item>
+        <el-descriptions-item label="修改者">{{ form.updatedUserInfo?.name }}</el-descriptions-item>
+        <el-descriptions-item label="修改时间" :span="2">{{ DateUtil.format(form.updatedTime) }}</el-descriptions-item>
+        <el-descriptions-item label="描述信息" :span="3"><MarkdownEditor v-model="form.description" readonly /></el-descriptions-item>
+      </el-descriptions>
     </el-form>
   </el-drawer>
-  <el-drawer v-model="formVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true">
+  <el-drawer v-model="formVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true" size="80%">
     <template #header="{ close, titleId, titleClass }">
       <h4 :id="titleId" :class="titleClass">{{ '信息' + (form.id ? ('修改 - ' + form.id) : '添加') }}</h4>
       <el-space>
@@ -178,26 +190,25 @@ const handleModel = (scope: any, env: any) => {
       </el-space>
     </template>
     <el-form ref="formRef" :model="form" :rules="rules" label-width="auto">
-      <el-form-item label="供应商名称" prop="name">
-        <el-input v-model="form.name" />
-      </el-form-item>
-      <el-form-item label="调用地址" prop="endpoint">
-        <el-input type="textarea" v-model="form.endpoint" />
-      </el-form-item>
-      <el-form-item label="认证标识">
-        <el-input  v-model="form.token"  type="password" placeholder="请输入认证标识" show-password />
-      </el-form-item>
-      <el-form-item label="排序">
-        <el-input-number v-model="form.sort" />
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="form.status" placeholder="请选择">
-          <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="描述">
-        <el-input type="textarea" v-model="form.description" />
-      </el-form-item>
+      <el-descriptions border>
+        <el-descriptions-item label="供应商类型">
+          <el-select v-model="form.type" placeholder="请选择">
+            <el-option v-for="(value, key) in config.types" :key="key" :value="key" :label="value" />
+          </el-select>
+        </el-descriptions-item>
+        <el-descriptions-item label="唯一标识"><el-input v-model="form.serial" /></el-descriptions-item>
+        <el-descriptions-item label="供应商名称"><el-input v-model="form.name" /></el-descriptions-item>
+        <el-descriptions-item label="调用地址" :span="3"><el-input type="textarea" v-model="form.endpoint" /></el-descriptions-item>
+        <el-descriptions-item label="认证标识"><el-input  v-model="form.token"  type="password" placeholder="请输入认证标识" show-password /></el-descriptions-item>
+        <el-descriptions-item label="排序"><el-input-number v-model="form.sort" /></el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-select v-model="form.status" placeholder="请选择">
+            <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
+          </el-select>
+        </el-descriptions-item>
+        <el-descriptions-item label="官网链接" :span="3"><el-input type="textarea" v-model="form.website" /></el-descriptions-item>
+        <el-descriptions-item label="描述信息" :span="3"><MarkdownEditor v-model="form.description" /></el-descriptions-item>
+      </el-descriptions>
     </el-form>
   </el-drawer>
 </template>

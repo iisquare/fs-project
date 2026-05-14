@@ -104,8 +104,8 @@ public class RoleService extends JPAServiceBase {
         return remove(roleDao, ids);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(roleDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(roleDao, rows, properties);
     }
 
 }

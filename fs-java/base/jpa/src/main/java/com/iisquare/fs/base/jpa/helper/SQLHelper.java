@@ -13,16 +13,15 @@ import org.springframework.jdbc.support.JdbcUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Date;
+import java.util.*;
 
 public class SQLHelper {
 
     private String sql;
-    private EntityManager manager;
-    private SQLBuilder builder;
+    private final EntityManager manager;
+    private final SQLBuilder builder;
+    public static final String regexNamedParameter = ":[a-zA-Z]\\w*";
 
     private SQLHelper(EntityManager manager, Class entity) {
         this.manager = manager;
@@ -152,36 +151,33 @@ public class SQLHelper {
     public PreparedStatement statement(Connection connection, String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
         List<Object> list = new ArrayList<>();
         Map<String, Object> pendingParams = builder.params();
-        List<String> params = DPUtil.matcher(SQLBuilder.PARAM_PREFIX, sql, false); // 获取全部命名参数
-        int size = params.size();
-        for (int index = 0; index < size; index++) {
-            String key = params.get(index);
+        List<String> params = DPUtil.matcher(regexNamedParameter, sql, false); // 匹配所有命名参数 :paramName
+        for (String param : params) {
+            String key = param.substring(1); // 去掉前缀 :
             Object value = pendingParams.get(key);
-            if(null == value) { // null值
-                list.add("");
-            } else if(value.getClass().isArray()) { // 数组
+            if (null == value) {
+                list.add(null);
+            } else if (value.getClass().isArray()) {
                 Object[] values = (Object[]) value;
-                sql = sql.replaceFirst(key, DPUtil.implode(", ", DPUtil.fillArray("?", values.length)));
-                for (Object item : values) {
-                    list.add(item);
-                }
+                sql = sql.replaceFirst(param, DPUtil.implode(", ", DPUtil.fillArray("?", values.length)));
+                list.addAll(Arrays.asList(values));
             } else {
                 list.add(value);
             }
         }
-        sql = sql.replaceAll(SQLBuilder.PARAM_PREFIX, "?"); // 替换命名参数为占位符
+        sql = sql.replaceAll(regexNamedParameter, "?"); // 替换命名参数为占位符
         PreparedStatement statement = connection.prepareStatement(sql, resultSetType, resultSetConcurrency);
-        size = list.size();
+        int size = list.size();
         for (int index = 0; index < size;) {
             Object param = list.get(index++);
-            if(null == param) {
+            if (null == param) {
                 statement.setObject(index, null);
             } else if (param instanceof String) {
                 statement.setString(index, param.toString());
             } else if (param instanceof Date) {
                 statement.setDate(index, Date.valueOf(param.toString()));
             } else if (param instanceof Boolean) {
-                statement.setBoolean(index, (Boolean) (param));
+                statement.setBoolean(index, (Boolean) param);
             } else if (param instanceof Integer) {
                 statement.setInt(index, (Integer) param);
             } else if (param instanceof Float) {
@@ -232,12 +228,10 @@ public class SQLHelper {
                     result = DPUtil.arrayNode();
                 }
             }
-            if (result.size() > 0) {
+            if (!result.isEmpty()) {
                 return callback.call(result);
             }
             return true;
-        } catch (SQLException e) {
-            throw e;
         } finally {
             JdbcUtils.closeResultSet(rs);
             JdbcUtils.closeStatement(statement);
@@ -278,7 +272,7 @@ public class SQLHelper {
                     if (0 == size) break;
                 }
             } while (true);
-            if (result.size() > 0) {
+            if (!result.isEmpty()) {
                 return callback.call(result);
             }
             return true;

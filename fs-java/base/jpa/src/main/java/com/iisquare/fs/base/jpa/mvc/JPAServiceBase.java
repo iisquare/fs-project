@@ -17,27 +17,63 @@ import org.springframework.data.jpa.domain.Specification;
 import java.io.Serializable;
 import java.util.*;
 
+import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
+
 public class JPAServiceBase extends ServiceBase {
 
     public JsonNode filter(JsonNode json) {
         return json;
     }
 
-    protected <T> JsonNode fillInfo(DaoBase<T, Integer> dao, JsonNode json, String... properties) {
-        return fillInfo(dao, Integer.class, json, properties);
+    protected <T> JsonNode fillInfo(DaoBase<T, Integer> dao, JsonNode rows, String... properties) {
+        return fillInfo(dao, Integer.class, rows, properties);
     }
 
     protected <T, ID extends Serializable> JsonNode fillInfo(
-            DaoBase<T, ID> dao, Class<ID> idClass, JsonNode json, String... properties) {
-        return fillInfo(dao, idClass, "id", "Id", "Info", json, properties);
+            DaoBase<T, ID> dao, Class<ID> idClass, JsonNode rows, String... properties) {
+        return fillInfo(dao, idClass, "id", "Id", "Info", rows, properties);
     }
 
     protected <T, ID extends Serializable> JsonNode fillInfo(
-            DaoBase<T, ID> dao, Class<ID> idClass, String idField, String fromSuffix, String toSuffix, JsonNode json, String... properties) {
-        Set<ID> ids = DPUtil.values(json, idClass, properties);
-        if(ids.isEmpty()) return json;
+            DaoBase<T, ID> dao, Class<ID> idClass, String idField, String fromSuffix, String toSuffix, JsonNode rows, String... properties) {
+        Set<ID> ids = DPUtil.values(rows, idClass, properties);
+        if(ids.isEmpty()) return rows;
         ObjectNode data = DPUtil.json2object(filter(DPUtil.toJSON(dao.findAllById(ids), ArrayNode.class)), idField);
-        return DPUtil.fillValues(json, true, properties, DPUtil.suffix(properties, fromSuffix, toSuffix), data);
+        return DPUtil.fillValues(rows, true, properties, DPUtil.suffix(properties, fromSuffix, toSuffix), data);
+    }
+
+    protected <T> JsonNode fillInfos(DaoBase<T, Integer> dao, JsonNode rows, String... properties) {
+        return fillInfos(dao, Integer.class, rows, properties);
+    }
+
+    protected <T, ID extends Serializable> JsonNode fillInfos(
+            DaoBase<T, ID> dao, Class<ID> idClass, JsonNode rows, String... properties) {
+        return fillInfos(dao, idClass, "id", "Ids", "s", rows, properties);
+    }
+
+    protected <T, ID extends Serializable> JsonNode fillInfos(
+            DaoBase<T, ID> dao, Class<ID> idClass, String idField, String fromSuffix, String toSuffix, JsonNode rows, String... properties) {
+        Set<ID> ids = new HashSet<>();
+        for (Object obj : DPUtil.values(rows, Object.class, properties)) {
+            for (String string : DPUtil.parseStringList(obj)) {
+                ids.add(DPUtil.toJSON(string, idClass));
+            }
+        }
+        if(ids.isEmpty()) return rows;
+        ObjectNode data = DPUtil.json2object(filter(DPUtil.toJSON(dao.findAllById(ids), ArrayNode.class)), idField);
+        String[] suffixed = DPUtil.suffix(properties, fromSuffix, toSuffix);
+        for (JsonNode row : rows) {
+            for (int i = 0; i < properties.length; i++) {
+                ArrayNode arr = ((ObjectNode) row).putArray(suffixed[i]);
+                List<String> list = DPUtil.parseStringList(DPUtil.toJSON(row.get(properties[i]), Object.class));
+                for (String id : list) {
+                    JsonNode item = data.at("/" + id);
+                    if (item.isNull() || item.isEmpty()) continue;
+                    arr.add(item);
+                }
+            }
+        }
+        return rows;
     }
 
     protected JsonNode fillStatus(JsonNode rows, Map<?, ?> map) {

@@ -42,8 +42,8 @@ public class RateService extends JPAServiceBase {
         return info(rateDao, id);
     }
 
-    public JsonNode fillInfo(JsonNode json, String ...properties) {
-        return fillInfo(rateDao, json, properties);
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(rateDao, rows, properties);
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {

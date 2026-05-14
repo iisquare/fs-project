@@ -22,6 +22,7 @@ public class ValidateUtil {
     public static final String regexMobilePhone = "^1\\d{10}$";
     public static final String regexIdCard = "^(([1-9]\\d{7}((0\\d)|(1[0-2]))(([0|1|2]\\d)|3[0-1])\\d{3})|([1-9]\\d{5}[1-9]\\d{3}((0\\d)|(1[0-2]))(([0|1|2]\\d)|3[0-1])\\d{3}([0-9]|[xX]))){1}$";
     public static final String regexPostCode = "^[1-9]\\d{5}(?!\\d)$";
+    public static final String regexLabel = "^[a-zA-Z][a-zA-Z0-9\\-\\.]*[a-zA-Z0-9]+$";
 
     public static boolean isNull(String object, boolean bTrim) {
         return null == object || "".endsWith(bTrim ? DPUtil.trim(object) : object);
@@ -85,6 +86,10 @@ public class ValidateUtil {
 
     public static boolean isPostCode(String object) {
         return DPUtil.isMatcher(regexPostCode, object);
+    }
+
+    public static boolean isLabel(String object) {
+        return DPUtil.isMatcher(regexLabel, object);
     }
 
     public static Integer filterInteger(Object object, boolean bBound, Integer min, Integer max, Integer defaultValue) {
@@ -180,6 +185,10 @@ public class ValidateUtil {
 
     public static String filterPostCode(String object, boolean bTrim, Integer min, Integer max, String defaultValue) {
         return filterRegex(regexPostCode, object, bTrim, min, max, defaultValue);
+    }
+
+    public static String filterLabel(String object, boolean bTrim, Integer min, Integer max, String defaultValue) {
+        return filterRegex(regexLabel, object, bTrim, min, max, defaultValue);
     }
 
     public static String filterDateTime(String object, boolean bTrim, String format, String defaultValue) {

@@ -27,7 +27,7 @@ public class ModelController extends PermitControllerBase {
     @Permission("")
     public String listAction(@RequestBody Map<String, Object> param) {
         ObjectNode result = modelService.search(param,
-                DPUtil.buildMap("withProviderInfo", true, "withUserInfo", true, "withStatusText", true));
+                DPUtil.buildMap("withProviderInfo", true, "withUserInfo", true, "withStatusText", true, "withRoles", true));
         return ApiUtil.echoResult(0, null, result);
     }
 
@@ -51,6 +51,7 @@ public class ModelController extends PermitControllerBase {
     public String configAction(ModelMap model) {
         model.put("status", modelService.status());
         model.put("types", modelService.types());
+        model.put("plans", modelService.plans());
         return ApiUtil.echoResult(0, null, model);
     }
 
