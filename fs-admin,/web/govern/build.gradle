@@ -1,8 +1,0 @@
-
-dependencies {
-    implementation project(':base:jpa')
-    implementation project(':base:neo4j')
-    implementation project(':web:core')
-    implementation project(':base:elasticsearch')
-    testImplementation project(':web:test')
-}

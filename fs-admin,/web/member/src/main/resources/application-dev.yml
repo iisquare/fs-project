@@ -1,8 +1,0 @@
-server:
-  port: 7801
-
-fs:
-  member:
-    email:
-      host: smtp.qq.com
-      port: 587

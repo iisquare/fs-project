@@ -1,5 +1,0 @@
-
-dependencies {
-    api project(':base:web')
-    api group: 'io.micrometer', name: 'micrometer-registry-prometheus', version: '1.6.3'
-}

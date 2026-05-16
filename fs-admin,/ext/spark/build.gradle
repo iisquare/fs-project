@@ -1,5 +1,0 @@
-
-dependencies {
-    implementation project(':app:spark')
-    testImplementation project(':base:test')
-}

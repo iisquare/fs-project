@@ -1,5 +1,0 @@
-spring:
-  application:
-    name: fs-shop-service
-  profiles:
-    active: dev,idev

@@ -1,5 +1,0 @@
-spring:
-  application:
-    name: fs-worker-service
-  profiles:
-    active: dev,idev

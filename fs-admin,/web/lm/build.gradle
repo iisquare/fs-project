@@ -1,6 +1,0 @@
-dependencies {
-    implementation project(':web:core')
-    implementation project(':base:jpa')
-    implementation project(':base:redis')
-    implementation("org.springframework.ai:spring-ai-starter-mcp-server-webmvc:1.0.1")
-}

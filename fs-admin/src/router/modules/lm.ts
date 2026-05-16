@@ -10,9 +10,9 @@ export const layouts = [{
     meta: { title: '工作面板' },
     component: layout.default
   }, {
-    path: '/lm/setting/manage',
-    meta: { title: '状态管理', permit: ['lm:manage:'] },
-    component: () => import('@/views/lm/setting/manage.vue')
+    path: '/lm/setting/gateway',
+    meta: { title: '网关状态', permit: ['lm:gateway:'] },
+    component: () => import('@/views/lm/setting/gateway.vue')
   }, {
     path: '/lm/security/sensitive',
     meta: { title: '拦截关键词', permit: ['lm:sensitive:'] },

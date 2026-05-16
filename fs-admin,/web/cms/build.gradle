@@ -1,6 +1,0 @@
-
-dependencies {
-    implementation project(':base:jpa')
-    implementation project(':web:core')
-    testImplementation project(':web:test')
-}

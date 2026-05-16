@@ -1,5 +1,0 @@
-spring:
-  application:
-    name: fs-site-service
-  profiles:
-    active: dev,idev

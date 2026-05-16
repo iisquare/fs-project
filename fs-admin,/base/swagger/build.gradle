@@ -1,4 +1,0 @@
-dependencies {
-    api group: 'io.springfox', name: 'springfox-swagger2', version: swaggerVersion
-    api group: 'io.springfox', name: 'springfox-swagger-ui', version: swaggerVersion
-}
