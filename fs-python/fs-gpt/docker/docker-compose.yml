@@ -1,0 +1,51 @@
+services:
+  vllm:
+    restart: unless-stopped
+    build:
+      context: ./service/vllm
+      args:
+        - VLLM_VERSION=${VLLM_VERSION}
+    ports:
+      - "${BIND_ADDRESS}${BIND_COLON}${VLLM_PORT}:8000"
+    entrypoint: bash /etc/vllm/entrypoint.sh
+    volumes:
+      - ${MODEL_DIR}:/data/models
+      - ./service/vllm/etc/entrypoint.sh:/etc/vllm/entrypoint.sh
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sS http://127.0.0.1:8000/health || exit 1" ]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 6m30s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: [ "0" ]
+              capabilities: [ "gpu" ]
+  sglang:
+    restart: unless-stopped
+    build:
+      context: ./service/sglang
+      args:
+        - SGLANG_VERSION=${SGLANG_VERSION}
+    ports:
+      - "${BIND_ADDRESS}${BIND_COLON}${SGLANG_PORT}:30000"
+    entrypoint: bash /etc/sglang/entrypoint.sh
+    volumes:
+      - ${MODEL_DIR}:/data/models
+      - ./service/sglang/etc/entrypoint.sh:/etc/sglang/entrypoint.sh
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sS http://127.0.0.1:30000/health || exit 1" ]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 6m30s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: "all"
+              capabilities: [ "gpu" ]

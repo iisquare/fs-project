@@ -1,0 +1,12 @@
+action: train
+model_name_or_path: models/Qwen2.5-0.5B
+
+stage: pt
+fine_tuning: full
+deepspeed: config/ds_z3_config.json
+
+train_dataset_names: news, wiki
+eval_dataset_names: wiki
+max_steps: 30
+
+output_dir: models/qwen-pt-full

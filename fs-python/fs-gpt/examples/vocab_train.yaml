@@ -1,0 +1,6 @@
+action: vocab
+stage: train
+input:
+  - data/news.jsonl
+
+output_dir: models/vocab-train

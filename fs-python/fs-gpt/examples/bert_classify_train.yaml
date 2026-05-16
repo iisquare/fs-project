@@ -1,0 +1,18 @@
+action: bert
+actuator: classify
+stage: train
+classify_labels:
+  - 通知公告
+  - 政策解读
+  - 重要会议
+  - 政府报告
+  - 领导讲话
+  - 政策文件
+  - 资讯动态
+model_name_or_path: models/bert-base-chinese
+train_dataset_names: classify
+eval_dataset_names: classify
+
+num_train_epochs: 150
+train_batch_size: 10
+output_dir: models/bert-classify

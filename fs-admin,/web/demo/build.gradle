@@ -1,0 +1,8 @@
+dependencies {
+    implementation project(':web:core')
+    implementation project(':base:jpa')
+    implementation project(':base:mongodb')
+    implementation project(':base:elasticsearch')
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-redis', version: springBootVersion
+    testImplementation project(':web:test')
+}

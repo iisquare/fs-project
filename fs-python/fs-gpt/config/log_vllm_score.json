@@ -1,0 +1,37 @@
+{
+    "version": 1,
+    "formatters": {
+        "vllm": {
+          "class": "vllm.logging_utils.NewLineFormatter",
+          "datefmt": "%m-%d %H:%M:%S",
+          "format": "%(levelname)s %(asctime)s %(filename)s:%(lineno)d] %(message)s"
+        }
+    },
+    "handlers": {
+        "console": {
+          "class" : "logging.StreamHandler",
+          "formatter": "vllm",
+          "level": "INFO",
+          "stream": "ext://sys.stdout"
+        },
+        "file": {
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "formatter": "vllm",
+            "filename": "./logs/vllm-score.log",
+            "when": "midnight",
+            "interval": 1,
+            "backupCount": 7,
+            "encoding": "utf-8"
+        }
+    },
+    "loggers": {
+        "vllm": {
+          "handlers": ["console", "file"],
+          "level": "INFO",
+          "propagate": false
+        },
+        "vllm.example_noisy_logger": {
+          "propagate": false
+        }
+    }
+}

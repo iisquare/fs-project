@@ -1,0 +1,7 @@
+dependencies {
+    api project(':base:core')
+    api('org.apache.calcite:calcite-core:1.40.0')
+    api("org.apache.commons:commons-dbcp2:2.11.0") // calcite-core runtime
+    api group: 'com.mysql', name: 'mysql-connector-j', version: mysqlVersion
+    testImplementation project(':base:test')
+}

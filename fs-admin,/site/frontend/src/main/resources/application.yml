@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: fs-site-frontend
+  profiles:
+    active: dev,idev

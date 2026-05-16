@@ -1,0 +1,3 @@
+action: api
+api_prefix: /v1
+embedding_name_or_path: models/bge-large-zh-v1.5

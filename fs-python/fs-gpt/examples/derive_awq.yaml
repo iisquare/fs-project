@@ -1,0 +1,5 @@
+action: derive
+model_name_or_path: models/Qwen2.5-0.5B-Instruct
+derive_method: awq
+quantization_bit: 4
+derive_dir: models/Qwen2.5-0.5B-Instruct-AWQ

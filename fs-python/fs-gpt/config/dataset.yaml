@@ -1,0 +1,23 @@
+wiki:
+  filepath: data/wiki.jsonl
+  text_field: content
+
+news:
+  filepath: data/news.jsonl
+  text_field: content
+
+identity:
+  filepath: data/identity.jsonl
+  input_field: input
+  output_field: output
+
+rlhf:
+  filepath: data/rlhf.jsonl
+  prompt_field: prompt
+  chosen_field: chosen
+  rejected_field: rejected
+
+classify:
+  filepath: data/classify.jsonl
+  input_field: text
+  output_field: label

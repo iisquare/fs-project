@@ -1,0 +1,17 @@
+server:
+  port: 7805
+
+fs:
+  opencv:
+    libs: web/xlab
+  torch:
+    lama:
+      path: "D:\\htdocs\\fs-project-vip\\python\\lama\\LaMa_models\\lama.pt"
+  tensorflow:
+    model:
+      mrcnn:
+        path: "D:\\xampp\\htdocs\\fs-project-vip\\python\\mask-rcnn\\model\\road"
+      mtcnn:
+        path: "D:\\xampp\\htdocs\\fs-project-vip\\python\\mtcnn\\data\\model\\mtcnn"
+      face:
+        path: "D:\\xampp\\htdocs\\fs-project-vip\\python\\insightface\\model\\mc"

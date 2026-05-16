@@ -1,0 +1,12 @@
+action: bert
+actuator: classify
+stage: predict
+classify_labels:
+  - 通知公告
+  - 政策解读
+  - 重要会议
+  - 政府报告
+  - 领导讲话
+  - 政策文件
+  - 资讯动态
+model_name_or_path: models/bert-classify

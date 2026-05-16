@@ -1,0 +1,15 @@
+action: derive
+model_name_or_path: models/Qwen3.5-0.8B
+derive_method: gptq
+quantization_bit: 4
+derive_dir: models/Qwen3.5-0.8B-GPTQ-Int4
+
+# 校准数据集配置
+# 可选值:
+#   - 'mixed': 中英文混合在线数据集 (C4 + mc4, 推荐)
+#   - 'en': 英文在线数据集 (wikitext)
+#   - 'zh': 中文在线数据集 (mc4)
+#   - 文件路径: 本地 JSONL 文件，如 'data/calibration.jsonl'
+calibration_dataset: data/calibration.jsonl
+calibration_samples: 512      # 校准样本数量，推荐 256-1024
+calibration_max_length: 2048  # 最大序列长度

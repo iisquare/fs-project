@@ -1,0 +1,5 @@
+action: derive
+model_name_or_path: models/Qwen2.5-0.5B-Instruct
+lora_path: models/qwen-sft-lora
+derive_method: lora
+derive_dir: models/Qwen2.5-0.5B-Instruct-Merge

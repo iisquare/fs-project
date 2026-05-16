@@ -1,0 +1,6 @@
+dependencies {
+    api project(':base:core')
+    api group: 'org.springframework.boot', name: 'spring-boot-starter', version: springBootVersion
+    api group: 'io.minio', name: 'minio', version: '8.5.17'
+    testImplementation project(':base:test')
+}

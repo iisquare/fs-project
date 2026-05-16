@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: fs-cron-service
+  profiles:
+    active: dev,idev

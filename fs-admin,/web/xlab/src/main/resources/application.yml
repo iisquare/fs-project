@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: fs-xlab-service
+  profiles:
+    active: dev,idev

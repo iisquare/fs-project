@@ -1,0 +1,8 @@
+server:
+  port: 7819
+
+fs:
+  cron:
+    zookeeper:
+      host: 127.0.0.1:2181/fs-cron
+      timeout: 2000

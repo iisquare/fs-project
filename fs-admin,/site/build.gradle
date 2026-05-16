@@ -1,0 +1,15 @@
+
+subprojects {
+    apply plugin: 'org.springframework.boot'
+
+    archivesBaseName = rootProject.name + '-site-' + name
+
+    bootJar {
+        enabled = true
+    }
+
+    jar {
+        enabled = true
+    }
+
+}

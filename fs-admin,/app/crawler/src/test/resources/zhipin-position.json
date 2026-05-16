@@ -1,0 +1,5823 @@
+{
+  "code": 0,
+  "message": "Success",
+  "zpData": [
+    {
+      "code": 100000,
+      "name": "技术",
+      "subLevelModelList": [
+        {
+          "code": 100100,
+          "name": "后端开发",
+          "subLevelModelList": [
+            {
+              "code": 100101,
+              "name": "Java",
+              "subLevelModelList": null,
+              "parentCode": 100100
+            },
+            {
+              "code": 100102,
+              "name": "C/C++",
+              "subLevelModelList": null,
+              "parentCode": 100100
+            },
+            {
+              "code": 100103,
+              "name": "PHP",
+              "subLevelModelList": null,
+              "parentCode": 100100
+            },
+            {
+              "code": 100106,
+              "name": "C#",
+              "subLevelModelList": null,
+              "parentCode": 100100
+            },
+            {
+              "code": 100107,
+              "name": ".NET",
+              "subLevelModelList": null,
+              "parentCode": 100100
+            },
+            {
+              "code": 100108,
+              "name": "Hadoop",
+              "subLevelModelList": null,
+              "parentCode": 100100
+            },
+            {
+              "code": 100109,
+              "name": "Python",
+              "subLevelModelList": null,
+              "parentCode": 100100
+            },
+            {
+              "code": 100114,
+              "name": "Node.js",
+              "subLevelModelList": null,
+              "parentCode": 100100
+            },
+            {
+              "code": 100116,
+              "name": "Golang",
+              "subLevelModelList": null,
+              "parentCode": 100100
+            },
+            {
+              "code": 100121,
+              "name": "语音/视频/图形开发",
+              "subLevelModelList": null,
+              "parentCode": 100100
+            },
+            {
+              "code": 100123,
+              "name": "全栈工程师",
+              "subLevelModelList": null,
+              "parentCode": 100100
+            },
+            {
+              "code": 100124,
+              "name": "GIS工程师",
+              "subLevelModelList": null,
+              "parentCode": 100100
+            },
+            {
+              "code": 100125,
+              "name": "区块链工程师",
+              "subLevelModelList": null,
+              "parentCode": 100100
+            }
+          ],
+          "parentCode": 100000
+        },
+        {
+          "code": 100200,
+          "name": "前端/移动开发",
+          "subLevelModelList": [
+            {
+              "code": 100202,
+              "name": "Android",
+              "subLevelModelList": null,
+              "parentCode": 100200
+            },
+            {
+              "code": 100203,
+              "name": "iOS",
+              "subLevelModelList": null,
+              "parentCode": 100200
+            },
+            {
+              "code": 100208,
+              "name": "JavaScript",
+              "subLevelModelList": null,
+              "parentCode": 100200
+            },
+            {
+              "code": 100209,
+              "name": "U3D",
+              "subLevelModelList": null,
+              "parentCode": 100200
+            },
+            {
+              "code": 100210,
+              "name": "Cocos",
+              "subLevelModelList": null,
+              "parentCode": 100200
+            },
+            {
+              "code": 100211,
+              "name": "UE4",
+              "subLevelModelList": null,
+              "parentCode": 100200
+            },
+            {
+              "code": 100212,
+              "name": "技术美术",
+              "subLevelModelList": null,
+              "parentCode": 100200
+            },
+            {
+              "code": 100213,
+              "name": "鸿蒙开发工程师",
+              "subLevelModelList": null,
+              "parentCode": 100200
+            },
+            {
+              "code": 100901,
+              "name": "前端开发工程师",
+              "subLevelModelList": null,
+              "parentCode": 100200
+            }
+          ],
+          "parentCode": 100000
+        },
+        {
+          "code": 100300,
+          "name": "测试",
+          "subLevelModelList": [
+            {
+              "code": 100301,
+              "name": "测试工程师",
+              "subLevelModelList": null,
+              "parentCode": 100300
+            },
+            {
+              "code": 100302,
+              "name": "自动化测试",
+              "subLevelModelList": null,
+              "parentCode": 100300
+            },
+            {
+              "code": 100303,
+              "name": "功能测试",
+              "subLevelModelList": null,
+              "parentCode": 100300
+            },
+            {
+              "code": 100304,
+              "name": "性能测试",
+              "subLevelModelList": null,
+              "parentCode": 100300
+            },
+            {
+              "code": 100305,
+              "name": "测试开发",
+              "subLevelModelList": null,
+              "parentCode": 100300
+            },
+            {
+              "code": 100307,
+              "name": "游戏测试",
+              "subLevelModelList": null,
+              "parentCode": 100300
+            },
+            {
+              "code": 100308,
+              "name": "硬件测试",
+              "subLevelModelList": null,
+              "parentCode": 100300
+            },
+            {
+              "code": 100309,
+              "name": "软件测试",
+              "subLevelModelList": null,
+              "parentCode": 100300
+            },
+            {
+              "code": 100310,
+              "name": "渗透测试",
+              "subLevelModelList": null,
+              "parentCode": 100300
+            },
+            {
+              "code": 100703,
+              "name": "测试经理",
+              "subLevelModelList": null,
+              "parentCode": 100300
+            }
+          ],
+          "parentCode": 100000
+        },
+        {
+          "code": 100400,
+          "name": "运维/技术支持",
+          "subLevelModelList": [
+            {
+              "code": 100401,
+              "name": "运维工程师",
+              "subLevelModelList": null,
+              "parentCode": 100400
+            },
+            {
+              "code": 100402,
+              "name": "运维开发工程师",
+              "subLevelModelList": null,
+              "parentCode": 100400
+            },
+            {
+              "code": 100403,
+              "name": "网络工程师",
+              "subLevelModelList": null,
+              "parentCode": 100400
+            },
+            {
+              "code": 100404,
+              "name": "系统工程师",
+              "subLevelModelList": null,
+              "parentCode": 100400
+            },
+            {
+              "code": 100405,
+              "name": "IT技术支持",
+              "subLevelModelList": null,
+              "parentCode": 100400
+            },
+            {
+              "code": 100406,
+              "name": "系统管理员",
+              "subLevelModelList": null,
+              "parentCode": 100400
+            },
+            {
+              "code": 100407,
+              "name": "网络安全",
+              "subLevelModelList": null,
+              "parentCode": 100400
+            },
+            {
+              "code": 100408,
+              "name": "系统安全",
+              "subLevelModelList": null,
+              "parentCode": 100400
+            },
+            {
+              "code": 100409,
+              "name": "DBA",
+              "subLevelModelList": null,
+              "parentCode": 100400
+            },
+            {
+              "code": 100410,
+              "name": "技术文档工程师",
+              "subLevelModelList": null,
+              "parentCode": 100400
+            }
+          ],
+          "parentCode": 100000
+        },
+        {
+          "code": 100500,
+          "name": "数据",
+          "subLevelModelList": [
+            {
+              "code": 100122,
+              "name": "数据采集",
+              "subLevelModelList": null,
+              "parentCode": 100500
+            },
+            {
+              "code": 100506,
+              "name": "ETL工程师",
+              "subLevelModelList": null,
+              "parentCode": 100500
+            },
+            {
+              "code": 100507,
+              "name": "数据仓库",
+              "subLevelModelList": null,
+              "parentCode": 100500
+            },
+            {
+              "code": 100508,
+              "name": "数据开发",
+              "subLevelModelList": null,
+              "parentCode": 100500
+            },
+            {
+              "code": 100511,
+              "name": "数据分析师",
+              "subLevelModelList": null,
+              "parentCode": 100500
+            },
+            {
+              "code": 100512,
+              "name": "数据架构师",
+              "subLevelModelList": null,
+              "parentCode": 100500
+            },
+            {
+              "code": 100514,
+              "name": "爬虫工程师",
+              "subLevelModelList": null,
+              "parentCode": 100500
+            },
+            {
+              "code": 100515,
+              "name": "数据治理",
+              "subLevelModelList": null,
+              "parentCode": 100500
+            }
+          ],
+          "parentCode": 100000
+        },
+        {
+          "code": 100600,
+          "name": "项目管理",
+          "subLevelModelList": [
+            {
+              "code": 100601,
+              "name": "项目经理/主管",
+              "subLevelModelList": null,
+              "parentCode": 100600
+            },
+            {
+              "code": 100603,
+              "name": "项目助理",
+              "subLevelModelList": null,
+              "parentCode": 100600
+            },
+            {
+              "code": 100604,
+              "name": "项目专员",
+              "subLevelModelList": null,
+              "parentCode": 100600
+            },
+            {
+              "code": 100605,
+              "name": "实施顾问",
+              "subLevelModelList": null,
+              "parentCode": 100600
+            },
+            {
+              "code": 100606,
+              "name": "实施工程师",
+              "subLevelModelList": null,
+              "parentCode": 100600
+            },
+            {
+              "code": 100607,
+              "name": "需求分析工程师",
+              "subLevelModelList": null,
+              "parentCode": 100600
+            },
+            {
+              "code": 100817,
+              "name": "硬件项目经理",
+              "subLevelModelList": null,
+              "parentCode": 100600
+            }
+          ],
+          "parentCode": 100000
+        },
+        {
+          "code": 100700,
+          "name": "高端技术职位",
+          "subLevelModelList": [
+            {
+              "code": 100701,
+              "name": "技术经理",
+              "subLevelModelList": null,
+              "parentCode": 100700
+            },
+            {
+              "code": 100702,
+              "name": "技术总监",
+              "subLevelModelList": null,
+              "parentCode": 100700
+            },
+            {
+              "code": 100704,
+              "name": "架构师",
+              "subLevelModelList": null,
+              "parentCode": 100700
+            },
+            {
+              "code": 100705,
+              "name": "CTO/CIO",
+              "subLevelModelList": null,
+              "parentCode": 100700
+            },
+            {
+              "code": 100706,
+              "name": "运维总监",
+              "subLevelModelList": null,
+              "parentCode": 100700
+            },
+            {
+              "code": 100707,
+              "name": "技术合伙人",
+              "subLevelModelList": null,
+              "parentCode": 100700
+            }
+          ],
+          "parentCode": 100000
+        },
+        {
+          "code": 100800,
+          "name": "硬件开发",
+          "subLevelModelList": [
+            {
+              "code": 100801,
+              "name": "硬件工程师",
+              "subLevelModelList": null,
+              "parentCode": 100800
+            },
+            {
+              "code": 100802,
+              "name": "嵌入式软件工程师",
+              "subLevelModelList": null,
+              "parentCode": 100800
+            },
+            {
+              "code": 100804,
+              "name": "单片机",
+              "subLevelModelList": null,
+              "parentCode": 100800
+            },
+            {
+              "code": 100805,
+              "name": "电路设计",
+              "subLevelModelList": null,
+              "parentCode": 100800
+            },
+            {
+              "code": 100806,
+              "name": "驱动开发工程师",
+              "subLevelModelList": null,
+              "parentCode": 100800
+            },
+            {
+              "code": 100807,
+              "name": "系统集成",
+              "subLevelModelList": null,
+              "parentCode": 100800
+            },
+            {
+              "code": 100808,
+              "name": "FPGA开发",
+              "subLevelModelList": null,
+              "parentCode": 100800
+            },
+            {
+              "code": 100809,
+              "name": "DSP开发",
+              "subLevelModelList": null,
+              "parentCode": 100800
+            },
+            {
+              "code": 100810,
+              "name": "ARM开发",
+              "subLevelModelList": null,
+              "parentCode": 100800
+            },
+            {
+              "code": 100811,
+              "name": "PCB工程师",
+              "subLevelModelList": null,
+              "parentCode": 100800
+            },
+            {
+              "code": 100816,
+              "name": "射频工程师",
+              "subLevelModelList": null,
+              "parentCode": 100800
+            },
+            {
+              "code": 100818,
+              "name": "光学工程师",
+              "subLevelModelList": null,
+              "parentCode": 100800
+            }
+          ],
+          "parentCode": 100000
+        },
+        {
+          "code": 101000,
+          "name": "通信",
+          "subLevelModelList": [
+            {
+              "code": 101001,
+              "name": "通信技术工程师",
+              "subLevelModelList": null,
+              "parentCode": 101000
+            },
+            {
+              "code": 101002,
+              "name": "通信研发工程师",
+              "subLevelModelList": null,
+              "parentCode": 101000
+            },
+            {
+              "code": 101003,
+              "name": "数据通信工程师",
+              "subLevelModelList": null,
+              "parentCode": 101000
+            },
+            {
+              "code": 101005,
+              "name": "宽带装维",
+              "subLevelModelList": null,
+              "parentCode": 101000
+            },
+            {
+              "code": 101007,
+              "name": "有线传输工程师",
+              "subLevelModelList": null,
+              "parentCode": 101000
+            },
+            {
+              "code": 101008,
+              "name": "无线/天线工程师",
+              "subLevelModelList": null,
+              "parentCode": 101000
+            },
+            {
+              "code": 101009,
+              "name": "通信电源工程师",
+              "subLevelModelList": null,
+              "parentCode": 101000
+            },
+            {
+              "code": 101010,
+              "name": "通信标准化工程师",
+              "subLevelModelList": null,
+              "parentCode": 101000
+            },
+            {
+              "code": 101011,
+              "name": "通信项目专员",
+              "subLevelModelList": null,
+              "parentCode": 101000
+            },
+            {
+              "code": 101012,
+              "name": "通信项目经理",
+              "subLevelModelList": null,
+              "parentCode": 101000
+            },
+            {
+              "code": 101013,
+              "name": "核心网工程师",
+              "subLevelModelList": null,
+              "parentCode": 101000
+            },
+            {
+              "code": 101018,
+              "name": "光网络工程师",
+              "subLevelModelList": null,
+              "parentCode": 101000
+            }
+          ],
+          "parentCode": 100000
+        },
+        {
+          "code": 101200,
+          "name": "销售技术支持",
+          "subLevelModelList": [
+            {
+              "code": 101201,
+              "name": "售前技术支持",
+              "subLevelModelList": null,
+              "parentCode": 101200
+            },
+            {
+              "code": 101202,
+              "name": "售后技术支持",
+              "subLevelModelList": null,
+              "parentCode": 101200
+            }
+          ],
+          "parentCode": 100000
+        },
+        {
+          "code": 101300,
+          "name": "人工智能",
+          "subLevelModelList": [
+            {
+              "code": 100104,
+              "name": "数据挖掘",
+              "subLevelModelList": null,
+              "parentCode": 101300
+            },
+            {
+              "code": 100115,
+              "name": "搜索算法",
+              "subLevelModelList": null,
+              "parentCode": 101300
+            },
+            {
+              "code": 100117,
+              "name": "自然语言处理算法",
+              "subLevelModelList": null,
+              "parentCode": 101300
+            },
+            {
+              "code": 100118,
+              "name": "推荐算法",
+              "subLevelModelList": null,
+              "parentCode": 101300
+            },
+            {
+              "code": 100120,
+              "name": "算法工程师",
+              "subLevelModelList": null,
+              "parentCode": 101300
+            },
+            {
+              "code": 101301,
+              "name": "机器学习",
+              "subLevelModelList": null,
+              "parentCode": 101300
+            },
+            {
+              "code": 101302,
+              "name": "深度学习",
+              "subLevelModelList": null,
+              "parentCode": 101300
+            },
+            {
+              "code": 101305,
+              "name": "语音算法",
+              "subLevelModelList": null,
+              "parentCode": 101300
+            },
+            {
+              "code": 101306,
+              "name": "图像算法",
+              "subLevelModelList": null,
+              "parentCode": 101300
+            },
+            {
+              "code": 101307,
+              "name": "算法研究员",
+              "subLevelModelList": null,
+              "parentCode": 101300
+            },
+            {
+              "code": 101308,
+              "name": "自动驾驶系统工程师",
+              "subLevelModelList": null,
+              "parentCode": 101300
+            },
+            {
+              "code": 101309,
+              "name": "风控算法",
+              "subLevelModelList": null,
+              "parentCode": 101300
+            },
+            {
+              "code": 101310,
+              "name": "大模型算法",
+              "subLevelModelList": null,
+              "parentCode": 101300
+            },
+            {
+              "code": 101311,
+              "name": "规控算法",
+              "subLevelModelList": null,
+              "parentCode": 101300
+            },
+            {
+              "code": 101312,
+              "name": "SLAM算法",
+              "subLevelModelList": null,
+              "parentCode": 101300
+            }
+          ],
+          "parentCode": 100000
+        },
+        {
+          "code": 101400,
+          "name": "电子/半导体",
+          "subLevelModelList": [
+            {
+              "code": 101401,
+              "name": "电子工程师",
+              "subLevelModelList": null,
+              "parentCode": 101400
+            },
+            {
+              "code": 101403,
+              "name": "FAE",
+              "subLevelModelList": null,
+              "parentCode": 101400
+            },
+            {
+              "code": 101405,
+              "name": "集成电路IC设计",
+              "subLevelModelList": null,
+              "parentCode": 101400
+            },
+            {
+              "code": 101406,
+              "name": "数字IC验证工程师",
+              "subLevelModelList": null,
+              "parentCode": 101400
+            },
+            {
+              "code": 101407,
+              "name": "模拟版图设计工程师",
+              "subLevelModelList": null,
+              "parentCode": 101400
+            },
+            {
+              "code": 101408,
+              "name": "电子维修技术员",
+              "subLevelModelList": null,
+              "parentCode": 101400
+            },
+            {
+              "code": 101409,
+              "name": "芯片测试工程师",
+              "subLevelModelList": null,
+              "parentCode": 101400
+            },
+            {
+              "code": 101410,
+              "name": "DFT工程师",
+              "subLevelModelList": null,
+              "parentCode": 101400
+            },
+            {
+              "code": 101411,
+              "name": "数字前端设计师",
+              "subLevelModelList": null,
+              "parentCode": 101400
+            },
+            {
+              "code": 101412,
+              "name": "数字后端工程师",
+              "subLevelModelList": null,
+              "parentCode": 101400
+            },
+            {
+              "code": 101413,
+              "name": "模拟IC设计工程师",
+              "subLevelModelList": null,
+              "parentCode": 101400
+            }
+          ],
+          "parentCode": 100000
+        }
+      ],
+      "parentCode": 100000
+    },
+    {
+      "code": 110000,
+      "name": "产品",
+      "subLevelModelList": [
+        {
+          "code": 110100,
+          "name": "产品经理",
+          "subLevelModelList": [
+            {
+              "code": 110101,
+              "name": "产品经理",
+              "subLevelModelList": null,
+              "parentCode": 110100
+            },
+            {
+              "code": 110103,
+              "name": "移动产品经理",
+              "subLevelModelList": null,
+              "parentCode": 110100
+            },
+            {
+              "code": 110105,
+              "name": "数据产品经理",
+              "subLevelModelList": null,
+              "parentCode": 110100
+            },
+            {
+              "code": 110106,
+              "name": "电商产品经理",
+              "subLevelModelList": null,
+              "parentCode": 110100
+            },
+            {
+              "code": 110107,
+              "name": "游戏策划",
+              "subLevelModelList": null,
+              "parentCode": 110100
+            },
+            {
+              "code": 110108,
+              "name": "产品专员/助理",
+              "subLevelModelList": null,
+              "parentCode": 110100
+            },
+            {
+              "code": 110109,
+              "name": "硬件产品经理",
+              "subLevelModelList": null,
+              "parentCode": 110100
+            },
+            {
+              "code": 110110,
+              "name": "AI产品经理",
+              "subLevelModelList": null,
+              "parentCode": 110100
+            },
+            {
+              "code": 110111,
+              "name": "化妆品产品经理",
+              "subLevelModelList": null,
+              "parentCode": 110100
+            }
+          ],
+          "parentCode": 110000
+        },
+        {
+          "code": 110300,
+          "name": "高端产品职位",
+          "subLevelModelList": [
+            {
+              "code": 110302,
+              "name": "高级产品管理岗",
+              "subLevelModelList": null,
+              "parentCode": 110300
+            },
+            {
+              "code": 110303,
+              "name": "游戏制作人",
+              "subLevelModelList": null,
+              "parentCode": 110300
+            }
+          ],
+          "parentCode": 110000
+        }
+      ],
+      "parentCode": 110000
+    },
+    {
+      "code": 120000,
+      "name": "设计",
+      "subLevelModelList": [
+        {
+          "code": 120100,
+          "name": "视觉/交互设计",
+          "subLevelModelList": [
+            {
+              "code": 120101,
+              "name": "视觉设计师",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            },
+            {
+              "code": 120102,
+              "name": "网页设计师",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            },
+            {
+              "code": 120105,
+              "name": "UI设计师",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            },
+            {
+              "code": 120106,
+              "name": "平面设计",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            },
+            {
+              "code": 120107,
+              "name": "3D设计师",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            },
+            {
+              "code": 120109,
+              "name": "多媒体设计师",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            },
+            {
+              "code": 120110,
+              "name": "原画师",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            },
+            {
+              "code": 120117,
+              "name": "美工",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            },
+            {
+              "code": 120118,
+              "name": "包装设计",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            },
+            {
+              "code": 120119,
+              "name": "设计师助理",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            },
+            {
+              "code": 120120,
+              "name": "动画设计",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            },
+            {
+              "code": 120121,
+              "name": "插画师",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            },
+            {
+              "code": 120122,
+              "name": "漫画师",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            },
+            {
+              "code": 120123,
+              "name": "修图师",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            },
+            {
+              "code": 120201,
+              "name": "交互设计师",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            },
+            {
+              "code": 140603,
+              "name": "广告设计",
+              "subLevelModelList": null,
+              "parentCode": 120100
+            }
+          ],
+          "parentCode": 120000
+        },
+        {
+          "code": 120200,
+          "name": "游戏设计",
+          "subLevelModelList": [
+            {
+              "code": 120111,
+              "name": "游戏特效",
+              "subLevelModelList": null,
+              "parentCode": 120200
+            },
+            {
+              "code": 120112,
+              "name": "游戏界面设计师",
+              "subLevelModelList": null,
+              "parentCode": 120200
+            },
+            {
+              "code": 120113,
+              "name": "游戏场景",
+              "subLevelModelList": null,
+              "parentCode": 120200
+            },
+            {
+              "code": 120114,
+              "name": "游戏角色",
+              "subLevelModelList": null,
+              "parentCode": 120200
+            },
+            {
+              "code": 120115,
+              "name": "游戏动作",
+              "subLevelModelList": null,
+              "parentCode": 120200
+            },
+            {
+              "code": 120303,
+              "name": "游戏数值策划",
+              "subLevelModelList": null,
+              "parentCode": 120200
+            },
+            {
+              "code": 120305,
+              "name": "系统策划",
+              "subLevelModelList": null,
+              "parentCode": 120200
+            },
+            {
+              "code": 120306,
+              "name": "游戏主美术",
+              "subLevelModelList": null,
+              "parentCode": 120200
+            }
+          ],
+          "parentCode": 120000
+        },
+        {
+          "code": 120300,
+          "name": "用户研究",
+          "subLevelModelList": [
+            {
+              "code": 120302,
+              "name": "用户研究员",
+              "subLevelModelList": null,
+              "parentCode": 120300
+            },
+            {
+              "code": 120304,
+              "name": "UX设计师",
+              "subLevelModelList": null,
+              "parentCode": 120300
+            },
+            {
+              "code": 120407,
+              "name": "用户研究经理",
+              "subLevelModelList": null,
+              "parentCode": 120300
+            },
+            {
+              "code": 120408,
+              "name": "用户研究总监",
+              "subLevelModelList": null,
+              "parentCode": 120300
+            }
+          ],
+          "parentCode": 120000
+        },
+        {
+          "code": 120400,
+          "name": "高端设计职位",
+          "subLevelModelList": [
+            {
+              "code": 120401,
+              "name": "设计经理/主管",
+              "subLevelModelList": null,
+              "parentCode": 120400
+            },
+            {
+              "code": 120402,
+              "name": "设计总监",
+              "subLevelModelList": null,
+              "parentCode": 120400
+            },
+            {
+              "code": 120404,
+              "name": "视觉设计总监",
+              "subLevelModelList": null,
+              "parentCode": 120400
+            }
+          ],
+          "parentCode": 120000
+        },
+        {
+          "code": 120600,
+          "name": "非视觉设计",
+          "subLevelModelList": [
+            {
+              "code": 120116,
+              "name": "CAD绘图员",
+              "subLevelModelList": null,
+              "parentCode": 120600
+            },
+            {
+              "code": 120602,
+              "name": "工业设计",
+              "subLevelModelList": null,
+              "parentCode": 120600
+            },
+            {
+              "code": 120603,
+              "name": "橱柜设计",
+              "subLevelModelList": null,
+              "parentCode": 120600
+            },
+            {
+              "code": 120604,
+              "name": "家具设计",
+              "subLevelModelList": null,
+              "parentCode": 120600
+            },
+            {
+              "code": 120605,
+              "name": "家居设计",
+              "subLevelModelList": null,
+              "parentCode": 120600
+            },
+            {
+              "code": 120606,
+              "name": "珠宝设计",
+              "subLevelModelList": null,
+              "parentCode": 120600
+            },
+            {
+              "code": 120608,
+              "name": "陈列设计",
+              "subLevelModelList": null,
+              "parentCode": 120600
+            },
+            {
+              "code": 120611,
+              "name": "展览/展示设计",
+              "subLevelModelList": null,
+              "parentCode": 120600
+            },
+            {
+              "code": 120612,
+              "name": "照明设计",
+              "subLevelModelList": null,
+              "parentCode": 120600
+            },
+            {
+              "code": 120613,
+              "name": "家具拆单员",
+              "subLevelModelList": null,
+              "parentCode": 120600
+            },
+            {
+              "code": 120614,
+              "name": "舞美设计师",
+              "subLevelModelList": null,
+              "parentCode": 120600
+            },
+            {
+              "code": 120615,
+              "name": "鞋类设计师",
+              "subLevelModelList": null,
+              "parentCode": 120600
+            },
+            {
+              "code": 220205,
+              "name": "室内设计",
+              "subLevelModelList": null,
+              "parentCode": 120600
+            },
+            {
+              "code": 300501,
+              "name": "服装/纺织设计",
+              "subLevelModelList": null,
+              "parentCode": 120600
+            }
+          ],
+          "parentCode": 120000
+        }
+      ],
+      "parentCode": 120000
+    },
+    {
+      "code": 130000,
+      "name": "运营",
+      "subLevelModelList": [
+        {
+          "code": 130100,
+          "name": "运营",
+          "subLevelModelList": [
+            {
+              "code": 130101,
+              "name": "用户运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130102,
+              "name": "产品运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130103,
+              "name": "数据/策略运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130104,
+              "name": "内容运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130105,
+              "name": "活动运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130106,
+              "name": "商家运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130107,
+              "name": "品类运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130108,
+              "name": "游戏运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130110,
+              "name": "网站运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130111,
+              "name": "新媒体运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130112,
+              "name": "社区运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130113,
+              "name": "微信运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130116,
+              "name": "线下拓展运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130117,
+              "name": "国内电商运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130118,
+              "name": "运营助理/专员",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130120,
+              "name": "内容审核",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130121,
+              "name": "数据标注/AI训练师",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130122,
+              "name": "直播运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130123,
+              "name": "车辆运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130124,
+              "name": "跨境电商运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130126,
+              "name": "淘宝运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130127,
+              "name": "天猫运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130128,
+              "name": "京东运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130129,
+              "name": "拼多多运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130130,
+              "name": "亚马逊运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130131,
+              "name": "速卖通运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130132,
+              "name": "阿里国际站运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130133,
+              "name": "亚马逊产品开发",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 130134,
+              "name": "外卖运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            },
+            {
+              "code": 170108,
+              "name": "视频运营",
+              "subLevelModelList": null,
+              "parentCode": 130100
+            }
+          ],
+          "parentCode": 130000
+        },
+        {
+          "code": 130200,
+          "name": "编辑",
+          "subLevelModelList": [
+            {
+              "code": 130201,
+              "name": "主编/副主编",
+              "subLevelModelList": null,
+              "parentCode": 130200
+            },
+            {
+              "code": 130203,
+              "name": "文案编辑",
+              "subLevelModelList": null,
+              "parentCode": 130200
+            },
+            {
+              "code": 130204,
+              "name": "网站编辑",
+              "subLevelModelList": null,
+              "parentCode": 130200
+            }
+          ],
+          "parentCode": 130000
+        },
+        {
+          "code": 130300,
+          "name": "客服",
+          "subLevelModelList": [
+            {
+              "code": 130301,
+              "name": "售前客服",
+              "subLevelModelList": null,
+              "parentCode": 130300
+            },
+            {
+              "code": 130302,
+              "name": "售后客服",
+              "subLevelModelList": null,
+              "parentCode": 130300
+            },
+            {
+              "code": 130303,
+              "name": "网络客服",
+              "subLevelModelList": null,
+              "parentCode": 130300
+            },
+            {
+              "code": 130304,
+              "name": "客服经理",
+              "subLevelModelList": null,
+              "parentCode": 130300
+            },
+            {
+              "code": 130305,
+              "name": "客服专员",
+              "subLevelModelList": null,
+              "parentCode": 130300
+            },
+            {
+              "code": 130306,
+              "name": "客服主管",
+              "subLevelModelList": null,
+              "parentCode": 130300
+            },
+            {
+              "code": 130308,
+              "name": "电话客服",
+              "subLevelModelList": null,
+              "parentCode": 130300
+            }
+          ],
+          "parentCode": 130000
+        },
+        {
+          "code": 130400,
+          "name": "高端运营职位",
+          "subLevelModelList": [
+            {
+              "code": 130402,
+              "name": "运营总监",
+              "subLevelModelList": null,
+              "parentCode": 130400
+            },
+            {
+              "code": 130403,
+              "name": "COO",
+              "subLevelModelList": null,
+              "parentCode": 130400
+            },
+            {
+              "code": 130404,
+              "name": "客服总监",
+              "subLevelModelList": null,
+              "parentCode": 130400
+            },
+            {
+              "code": 130405,
+              "name": "运营经理/主管",
+              "subLevelModelList": null,
+              "parentCode": 130400
+            }
+          ],
+          "parentCode": 130000
+        }
+      ],
+      "parentCode": 130000
+    },
+    {
+      "code": 140000,
+      "name": "市场",
+      "subLevelModelList": [
+        {
+          "code": 140100,
+          "name": "市场营销",
+          "subLevelModelList": [
+            {
+              "code": 140101,
+              "name": "市场营销策划",
+              "subLevelModelList": null,
+              "parentCode": 140100
+            },
+            {
+              "code": 140107,
+              "name": "商务渠道",
+              "subLevelModelList": null,
+              "parentCode": 140100
+            },
+            {
+              "code": 140109,
+              "name": "活动策划执行",
+              "subLevelModelList": null,
+              "parentCode": 140100
+            },
+            {
+              "code": 140111,
+              "name": "海外市场",
+              "subLevelModelList": null,
+              "parentCode": 140100
+            },
+            {
+              "code": 140401,
+              "name": "市场总监",
+              "subLevelModelList": null,
+              "parentCode": 140100
+            },
+            {
+              "code": 140404,
+              "name": "CMO",
+              "subLevelModelList": null,
+              "parentCode": 140100
+            },
+            {
+              "code": 140505,
+              "name": "会务/会展策划",
+              "subLevelModelList": null,
+              "parentCode": 140100
+            },
+            {
+              "code": 140506,
+              "name": "会务/会展执行",
+              "subLevelModelList": null,
+              "parentCode": 140100
+            }
+          ],
+          "parentCode": 140000
+        },
+        {
+          "code": 140120,
+          "name": "调研分析",
+          "subLevelModelList": [
+            {
+              "code": 140108,
+              "name": "商业数据分析",
+              "subLevelModelList": null,
+              "parentCode": 140120
+            },
+            {
+              "code": 140114,
+              "name": "选址开发",
+              "subLevelModelList": null,
+              "parentCode": 140120
+            }
+          ],
+          "parentCode": 140000
+        },
+        {
+          "code": 140200,
+          "name": "公关",
+          "subLevelModelList": [
+            {
+              "code": 140203,
+              "name": "品牌公关",
+              "subLevelModelList": null,
+              "parentCode": 140200
+            },
+            {
+              "code": 140405,
+              "name": "公关总监",
+              "subLevelModelList": null,
+              "parentCode": 140200
+            }
+          ],
+          "parentCode": 140000
+        },
+        {
+          "code": 140600,
+          "name": "广告",
+          "subLevelModelList": [
+            {
+              "code": 140202,
+              "name": "广告客户执行",
+              "subLevelModelList": null,
+              "parentCode": 140600
+            },
+            {
+              "code": 140407,
+              "name": "创意总监",
+              "subLevelModelList": null,
+              "parentCode": 140600
+            },
+            {
+              "code": 140601,
+              "name": "广告创意策划",
+              "subLevelModelList": null,
+              "parentCode": 140600
+            },
+            {
+              "code": 140602,
+              "name": "美术指导",
+              "subLevelModelList": null,
+              "parentCode": 140600
+            },
+            {
+              "code": 140604,
+              "name": "策划经理",
+              "subLevelModelList": null,
+              "parentCode": 140600
+            },
+            {
+              "code": 140605,
+              "name": "广告文案",
+              "subLevelModelList": null,
+              "parentCode": 140600
+            },
+            {
+              "code": 140607,
+              "name": "广告制作",
+              "subLevelModelList": null,
+              "parentCode": 140600
+            },
+            {
+              "code": 140611,
+              "name": "广告审核",
+              "subLevelModelList": null,
+              "parentCode": 140600
+            },
+            {
+              "code": 140612,
+              "name": "广告/会展项目经理",
+              "subLevelModelList": null,
+              "parentCode": 140600
+            }
+          ],
+          "parentCode": 140000
+        },
+        {
+          "code": 140800,
+          "name": "政府事务",
+          "subLevelModelList": [
+            {
+              "code": 140112,
+              "name": "政府关系",
+              "subLevelModelList": null,
+              "parentCode": 140800
+            },
+            {
+              "code": 140801,
+              "name": "政策研究",
+              "subLevelModelList": null,
+              "parentCode": 140800
+            },
+            {
+              "code": 140803,
+              "name": "社工",
+              "subLevelModelList": null,
+              "parentCode": 140800
+            },
+            {
+              "code": 140804,
+              "name": "项目申报专员",
+              "subLevelModelList": null,
+              "parentCode": 140800
+            }
+          ],
+          "parentCode": 140000
+        },
+        {
+          "code": 140900,
+          "name": "推广/投放",
+          "subLevelModelList": [
+            {
+              "code": 130109,
+              "name": "网络推广",
+              "subLevelModelList": null,
+              "parentCode": 140900
+            },
+            {
+              "code": 140104,
+              "name": "市场推广/地推",
+              "subLevelModelList": null,
+              "parentCode": 140900
+            },
+            {
+              "code": 140105,
+              "name": "SEO",
+              "subLevelModelList": null,
+              "parentCode": 140900
+            },
+            {
+              "code": 140106,
+              "name": "SEM",
+              "subLevelModelList": null,
+              "parentCode": 140900
+            },
+            {
+              "code": 140115,
+              "name": "游戏推广",
+              "subLevelModelList": null,
+              "parentCode": 140900
+            },
+            {
+              "code": 140116,
+              "name": "信息流优化师",
+              "subLevelModelList": null,
+              "parentCode": 140900
+            },
+            {
+              "code": 140204,
+              "name": "媒介专员",
+              "subLevelModelList": null,
+              "parentCode": 140900
+            },
+            {
+              "code": 140206,
+              "name": "媒介经理/总监",
+              "subLevelModelList": null,
+              "parentCode": 140900
+            },
+            {
+              "code": 140608,
+              "name": "媒介投放",
+              "subLevelModelList": null,
+              "parentCode": 140900
+            },
+            {
+              "code": 140609,
+              "name": "媒介商务BD",
+              "subLevelModelList": null,
+              "parentCode": 140900
+            }
+          ],
+          "parentCode": 140000
+        }
+      ],
+      "parentCode": 140000
+    },
+    {
+      "code": 150000,
+      "name": "人力/财务/行政",
+      "subLevelModelList": [
+        {
+          "code": 150100,
+          "name": "人力资源",
+          "subLevelModelList": [
+            {
+              "code": 150102,
+              "name": "招聘",
+              "subLevelModelList": null,
+              "parentCode": 150100
+            },
+            {
+              "code": 150103,
+              "name": "HRBP",
+              "subLevelModelList": null,
+              "parentCode": 150100
+            },
+            {
+              "code": 150104,
+              "name": "人力资源专员/助理",
+              "subLevelModelList": null,
+              "parentCode": 150100
+            },
+            {
+              "code": 150105,
+              "name": "培训",
+              "subLevelModelList": null,
+              "parentCode": 150100
+            },
+            {
+              "code": 150106,
+              "name": "薪酬绩效",
+              "subLevelModelList": null,
+              "parentCode": 150100
+            },
+            {
+              "code": 150108,
+              "name": "人力资源总监",
+              "subLevelModelList": null,
+              "parentCode": 150100
+            },
+            {
+              "code": 150109,
+              "name": "员工关系",
+              "subLevelModelList": null,
+              "parentCode": 150100
+            },
+            {
+              "code": 150110,
+              "name": "组织发展",
+              "subLevelModelList": null,
+              "parentCode": 150100
+            },
+            {
+              "code": 150111,
+              "name": "企业文化",
+              "subLevelModelList": null,
+              "parentCode": 150100
+            },
+            {
+              "code": 150403,
+              "name": "人力资源经理/主管",
+              "subLevelModelList": null,
+              "parentCode": 150100
+            },
+            {
+              "code": 260108,
+              "name": "猎头顾问",
+              "subLevelModelList": null,
+              "parentCode": 150100
+            }
+          ],
+          "parentCode": 150000
+        },
+        {
+          "code": 150200,
+          "name": "行政",
+          "subLevelModelList": [
+            {
+              "code": 140802,
+              "name": "企业党建",
+              "subLevelModelList": null,
+              "parentCode": 150200
+            },
+            {
+              "code": 150201,
+              "name": "行政专员/助理",
+              "subLevelModelList": null,
+              "parentCode": 150200
+            },
+            {
+              "code": 150202,
+              "name": "前台",
+              "subLevelModelList": null,
+              "parentCode": 150200
+            },
+            {
+              "code": 150205,
+              "name": "经理助理",
+              "subLevelModelList": null,
+              "parentCode": 150200
+            },
+            {
+              "code": 150207,
+              "name": "后勤",
+              "subLevelModelList": null,
+              "parentCode": 150200
+            },
+            {
+              "code": 150209,
+              "name": "行政总监",
+              "subLevelModelList": null,
+              "parentCode": 150200
+            },
+            {
+              "code": 150210,
+              "name": "文员",
+              "subLevelModelList": null,
+              "parentCode": 150200
+            },
+            {
+              "code": 150211,
+              "name": "档案管理",
+              "subLevelModelList": null,
+              "parentCode": 150200
+            },
+            {
+              "code": 150401,
+              "name": "行政经理/主管",
+              "subLevelModelList": null,
+              "parentCode": 150200
+            }
+          ],
+          "parentCode": 150000
+        },
+        {
+          "code": 150300,
+          "name": "财务",
+          "subLevelModelList": [
+            {
+              "code": 150301,
+              "name": "会计",
+              "subLevelModelList": null,
+              "parentCode": 150300
+            },
+            {
+              "code": 150302,
+              "name": "出纳",
+              "subLevelModelList": null,
+              "parentCode": 150300
+            },
+            {
+              "code": 150303,
+              "name": "财务顾问",
+              "subLevelModelList": null,
+              "parentCode": 150300
+            },
+            {
+              "code": 150304,
+              "name": "结算会计",
+              "subLevelModelList": null,
+              "parentCode": 150300
+            },
+            {
+              "code": 150305,
+              "name": "税务",
+              "subLevelModelList": null,
+              "parentCode": 150300
+            },
+            {
+              "code": 150306,
+              "name": "审计",
+              "subLevelModelList": null,
+              "parentCode": 150300
+            },
+            {
+              "code": 150308,
+              "name": "财务总监/VP",
+              "subLevelModelList": null,
+              "parentCode": 150300
+            },
+            {
+              "code": 150310,
+              "name": "成本会计",
+              "subLevelModelList": null,
+              "parentCode": 150300
+            },
+            {
+              "code": 150311,
+              "name": "总账会计",
+              "subLevelModelList": null,
+              "parentCode": 150300
+            },
+            {
+              "code": 150312,
+              "name": "建筑/工程会计",
+              "subLevelModelList": null,
+              "parentCode": 150300
+            },
+            {
+              "code": 150313,
+              "name": "税务外勤会计",
+              "subLevelModelList": null,
+              "parentCode": 150300
+            },
+            {
+              "code": 150314,
+              "name": "统计员",
+              "subLevelModelList": null,
+              "parentCode": 150300
+            },
+            {
+              "code": 150316,
+              "name": "财务分析/财务BP",
+              "subLevelModelList": null,
+              "parentCode": 150300
+            },
+            {
+              "code": 150402,
+              "name": "财务经理/主管",
+              "subLevelModelList": null,
+              "parentCode": 150300
+            },
+            {
+              "code": 150404,
+              "name": "CFO",
+              "subLevelModelList": null,
+              "parentCode": 150300
+            }
+          ],
+          "parentCode": 150000
+        },
+        {
+          "code": 150500,
+          "name": "法务",
+          "subLevelModelList": [
+            {
+              "code": 150203,
+              "name": "法务专员/助理",
+              "subLevelModelList": null,
+              "parentCode": 150500
+            },
+            {
+              "code": 150502,
+              "name": "律师",
+              "subLevelModelList": null,
+              "parentCode": 150500
+            },
+            {
+              "code": 150504,
+              "name": "法律顾问",
+              "subLevelModelList": null,
+              "parentCode": 150500
+            },
+            {
+              "code": 150506,
+              "name": "法务经理/主管",
+              "subLevelModelList": null,
+              "parentCode": 150500
+            },
+            {
+              "code": 150507,
+              "name": "法务总监",
+              "subLevelModelList": null,
+              "parentCode": 150500
+            }
+          ],
+          "parentCode": 150000
+        }
+      ],
+      "parentCode": 150000
+    },
+    {
+      "code": 160000,
+      "name": "销售",
+      "subLevelModelList": [
+        {
+          "code": 140300,
+          "name": "销售",
+          "subLevelModelList": [
+            {
+              "code": 140301,
+              "name": "销售专员",
+              "subLevelModelList": null,
+              "parentCode": 140300
+            },
+            {
+              "code": 140304,
+              "name": "大客户代表",
+              "subLevelModelList": null,
+              "parentCode": 140300
+            },
+            {
+              "code": 140305,
+              "name": "BD经理",
+              "subLevelModelList": null,
+              "parentCode": 140300
+            },
+            {
+              "code": 140307,
+              "name": "渠道销售",
+              "subLevelModelList": null,
+              "parentCode": 140300
+            },
+            {
+              "code": 140310,
+              "name": "电话销售",
+              "subLevelModelList": null,
+              "parentCode": 140300
+            },
+            {
+              "code": 140314,
+              "name": "网络销售",
+              "subLevelModelList": null,
+              "parentCode": 140300
+            },
+            {
+              "code": 140316,
+              "name": "销售工程师",
+              "subLevelModelList": null,
+              "parentCode": 140300
+            },
+            {
+              "code": 140317,
+              "name": "客户经理",
+              "subLevelModelList": null,
+              "parentCode": 140300
+            }
+          ],
+          "parentCode": 160000
+        },
+        {
+          "code": 160100,
+          "name": "销售管理",
+          "subLevelModelList": [
+            {
+              "code": 140302,
+              "name": "销售经理",
+              "subLevelModelList": null,
+              "parentCode": 160100
+            },
+            {
+              "code": 140402,
+              "name": "销售总监",
+              "subLevelModelList": null,
+              "parentCode": 160100
+            },
+            {
+              "code": 160101,
+              "name": "区域总监",
+              "subLevelModelList": null,
+              "parentCode": 160100
+            },
+            {
+              "code": 160102,
+              "name": "城市经理",
+              "subLevelModelList": null,
+              "parentCode": 160100
+            },
+            {
+              "code": 160103,
+              "name": "销售VP",
+              "subLevelModelList": null,
+              "parentCode": 160100
+            },
+            {
+              "code": 160104,
+              "name": "团队经理",
+              "subLevelModelList": null,
+              "parentCode": 160100
+            }
+          ],
+          "parentCode": 160000
+        },
+        {
+          "code": 160300,
+          "name": "销售行政/商务",
+          "subLevelModelList": [
+            {
+              "code": 130119,
+              "name": "销售运营",
+              "subLevelModelList": null,
+              "parentCode": 160300
+            },
+            {
+              "code": 140309,
+              "name": "销售助理",
+              "subLevelModelList": null,
+              "parentCode": 160300
+            },
+            {
+              "code": 140403,
+              "name": "商务总监",
+              "subLevelModelList": null,
+              "parentCode": 160300
+            },
+            {
+              "code": 160301,
+              "name": "商务专员",
+              "subLevelModelList": null,
+              "parentCode": 160300
+            },
+            {
+              "code": 160302,
+              "name": "商务经理",
+              "subLevelModelList": null,
+              "parentCode": 160300
+            },
+            {
+              "code": 160303,
+              "name": "客户成功",
+              "subLevelModelList": null,
+              "parentCode": 160300
+            }
+          ],
+          "parentCode": 160000
+        },
+        {
+          "code": 160500,
+          "name": "服务业销售",
+          "subLevelModelList": [
+            {
+              "code": 160501,
+              "name": "服装导购",
+              "subLevelModelList": null,
+              "parentCode": 160500
+            },
+            {
+              "code": 210406,
+              "name": "化妆品导购",
+              "subLevelModelList": null,
+              "parentCode": 160500
+            },
+            {
+              "code": 210414,
+              "name": "美容顾问",
+              "subLevelModelList": null,
+              "parentCode": 160500
+            },
+            {
+              "code": 210610,
+              "name": "会籍顾问",
+              "subLevelModelList": null,
+              "parentCode": 160500
+            },
+            {
+              "code": 280103,
+              "name": "旅游顾问",
+              "subLevelModelList": null,
+              "parentCode": 160500
+            },
+            {
+              "code": 290312,
+              "name": "珠宝销售",
+              "subLevelModelList": null,
+              "parentCode": 160500
+            }
+          ],
+          "parentCode": 160000
+        },
+        {
+          "code": 160600,
+          "name": "汽车销售",
+          "subLevelModelList": [
+            {
+              "code": 230201,
+              "name": "汽车销售",
+              "subLevelModelList": null,
+              "parentCode": 160600
+            },
+            {
+              "code": 230202,
+              "name": "汽车配件销售",
+              "subLevelModelList": null,
+              "parentCode": 160600
+            }
+          ],
+          "parentCode": 160000
+        },
+        {
+          "code": 160700,
+          "name": "广告/会展销售",
+          "subLevelModelList": [
+            {
+              "code": 140313,
+              "name": "广告销售",
+              "subLevelModelList": null,
+              "parentCode": 160700
+            },
+            {
+              "code": 140501,
+              "name": "会议活动销售",
+              "subLevelModelList": null,
+              "parentCode": 160700
+            },
+            {
+              "code": 140504,
+              "name": "会展活动销售",
+              "subLevelModelList": null,
+              "parentCode": 160700
+            }
+          ],
+          "parentCode": 160000
+        },
+        {
+          "code": 160800,
+          "name": "金融销售",
+          "subLevelModelList": [
+            {
+              "code": 180401,
+              "name": "信用卡销售",
+              "subLevelModelList": null,
+              "parentCode": 160800
+            },
+            {
+              "code": 180506,
+              "name": "理财顾问",
+              "subLevelModelList": null,
+              "parentCode": 160800
+            },
+            {
+              "code": 180701,
+              "name": "保险顾问",
+              "subLevelModelList": null,
+              "parentCode": 160800
+            },
+            {
+              "code": 180801,
+              "name": "证券经纪人",
+              "subLevelModelList": null,
+              "parentCode": 160800
+            }
+          ],
+          "parentCode": 160000
+        },
+        {
+          "code": 160900,
+          "name": "外贸销售",
+          "subLevelModelList": [
+            {
+              "code": 250201,
+              "name": "外贸经理",
+              "subLevelModelList": null,
+              "parentCode": 160900
+            },
+            {
+              "code": 250203,
+              "name": "外贸业务员",
+              "subLevelModelList": null,
+              "parentCode": 160900
+            }
+          ],
+          "parentCode": 160000
+        },
+        {
+          "code": 190600,
+          "name": "课程销售",
+          "subLevelModelList": [
+            {
+              "code": 190601,
+              "name": "课程顾问",
+              "subLevelModelList": null,
+              "parentCode": 190600
+            },
+            {
+              "code": 190602,
+              "name": "招生顾问",
+              "subLevelModelList": null,
+              "parentCode": 190600
+            },
+            {
+              "code": 190603,
+              "name": "留学顾问",
+              "subLevelModelList": null,
+              "parentCode": 190600
+            }
+          ],
+          "parentCode": 160000
+        },
+        {
+          "code": 210500,
+          "name": "医疗销售",
+          "subLevelModelList": [
+            {
+              "code": 210502,
+              "name": "医药代表",
+              "subLevelModelList": null,
+              "parentCode": 210500
+            },
+            {
+              "code": 210504,
+              "name": "健康顾问",
+              "subLevelModelList": null,
+              "parentCode": 210500
+            },
+            {
+              "code": 210505,
+              "name": "医美咨询",
+              "subLevelModelList": null,
+              "parentCode": 210500
+            },
+            {
+              "code": 210506,
+              "name": "医疗器械销售",
+              "subLevelModelList": null,
+              "parentCode": 210500
+            },
+            {
+              "code": 210507,
+              "name": "口腔咨询师",
+              "subLevelModelList": null,
+              "parentCode": 210500
+            }
+          ],
+          "parentCode": 160000
+        }
+      ],
+      "parentCode": 160000
+    },
+    {
+      "code": 170000,
+      "name": "传媒",
+      "subLevelModelList": [
+        {
+          "code": 170100,
+          "name": "采编/写作/出版",
+          "subLevelModelList": [
+            {
+              "code": 170101,
+              "name": "记者/采编",
+              "subLevelModelList": null,
+              "parentCode": 170100
+            },
+            {
+              "code": 170102,
+              "name": "编辑",
+              "subLevelModelList": null,
+              "parentCode": 170100
+            },
+            {
+              "code": 170104,
+              "name": "作者/撰稿人",
+              "subLevelModelList": null,
+              "parentCode": 170100
+            },
+            {
+              "code": 170105,
+              "name": "出版发行",
+              "subLevelModelList": null,
+              "parentCode": 170100
+            },
+            {
+              "code": 170106,
+              "name": "校对录入",
+              "subLevelModelList": null,
+              "parentCode": 170100
+            },
+            {
+              "code": 170109,
+              "name": "印刷排版",
+              "subLevelModelList": null,
+              "parentCode": 170100
+            }
+          ],
+          "parentCode": 170000
+        },
+        {
+          "code": 170200,
+          "name": "广告",
+          "subLevelModelList": [
+            {
+              "code": 170201,
+              "name": "广告创意设计",
+              "subLevelModelList": null,
+              "parentCode": 170200
+            },
+            {
+              "code": 170202,
+              "name": "美术指导",
+              "subLevelModelList": null,
+              "parentCode": 170200
+            },
+            {
+              "code": 170204,
+              "name": "策划经理",
+              "subLevelModelList": null,
+              "parentCode": 170200
+            },
+            {
+              "code": 170205,
+              "name": "广告文案",
+              "subLevelModelList": null,
+              "parentCode": 170200
+            },
+            {
+              "code": 170207,
+              "name": "广告制作",
+              "subLevelModelList": null,
+              "parentCode": 170200
+            },
+            {
+              "code": 170208,
+              "name": "媒介投放",
+              "subLevelModelList": null,
+              "parentCode": 170200
+            },
+            {
+              "code": 170209,
+              "name": "媒介合作",
+              "subLevelModelList": null,
+              "parentCode": 170200
+            },
+            {
+              "code": 170211,
+              "name": "广告审核",
+              "subLevelModelList": null,
+              "parentCode": 170200
+            },
+            {
+              "code": 170212,
+              "name": "广告/会展项目经理",
+              "subLevelModelList": null,
+              "parentCode": 170200
+            }
+          ],
+          "parentCode": 170000
+        },
+        {
+          "code": 170600,
+          "name": "影视媒体",
+          "subLevelModelList": [
+            {
+              "code": 170601,
+              "name": "导演/编导",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170602,
+              "name": "摄影/摄像师",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170603,
+              "name": "视频编辑",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170604,
+              "name": "音频编辑",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170605,
+              "name": "经纪人/星探",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170606,
+              "name": "后期制作",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170608,
+              "name": "影视发行",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170609,
+              "name": "影视策划",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170610,
+              "name": "主播",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170611,
+              "name": "演员/配音员",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170613,
+              "name": "放映员",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170614,
+              "name": "录音/音效",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170615,
+              "name": "制片人",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170616,
+              "name": "编剧",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170617,
+              "name": "艺人助理",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170620,
+              "name": "主持人/DJ",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170621,
+              "name": "中控/场控/助播",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170622,
+              "name": "灯光师",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170623,
+              "name": "剪辑师",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170624,
+              "name": "影视特效",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170625,
+              "name": "带货主播",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170626,
+              "name": "剧本杀主持人",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170627,
+              "name": "剧本杀编剧",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170628,
+              "name": "儿童引导师",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170629,
+              "name": "游戏主播",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            },
+            {
+              "code": 170630,
+              "name": "模特",
+              "subLevelModelList": null,
+              "parentCode": 170600
+            }
+          ],
+          "parentCode": 170000
+        }
+      ],
+      "parentCode": 170000
+    },
+    {
+      "code": 180000,
+      "name": "金融",
+      "subLevelModelList": [
+        {
+          "code": 180100,
+          "name": "投融资",
+          "subLevelModelList": [
+            {
+              "code": 180101,
+              "name": "投资经理",
+              "subLevelModelList": null,
+              "parentCode": 180100
+            },
+            {
+              "code": 180103,
+              "name": "行业研究",
+              "subLevelModelList": null,
+              "parentCode": 180100
+            },
+            {
+              "code": 180112,
+              "name": "投资总监/VP",
+              "subLevelModelList": null,
+              "parentCode": 180100
+            },
+            {
+              "code": 180115,
+              "name": "融资",
+              "subLevelModelList": null,
+              "parentCode": 180100
+            },
+            {
+              "code": 180116,
+              "name": "并购",
+              "subLevelModelList": null,
+              "parentCode": 180100
+            },
+            {
+              "code": 180117,
+              "name": "投后管理",
+              "subLevelModelList": null,
+              "parentCode": 180100
+            },
+            {
+              "code": 180118,
+              "name": "投资助理",
+              "subLevelModelList": null,
+              "parentCode": 180100
+            },
+            {
+              "code": 180120,
+              "name": "投资者关系/证券事务代表",
+              "subLevelModelList": null,
+              "parentCode": 180100
+            }
+          ],
+          "parentCode": 180000
+        },
+        {
+          "code": 180200,
+          "name": "中后台",
+          "subLevelModelList": [
+            {
+              "code": 150307,
+              "name": "风控",
+              "subLevelModelList": null,
+              "parentCode": 180200
+            },
+            {
+              "code": 180104,
+              "name": "资产评估",
+              "subLevelModelList": null,
+              "parentCode": 180200
+            },
+            {
+              "code": 180203,
+              "name": "资信评估",
+              "subLevelModelList": null,
+              "parentCode": 180200
+            },
+            {
+              "code": 180204,
+              "name": "合规稽查",
+              "subLevelModelList": null,
+              "parentCode": 180200
+            },
+            {
+              "code": 180304,
+              "name": "清算",
+              "subLevelModelList": null,
+              "parentCode": 180200
+            },
+            {
+              "code": 180501,
+              "name": "金融产品经理",
+              "subLevelModelList": null,
+              "parentCode": 180200
+            },
+            {
+              "code": 180503,
+              "name": "催收员",
+              "subLevelModelList": null,
+              "parentCode": 180200
+            }
+          ],
+          "parentCode": 180000
+        },
+        {
+          "code": 180400,
+          "name": "银行",
+          "subLevelModelList": [
+            {
+              "code": 180402,
+              "name": "柜员",
+              "subLevelModelList": null,
+              "parentCode": 180400
+            },
+            {
+              "code": 180403,
+              "name": "客户经理",
+              "subLevelModelList": null,
+              "parentCode": 180400
+            },
+            {
+              "code": 180404,
+              "name": "银行大堂经理",
+              "subLevelModelList": null,
+              "parentCode": 180400
+            },
+            {
+              "code": 180406,
+              "name": "信贷专员",
+              "subLevelModelList": null,
+              "parentCode": 180400
+            }
+          ],
+          "parentCode": 180000
+        },
+        {
+          "code": 180700,
+          "name": "保险",
+          "subLevelModelList": [
+            {
+              "code": 180702,
+              "name": "保险精算师",
+              "subLevelModelList": null,
+              "parentCode": 180700
+            },
+            {
+              "code": 180703,
+              "name": "保险理赔",
+              "subLevelModelList": null,
+              "parentCode": 180700
+            }
+          ],
+          "parentCode": 180000
+        },
+        {
+          "code": 180800,
+          "name": "证券/基金/期货",
+          "subLevelModelList": [
+            {
+              "code": 180106,
+              "name": "证券交易员",
+              "subLevelModelList": null,
+              "parentCode": 180800
+            },
+            {
+              "code": 180802,
+              "name": "卖方分析师",
+              "subLevelModelList": null,
+              "parentCode": 180800
+            },
+            {
+              "code": 180803,
+              "name": "买方分析师",
+              "subLevelModelList": null,
+              "parentCode": 180800
+            },
+            {
+              "code": 180805,
+              "name": "基金经理",
+              "subLevelModelList": null,
+              "parentCode": 180800
+            },
+            {
+              "code": 180806,
+              "name": "投资银行业务",
+              "subLevelModelList": null,
+              "parentCode": 180800
+            },
+            {
+              "code": 180807,
+              "name": "量化研究员",
+              "subLevelModelList": null,
+              "parentCode": 180800
+            }
+          ],
+          "parentCode": 180000
+        }
+      ],
+      "parentCode": 180000
+    },
+    {
+      "code": 190000,
+      "name": "教育培训",
+      "subLevelModelList": [
+        {
+          "code": 190100,
+          "name": "教育产品研发",
+          "subLevelModelList": [
+            {
+              "code": 190101,
+              "name": "课程设计",
+              "subLevelModelList": null,
+              "parentCode": 190100
+            },
+            {
+              "code": 190102,
+              "name": "课程编辑",
+              "subLevelModelList": null,
+              "parentCode": 190100
+            },
+            {
+              "code": 190104,
+              "name": "培训研究",
+              "subLevelModelList": null,
+              "parentCode": 190100
+            },
+            {
+              "code": 190105,
+              "name": "培训师",
+              "subLevelModelList": null,
+              "parentCode": 190100
+            },
+            {
+              "code": 190107,
+              "name": "培训策划",
+              "subLevelModelList": null,
+              "parentCode": 190100
+            }
+          ],
+          "parentCode": 190000
+        },
+        {
+          "code": 190200,
+          "name": "教育行政",
+          "subLevelModelList": [
+            {
+              "code": 190201,
+              "name": "校长/副校长",
+              "subLevelModelList": null,
+              "parentCode": 190200
+            },
+            {
+              "code": 190202,
+              "name": "教务管理",
+              "subLevelModelList": null,
+              "parentCode": 190200
+            },
+            {
+              "code": 190203,
+              "name": "教学管理",
+              "subLevelModelList": null,
+              "parentCode": 190200
+            },
+            {
+              "code": 190204,
+              "name": "班主任/辅导员",
+              "subLevelModelList": null,
+              "parentCode": 190200
+            },
+            {
+              "code": 190205,
+              "name": "园长/副园长",
+              "subLevelModelList": null,
+              "parentCode": 190200
+            }
+          ],
+          "parentCode": 190000
+        },
+        {
+          "code": 190300,
+          "name": "教师",
+          "subLevelModelList": [
+            {
+              "code": 190245,
+              "name": "地理教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190301,
+              "name": "教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190302,
+              "name": "助教",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190303,
+              "name": "高中教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190304,
+              "name": "初中教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190305,
+              "name": "小学教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190306,
+              "name": "幼教",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190307,
+              "name": "理科教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190308,
+              "name": "文科教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190309,
+              "name": "英语教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190310,
+              "name": "音乐教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190311,
+              "name": "美术教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190312,
+              "name": "体育教师/体育教练",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190313,
+              "name": "就业老师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190314,
+              "name": "日语教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190315,
+              "name": "其他外语教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190316,
+              "name": "语文教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190317,
+              "name": "数学教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190318,
+              "name": "物理教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190319,
+              "name": "化学教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190320,
+              "name": "生物教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190321,
+              "name": "家教",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190322,
+              "name": "托管老师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190323,
+              "name": "早教老师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190324,
+              "name": "感统训练教师",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            },
+            {
+              "code": 190326,
+              "name": "保育员",
+              "subLevelModelList": null,
+              "parentCode": 190300
+            }
+          ],
+          "parentCode": 190000
+        },
+        {
+          "code": 190500,
+          "name": "职业培训",
+          "subLevelModelList": [
+            {
+              "code": 190406,
+              "name": "IT培训讲师",
+              "subLevelModelList": null,
+              "parentCode": 190500
+            },
+            {
+              "code": 190501,
+              "name": "财会培训讲师",
+              "subLevelModelList": null,
+              "parentCode": 190500
+            },
+            {
+              "code": 190504,
+              "name": "拓展培训",
+              "subLevelModelList": null,
+              "parentCode": 190500
+            }
+          ],
+          "parentCode": 190000
+        },
+        {
+          "code": 190700,
+          "name": "特长培训",
+          "subLevelModelList": [
+            {
+              "code": 190701,
+              "name": "舞蹈老师",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190702,
+              "name": "瑜伽老师",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190704,
+              "name": "游泳教练",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190705,
+              "name": "健身教练",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190706,
+              "name": "篮球教练",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190707,
+              "name": "跆拳道教练",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190708,
+              "name": "武术教练",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190709,
+              "name": "轮滑教练",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190710,
+              "name": "表演教师",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190711,
+              "name": "机器人教师",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190712,
+              "name": "书法教师",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190713,
+              "name": "钢琴教师",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190714,
+              "name": "吉他教师",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190715,
+              "name": "古筝教师",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190716,
+              "name": "播音主持教师",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190717,
+              "name": "乐高教师",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190718,
+              "name": "少儿编程老师",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190719,
+              "name": "乒乓球教练",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190720,
+              "name": "羽毛球教练",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190766,
+              "name": "足球教练",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190767,
+              "name": "架子鼓老师",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190768,
+              "name": "围棋老师",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190769,
+              "name": "拳击教练",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            },
+            {
+              "code": 190770,
+              "name": "台球教练/助教",
+              "subLevelModelList": null,
+              "parentCode": 190700
+            }
+          ],
+          "parentCode": 190000
+        }
+      ],
+      "parentCode": 190000
+    },
+    {
+      "code": 210000,
+      "name": "医疗健康",
+      "subLevelModelList": [
+        {
+          "code": 210100,
+          "name": "生物制药",
+          "subLevelModelList": [
+            {
+              "code": 210108,
+              "name": "医药研发",
+              "subLevelModelList": null,
+              "parentCode": 210100
+            },
+            {
+              "code": 210115,
+              "name": "生物学研究人员",
+              "subLevelModelList": null,
+              "parentCode": 210100
+            },
+            {
+              "code": 210116,
+              "name": "药品注册",
+              "subLevelModelList": null,
+              "parentCode": 210100
+            },
+            {
+              "code": 210117,
+              "name": "药品生产",
+              "subLevelModelList": null,
+              "parentCode": 210100
+            },
+            {
+              "code": 210123,
+              "name": "医药项目经理",
+              "subLevelModelList": null,
+              "parentCode": 210100
+            },
+            {
+              "code": 210124,
+              "name": "细胞培养员",
+              "subLevelModelList": null,
+              "parentCode": 210100
+            },
+            {
+              "code": 210125,
+              "name": "药物分析",
+              "subLevelModelList": null,
+              "parentCode": 210100
+            },
+            {
+              "code": 210126,
+              "name": "药物合成",
+              "subLevelModelList": null,
+              "parentCode": 210100
+            },
+            {
+              "code": 210127,
+              "name": "医疗产品技术支持",
+              "subLevelModelList": null,
+              "parentCode": 210100
+            },
+            {
+              "code": 210128,
+              "name": "生物信息工程师",
+              "subLevelModelList": null,
+              "parentCode": 210100
+            },
+            {
+              "code": 210129,
+              "name": "制剂研发",
+              "subLevelModelList": null,
+              "parentCode": 210100
+            },
+            {
+              "code": 210130,
+              "name": "药理研究",
+              "subLevelModelList": null,
+              "parentCode": 210100
+            }
+          ],
+          "parentCode": 210000
+        },
+        {
+          "code": 210200,
+          "name": "护士/护理",
+          "subLevelModelList": [
+            {
+              "code": 210201,
+              "name": "护士",
+              "subLevelModelList": null,
+              "parentCode": 210200
+            },
+            {
+              "code": 210202,
+              "name": "护士长",
+              "subLevelModelList": null,
+              "parentCode": 210200
+            },
+            {
+              "code": 210503,
+              "name": "导医",
+              "subLevelModelList": null,
+              "parentCode": 210200
+            }
+          ],
+          "parentCode": 210000
+        },
+        {
+          "code": 210300,
+          "name": "医生/医技",
+          "subLevelModelList": [
+            {
+              "code": 210104,
+              "name": "药剂师",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210109,
+              "name": "验光师",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210111,
+              "name": "检验科医师",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210112,
+              "name": "医生助理",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210113,
+              "name": "放射科医生",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210114,
+              "name": "超声科医生",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210302,
+              "name": "中医",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210303,
+              "name": "精神心理科医生",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210304,
+              "name": "口腔科医生",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210306,
+              "name": "内科医生",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210307,
+              "name": "全科医生",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210308,
+              "name": "幼儿园保健医",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210309,
+              "name": "外科医生",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210310,
+              "name": "儿科医生",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210311,
+              "name": "妇产科医生",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210312,
+              "name": "眼科医生",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210313,
+              "name": "皮肤科医生",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210314,
+              "name": "耳鼻喉科医生",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210315,
+              "name": "麻醉科医生",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210316,
+              "name": "病理科医生",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210317,
+              "name": "医务管理",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            },
+            {
+              "code": 210402,
+              "name": "整形医生",
+              "subLevelModelList": null,
+              "parentCode": 210300
+            }
+          ],
+          "parentCode": 210000
+        },
+        {
+          "code": 210400,
+          "name": "健康整形",
+          "subLevelModelList": [
+            {
+              "code": 210305,
+              "name": "康复治疗师",
+              "subLevelModelList": null,
+              "parentCode": 210400
+            },
+            {
+              "code": 210401,
+              "name": "营养师/健康管理师",
+              "subLevelModelList": null,
+              "parentCode": 210400
+            }
+          ],
+          "parentCode": 210000
+        },
+        {
+          "code": 210800,
+          "name": "药店",
+          "subLevelModelList": [
+            {
+              "code": 210801,
+              "name": "药店店长",
+              "subLevelModelList": null,
+              "parentCode": 210800
+            },
+            {
+              "code": 210802,
+              "name": "执业药师/驻店药师",
+              "subLevelModelList": null,
+              "parentCode": 210800
+            },
+            {
+              "code": 210803,
+              "name": "药店店员",
+              "subLevelModelList": null,
+              "parentCode": 210800
+            }
+          ],
+          "parentCode": 210000
+        },
+        {
+          "code": 210900,
+          "name": "医疗器械",
+          "subLevelModelList": [
+            {
+              "code": 210105,
+              "name": "医疗器械研发",
+              "subLevelModelList": null,
+              "parentCode": 210900
+            },
+            {
+              "code": 210121,
+              "name": "医疗器械注册",
+              "subLevelModelList": null,
+              "parentCode": 210900
+            },
+            {
+              "code": 210122,
+              "name": "医疗器械生产/质量管理",
+              "subLevelModelList": null,
+              "parentCode": 210900
+            },
+            {
+              "code": 210901,
+              "name": "试剂研发",
+              "subLevelModelList": null,
+              "parentCode": 210900
+            }
+          ],
+          "parentCode": 210000
+        },
+        {
+          "code": 211000,
+          "name": "临床试验",
+          "subLevelModelList": [
+            {
+              "code": 210118,
+              "name": "临床医学经理/专员",
+              "subLevelModelList": null,
+              "parentCode": 211000
+            },
+            {
+              "code": 210119,
+              "name": "临床协调员",
+              "subLevelModelList": null,
+              "parentCode": 211000
+            },
+            {
+              "code": 210120,
+              "name": "临床数据分析",
+              "subLevelModelList": null,
+              "parentCode": 211000
+            },
+            {
+              "code": 210501,
+              "name": "临床医学总监",
+              "subLevelModelList": null,
+              "parentCode": 211000
+            },
+            {
+              "code": 211001,
+              "name": "临床项目经理",
+              "subLevelModelList": null,
+              "parentCode": 211000
+            },
+            {
+              "code": 211002,
+              "name": "临床监查员",
+              "subLevelModelList": null,
+              "parentCode": 211000
+            }
+          ],
+          "parentCode": 210000
+        }
+      ],
+      "parentCode": 210000
+    },
+    {
+      "code": 220000,
+      "name": "房地产/建筑",
+      "subLevelModelList": [
+        {
+          "code": 220100,
+          "name": "房地产规划开发",
+          "subLevelModelList": [
+            {
+              "code": 220101,
+              "name": "房地产策划",
+              "subLevelModelList": null,
+              "parentCode": 220100
+            },
+            {
+              "code": 220102,
+              "name": "地产项目管理",
+              "subLevelModelList": null,
+              "parentCode": 220100
+            },
+            {
+              "code": 220103,
+              "name": "地产招投标",
+              "subLevelModelList": null,
+              "parentCode": 220100
+            },
+            {
+              "code": 220302,
+              "name": "房产评估师",
+              "subLevelModelList": null,
+              "parentCode": 220100
+            }
+          ],
+          "parentCode": 220000
+        },
+        {
+          "code": 220200,
+          "name": "建筑/规划设计",
+          "subLevelModelList": [
+            {
+              "code": 220202,
+              "name": "建筑工程师",
+              "subLevelModelList": null,
+              "parentCode": 220200
+            },
+            {
+              "code": 220203,
+              "name": "建筑设计师",
+              "subLevelModelList": null,
+              "parentCode": 220200
+            },
+            {
+              "code": 220204,
+              "name": "土木/土建/结构工程师",
+              "subLevelModelList": null,
+              "parentCode": 220200
+            },
+            {
+              "code": 220206,
+              "name": "园林/景观设计",
+              "subLevelModelList": null,
+              "parentCode": 220200
+            },
+            {
+              "code": 220207,
+              "name": "城市规划设计",
+              "subLevelModelList": null,
+              "parentCode": 220200
+            },
+            {
+              "code": 220213,
+              "name": "弱电工程师",
+              "subLevelModelList": null,
+              "parentCode": 220200
+            },
+            {
+              "code": 220214,
+              "name": "给排水工程师",
+              "subLevelModelList": null,
+              "parentCode": 220200
+            },
+            {
+              "code": 220215,
+              "name": "暖通工程师",
+              "subLevelModelList": null,
+              "parentCode": 220200
+            },
+            {
+              "code": 220216,
+              "name": "幕墙工程师",
+              "subLevelModelList": null,
+              "parentCode": 220200
+            },
+            {
+              "code": 220221,
+              "name": "BIM工程师",
+              "subLevelModelList": null,
+              "parentCode": 220200
+            },
+            {
+              "code": 220223,
+              "name": "建筑机电工程师",
+              "subLevelModelList": null,
+              "parentCode": 220200
+            },
+            {
+              "code": 220224,
+              "name": "消防工程师",
+              "subLevelModelList": null,
+              "parentCode": 220200
+            }
+          ],
+          "parentCode": 220000
+        },
+        {
+          "code": 220400,
+          "name": "物业管理",
+          "subLevelModelList": [
+            {
+              "code": 220401,
+              "name": "物业经理",
+              "subLevelModelList": null,
+              "parentCode": 220400
+            },
+            {
+              "code": 220404,
+              "name": "综合维修工",
+              "subLevelModelList": null,
+              "parentCode": 220400
+            },
+            {
+              "code": 220405,
+              "name": "绿化工",
+              "subLevelModelList": null,
+              "parentCode": 220400
+            },
+            {
+              "code": 220406,
+              "name": "物业管理员",
+              "subLevelModelList": null,
+              "parentCode": 220400
+            },
+            {
+              "code": 220407,
+              "name": "物业工程主管",
+              "subLevelModelList": null,
+              "parentCode": 220400
+            }
+          ],
+          "parentCode": 220000
+        },
+        {
+          "code": 220500,
+          "name": "高端房地产职位",
+          "subLevelModelList": [
+            {
+              "code": 220501,
+              "name": "地产项目总监",
+              "subLevelModelList": null,
+              "parentCode": 220500
+            },
+            {
+              "code": 220502,
+              "name": "地产策划总监",
+              "subLevelModelList": null,
+              "parentCode": 220500
+            },
+            {
+              "code": 220503,
+              "name": "地产招投标总监",
+              "subLevelModelList": null,
+              "parentCode": 220500
+            }
+          ],
+          "parentCode": 220000
+        },
+        {
+          "code": 220700,
+          "name": "装饰装修",
+          "subLevelModelList": [
+            {
+              "code": 220217,
+              "name": "软装设计师",
+              "subLevelModelList": null,
+              "parentCode": 220700
+            },
+            {
+              "code": 220222,
+              "name": "装修项目经理",
+              "subLevelModelList": null,
+              "parentCode": 220700
+            },
+            {
+              "code": 220701,
+              "name": "装修造价",
+              "subLevelModelList": null,
+              "parentCode": 220700
+            }
+          ],
+          "parentCode": 220000
+        },
+        {
+          "code": 220800,
+          "name": "工程管理",
+          "subLevelModelList": [
+            {
+              "code": 220208,
+              "name": "工程监理",
+              "subLevelModelList": null,
+              "parentCode": 220800
+            },
+            {
+              "code": 220209,
+              "name": "工程造价",
+              "subLevelModelList": null,
+              "parentCode": 220800
+            },
+            {
+              "code": 220210,
+              "name": "工程预算",
+              "subLevelModelList": null,
+              "parentCode": 220800
+            },
+            {
+              "code": 220211,
+              "name": "资料员",
+              "subLevelModelList": null,
+              "parentCode": 220800
+            },
+            {
+              "code": 220212,
+              "name": "建筑施工项目经理",
+              "subLevelModelList": null,
+              "parentCode": 220800
+            },
+            {
+              "code": 220218,
+              "name": "施工员",
+              "subLevelModelList": null,
+              "parentCode": 220800
+            },
+            {
+              "code": 220219,
+              "name": "测绘/测量",
+              "subLevelModelList": null,
+              "parentCode": 220800
+            },
+            {
+              "code": 220220,
+              "name": "材料员",
+              "subLevelModelList": null,
+              "parentCode": 220800
+            },
+            {
+              "code": 220225,
+              "name": "施工安全员",
+              "subLevelModelList": null,
+              "parentCode": 220800
+            }
+          ],
+          "parentCode": 220000
+        }
+      ],
+      "parentCode": 220000
+    },
+    {
+      "code": 240000,
+      "name": "供应链/物流",
+      "subLevelModelList": [
+        {
+          "code": 240100,
+          "name": "物流",
+          "subLevelModelList": [
+            {
+              "code": 240101,
+              "name": "供应链专员",
+              "subLevelModelList": null,
+              "parentCode": 240100
+            },
+            {
+              "code": 240102,
+              "name": "供应链经理",
+              "subLevelModelList": null,
+              "parentCode": 240100
+            },
+            {
+              "code": 240103,
+              "name": "物流专员",
+              "subLevelModelList": null,
+              "parentCode": 240100
+            },
+            {
+              "code": 240104,
+              "name": "物流经理",
+              "subLevelModelList": null,
+              "parentCode": 240100
+            },
+            {
+              "code": 240105,
+              "name": "物流运营",
+              "subLevelModelList": null,
+              "parentCode": 240100
+            },
+            {
+              "code": 240106,
+              "name": "物流跟单",
+              "subLevelModelList": null,
+              "parentCode": 240100
+            },
+            {
+              "code": 240108,
+              "name": "调度员",
+              "subLevelModelList": null,
+              "parentCode": 240100
+            },
+            {
+              "code": 240109,
+              "name": "物流/仓储项目经理",
+              "subLevelModelList": null,
+              "parentCode": 240100
+            },
+            {
+              "code": 240111,
+              "name": "货运代理专员",
+              "subLevelModelList": null,
+              "parentCode": 240100
+            },
+            {
+              "code": 240112,
+              "name": "货运代理经理",
+              "subLevelModelList": null,
+              "parentCode": 240100
+            },
+            {
+              "code": 240113,
+              "name": "水/空/陆运操作",
+              "subLevelModelList": null,
+              "parentCode": 240100
+            },
+            {
+              "code": 240118,
+              "name": "配送站长",
+              "subLevelModelList": null,
+              "parentCode": 240100
+            },
+            {
+              "code": 240119,
+              "name": "跟车员",
+              "subLevelModelList": null,
+              "parentCode": 240100
+            },
+            {
+              "code": 240302,
+              "name": "集装箱管理",
+              "subLevelModelList": null,
+              "parentCode": 240100
+            }
+          ],
+          "parentCode": 240000
+        },
+        {
+          "code": 240200,
+          "name": "仓储",
+          "subLevelModelList": [
+            {
+              "code": 240201,
+              "name": "仓库主管/经理",
+              "subLevelModelList": null,
+              "parentCode": 240200
+            },
+            {
+              "code": 240204,
+              "name": "仓库管理员",
+              "subLevelModelList": null,
+              "parentCode": 240200
+            },
+            {
+              "code": 240205,
+              "name": "仓库文员",
+              "subLevelModelList": null,
+              "parentCode": 240200
+            },
+            {
+              "code": 240206,
+              "name": "配/理/拣/发货",
+              "subLevelModelList": null,
+              "parentCode": 240200
+            }
+          ],
+          "parentCode": 240000
+        },
+        {
+          "code": 240300,
+          "name": "交通/运输",
+          "subLevelModelList": [
+            {
+              "code": 100311,
+              "name": "无人机飞手",
+              "subLevelModelList": null,
+              "parentCode": 240300
+            },
+            {
+              "code": 150208,
+              "name": "商务司机",
+              "subLevelModelList": null,
+              "parentCode": 240300
+            },
+            {
+              "code": 240110,
+              "name": "运输经理/主管",
+              "subLevelModelList": null,
+              "parentCode": 240300
+            },
+            {
+              "code": 240301,
+              "name": "货运司机",
+              "subLevelModelList": null,
+              "parentCode": 240300
+            },
+            {
+              "code": 240303,
+              "name": "配送员",
+              "subLevelModelList": null,
+              "parentCode": 240300
+            },
+            {
+              "code": 240304,
+              "name": "快递员",
+              "subLevelModelList": null,
+              "parentCode": 240300
+            },
+            {
+              "code": 240305,
+              "name": "网约车司机",
+              "subLevelModelList": null,
+              "parentCode": 240300
+            },
+            {
+              "code": 240306,
+              "name": "代驾司机",
+              "subLevelModelList": null,
+              "parentCode": 240300
+            },
+            {
+              "code": 240307,
+              "name": "驾校教练",
+              "subLevelModelList": null,
+              "parentCode": 240300
+            },
+            {
+              "code": 240308,
+              "name": "客运司机",
+              "subLevelModelList": null,
+              "parentCode": 240300
+            },
+            {
+              "code": 290205,
+              "name": "送餐员",
+              "subLevelModelList": null,
+              "parentCode": 240300
+            }
+          ],
+          "parentCode": 240000
+        },
+        {
+          "code": 240400,
+          "name": "高端供应链职位",
+          "subLevelModelList": [
+            {
+              "code": 240401,
+              "name": "供应链总监",
+              "subLevelModelList": null,
+              "parentCode": 240400
+            },
+            {
+              "code": 240402,
+              "name": "物流总监",
+              "subLevelModelList": null,
+              "parentCode": 240400
+            }
+          ],
+          "parentCode": 240000
+        }
+      ],
+      "parentCode": 240000
+    },
+    {
+      "code": 250000,
+      "name": "采购/贸易",
+      "subLevelModelList": [
+        {
+          "code": 250100,
+          "name": "采购",
+          "subLevelModelList": [
+            {
+              "code": 140312,
+              "name": "商品经理",
+              "subLevelModelList": null,
+              "parentCode": 250100
+            },
+            {
+              "code": 250101,
+              "name": "采购总监",
+              "subLevelModelList": null,
+              "parentCode": 250100
+            },
+            {
+              "code": 250102,
+              "name": "采购经理/主管",
+              "subLevelModelList": null,
+              "parentCode": 250100
+            },
+            {
+              "code": 250103,
+              "name": "采购专员/助理",
+              "subLevelModelList": null,
+              "parentCode": 250100
+            },
+            {
+              "code": 250104,
+              "name": "买手",
+              "subLevelModelList": null,
+              "parentCode": 250100
+            },
+            {
+              "code": 250105,
+              "name": "采购工程师",
+              "subLevelModelList": null,
+              "parentCode": 250100
+            },
+            {
+              "code": 250108,
+              "name": "供应商质量工程师",
+              "subLevelModelList": null,
+              "parentCode": 250100
+            },
+            {
+              "code": 250109,
+              "name": "招标专员",
+              "subLevelModelList": null,
+              "parentCode": 250100
+            },
+            {
+              "code": 250110,
+              "name": "投标专员",
+              "subLevelModelList": null,
+              "parentCode": 250100
+            },
+            {
+              "code": 250111,
+              "name": "商品专员/助理",
+              "subLevelModelList": null,
+              "parentCode": 250100
+            }
+          ],
+          "parentCode": 250000
+        },
+        {
+          "code": 250200,
+          "name": "进出口贸易",
+          "subLevelModelList": [
+            {
+              "code": 240114,
+              "name": "报关/报检员",
+              "subLevelModelList": null,
+              "parentCode": 250200
+            },
+            {
+              "code": 240117,
+              "name": "单证员",
+              "subLevelModelList": null,
+              "parentCode": 250200
+            },
+            {
+              "code": 250204,
+              "name": "贸易跟单",
+              "subLevelModelList": null,
+              "parentCode": 250200
+            }
+          ],
+          "parentCode": 250000
+        }
+      ],
+      "parentCode": 250000
+    },
+    {
+      "code": 260000,
+      "name": "咨询/翻译/法律",
+      "subLevelModelList": [
+        {
+          "code": 260100,
+          "name": "咨询/调研",
+          "subLevelModelList": [
+            {
+              "code": 260101,
+              "name": "企业管理咨询",
+              "subLevelModelList": null,
+              "parentCode": 260100
+            },
+            {
+              "code": 260104,
+              "name": "IT咨询顾问",
+              "subLevelModelList": null,
+              "parentCode": 260100
+            },
+            {
+              "code": 260105,
+              "name": "人力资源咨询顾问",
+              "subLevelModelList": null,
+              "parentCode": 260100
+            },
+            {
+              "code": 260106,
+              "name": "咨询项目管理",
+              "subLevelModelList": null,
+              "parentCode": 260100
+            },
+            {
+              "code": 260107,
+              "name": "战略咨询",
+              "subLevelModelList": null,
+              "parentCode": 260100
+            },
+            {
+              "code": 260109,
+              "name": "市场调研",
+              "subLevelModelList": null,
+              "parentCode": 260100
+            },
+            {
+              "code": 260110,
+              "name": "其他咨询顾问",
+              "subLevelModelList": null,
+              "parentCode": 260100
+            },
+            {
+              "code": 260111,
+              "name": "知识产权/专利/商标代理人",
+              "subLevelModelList": null,
+              "parentCode": 260100
+            },
+            {
+              "code": 260112,
+              "name": "心理咨询师",
+              "subLevelModelList": null,
+              "parentCode": 260100
+            },
+            {
+              "code": 260113,
+              "name": "婚恋咨询师",
+              "subLevelModelList": null,
+              "parentCode": 260100
+            },
+            {
+              "code": 260114,
+              "name": "工程咨询",
+              "subLevelModelList": null,
+              "parentCode": 260100
+            },
+            {
+              "code": 260401,
+              "name": "咨询总监",
+              "subLevelModelList": null,
+              "parentCode": 260100
+            },
+            {
+              "code": 260402,
+              "name": "咨询经理",
+              "subLevelModelList": null,
+              "parentCode": 260100
+            }
+          ],
+          "parentCode": 260000
+        },
+        {
+          "code": 260200,
+          "name": "律师",
+          "subLevelModelList": [
+            {
+              "code": 150503,
+              "name": "专利律师",
+              "subLevelModelList": null,
+              "parentCode": 260200
+            },
+            {
+              "code": 260201,
+              "name": "事务所律师",
+              "subLevelModelList": null,
+              "parentCode": 260200
+            },
+            {
+              "code": 260202,
+              "name": "法务",
+              "subLevelModelList": null,
+              "parentCode": 260200
+            },
+            {
+              "code": 260203,
+              "name": "知识产权律师",
+              "subLevelModelList": null,
+              "parentCode": 260200
+            },
+            {
+              "code": 260204,
+              "name": "律师助理",
+              "subLevelModelList": null,
+              "parentCode": 260200
+            }
+          ],
+          "parentCode": 260000
+        },
+        {
+          "code": 260300,
+          "name": "翻译",
+          "subLevelModelList": [
+            {
+              "code": 260301,
+              "name": "英语翻译",
+              "subLevelModelList": null,
+              "parentCode": 260300
+            },
+            {
+              "code": 260302,
+              "name": "日语翻译",
+              "subLevelModelList": null,
+              "parentCode": 260300
+            },
+            {
+              "code": 260303,
+              "name": "韩语/朝鲜语翻译",
+              "subLevelModelList": null,
+              "parentCode": 260300
+            },
+            {
+              "code": 260304,
+              "name": "法语翻译",
+              "subLevelModelList": null,
+              "parentCode": 260300
+            },
+            {
+              "code": 260305,
+              "name": "德语翻译",
+              "subLevelModelList": null,
+              "parentCode": 260300
+            },
+            {
+              "code": 260306,
+              "name": "俄语翻译",
+              "subLevelModelList": null,
+              "parentCode": 260300
+            },
+            {
+              "code": 260307,
+              "name": "西班牙语翻译",
+              "subLevelModelList": null,
+              "parentCode": 260300
+            },
+            {
+              "code": 260308,
+              "name": "其他语种翻译",
+              "subLevelModelList": null,
+              "parentCode": 260300
+            }
+          ],
+          "parentCode": 260000
+        }
+      ],
+      "parentCode": 260000
+    },
+    {
+      "code": 280000,
+      "name": "旅游",
+      "subLevelModelList": [
+        {
+          "code": 280100,
+          "name": "旅游服务",
+          "subLevelModelList": [
+            {
+              "code": 280101,
+              "name": "计调",
+              "subLevelModelList": null,
+              "parentCode": 280100
+            },
+            {
+              "code": 280102,
+              "name": "签证专员",
+              "subLevelModelList": null,
+              "parentCode": 280100
+            },
+            {
+              "code": 280104,
+              "name": "导游",
+              "subLevelModelList": null,
+              "parentCode": 280100
+            },
+            {
+              "code": 280105,
+              "name": "票务员",
+              "subLevelModelList": null,
+              "parentCode": 280100
+            },
+            {
+              "code": 280106,
+              "name": "讲解员",
+              "subLevelModelList": null,
+              "parentCode": 280100
+            },
+            {
+              "code": 280201,
+              "name": "旅游产品经理",
+              "subLevelModelList": null,
+              "parentCode": 280100
+            }
+          ],
+          "parentCode": 280000
+        }
+      ],
+      "parentCode": 280000
+    },
+    {
+      "code": 290000,
+      "name": "服务业",
+      "subLevelModelList": [
+        {
+          "code": 210600,
+          "name": "运动健身",
+          "subLevelModelList": [
+            {
+              "code": 210601,
+              "name": "瑜伽老师",
+              "subLevelModelList": null,
+              "parentCode": 210600
+            },
+            {
+              "code": 210603,
+              "name": "游泳教练",
+              "subLevelModelList": null,
+              "parentCode": 210600
+            },
+            {
+              "code": 210613,
+              "name": "救生员",
+              "subLevelModelList": null,
+              "parentCode": 210600
+            }
+          ],
+          "parentCode": 290000
+        },
+        {
+          "code": 230200,
+          "name": "汽车服务",
+          "subLevelModelList": [
+            {
+              "code": 230203,
+              "name": "汽车服务顾问",
+              "subLevelModelList": null,
+              "parentCode": 230200
+            },
+            {
+              "code": 230204,
+              "name": "汽车维修",
+              "subLevelModelList": null,
+              "parentCode": 230200
+            },
+            {
+              "code": 230205,
+              "name": "汽车美容",
+              "subLevelModelList": null,
+              "parentCode": 230200
+            },
+            {
+              "code": 230206,
+              "name": "汽车查勘定损",
+              "subLevelModelList": null,
+              "parentCode": 230200
+            },
+            {
+              "code": 230207,
+              "name": "二手车评估师",
+              "subLevelModelList": null,
+              "parentCode": 230200
+            },
+            {
+              "code": 230208,
+              "name": "4S店店长/维修站长",
+              "subLevelModelList": null,
+              "parentCode": 230200
+            },
+            {
+              "code": 230209,
+              "name": "汽车改装",
+              "subLevelModelList": null,
+              "parentCode": 230200
+            },
+            {
+              "code": 230213,
+              "name": "洗车工",
+              "subLevelModelList": null,
+              "parentCode": 230200
+            },
+            {
+              "code": 230214,
+              "name": "加油员",
+              "subLevelModelList": null,
+              "parentCode": 230200
+            }
+          ],
+          "parentCode": 290000
+        },
+        {
+          "code": 290100,
+          "name": "酒店",
+          "subLevelModelList": [
+            {
+              "code": 290102,
+              "name": "酒店前台",
+              "subLevelModelList": null,
+              "parentCode": 290100
+            },
+            {
+              "code": 290103,
+              "name": "客房服务员",
+              "subLevelModelList": null,
+              "parentCode": 290100
+            },
+            {
+              "code": 290104,
+              "name": "酒店经理",
+              "subLevelModelList": null,
+              "parentCode": 290100
+            },
+            {
+              "code": 290107,
+              "name": "礼仪/迎宾/接待",
+              "subLevelModelList": null,
+              "parentCode": 290100
+            },
+            {
+              "code": 290115,
+              "name": "酒店前厅经理",
+              "subLevelModelList": null,
+              "parentCode": 290100
+            },
+            {
+              "code": 290116,
+              "name": "客房经理",
+              "subLevelModelList": null,
+              "parentCode": 290100
+            },
+            {
+              "code": 290158,
+              "name": "民宿管家",
+              "subLevelModelList": null,
+              "parentCode": 290100
+            }
+          ],
+          "parentCode": 290000
+        },
+        {
+          "code": 290200,
+          "name": "餐饮",
+          "subLevelModelList": [
+            {
+              "code": 290201,
+              "name": "收银",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290202,
+              "name": "服务员",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290203,
+              "name": "厨师",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290204,
+              "name": "咖啡师",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290206,
+              "name": "餐饮店长",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290207,
+              "name": "餐饮前厅经理/领班",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290208,
+              "name": "后厨",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290209,
+              "name": "配菜打荷",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290210,
+              "name": "茶艺师",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290211,
+              "name": "蛋糕/裱花师",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290212,
+              "name": "餐饮学徒",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290213,
+              "name": "面点师",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290214,
+              "name": "行政总厨",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290215,
+              "name": "厨师长",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290216,
+              "name": "传菜员",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290217,
+              "name": "洗碗工",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290218,
+              "name": "凉菜厨师",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290219,
+              "name": "中餐厨师",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290220,
+              "name": "西餐厨师",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290221,
+              "name": "日料厨师",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290222,
+              "name": "烧烤师傅",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290223,
+              "name": "奶茶店店员",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290224,
+              "name": "水台/水产员",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290225,
+              "name": "面包/烘焙师",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290226,
+              "name": "储备店长",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290227,
+              "name": "调酒师",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            },
+            {
+              "code": 290228,
+              "name": "餐饮督导",
+              "subLevelModelList": null,
+              "parentCode": 290200
+            }
+          ],
+          "parentCode": 290000
+        },
+        {
+          "code": 290300,
+          "name": "零售",
+          "subLevelModelList": [
+            {
+              "code": 290302,
+              "name": "导购",
+              "subLevelModelList": null,
+              "parentCode": 290300
+            },
+            {
+              "code": 290303,
+              "name": "店员/营业员",
+              "subLevelModelList": null,
+              "parentCode": 290300
+            },
+            {
+              "code": 290304,
+              "name": "门店店长",
+              "subLevelModelList": null,
+              "parentCode": 290300
+            },
+            {
+              "code": 290305,
+              "name": "督导/巡店",
+              "subLevelModelList": null,
+              "parentCode": 290300
+            },
+            {
+              "code": 290306,
+              "name": "陈列员",
+              "subLevelModelList": null,
+              "parentCode": 290300
+            },
+            {
+              "code": 290307,
+              "name": "理货员",
+              "subLevelModelList": null,
+              "parentCode": 290300
+            },
+            {
+              "code": 290308,
+              "name": "防损员",
+              "subLevelModelList": null,
+              "parentCode": 290300
+            },
+            {
+              "code": 290309,
+              "name": "卖场经理",
+              "subLevelModelList": null,
+              "parentCode": 290300
+            },
+            {
+              "code": 290311,
+              "name": "促销员",
+              "subLevelModelList": null,
+              "parentCode": 290300
+            },
+            {
+              "code": 290314,
+              "name": "商场运营",
+              "subLevelModelList": null,
+              "parentCode": 290300
+            }
+          ],
+          "parentCode": 290000
+        },
+        {
+          "code": 290500,
+          "name": "安保/家政/维修",
+          "subLevelModelList": [
+            {
+              "code": 290105,
+              "name": "保安",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290106,
+              "name": "保洁",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290108,
+              "name": "保姆",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290109,
+              "name": "月嫂",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290110,
+              "name": "育婴师",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290111,
+              "name": "护工",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290112,
+              "name": "安检员",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290113,
+              "name": "手机维修",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290114,
+              "name": "家电维修",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290117,
+              "name": "保安主管/队长",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290118,
+              "name": "产后康复师",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290120,
+              "name": "押运员",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290121,
+              "name": "消防中控员",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290122,
+              "name": "保洁主管",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290123,
+              "name": "消防维保员",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290124,
+              "name": "电动车/摩托车维修",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290166,
+              "name": "电脑/打印机维修",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            },
+            {
+              "code": 290169,
+              "name": "收纳师",
+              "subLevelModelList": null,
+              "parentCode": 290500
+            }
+          ],
+          "parentCode": 290000
+        },
+        {
+          "code": 290600,
+          "name": "宠物服务",
+          "subLevelModelList": [
+            {
+              "code": 290601,
+              "name": "宠物美容",
+              "subLevelModelList": null,
+              "parentCode": 290600
+            },
+            {
+              "code": 290602,
+              "name": "宠物医生",
+              "subLevelModelList": null,
+              "parentCode": 290600
+            }
+          ],
+          "parentCode": 290000
+        },
+        {
+          "code": 290700,
+          "name": "婚礼/花艺",
+          "subLevelModelList": [
+            {
+              "code": 290701,
+              "name": "花艺师",
+              "subLevelModelList": null,
+              "parentCode": 290700
+            },
+            {
+              "code": 290702,
+              "name": "婚礼策划",
+              "subLevelModelList": null,
+              "parentCode": 290700
+            }
+          ],
+          "parentCode": 290000
+        },
+        {
+          "code": 290800,
+          "name": "美容保健",
+          "subLevelModelList": [
+            {
+              "code": 210403,
+              "name": "理疗师",
+              "subLevelModelList": null,
+              "parentCode": 290800
+            },
+            {
+              "code": 210404,
+              "name": "针灸推拿",
+              "subLevelModelList": null,
+              "parentCode": 290800
+            },
+            {
+              "code": 210405,
+              "name": "美容师",
+              "subLevelModelList": null,
+              "parentCode": 290800
+            },
+            {
+              "code": 210407,
+              "name": "纹绣师",
+              "subLevelModelList": null,
+              "parentCode": 290800
+            },
+            {
+              "code": 210408,
+              "name": "美体师",
+              "subLevelModelList": null,
+              "parentCode": 290800
+            },
+            {
+              "code": 210409,
+              "name": "美发助理/学徒",
+              "subLevelModelList": null,
+              "parentCode": 290800
+            },
+            {
+              "code": 210410,
+              "name": "美容店长",
+              "subLevelModelList": null,
+              "parentCode": 290800
+            },
+            {
+              "code": 210411,
+              "name": "足疗师",
+              "subLevelModelList": null,
+              "parentCode": 290800
+            },
+            {
+              "code": 210412,
+              "name": "按摩师",
+              "subLevelModelList": null,
+              "parentCode": 290800
+            },
+            {
+              "code": 210415,
+              "name": "采耳师",
+              "subLevelModelList": null,
+              "parentCode": 290800
+            },
+            {
+              "code": 210607,
+              "name": "发型师",
+              "subLevelModelList": null,
+              "parentCode": 290800
+            },
+            {
+              "code": 210608,
+              "name": "美甲美睫师",
+              "subLevelModelList": null,
+              "parentCode": 290800
+            },
+            {
+              "code": 210609,
+              "name": "化妆/造型/服装",
+              "subLevelModelList": null,
+              "parentCode": 290800
+            },
+            {
+              "code": 290801,
+              "name": "养发师",
+              "subLevelModelList": null,
+              "parentCode": 290800
+            },
+            {
+              "code": 290802,
+              "name": "美容导师",
+              "subLevelModelList": null,
+              "parentCode": 290800
+            }
+          ],
+          "parentCode": 290000
+        }
+      ],
+      "parentCode": 290000
+    },
+    {
+      "code": 300000,
+      "name": "生产制造",
+      "subLevelModelList": [
+        {
+          "code": 101500,
+          "name": "电气/自动化",
+          "subLevelModelList": [
+            {
+              "code": 100803,
+              "name": "自动化",
+              "subLevelModelList": null,
+              "parentCode": 101500
+            },
+            {
+              "code": 101402,
+              "name": "电气工程师",
+              "subLevelModelList": null,
+              "parentCode": 101500
+            },
+            {
+              "code": 101404,
+              "name": "电气设计工程师",
+              "subLevelModelList": null,
+              "parentCode": 101500
+            }
+          ],
+          "parentCode": 300000
+        },
+        {
+          "code": 230100,
+          "name": "汽车制造",
+          "subLevelModelList": [
+            {
+              "code": 230101,
+              "name": "汽车设计",
+              "subLevelModelList": null,
+              "parentCode": 230100
+            },
+            {
+              "code": 230102,
+              "name": "车身/造型设计",
+              "subLevelModelList": null,
+              "parentCode": 230100
+            },
+            {
+              "code": 230103,
+              "name": "底盘工程师",
+              "subLevelModelList": null,
+              "parentCode": 230100
+            },
+            {
+              "code": 230105,
+              "name": "动力系统工程师",
+              "subLevelModelList": null,
+              "parentCode": 230100
+            },
+            {
+              "code": 230106,
+              "name": "汽车电子工程师",
+              "subLevelModelList": null,
+              "parentCode": 230100
+            },
+            {
+              "code": 230107,
+              "name": "汽车零部件设计",
+              "subLevelModelList": null,
+              "parentCode": 230100
+            },
+            {
+              "code": 230108,
+              "name": "汽车项目管理",
+              "subLevelModelList": null,
+              "parentCode": 230100
+            },
+            {
+              "code": 230110,
+              "name": "内外饰设计工程师",
+              "subLevelModelList": null,
+              "parentCode": 230100
+            },
+            {
+              "code": 230210,
+              "name": "总装工程师",
+              "subLevelModelList": null,
+              "parentCode": 230100
+            }
+          ],
+          "parentCode": 300000
+        },
+        {
+          "code": 300100,
+          "name": "生产营运",
+          "subLevelModelList": [
+            {
+              "code": 300101,
+              "name": "厂长",
+              "subLevelModelList": null,
+              "parentCode": 300100
+            },
+            {
+              "code": 300102,
+              "name": "生产总监",
+              "subLevelModelList": null,
+              "parentCode": 300100
+            },
+            {
+              "code": 300103,
+              "name": "车间主任",
+              "subLevelModelList": null,
+              "parentCode": 300100
+            },
+            {
+              "code": 300104,
+              "name": "生产组长/拉长",
+              "subLevelModelList": null,
+              "parentCode": 300100
+            },
+            {
+              "code": 300106,
+              "name": "生产设备管理员",
+              "subLevelModelList": null,
+              "parentCode": 300100
+            },
+            {
+              "code": 300107,
+              "name": "生产计划/物料管理(PMC)",
+              "subLevelModelList": null,
+              "parentCode": 300100
+            },
+            {
+              "code": 300108,
+              "name": "生产跟单/文员",
+              "subLevelModelList": null,
+              "parentCode": 300100
+            },
+            {
+              "code": 300110,
+              "name": "厂务",
+              "subLevelModelList": null,
+              "parentCode": 300100
+            }
+          ],
+          "parentCode": 300000
+        },
+        {
+          "code": 300200,
+          "name": "质量安全",
+          "subLevelModelList": [
+            {
+              "code": 230109,
+              "name": "汽车质量工程师",
+              "subLevelModelList": null,
+              "parentCode": 300200
+            },
+            {
+              "code": 300201,
+              "name": "质量管理/测试",
+              "subLevelModelList": null,
+              "parentCode": 300200
+            },
+            {
+              "code": 300202,
+              "name": "可靠度工程师",
+              "subLevelModelList": null,
+              "parentCode": 300200
+            },
+            {
+              "code": 300203,
+              "name": "失效分析工程师",
+              "subLevelModelList": null,
+              "parentCode": 300200
+            },
+            {
+              "code": 300204,
+              "name": "产品认证工程师",
+              "subLevelModelList": null,
+              "parentCode": 300200
+            },
+            {
+              "code": 300205,
+              "name": "体系工程师",
+              "subLevelModelList": null,
+              "parentCode": 300200
+            },
+            {
+              "code": 300206,
+              "name": "体系审核员",
+              "subLevelModelList": null,
+              "parentCode": 300200
+            },
+            {
+              "code": 300207,
+              "name": "生产安全员",
+              "subLevelModelList": null,
+              "parentCode": 300200
+            },
+            {
+              "code": 300208,
+              "name": "质检员",
+              "subLevelModelList": null,
+              "parentCode": 300200
+            },
+            {
+              "code": 300209,
+              "name": "计量工程师",
+              "subLevelModelList": null,
+              "parentCode": 300200
+            },
+            {
+              "code": 300210,
+              "name": "安全评价师",
+              "subLevelModelList": null,
+              "parentCode": 300200
+            }
+          ],
+          "parentCode": 300000
+        },
+        {
+          "code": 300300,
+          "name": "机械设计/制造",
+          "subLevelModelList": [
+            {
+              "code": 100813,
+              "name": "热设计工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300301,
+              "name": "机械工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300303,
+              "name": "机械设备工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300304,
+              "name": "设备维修保养工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300305,
+              "name": "机械制图员",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300306,
+              "name": "机械结构工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300307,
+              "name": "工业工程师(IE)",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300308,
+              "name": "工艺工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300309,
+              "name": "材料工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300310,
+              "name": "机电工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300311,
+              "name": "CNC数控操机/编程员",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300312,
+              "name": "冲压工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300313,
+              "name": "夹具工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300314,
+              "name": "模具工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300315,
+              "name": "焊接工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300316,
+              "name": "注塑工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300317,
+              "name": "铸造/锻造工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300318,
+              "name": "液压工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300319,
+              "name": "仿真工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            },
+            {
+              "code": 300320,
+              "name": "装配工程师",
+              "subLevelModelList": null,
+              "parentCode": 300300
+            }
+          ],
+          "parentCode": 300000
+        },
+        {
+          "code": 300400,
+          "name": "化工",
+          "subLevelModelList": [
+            {
+              "code": 300401,
+              "name": "化工工程师",
+              "subLevelModelList": null,
+              "parentCode": 300400
+            },
+            {
+              "code": 300402,
+              "name": "实验室技术员",
+              "subLevelModelList": null,
+              "parentCode": 300400
+            },
+            {
+              "code": 300404,
+              "name": "涂料研发",
+              "subLevelModelList": null,
+              "parentCode": 300400
+            },
+            {
+              "code": 300405,
+              "name": "化妆品研发",
+              "subLevelModelList": null,
+              "parentCode": 300400
+            },
+            {
+              "code": 300406,
+              "name": "食品/饮料研发",
+              "subLevelModelList": null,
+              "parentCode": 300400
+            },
+            {
+              "code": 300407,
+              "name": "化工项目经理",
+              "subLevelModelList": null,
+              "parentCode": 300400
+            }
+          ],
+          "parentCode": 300000
+        },
+        {
+          "code": 300500,
+          "name": "服装/纺织/皮革",
+          "subLevelModelList": [
+            {
+              "code": 300507,
+              "name": "面料辅料开发",
+              "subLevelModelList": null,
+              "parentCode": 300500
+            },
+            {
+              "code": 300509,
+              "name": "打样/制版",
+              "subLevelModelList": null,
+              "parentCode": 300500
+            },
+            {
+              "code": 300510,
+              "name": "服装/纺织/皮革跟单",
+              "subLevelModelList": null,
+              "parentCode": 300500
+            },
+            {
+              "code": 300511,
+              "name": "量体师",
+              "subLevelModelList": null,
+              "parentCode": 300500
+            }
+          ],
+          "parentCode": 300000
+        },
+        {
+          "code": 300600,
+          "name": "技工/普工",
+          "subLevelModelList": [
+            {
+              "code": 300601,
+              "name": "普工/操作工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300602,
+              "name": "叉车工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300603,
+              "name": "铲车司机",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300604,
+              "name": "焊工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300605,
+              "name": "氩弧焊工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300606,
+              "name": "电工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300608,
+              "name": "木工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300609,
+              "name": "油漆工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300610,
+              "name": "车工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300611,
+              "name": "磨工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300612,
+              "name": "铣工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300613,
+              "name": "钳工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300614,
+              "name": "钻工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300615,
+              "name": "铆工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300616,
+              "name": "钣金工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300617,
+              "name": "抛光工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300618,
+              "name": "机修工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300619,
+              "name": "折弯工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300620,
+              "name": "电镀工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300621,
+              "name": "喷塑工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300622,
+              "name": "注塑工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300623,
+              "name": "组装工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300624,
+              "name": "包装工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300625,
+              "name": "空调工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300626,
+              "name": "电梯工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300627,
+              "name": "锅炉工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300628,
+              "name": "学徒工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300629,
+              "name": "缝纫工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300630,
+              "name": "搬运工/装卸工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300631,
+              "name": "切割工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300632,
+              "name": "样衣工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300633,
+              "name": "模具工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300634,
+              "name": "挖掘机司机",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300635,
+              "name": "弱电工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300637,
+              "name": "裁剪工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300638,
+              "name": "水电工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            },
+            {
+              "code": 300639,
+              "name": "泥瓦工",
+              "subLevelModelList": null,
+              "parentCode": 300600
+            }
+          ],
+          "parentCode": 300000
+        },
+        {
+          "code": 300800,
+          "name": "新能源",
+          "subLevelModelList": [
+            {
+              "code": 300801,
+              "name": "电池工程师",
+              "subLevelModelList": null,
+              "parentCode": 300800
+            },
+            {
+              "code": 300802,
+              "name": "电机工程师",
+              "subLevelModelList": null,
+              "parentCode": 300800
+            },
+            {
+              "code": 300803,
+              "name": "线束设计",
+              "subLevelModelList": null,
+              "parentCode": 300800
+            }
+          ],
+          "parentCode": 300000
+        },
+        {
+          "code": 300900,
+          "name": "环保",
+          "subLevelModelList": [
+            {
+              "code": 300901,
+              "name": "环保工程师",
+              "subLevelModelList": null,
+              "parentCode": 300900
+            },
+            {
+              "code": 300902,
+              "name": "环评工程师",
+              "subLevelModelList": null,
+              "parentCode": 300900
+            },
+            {
+              "code": 300903,
+              "name": "EHS工程师",
+              "subLevelModelList": null,
+              "parentCode": 300900
+            },
+            {
+              "code": 300904,
+              "name": "碳排放管理师",
+              "subLevelModelList": null,
+              "parentCode": 300900
+            },
+            {
+              "code": 300905,
+              "name": "环境采样/检测员",
+              "subLevelModelList": null,
+              "parentCode": 300900
+            }
+          ],
+          "parentCode": 300000
+        },
+        {
+          "code": 301000,
+          "name": "能源/地质",
+          "subLevelModelList": [
+            {
+              "code": 301001,
+              "name": "地质工程师",
+              "subLevelModelList": null,
+              "parentCode": 301000
+            },
+            {
+              "code": 301002,
+              "name": "光伏系统工程师",
+              "subLevelModelList": null,
+              "parentCode": 301000
+            },
+            {
+              "code": 301003,
+              "name": "风电/光伏运维工程师",
+              "subLevelModelList": null,
+              "parentCode": 301000
+            },
+            {
+              "code": 301004,
+              "name": "水利工程师",
+              "subLevelModelList": null,
+              "parentCode": 301000
+            }
+          ],
+          "parentCode": 300000
+        }
+      ],
+      "parentCode": 300000
+    }
+  ]
+}

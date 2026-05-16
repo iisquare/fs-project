@@ -1,0 +1,4 @@
+action: vocab
+stage: tokenize
+
+model_name_or_path: models/Qwen2.5-0.5B-Instruct

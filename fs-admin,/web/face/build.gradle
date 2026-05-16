@@ -1,0 +1,5 @@
+
+dependencies {
+    implementation project(':base:jpa')
+    implementation project(':web:core')
+}

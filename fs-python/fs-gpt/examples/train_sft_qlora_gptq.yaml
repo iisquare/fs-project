@@ -1,0 +1,12 @@
+action: train
+model_name_or_path: models/Qwen3.5-0.8B-GPTQ-Int4
+
+stage: sft
+fine_tuning: lora
+
+train_dataset_names: identity
+eval_dataset_names: identity
+max_steps: 50
+learning_rate: 1.0e-4
+
+output_dir: models/qwen-sft-qlora-gptq

@@ -1,0 +1,5 @@
+ARG VLLM_VERSION
+
+FROM vllm/vllm-openai:${VLLM_VERSION}
+
+EXPOSE 8000

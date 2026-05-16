@@ -1,0 +1,19 @@
+{
+  "halt": {
+    "name": "线程停顿",
+    "classname": "com.iisquare.fs.app.crawler.assist.HaltAssist",
+    "property": [
+      {"name":"时长","key":"time","value":"","group":"停顿设置","editor":"text"}
+    ]
+  },
+  "verify": {
+    "name": "模拟打码",
+    "classname": "com.iisquare.fs.app.crawler.assist.VerifyAssist",
+    "property": [
+      {"name":"类型","key":"type","value":"slide","group":"打码设置","editor":"text"},
+      {"name":"站点","key":"site","value":"anjuke","group":"打码设置","editor":"text"},
+      {"name":"链接","key":"url","value":"","group":"打码设置","editor":"text"},
+      {"name":"代理","key":"proxy","value":"","group":"连接设置","editor":"text"}
+    ]
+  }
+}

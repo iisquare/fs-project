@@ -1,0 +1,18 @@
+# 推荐使用bitsandbytes方式进行量化训练。
+# GPTQ和AWQ是为推理设计的，精度有损失，尽量不要基于量化后的基座模型进行qlora训练。
+# 合并使用时，先将训练后的lora模型与非量化的基座模型合并，之后再对合并后的模型进行量化。
+
+action: train
+model_name_or_path: models/Qwen3.5-0.8B
+quantization_method: bitsandbytes
+
+stage: sft
+fine_tuning: lora
+deepspeed: config/ds_z3_config.json
+
+train_dataset_names: identity
+eval_dataset_names: identity
+max_steps: 50
+learning_rate: 1.0e-4
+
+output_dir: models/qwen-sft-qlora-bnb

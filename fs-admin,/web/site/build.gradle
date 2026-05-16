@@ -1,0 +1,6 @@
+
+dependencies {
+    implementation project(':web:core')
+    implementation project(':base:view')
+    testImplementation project(':web:test')
+}

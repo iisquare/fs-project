@@ -1,0 +1,12 @@
+action: train
+model_name_or_path: models/Qwen2.5-0.5B
+
+stage: sft
+fine_tuning: lora
+deepspeed: config/ds_z3_config.json
+
+train_dataset_names: classify
+eval_dataset_names: classify
+learning_rate: 1.0e-4
+
+output_dir: models/qwen-classify-lora

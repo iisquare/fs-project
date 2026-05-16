@@ -1,0 +1,2 @@
+{"prompt":  "1+1", "chosen":  "1 + 1 equals 2!", rejected: "2"}
+{"prompt":  "2 plus 3", "chosen":  "2 plus 3 equals 5!", rejected: "5"}
