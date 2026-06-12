@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用量超限提醒</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            padding: 20px;
+            line-height: 1.6;
+            color: #333333;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+            border: solid 1px #f5f5f5;
+        }
+
+        .alert-box {
+            background-color: #fdf2f2;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: center;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .alert-box .limit-type {
+            font-size: 28px;
+            font-weight: 700;
+            color: #c0392b;
+            margin: 10px 0;
+        }
+
+        .info-box {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 25px 0;
+            border-left: 4px solid #3498db;
+        }
+
+        .info-box h3 {
+            color: #2980b9;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .info-box p {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .warning {
+            background-color: #fef9e7;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 25px 0;
+            font-size: 14px;
+            border-left: 4px solid #e67e22;
+        }
+
+        .warning p {
+            margin-bottom: 5px;
+        }
+
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+            border-top: 1px solid #eaeaea;
+        }
+
+        .footer a {
+            color: #e74c3c;
+            text-decoration: none;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #e74c3c;
+            color: white !important;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .button:hover {
+            background-color: #c0392b;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>用量超限提醒</h1>
+        <p>平方域 - IISquare.com</p>
+    </div>
+
+    <div class="content">
+        <p>尊敬的 {name}，您好！</p>
+
+        <p>您的账户在当前统计周期内的用量已超出限制，相关服务已被暂时限制访问。</p>
+
+        <div class="alert-box">
+            <p>受限资源类型</p>
+            <div class="limit-type">{type}</div>
+        </div>
+
+        <p>超出限制后系统将拒绝该类型的后续请求，直至统计周期重置或您主动升级配额。请及时调整使用策略以避免业务中断。</p>
+
+        <div class="info-box">
+            <h3>如何恢复使用？</h3>
+            <p>1. 等待当前统计周期结束，配额将自动重置</p>
+            <p>2. 登录平方域平台，升级对应资源的配额上限</p>
+            <p>3. 优化调用频率，合理分配各类型资源的用量</p>
+        </div>
+
+        <div class="warning">
+            <p><strong>温馨提示：</strong></p>
+            <p>1. 配额重置时间请以平台"用量管理"页面显示为准。</p>
+            <p>2. 升级配额后将立即生效，已产生的限制不会追溯。</p>
+            <p>3. 建议设置用量预警，在接近上限时提前收到提醒。</p>
+        </div>
+
+        <p style="text-align: center;">
+            <a href="https://www.iisquare.com/" class="button">前往平台升级配额</a>
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>此邮件由系统自动发送，请勿直接回复。</p>
+        <p>&copy;平方域 - IISquare.com 保留所有权利.</p>
+    </div>
+</div>
+</body>
+</html>

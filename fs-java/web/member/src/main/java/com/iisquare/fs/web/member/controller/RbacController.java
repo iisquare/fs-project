@@ -119,6 +119,15 @@ public class RbacController extends RpcControllerBase {
     }
 
     /**
+     * 根据ID获取用户的个人信息及所属的角色信息
+     */
+    @PostMapping("/identityById")
+    public String identityByIdAction(@RequestBody Map<String, Object> param, HttpServletRequest request) {
+        JsonNode identity = rbacService.identity(DPUtil.parseInt(param.get("id")));
+        return ApiUtil.echoResult(0, null, identity);
+    }
+
+    /**
      * 获取或更新配置信息
      */
     @PostMapping("/setting")

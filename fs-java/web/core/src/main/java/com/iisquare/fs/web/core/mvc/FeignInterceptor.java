@@ -50,6 +50,10 @@ public class FeignInterceptor implements RequestInterceptor {
 
     @Override
     public void apply(RequestTemplate template) {
+        String time = String.valueOf(System.currentTimeMillis());
+        template.header(HEADER_APP_NAME, appName);
+        template.header(HEADER_APP_TIME, time);
+        template.header(HEADER_APP_TOKEN, token(appName, time));
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (null == attributes) return;
         HttpServletRequest request = attributes.getRequest();
@@ -59,10 +63,6 @@ public class FeignInterceptor implements RequestInterceptor {
                 template.header(name, header);
             }
         }
-        String time = String.valueOf(System.currentTimeMillis());
-        template.header(HEADER_APP_NAME, appName);
-        template.header(HEADER_APP_TIME, time);
-        template.header(HEADER_APP_TOKEN, token(appName, time));
     }
 
 }

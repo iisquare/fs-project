@@ -34,6 +34,8 @@ public class Auth implements Serializable {
     @Column
     private String status;
     @Column
+    private Long expiredTime; // 过期时间，留空为永久有效
+    @Column
     private Long createdTime;
     @Column
     private Integer createdUid;

@@ -5,6 +5,8 @@ import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
+import java.math.BigDecimal;
+
 @Entity
 @Getter
 @Setter
@@ -23,7 +25,9 @@ public class Usage {
     @Column
     private String type; // 计费类型：充值、消费等
     @Column
-    private Double creditAmount; // 积分数量，消费为负值
+    private String place; // 充值消费地点，如充值平台、调用的模型名称等
+    @Column
+    private BigDecimal creditAmount; // 积分数量，消费为负值
     @Column
     private String status; // 执行状态
     /* 模型通用字段 */
@@ -38,15 +42,7 @@ public class Usage {
     @Column
     private Long beginTime; // 处理开始时间
     @Column
-    private Long requestTime; // 请求开始时间
-    @Column
-    private Long waitingTime; // 等待首次响应时间，接收到第一个返回字节
-    @Column
-    private Long responseTime; // 请求结束时间
-    @Column
     private Long endTime; // 处理结束时间
-    @Column
-    private Integer coastRequest; // 请求耗时（毫秒）
     @Column
     private Integer coastTotal; // 整体耗时（毫秒）
     /* 对话模型字段 */
@@ -73,17 +69,11 @@ public class Usage {
     @Column
     private String finishDetail; // 详细原因
     @Column
-    private Integer usagePromptCacheHitTokens;
-    @Column
-    private Integer usagePromptCacheMissTokens;
+    private Integer usagePromptCachedTokens;
     @Column
     private Integer usagePromptTokens; // 总输入：usagePromptCacheHitTokens + usagePromptCacheMissTokens
     @Column
-    private Integer usageCompletionCacheHitTokens;
-    @Column
-    private Integer usageCompletionCacheMissTokens;
-    @Column
-    private Integer usageCompletionTokens; // 总输出：usageCompletionCacheHitTokens + usageCompletionCacheMissTokens
+    private Integer usageCompletionTokens; // 总输出
     @Column
     private Integer usageTotalTokens; // 总使用：usagePromptTokens + usageCompletionTokens
     /* 管理功能字段 */
@@ -99,5 +89,13 @@ public class Usage {
     private Long deletedTime;
     @Column
     private Integer deletedUid;
+
+    public static class UsageBuilder {
+
+        public String getFinishReason() {
+            return finishReason;
+        };
+
+    }
 
 }

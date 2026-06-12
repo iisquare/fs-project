@@ -1,5 +1,5 @@
 dependencies {
-    api (group: 'org.springframework.boot', name: 'spring-boot-starter-data-redis', version: springBootVersion) {
+    api (group: 'org.springframework.boot', name: 'spring-boot-starter-data-redis', version: '3.5.14') {
         exclude group: 'io.lettuce', module: 'lettuce-core'
     }
     api group: 'redis.clients', name: 'jedis', version: '7.2.0'

@@ -32,9 +32,9 @@ public class ChatService extends ServiceBase {
     GatewayService gatewayService;
 
     public SseEmitter dialog(ObjectNode json, HttpServletRequest request, HttpServletResponse response) throws IOException {
-        SsePlainEmitter emitter = new SsePlainEmitter(0L);
+        SsePlainEmitter emitter = new SsePlainEmitter(request, response, 0L);
         ObjectNode agent = agent(json, emitter, request, response);
-        if (null == agent) return emitter.sync();
+        if (null == agent) return emitter.sync(404);
         ArrayNode messages = DPUtil.arrayNode();
         messages.addObject().put("role", "user").put("content", json.at("/input").asText(""));
         agent.replace("messages", messages);
@@ -43,9 +43,9 @@ public class ChatService extends ServiceBase {
     }
 
     public SseEmitter demo(ObjectNode json, HttpServletRequest request, HttpServletResponse response) throws IOException {
-        SsePlainEmitter emitter = new SsePlainEmitter(0L);
+        SsePlainEmitter emitter = new SsePlainEmitter(request, response, 0L);
         ObjectNode agent = agent(json, emitter, request, response);
-        if (null == agent) return emitter.sync();
+        if (null == agent) return emitter.sync(404);
         agent.replace("systemPrompt", json.at("/systemPrompt"));
         agent.replace("maxTokens", json.at("/maxTokens"));
         agent.replace("temperature", json.at("/temperature"));
@@ -58,9 +58,9 @@ public class ChatService extends ServiceBase {
     }
 
     public SseEmitter compare(ObjectNode json, HttpServletRequest request, HttpServletResponse response) throws IOException {
-        SsePlainEmitter emitter = new SsePlainEmitter(0L);
+        SsePlainEmitter emitter = new SsePlainEmitter(request, response, 0L);
         ObjectNode agent = agent(json, emitter, request, response);
-        if (null == agent) return emitter.sync();
+        if (null == agent) return emitter.sync(404);
         ArrayNode messages = DPUtil.arrayNode();
         messages.addObject().put("role", "user").put("content", json.at("/input").asText(""));
         agent.replace("messages", messages);

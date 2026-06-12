@@ -9,7 +9,6 @@ import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
 import ProviderApi from '@/api/lm/ProviderApi';
 import RoleApi from '@/api/member/RoleApi';
-import { el } from 'element-plus/es/locales.mjs';
 
 const route = useRoute()
 const router = useRouter()
@@ -20,7 +19,7 @@ const columns = ref([
   { prop: 'id', label: 'ID' },
   { prop: 'providerInfo.name', label: '供应商' },
   { prop: 'name', label: '模型名称' },
-  { prop: 'alias', label: '模型别名', slot: 'alias' },
+  { prop: 'alias', label: '模型别名' },
   { prop: 'typeText', label: '模型类型' },
   { prop: 'explorable', label: '模型广场' },
   { prop: 'allVisible', label: '全部可见' },
@@ -48,7 +47,7 @@ const parameters = computed(() => {
 })
 const rows = ref([])
 const filterRef = ref<FormInstance>()
-const filters = ref(RouteUtil.query2filter(route, { advanced: false, serverEndpointIds: [] }))
+const filters = ref(RouteUtil.query2filter(route, { advanced: false, modelIds: [] }))
 const pagination = ref(RouteUtil.pagination(filters.value))
 const selection = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
@@ -143,8 +142,8 @@ const handleDelete = () => {
   <el-card :bordered="false" shadow="never" class="fs-table-card">
     <div class="fs-table-toolbar flex-between">
       <el-space>
-        <button-add v-permit="'lm:serverEndpoint:add'" @click="handleAdd" />
-        <button-delete v-permit="'lm:serverEndpoint:delete'" :disabled="selection.length === 0" @click="handleDelete" />
+        <button-add v-permit="'lm:model:add'" @click="handleAdd" />
+        <button-delete v-permit="'lm:model:delete'" :disabled="selection.length === 0" @click="handleDelete" />
       </el-space>
       <el-space>
         <button-search @click="searchable = !searchable" />
@@ -163,7 +162,6 @@ const handleDelete = () => {
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns">
-        <template #alias="scope">{{ scope.row.alias ? scope.row.alias : (scope.row.providerInfo?.serial + '/' + scope.row.name) }}</template>
         <template #role="scope">
           <el-space><el-tag v-for="item in scope.row.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
         </template>
@@ -219,7 +217,7 @@ const handleDelete = () => {
           <el-input v-model="form.name" />
         </el-descriptions-item>
         <el-descriptions-item label="模型别名" prop="alias">
-          <el-input v-model="form.alias" placeholder="默认为：供应商标识/模型名称" />
+          <el-input v-model="form.alias" placeholder="非空时以别名为准，同名用于负载均衡" />
         </el-descriptions-item>
         <el-descriptions-item label="模型类型" prop="type">
           <el-select v-model="form.type" placeholder="请选择">

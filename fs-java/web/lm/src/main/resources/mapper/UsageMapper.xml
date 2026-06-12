@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iisquare.fs.web.lm.mapper.UsageMapper">
+
+    <sql id="timeExpr">
+        <choose>
+            <when test="aggregation == 'hour'">DATE_FORMAT(FROM_UNIXTIME(begin_time / 1000), '%Y-%m-%d %H:00')</when>
+            <when test="aggregation == 'month'">DATE_FORMAT(FROM_UNIXTIME(begin_time / 1000), '%Y-%m')</when>
+            <otherwise>DATE_FORMAT(FROM_UNIXTIME(begin_time / 1000), '%Y-%m-%d')</otherwise>
+        </choose>
+    </sql>
+
+    <select id="summary" resultType="map">
+        SELECT
+            COUNT(*) as calls,
+            COALESCE(SUM(CASE WHEN credit_amount > 0 THEN credit_amount ELSE 0 END), 0) as rechargeCredits,
+            COALESCE(SUM(CASE WHEN credit_amount &lt; 0 THEN -credit_amount ELSE 0 END), 0) as consumeCredits,
+            COALESCE(SUM(usage_prompt_cached_tokens), 0) as cachedTokens,
+            COALESCE(SUM(usage_prompt_tokens), 0) as inputTokens,
+            COALESCE(SUM(usage_completion_tokens), 0) as outputTokens,
+            COALESCE(SUM(usage_total_tokens), 0) as totalTokens
+        FROM fs_lm_usage
+        ${where}
+    </select>
+
+    <select id="rank" resultType="map">
+        SELECT ${field} as ${alias},
+            COUNT(*) as calls,
+            COALESCE(SUM(usage_total_tokens), 0) as tokens,
+            COALESCE(SUM(CASE WHEN credit_amount &lt; 0 THEN -credit_amount ELSE 0 END), 0) as consumeCredits
+        FROM fs_lm_usage
+        ${where}
+        GROUP BY ${field}
+        ORDER BY ${orderBy}
+        LIMIT ${limit}
+    </select>
+
+    <select id="groupCount" resultType="map">
+        SELECT ${field} as ${alias}, COUNT(*) as count
+        FROM fs_lm_usage
+        ${where}
+        GROUP BY ${field}
+        ORDER BY ${orderBy}
+    </select>
+
+    <select id="timelineByPlace" resultType="map">
+        SELECT <include refid="timeExpr"/> as time, place,
+        <choose>
+            <when test="aggregateCredits">COALESCE(SUM(CASE WHEN credit_amount &lt; 0 THEN -credit_amount ELSE 0 END), 0)</when>
+            <otherwise>COUNT(*)</otherwise>
+        </choose>
+        as value
+        FROM fs_lm_usage
+        ${where}
+        GROUP BY time, place
+        ORDER BY time, place
+    </select>
+
+    <select id="timelineTokens" resultType="map">
+        SELECT <include refid="timeExpr"/> as time,
+            COALESCE(SUM(usage_prompt_cached_tokens), 0) as cachedTokens,
+            COALESCE(SUM(usage_prompt_tokens), 0) as inputTokens,
+            COALESCE(SUM(usage_completion_tokens), 0) as outputTokens,
+            COALESCE(SUM(usage_total_tokens), 0) as totalTokens
+        FROM fs_lm_usage
+        ${where}
+        GROUP BY time
+        ORDER BY time
+    </select>
+
+</mapper>

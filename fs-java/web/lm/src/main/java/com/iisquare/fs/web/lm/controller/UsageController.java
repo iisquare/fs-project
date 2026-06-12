@@ -5,7 +5,7 @@ import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
-import com.iisquare.fs.web.lm.service.LogService;
+import com.iisquare.fs.web.lm.service.UsageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,23 +16,23 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/log")
-public class LogController extends PermitControllerBase {
+@RequestMapping("/usage")
+public class UsageController extends PermitControllerBase {
 
     @Autowired
-    private LogService logService;
+    private UsageService usageService;
 
     @RequestMapping("/list")
     @Permission("")
     public String listAction(@RequestBody Map<String, Object> param) {
-        ObjectNode result = logService.search(param, DPUtil.buildMap("withInfo", true));
+        ObjectNode result = usageService.search(param, DPUtil.buildMap("withInfo", true));
         return ApiUtil.echoResult(0, null, result);
     }
 
     @RequestMapping("/audit")
     @Permission
     public String auditAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        Map<String, Object> result = logService.audit(param, request);
+        Map<String, Object> result = usageService.audit(param, request);
         return ApiUtil.echoResult(result);
     }
 
@@ -40,8 +40,15 @@ public class LogController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Long> ids = DPUtil.parseLongList(param.get("ids"));
-        boolean result = logService.delete(ids, request);
+        boolean result = usageService.delete(ids, request);
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
+    }
+
+    @RequestMapping("/statistic")
+    @Permission("")
+    public String statisticAction(@RequestBody Map<String, Object> param) {
+        Map<String, Object> result = usageService.statistic(param);
+        return ApiUtil.echoResult(result);
     }
 
 }

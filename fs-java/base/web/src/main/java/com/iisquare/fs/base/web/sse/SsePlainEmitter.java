@@ -3,6 +3,8 @@ package com.iisquare.fs.base.web.sse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.Header;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.springframework.http.HttpHeaders;
@@ -25,8 +27,12 @@ public class SsePlainEmitter {
     Consumer<Throwable> errorCallback = null;
     Runnable timeoutCallback = null;
     public Throwable failure = null; // 记录最终异常，一般为客户端断开连接
+    HttpServletRequest request;
+    HttpServletResponse response;
 
-    public SsePlainEmitter() {
+    public SsePlainEmitter(HttpServletRequest request, HttpServletResponse response) {
+        this.request = request;
+        this.response = response;
         emitter = new SseFixedEmitter();
         initialize();
     }
@@ -37,7 +43,9 @@ public class SsePlainEmitter {
      *                By default, not set in which case the default configured in the MVC Java Config or the MVC namespace is used,
      *                or if that's not set, then the timeout depends on the default of the underlying server.
      */
-    public SsePlainEmitter(Long timeout) {
+    public SsePlainEmitter(HttpServletRequest request, HttpServletResponse response, Long timeout) {
+        this.request = request;
+        this.response = response;
         emitter = new SseFixedEmitter(timeout);
         initialize();
     }
@@ -144,13 +152,18 @@ public class SsePlainEmitter {
     }
 
     public SsePlainEmitter error(String code, String message, String type, Object param, boolean eventData) {
+        ObjectNode error = error(code, message, type, param);
+        return send(error.toString(), eventData);
+    }
+
+    public static ObjectNode error(String code, String message, String type, Object param) {
         ObjectNode node = DPUtil.objectNode();
         ObjectNode error = node.putObject("error");
         error.put("message", message);
         error.put("type", type);
         error.replace("param", DPUtil.toJSON(param));
         error.put("code", code);
-        return send(node.toString(), eventData);
+        return node;
     }
 
     public SsePlainEmitter onCompletion(Runnable callback) {
@@ -177,7 +190,12 @@ public class SsePlainEmitter {
         return this;
     }
 
-    public SseEmitter sync() {
+    public SseEmitter sync(Integer status) {
+        if (null != status) {
+            try {
+               response.setStatus(status);
+            } catch (Exception ignored) {}
+        }
         setMediaType(MediaType.APPLICATION_JSON);
         emitter.complete(); // 通知完成，断开与客户端连接
         return emitter;

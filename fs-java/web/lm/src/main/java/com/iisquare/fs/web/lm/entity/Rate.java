@@ -26,15 +26,15 @@ public class Rate implements Serializable {
     @Column
     private String name; // 名称
     @Column
-    private Integer requestCount; // 间隔内请求数量
+    private Double requestCount; // 间隔内请求数量
     @Column
     private Integer requestInterval; // 请求间隔
     @Column
-    private Integer tokenCount; // 间隔内词元数量
+    private Double tokenCount; // 间隔内词元数量
     @Column
     private Integer tokenInterval; // 词元间隔
     @Column
-    private Integer creditCount; // 间隔内积分数量
+    private Double creditCount; // 间隔内积分数量
     @Column
     private Integer creditInterval; // 积分间隔
     @Column

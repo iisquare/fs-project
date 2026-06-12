@@ -1,10 +1,8 @@
 package com.iisquare.fs.web.lm.controller;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.web.mvc.ControllerBase;
-import com.iisquare.fs.web.lm.service.AgentService;
 import com.iisquare.fs.web.lm.service.GatewayService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +13,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
 import java.util.Map;
 
 @RestController
@@ -22,27 +22,22 @@ import java.util.Map;
 public class IndexController extends ControllerBase {
 
     @Autowired
-    AgentService agentService;
-    @Autowired
     GatewayService gatewayService;
 
-    @RequestMapping("/v1/chat/completions")
-    public SseEmitter completionAction(@RequestBody String body, HttpServletRequest request, HttpServletResponse response) throws Exception {
-        ObjectNode json = (ObjectNode) DPUtil.parseJSON(body);
-        return gatewayService.completion(json, request, response);
-    }
-
     @RequestMapping("/v1/models")
-    public String modelAction(@RequestParam Map<?, ?> param, HttpServletRequest request) {
-        String token = gatewayService.token(request);
-        ObjectNode result = gatewayService.models(token);
+    public String modelAction(@RequestParam Map<String, Object> param, HttpServletRequest request, HttpServletResponse response) {
+        ObjectNode result = gatewayService.models(param, request, response);
         return DPUtil.stringify(result);
     }
 
-    @RequestMapping("/v1/agents")
-    public String agentAction(HttpServletRequest request) {
-        ObjectNode result = agentService.listByIdentity(request, true);
-        return ApiUtil.echoResult(0, null, DPUtil.arrayNode(result));
+    @RequestMapping("/v1/chat/completions")
+    public SseEmitter chatCompletionsAction(@RequestBody ObjectNode json, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        return gatewayService.completion(json, request, response);
+    }
+
+    @RequestMapping("/v1/messages")
+    public SseEmitter messagesAction(@RequestBody ObjectNode json, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        return gatewayService.completion(json, request, response);
     }
 
 }

@@ -54,7 +54,28 @@ public class JsonTests {
         ArrayNode arr = json.putArray("arr");
         arr.add("a").add(2).add("b");
         arr.addObject().put("c", 3).put("d", "4");
-        System.out.println(json.at("/arr/3/d"));
+        System.out.println(json.toPrettyString());
+        System.out.println("has: " + json.has("/arr/3/d"));
+        System.out.println("at:" + json.at("/arr/3/d"));
+        System.out.println("at+has:" + json.at("/arr/3").has("d"));
+    }
+
+    @Test
+    public void objectTest() {
+        ObjectNode json = DPUtil.objectNode();
+        json.put("a", 1);
+        json.put("/b1/b2", 2);
+        json.put("c0~1", 3);
+        json.put("d", 4);
+        json.put("D", 5);
+        for (Map.Entry<String, JsonNode> entry : json.properties()) {
+            String key = entry.getKey();
+            System.out.println("-------------------");
+            System.out.println("[key]:" + key);
+            System.out.println("[value];" + entry.getValue());
+            System.out.println("[at]:" + json.at("/" + key));
+            System.out.println("[escape]:" + json.at("/" + DPUtil.escapeJsonAt(key)));
+        }
     }
 
     @Test

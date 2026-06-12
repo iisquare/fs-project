@@ -82,28 +82,30 @@ onMounted(() => {
         <el-button link @click="tree?.setCheckedKeys(treeCheckedKeys = DataUtil.removeArrayItem(TreeUtil.ids(treeData), treeCheckedKeys))">反选</el-button>
         <el-button link @click="handleFixed">取消固定</el-button>
       </el-space>
-      <el-tree
-        ref="tree"
-        :data="treeData"
-        node-key="id"
-        draggable
-        default-expand-all
-        show-checkbox
-        :check-strictly="true"
-        :expand-on-click-node="false"
-        :default-checked-keys="treeCheckedKeys"
-        @check="(node, data) => treeCheckedKeys = data.checkedKeys"
-        :allow-drop="handleAllowDrop">
-        <template #default="{ node, data }">
-          <div class="tree-item">
-            <span>{{ node.label }}</span>
-            <el-space>
-              <LayoutIcon name="layout.fixedLeft" :class="[data.fixed === 'left' && 'checked']" @click.stop="data.fixed = 'left'" />
-              <LayoutIcon name="layout.fixedRight"  :class="[data.fixed === 'right' && 'checked']" @click.stop="data.fixed = 'right'" />
-            </el-space>
-          </div>
-        </template>
-      </el-tree>
+      <div class="tree-body">
+        <el-tree
+          ref="tree"
+          :data="treeData"
+          node-key="id"
+          draggable
+          default-expand-all
+          show-checkbox
+          :check-strictly="true"
+          :expand-on-click-node="false"
+          :default-checked-keys="treeCheckedKeys"
+          @check="(node, data) => treeCheckedKeys = data.checkedKeys"
+          :allow-drop="handleAllowDrop">
+          <template #default="{ node, data }">
+            <div class="tree-item">
+              <span class="tree-label" :title="node.label">{{ node.label }}</span>
+              <el-space class="tree-actions">
+                <LayoutIcon name="layout.fixedLeft" :class="[data.fixed === 'left' && 'checked']" @click.stop="data.fixed = 'left'" />
+                <LayoutIcon name="layout.fixedRight"  :class="[data.fixed === 'right' && 'checked']" @click.stop="data.fixed = 'right'" />
+              </el-space>
+            </div>
+          </template>
+        </el-tree>
+      </div>
       <el-space class="footer flex-center" size="large">
         <el-button type="primary" size="small" @click="handleSubmit">确认</el-button>
         <el-button type="warning" size="small" @click="handleReset">重置</el-button>
@@ -126,12 +128,32 @@ onMounted(() => {
 .footer {
   border-top: solid 1px var(--fs-layout-border-color);
 }
+.tree-body {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
 .tree-item {
-  width: 100%;
-  padding-right: 15px;
+  flex: 1;
+  min-width: 0;
+  padding-right: 20px;
   @include flex-between();
+  gap: 8px;
   .checked {
     color: var(--el-color-primary);
   }
+}
+.tree-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tree-actions {
+  flex-shrink: 0;
+}
+:deep(.el-tree-node__content) {
+  overflow: hidden;
 }
 </style>

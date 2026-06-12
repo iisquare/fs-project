@@ -23,7 +23,7 @@ public class Model {
     @Column
     private String name; // 模型名称
     @Column
-    private String alias; // 模型别名，模型广场展示名称，同名可用于负载均衡，默认为“供应商标识/模型名称”
+    private String alias; // 模型别名，非空时以别名为准，同名可用于负载均衡
     @Column
     private String type; // 模型类型
     @Column
@@ -31,7 +31,7 @@ public class Model {
     @Column
     private Integer explorable; // 是否可在模型广场展示
     @Column
-    private Integer allVisible; // 无授权用户是否可见
+    private Integer allVisible; // 无授权用户是否在模型广场可见
     @Column
     private Integer securityDetectable; // 启用安全围栏
     @Column

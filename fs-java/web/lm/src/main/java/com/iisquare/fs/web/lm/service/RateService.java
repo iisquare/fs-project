@@ -64,11 +64,11 @@ public class RateService extends JPAServiceBase {
             info = new Rate();
         }
         info.setName(name);
-        info.setRequestCount(DPUtil.parseInt(param.get("requestCount")));
+        info.setRequestCount(DPUtil.parseDouble(param.get("requestCount")));
         info.setRequestInterval(DPUtil.parseInt(param.get("requestInterval")));
-        info.setTokenCount(DPUtil.parseInt(param.get("tokenCount")));
+        info.setTokenCount(DPUtil.parseDouble(param.get("tokenCount")));
         info.setTokenInterval(DPUtil.parseInt(param.get("tokenInterval")));
-        info.setCreditCount(DPUtil.parseInt(param.get("creditCount")));
+        info.setCreditCount(DPUtil.parseDouble(param.get("creditCount")));
         info.setCreditInterval(DPUtil.parseInt(param.get("creditInterval")));
         info.setSort(DPUtil.parseInt(param.get("sort")));
         info.setStatus(status);

@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -62,19 +63,19 @@ public class ProxyController extends ControllerBase implements InitializingBean,
     }
 
     @PostMapping("/postSSE")
-    public SseEmitter postSSEAction(HttpServletRequest request, @RequestBody Map<?, ?> param) throws Exception {
-        return sse(request, RequestMethod.POST, param);
+    public SseEmitter postSSEAction(@RequestBody Map<?, ?> param, HttpServletRequest request, HttpServletResponse response) throws Exception {
+        return sse(RequestMethod.POST, param, request, response);
     }
 
     @GetMapping("/getSSE")
-    public SseEmitter getSSEAction(HttpServletRequest request, @RequestParam Map<String, Object> param) throws Exception {
+    public SseEmitter getSSEAction(@RequestParam Map<String, Object> param, HttpServletRequest request, HttpServletResponse response) throws Exception {
         String data = new String(Base64.decodeBase64(DPUtil.parseString(param.get("data"))));
         param.put("data", DPUtil.toJSON(DPUtil.parseJSON(data), Map.class));
-        return sse(request, RequestMethod.GET, param);
+        return sse(RequestMethod.GET, param,  request, response);
     }
 
     @PostMapping("/upload")
-    public String uploadAction(@RequestParam Map param, @RequestPart("file") MultipartFile file) {
+    public String uploadAction(@RequestParam Map param, MultipartHttpServletRequest request) {
         RpcBase rpc;
         try {
             rpc = rpc(DPUtil.parseString(param.get("app")));
@@ -85,7 +86,7 @@ public class ProxyController extends ControllerBase implements InitializingBean,
         String json = new String(Base64.decodeBase64(DPUtil.parseString(param.get("data"))));
         Map data = DPUtil.toJSON(DPUtil.parseJSON(json), Map.class);
         if (null == data) data = new LinkedHashMap();
-        return rpc.upload(uri, file, data);
+        return rpc.upload(uri, data, request.getFileMap().values().toArray(new MultipartFile[0]));
     }
 
     private String request(RequestMethod method, Map<?, ?> param) {
@@ -132,13 +133,13 @@ public class ProxyController extends ControllerBase implements InitializingBean,
         return IOUtils.toString(result.body().asInputStream());
     }
 
-    private SseEmitter sse(HttpServletRequest r1, RequestMethod method, Map<?, ?> param) throws Exception {
-        SsePlainEmitter emitter = new SsePlainEmitter(0L);
+    private SseEmitter sse(RequestMethod method, Map<?, ?> param, HttpServletRequest req, HttpServletResponse res) throws Exception {
+        SsePlainEmitter emitter = new SsePlainEmitter(req, res, 0L);
         boolean forceEvent = DPUtil.parseBoolean(param.get("forceEvent")); // 强制采用SSE格式返回
         String url = String.format("rpc.%s.rest", DPUtil.parseString(param.get("app"))).toLowerCase();
         url = context.getEnvironment().getProperty(url);
         if (DPUtil.empty(url)) {
-            return emitter.error("app_not_found", "请求应用不存在", "admin", param, forceEvent).sync();
+            return emitter.error("app_not_found", "请求应用不存在", "admin", param, forceEvent).sync(404);
         }
         url += DPUtil.parseString(param.get("uri"));
         String finalUrl = url;
@@ -154,11 +155,11 @@ public class ProxyController extends ControllerBase implements InitializingBean,
                         if (!DPUtil.empty(data)) {
                             r2.setEntity(new StringEntity(data, charset));
                         }
-                        return pool.applyHeaders(r2, r1, FeignInterceptor.headers);
+                        return pool.applyHeaders(r2, req, FeignInterceptor.headers);
                     }
                     case GET: {
                         HttpGet r3 = new HttpGet(finalUrl);
-                        return pool.applyHeaders(r3, r1, FeignInterceptor.headers);
+                        return pool.applyHeaders(r3, req, FeignInterceptor.headers);
                     }
                     default:
                         return null;

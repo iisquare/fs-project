@@ -1,6 +1,7 @@
 package com.iisquare.fs.web.lm.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
@@ -10,13 +11,17 @@ import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.lm.dao.ModelDao;
 import com.iisquare.fs.web.lm.dao.ProviderDao;
+import com.iisquare.fs.web.lm.entity.Model;
 import com.iisquare.fs.web.lm.entity.Provider;
 import com.iisquare.fs.web.lm.mvc.Configuration;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,12 +42,14 @@ public class ProviderService extends JPAServiceBase {
         Map<String, String> types = new LinkedHashMap<>();
         types.put("vllm", "vLLM");
         types.put("sglang", "SGLang");
-        types.put("deepseek", "DeepSeek");
+        types.put("mindie", "MindIE");
+        types.put("mixed-compatible", "Mixed Compatible");
+        types.put("openai-compatible", "OpenAI Compatible");
+        types.put("anthropic-compatible", "Anthropic Compatible");
+        types.put("deepseek", "深度求索");
         types.put("volcengine", "火山引擎");
         types.put("siliconflow", "硅基流动");
         types.put("aliyun", "阿里云百炼");
-        types.put("openai-compatible", "OpenAI Compatible");
-        types.put("anthropic-compatible", "Anthropic Compatible");
         return types;
     }
 
@@ -51,6 +58,84 @@ public class ProviderService extends JPAServiceBase {
         status.put(1, "启用");
         status.put(2, "禁用");
         return status;
+    }
+
+    /**
+     * 配置缓存
+     * {
+     *     aliases: {
+     *         [alias or modelName]: [modelId],
+     *     },
+     *     models: {
+     *         [modelId]: {
+     *             id: Integer,
+     *             providerId: Integer,
+     *             name: String,
+     *             alias: String,
+     *             type: String,
+     *             roleIds: Array<Integer>,
+     *             explorable: Boolean,
+     *             allVisible: Boolean,
+     *             securityDetectable: Boolean,
+     *             plan: String,
+     *             content: {}
+     *         }
+     *     },
+     *     providers: {
+     *         [providerId]: {
+     *             id: Integer,
+     *             type: String,
+     *             serial: String,
+     *             name: String,
+     *             endpoint: String,
+     *             token: String
+     *         }
+     *     },
+     * }
+     */
+    public ObjectNode cache() {
+        ObjectNode cache = DPUtil.objectNode();
+        ObjectNode models = cache.putObject("models");
+        ObjectNode aliases = cache.putObject("aliases");
+        ObjectNode providers = cache.putObject("providers");
+        List<Provider> providerList = providerDao.findAll((Specification<Provider>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("status"), 1));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        });
+        for (Provider provider : providerList) {
+            ObjectNode item = providers.putObject(String.valueOf(provider.getId()));
+            item.put("id", provider.getId());
+            item.put("type", provider.getType());
+            item.put("serial", provider.getSerial());
+            item.put("name", provider.getName());
+            item.put("endpoint", provider.getEndpoint());
+            item.put("token", provider.getToken());
+        }
+        List<Model> modelList = modelDao.findAll((Specification<Model>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("status"), 1));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        });
+        for (Model model : modelList) {
+            JsonNode provider = providers.at("/" + model.getProviderId());
+            if (provider.isEmpty()) continue;
+            String place = (DPUtil.empty(model.getAlias()) ? model.getName() : model.getAlias());
+            (aliases.has(place) ? (ArrayNode) aliases.at(place) : aliases.putArray(place)).add(model.getId());
+            ObjectNode item = models.putObject(String.valueOf(model.getId()));
+            item.put("id", model.getId());
+            item.put("providerId", model.getProviderId());
+            item.put("name", model.getName());
+            item.put("alias", model.getAlias());
+            item.put("type", model.getType());
+            item.replace("roleIds", DPUtil.toJSON(DPUtil.parseIntList(model.getRoleIds())));
+            item.put("explorable", model.getExplorable() == 1);
+            item.put("allVisible", model.getAllVisible() == 1);
+            item.put("securityDetectable", model.getSecurityDetectable() == 1);
+            item.put("plan", model.getPlan());
+            item.replace("content", DPUtil.parseJSON(model.getContent()));
+        }
+        return cache;
     }
 
     public Provider info(Integer id) {

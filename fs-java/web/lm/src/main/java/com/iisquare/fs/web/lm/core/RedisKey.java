@@ -11,12 +11,20 @@ import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 @Configuration
 public class RedisKey {
 
-    public static String clientParallel(int clientId, int serverId) {
-        return String.format("fs:lm:gateway:parallel-client%d-server%d", clientId, serverId);
+    public static String rate(String type, int uid, int rateId, long interval) {
+        return String.format("fs:lm:gateway:rate-%s-%d-%d-%d", type, uid, rateId, interval);
     }
 
-    public static String backendParallel(int serverEndpointId) {
-        return String.format("fs:lm:gateway:parallel-backend%d", serverEndpointId);
+    public static String reminder(int uid) {
+        return String.format("fs:lm:gateway:reminder-%d", uid);
+    }
+
+    public static String limited(String type, int uid) {
+        return String.format("fs:lm:gateway:limited-%s-%d", type, uid);
+    }
+
+    public static String modelParallel(int modelId) {
+        return String.format("fs:lm:gateway:model-parallel-%d", modelId);
     }
 
     public static String channel() {

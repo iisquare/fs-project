@@ -19,11 +19,12 @@ const columns = ref([
   { prop: 'id', label: 'ID' },
   { prop: 'name', label: '名称' },
   { prop: 'secret', label: '密钥', slot: 'secret' },
-  { prop: 'uid', label: '所属用户' },
+  { prop: 'uid', label: '所属用户', hide: true },
   { prop: 'uidUserInfo.serial', label: '用户账号' },
   { prop: 'uidUserInfo.name', label: '用户昵称' },
   { prop: 'modelIds', label: '模型限制', slot: 'modelIds' },
   { prop: 'statusText', label: '状态' },
+  { prop: 'expiredTime', label: '过期时间', formatter: DateUtil.render },
   { prop: 'createdTime', label: '创建时间', formatter: DateUtil.render, hide: true },
   { prop: 'updatedTime', label: '修改时间', formatter: DateUtil.render, hide: true },
   { prop: 'deletedTime', label: '删除时间', formatter: DateUtil.render, hide: true },
@@ -83,7 +84,9 @@ const handleShow = (scope: any) => {
 }
 
 const handleEdit = (scope: any) => {
-  form.value = Object.assign({}, scope.row, {})
+  form.value = Object.assign({}, scope.row, {
+    expiredTime: DateUtil.format(scope.row.expiredTime),
+  })
   formVisible.value = true
 }
 
@@ -197,6 +200,7 @@ const handleDelete = () => {
         </el-space>
         <span v-else>不限</span>
       </el-descriptions-item>
+      <el-descriptions-item label="过期时间" :span="2">{{ DateUtil.format(form.expiredTime) }}</el-descriptions-item>
       <el-descriptions-item label="创建者">{{ form.createdUserInfo?.name }}</el-descriptions-item>
       <el-descriptions-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-descriptions-item>
       <el-descriptions-item label="修改者">{{ form.updatedUserInfo?.name }}</el-descriptions-item>
@@ -231,6 +235,9 @@ const handleDelete = () => {
       </el-form-item>
       <el-form-item prop="modelIds" label="模型限制">
         <form-select v-model="form.modelIds" :callback="ModelApi.list" multiple clearable />
+      </el-form-item>
+      <el-form-item prop="expiredTime" label="过期时间">
+         <form-date-picker v-model="form.expiredTime" placeholder="留空为永久有效" />
       </el-form-item>
     </el-form>
   </el-drawer>

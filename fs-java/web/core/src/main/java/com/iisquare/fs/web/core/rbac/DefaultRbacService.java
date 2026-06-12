@@ -45,6 +45,14 @@ public class DefaultRbacService extends RbacServiceBase {
     }
 
     /**
+     * 根据ID获取用户的个人信息及所属的角色信息
+     */
+    @Override
+    public JsonNode identity(Integer uid) {
+        return RpcUtil.data(memberRpc.post("/rbac/identityById", DPUtil.buildMap("id", uid)), false);
+    }
+
+    /**
      * 批量获取鉴权信息，防止网络抖动导致单次请求的多次RPC调用结果不一致
      */
     public JsonNode pack(HttpServletRequest request, String key) {
@@ -55,9 +63,7 @@ public class DefaultRbacService extends RbacServiceBase {
         JsonNode pack = post("pack", DPUtil.buildMap(
             PermitInterceptor.ATTRIBUTE_USER, null, PermitInterceptor.ATTRIBUTE_RESOURCE, null
         ), false);
-        Iterator<Map.Entry<String, JsonNode>> iterator = pack.fields();
-        while (iterator.hasNext()) {
-            Map.Entry<String, JsonNode> entry = iterator.next();
+        for (Map.Entry<String, JsonNode> entry : pack.properties()) {
             request.setAttribute(entry.getKey(), entry.getValue());
         }
         return null == key ? pack : pack.at("/" + key);

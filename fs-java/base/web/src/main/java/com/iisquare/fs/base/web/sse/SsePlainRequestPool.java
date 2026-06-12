@@ -129,7 +129,7 @@ public class SsePlainRequestPool implements Closeable {
         } catch (Exception e) {
             request.onError(null, e, false); // 转交给SsePlainRequest进行异常处理
             FileUtil.close(request);
-            return emitter.sync();
+            return emitter.sync(null);
         }
         emitter.setMediaType(response); // 需要在异步返回前，确定请求响应类型
         return emitter.async(() -> process(request, response));

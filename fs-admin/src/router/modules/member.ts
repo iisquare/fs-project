@@ -73,6 +73,10 @@ export const layouts = [{
     path: '/member/data/log',
     meta: { title: '鉴权日志', permit: ['member:dataLog:'] },
     component: () => import('@/views/member/data/log.vue')
+  }, {
+    path: '/member/message/list',
+    meta: { title: '消息列表', permit: ['member:message:'] },
+    component: () => import('@/views/member/message/list.vue')
   }]
 }]
 

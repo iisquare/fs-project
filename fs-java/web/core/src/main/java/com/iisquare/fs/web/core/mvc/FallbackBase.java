@@ -46,11 +46,11 @@ public abstract class FallbackBase implements RpcBase {
     }
 
     @Override
-    public String upload(String uri, MultipartFile file, Map param) {
+    public String upload(String uri, Map param, MultipartFile... files) {
         return fallback();
     }
 
-    public String upload(String uri, MultipartFile file, Throwable cause) {
+    public String upload(String uri, Map param, MultipartFile[] files, Throwable cause) {
         return fallback(cause);
     }
 

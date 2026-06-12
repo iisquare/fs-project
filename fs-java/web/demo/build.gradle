@@ -1,8 +1,9 @@
 dependencies {
     implementation project(':web:core')
     implementation project(':base:jpa')
+    implementation project(':base:mybatis')
     implementation project(':base:mongodb')
     implementation project(':base:elasticsearch')
-    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-redis', version: springBootVersion
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-redis', version: '3.5.14'
     testImplementation project(':web:test')
 }

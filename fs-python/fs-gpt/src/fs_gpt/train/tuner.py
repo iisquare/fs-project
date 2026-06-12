@@ -102,13 +102,16 @@ class Tuner:
         print(f"Evaluate...")
         if trainer.args.do_eval:
             metrics = trainer.evaluate(metric_key_prefix="eval")
-            try:
-                perplexity = math.exp(metrics["eval_loss"])
-            except OverflowError:
-                perplexity = float("inf")
-            metrics["perplexity"] = perplexity
-            trainer.log_metrics("eval", metrics)
-            trainer.save_metrics("eval", metrics)
+            if "eval_loss" in metrics:
+                try:
+                    perplexity = math.exp(metrics["eval_loss"])
+                except OverflowError:
+                    perplexity = float("inf")
+                metrics["perplexity"] = perplexity
+                trainer.log_metrics("eval", metrics)
+                trainer.save_metrics("eval", metrics)
+            else:
+                print("Warning: eval_loss not found in metrics. Evaluation may have failed or eval dataset is empty.")
         print(f'Done.')
 
     def model(self):
@@ -169,6 +172,10 @@ class Tuner:
                 # AutoModelForCausalLM 通过集成 optimum 库来支持 GPTQ 量化方法
                 # 内置的转换逻辑无法完美兼容 Marlin 算子的对齐限制，试图用 Marlin 规则去解析时，断言异常：
                 # NotImplementedError: <class 'gptqmodel.nn_modules.qlinear.marlin.MarlinLinear'>: `out_features`: 16 must be divisible by [64].
+                # GPTQConfig(
+                #     use_marlin=False, # 关键：关闭 Marlin
+                #     disable_exllama=False # 确保启用 exllama 作为替代
+                # )
                 model = AutoModelForCausalLM.from_pretrained(
                     self.model_name_or_path,
                     device_map=self.args.get("device_map", "auto"),

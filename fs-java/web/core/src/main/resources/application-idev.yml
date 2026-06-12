@@ -87,6 +87,10 @@ server:
     encoding:
       charset: UTF-8
 
+logging:
+  level:
+    org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JCircuitBreakerFactory: ERROR
+
 # https://springdoc.cn/spring-cloud-circuitbreaker/
 resilience4j.circuitbreaker:
   configs:
@@ -98,6 +102,11 @@ resilience4j.timelimiter:
     default:
       timeoutDuration: 30s
       cancelRunningFuture: true
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
 
 spring:
   cloud:

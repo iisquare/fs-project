@@ -6,6 +6,7 @@ import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 
 /**
  * 用户积分（开通用户）
@@ -23,9 +24,9 @@ public class Credit implements Serializable {
     @Id
     private Integer uid;
     @Column
-    private Double remained; // 剩余
+    private BigDecimal remained; // 剩余
     @Column
-    private Double consumed; // 总消耗
+    private BigDecimal consumed; // 总消耗
     @Column
     private String rateIds; // 速率限制
     @Column

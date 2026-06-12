@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>积分不足提醒</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            padding: 20px;
+            line-height: 1.6;
+            color: #333333;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+            border: solid 1px #f5f5f5;
+        }
+
+        .alert-box {
+            background-color: #fef9e7;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: center;
+            border-left: 4px solid #e67e22;
+        }
+
+        .alert-box .threshold {
+            font-size: 28px;
+            font-weight: 700;
+            color: #d35400;
+            margin: 10px 0;
+        }
+
+        .info-box {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 25px 0;
+            border-left: 4px solid #3498db;
+        }
+
+        .info-box h3 {
+            color: #2980b9;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .info-box p {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .warning {
+            background-color: #fdf2f2;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 25px 0;
+            font-size: 14px;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .warning p {
+            margin-bottom: 5px;
+        }
+
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+            border-top: 1px solid #eaeaea;
+        }
+
+        .footer a {
+            color: #e67e22;
+            text-decoration: none;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #e67e22;
+            color: white !important;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .button:hover {
+            background-color: #d35400;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>积分不足提醒</h1>
+        <p>平方域 - IISquare.com</p>
+    </div>
+
+    <div class="content">
+        <p>尊敬的 {name}，您好！</p>
+
+        <p>您的账户积分余额已低于预设的预警阈值，为避免影响服务的正常使用，请您及时充值。</p>
+
+        <div class="alert-box">
+            <p>当前预警阈值</p>
+            <div class="threshold">{threshold}</div>
+            <p>积分</p>
+        </div>
+
+        <p>当积分余额低于该阈值时系统将发送本提醒。您可登录平台调整预警设置或关闭此通知。</p>
+
+        <div class="info-box">
+            <h3>如何充值积分？</h3>
+            <p>1. 登录平方域平台，进入个人中心</p>
+            <p>2. 选择积分充值，根据需求选择合适的套餐</p>
+            <p>3. 完成支付后积分将实时到账</p>
+        </div>
+
+        <div class="warning">
+            <p><strong>温馨提示：</strong></p>
+            <p>1. 积分不足可能导致API调用失败，请及时关注余额变化。</p>
+            <p>2. 您可在平台"积分管理"页面调整预警阈值或关闭预警通知。</p>
+            <p>3. 本次提醒后30分钟内不会重复发送，请放心使用。</p>
+        </div>
+
+        <p style="text-align: center;">
+            <a href="https://www.iisquare.com/" class="button">前往平台充值</a>
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>此邮件由系统自动发送，请勿直接回复。</p>
+        <p>&copy;平方域 - IISquare.com 保留所有权利.</p>
+    </div>
+</div>
+</body>
+</html>

@@ -22,8 +22,12 @@ public interface RpcBase {
     @RequestMapping(method = RequestMethod.POST, value = "{uri}")
     String post(@PathVariable("uri") String uri, @RequestBody String body);
 
+    /**
+     * 推荐采用@RequestPart方式定义form的数据字段
+     * 参数Map会转换为url的querystring，不适合传递长文本
+     */
     @RequestMapping(value = "{uri}", method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    String upload(@PathVariable("uri") String uri, @RequestPart(value = "file") MultipartFile file, @RequestParam Map param);
+    String upload(@PathVariable("uri") String uri, @RequestParam Map param, @RequestPart(value = "file") MultipartFile... files);
 
     @RequestMapping(method = RequestMethod.GET, value = "{uri}")
     Response getResponse(@PathVariable("uri") String uri, @RequestParam Map param);

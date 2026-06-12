@@ -1,7 +1,7 @@
 
 buildscript {
     ext {
-        springBootVersion = '3.5.4'
+        springBootVersion = '3.5.9'
         shadowVersion = '4.0.3'
     }
     repositories {
@@ -41,10 +41,11 @@ subprojects {
         nettyVersion = '4.1.36.Final'
         lang3Version = '3.20.0'
         pool2Version = '2.12.1'
-        springBootVersion = '3.5.4'
-        springCloudVersion = '4.3.1'
-        feignVersion = '13.6' // based on cloud version
-        resilience4jVersion = '3.3.0' // based on cloud version
+        springBootVersion = '3.5.9'
+        springCloudVersion = '4.3.2'
+        feignVersion = '13.6.1' // based on cloud version
+        resilience4jVersion = '3.3.2' // based on cloud version
+        mybatisVersion = '3.5.16' // based on springboot version
         scalaVersion = '2.12' // based on spark and flink version
         sparkVersion = '3.3.3'
         flinkVersion = '1.17.1'

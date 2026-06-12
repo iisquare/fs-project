@@ -38,6 +38,18 @@ export const layouts = [{
     meta: { title: '任务编排', permit: ['cron:flow:add', 'cron:flow:modify'], fit: true },
     component: () => import('@/views/server/cron/diagram.vue')
   }, {
+    path: '/server/elasticsearch/demo',
+    meta: { title: '索引示例', permit: ['lucene::'] },
+    component: () => import('@/views/server/elasticsearch/demo.vue')
+  }, {
+    path: '/server/elasticsearch/reload',
+    meta: { title: '服务重载', permit: ['lucene::'] },
+    component: () => import('@/views/server/elasticsearch/reload.vue')
+  }, {
+    path: '/server/elasticsearch/dictionary',
+    meta: { title: '词库列表', permit: ['lucene:dictionary:'] },
+    component: () => import('@/views/server/elasticsearch/dictionary.vue')
+  }, {
     path: '/server/file/archive',
     meta: { title: '文件管理', permit: ['file:archive:'] },
     component: () => import('@/views/server/file/archive.vue')

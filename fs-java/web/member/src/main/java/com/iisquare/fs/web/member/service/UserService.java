@@ -53,7 +53,7 @@ public class UserService extends JPAServiceBase {
     @Autowired
     StringRedisTemplate redis;
     @Autowired
-    EmailService emailService;
+    MessageService messageService;
 
     public static final Integer LOGIN_TRY_TIMES = 6;
 
@@ -144,7 +144,7 @@ public class UserService extends JPAServiceBase {
             verify.put("captcha", captchaCode);
             verify.put("code", code);
             redis.opsForValue().set(redisKey, verify.toString(), Duration.ofMinutes(5));
-            return emailService.signup(email, code);
+            return messageService.signup(email, code);
         }
         if (DPUtil.empty(verifyCode) || !verifyCode.equals(verify.at("/code").asText())) {
             return ApiUtil.result(13402, "邮箱验证码错误或已过期，请重新输入", param.get("verify"));
@@ -220,7 +220,7 @@ public class UserService extends JPAServiceBase {
             verify.put("captcha", captchaCode);
             verify.put("code", code);
             redis.opsForValue().set(redisKey, verify.toString(), Duration.ofMinutes(5));
-            return emailService.forgot(email, code);
+            return messageService.forgot(email, code);
         }
         if (DPUtil.empty(verifyCode) || !verifyCode.equals(verify.at("/code").asText())) {
             return ApiUtil.result(13402, "邮箱验证码错误或已过期，请重新输入", param.get("verify"));
@@ -245,6 +245,8 @@ public class UserService extends JPAServiceBase {
         if (null == info) return result;
         result.put("id", info.getId());
         result.put("name", info.getName());
+        result.put("email", info.getEmail());
+        result.put("phone", info.getPhone());
         result.put("status", info.getStatus());
         ObjectNode roles = result.putObject("roles");
         Set<Integer> roleIds = DPUtil.values(relationDao.findAllByTypeAndAid("user_role", info.getId()), Integer.class, "bid");
@@ -368,7 +370,7 @@ public class UserService extends JPAServiceBase {
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
         Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
         String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
-        if(DPUtil.empty(serial) || !ValidateUtil.isUsername(serial)) {
+        if(DPUtil.empty(serial) || (DPUtil.parseInt(id) <= 0 && !ValidateUtil.isUsername(serial))) {
             return ApiUtil.result(1001, "账号格式异常", serial);
         }
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
@@ -488,9 +490,16 @@ public class UserService extends JPAServiceBase {
             helper.betweenWithDate("createdTime").betweenWithDate("updatedTime");
             helper.betweenWithDate("loginTime").betweenWithDate("lockedTime").betweenWithDate("deletedTime");
             List<Integer> roleIds = DPUtil.parseIntList(param.get("roleIds"));
-            if(!roleIds.isEmpty()) {
-                helper.add(root.get("id").in(DPUtil.values(
-                        relationDao.findAllByTypeAndBidIn("user_role", roleIds), Integer.class, "aid")));
+            if(!roleIds.isEmpty() && null != query) {
+                var subquery = query.subquery(Relation.class);
+                var subRoot = subquery.from(Relation.class);
+                subquery.select(subRoot)
+                        .where(cb.and(
+                                cb.equal(subRoot.get("aid"), root.get("id")),
+                                cb.equal(subRoot.get("type"), "user_role"),
+                                subRoot.get("bid").in(roleIds)
+                        ));
+                helper.add(cb.exists(subquery));
             }
             return cb.and(helper.predicates());
         }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort");

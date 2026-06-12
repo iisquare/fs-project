@@ -1,22 +1,26 @@
 package com.iisquare.fs.web.lm.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
+import com.iisquare.fs.web.lm.dao.AuthDao;
 import com.iisquare.fs.web.lm.dao.CreditDao;
+import com.iisquare.fs.web.lm.dao.RateDao;
+import com.iisquare.fs.web.lm.entity.Auth;
 import com.iisquare.fs.web.lm.entity.Credit;
+import com.iisquare.fs.web.lm.entity.Rate;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class CreditService extends JPAServiceBase {
@@ -27,12 +31,70 @@ public class CreditService extends JPAServiceBase {
     private DefaultRbacService rbacService;
     @Autowired
     private RateService rateService;
+    @Autowired
+    private AuthDao authDao;
+    @Autowired
+    private RateDao rateDao;
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();
         status.put(1, "启用");
         status.put(2, "禁用");
         return status;
+    }
+
+    public ObjectNode authByKey(String key, ObjectNode cache) {
+        if (DPUtil.empty(key)) return null;
+        Auth auth = authDao.findOne((Specification<Auth>) (root, query, cb) -> cb.and(
+                cb.equal(root.get("secret"), key), cb.equal(root.get("status"), "valid"))).orElse(null);
+        if (null == auth) return null;
+        Long expiredTime = auth.getExpiredTime();
+        if (null != expiredTime && expiredTime > 0 && expiredTime <= System.currentTimeMillis()) return null;
+        Credit credit = info(auth.getUid());
+        if (null == credit || 1 != credit.getStatus()) return null;
+        JsonNode identity = rbacService.identity(auth.getUid());
+        if (identity.isEmpty()) return null;
+        if (1 != identity.at("/status").asInt()) return null;
+        ObjectNode result = DPUtil.objectNode();
+        result.put("id", auth.getId());
+        result.put("name", auth.getName());
+        result.put("uid", auth.getUid());
+        result.put("secret", auth.getSecret());
+        ObjectNode rates = result.putObject("credit")
+                .put("uid", credit.getUid())
+                .put("remained", credit.getRemained())
+                .put("consumed", credit.getConsumed())
+                .put("reminderEnabled", DPUtil.parseBoolean(credit.getReminderEnabled()))
+                .put("reminderThreshold", credit.getReminderThreshold())
+                .putObject("rates");
+        List<Rate> rateList = rateDao.findAllById(DPUtil.parseIntList(credit.getRateIds()));
+        for (Rate rate : rateList) {
+            if (1 != rate.getStatus()) continue;
+            ObjectNode item = rates.putObject(String.valueOf(rate.getId()));
+            item.put("id", rate.getId());
+            item.put("name", rate.getName());
+            item.put("requestCount", rate.getRequestCount());
+            item.put("requestInterval", rate.getRequestInterval());
+            item.put("tokenCount", rate.getTokenCount());
+            item.put("tokenInterval", rate.getTokenInterval());
+            item.put("creditCount", rate.getCreditCount());
+            item.put("creditInterval", rate.getCreditInterval());
+        }
+        result.replace("identity", identity);
+        ObjectNode models = result.putObject("models");
+        Set<Integer> authModelIds = new HashSet<>(DPUtil.parseIntList(auth.getModelIds()));
+        Set<Integer> userRoleIds = new HashSet<>(DPUtil.parseIntList(DPUtil.fields(identity.at("/roles"))));
+        for (Map.Entry<String, JsonNode> entry : cache.at("/models").properties()) {
+            JsonNode model = entry.getValue();
+            int modelId = model.at("/id").asInt();
+            if (!authModelIds.isEmpty() && !authModelIds.contains(modelId)) continue;
+            List authRoleIds = DPUtil.toJSON(model.at("/roleIds"), List.class);
+            if (!authRoleIds.isEmpty() && Collections.disjoint(userRoleIds, authRoleIds)) continue;
+            String place = model.at("/alias").asText();
+            if (DPUtil.empty(place)) place = model.at("/name").asText();
+            (models.has(place) ? (ArrayNode) models.at(place) : models.putArray(place)).add(modelId);
+        }
+        return result;
     }
 
     public Credit info(Integer uid) {
@@ -52,8 +114,8 @@ public class CreditService extends JPAServiceBase {
             info = new Credit();
             info.setUid(uid);
         }
-        info.setRemained(DPUtil.parseDouble(param.get("remained")));
-        info.setConsumed(DPUtil.parseDouble(param.get("consumed")));
+        info.setRemained(DPUtil.parseDecimal(param.get("remained")));
+        info.setConsumed(DPUtil.parseDecimal(param.get("consumed")));
         info.setRateIds(DPUtil.implode(",", DPUtil.parseIntList(param.get("rateIds"))));
         info.setReminderEnabled(DPUtil.parseBoolean(param.get("reminderEnabled")) ? 1 : 0);
         info.setReminderThreshold(DPUtil.parseDouble(param.get("reminderThreshold")));

@@ -14,25 +14,25 @@ import com.iisquare.fs.base.web.util.ServletUtil;
 import com.iisquare.fs.web.lm.core.RedisKey;
 import com.iisquare.fs.web.lm.dao.*;
 import com.iisquare.fs.web.lm.entity.*;
+import com.iisquare.fs.web.lm.gateway.GatewayHandler;
+import com.iisquare.fs.web.lm.gateway.GatewayHandler.StreamContent;
+import com.iisquare.fs.web.lm.gateway.GatewayHandler.StreamResult;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.entity.StringEntity;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import jakarta.persistence.criteria.Predicate;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -46,24 +46,26 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
     @Autowired
     private StringRedisTemplate redis;
     @Autowired
-    ClientDao clientDao;
+    ProviderService providerService;
     @Autowired
-    ClientEndpointDao clientEndpointDao;
+    CreditService creditService;
     @Autowired
-    ServerDao serverDao;
-    @Autowired
-    ServerEndpointDao serverEndpointDao;
-    @Autowired
-    LogDao logDao;
+    UsageService usageService;
 
     private ObjectNode cache = DPUtil.objectNode();
     private final SsePlainRequestPool pool = new SsePlainRequestPool();
     public final Charset charset = StandardCharsets.UTF_8;
 
+    public static final Map<String, String> checkRates = new LinkedHashMap<>(){{
+        put("request", "请求");
+        put("token", "词元");
+        put("credit", "积分");
+    }};
+
     @Override
     public void afterPropertiesSet() throws Exception {
         sensitiveService.rebuild();
-        cache = cache();
+        cache = providerService.cache();
     }
 
     @Override
@@ -84,13 +86,22 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
                 sensitiveService.rebuild();
                 return;
             case "model":
-                cache = cache();
+                cache = providerService.cache();
                 return;
         }
     }
 
     public SsePlainRequestPool pool() {
         return pool;
+    }
+
+    public Map<String, Object> test(Map<String, Object> param, HttpServletRequest request) {
+        String token = DPUtil.parseString(param.get("token"));
+        ObjectNode auth = creditService.authByKey(token, cache);
+        if (null == auth) {
+            return ApiUtil.result(1001, "无效的认证密钥", token);
+        }
+        return usageService.reminder(auth, 1);
     }
 
     public Map<String, Object> notice(Map<String, Object> param) {
@@ -101,384 +112,421 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         ObjectNode notice = DPUtil.objectNode();
         notice.put("type", type);
         notice.put("time", System.currentTimeMillis());
-        redis.convertAndSend(RedisKey.channel(), DPUtil.stringify(notice));
+        redis.convertAndSend(RedisKey.channel(), notice.toString());
         return ApiUtil.result(0, null, notice);
-    }
-
-    /**
-     * 配置缓存
-     * {
-     *     clients: {
-     *         [token]: {
-     *             id: Integer,
-     *             name: String,
-     *             token: String,
-     *             endpoints: {
-     *                 [serverId]: {
-     *                     id: Integer,
-     *                     clientId: Integer,
-     *                     serverId: Integer,
-     *                     parallel: Integer,
-     *                     checkable: Boolean,
-     *                 }
-     *             }
-     *         }
-     *     },
-     *     servers: {
-     *         [model]: {
-     *             id: Integer,
-     *             model: String,
-     *             name: String,
-     *             endpoints: {
-     *                 [id]: {
-     *                     id: Integer,
-     *                     serverId: Integer,
-     *                     url: String,
-     *                     model: String,
-     *                     token: String,
-     *                     parallel: Integer,
-     *                 }
-     *             }
-     *         }
-     *     }
-     * }
-     */
-    public ObjectNode cache() {
-        ObjectNode result = DPUtil.objectNode();
-        List<Client> clients = clientDao.findAll((Specification<Client>) (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("status"), 1));
-            return cb.and(predicates.toArray(new Predicate[0]));
-        });
-        ObjectNode jsonClients = result.putObject("clients");
-        ObjectNode jsonClientsRefer = DPUtil.objectNode();
-        for (Client client : clients) {
-            ObjectNode item = jsonClients.putObject(client.getToken());
-            item.put("id", client.getId());
-            item.put("name", client.getName());
-            item.put("token", client.getToken());
-            item.putObject("endpoints");
-            jsonClientsRefer.replace(String.valueOf(client.getId()), item);
-        }
-        List<ClientEndpoint> clientEndpoints = clientEndpointDao.findAll((Specification<ClientEndpoint>) (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("status"), 1));
-            return cb.and(predicates.toArray(new Predicate[0]));
-        });
-        for (ClientEndpoint endpoint : clientEndpoints) {
-            if (!jsonClientsRefer.has(String.valueOf(endpoint.getClientId()))) continue;
-            ObjectNode endpoints = (ObjectNode) jsonClientsRefer.at("/" + endpoint.getClientId() + "/endpoints");
-            ObjectNode item = endpoints.putObject(String.valueOf(endpoint.getServerId()));
-            item.put("id", endpoint.getId());
-            item.put("clientId", endpoint.getClientId());
-            item.put("serverId", endpoint.getServerId());
-            item.put("parallel", endpoint.getParallel());
-            item.put("checkable", 1 == endpoint.getCheckable());
-        }
-        List<Server> servers = serverDao.findAll((Specification<Server>) (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("status"), 1));
-            return cb.and(predicates.toArray(new Predicate[0]));
-        });
-        ObjectNode jsonServers = result.putObject("servers");
-        ObjectNode jsonServersRefer = DPUtil.objectNode();
-        for (Server server : servers) {
-            ObjectNode item = jsonServers.putObject(server.getModel());
-            item.put("id", server.getId());
-            item.put("model", server.getModel());
-            item.put("name", server.getName());
-            item.putObject("endpoints");
-            jsonServersRefer.replace(String.valueOf(server.getId()), item);
-        }
-        List<ServerEndpoint> serverEndpoints = serverEndpointDao.findAll((Specification<ServerEndpoint>) (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("status"), 1));
-            return cb.and(predicates.toArray(new Predicate[0]));
-        });
-        for (ServerEndpoint endpoint : serverEndpoints) {
-            if (!jsonServersRefer.has(String.valueOf(endpoint.getServerId()))) continue;
-            ObjectNode endpoints = (ObjectNode) jsonServersRefer.at("/" + endpoint.getServerId() + "/endpoints");
-            ObjectNode item = endpoints.putObject(String.valueOf(endpoint.getId()));
-            item.put("id", endpoint.getId());
-            item.put("serverId", endpoint.getServerId());
-            item.put("url", endpoint.getUrl());
-            item.put("model", endpoint.getModel());
-            item.put("token", endpoint.getToken());
-            item.put("parallel", endpoint.getParallel());
-        }
-        return result;
     }
 
     public String token(HttpServletRequest request) {
         String authorization = request.getHeader("authorization");
-        if (null == authorization || !authorization.startsWith("Bearer ")) return "";
-        return authorization.substring("Bearer ".length());
+        if (null != authorization && authorization.startsWith("Bearer ")) {
+            return authorization.substring("Bearer ".length());
+        }
+        String xApiKey = request.getHeader("x-api-key");
+        return null != xApiKey ? xApiKey : "";
     }
 
-    public ObjectNode models(String token) {
+    public static ObjectNode error401(HttpServletResponse response) {
+        response.setStatus(401);
+        return SsePlainEmitter.error("invalid_request_error", "Authentication Fails, Your api key is invalid", "authentication_error", null);
+    }
+
+    public ObjectNode models(Map<String, Object> param, HttpServletRequest request, HttpServletResponse response) {
+        ObjectNode auth = creditService.authByKey(token(request), cache);
+        if (null == auth) return error401(response);
+        boolean isAnthropic = isAnthropicModelsRequest(request);
         ObjectNode result = DPUtil.objectNode();
-        result.put("object", "list");
+        if (isAnthropic) {
+            result.put("type", "model_list");
+        } else {
+            result.put("object", "list");
+        }
         ArrayNode data = result.putArray("data");
-        Client client = clientDao.findOne((Specification<Client>) (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("token"), token));
-            predicates.add(cb.equal(root.get("status"), 1));
-            return cb.and(predicates.toArray(new Predicate[0]));
-        }).orElse(null);
-        if (null == client) return result;
-        List<ClientEndpoint> endpoints = clientEndpointDao.findAll((Specification<ClientEndpoint>) (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("clientId"), client.getId()));
-            predicates.add(cb.equal(root.get("status"), 1));
-            return cb.and(predicates.toArray(new Predicate[0]));
-        });
-        Set<Integer> serverIds = DPUtil.values(endpoints, Integer.class, "serverId");
-        if (serverIds.size() == 0) return result;
-        List<Server> servers = serverDao.findAll((Specification<Server>) (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            predicates.add(root.get("id").in(serverIds));
-            predicates.add(cb.equal(root.get("status"), 1));
-            return cb.and(predicates.toArray(new Predicate[0]));
-        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.asc("model")));
-        for (Server server : servers) {
+        for (Map.Entry<String, JsonNode> entry : auth.at("/models").properties()) {
             ObjectNode item = data.addObject();
-            item.put("id", server.getModel());
-            item.put("object", "model");
-            item.put("created", server.getCreatedTime() / 1000);
-            item.put("owned_by", server.getName());
+            item.put("id", entry.getKey());
+            if (isAnthropic) {
+                item.put("type", "model");
+                item.put("display_name", entry.getKey());
+                item.put("created_at", "2025-01-01T00:00:00Z");
+            } else {
+                item.put("object", "model");
+                item.put("owned_by", "fs-gateway");
+            }
         }
         return result;
     }
 
+    private boolean isAnthropicModelsRequest(HttpServletRequest request) {
+        String version = request.getHeader("anthropic-version");
+        if (!DPUtil.empty(version)) return true;
+        String authorization = request.getHeader("authorization");
+        if (null != authorization && authorization.startsWith("Bearer ")) return false;
+        String xApiKey = request.getHeader("x-api-key");
+        return !DPUtil.empty(xApiKey);
+    }
+
     public SseEmitter completion(ObjectNode json, HttpServletRequest request, HttpServletResponse response) throws IOException {
-        Log.LogBuilder log = Log.builder();
-        log.beginTime(System.currentTimeMillis());
-        SsePlainEmitter emitter = new SsePlainEmitter(0L);
-        JsonNode client = cache.at("/clients/" + token(request));
-        if (client.isEmpty()) {
-            return emitter.error("token_invalid", "无效的认证标识", "gateway", null, false).sync();
+        long beginTime = System.currentTimeMillis();
+        SsePlainEmitter emitter = new SsePlainEmitter(request, response, 0L);
+        ObjectNode auth = creditService.authByKey(token(request), cache);
+        if (null == auth) {
+            return emitter.error("token_invalid", "无效的认证标识", "gateway", null, false).sync(401);
         }
-        String model = json.at("/model").asText("");
-        JsonNode server = cache.at("/servers/" + model);
-        if (server.isEmpty()) {
-            return emitter.error("model_invalid", "无效的模型名称", "gateway", null, false).sync();
+        if (auth.at("/credit/remained").asDouble() <= 0) {
+            return emitter.error("token_limited", "积分不足", "gateway", null, false).sync(400);
         }
-        JsonNode clientEndpoint = client.at("/endpoints/" + server.at("/id").asInt());
-        if (clientEndpoint.isEmpty()) {
-            return emitter.error("model_denied", "暂未开通该模型权限", "gateway", null, false).sync();
+        String place = json.at("/model").asText("");
+        if (DPUtil.empty(place) || !auth.at("/models").has(place)) {
+            return emitter.error("model_denied", "暂未开通该模型权限", "gateway", null, false).sync(403);
         }
-        JsonNode serverEndpoints = server.at("/endpoints");
-        if (serverEndpoints.isEmpty()) {
-            return emitter.error("backend_invalid", "模型后端服务不可用", "gateway", null, false).sync();
+        JsonNode model = minimumConcurrencyPriority(place);
+        if (null == model || model.isEmpty()) {
+            return emitter.error("model_invalid", "模型暂不可用", "gateway", null, false).sync(403);
         }
-        int clientId = client.at("/id").asInt(0);
-        int serverId = server.at("/id").asInt(0);
-        int clientParallel = clientEndpoint.at("/parallel").asInt(0);
-        String clientKey = RedisKey.clientParallel(clientId, serverId);
-        if (clientParallel > 0) { // 客户端并发限制
-            Long count = redis.opsForValue().increment(clientKey);
-            if (null == count || count > clientParallel) {
-                redis.opsForValue().decrement(clientKey);
-                return emitter.error("client_busy", "客户端繁忙，请稍后再试。", "gateway", null, false).sync();
-            } else {
-                redis.expire(clientKey, 30, TimeUnit.MINUTES);
+        JsonNode provider = cache.at("/providers/" + model.at("/providerId").asInt());
+        if (provider.isEmpty()) {
+            return emitter.error("provider_invalid", "提供商暂不可用", "gateway", null, false).sync(403);
+        }
+        int uid = auth.at("/uid").asInt();
+        for (JsonNode rate : auth.at("/credit/rates")) { // 用户访问频率限制
+            int rateId = rate.at("/id").asInt();
+            for (Map.Entry<String, String> entry : checkRates.entrySet()) {
+                double count = rate.at("/" + entry.getKey() + "Count").asDouble();
+                int interval = rate.at("/" + entry.getKey() + "Interval").asInt();
+                if (count <= 0 || interval <= 0) continue;
+                String key = RedisKey.rate(entry.getKey(), uid, rateId, beginTime / interval / 1000);
+                double current = DPUtil.parseDouble(redis.opsForValue().get(key));
+                if (current >= count) {
+                    usageService.limited(auth, entry);
+                    return emitter.error("token_limited", "间隔内" + entry.getValue() + "数量超过限制", "gateway", null, false).sync(400);
+                }
             }
         }
-        JsonNode serverEndpoint = minimumConcurrencyPriority(serverEndpoints);
-        if (null == serverEndpoint) {
-            redis.opsForValue().decrement(clientKey);
-            return emitter.error("server_busy", "服务端繁忙，请稍后再试。", "gateway", null, false).sync();
+        String keyParallel = RedisKey.modelParallel(model.at("/id").asInt());
+        Long count = redis.opsForValue().increment(keyParallel);
+        if (null == count) {
+            return emitter.error("server_busy", "服务器繁忙，请稍后再试。", "gateway", null, false).sync(400);
+        } else {
+            redis.expire(keyParallel, 30, TimeUnit.MINUTES);
         }
-        int backendId = serverEndpoint.at("/id").asInt(0);
-        String backendKey = RedisKey.backendParallel(backendId);
-        int backendParallel = serverEndpoint.at("/parallel").asInt(0);
-        if (backendParallel > 0) { // 服务端并发限制
-            Long count = redis.opsForValue().increment(backendKey);
-            if (null == count || count > backendParallel) {
-                redis.opsForValue().decrement(clientKey);
-                redis.opsForValue().decrement(backendKey);
-                return emitter.error("backend_busy", "模型端繁忙，请稍后再试。", "gateway", null, false).sync();
-            } else {
-                redis.expire(backendKey, 30, TimeUnit.MINUTES);
-            }
-        }
+        Usage.UsageBuilder usage = Usage.builder().type("consume_llm").place(place);
+        usage.uid(auth.at("/uid").asInt()).authId(auth.at("/id").asInt());
+        usage.modelId(model.at("/id").asInt()).providerId(provider.at("/id").asInt());
+        usage.status("completed").requestIp(ServletUtil.getRemoteAddr(request)).beginTime(beginTime);
         // 基础校验和并发校验完成，进入受理阶段
+        GatewayHandler handler = GatewayHandler.select(request, provider);
+        if (null == handler) {
+            return emitter.error("protocol_mismatch", "客户端与后端协议不兼容，当前仅支持同协议转发", "gateway", null, false).sync(403);
+        }
         boolean stream = json.at("/stream").asBoolean(false);
-        boolean checkable = clientEndpoint.at("/checkable").asBoolean(false);
+        boolean securityDetectable = model.at("/securityDetectable").asBoolean(false);
         SsePlainRequest req = new SsePlainRequest() { // 处理请求
             @Override
             public HttpRequestBase request() {
-                HttpPost request = new HttpPost(serverEndpoint.at("/url").asText(""));
-                String token = serverEndpoint.at("/token").asText("");
-                if (!DPUtil.empty(token)) {
-                    request.addHeader("Authorization", "Bearer " + token);
+                try {
+                    return handler.buildRequest(json, model, provider);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
-                request.addHeader("Content-Type", "application/json;charset=" + charset.name());
-                json.put("model", serverEndpoint.at("/model").asText(""));
-                json.put("stream", stream);
-                request.setEntity(new StringEntity(json.toString(), charset));
-                return request;
             }
 
             @Override
             public void onError(CloseableHttpResponse response, Throwable throwable, boolean isStream) { // 中断客户端处理请求
-                log.finishReason("backend_abort").finishDetail(ApiUtil.getStackTrace(throwable));
+                usage.finishReason("backend_abort").finishDetail(ApiUtil.getStackTrace(throwable));
                 emitter.error("backend_abort", "模型端服务处理异常", "gateway", throwable.getMessage(), isStream).abort();
             }
 
             @Override
             public void onClose() {
-                log.responseTime(System.currentTimeMillis());
-                log.responseBody(responseBody.toString()).responseCompletion(responseCompletion.toString());
-                log.usagePromptTokens(promptTokens).usageCompletionTokens(completionTokens).usageTotalTokens(totalTokens);
-                if (null != finishReason && null == log.build().getFinishReason()) {
-                    log.finishReason(finishReason);
+                buildMergedToolCalls();
+                usage.responseBody(responseBody.toString()).responseTool(responseTool.toString())
+                        .responseReason(responseReason.toString()).responseCompletion(responseCompletion.toString());
+                if (totalTokens <= 0) totalTokens = promptTokens + completionTokens;
+                usage.usagePromptCachedTokens(promptCachedTokens)
+                    .usagePromptTokens(promptTokens).usageCompletionTokens(completionTokens).usageTotalTokens(totalTokens);
+                if (null != finishReason && null == usage.getFinishReason()) {
+                    usage.finishReason(finishReason);
                 }
-                if (clientParallel > 0) {
-                    redis.opsForValue().decrement(clientKey);
+                redis.opsForValue().decrement(keyParallel);
+                long endTime = System.currentTimeMillis();
+                usage.endTime(endTime).coastTotal((int) (endTime - beginTime));
+                BigDecimal creditAmount = BigDecimal.ZERO;
+                BigDecimal divisor = BigDecimal.valueOf(1000000);
+                creditAmount = creditAmount.add(BigDecimal.valueOf(promptCachedTokens).abs()
+                        .multiply(new BigDecimal(model.at("/content/prompt_cached_credits").asText()).abs())
+                        .divide(divisor, 20, RoundingMode.HALF_UP));
+                creditAmount = creditAmount.add(BigDecimal.valueOf(promptTokens - promptCachedTokens).abs()
+                        .multiply(new BigDecimal(model.at("/content/prompt_credits").asText()).abs())
+                        .divide(divisor, 20, RoundingMode.HALF_UP));
+                creditAmount = creditAmount.add(BigDecimal.valueOf(completionTokens).abs()
+                        .multiply(new BigDecimal(model.at("/content/completion_credits").asText()).abs())
+                        .divide(divisor, 20, RoundingMode.HALF_UP));
+                usage.creditAmount(creditAmount.negate());
+                usageService.record(usage.build(), auth);
+                for (JsonNode rate : auth.at("/credit/rates")) { // 用户访问频率限制
+                    int rateId = rate.at("/id").asInt();
+                    for (Map.Entry<String, String> entry : checkRates.entrySet()) {
+                        int interval = rate.at("/" + entry.getKey() + "Interval").asInt();
+                        if (interval <= 0) continue;
+                        double delta = switch (entry.getKey()) {
+                            case "request" -> 1;
+                            case "token" -> totalTokens;
+                            case "credit" -> creditAmount.doubleValue();
+                            default -> 0;
+                        };
+                        if (delta <= 0) continue;
+                        String key = RedisKey.rate(entry.getKey(), uid, rateId, beginTime / interval / 1000);
+                        redis.opsForValue().increment(key, delta);
+                        redis.expire(key, interval, TimeUnit.SECONDS);
+                    }
                 }
-                if (backendParallel > 0) {
-                    redis.opsForValue().decrement(backendKey);
-                }
-                log.endTime(System.currentTimeMillis());
-                logDao.save(log.build());
             }
 
             @Override
             public boolean onMessage(ObjectNode message, boolean isEvent, boolean isStream) {
                 responseBody.append(DPUtil.stringify(message)).append("\n");
-                ObjectNode data = data(message, isEvent);
+                ObjectNode data;
+                ObjectNode sseMessage;
+                boolean sseIsEvent;
+                if (!isStream) {
+                    // Non-streaming: full response body from backend
+                    ObjectNode backendData = GatewayHandler.parseSseData(message, isEvent);
+                    data = handler.processNonStreamResponse(backendData);
+                    sseIsEvent = true;
+                    sseMessage = DPUtil.objectNode();
+                    sseMessage.put("data", DPUtil.stringify(data));
+                } else {
+                    // Streaming: SSE event from backend
+                    StreamResult sr = handler.processStreamMessage(message, isEvent);
+                    if (!sr.forward) return isRunning();
+                    data = sr.data;
+                    sseMessage = sr.sseMessage;
+                    sseIsEvent = sr.isEvent;
+                    if (data.has("_done")) return isRunning();
+                }
                 if (data.has("error")) {
-                    log.finishReason("backend_error").finishDetail(DPUtil.stringify(data));
-                    emitter.message(data, isEvent);
+                    usage.finishReason("backend_error").finishDetail(DPUtil.stringify(data));
+                    emitter.message(sseMessage, sseIsEvent);
                     return false;
-                } else if (data.has("choices")) {
-                    List<String> check = check(data);
-                    if (null != check && !check.isEmpty()) {
-                        log.finishReason("completion_sensitive").finishDetail(DPUtil.implode(check));
+                }
+                // Accumulate content/tokens via handler
+                StreamContent sc = handler.extractStreamContent(data);
+                if (sc.hasError) {
+                    usage.finishReason("backend_error").finishDetail(DPUtil.stringify(data));
+                    emitter.message(sseMessage, sseIsEvent);
+                    return false;
+                }
+                if (sc.reasoning != null) responseReason.append(sc.reasoning);
+                if (sc.content != null) responseCompletion.append(sc.content);
+                if (sc.toolCallsJson != null) mergeToolCallChunk(sc.toolCallsJson);
+                if (sc.finishReason != null) finishReason = sc.finishReason;
+                promptCachedTokens += sc.cachedPromptTokens;
+                promptTokens += sc.promptTokens;
+                completionTokens += sc.completionTokens;
+                totalTokens += sc.totalTokens;
+                // Replace model name
+                if (!data.isEmpty() && !data.has("_done")) {
+                    data.put("model", place);
+                    sseMessage.put("data", DPUtil.stringify(data));
+                }
+                // Sensitive word check
+                if (securityDetectable && (sc.reasoning != null || sc.content != null)) {
+                    List<String> check = checkAccumulated();
+                    if (!check.isEmpty()) {
+                        usage.finishReason("completion_sensitive").finishDetail(DPUtil.implode(check));
                         emitter.error("completion_sensitive", "迷路了", "gateway", null, isStream);
                         return false;
                     }
-                    data.put("model", model); // 替换模型名称
                 }
-                return emitter.message(message, isEvent).isRunning();
+                return emitter.message(sseMessage, sseIsEvent).isRunning();
+            }
+
+            private boolean isRunning() {
+                return !isAborted();
             }
 
             final StringBuilder responseBody = new StringBuilder();
+            final StringBuilder responseReason = new StringBuilder();
             final StringBuilder responseCompletion = new StringBuilder();
+            final StringBuilder responseTool = new StringBuilder();
+            final Map<Integer, ObjectNode> toolCallMeta = new LinkedHashMap<>();
+            final Map<Integer, StringBuilder> toolCallArgBuilders = new LinkedHashMap<>();
             String finishReason = null;
-            int promptTokens = 0, completionTokens = 0, totalTokens = 0;
-            boolean waitingSuffix = false;
+            int promptCachedTokens = 0, promptTokens = 0, completionTokens = 0, totalTokens = 0;
 
-            public List<String> check(ObjectNode message) {
-                int length = responseCompletion.length();
-                for (JsonNode choice : message.at("/choices")) {
-                    boolean isDelta = choice.has("delta");
-                    JsonNode item = isDelta ? choice.at("/delta") : choice.at("/message");
-                    String reasoning = item.at("/reasoning_content").asText(null);
-                    String content = item.at("/content").asText(null);
-                    if (null != reasoning) {
-                        if (0 == responseCompletion.length()) {
-                            responseCompletion.append("<think>\n");
-                            waitingSuffix = true; // 等待补充结束标识
-                        }
-                        responseCompletion.append(reasoning);
-                    }
-                    if (waitingSuffix && (!isDelta || null == reasoning)) {
-                        responseCompletion.append("\n</think>\n");
-                        waitingSuffix = false; // 完成补充结束标识
-                    }
-                    if (null != content) {
-                        responseCompletion.append(content);
-                    }
-                    finishReason = choice.at("/finish_reason").asText();
+            public List<String> checkAccumulated() {
+                List<String> check = new ArrayList<>();
+                int lenReason = responseReason.length();
+                int lenCompletion = responseCompletion.length();
+                if (lenReason > 0) {
+                    check.addAll(sensitiveService.check(sensitiveService.window(responseReason.toString(), lenReason + sensitiveService.window())));
                 }
-                if (message.has("usage")) {
-                    promptTokens += message.at("/usage/prompt_tokens").asInt(0);
-                    completionTokens += message.at("/usage/completion_tokens").asInt(0);
-                    totalTokens += message.at("/usage/total_tokens").asInt(0);
+                if (lenCompletion > 0) {
+                    check.addAll(sensitiveService.check(sensitiveService.window(responseCompletion.toString(), lenCompletion + sensitiveService.window())));
                 }
-                if (!checkable) return null;
-                String sentence = sensitiveService.window(responseCompletion.toString(), sensitiveService.window() + responseCompletion.length() - length);
-                return sensitiveService.check(sentence);
+                return check;
+            }
+
+            private void mergeToolCallChunk(String json) {
+                JsonNode parsed = DPUtil.parseJSON(json);
+                if (parsed == null || !parsed.isArray()) {
+                    responseTool.append(json).append("\n");
+                    return;
+                }
+                for (JsonNode item : parsed) {
+                    int index = item.at("/index").asInt();
+                    if (item.has("id") && item.has("function") && item.at("/function").has("name")) {
+                        toolCallMeta.putIfAbsent(index, item.deepCopy());
+                    }
+                    String args = item.at("/function/arguments").asText(null);
+                    if (args != null) {
+                        toolCallArgBuilders.computeIfAbsent(index, k -> new StringBuilder()).append(args);
+                    }
+                }
+            }
+
+            private void buildMergedToolCalls() {
+                if (toolCallMeta.isEmpty()) return;
+                ArrayNode merged = DPUtil.arrayNode();
+                for (Map.Entry<Integer, ObjectNode> entry : toolCallMeta.entrySet()) {
+                    ObjectNode item = entry.getValue();
+                    StringBuilder argBuilder = toolCallArgBuilders.get(entry.getKey());
+                    String mergedArgs = argBuilder != null ? argBuilder.toString() : "";
+                    if (item.has("function")) {
+                        ((ObjectNode) item.at("/function")).put("arguments", mergedArgs);
+                    }
+                    merged.add(item);
+                }
+                responseTool.append(merged.toPrettyString());
             }
         };
         emitter.onError((e) -> {
-            log.finishReason("client_abort").finishDetail(ApiUtil.getStackTrace(e));
+            usage.finishReason("client_abort").finishDetail(ApiUtil.getStackTrace(e));
             req.abort(); // 中断模型端处理请求
         }).onTimeout(() -> {
-            log.finishReason("sse_timeout");
+            usage.finishReason("sse_timeout");
             req.abort(); // 中断模型端处理请求
         });
         // 记录请求信息
-        log.clientId(clientId).clientEndpointId(clientEndpoint.at("/id").asInt(0));
-        log.serverId(serverId).serverEndpointId(backendId);
-        log.requestBody(DPUtil.stringify(json)).requestStream(stream ? 1 : 0);
-        log.requestIp(ServletUtil.getRemoteAddr(request));
-        log.requestPrompt("").responseBody("").responseCompletion("").finishDetail("").auditDetail(""); // 记录默认值
-        String prompt = prompt(json);
-        log.requestPrompt(prompt);
-        if (checkable) { // 执行提示词拦截
+        usage.requestBody(DPUtil.stringify(json)).requestStream(stream ? 1 : 0);
+        usage.requestIp(ServletUtil.getRemoteAddr(request));
+        usage.responseBody("").responseCompletion("").finishDetail("").auditDetail(""); // 记录默认值
+        String prompt = prompt(json, usage);
+        if (securityDetectable) { // 执行提示词拦截
             List<String> check = sensitiveService.check(prompt);
-            if (check.size() > 0) {
-                log.finishReason("prompt_sensitive").finishDetail(DPUtil.implode(check));
-                return emitter.error("prompt_sensitive", "换个问题试试吧", "gateway", null, false).sync();
+            if (!check.isEmpty()) {
+                usage.finishReason("prompt_sensitive").finishDetail(DPUtil.implode(check));
+                return emitter.error("prompt_sensitive", "换个问题试试吧", "gateway", null, false).sync(403);
             }
         }
         // 发起模型端连接，处理客户端请求
-        log.requestTime(System.currentTimeMillis());
         CloseableHttpResponse res;
         try {
             res = pool.execute(req);
-            log.waitingTime(System.currentTimeMillis());
         } catch (Exception e) {
-            log.finishReason("backend_failed").finishDetail(ApiUtil.getStackTrace(e));
+            usage.finishReason("backend_failed").finishDetail(ApiUtil.getStackTrace(e));
             FileUtil.close(req);
-            return emitter.error("connect_backend_failed", "连接模型端服务失败", "gateway", e.getMessage(), false).sync();
+            return emitter.error("connect_backend_failed", "连接模型端服务失败", "gateway", e.getMessage(), false).sync(400);
         }
         emitter.setMediaType(res); // 需要在异步返回前，确定请求响应类型
         return emitter.async(() -> pool.process(req, res));
     }
 
-    public String prompt(JsonNode json) {
-        StringBuilder sb = new StringBuilder();
-        for (JsonNode message : json.at("/messages")) {
-            sb.append(message.at("/role").asText()).append(":\n");
-            sb.append(message.at("/content").asText()).append("\n");
+    private String extractMessageContent(JsonNode message) {
+        JsonNode content = message.at("/content");
+        if (content.isTextual()) {
+            return content.asText();
         }
-        return sb.toString();
+        if (content.isArray()) {
+            StringBuilder sb = new StringBuilder();
+            for (JsonNode block : content) {
+                if ("text".equals(block.at("/type").asText())) {
+                    sb.append(block.at("/text").asText());
+                }
+            }
+            return sb.toString();
+        }
+        return "";
     }
 
-    public JsonNode minimumConcurrencyPriority(JsonNode serverEndpoints) {
-        List<String> backendKeys = new ArrayList<>();
-        for (JsonNode endpoint : serverEndpoints) {
-            backendKeys.add(RedisKey.backendParallel(endpoint.at("/id").asInt(0)));
+    public String prompt(JsonNode json, Usage.UsageBuilder usage) {
+        StringBuilder sb = new StringBuilder();
+        String systemContent = extractSystemContent(json);
+        usage.requestSystem(systemContent);
+        if (!systemContent.isEmpty()) {
+            sb.append("system:\n").append(systemContent).append("\n");
         }
-        List<String> backendValues = redis.opsForValue().multiGet(backendKeys);
+        String lastUserContent = "";
+        for (JsonNode message : json.at("/messages")) {
+            String role = message.at("/role").asText();
+            String content = extractMessageContent(message);
+            sb.append(role).append(":\n");
+            sb.append(content).append("\n");
+            if ("system".equals(role) && systemContent.isEmpty()) {
+                systemContent = content;
+                usage.requestSystem(systemContent);
+            }
+            if ("user".equals(role)) {
+                lastUserContent = content;
+            }
+        }
+        usage.requestUser(lastUserContent);
+        String prompt = sb.toString();
+        usage.requestPrompt(prompt);
+        return prompt;
+    }
+
+    private String extractSystemContent(JsonNode json) {
+        // Anthropic format: top-level "system" field (string or array of content blocks)
+        if (json.has("system")) {
+            JsonNode sys = json.at("/system");
+            if (sys.isTextual()) return sys.asText();
+            if (sys.isArray()) {
+                StringBuilder sb = new StringBuilder();
+                for (JsonNode block : sys) {
+                    if ("text".equals(block.at("/type").asText())) {
+                        sb.append(block.at("/text").asText());
+                    }
+                }
+                return sb.toString();
+            }
+        }
+        return "";
+    }
+
+    public JsonNode minimumConcurrencyPriority(String model) {
+        List<Integer> modelIds = DPUtil.toJSON(cache.at("/aliases/" + model.replaceAll("/", "~1")), List.class);
+        if (DPUtil.empty(modelIds)) return null;
+        int size = modelIds.size();
+        if (1 == size) return cache.at("/models/" + modelIds.get(0));
+        List<String> keys = new ArrayList<>();
+        for (Integer modelId : modelIds) {
+            keys.add(RedisKey.modelParallel(modelId));
+        }
+        List<String> values = redis.opsForValue().multiGet(keys);
+        if (null == values) return null;
         List<Integer> candidateIds = new ArrayList<>();
         Map<Integer, Double> sorts = new LinkedHashMap<>();
-        int index = 0;
-        for (JsonNode endpoint : serverEndpoints) {
-            int id = endpoint.at("/id").asInt(0);
-            double parallel = endpoint.at("/parallel").asInt(0);
-            if (parallel > 0) {
-                int count = DPUtil.parseInt(backendValues.get(index));
-                if (count < parallel) {
-                    sorts.put(id, DPUtil.parseDouble(count) / parallel);
+        for (int index = 0; index < size; index++) {
+            Integer id = modelIds.get(index);
+            int rpm = cache.at("/models/" + id + "/content/rpm").asInt();
+            if (rpm > 0) {
+                int count = DPUtil.parseInt(values.get(index));
+                if (count < rpm) {
+                    sorts.put(id, DPUtil.parseDouble(count) / rpm);
                 }
             } else {
                 candidateIds.add(id);
             }
-            index++;
         }
-        if (sorts.size() > 0) {
+        if (!sorts.isEmpty()) {
             List<Map.Entry<Integer, Double>> list = new ArrayList<>(sorts.entrySet());
             list.sort((o1, o2) -> (int) ((o1.getValue() - o2.getValue()) * 10000));
             candidateIds.add(list.get(0).getKey());
         }
-        if (candidateIds.size() == 0) return null;
+        if (candidateIds.isEmpty()) return null;
         int random = DPUtil.random(0, candidateIds.size() - 1);
-        return serverEndpoints.at("/" + candidateIds.get(random));
+        return cache.at("/models/" + candidateIds.get(random));
     }
 
 }

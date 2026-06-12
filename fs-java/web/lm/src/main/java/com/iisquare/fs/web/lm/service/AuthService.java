@@ -72,6 +72,14 @@ public class AuthService extends JPAServiceBase {
         info.setSecret(secret);
         info.setModelIds(DPUtil.implode(",", DPUtil.parseIntList(param.get("modelIds"))));
         info.setStatus(status);
+        if(param.containsKey("expiredTime")) {
+            String expiredTime =  DPUtil.trim(DPUtil.parseString(param.get("expiredTime")));
+            if(DPUtil.empty(expiredTime)) {
+                info.setExpiredTime(0L);
+            } else {
+                info.setExpiredTime(DPUtil.dateTime2millis(expiredTime, configuration.getFormatDate()));
+            }
+        }
         info = save(authDao, info, rbacService.uid(request));
         return ApiUtil.result(0, null, info);
     }

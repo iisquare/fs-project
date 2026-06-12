@@ -106,4 +106,6 @@ public abstract class RbacServiceBase extends ServiceBase {
 
     public abstract JsonNode identity(HttpServletRequest request);
 
+    public abstract JsonNode identity(Integer uid);
+
 }

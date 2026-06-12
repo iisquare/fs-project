@@ -1,0 +1,6 @@
+dependencies {
+    api project(':base:web')
+    api group: 'com.baomidou', name: 'mybatis-plus-spring-boot3-starter', version: mybatisVersion
+    api group: 'com.mysql', name: 'mysql-connector-j', version: mysqlVersion
+    testImplementation project(':base:test')
+}

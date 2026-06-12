@@ -1,22 +1,17 @@
 package com.iisquare.fs.web.member.service;
 
-import com.iisquare.fs.base.core.util.ApiUtil;
-import com.iisquare.fs.base.core.util.FileUtil;
 import jakarta.activation.DataHandler;
 import jakarta.activation.DataSource;
 import jakarta.activation.FileDataSource;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
+import jakarta.mail.util.ByteArrayDataSource;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 @Service
 public class EmailService {
@@ -30,21 +25,6 @@ public class EmailService {
     @Value("${fs.member.email.password}")
     String emailPassword;
     private static volatile Session session = null;
-    public static final String HTML_SIGNUP;
-    public static final String HTML_FORGOT;
-
-    static {
-        try (InputStream input = new ClassPathResource("/email/signup.html").getInputStream()) {
-            HTML_SIGNUP = FileUtil.getContent(input, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        try (InputStream input = new ClassPathResource("/email/forgot.html").getInputStream()) {
-            HTML_FORGOT = FileUtil.getContent(input, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     private Session session() {
         Properties props = new Properties();
@@ -60,7 +40,33 @@ public class EmailService {
         });
     }
 
-    public void send(String email, String subject, String html, File... files) throws Exception {
+    public static MimeBodyPart[] parts(File... files) throws Exception {
+        MimeBodyPart[] parts = new MimeBodyPart[files.length];
+        for (int i = 0; i < files.length; i++) {
+            File file = files[i];
+            MimeBodyPart attachmentBodyPart = new MimeBodyPart();
+            DataSource source = new FileDataSource(file);
+            attachmentBodyPart.setDataHandler(new DataHandler(source));
+            attachmentBodyPart.setFileName(file.getName());
+            parts[i] = attachmentBodyPart;
+        }
+        return parts;
+    }
+
+    public static MimeBodyPart[] parts(MultipartFile... files) throws Exception {
+        MimeBodyPart[] parts = new MimeBodyPart[files.length];
+        for (int i = 0; i < files.length; i++) {
+            MultipartFile file = files[i];
+            MimeBodyPart attachmentBodyPart = new MimeBodyPart();
+            ByteArrayDataSource source = new ByteArrayDataSource(file.getBytes(), file.getContentType());
+            attachmentBodyPart.setDataHandler(new DataHandler(source));
+            attachmentBodyPart.setFileName(file.getOriginalFilename());
+            parts[i] = attachmentBodyPart;
+        }
+        return parts;
+    }
+
+    public void send(String email, String subject, String html, MimeBodyPart... files) throws Exception {
         if (null == session) {
             synchronized (this) {
                 if (null == session) {
@@ -79,38 +85,12 @@ public class EmailService {
         Multipart multipart = new MimeMultipart();
         multipart.addBodyPart(messageBodyPart);
         // 附件部分
-        for (File file : files) {
-            MimeBodyPart attachmentBodyPart = new MimeBodyPart();
-            DataSource source = new FileDataSource(file);
-            attachmentBodyPart.setDataHandler(new DataHandler(source));
-            attachmentBodyPart.setFileName(file.getName());
-            multipart.addBodyPart(attachmentBodyPart);
+        for (MimeBodyPart file : files) {
+            multipart.addBodyPart(file);
         }
         // 设置完整消息
         message.setContent(multipart);
         Transport.send(message);
-    }
-
-    public Map<String, Object> signup(String email, String code) {
-        String subject = "平方域用户注册验证码";
-        String html = HTML_SIGNUP.replace("{code}", code);
-        try {
-            send(email, subject, html);
-            return ApiUtil.result(0, "邮箱验证码发送成功，请查收", email);
-        } catch (Exception e) {
-            return ApiUtil.result(17501, "邮箱验证码发送失败", e.getMessage());
-        }
-    }
-
-    public Map<String, Object> forgot(String email, String code) {
-        String subject = "平方域重置密码验证码";
-        String html = HTML_FORGOT.replace("{code}", code);
-        try {
-            send(email, subject, html);
-            return ApiUtil.result(0, "邮箱验证码发送成功，请查收", email);
-        } catch (Exception e) {
-            return ApiUtil.result(17501, "邮箱验证码发送失败", e.getMessage());
-        }
     }
 
 }

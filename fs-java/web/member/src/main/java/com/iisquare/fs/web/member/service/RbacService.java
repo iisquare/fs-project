@@ -108,6 +108,11 @@ public class RbacService extends RbacServiceBase {
         return userService.identity(uid(request));
     }
 
+    @Override
+    public JsonNode identity(Integer uid) {
+        return userService.identity(uid);
+    }
+
     public Map<String, Object> currentInfo(HttpServletRequest request, Map<?, ?> info) {
         Map<String, Object> result = ServletUtil.getSessionMap(request);
         if(null == info) return result;

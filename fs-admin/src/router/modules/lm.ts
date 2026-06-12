@@ -26,9 +26,13 @@ export const layouts = [{
     meta: { title: 'MCP服务', permit: ['lm:mcp:'] },
     component: () => import('@/views/lm/plugin/mcp.vue')
   }, {
-    path: '/lm/operation/log',
-    meta: { title: '调用日志', permit: ['lm:log:'] },
-    component: () => import('@/views/lm/operation/log.vue')
+    path: '/lm/operation/usage',
+    meta: { title: '调用日志', permit: ['lm:usage:'] },
+    component: () => import('@/views/lm/operation/usage.vue')
+  }, {
+    path: '/lm/operation/statistic',
+    meta: { title: '调用统计', permit: ['lm:usage:'] },
+    component: () => import('@/views/lm/operation/statistic.vue')
   }, {
     path: '/lm/operation/rate',
     meta: { title: '速率限制', permit: ['lm:rate:'] },

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -236,6 +237,23 @@ public class DPUtil {
     }
 
     /**
+     * 转换为BigDecimal类型
+     */
+    public static BigDecimal parseDecimal(Object object) {
+        BigDecimal result = parseDecimal(object, null);
+        return null == result ? BigDecimal.ZERO : result;
+    }
+
+    public static BigDecimal parseDecimal(Object object, BigDecimal defaultValue) {
+        if (null == object) return defaultValue;
+        String str = object.toString();
+        if ("".equals(str)) return defaultValue;
+        str = firstMatcher(regexDouble, str);
+        if (null == str) return defaultValue;
+        return new BigDecimal(str);
+    }
+
+    /**
      * 转换为String类型
      */
     public static String parseString(Object object) {
@@ -248,11 +266,10 @@ public class DPUtil {
      */
     public static boolean equals(Object object1, Object object2) {
         if (null == object1) {
-            if (null == object2) return true;
+            return null == object2;
         } else {
             return object1.equals(object2);
         }
-        return false;
     }
 
     /**
@@ -984,9 +1001,8 @@ public class DPUtil {
     public static List<String> fields(JsonNode json) {
         List<String> list = new ArrayList<>();
         if (null == json || !json.isObject()) return list;
-        Iterator<Map.Entry<String, JsonNode>> iterator = json.fields();
-        while (iterator.hasNext()) {
-            list.add(iterator.next().getKey());
+        for (Map.Entry<String, JsonNode> entry : json.properties()) {
+            list.add(entry.getKey());
         }
         return list;
     }
@@ -1191,6 +1207,13 @@ public class DPUtil {
      */
     public static JsonNode toJSON(Object obj) {
         return mapper.convertValue(obj, JsonNode.class);
+    }
+
+    /**
+     * 按照 JSON Pointer（RFC 6901）的规则进行转义
+     */
+    public static String escapeJsonAt(String str) {
+        return str.replaceAll("~", "~0").replaceAll("/", "~1");
     }
 
     /**

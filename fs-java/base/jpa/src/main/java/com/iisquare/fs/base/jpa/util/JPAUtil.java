@@ -40,7 +40,7 @@ public class JPAUtil {
             if (!ORDER_DIRECTION.containsKey(direction)) direction = null;
             orders.add(new Sort.Order(null == direction ? Sort.DEFAULT_DIRECTION : ORDER_DIRECTION.get(direction), order));
         }
-        if (orders.size() < 1) return null;
+        if (orders.isEmpty()) return null;
         return Sort.by(orders);
     }
 
