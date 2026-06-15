@@ -64,8 +64,8 @@ public class CreditService extends JPAServiceBase {
                 .put("uid", credit.getUid())
                 .put("remained", credit.getRemained())
                 .put("consumed", credit.getConsumed())
-                .put("reminderEnabled", DPUtil.parseBoolean(credit.getReminderEnabled()))
-                .put("reminderThreshold", credit.getReminderThreshold())
+                .put("remindEnabled", DPUtil.parseBoolean(credit.getRemindEnabled()))
+                .put("remindThreshold", credit.getRemindThreshold())
                 .putObject("rates");
         List<Rate> rateList = rateDao.findAllById(DPUtil.parseIntList(credit.getRateIds()));
         for (Rate rate : rateList) {
@@ -117,8 +117,8 @@ public class CreditService extends JPAServiceBase {
         info.setRemained(DPUtil.parseDecimal(param.get("remained")));
         info.setConsumed(DPUtil.parseDecimal(param.get("consumed")));
         info.setRateIds(DPUtil.implode(",", DPUtil.parseIntList(param.get("rateIds"))));
-        info.setReminderEnabled(DPUtil.parseBoolean(param.get("reminderEnabled")) ? 1 : 0);
-        info.setReminderThreshold(DPUtil.parseDouble(param.get("reminderThreshold")));
+        info.setRemindEnabled(DPUtil.parseBoolean(param.get("remindEnabled")) ? 1 : 0);
+        info.setRemindThreshold(DPUtil.parseDouble(param.get("remindThreshold")));
         info.setSort(DPUtil.parseInt(param.get("sort")));
         info.setStatus(status);
         info.setDescription(DPUtil.parseString(param.get("description")));
@@ -148,8 +148,8 @@ public class CreditService extends JPAServiceBase {
     public JsonNode format(JsonNode rows) {
         for (JsonNode row : rows) {
             ObjectNode node = (ObjectNode) row;
-            int reminderEnabled = node.at("/reminderEnabled").asInt(0);
-            node.put("reminderEnabled", 1 == reminderEnabled);
+            int remindEnabled = node.at("/remindEnabled").asInt(0);
+            node.put("remindEnabled", 1 == remindEnabled);
             List<Integer> ids = DPUtil.parseIntList(node.at("/rateIds").asText(""));
             node.replace("rateIds", DPUtil.toJSON(ids));
         }

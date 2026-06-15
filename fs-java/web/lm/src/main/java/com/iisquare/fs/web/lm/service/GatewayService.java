@@ -12,7 +12,6 @@ import com.iisquare.fs.base.web.sse.SsePlainRequest;
 import com.iisquare.fs.base.web.sse.SsePlainRequestPool;
 import com.iisquare.fs.base.web.util.ServletUtil;
 import com.iisquare.fs.web.lm.core.RedisKey;
-import com.iisquare.fs.web.lm.dao.*;
 import com.iisquare.fs.web.lm.entity.*;
 import com.iisquare.fs.web.lm.gateway.GatewayHandler;
 import com.iisquare.fs.web.lm.gateway.GatewayHandler.StreamContent;
@@ -51,6 +50,8 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
     CreditService creditService;
     @Autowired
     UsageService usageService;
+    @Autowired
+    RemindService remindService;
 
     private ObjectNode cache = DPUtil.objectNode();
     private final SsePlainRequestPool pool = new SsePlainRequestPool();
@@ -101,7 +102,7 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         if (null == auth) {
             return ApiUtil.result(1001, "无效的认证密钥", token);
         }
-        return usageService.reminder(auth, 1);
+        return remindService.amount(auth, 10);
     }
 
     public Map<String, Object> notice(Map<String, Object> param) {
@@ -197,7 +198,7 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
                 String key = RedisKey.rate(entry.getKey(), uid, rateId, beginTime / interval / 1000);
                 double current = DPUtil.parseDouble(redis.opsForValue().get(key));
                 if (current >= count) {
-                    usageService.limited(auth, entry);
+                    remindService.limited(auth, entry);
                     return emitter.error("token_limited", "间隔内" + entry.getValue() + "数量超过限制", "gateway", null, false).sync(400);
                 }
             }
@@ -449,19 +450,75 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         return "";
     }
 
+    /**
+     * Extract tool call / tool result info from a message, covering both
+     * OpenAI (tool_calls on assistant, tool_call_id on tool role) and
+     * Anthropic (tool_use / tool_result blocks in content array) formats.
+     */
+    private String extractMessageTools(JsonNode message) {
+        StringBuilder sb = new StringBuilder();
+        // --- OpenAI format ---
+        // assistant message with tool_calls
+        JsonNode toolCalls = message.at("/tool_calls");
+        if (toolCalls.isArray() && !toolCalls.isEmpty()) {
+            sb.append("tool_calls:\n");
+            for (JsonNode tc : toolCalls) {
+                sb.append("  - id: ").append(tc.at("/id").asText()).append("\n");
+                sb.append("    function: ").append(tc.at("/function/name").asText()).append("\n");
+                sb.append("    arguments: ").append(tc.at("/function/arguments").asText()).append("\n");
+            }
+        }
+        // tool message with tool_call_id (OpenAI)
+        if ("tool".equals(message.at("/role").asText())) {
+            sb.append("[tool_call_id: ").append(message.at("/tool_call_id").asText()).append("]\n");
+        }
+        // --- Anthropic format ---
+        JsonNode content = message.at("/content");
+        if (content.isArray()) {
+            for (JsonNode block : content) {
+                String type = block.at("/type").asText();
+                if ("tool_use".equals(type)) {
+                    sb.append("tool_use:\n");
+                    sb.append("  - id: ").append(block.at("/id").asText()).append("\n");
+                    sb.append("    name: ").append(block.at("/name").asText()).append("\n");
+                    sb.append("    input: ").append(DPUtil.stringify(block.at("/input"))).append("\n");
+                } else if ("tool_result".equals(type)) {
+                    sb.append("tool_result:\n");
+                    sb.append("  - tool_use_id: ").append(block.at("/tool_use_id").asText()).append("\n");
+                    JsonNode tc = block.at("/content");
+                    if (tc.isTextual()) {
+                        sb.append("    content: ").append(tc.asText()).append("\n");
+                    } else if (tc.isArray()) {
+                        for (JsonNode b : tc) {
+                            if ("text".equals(b.at("/type").asText())) {
+                                sb.append("    content: ").append(b.at("/text").asText()).append("\n");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return sb.toString();
+    }
+
     public String prompt(JsonNode json, Usage.UsageBuilder usage) {
         StringBuilder sb = new StringBuilder();
         String systemContent = extractSystemContent(json);
         usage.requestSystem(systemContent);
         if (!systemContent.isEmpty()) {
-            sb.append("system:\n").append(systemContent).append("\n");
+            sb.append("[system]\n").append(systemContent).append("\n");
         }
         String lastUserContent = "";
         for (JsonNode message : json.at("/messages")) {
             String role = message.at("/role").asText();
             String content = extractMessageContent(message);
-            sb.append(role).append(":\n");
-            sb.append(content).append("\n");
+            String tools = extractMessageTools(message);
+            sb.append("[").append(role).append("]\n");
+            sb.append(content);
+            if (!tools.isEmpty()) {
+                sb.append("\n").append(tools);
+            }
+            sb.append("\n");
             if ("system".equals(role) && systemContent.isEmpty()) {
                 systemContent = content;
                 usage.requestSystem(systemContent);

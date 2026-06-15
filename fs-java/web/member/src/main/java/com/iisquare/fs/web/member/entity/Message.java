@@ -27,9 +27,9 @@ public class Message implements Serializable {
     @Column
     private String subject; // 主题
     @Column
-    private String content; // 内容
+    private String requestBody; // 请求内容
     @Column
-    private String exception; // 异常信息
+    private String responseBody; // 返回结果或异常信息
     @Column
     private String status; // 状态
     @Column

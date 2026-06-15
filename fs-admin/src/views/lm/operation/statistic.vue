@@ -261,7 +261,7 @@ const renderCharts = () => {
       timeline.tokens.forEach((d: any) => {
         d.inputNoCache = (d.inputTokens ?? 0) - (d.cachedTokens ?? 0)
       })
-      const tokenKeys = ['outputTokens', 'inputNoCache', 'cachedTokens']
+      const tokenKeys = ['cachedTokens', 'inputNoCache', 'outputTokens']
       const tokenLabels: Record<string, string> = {
         cachedTokens: '输入缓存Token', inputNoCache: '输入Token(非缓存)', outputTokens: '输出Token',
       }

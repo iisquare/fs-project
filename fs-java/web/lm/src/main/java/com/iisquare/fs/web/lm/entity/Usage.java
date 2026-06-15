@@ -51,7 +51,7 @@ public class Usage {
     @Column
     private Integer requestStream; // 是否为流式输出
     @Column
-    private String requestPrompt; // 完整问题
+    private String requestPrompt; // 完整提示词
     @Column
     private String requestSystem; // 系统提示词
     @Column

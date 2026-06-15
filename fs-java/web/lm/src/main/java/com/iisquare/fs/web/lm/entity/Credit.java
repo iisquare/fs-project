@@ -30,9 +30,9 @@ public class Credit implements Serializable {
     @Column
     private String rateIds; // 速率限制
     @Column
-    private Integer reminderEnabled; // 启用余额预警
+    private Integer remindEnabled; // 启用余额预警
     @Column
-    private Double reminderThreshold; // 预警阈值
+    private Double remindThreshold; // 预警阈值
     @Column
     private Integer sort;
     @Column

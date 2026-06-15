@@ -21,8 +21,8 @@ const columns = ref([
   { prop: 'uidUserInfo.name', label: '用户昵称' },
   { prop: 'remained', label: '剩余积分' },
   { prop: 'consumed', label: '总消耗' },
-  { prop: 'reminderEnabled', label: '余额预警' },
-  { prop: 'reminderThreshold', label: '预警阈值' },
+  { prop: 'remindEnabled', label: '余额预警' },
+  { prop: 'remindThreshold', label: '预警阈值' },
   { prop: 'rateIds', label: '速率限制', slot: 'rateIds' },
   { prop: 'sort', label: '排序' },
   { prop: 'statusText', label: '状态' },
@@ -178,8 +178,8 @@ const handleDelete = () => {
       <el-descriptions-item label="用户昵称">{{ form.uidUserInfo?.name }}</el-descriptions-item>
       <el-descriptions-item label="剩余积分">{{ form.remained }}</el-descriptions-item>
       <el-descriptions-item label="总消耗">{{ form.consumed }}</el-descriptions-item>
-      <el-descriptions-item label="余额预警">{{ form.reminderEnabled }}</el-descriptions-item>
-      <el-descriptions-item label="预警阈值">{{ form.reminderThreshold }}</el-descriptions-item>
+      <el-descriptions-item label="余额预警">{{ form.remindEnabled }}</el-descriptions-item>
+      <el-descriptions-item label="预警阈值">{{ form.remindThreshold }}</el-descriptions-item>
       <el-descriptions-item label="排序">{{ form.sort }}</el-descriptions-item>
       <el-descriptions-item label="速率限制" :span="2">
         <el-space><el-tag v-for="item in form.rates" :key="item.id">{{ item.name }}</el-tag></el-space>
@@ -217,10 +217,10 @@ const handleDelete = () => {
           <el-input v-model="form.consumed" />
         </el-descriptions-item>
         <el-descriptions-item label="余额预警">
-           <el-checkbox v-model="form.reminderEnabled">启用余额预警</el-checkbox>
+           <el-checkbox v-model="form.remindEnabled">启用余额预警</el-checkbox>
         </el-descriptions-item>
         <el-descriptions-item label="预警阈值">
-          <el-input v-model="form.reminderThreshold" />
+          <el-input v-model="form.remindThreshold" />
         </el-descriptions-item>
         <el-descriptions-item label="速率限制" :span="2">
           <form-select v-model="form.rateIds" :callback="RateApi.list" multiple clearable />

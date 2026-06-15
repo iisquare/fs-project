@@ -15,12 +15,12 @@ public class RedisKey {
         return String.format("fs:lm:gateway:rate-%s-%d-%d-%d", type, uid, rateId, interval);
     }
 
-    public static String reminder(int uid) {
-        return String.format("fs:lm:gateway:reminder-%d", uid);
+    public static String remindAmount(int uid) {
+        return String.format("fs:lm:gateway:remind-amount-%d", uid);
     }
 
-    public static String limited(String type, int uid) {
-        return String.format("fs:lm:gateway:limited-%s-%d", type, uid);
+    public static String remindLimited(String type, int uid) {
+        return String.format("fs:lm:gateway:remind-limited-%s-%d", type, uid);
     }
 
     public static String modelParallel(int modelId) {

@@ -18,8 +18,8 @@ const columns = ref([
   { prop: 'recipient', label: '收件人' },
   { prop: 'subject', label: '主题' },
   { prop: 'status', label: '状态' },
-  { prop: 'content', label: '内容', hide: true },
-  { prop: 'exception', label: '异常', hide: true },
+  { prop: 'requestBody', label: '内容', hide: true },
+  { prop: 'responseBody', label: '结果', hide: true },
   { prop: 'createdTime', label: '创建时间', formatter: DateUtil.render },
 ])
 const rows = ref([])
@@ -82,8 +82,8 @@ const handleDelete = () => {
         <form-search-item label="状态" prop="status">
           <el-input v-model="filters.status" clearable />
         </form-search-item>
-        <form-search-item label="内容" prop="content" :span="12">
-          <el-input v-model="filters.content" clearable />
+        <form-search-item label="内容" prop="requestBody" :span="12">
+          <el-input v-model="filters.requestBody" clearable />
         </form-search-item>
         <form-search-item label="创建开始时间" prop="createdTimeBegin">
           <form-date-picker v-model="filters.createdTimeBegin" placeholder="开始时间" />
@@ -91,8 +91,8 @@ const handleDelete = () => {
         <form-search-item label="创建结束时间" prop="createdTimeEnd">
           <form-date-picker v-model="filters.createdTimeEnd" placeholder="结束时间" />
         </form-search-item>
-        <form-search-item label="异常" prop="exception" :span="12">
-          <el-input v-model="filters.exception" clearable />
+        <form-search-item label="结果" prop="responseBody" :span="12">
+          <el-input v-model="filters.responseBody" clearable />
         </form-search-item>
       </template>
     </form-search>
@@ -134,8 +134,8 @@ const handleDelete = () => {
       <el-descriptions-item label="收件人">{{ form.recipient }}</el-descriptions-item>
       <el-descriptions-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-descriptions-item>
       <el-descriptions-item label="主题" :span="2">{{ form.subject }}</el-descriptions-item>
-      <el-descriptions-item label="内容" :span="2"><layout-html-sandbox :html="form.content" style="height: 600px;" /></el-descriptions-item>
-      <el-descriptions-item label="异常信息" :span="2">{{ form.exception }}</el-descriptions-item>
+      <el-descriptions-item label="内容" :span="2"><layout-html-sandbox :html="form.requestBody" style="height: 600px;" /></el-descriptions-item>
+      <el-descriptions-item label="结果" :span="2">{{ form.responseBody }}</el-descriptions-item>
     </el-descriptions>
   </el-drawer>
 </template>

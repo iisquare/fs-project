@@ -5,14 +5,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.iisquare.fs.base.core.util.FileUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
-import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
-import com.iisquare.fs.web.core.rpc.MemberRpc;
-import com.iisquare.fs.web.lm.core.RedisKey;
 import com.iisquare.fs.web.lm.dao.CreditDao;
 import com.iisquare.fs.web.lm.dao.UsageDao;
 import com.iisquare.fs.web.lm.mapper.UsageMapper;
@@ -21,20 +17,14 @@ import com.iisquare.fs.web.lm.mvc.Configuration;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -49,8 +39,6 @@ public class UsageService extends JPAServiceBase {
     @Autowired
     CreditDao creditDao;
     @Autowired
-    MemberRpc memberRpc;
-    @Autowired
     AuthService authService;
     @Autowired
     ProviderService  providerService;
@@ -59,23 +47,8 @@ public class UsageService extends JPAServiceBase {
     @Autowired
     private UsageMapper usageMapper;
     @Autowired
-    private StringRedisTemplate redis;
+    RemindService  remindService;
 
-    public static final String HTML_REMINDER;
-    public static final String HTML_LIMITED;
-
-    static {
-        try (InputStream input = new ClassPathResource("/email/reminder.html").getInputStream()) {
-            HTML_REMINDER = FileUtil.getContent(input, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        try (InputStream input = new ClassPathResource("/email/limited.html").getInputStream()) {
-            HTML_LIMITED = FileUtil.getContent(input, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     public Usage info(Long id) {
         return info(usageDao, id);
@@ -90,56 +63,8 @@ public class UsageService extends JPAServiceBase {
         } catch (Exception e) {
             log.error("记录积分使用信息失败：{}", DPUtil.toJSON(usage), e);
         }
-        double remained = auth.at("/credit/remained").asDouble();
-        boolean reminderEnabled = auth.at("/credit/reminderEnabled").asBoolean();
-        double reminderThreshold = auth.at("/credit/reminderThreshold").asDouble();
-        if (!reminderEnabled) return false; // 未开启预警
-        if (remained <= reminderThreshold) return false; // 余额已小于预警阈值
-        if (remained - amount.doubleValue() > reminderThreshold) return false; // 余额未达到预警阈值
-        reminder(auth, reminderThreshold); // 发送预警通知
+        remindService.amount(auth, amount.doubleValue()); // 发送预警通知
         return true;
-    }
-
-    public Map<String, Object> reminder(ObjectNode auth, double threshold) {
-        String email = auth.at("/identity/email").asText();
-        if (DPUtil.empty(email)) {
-            return ApiUtil.result(13001, "未配置邮箱", email);
-        }
-        String key = RedisKey.reminder(auth.at("/uid").asInt());
-        Boolean locked = redis.opsForValue().setIfAbsent(key, email, 30, TimeUnit.MINUTES);
-        if (Boolean.FALSE.equals(locked)) {
-            return ApiUtil.result(13002, "已执行过通知，半小时内不再重复处理", email);
-        }
-        String name = auth.at("/identity/name").asText();
-        String subject = "平方域积分不足提醒";
-        String html = HTML_REMINDER.replace("{name}", name).replace("{threshold}", String.valueOf(threshold));
-        Map<String, Object> result = RpcUtil.result(memberRpc.email(email, subject, html));
-        if (ApiUtil.failed(result)) {
-            log.warn("usage reminder send email failed: {}", DPUtil.stringify(result));
-            redis.delete(key); // 发送失败，清理分布式锁
-        }
-        return result;
-    }
-
-    public Map<String, Object> limited(ObjectNode auth, Map.Entry<String, String> entry) {
-        String email = auth.at("/identity/email").asText();
-        if (DPUtil.empty(email)) {
-            return ApiUtil.result(13001, "未配置邮箱", email);
-        }
-        String key = RedisKey.limited(entry.getKey(), auth.at("/uid").asInt());
-        Boolean locked = redis.opsForValue().setIfAbsent(key, email, 30, TimeUnit.MINUTES);
-        if (Boolean.FALSE.equals(locked)) {
-            return ApiUtil.result(13002, "已执行过通知，半小时内不再重复处理", email);
-        }
-        String name = auth.at("/identity/name").asText();
-        String subject = "平方域" + entry.getValue() + "间隔内用量超限提醒";
-        String html = HTML_LIMITED.replace("{name}", name).replace("{type}", entry.getValue());
-        Map<String, Object> result = RpcUtil.result(memberRpc.email(email, subject, html));
-        if (ApiUtil.failed(result)) {
-            log.warn("usage limited send email failed: {}", DPUtil.stringify(result));
-            redis.delete(key); // 发送失败，清理分布式锁
-        }
-        return result;
     }
 
     public Map<String, Object> audit(Map<?, ?> param, HttpServletRequest request) {

@@ -12,6 +12,11 @@ import com.iisquare.fs.web.member.entity.Message;
 import com.iisquare.fs.web.member.mvc.Configuration;
 import jakarta.mail.internet.MimeBodyPart;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Sort;
@@ -20,6 +25,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.util.EntityUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -27,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class MessageService extends JPAServiceBase {
+public class MessageService extends JPAServiceBase implements DisposableBean {
 
     @Autowired
     MessageDao messageDao;
@@ -37,9 +49,10 @@ public class MessageService extends JPAServiceBase {
     private RbacService rbacService;
     @Autowired
     private Configuration configuration;
-
     public static final String HTML_SIGNUP;
     public static final String HTML_FORGOT;
+    CloseableHttpClient client;
+    final RequestConfig config;
 
     static {
         try (InputStream input = new ClassPathResource("/email/signup.html").getInputStream()) {
@@ -54,6 +67,50 @@ public class MessageService extends JPAServiceBase {
         }
     }
 
+    public MessageService() {
+        PoolingHttpClientConnectionManager pooling = new PoolingHttpClientConnectionManager();
+        pooling.setMaxTotal(200); // 最大连接数
+        pooling.setDefaultMaxPerRoute(100); // 默认的每个路由的最大连接数
+        HttpClientBuilder builder = HttpClientBuilder.create();
+        builder.setConnectionManager(pooling);
+        client = builder.build();
+        config = RequestConfig.custom()
+                .setSocketTimeout(25000)
+                .setConnectTimeout(1000)
+                .setConnectionRequestTimeout(3000)
+                .build();
+    }
+
+    public String post(String url, String params, Map<String, String> headers) throws Exception {
+        HttpPost http = new HttpPost(url);
+        if (headers != null && !headers.isEmpty()) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                http.addHeader(entry.getKey(), entry.getValue());
+            }
+        }
+        StringEntity entity = new StringEntity(params, StandardCharsets.UTF_8);
+        entity.setContentType("application/json");
+        http.setEntity(entity);
+        return this.execute(http);
+    }
+
+    public String execute(HttpRequestBase http) throws Exception {
+        CloseableHttpResponse response = null;
+        try {
+            http.setConfig(this.config);
+            response = client.execute(http);
+            HttpEntity entity = response.getEntity();
+            return EntityUtils.toString(entity, StandardCharsets.UTF_8);
+        } finally {
+            FileUtil.close(response);
+        }
+    }
+
+    @Override
+    public void destroy() throws Exception {
+        FileUtil.close(client);
+    }
+
     public Message record(Message message) {
         message.setCreatedTime(System.currentTimeMillis());
         return messageDao.save(message);
@@ -64,7 +121,7 @@ public class MessageService extends JPAServiceBase {
             SpecificationHelper<Message> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id").withoutDeleted();
             helper.equal("type").equal("recipient").like("subject").equal("status");
-            helper.like("content").like("exception").betweenWithDate("createdTime");
+            helper.like("requestBody").like("responseBody").betweenWithDate("createdTime");
             return cb.and(helper.predicates());
         }, Sort.by(Sort.Order.desc("createdTime")), "id", "status", "createdTime");
         return result;
@@ -97,14 +154,14 @@ public class MessageService extends JPAServiceBase {
         if (DPUtil.empty(html)) {
             return ApiUtil.result(17003, "邮件内容不能为空", html);
         }
-        Message.MessageBuilder message = Message.builder().exception("");
-        message.type("email").recipient(email).subject(subject).content(html);
+        Message.MessageBuilder message = Message.builder().responseBody("");
+        message.type("email").recipient(email).subject(subject).requestBody(html);
         try {
             emailService.send(email, subject, html, files);
             message.status("success");
             return ApiUtil.result(0, null, email);
         } catch (Exception e) {
-            message.status("error").exception(ApiUtil.getStackTrace(e));
+            message.status("error").responseBody(ApiUtil.getStackTrace(e));
             return ApiUtil.result(17500, "发送失败", e.getMessage());
         } finally {
             record(message.build());
@@ -133,6 +190,56 @@ public class MessageService extends JPAServiceBase {
             result.put(ApiUtil.FIELD_MSG, "邮箱验证码发送成功，请查收");
         }
         return result;
+    }
+
+    /**
+     * 发送钉钉群消息
+     * @param recipient 对应access_token
+     * @param subject 时间主题，仅用于内部运维标识
+     * @param content 消息内容
+     */
+    public Map<String, Object> dingtalk(String recipient, String subject, String content) {
+        if (DPUtil.empty(recipient)) {
+            return ApiUtil.result(17101, "认证密钥不能为空", recipient);
+        }
+        if (DPUtil.empty(content)) {
+            return ApiUtil.result(17102, "消息内容不能为空", content);
+        }
+        String url = "https://oapi.dingtalk.com/robot/send?access_token=" + recipient;
+        Message.MessageBuilder message = Message.builder().responseBody("");
+        message.type("dingtalk").recipient(recipient).subject(subject).requestBody(content);
+        try {
+            String body = post(url, content, null);
+            message.status("success").responseBody(body);
+            return ApiUtil.result(0, null, body);
+        } catch (Exception e) {
+            message.status("error").responseBody(ApiUtil.getStackTrace(e));
+            return ApiUtil.result(17500, "发送失败", e.getMessage());
+        } finally {
+            record(message.build());
+        }
+    }
+
+    public Map<String, Object> wecom(String key, String msgtype, String content) {
+        if (DPUtil.empty(key)) {
+            return ApiUtil.result(17101, "密钥不能为空", key);
+        }
+        if (DPUtil.empty(content)) {
+            return ApiUtil.result(17102, "消息内容不能为空", content);
+        }
+        String url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=" + key;
+        Message.MessageBuilder message = Message.builder().requestBody("");
+        message.type("wecom").recipient(key).subject(msgtype).requestBody(content);
+        try {
+            String body = post(url, content, null);
+            message.status("success").responseBody(body);
+            return ApiUtil.result(0, null, body);
+        } catch (Exception e) {
+            message.status("error").responseBody(ApiUtil.getStackTrace(e));
+            return ApiUtil.result(17500, "发送失败", e.getMessage());
+        } finally {
+            record(message.build());
+        }
     }
 
 }
