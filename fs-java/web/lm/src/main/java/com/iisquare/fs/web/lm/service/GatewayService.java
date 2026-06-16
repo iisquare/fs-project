@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
+import com.iisquare.fs.base.core.util.CodeUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
 import com.iisquare.fs.base.web.sse.SsePlainEmitter;
@@ -62,6 +63,12 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         put("token", "词元");
         put("credit", "积分");
     }};
+
+    public static final List<String> routeHeaders = Arrays.asList(
+            "x-claude-code-session-id",
+            "x-conversation-id",
+            "x-session-id"
+    );
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -180,13 +187,17 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         if (DPUtil.empty(place) || !auth.at("/models").has(place)) {
             return emitter.error("model_denied", "暂未开通该模型权限", "gateway", null, false).sync(403);
         }
-        JsonNode model = minimumConcurrencyPriority(place);
+        JsonNode model = minimumConcurrencyPriority(auth, place, request);
         if (null == model || model.isEmpty()) {
             return emitter.error("model_invalid", "模型暂不可用", "gateway", null, false).sync(403);
         }
         JsonNode provider = cache.at("/providers/" + model.at("/providerId").asInt());
         if (provider.isEmpty()) {
             return emitter.error("provider_invalid", "提供商暂不可用", "gateway", null, false).sync(403);
+        }
+        GatewayHandler handler = GatewayHandler.select(request, provider);
+        if (null == handler) {
+            return emitter.error("protocol_mismatch", "客户端与后端协议不兼容，当前仅支持同协议转发", "gateway", null, false).sync(403);
         }
         int uid = auth.at("/uid").asInt();
         for (JsonNode rate : auth.at("/credit/rates")) { // 用户访问频率限制
@@ -210,22 +221,19 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         } else {
             redis.expire(keyParallel, 30, TimeUnit.MINUTES);
         }
+        Map<String, String> headers = ServletUtil.headers(request);
         Usage.UsageBuilder usage = Usage.builder().type("consume_llm").place(place);
         usage.uid(auth.at("/uid").asInt()).authId(auth.at("/id").asInt());
         usage.modelId(model.at("/id").asInt()).providerId(provider.at("/id").asInt());
         usage.status("completed").requestIp(ServletUtil.getRemoteAddr(request)).beginTime(beginTime);
         // 基础校验和并发校验完成，进入受理阶段
-        GatewayHandler handler = GatewayHandler.select(request, provider);
-        if (null == handler) {
-            return emitter.error("protocol_mismatch", "客户端与后端协议不兼容，当前仅支持同协议转发", "gateway", null, false).sync(403);
-        }
         boolean stream = json.at("/stream").asBoolean(false);
         boolean securityDetectable = model.at("/securityDetectable").asBoolean(false);
         SsePlainRequest req = new SsePlainRequest() { // 处理请求
             @Override
             public HttpRequestBase request() {
                 try {
-                    return handler.buildRequest(json, model, provider);
+                    return handler.buildRequest(json, model, provider, headers);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -410,7 +418,7 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         });
         // 记录请求信息
         usage.requestBody(DPUtil.stringify(json)).requestStream(stream ? 1 : 0);
-        usage.requestIp(ServletUtil.getRemoteAddr(request));
+        usage.requestIp(ServletUtil.getRemoteAddr(request)).requestHeader(DPUtil.stringify(headers));
         usage.responseBody("").responseCompletion("").finishDetail("").auditDetail(""); // 记录默认值
         String prompt = prompt(json, usage);
         if (securityDetectable) { // 执行提示词拦截
@@ -551,11 +559,26 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         return "";
     }
 
-    public JsonNode minimumConcurrencyPriority(String model) {
+    public String routeId(HttpServletRequest request) {
+        for (String name : routeHeaders) {
+            String id = request.getHeader(name);
+            if (!DPUtil.empty(id)) return id;
+        }
+        return null;
+    }
+
+    public JsonNode minimumConcurrencyPriority(ObjectNode auth, String model, HttpServletRequest request) {
         List<Integer> modelIds = DPUtil.toJSON(cache.at("/aliases/" + model.replaceAll("/", "~1")), List.class);
         if (DPUtil.empty(modelIds)) return null;
         int size = modelIds.size();
         if (1 == size) return cache.at("/models/" + modelIds.get(0));
+        String routeId = routeId(request);
+        if (!DPUtil.empty(routeId)) routeId = CodeUtil.md5(routeId); // 防注入
+        if (!DPUtil.empty(routeId)) { // 存在指定路由
+            String routeKey = RedisKey.route(auth.at("/uid").asInt(), auth.at("/id").asInt());
+            int routeModelId = DPUtil.parseInt(redis.opsForHash().get(routeKey, routeId));
+            if (modelIds.contains(routeModelId)) return cache.at("/models/" + routeModelId);
+        }
         List<String> keys = new ArrayList<>();
         for (Integer modelId : modelIds) {
             keys.add(RedisKey.modelParallel(modelId));
@@ -582,8 +605,13 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
             candidateIds.add(list.get(0).getKey());
         }
         if (candidateIds.isEmpty()) return null;
-        int random = DPUtil.random(0, candidateIds.size() - 1);
-        return cache.at("/models/" + candidateIds.get(random));
+        Integer random = candidateIds.get(DPUtil.random(0, candidateIds.size() - 1));
+        if (!DPUtil.empty(routeId)) { // 缓存路由结果
+            String routeKey = RedisKey.route(auth.at("/uid").asInt(), auth.at("/id").asInt());
+            redis.opsForHash().put(routeKey, routeId, random);
+            redis.expire(routeKey, 15, TimeUnit.DAYS);
+        }
+        return cache.at("/models/" + random);
     }
 
 }

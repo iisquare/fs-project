@@ -10,6 +10,7 @@ import org.apache.http.entity.StringEntity;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -104,11 +105,17 @@ public abstract class GatewayHandler {
      * Build the HTTP request to send to the backend model provider.
      * Transforms the request body in-place to match the backend API format.
      */
-    public HttpRequestBase buildRequest(ObjectNode json, JsonNode model, JsonNode provider) throws Exception {
+    public HttpRequestBase buildRequest(ObjectNode json, JsonNode model, JsonNode provider, Map<String, String> headers) throws Exception {
         String endpoint = provider.at("/endpoint").asText();
         String token = provider.at("/token").asText();
         String url = buildUrl(endpoint, provider);
         HttpPost request = new HttpPost(url);
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            String key = entry.getKey().toLowerCase();
+            if (key.startsWith("x-") || key.startsWith("anthropic-") || key.startsWith("user-")) {
+                request.addHeader(entry.getKey(), entry.getValue());
+            }
+        }
         if (!DPUtil.empty(token)) {
             request.addHeader("Authorization", "Bearer " + token);
         }

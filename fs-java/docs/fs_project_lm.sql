@@ -21,7 +21,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-61224';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-61241';
 
 --
 -- Table structure for table `fs_lm_agent`
@@ -542,7 +542,8 @@ CREATE TABLE `fs_lm_usage` (
   `begin_time` bigint NOT NULL DEFAULT '0',
   `end_time` bigint NOT NULL DEFAULT '0',
   `coast_total` int NOT NULL DEFAULT '0',
-  `request_body` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `request_header` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `request_body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `request_stream` tinyint NOT NULL DEFAULT '0',
   `request_prompt` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `request_system` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
@@ -575,7 +576,7 @@ CREATE TABLE `fs_lm_usage` (
   KEY `idx_finish_reason` (`finish_reason`) USING BTREE,
   KEY `idx_begin_time` (`begin_time`) USING BTREE,
   KEY `idx_end_time` (`end_time`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=84 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=86 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -588,4 +589,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-06-15 13:44:55
+-- Dump completed on 2026-06-16  9:40:55

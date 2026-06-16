@@ -50,19 +50,21 @@ public class FeignInterceptor implements RequestInterceptor {
 
     @Override
     public void apply(RequestTemplate template) {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (null != attributes) { // 多线程异步调用可能获取不到
+            HttpServletRequest request = attributes.getRequest();
+            for (String name : headers) {
+                String header = request.getHeader(name);
+                if (!DPUtil.empty(header)) {
+                    template.header(name, header);
+                }
+            }
+        }
+        // 自定义头部放在最后添加，防止被请求端覆盖
         String time = String.valueOf(System.currentTimeMillis());
         template.header(HEADER_APP_NAME, appName);
         template.header(HEADER_APP_TIME, time);
         template.header(HEADER_APP_TOKEN, token(appName, time));
-        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (null == attributes) return;
-        HttpServletRequest request = attributes.getRequest();
-        for (String name : headers) {
-            String header = request.getHeader(name);
-            if (!DPUtil.empty(header)) {
-                template.header(name, header);
-            }
-        }
     }
 
 }

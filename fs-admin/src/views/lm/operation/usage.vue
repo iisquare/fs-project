@@ -34,6 +34,7 @@ const columns = ref([
   { prop: 'requestPrompt', label: '上下文', hide: true },
   { prop: 'responseReason', label: '思考', hide: true },
   { prop: 'responseCompletion', label: '回答' },
+  { prop: 'responseHeader', label: '请求头', hide: true },
   { prop: 'responseBody', label: '响应内容', hide: true },
   { prop: 'responseTool', label: '工具调用', hide: true },
   { prop: 'finishReason', label: '完成状态' },
@@ -255,6 +256,7 @@ const handleDelete = () => {
         <el-descriptions-item label="思考" :span="3"><el-input type="textarea" v-model="form.responseReason" :rows="5" /></el-descriptions-item>
         <el-descriptions-item label="回答" :span="3"><el-input type="textarea" v-model="form.responseCompletion" :rows="5" /></el-descriptions-item>
         <el-descriptions-item label="工具调用" :span="3"><el-input type="textarea" v-model="form.responseTool" :rows="3" /></el-descriptions-item>
+        <el-descriptions-item label="请求头" :span="3"><el-input type="textarea" v-model="form.requestHeader" :rows="5" /></el-descriptions-item>
         <el-descriptions-item label="请求参数" :span="3"><el-input type="textarea" v-model="form.requestBody" :rows="5" /></el-descriptions-item>
         <el-descriptions-item label="响应内容" :span="3"><el-input type="textarea" v-model="form.responseBody" :rows="5" /></el-descriptions-item>
         <el-descriptions-item label="详细原因" :span="3"><el-input type="textarea" v-model="form.finishDetail" :rows="3" /></el-descriptions-item>

@@ -47,6 +47,8 @@ public class Usage {
     private Integer coastTotal; // 整体耗时（毫秒）
     /* 对话模型字段 */
     @Column
+    private String requestHeader; // 请求头
+    @Column
     private String requestBody; // 请求参数
     @Column
     private Integer requestStream; // 是否为流式输出

@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.member.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
@@ -192,6 +193,21 @@ public class MessageService extends JPAServiceBase implements DisposableBean {
         return result;
     }
 
+    public Map<String, Object> parseBody(Message.MessageBuilder message, String body) {
+        JsonNode json = DPUtil.parseJSON(body);
+        if (null == json) {
+            message.status("error").responseBody(body);
+            return ApiUtil.result(17501, "解析返回结果失败", body);
+        }
+        int code = json.at("/errcode").asInt(-1);
+        if (0 != code) {
+            message.status("error").responseBody(body);
+            return ApiUtil.result(10000000 + code, json.at("/errmsg").asText(), body);
+        }
+        message.status("success").responseBody(body);
+        return ApiUtil.result(0, null, body);
+    }
+
     /**
      * 发送钉钉群消息
      * @param recipient 对应access_token
@@ -209,9 +225,7 @@ public class MessageService extends JPAServiceBase implements DisposableBean {
         Message.MessageBuilder message = Message.builder().responseBody("");
         message.type("dingtalk").recipient(recipient).subject(subject).requestBody(content);
         try {
-            String body = post(url, content, null);
-            message.status("success").responseBody(body);
-            return ApiUtil.result(0, null, body);
+            return parseBody(message, post(url, content, null));
         } catch (Exception e) {
             message.status("error").responseBody(ApiUtil.getStackTrace(e));
             return ApiUtil.result(17500, "发送失败", e.getMessage());
@@ -231,9 +245,7 @@ public class MessageService extends JPAServiceBase implements DisposableBean {
         Message.MessageBuilder message = Message.builder().requestBody("");
         message.type("wecom").recipient(key).subject(msgtype).requestBody(content);
         try {
-            String body = post(url, content, null);
-            message.status("success").responseBody(body);
-            return ApiUtil.result(0, null, body);
+            return parseBody(message, post(url, content, null));
         } catch (Exception e) {
             message.status("error").responseBody(ApiUtil.getStackTrace(e));
             return ApiUtil.result(17500, "发送失败", e.getMessage());

@@ -11,6 +11,10 @@ import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 @Configuration
 public class RedisKey {
 
+    public static String route(int uid, int authId) {
+        return String.format("fs:lm:gateway:route-%d-%d", uid, authId);
+    }
+
     public static String rate(String type, int uid, int rateId, long interval) {
         return String.format("fs:lm:gateway:rate-%s-%d-%d-%d", type, uid, rateId, interval);
     }
