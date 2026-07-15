@@ -23,9 +23,13 @@ public class KnowledgeDocument {
     @Column
     private Integer knowledgeId; // 所属知识库
     @Column
+    private String fileId; // 文件标识
+    @Column
     private String filepath; // 存储路径
     @Column
-    private String content; // 文档内容
+    private Integer tokenSize; // 字符数量
+    @Column
+    private String metadata; // 元数据，json格式的kv字符串
     @Column
     private Integer status;
     @Column

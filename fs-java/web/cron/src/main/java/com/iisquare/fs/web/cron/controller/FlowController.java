@@ -20,7 +20,7 @@ import java.util.Map;
 public class FlowController extends PermitControllerBase {
 
     @Autowired
-    private FlowService flowService;
+    FlowService flowService;
 
     @RequestMapping("/info")
     @Permission("")

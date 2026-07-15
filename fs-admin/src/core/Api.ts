@@ -65,4 +65,11 @@ export default {
   post(url: string, data: any = null, tips = {}, config = {}) {
     return this.request(tips, Object.assign(config, { method: 'post', url, data }))
   },
+  form(url: string, data: any = null, tips = {}, config = {}) {
+    const form = new FormData()
+    for (const key in data) {
+      form.append(key, data[key])
+    }
+    return this.request(tips, Object.assign(config, { method: 'post', url, data: form }))
+  },
 }

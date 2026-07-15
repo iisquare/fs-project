@@ -21,15 +21,19 @@ public class Knowledge {
     @Column
     private String name; // 知识库名称
     @Column
-    private Integer embeddingId; // 词嵌入模型
+    private String embeddingModel; // 词嵌入模型
     @Column
-    private Integer rerankerId; // 重排序模型
+    private String rerankModel; // 重排序模型
     @Column(name = "top_k")
     private Integer topK; // 召回数量
     @Column
-    private Float score; // 召回阈值
+    private Double score; // 召回阈值
     @Column
-    private String splitType; // 拆分方式，chunk-检索块、segment-父子分段、document-全文
+    private String recallType; // 召回方式，vector-向量、text-全文、hybrid-混合
+    @Column
+    private Integer reranked; // 是否启用重排序
+    @Column
+    private String recallScope; // 召回范围，chunk-检索块、segment-父子分段、document-全文
     @Column
     private String splitSeparator; // 段落分隔符
     @Column
@@ -38,6 +42,10 @@ public class Knowledge {
     private Integer splitChunkTokens; // 分块长度
     @Column
     private Integer splitOverlayTokens; // 重叠长度
+    @Column
+    private String labels; // 标签，英文逗号分割
+    @Column
+    private String roleIds; // 授权角色，留空为不限制
     @Column
     private Integer sort;
     @Column

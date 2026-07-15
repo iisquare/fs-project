@@ -1,4 +1,10 @@
 <script setup lang="ts">
+/**
+ * 聊天加载动画 - 三个蓝色圆点的渐变脉冲动画，常用于 AI 对话中表示思考/等待状态。
+ *
+ * @example
+ * <chat-loading />
+ */
 </script>
 
 <template>

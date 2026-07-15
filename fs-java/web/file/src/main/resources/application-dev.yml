@@ -4,3 +4,4 @@ server:
 fs:
   file:
     shareKey: fs-share
+    wmPath: classpath:/watermark/fs.png

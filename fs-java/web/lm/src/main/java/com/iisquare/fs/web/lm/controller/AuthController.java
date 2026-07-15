@@ -23,7 +23,7 @@ import java.util.Map;
 public class AuthController extends PermitControllerBase {
 
     @Autowired
-    private AuthService authService;
+    AuthService authService;
 
     @RequestMapping("/info")
     @Permission("")

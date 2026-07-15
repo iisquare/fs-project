@@ -11,28 +11,22 @@ import java.util.Map;
 public interface RpcBase {
 
     @RequestMapping(method = RequestMethod.GET, value = "{uri}")
-    String get(@PathVariable("uri") String uri, @RequestParam Map param);
+    Response get(@PathVariable("uri") String uri, @RequestParam Map param);
 
     @RequestMapping(method = RequestMethod.POST, value = "{uri}")
-    String post(@PathVariable("uri") String uri, @RequestBody Map param);
+    Response post(@PathVariable("uri") String uri, @RequestBody Map param);
 
     @RequestMapping(method = RequestMethod.POST, value = "{uri}")
-    String post(@PathVariable("uri") String uri, @RequestBody JsonNode json);
+    Response post(@PathVariable("uri") String uri, @RequestBody JsonNode json);
 
     @RequestMapping(method = RequestMethod.POST, value = "{uri}")
-    String post(@PathVariable("uri") String uri, @RequestBody String body);
+    Response post(@PathVariable("uri") String uri, @RequestBody String body);
 
     /**
      * 推荐采用@RequestPart方式定义form的数据字段
      * 参数Map会转换为url的querystring，不适合传递长文本
      */
     @RequestMapping(value = "{uri}", method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    String upload(@PathVariable("uri") String uri, @RequestParam Map param, @RequestPart(value = "file") MultipartFile... files);
-
-    @RequestMapping(method = RequestMethod.GET, value = "{uri}")
-    Response getResponse(@PathVariable("uri") String uri, @RequestParam Map param);
-
-    @RequestMapping(method = RequestMethod.POST, value = "{uri}")
-    Response postResponse(@PathVariable("uri") String uri, @RequestBody Map param);
+    Response form(@PathVariable("uri") String uri, @RequestParam Map param, @RequestPart(value = "file", required = false) MultipartFile... files);
 
 }

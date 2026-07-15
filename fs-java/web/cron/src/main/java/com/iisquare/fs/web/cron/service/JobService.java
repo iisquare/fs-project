@@ -25,9 +25,9 @@ import java.util.Map;
 public class JobService extends ServiceBase {
 
     @Autowired
-    private NodeService nodeService;
+    NodeService nodeService;
     @Autowired
-    private JobDao jobDao;
+    JobDao jobDao;
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) throws Exception {
         Scheduler scheduler = nodeService.scheduler();

@@ -18,7 +18,7 @@ public class CanalService extends ServiceBase {
 
     @Lazy
     @Autowired
-    private RabbitAdmin rabbitAdmin;
+    RabbitAdmin rabbitAdmin;
 
     public static final String QUEUE_SYNC_NAME = "fs-canal-sync";
     public static final String EXCHANGE_BINLOG_NAME = "fs-canal-binlog";

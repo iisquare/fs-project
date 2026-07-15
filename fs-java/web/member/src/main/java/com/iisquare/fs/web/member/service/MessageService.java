@@ -47,9 +47,9 @@ public class MessageService extends JPAServiceBase implements DisposableBean {
     @Autowired
     EmailService emailService;
     @Autowired
-    private RbacService rbacService;
+    RbacService rbacService;
     @Autowired
-    private Configuration configuration;
+    Configuration configuration;
     public static final String HTML_SIGNUP;
     public static final String HTML_FORGOT;
     CloseableHttpClient client;

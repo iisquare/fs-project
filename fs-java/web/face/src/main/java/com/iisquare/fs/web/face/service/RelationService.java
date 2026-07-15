@@ -15,7 +15,7 @@ import java.util.Set;
 public class RelationService extends ServiceBase {
 
     @Autowired
-    private RelationDao relationDao;
+    RelationDao relationDao;
 
     public Set<Integer> relationIds(String type, Integer aid, Set<Integer> bids) {
         List<Relation> list = relationDao.findAllByTypeAndAid(type, aid);

@@ -25,15 +25,13 @@ import java.util.Map;
 public class ModelService extends JPAServiceBase {
 
     @Autowired
-    private ModelDao modelDao;
+    ModelDao modelDao;
     @Autowired
-    private ProviderService providerService;
+    ProviderService providerService;
     @Autowired
     DefaultRbacService rbacService;
     @Autowired
     Configuration configuration;
-    @Autowired
-    AIService aiService;
 
     private static final ObjectNode plans = DPUtil.objectNode();
 
@@ -62,7 +60,6 @@ public class ModelService extends JPAServiceBase {
         parameters.replace("rpm", parameter("每分钟请求数", "number", "RPM"));
         parameters.replace("tpm", parameter("每分钟词元数", "number", "TPM"));
         parameters.replace("credits", parameter("消耗积分数", "number", "积分/百万词元"));
-        parameters.putObject("");
     }
 
     public static ObjectNode parameter(String name, String type, String unit) {
@@ -90,32 +87,6 @@ public class ModelService extends JPAServiceBase {
         types.put("embedding", "词嵌入");
         types.put("reranker", "重排序");
         return types;
-    }
-
-    public Map<String, Object> embedding(Integer id, List<String> inputs) {
-        if (inputs.isEmpty()) return ApiUtil.result(16101, "待生成内容不能为空", inputs);
-        for (String input : inputs) {
-            int length = input.length();
-            if (length < 1 || length > 512) {
-                return ApiUtil.result(16102, "待生成内容长度异常", input);
-            }
-        }
-        Model model = info(id);
-        if (null == model || 1 != model.getStatus()) {
-            return ApiUtil.result(16001, "模型不存在或已禁用", id);
-        }
-        if (!"embedding".equals(model.getType())) {
-            return ApiUtil.result(16002, "模型类型异常", model.getType());
-        }
-        Provider provider = providerService.info(model.getProviderId());
-        if (null == provider || 1 != provider.getStatus()) {
-            return ApiUtil.result(16003, "模型提供商不存在或已禁用", model.getProviderId());
-        }
-        String url = provider.getEndpoint() + "/embeddings";
-        ObjectNode body = DPUtil.objectNode();
-        body.put("model", model.getName());
-        body.replace("input", DPUtil.toJSON(inputs));
-        return aiService.post(url, body, aiService.authorization(provider.getToken()));
     }
 
     public Model info(Integer id) {

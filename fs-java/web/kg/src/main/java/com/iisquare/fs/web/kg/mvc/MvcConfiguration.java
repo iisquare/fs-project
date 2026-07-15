@@ -19,7 +19,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class MvcConfiguration extends WebMvcConfiguration implements HandlerExceptionResolver {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     @Override
     protected void addInterceptors(InterceptorRegistry registry) {

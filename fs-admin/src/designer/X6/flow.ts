@@ -1,15 +1,5 @@
 import * as X6 from '@antv/x6'
-import * as X6Dnd from '@antv/x6-plugin-dnd'
 import * as X6VueShape from '@antv/x6-vue-shape'
-import { Transform } from '@antv/x6-plugin-transform'
-import { Snapline } from '@antv/x6-plugin-snapline'
-import { Clipboard } from '@antv/x6-plugin-clipboard'
-import { Keyboard } from '@antv/x6-plugin-keyboard'
-import { Selection } from '@antv/x6-plugin-selection'
-import { History } from '@antv/x6-plugin-history'
-import { Scroller } from '@antv/x6-plugin-scroller'
-import { MiniMap } from '@antv/x6-plugin-minimap'
-import { Export } from '@antv/x6-plugin-export'
 import FlowEdge from './FlowEdge'
 import FlowGroup from './FlowGroup'
 import FlowSubprocess from './FlowSubprocess'
@@ -21,7 +11,7 @@ class Flow {
 
   options: any
   graph: X6.Graph
-  dnd: X6Dnd.Dnd
+  dnd: X6.Dnd
   counter: number = 0
 
   constructor (container: any, options: any) {
@@ -75,7 +65,7 @@ class Flow {
         }
       },
     })
-    this.dnd = new X6Dnd.Dnd({
+    this.dnd = new X6.Dnd({
       target: this.graph,
     })
     this.regist().plugin().bindEvent().panning()
@@ -146,7 +136,7 @@ class Flow {
     this.counter++
     const point: any = this.graph.pageToLocal(event.pageX, event.pageY)
     const shape = NodeShapes[widget.shape]
-    const metadata: X6.Node.Metadata = {
+    const metadata: X6.NodeMetadata = {
       shape: widget.shape,
       x: point.x - shape.offsetX,
       y: point.y - shape.offsetY,
@@ -281,18 +271,18 @@ class Flow {
   }
 
   plugin (): Flow {
-    this.graph.use(new Export())
-    this.graph.use(new Selection({
+    this.graph.use(new X6.Export())
+    this.graph.use(new X6.Selection({
       enabled: this.options.selection,
     }))
-    this.graph.use(new Keyboard({
+    this.graph.use(new X6.Keyboard({
       enabled: this.options.keyboard,
     }))
-    this.options.minimap && this.graph.use(new MiniMap({
+    this.options.minimap && this.graph.use(new X6.MiniMap({
       container: this.options.minimap,
     }))
     if (this.options.readonly) return this
-    this.graph.use(new Transform({
+    this.graph.use(new X6.Transform({
       resizing: {
         enabled: this.options.resizing,
         minWidth: 50,
@@ -300,17 +290,17 @@ class Flow {
       },
       rotating: this.options.rotating,
     }))
-    this.graph.use(new Snapline({
+    this.graph.use(new X6.Snapline({
       enabled: this.options.snapline,
       clean: false,
     }))
-    this.graph.use(new Clipboard({
+    this.graph.use(new X6.Clipboard({
       enabled: this.options.clipboard,
     }))
-    this.graph.use(new History({
+    this.graph.use(new X6.History({
       enabled: this.options.history,
     }))
-    this.options.scroller && this.graph.use(new Scroller({
+    this.options.scroller && this.graph.use(new X6.Scroller({
       enabled: this.options.scroller,
     }))
     return this

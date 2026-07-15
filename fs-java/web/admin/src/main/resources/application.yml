@@ -3,3 +3,6 @@ spring:
     name: fs-admin-service
   profiles:
     active: dev,idev
+  servlet:
+    multipart:
+      enabled: false

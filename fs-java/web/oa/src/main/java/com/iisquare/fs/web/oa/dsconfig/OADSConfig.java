@@ -27,7 +27,7 @@ import java.util.Map;
 public class OADSConfig extends DSConfigBase {
 
     @Autowired
-    private NamingStrategy namingStrategy;
+    NamingStrategy namingStrategy;
 
     @Bean(name = "oaEntityManager")
     public EntityManager oaEntityManager(EntityManagerFactoryBuilder builder) throws SQLException {

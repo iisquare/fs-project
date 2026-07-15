@@ -23,11 +23,11 @@ import java.util.*;
 public class FlowService extends JPAServiceBase {
 
     @Autowired
-    private FlowDao flowDao;
+    FlowDao flowDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private NodeService nodeService;
+    NodeService nodeService;
 
     public String group() {
         return this.getClass().getName();

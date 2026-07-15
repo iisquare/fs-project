@@ -22,7 +22,7 @@ import java.util.Map;
 public class ToolService extends JPAServiceBase {
 
     @Autowired
-    private ToolDao toolDao;
+    ToolDao toolDao;
     @Autowired
     DefaultRbacService rbacService;
     @Autowired

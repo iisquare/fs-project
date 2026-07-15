@@ -23,7 +23,7 @@ import java.util.Map;
 public class InterceptController extends PermitControllerBase {
 
     @Autowired
-    private InterceptService interceptService;
+    InterceptService interceptService;
 
     @RequestMapping("/info")
     @Permission("")

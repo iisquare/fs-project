@@ -21,9 +21,9 @@ import java.util.Map;
 public class CiteController extends PermitControllerBase {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private CiteService citeService;
+    CiteService citeService;
 
     @RequestMapping("/list")
     @Permission("")

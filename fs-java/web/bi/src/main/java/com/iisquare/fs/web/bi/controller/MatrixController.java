@@ -24,9 +24,9 @@ import java.util.Map;
 public class MatrixController extends PermitControllerBase {
 
     @Autowired
-    private MatrixService matrixService;
+    MatrixService matrixService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     @RequestMapping("/search")
     @Permission

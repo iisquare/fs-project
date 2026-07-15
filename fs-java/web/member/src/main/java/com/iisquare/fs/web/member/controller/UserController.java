@@ -22,7 +22,7 @@ import java.util.Map;
 public class UserController extends PermitControllerBase {
 
     @Autowired
-    private UserService userService;
+    UserService userService;
 
     @RequestMapping("/list")
     @Permission("")

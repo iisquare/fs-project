@@ -2,7 +2,6 @@ package com.iisquare.fs.web.file.controller;
 
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
-import com.iisquare.fs.web.file.service.ArchiveService;
 import com.iisquare.fs.web.file.service.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
@@ -23,9 +22,7 @@ import java.util.Map;
 public class IndexController extends PermitControllerBase {
 
     @Autowired
-    private FileService fileService;
-    @Autowired
-    private ArchiveService archiveService;
+    FileService fileService;
 
     @GetMapping("/image/{filename:.+}")
     public String imageAction(@PathVariable("filename") String filename, HttpServletResponse response) throws Exception {

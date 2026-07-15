@@ -31,7 +31,7 @@ import java.util.Map;
 public class FileController extends PermitControllerBase {
 
     @Autowired
-    private FileRpc fileRpc;
+    FileRpc fileRpc;
 
     public String ueditor(Map param, Object state) {
         String content;
@@ -69,7 +69,7 @@ public class FileController extends PermitControllerBase {
         MultipartFile file = multiRequest.getFile(iterator.next().toString());
         if(null == file) return ueditor(param, "获取文件句柄失败");
         String bucket = "ueditor-" + action;
-        String json = fileRpc.upload("/archive/upload", DPUtil.buildMap("bucket", bucket, "expire", 50 * 360 * 24 * 60 * 60 * 100), file);
+        String json = RpcUtil.string(fileRpc.form("/archive/upload", DPUtil.buildMap("bucket", bucket, "expire", 50 * 360 * 24 * 60 * 60 * 100), file));
         JsonNode result = RpcUtil.data(json, true);
         if (null == result) return ueditor(param, "调用文件服务失败");
         Map<String, Object> data = new LinkedHashMap<>();

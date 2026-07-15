@@ -10,6 +10,10 @@ export const layouts = [{
     meta: { title: '工作面板' },
     component: layout.default
   }, {
+    path: '/server/rabbit/dashboard',
+    meta: { title: '消息队列', permit: ['rabbit::'] },
+    component: () => import('@/views/server/rabbit/dashboard.vue')
+  }, {
     path: '/server/cron/node',
     meta: { title: '工作节点', permit: ['cron::'] },
     component: () => import('@/views/server/cron/node.vue')
@@ -53,6 +57,10 @@ export const layouts = [{
     path: '/server/file/archive',
     meta: { title: '文件管理', permit: ['file:archive:'] },
     component: () => import('@/views/server/file/archive.vue')
+  }, {
+    path: '/server/file/preview',
+    meta: { title: '图片预览', permit: ['file:archive:'] },
+    component: () => import('@/views/server/file/preview.vue')
   }]
 }]
 

@@ -29,15 +29,15 @@ import java.util.*;
 public class ModelService extends ServiceBase {
 
     @Autowired
-    private ModelDao modelDao;
+    ModelDao modelDao;
     @Autowired
-    private ModelColumnDao columnDao;
+    ModelColumnDao columnDao;
     @Autowired
-    private ModelRelationDao relationDao;
+    ModelRelationDao relationDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private ModelColumnService columnService;
+    ModelColumnService columnService;
 
     public Map<?, ?> types() {
         Map<String, String> result = new LinkedHashMap<>();

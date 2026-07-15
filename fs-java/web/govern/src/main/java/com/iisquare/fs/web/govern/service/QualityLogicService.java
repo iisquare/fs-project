@@ -23,9 +23,9 @@ import java.util.*;
 public class QualityLogicService extends ServiceBase {
 
     @Autowired
-    private QualityLogicDao logicDao;
+    QualityLogicDao logicDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public Map<?, ?> status(String level) {
         Map<Integer, String> status = new LinkedHashMap<>();

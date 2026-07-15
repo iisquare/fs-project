@@ -32,7 +32,7 @@ const config = ref({
 const rows = ref([])
 const filterRef = ref<FormInstance>()
 const filters = ref(RouteUtil.query2filter(route, { advanced: false, roleIds: [] }))
-const selection = ref([])
+const selection: any = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
   tableRef.value?.clearSelection()
   filter2query && RouteUtil.filter2query(route, router, filters.value)
@@ -111,7 +111,9 @@ const handleDelete = () => {
     loading.value = true
     DictionaryApi.delete(ids, { success: true }).then(() => {
       handleRefresh(false, true)
-    }).catch(() => {})
+    }).catch(() => {
+      loading.value = false
+    })
   }).catch(() => {})
 }
 
@@ -152,12 +154,12 @@ const handleExpand = () => {
     <el-table
       ref="tableRef"
       :data="rows"
-      :row-key="record => record.id"
+      :row-key="(record: any) => record.id"
       :expand-row-keys="expandedRowKeys"
       :border="true"
       v-loading="loading"
       table-layout="auto"
-      @selection-change="newSelection => selection = newSelection"
+      @selection-change="(s: any) => selection = s"
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns">

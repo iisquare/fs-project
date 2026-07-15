@@ -2,74 +2,89 @@ package com.iisquare.fs.web.core.mvc;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
+import feign.Request;
 import feign.Response;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public abstract class FallbackBase implements RpcBase {
 
     @Override
-    public String get(String uri, Map param) {
+    public Response get(String uri, Map param) {
         return fallback();
     }
 
-    public String get(String uri, Map param, Throwable cause) {
+    public Response get(String uri, Map param, Throwable cause) {
         return fallback(cause);
     }
 
     @Override
-    public String post(String uri, Map param) {
+    public Response post(String uri, Map param) {
         return fallback();
     }
 
-    public String post(String uri, Map param, Throwable cause) {
+    public Response post(String uri, Map param, Throwable cause) {
         return fallback(cause);
     }
 
     @Override
-    public String post(String uri, JsonNode json) {
+    public Response post(String uri, JsonNode json) {
         return fallback();
     }
 
-    public String post(String uri, JsonNode json, Throwable cause) {
+    public Response post(String uri, JsonNode json, Throwable cause) {
         return fallback(cause);
     }
 
     @Override
-    public String post(String uri, String body) {
+    public Response post(String uri, String body) {
         return fallback();
     }
 
-    public String post(String uri, String body, Throwable cause) {
+    public Response post(String uri, String body, Throwable cause) {
         return fallback(cause);
     }
 
     @Override
-    public String upload(String uri, Map param, MultipartFile... files) {
+    public Response form(String uri, Map param, MultipartFile... files) {
         return fallback();
     }
 
-    public String upload(String uri, Map param, MultipartFile[] files, Throwable cause) {
+    public Response form(String uri, Map param, MultipartFile[] files, Throwable cause) {
         return fallback(cause);
     }
 
-    @Override
-    public Response getResponse(String uri, Map param) {
-        return null;
+    public Response fallback() {
+        String message = getClass().getSimpleName();
+        String body = ApiUtil.echoResult(4501, message, null);
+        return Response.builder()
+                .status(200)
+                .request(Request.create(Request.HttpMethod.POST, "/", Collections.emptyMap(), Request.Body.empty(), null))
+                .headers(new HashMap<>())
+                .body(body, StandardCharsets.UTF_8)
+                .build();
     }
 
-    @Override
-    public Response postResponse(String uri, Map param) {
-        return null;
+    public Response fallback(Throwable cause) {
+        String message = getClass().getSimpleName();
+        String data = null == cause ? null : cause.getMessage();
+        String body = ApiUtil.echoResult(4502, message, data);
+        return Response.builder()
+                .status(200)
+                .request(Request.create(Request.HttpMethod.POST, "/", Collections.emptyMap(), Request.Body.empty(), null))
+                .headers(new HashMap<>())
+                .body(body, StandardCharsets.UTF_8)
+                .build();
     }
 
-    public String fallback() {
+    public String fallbackString() {
         String message = getClass().getSimpleName();
         return ApiUtil.echoResult(4501, message, null);
     }
 
-    public String fallback(Throwable cause) {
+    public String fallbackString(Throwable cause) {
         String message = getClass().getSimpleName();
         String data = null == cause ? null : cause.getMessage();
         return ApiUtil.echoResult(4502, message, data);

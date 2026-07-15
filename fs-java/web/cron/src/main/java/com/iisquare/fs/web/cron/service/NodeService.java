@@ -36,7 +36,7 @@ public class NodeService extends ServiceBase implements DisposableBean, Applicat
     @Value("${fs.cron.zookeeper.timeout}")
     private int zhTimeout;
     @Autowired
-    private FlowLogService flowLogService;
+    FlowLogService flowLogService;
 
     private ZooKeeperClient zookeeper;
     private static volatile Scheduler scheduler = null;

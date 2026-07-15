@@ -21,7 +21,7 @@ import java.util.Map;
 public class ProviderController extends PermitControllerBase {
 
     @Autowired
-    private ProviderService providerService;
+    ProviderService providerService;
 
     @RequestMapping("/list")
     @Permission("")

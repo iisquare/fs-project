@@ -113,7 +113,7 @@ const handleUnique = () => {
 }
 
 const baseURL = import.meta.env.VITE_APP_API_URL
-const uploadAction = baseURL + '/proxy/upload?app=Lucene&uri=/dictionary/scel'
+const uploadAction = baseURL + '/lucene/dictionary/scel'
 const uploading = ref(false)
 const handleUploadChange = (file: any) => {
   switch (file.status) {
@@ -143,12 +143,7 @@ const handleUploadChange = (file: any) => {
 
 const handleDownload = () => {
   const data = CodeUtil.encodeBase64(JSON.stringify(filters.value))
-  const params: string[] = []
-  for (const key of ['app', 'uri', 'data']) {
-    const value: any = { app: 'Lucene', uri: '/dictionary/plain', data }[key]
-    params.push(key + '=' + encodeURIComponent(value))
-  }
-  window.open(baseURL + '/proxy/getResponse?' + params.join('&'))
+  window.open(baseURL + '/lucene/dictionary/plain?data=' + encodeURIComponent(data))
 }
 
 onMounted(() => {

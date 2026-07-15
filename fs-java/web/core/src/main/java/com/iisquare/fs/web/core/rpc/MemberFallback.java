@@ -9,6 +9,6 @@ public class MemberFallback extends FallbackFactoryBase<MemberFallback> implemen
 
     @Override
     public String email(String email, String subject, String html, MultipartFile... files) {
-        return fallback();
+        return fallbackString();
     }
 }

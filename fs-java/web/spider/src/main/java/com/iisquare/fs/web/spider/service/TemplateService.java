@@ -23,7 +23,7 @@ import java.util.*;
 public class TemplateService extends JPAServiceBase {
 
     @Autowired
-    private TemplateDao templateDao;
+    TemplateDao templateDao;
     @Autowired
     RateDao rateDao;
     @Autowired
@@ -37,7 +37,7 @@ public class TemplateService extends JPAServiceBase {
     @Autowired
     InterceptDao interceptDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
     NodeService nodeService;
     @Autowired

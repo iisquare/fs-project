@@ -1,4 +1,15 @@
 <script setup lang="ts">
+/**
+ * 表格列设置 - 下拉面板组件，可拖拽排序、显示/隐藏、固定表格列。
+ *
+ * @v-model  {ColumnConfig[]} 列配置数组（双向绑定主值）
+ * @prop     {TableInstance}  table  - el-table 实例，通过 v-model:table 传入
+ *
+ * @emits {Function} change - 确认设置变更时触发
+ *
+ * @example
+ * <table-column-setting v-model="columns" @change="handleColChange" />
+ */
 import * as ElementPlusIcons from '@element-plus/icons-vue';
 import { onMounted, ref, type PropType } from 'vue';
 import type { DropdownInstance, TreeInstance, TableInstance } from 'element-plus'
@@ -7,6 +18,7 @@ import TreeUtil from '@/utils/TreeUtil';
 
 const model = defineModel()
 const table = defineModel('table', { type: Object as PropType<TableInstance>, required: false })
+const emit = defineEmits(['change'])
 
 const dropdown = ref<DropdownInstance>()
 const handleSubmit = () => {
@@ -23,6 +35,7 @@ const handleSubmit = () => {
     return result
   })(treeData.value)
   dropdown.value?.handleClose()
+  emit('change')
 }
 const handleReset = () => {
   treeData.value = JSON.parse(JSON.stringify(treeCache.value))

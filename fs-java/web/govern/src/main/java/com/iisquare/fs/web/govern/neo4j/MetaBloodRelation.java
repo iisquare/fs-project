@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 public class MetaBloodRelation extends Neo4jRelationshipBase {
 
     @Autowired
-    private MetaBloodNode metaBloodNode;
+    MetaBloodNode metaBloodNode;
 
     public MetaBloodRelation() {
         this.TYPE_NAME = "GovernBlood";

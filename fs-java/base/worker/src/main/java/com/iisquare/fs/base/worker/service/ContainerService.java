@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ContainerService extends ServiceBase implements ApplicationContextAware {
 
     @Autowired
-    private RabbitTemplate rabbitTemplate;
+    RabbitTemplate rabbitTemplate;
 
     private ConfigurableApplicationContext applicationContext;
     private static final Map<String, Container> containers = new ConcurrentHashMap<>();

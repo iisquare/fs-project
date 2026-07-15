@@ -23,9 +23,9 @@ import java.util.Map;
 public class DictionaryController extends PermitControllerBase {
 
     @Autowired
-    private RbacService rbacService;
+    RbacService rbacService;
     @Autowired
-    private DictionaryService dictionaryService;
+    DictionaryService dictionaryService;
 
     @RequestMapping("/options")
     public String optionsAction(@RequestBody Map<?, ?> param) {

@@ -23,13 +23,13 @@ import java.util.*;
 public class FormDataService extends ServiceBase {
 
     @Autowired
-    private Configuration configuration;
+    Configuration configuration;
     @Autowired
-    private FormDataMongo formDataMongo;
+    FormDataMongo formDataMongo;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private FormFrameService formFrameService;
+    FormFrameService formFrameService;
 
     public Map<?, ?> sort() {
         Map<String, String> sort = new LinkedHashMap<>();

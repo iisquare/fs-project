@@ -1,11 +1,23 @@
 <script setup lang="ts">
+/**
+ * 表格排序设置 - 下拉面板组件，可视化配置多列排序规则（升序/降序），输出排序字符串。
+ *
+ * @v-model  {String}          排序字符串（双向绑定主值），格式如 "field1.asc,field2.desc"
+ * @prop     {ColumnConfig[]}  columns  - 表格列配置数组（必填），需包含 prop 和 label
+ * @prop     {String}          sortable - 可排序字段列表，格式同 v-model，用于初始化可选字段
+ *
+ * @emits {Function} change - 确认排序变更时触发
+ *
+ * @example
+ * <table-sort v-model="sortString" :columns="columns" :sortable="'createdAt.desc'" @change="fetchData" />
+ */
 import * as ElementPlusIcons from '@element-plus/icons-vue'
 import { onMounted, ref, computed } from 'vue'
 import type { DropdownInstance, TreeInstance } from 'element-plus'
 import TreeUtil from '@/utils/TreeUtil'
 import DataUtil from '@/utils/DataUtil'
 
-const model = defineModel({ default: '' })
+const model = defineModel<string>({ default: '' })
 
 const props = defineProps({
   columns: { type: Array<any>, required: true },

@@ -41,19 +41,19 @@ import java.util.*;
 public class WorkflowService extends ServiceBase {
 
     @Autowired
-    private WorkflowDao workflowDao;
+    WorkflowDao workflowDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private FormService formService;
+    FormService formService;
     @Autowired
-    private RepositoryService repositoryService;
+    RepositoryService repositoryService;
     @Autowired
-    private HistoryService historyService;
+    HistoryService historyService;
     @Autowired
-    private RuntimeService runtimeService;
+    RuntimeService runtimeService;
     @Autowired
-    private ManagementService managementService; // 引擎管理服务，和具体业务无关，管理引擎。
+    ManagementService managementService; // 引擎管理服务，和具体业务无关，管理引擎。
 
     public static final String BPMN_SUFFIX = ".bpmn20.xml";
 

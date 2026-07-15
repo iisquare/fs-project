@@ -23,7 +23,7 @@ import java.util.Map;
 public class BIService {
 
     @Autowired
-    private SparkService sparkService;
+    SparkService sparkService;
     static Map<String, Class<DAGNode>> node;
     static Map<String, Class<DAGNode>> batch;
     static Map<String, Class<DAGNode>> stream;

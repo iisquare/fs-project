@@ -1,12 +1,24 @@
 <script setup lang="ts">
 /**
- * 通过CSV格式转换数据模型字段
+ * 数据模型编辑器 - 支持通过 CSV 文本批量转换数据字段定义，或通过表格逐行编辑。
+ *
+ * @v-model  {FieldRow[]}   字段列表（双向绑定主值）
+ * @prop     {String[]}      types    - 可选的字段类型列表，通过 v-model:types 传入
+ *
+ * 字段行结构 (FieldRow):
+ *   { name: string, title: string, type: string }
+ *   name  - 字段名（必填）
+ *   title - 显示名称（选填，默认为字段名）
+ *   type  - 数据类型（必填）
+ *
+ * @example
+ * <data-schema v-model="fields" v-model:types="['String', 'Integer', 'Boolean', 'Date']" />
  */
 import { ref } from 'vue';
 import DataTable from './DataTable.vue';
 
 const model: any = defineModel()
-const types = defineModel('types', { type: Array<String>, default: [] })
+const types = defineModel<String[]>('types', { default: () => [] })
 const separator = ref(',')
 const schema = ref('')
 const editorRef = ref()

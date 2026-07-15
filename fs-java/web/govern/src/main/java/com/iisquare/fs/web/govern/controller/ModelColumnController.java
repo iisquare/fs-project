@@ -17,7 +17,7 @@ import java.util.Map;
 public class ModelColumnController extends PermitControllerBase {
 
     @Autowired
-    private ModelColumnService columnService;
+    ModelColumnService columnService;
 
     @RequestMapping("/list")
     @Permission("model:")

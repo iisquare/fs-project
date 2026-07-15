@@ -26,11 +26,26 @@ public abstract class GatewayHandler {
 
     public static final Charset CHARSET = StandardCharsets.UTF_8;
 
-    /** Provider types that speak the native Anthropic API (including dual-protocol providers) */
+    /** Provider types that speak the OpenAI-compatible Chat Completions API. */
+    private static final Set<String> OPENAI_PROVIDER_TYPES = Set.of(
+        "vllm",
+        "sglang",
+        "mindie",
+        "mixed-compatible",
+        "openai-compatible",
+        "deepseek",
+        "volcengine",
+        "siliconflow",
+        "aliyun"
+    );
+
+    /** Provider types that speak the Anthropic Messages API. */
     private static final Set<String> ANTHROPIC_PROVIDER_TYPES = Set.of(
+        "vllm",
+        "mixed-compatible",
         "anthropic-compatible",
         "deepseek",
-        "mixed-compatible"
+        "volcengine"
     );
 
     protected String chunkId;
@@ -82,10 +97,8 @@ public abstract class GatewayHandler {
      */
     public static GatewayHandler select(HttpServletRequest request, JsonNode provider) {
         boolean clientAnthropic = isAnthropicRequest(request);
-        boolean backendAnthropic = isAnthropicProvider(provider);
-
-        if (clientAnthropic && backendAnthropic) return new AnthropicHandler();
-        if (!clientAnthropic && !backendAnthropic) return new OpenAIHandler();
+        if (clientAnthropic && isAnthropicProvider(provider)) return new AnthropicHandler();
+        if (!clientAnthropic && isOpenAIProvider(provider)) return new OpenAIHandler();
         return null;
     }
 
@@ -93,6 +106,12 @@ public abstract class GatewayHandler {
     public static boolean isAnthropicRequest(HttpServletRequest request) {
         String uri = request.getRequestURI();
         return uri != null && uri.endsWith("/messages");
+    }
+
+    /** Detect whether a provider speaks the OpenAI-compatible Chat Completions API. */
+    public static boolean isOpenAIProvider(JsonNode provider) {
+        String type = provider.at("/type").asText();
+        return OPENAI_PROVIDER_TYPES.contains(type);
     }
 
     /** Detect whether a provider speaks the Anthropic-native API. */
@@ -152,7 +171,7 @@ public abstract class GatewayHandler {
 
     // ---- Utility ----
 
-    /** Parse the "data" field of an SSE event message. */
+    /** 解析SSE事件消息中的"data"字段 */
     public static ObjectNode parseSseData(ObjectNode message, boolean isEvent) {
         if (!isEvent) {
             JsonNode parsed = DPUtil.parseJSON(DPUtil.stringify(message));

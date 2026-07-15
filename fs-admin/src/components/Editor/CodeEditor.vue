@@ -1,4 +1,30 @@
 <script setup lang="ts">
+/**
+ * 代码编辑器 - 基于 CodeMirror 的代码编辑组件，支持语法高亮、代码折叠、搜索替换、自动提示等功能。
+ *
+ * @v-model  {String}          编辑器内容（双向绑定主值）
+ * @prop     {String}           mode         - 语法模式，默认 'null'，可选 'javascript', 'sql' 等
+ * @prop     {Number}           height       - 编辑器高度(px)，默认 500
+ * @prop     {String}           theme        - 主题，默认 'base16-light'，可选 'ayu-dark'
+ * @prop     {Boolean}          foldGutter   - 是否显示代码折叠，默认 false
+ * @prop     {Boolean}          lineNumbers  - 是否显示行号，默认 true
+ * @prop     {Boolean}          lineWrapping - 是否自动换行，默认 true
+ * @prop     {HintItem[]}       hints        - 自定义自动提示列表
+ * @prop     {*}                volatile     - 外部触发器，值变化时回写编辑器内容
+ *
+ * 提示项结构 (HintItem):
+ *   { className: string, displayText: string, text: string }
+ *   className    - li 元素的 CSS 类名
+ *   displayText  - 联想列表展示内容
+ *   text         - 选中后实际插入的文本
+ *
+ * @example
+ * <!-- 基础用法 -->
+ * <code-editor v-model="code" mode="javascript" />
+ *
+ * <!-- 带自定义提示 -->
+ * <code-editor v-model="sql" mode="sql" :hints="sqlHints" />
+ */
 import 'codemirror/lib/codemirror.css'
 import 'codemirror/theme/ayu-dark.css'
 import 'codemirror/theme/base16-light.css'
@@ -44,7 +70,7 @@ const {
   foldGutter: { type: Boolean, required: false },
   lineNumbers: { type: Boolean, required: false },
   lineWrapping: { type: Boolean, required: false },
-  hints: { type: Array<Object>, required: false }, // { className: 'li的类名', displayText: '联想展示内容', text: '实际插入内容' }
+  hints: { type: Array<Object>, required: false },
   volatile: { required: false },
 })
 

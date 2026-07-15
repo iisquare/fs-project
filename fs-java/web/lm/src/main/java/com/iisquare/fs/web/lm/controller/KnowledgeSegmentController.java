@@ -21,13 +21,13 @@ import java.util.Map;
 public class KnowledgeSegmentController extends PermitControllerBase {
 
     @Autowired
-    private KnowledgeSegmentService segmentService;
+    KnowledgeSegmentService segmentService;
 
     @RequestMapping("/list")
     @Permission("knowledge:")
     public String listAction(@RequestBody Map<String, Object> param) {
         ObjectNode result = segmentService.search(param,
-                DPUtil.buildMap("withUserInfo", true, "withStatusText", true, "withKnowledgeInfo", true));
+                DPUtil.buildMap("withUserInfo", true, "withStatusText", true, "withChunk", true, "withKnowledgeInfo", true));
         return ApiUtil.echoResult(0, null, result);
     }
 

@@ -21,7 +21,7 @@ import java.util.Map;
 public class KnowledgeChunkController extends PermitControllerBase {
 
     @Autowired
-    private KnowledgeChunkService chunkService;
+    KnowledgeChunkService chunkService;
 
     @RequestMapping("/list")
     @Permission("knowledge:")

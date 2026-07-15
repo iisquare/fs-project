@@ -1,4 +1,22 @@
 <script setup lang="ts">
+/**
+ * 设计器布局容器 - 标准的三栏布局：左侧面板(240px) + 中间画布区 + 右侧属性面板(350px) + 底部状态栏(35px)。
+ *
+ * @slot left    - 左侧面板内容（如组件库/图层树）
+ * @slot top     - 中间区域顶部工具栏
+ * @slot default - 中间画布主体内容
+ * @slot right   - 右侧属性面板内容
+ * @slot footer  - 底部状态栏
+ *
+ * @example
+ * <layout-designer>
+ *   <template #left><layout-widget :widgets="widgets" /></template>
+ *   <template #top><layout-toolbar :toolbars="toolbars" /></template>
+ *   <div id="canvas"></div>
+ *   <template #right><layout-property v-model="config" :activeItem="active" /></template>
+ *   <template #footer>状态信息</template>
+ * </layout-designer>
+ */
 </script>
 
 <template>

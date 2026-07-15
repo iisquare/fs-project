@@ -40,4 +40,14 @@ public class IndexController extends ControllerBase {
         return gatewayService.completion(json, request, response);
     }
 
+    @RequestMapping("/v1/embeddings")
+    public String embeddingsAction(@RequestBody ObjectNode json, HttpServletRequest request, HttpServletResponse response) {
+        return DPUtil.stringify(gatewayService.embedding(json, request, response));
+    }
+
+    @RequestMapping("/v1/rerank")
+    public String rerankAction(@RequestBody ObjectNode json, HttpServletRequest request, HttpServletResponse response) {
+        return DPUtil.stringify(gatewayService.rerank(json, request, response));
+    }
+
 }

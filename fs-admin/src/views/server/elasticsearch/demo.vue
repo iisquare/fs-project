@@ -1,13 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { computed, ref } from 'vue'
 import LuceneApi from '@/api/server/LuceneApi'
 
-const ES_URL_KEY = 'elasticsearchURL'
-const DEFAULT_ES_URL = 'http://127.0.0.1:9200/_plugin/analysis-ik-online'
-
 const result = ref({})
-const elasticsearchURL = ref(DEFAULT_ES_URL)
 const formLoading = ref(false)
 const form = ref({
   dictSerial: '',
@@ -31,22 +26,10 @@ const form = ref({
 
 const json = computed(() => JSON.stringify(result.value, null, 4))
 
-const saveURL = (url: string) => {
-  if (window.localStorage) {
-    window.localStorage.setItem(ES_URL_KEY, url)
-  }
-  return url
-}
-
 const handleIndex = () => {
-  saveURL(elasticsearchURL.value)
-  if (!elasticsearchURL.value) {
-    ElMessage.warning('请确认连接服务地址')
-    return
-  }
   if (formLoading.value) return
   formLoading.value = true
-  LuceneApi.dictIndex(elasticsearchURL.value, {
+  LuceneApi.ikIndex({
     keyword: form.value.inputKeyword,
     dictSerial: form.value.dictSerial,
     useSynonym: form.value.useSynonym,
@@ -55,20 +38,15 @@ const handleIndex = () => {
     useEnglish: form.value.useEnglish
   }).then((res: any) => {
     result.value = res
-  }).finally(() => {
+  }).catch(() => {}).finally(() => {
     formLoading.value = false
   })
 }
 
 const handleDemo = () => {
-  saveURL(elasticsearchURL.value)
-  if (!elasticsearchURL.value) {
-    ElMessage.warning('请确认连接服务地址')
-    return
-  }
   if (formLoading.value) return
   formLoading.value = true
-  LuceneApi.dictDemo(elasticsearchURL.value, {
+  LuceneApi.ikDemo({
     keyword: form.value.inputKeyword,
     content: form.value.inputContent,
     parserOperator: form.value.parserOperator,
@@ -84,16 +62,10 @@ const handleDemo = () => {
     useEnglishQuery: form.value.useEnglishQuery
   }).then((res: any) => {
     result.value = res
-  }).finally(() => {
+  }).catch(() => {}).finally(() => {
     formLoading.value = false
   })
 }
-
-onMounted(() => {
-  if (window.localStorage && window.localStorage[ES_URL_KEY]) {
-    elasticsearchURL.value = window.localStorage[ES_URL_KEY]
-  }
-})
 </script>
 
 <template>
@@ -106,9 +78,6 @@ onMounted(() => {
         <el-card shadow="never">
           <template #header>索引示例</template>
           <el-form :model="form" label-width="80px">
-            <el-form-item label="服务地址">
-              <el-input v-model="elasticsearchURL" placeholder="节点链接地址" clearable />
-            </el-form-item>
             <el-form-item label="词典编号">
               <el-input v-model="form.dictSerial" placeholder="词典编号" />
             </el-form-item>

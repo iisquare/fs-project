@@ -24,9 +24,9 @@ import java.util.Map;
 public class FormRegularController extends PermitControllerBase {
 
     @Autowired
-    private FormRegularService formRegularService;
+    FormRegularService formRegularService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     @RequestMapping("/test")
     public String testAction(@RequestBody Map<?, ?> param) {

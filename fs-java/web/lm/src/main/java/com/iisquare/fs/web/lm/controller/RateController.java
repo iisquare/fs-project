@@ -23,7 +23,7 @@ import java.util.Map;
 public class RateController extends PermitControllerBase {
 
     @Autowired
-    private RateService rateService;
+    RateService rateService;
 
     @RequestMapping("/info")
     @Permission("")

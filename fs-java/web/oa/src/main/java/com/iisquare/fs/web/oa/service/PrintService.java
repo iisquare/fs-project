@@ -22,9 +22,9 @@ import java.util.*;
 public class PrintService extends ServiceBase {
 
     @Autowired
-    private PrintDao printDao;
+    PrintDao printDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) {
         Map<String, Object> result = new LinkedHashMap<>();

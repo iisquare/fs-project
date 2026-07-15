@@ -21,7 +21,7 @@ import java.util.Map;
 public class OntologyController extends PermitControllerBase {
 
     @Autowired
-    private OntologyService ontologyService;
+    OntologyService ontologyService;
 
     @RequestMapping("/info")
     @Permission("")

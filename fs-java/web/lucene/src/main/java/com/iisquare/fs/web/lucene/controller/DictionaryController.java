@@ -18,6 +18,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -27,16 +29,18 @@ import java.util.Map;
 public class DictionaryController extends PermitControllerBase {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private DictionaryService dictionaryService;
+    DictionaryService dictionaryService;
 
     @GetMapping("/plain")
     public String plainAction(@RequestParam Map<String, Object> param, HttpServletResponse response) {
         String name = DPUtil.trim(DPUtil.parseString(param.get("catalogue")));
         name += "-" + DPUtil.trim(DPUtil.parseString(param.get("type")));
         response.setContentType("text/plain;charset=utf-8");
-        response.setHeader("Content-Disposition", "attachment; filename=" + name + ".dict");
+        String filename = name + ".dict";
+        String encodedName = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + name.replaceAll("[^\\x00-\\x7F]", "_") + ".dict\"; filename*=UTF-8''" + encodedName);
         return dictionaryService.plain(param);
     }
 

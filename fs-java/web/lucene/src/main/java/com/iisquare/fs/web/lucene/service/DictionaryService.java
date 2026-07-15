@@ -24,9 +24,9 @@ import java.util.*;
 public class DictionaryService extends ServiceBase {
 
     @Autowired
-    private DictionaryDao dictionaryDao;
+    DictionaryDao dictionaryDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public Map<?, ?> type() {
         Map<String, String> type = new LinkedHashMap<>();

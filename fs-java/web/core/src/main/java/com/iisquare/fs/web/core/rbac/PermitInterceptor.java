@@ -30,11 +30,11 @@ public class PermitInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        if(!(handler instanceof HandlerMethod)) return true;
-        HandlerMethod method = (HandlerMethod) handler;
-        if (!FeignInterceptor.hashPermit(request, response, method)) return false;
-        if(!(method.getBean() instanceof PermitControllerBase)) return true;
-        PermitControllerBase instance = (PermitControllerBase) method.getBean();
+        if(!(handler instanceof HandlerMethod method)) return true;
+        if (!FeignInterceptor.hashPermit(request, response, method)) {
+            throw new PermitException(PermitException.CALLER_DENIED);
+        }
+        if(!(method.getBean() instanceof PermitControllerBase instance)) return true;
         String[] names = DPUtil.explode("\\.", instance.getClass().getName(), null, false);
         if(names.length < 5) throw new PermitException(PermitException.NO_PACKAGE);
         String module = names[names.length - 2];

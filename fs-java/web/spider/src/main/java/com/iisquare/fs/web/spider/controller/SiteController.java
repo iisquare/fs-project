@@ -23,7 +23,7 @@ import java.util.Map;
 public class SiteController extends PermitControllerBase {
 
     @Autowired
-    private SiteService siteService;
+    SiteService siteService;
 
     @RequestMapping("/info")
     @Permission("")

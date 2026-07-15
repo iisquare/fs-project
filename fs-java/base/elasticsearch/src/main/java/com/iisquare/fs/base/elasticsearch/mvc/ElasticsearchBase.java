@@ -1,109 +1,71 @@
 package com.iisquare.fs.base.elasticsearch.mvc;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.RequestBase;
+import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.*;
+import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import co.elastic.clients.elasticsearch.core.get.GetResult;
+import co.elastic.clients.elasticsearch.core.mget.MultiGetResponseItem;
+import co.elastic.clients.elasticsearch.indices.*;
+import co.elastic.clients.elasticsearch.indices.update_aliases.Action;
+import co.elastic.clients.json.JsonData;
+import co.elastic.clients.json.JsonpUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.elasticsearch.action.DocWriteResponse;
-import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
-import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.delete.DeleteResponse;
-import org.elasticsearch.action.get.*;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.client.indices.PutIndexTemplateRequest;
-import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.ToXContent;
-import org.elasticsearch.common.xcontent.XContentHelper;
-import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TermsQueryBuilder;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.iisquare.fs.base.elasticsearch.util.ElasticsearchUtil;
+import com.iisquare.fs.base.elasticsearch.util.QueryUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import jakarta.servlet.http.HttpServletRequest;
-import java.io.IOException;
+import java.io.StringReader;
 import java.util.*;
+import java.util.function.Function;
 
+@Slf4j
 public abstract class ElasticsearchBase {
 
-    protected Logger logger = LoggerFactory.getLogger(this.getClass());
-    public static final String FIELD_ID = "_id";
     public static final int STATE_FAILED = -1;
-    public static final String ATTR_VERSION = "_ELASTIC.VERSION_";
 
     @Autowired
-    private RestHighLevelClient client;
-    @Autowired
-    private HttpServletRequest request;
+    protected ElasticsearchClient client;
 
-    protected String collection = "fs_not_exist";
+    protected String collection = "fs_not_exists";
     protected int shards = 1;
     protected int replicas = 0;
 
-    public Integer version() {
-        return DPUtil.parseInt(request.getAttribute(ATTR_VERSION), null);
-    }
-
-    public Integer version(Integer version) {
-        if (null == version) {
-            request.removeAttribute(ATTR_VERSION);
-        } else {
-            request.setAttribute(ATTR_VERSION, version);
-        }
-        return version;
-    }
-
     public String collection() {
-        Integer version = version();
-        if (null == version) return collection;
-        return collection + "_v" + version;
+        return this.collection;
     }
 
-    public SearchHits search(SearchSourceBuilder builder) {
-        SearchRequest request = new SearchRequest(collection());
-        request.source(builder);
+    public SearchResponse<ObjectNode> search(Function<SearchRequest.Builder, SearchRequest.Builder> fn) {
+        return search(fn.apply(new SearchRequest.Builder()));
+    }
+
+    public SearchResponse<ObjectNode> search(SearchRequest.Builder builder) {
+        SearchRequest request = builder.index(collection()).build();
         try {
-            SearchResponse response = client.search(request, options());
-            return response.getHits();
-        } catch (IOException e) {
-            logger.warn("search failed:" + toXContent(builder, false), e);
+            return client.search(request, ObjectNode.class);
+        } catch (Exception e) {
+            log.warn("search failed:{}", request, e);
             return null;
         }
     }
 
     public boolean update(ObjectNode source, boolean shouldUpsertDoc) {
-        UpdateRequest request = new UpdateRequest(collection(), id(source));
-        request.docAsUpsert(shouldUpsertDoc);
-        String json = DPUtil.stringify(source);
-        request.doc(json, XContentType.JSON);
         try {
-            UpdateResponse response = client.update(request, options());
-            DocWriteResponse.Result result = response.getResult();
-            return DocWriteResponse.Result.CREATED.equals(result)
-                    || DocWriteResponse.Result.UPDATED.equals(result)
-                    || DocWriteResponse.Result.NOOP.equals(result);
-        } catch (IOException e) {
-            logger.warn("update source failed:" + json, e);
+            UpdateResponse<ObjectNode> response = client.update(u -> u
+                    .index(collection()).id(id(source))
+                    .doc(source).docAsUpsert(shouldUpsertDoc),
+                    ObjectNode.class);
+            Result result = response.result();
+            return Result.Created.equals(result) || Result.Updated.equals(result) || Result.NoOp.equals(result);
+        } catch (Exception e) {
+            log.warn("update source failed:{}", source, e);
             return false;
         }
     }
@@ -111,170 +73,194 @@ public abstract class ElasticsearchBase {
     public abstract String id(ObjectNode source);
 
     public long delete(String id) {
-        DeleteRequest request = new DeleteRequest(collection(), id);
         try {
-            DeleteResponse response = client.delete(request, options());
-            DocWriteResponse.Result result = response.getResult();
-            return DocWriteResponse.Result.DELETED.equals(result) ? 1 : 0;
-        } catch (IOException e) {
-            logger.warn("delete source failed:" + id, e);
+            DeleteResponse response = client.delete(d -> d.index(collection()).id(id));
+            return Result.Deleted.equals(response.result()) ? 1 : 0;
+        } catch (Exception e) {
+            log.warn("delete source failed:{}", id, e);
             return STATE_FAILED;
         }
     }
 
     public long delete(String... ids) {
-        if (ids.length < 1) return 0;
-        TermsQueryBuilder query = QueryBuilders.termsQuery(FIELD_ID, ids);
-        return deleteByQuery(query);
+        return delete(Arrays.asList(ids));
     }
 
-    public long deleteByQuery(QueryBuilder query) {
-        DeleteByQueryRequest request = new DeleteByQueryRequest(collection());
-        request.setQuery(query);
+    public long delete(Collection<?> ids) {
+        if (DPUtil.empty(ids)) return 0;
+        return deleteByQuery(QueryUtil.terms(ElasticsearchUtil.FIELD_ID, ids));
+    }
+
+    public long deleteByQuery(Query query) {
         try {
-            BulkByScrollResponse response = client.deleteByQuery(request, options());
-            return response.getTotal();
-        } catch (IOException e) {
-            logger.warn("delete sources failed:" + query, e);
+            DeleteByQueryResponse response = client.deleteByQuery(d -> d.index(collection()).query(query));
+            Long total = response.total();
+            return total == null ? 0 : total;
+        } catch (Exception e) {
+            log.warn("delete sources failed:{}", query, e);
+            return STATE_FAILED;
+        }
+    }
+
+    public long updateByQuery(ObjectNode source, Query query) {
+        StringBuilder code = new StringBuilder();
+        Map<String, JsonData> params = new LinkedHashMap<>();
+        for (Map.Entry<String, JsonNode> entry : source.properties()) {
+            String key = entry.getKey();
+            code.append("ctx._source.").append(key).append(" = params.").append(key).append(";");
+            params.put(key, JsonData.of(entry.getValue()));
+        }
+        Script script = Script.of(s -> s.lang("painless").source(code.toString()).params(params));
+        try {
+            UpdateByQueryResponse response = client.updateByQuery(u -> u.index(collection()).query(query).script(script));
+            Long updated = response.updated();
+            return updated == null ? 0 : updated;
+        } catch (Exception e) {
+            log.warn("updateByQuery failed:{}", query, e);
             return STATE_FAILED;
         }
     }
 
     public ObjectNode all(String... ids) {
-        MultiGetRequest request = new MultiGetRequest();
-        String collection = collection();
-        for (String id : ids) {
-            request.add(collection, id);
-        }
+        return all(Arrays.asList(ids));
+    }
+
+    public ObjectNode all(List<String> ids) {
         try {
-            MultiGetResponse responses = client.mget(request, options());
+            MgetResponse<ObjectNode> response = client.mget(m -> m.index(collection()).ids(ids), ObjectNode.class);
             ObjectNode result = DPUtil.objectNode();
-            for (MultiGetItemResponse response : responses) {
-                JsonNode data = null;
-                if (!response.isFailed()) {
-                    data = DPUtil.parseJSON(response.getResponse().getSourceAsString());
+            for (MultiGetResponseItem<ObjectNode> item : response.docs()) {
+                if (item.isResult()) {
+                    GetResult<ObjectNode> r = item.result();
+                    result.replace(r.id(), r.source() == null ? DPUtil.objectNode() : r.source());
+                } else {
+                    result.replace(item.failure().id(), DPUtil.objectNode());
                 }
-                result.replace(response.getId(), data);
             }
             return result;
-        } catch (IOException e) {
-            logger.warn("get all sources failed:" + DPUtil.implode(",", ids), e);
+        } catch (Exception e) {
+            log.warn("get all sources failed:{}", DPUtil.implode(",", ids), e);
             return null;
         }
     }
 
-    public JsonNode one(String id) {
-        GetRequest request = new GetRequest(collection(), id);
+    public ObjectNode one(String id) {
         try {
-            GetResponse response = client.get(request, options());
-            String string = response.getSourceAsString();
-            return DPUtil.parseJSON(string);
-        } catch (IOException e) {
-            logger.warn("get one source failed:" + id, e);
+            GetResponse<ObjectNode> response = client.get(g -> g.index(collection()).id(id), ObjectNode.class);
+            return response.source();
+        } catch (Exception e) {
+            log.warn("get one source failed:{}", id, e);
             return null;
         }
     }
 
     public List<String> add(ArrayNode sources) {
-        String collection = collection();
-        BulkRequest request = new BulkRequest();
-        Iterator<JsonNode> iterator = sources.iterator();
-        while (iterator.hasNext()) {
-            ObjectNode source = (ObjectNode) iterator.next();
-            String id = id(source);
-            IndexRequest item = new IndexRequest(collection);
-            if (null != id) item.id(id);
-            String json = DPUtil.stringify(source);
-            item.source(json, XContentType.JSON);
-            request.add(item);
-        }
+        String coll = collection();
         try {
-            BulkResponse responses = client.bulk(request, options());
+            BulkResponse response = client.bulk(b -> {
+                b.index(coll);
+                for (JsonNode jsonNode : sources) {
+                    ObjectNode source = (ObjectNode) jsonNode;
+                    String docId = id(source);
+                    b.operations(op -> op.index(idx -> {
+                        if (null != docId) idx.id(docId);
+                        idx.document(source);
+                        return idx;
+                    }));
+                }
+                return b;
+            });
             List<String> result = new ArrayList<>();
-            for (BulkItemResponse response : responses) {
-                result.add(response.isFailed() ? null : response.getId());
+            for (BulkResponseItem item : response.items()) {
+                result.add(item.error() != null ? null : item.id());
             }
             return result;
-        } catch (IOException e) {
-            logger.warn("add sources failed:" + DPUtil.stringify(sources), e);
+        } catch (Exception e) {
+            log.warn("add sources failed:{}", sources, e);
             return null;
         }
     }
 
     public String add(ObjectNode source) {
-        IndexRequest request = new IndexRequest(collection());
-        String id = id(source);
-        if (null != id) request.id(id);
-        String json = DPUtil.stringify(source);
-        request.source(json, XContentType.JSON);
         try {
-            IndexResponse response = client.index(request, options());
-            return response.getId();
-        } catch (IOException e) {
-            logger.warn("add source failed:" + json, e);
+            IndexResponse response = client.index(i -> {
+                i.index(collection());
+                String id = id(source);
+                if (null != id) i.id(id);
+                i.document(source);
+                return i;
+            });
+            return response.id();
+        } catch (Exception e) {
+            log.warn("add source failed:{}", source, e);
             return null;
         }
     }
 
-    protected RequestOptions options() {
-        return RequestOptions.DEFAULT;
-    }
-
     /**
      * POST /_aliases
-     * @see(https://www.elastic.co/guide/en/elasticsearch/reference/7.9/indices-aliases.html)
+     * {@code https://www.elastic.co/guide/en/elasticsearch/reference/7.9/indices-aliases.html}
      */
     public String alias(int fromVersion, int toVersion) {
-        IndicesAliasesRequest request = new IndicesAliasesRequest();
-        request.addAliasAction(
-                IndicesAliasesRequest.AliasActions.remove().index(collection + "_v" + fromVersion).alias(collection)
-        );
-        request.addAliasAction(
-                IndicesAliasesRequest.AliasActions.add().index(collection + "_v" + toVersion).alias(collection)
-        );
-        return toXContent(request, false);
+        UpdateAliasesRequest.Builder builder = new UpdateAliasesRequest.Builder();
+        builder.actions(Arrays.asList(
+                Action.of(ac -> ac.remove(r -> r
+                        .index(collection + "_v" + fromVersion)
+                        .alias(collection))),
+                Action.of(ac -> ac.add(ad -> ad
+                        .index(collection + "_v" + toVersion)
+                        .alias(collection)))
+        ));
+        return toJsonString(builder.build());
     }
 
     /**
      * PUT /index_name
-     * @see(https://www.elastic.co/guide/en/elasticsearch/reference/7.9/indices-put-mapping.html)
+     * {@code https://www.elastic.co/guide/en/elasticsearch/reference/7.9/indices-put-mapping.html}
      */
     public String create(boolean withAlias) {
-        CreateIndexRequest request = new CreateIndexRequest(collection());
-        request.settings(setting());
-        if (withAlias) request.alias(new Alias(collection));
-        request.mapping(DPUtil.toJSON(mapping(), Map.class));
-        return toXContent(request, false);
+        CreateIndexRequest.Builder builder = new CreateIndexRequest.Builder();
+        builder.index(collection);
+        builder.settings(setting().build());
+        builder.mappings(m -> m.withJson(new StringReader(mapping().toString())));
+        if (withAlias) {
+            builder.aliases(collection, a -> a.isWriteIndex(true));
+        }
+        return toJsonString(builder.build());
     }
 
-    public Settings.Builder setting() {
-        return Settings.builder()
-                .put("index.number_of_shards", shards)
-                .put("index.number_of_replicas", replicas)
-                .put("index.store.type", "mmapfs")
-                .putList("index.store.preload", "*");
+    public IndexSettings.Builder setting() {
+        IndexSettings.Builder builder = new IndexSettings.Builder();
+        builder.numberOfShards(String.valueOf(shards));
+        builder.numberOfReplicas(String.valueOf(replicas));
+        builder.store(s -> {
+            s.type(StorageType.Mmapfs);
+            return s;
+        });
+        return builder;
     }
 
     /**
      * PUT /_template/template_name
-     * @see(https://www.elastic.co/guide/en/elasticsearch/reference/7.9/index-templates.html)
+     * {@code https://www.elastic.co/guide/en/elasticsearch/reference/7.9/index-templates.html}
      */
     public String template(boolean withAlias) {
-        PutIndexTemplateRequest request = new PutIndexTemplateRequest(collection);
-        request.patterns(Arrays.asList(collection + "_*"));
-        request.settings(setting());
-        if (withAlias) request.alias(new Alias(collection));
-        request.mapping(DPUtil.toJSON(mapping(), Map.class));
-        return toXContent(request, false);
+        PutIndexTemplateRequest.Builder builder = new PutIndexTemplateRequest.Builder();
+        builder.name(collection);
+        builder.indexPatterns(List.of(collection + "_pattern"));
+        builder.template(tm -> {
+            tm.settings(setting().build());
+            tm.mappings(m -> m.withJson(new StringReader(mapping().toString())));
+            if (withAlias) {
+                tm.aliases(collection, a -> a.isWriteIndex(true));
+            }
+            return tm;
+        });
+        return toJsonString(builder.build());
     }
 
-    private String toXContent(ToXContent content, boolean humanReadable) {
-        try {
-            BytesReference reference = XContentHelper.toXContent(content, XContentType.JSON, humanReadable);
-            return reference.utf8ToString();
-        } catch (IOException e) {
-            return ExceptionUtils.getStackTrace(e);
-        }
+    public String toJsonString(RequestBase request) {
+        return JsonpUtils.toJsonString(request, client._jsonpMapper());
     }
 
     protected abstract ObjectNode mapping();

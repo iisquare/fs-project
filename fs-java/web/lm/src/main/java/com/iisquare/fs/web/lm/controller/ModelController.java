@@ -21,7 +21,7 @@ import java.util.Map;
 public class ModelController extends PermitControllerBase {
 
     @Autowired
-    private ModelService modelService;
+    ModelService modelService;
 
     @RequestMapping("/list")
     @Permission("")

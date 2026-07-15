@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
+import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
@@ -26,13 +27,13 @@ import java.util.Map;
 public class WorkflowController extends PermitControllerBase {
 
     @Autowired
-    private WorkflowService workflowService;
+    WorkflowService workflowService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private ApproveService approveService;
+    ApproveService approveService;
     @Autowired
-    private MemberRpc memberRpc;
+    MemberRpc memberRpc;
 
     @RequestMapping("/process")
     @Permission
@@ -150,7 +151,7 @@ public class WorkflowController extends PermitControllerBase {
     @RequestMapping("/candidateInfos")
     @Permission("modify")
     public String candidateInfosAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        return memberRpc.post("/rbac/infos", param);
+        return RpcUtil.string(memberRpc.post("/rbac/infos", param));
     }
 
     @RequestMapping("/delete")

@@ -26,9 +26,9 @@ import java.util.*;
 public class FormRegularService extends ServiceBase {
 
     @Autowired
-    private FormRegularDao formRegularDao;
+    FormRegularDao formRegularDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public ObjectNode all() {
         List<FormRegular> all = formRegularDao.findAll((Specification<FormRegular>) (root, query, cb) -> {

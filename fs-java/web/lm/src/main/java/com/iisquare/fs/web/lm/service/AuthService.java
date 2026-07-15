@@ -25,11 +25,11 @@ import java.util.UUID;
 public class AuthService extends JPAServiceBase {
 
     @Autowired
-    private AuthDao authDao;
+    AuthDao authDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private Configuration configuration;
+    Configuration configuration;
     @Autowired
     ModelService modelService;
 

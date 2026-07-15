@@ -25,9 +25,9 @@ import java.util.*;
 public class StandardService extends ServiceBase {
 
     @Autowired
-    private StandardDao standardDao;
+    StandardDao standardDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public Map<?, ?> molds() {
         Map<String, String> result = new LinkedHashMap<>();

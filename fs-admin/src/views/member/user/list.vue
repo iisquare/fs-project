@@ -39,7 +39,7 @@ const rows = ref([])
 const filterRef = ref<FormInstance>()
 const filters = ref(RouteUtil.query2filter(route, { advanced: false, roleIds: [], deleted: '' }))
 const pagination = ref(RouteUtil.pagination(filters.value))
-const selection = ref([])
+const selection: any = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
   tableRef.value?.clearSelection()
   Object.assign(filters.value, RouteUtil.pagination2filter(pagination.value, keepPage))
@@ -103,7 +103,9 @@ const handleDelete = () => {
     loading.value = true
     UserApi.delete(ids, { success: true }).then(() => {
       handleRefresh(false, true)
-    }).catch(() => {})
+    }).catch(() => {
+      loading.value = false
+    })
   }).catch(() => {})
 }
 </script>
@@ -197,11 +199,11 @@ const handleDelete = () => {
     <el-table
       ref="tableRef"
       :data="rows"
-      :row-key="record => record.id"
+      :row-key="(record: any) => record.id"
       :border="true"
       v-loading="loading"
       table-layout="auto"
-      @selection-change="newSelection => selection = newSelection"
+      @selection-change="(s: any) => selection = s"
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns">

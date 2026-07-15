@@ -23,9 +23,9 @@ import java.util.Map;
 public class MongoService extends ServiceBase {
 
     @Autowired
-    private DemoTestMongo testMongo;
+    DemoTestMongo testMongo;
     @Autowired
-    private Configuration configuration;
+    Configuration configuration;
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) {
         Map<String, Object> result = new LinkedHashMap<>();

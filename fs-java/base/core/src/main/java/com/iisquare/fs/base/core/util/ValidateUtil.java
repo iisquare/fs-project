@@ -92,12 +92,20 @@ public class ValidateUtil {
         return DPUtil.isMatcher(regexLabel, object);
     }
 
+    public static int filterInteger(Object object, Integer min, Integer max, int defaultValue) {
+        return DPUtil.parseInt(filterInteger(object, true, min, max, defaultValue));
+    }
+
     public static Integer filterInteger(Object object, boolean bBound, Integer min, Integer max, Integer defaultValue) {
         if (null == object) return defaultValue;
         int obj = DPUtil.parseInt(object);
         if (null != min && obj < min) return bBound ? defaultValue : null;
         if (null != max && obj > max) return bBound ? defaultValue : null;
         return obj;
+    }
+
+    public static long filterLong(Object object, Long min, Long max, long defaultValue) {
+        return DPUtil.parseLong(filterLong(object, true, min, max, defaultValue));
     }
 
     public static Long filterLong(Object object, boolean bBound, Long min, Long max, Long defaultValue) {
@@ -108,12 +116,20 @@ public class ValidateUtil {
         return obj;
     }
 
+    public static double filterDouble(Object object, Double min, Double max, double defaultValue) {
+        return DPUtil.parseDouble(filterDouble(object, true, min, max, defaultValue));
+    }
+
     public static Double filterDouble(Object object, boolean bBound, Double min, Double max, Double defaultValue) {
         if (null == object) return defaultValue;
         double obj = DPUtil.parseDouble(object);
         if (null != min && obj < min) return bBound ? defaultValue : null;
         if (null != max && obj > max) return bBound ? defaultValue : null;
         return obj;
+    }
+
+    public static float filterFloat(Object object, Float min, Float max, float defaultValue) {
+        return DPUtil.parseFloat(filterFloat(object, true, min, max, defaultValue));
     }
 
     public static Float filterFloat(Object object, boolean bBound, Float min, Float max, Float defaultValue) {
@@ -135,7 +151,7 @@ public class ValidateUtil {
     public static String filterRegex(String pattener, String object, boolean bTrim, Integer min, Integer max, String defaultValue) {
         if (null == object) return defaultValue;
         if (bTrim) object = DPUtil.trim(object);
-        if (object.length() > 0 && !DPUtil.isMatcher(pattener, object)) return defaultValue;
+        if (!object.isEmpty() && !DPUtil.isMatcher(pattener, object)) return defaultValue;
         return filterLength(object, min, max, defaultValue);
     }
 

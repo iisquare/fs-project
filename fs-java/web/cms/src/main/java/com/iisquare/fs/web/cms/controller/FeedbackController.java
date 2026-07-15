@@ -24,11 +24,11 @@ import java.util.Map;
 public class FeedbackController extends PermitControllerBase {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private FeedbackService feedbackService;
+    FeedbackService feedbackService;
     @Autowired
-    private MemberRpc memberRpc;
+    MemberRpc memberRpc;
 
     @RequestMapping("/list")
     @Permission("")

@@ -32,17 +32,17 @@ import java.util.*;
 public class QualityPlanService extends ServiceBase {
 
     @Autowired
-    private QualityPlanDao planDao;
+    QualityPlanDao planDao;
     @Autowired
-    private QualityLogDao logDao;
+    QualityLogDao logDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private QualityLogicService logicService;
+    QualityLogicService logicService;
     @Autowired
-    private QualityRuleService ruleService;
+    QualityRuleService ruleService;
     @Autowired
-    private SourceService sourceService;
+    SourceService sourceService;
 
     public Map<?, ?> status(String level) {
         Map<Integer, String> status = new LinkedHashMap<>();

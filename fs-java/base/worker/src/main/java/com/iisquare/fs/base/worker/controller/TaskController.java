@@ -21,9 +21,9 @@ import java.util.Map;
 public class TaskController extends PermitControllerBase {
 
     @Autowired
-    private TaskService taskService;
+    TaskService taskService;
     @Autowired
-    private ContainerService containerService;
+    ContainerService containerService;
 
     @GetMapping("/transient")
     public String transientAction(@RequestParam Map<?, ?> param) {

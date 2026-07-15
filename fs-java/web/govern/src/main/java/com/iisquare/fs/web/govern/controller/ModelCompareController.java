@@ -16,7 +16,7 @@ import java.util.Map;
 public class ModelCompareController extends PermitControllerBase {
 
     @Autowired
-    private ModelCompareService compareService;
+    ModelCompareService compareService;
 
     @RequestMapping("/jdbc")
     @Permission("model:")

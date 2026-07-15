@@ -7,4 +7,6 @@
 export {}
 declare global {
   const ElDivider: typeof import('element-plus/es')['ElDivider']
+  const ElMessage: typeof import('element-plus/es')['ElMessage']
+  const ElNotification: typeof import('element-plus/es')['ElNotification']
 }

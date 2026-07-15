@@ -22,9 +22,9 @@ import java.util.Map;
 public class MenuController extends PermitControllerBase {
 
     @Autowired
-    private RbacService rbacService;
+    RbacService rbacService;
     @Autowired
-    private MenuService menuService;
+    MenuService menuService;
 
     @RequestMapping("/tree")
     @Permission("")

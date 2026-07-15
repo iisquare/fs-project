@@ -21,9 +21,9 @@ import java.util.Map;
 public class TagController extends PermitControllerBase {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private TagService tagService;
+    TagService tagService;
 
     @RequestMapping("/list")
     @Permission("")

@@ -15,7 +15,9 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ResourceUtils;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.IIOImage;
@@ -26,6 +28,8 @@ import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
@@ -34,9 +38,9 @@ import java.util.List;
 public class FileService {
 
     @Autowired
-    private ArchiveService archiveService;
+    ArchiveService archiveService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     @Value("${fs.file.shareKey:}")
     private String shareKey; // 文件分享校验码
@@ -61,14 +65,14 @@ public class FileService {
     @Value("${fs.site.urls.file}")
     private String fileUrl;
     @Autowired
-    private MinIOService minIOService;
+    MinIOService minIOService;
 
     public Map<String, Map<String, String>> scale(String field) {
-        java.util.List<Map<String, String>> scale = Arrays.asList(new LinkedHashMap<String, String>() {{
+        java.util.List<Map<String, String>> scale = Arrays.asList(new LinkedHashMap<>() {{
             put("id", "fw");
             put("label", "固定宽度");
             put("value", "fixed-width");
-        }}, new LinkedHashMap<String, String>() {{
+        }}, new LinkedHashMap<>() {{
             put("id", "fh");
             put("label", "固定高度");
             put("value", "fixed-height");
@@ -77,23 +81,23 @@ public class FileService {
     }
 
     public Map<String, Map<String, String>> position(String field) {
-        List<Map<String, String>> position = Arrays.asList(new LinkedHashMap<String, String>() {{
+        List<Map<String, String>> position = Arrays.asList(new LinkedHashMap<>() {{
             put("id", "lt");
             put("label", "左上");
             put("value", "left-top");
-        }}, new LinkedHashMap<String, String>() {{
+        }}, new LinkedHashMap<>() {{
             put("id", "rt");
             put("label", "右上");
             put("value", "right-top");
-        }}, new LinkedHashMap<String, String>() {{
+        }}, new LinkedHashMap<>() {{
             put("id", "lb");
             put("label", "左下");
             put("value", "left-bottom");
-        }}, new LinkedHashMap<String, String>() {{
+        }}, new LinkedHashMap<>() {{
             put("id", "rb");
             put("label", "右下");
             put("value", "right-bottom");
-        }}, new LinkedHashMap<String, String>() {{
+        }}, new LinkedHashMap<>() {{
             put("id", "cc");
             put("label", "居中");
             put("value", "center");
@@ -160,19 +164,13 @@ public class FileService {
         Integer width = ValidateUtil.filterInteger(args.at("/width").asInt(0), true, 16, 4096, null);
         Integer height = ValidateUtil.filterInteger(args.at("/height").asInt(0), true, 16, 4096, null);
         if (null == width || null == height) return ApiUtil.result(1503, "图片尺寸异常", null);
-        File wm = null;
+        Image watermark = null;
         if (!DPUtil.empty(wmPath)) {
             try {
-                wm = ResourceUtils.getFile(wmPath);
-            } catch (FileNotFoundException e) {
-                return ApiUtil.result(1401, "导入资源失败", e.getMessage());
+                watermark = ImageIO.read(new DefaultResourceLoader().getResource(wmPath).getInputStream());
+            } catch (IOException e) {
+                return ApiUtil.result(1402, "加载资源失败", e.getMessage());
             }
-        }
-        Image watermark = null;
-        try {
-            if (null != wm ) watermark = ImageIO.read(wm);
-        } catch (IOException e) {
-            return ApiUtil.result(1402, "加载资源失败", e.getMessage());
         }
         Image background;
         try {
@@ -182,6 +180,9 @@ public class FileService {
         }
         int sourceWidth = background.getWidth(null);
         int sourceHeight = background.getHeight(null);
+        // 限制输出尺寸不超过原图实际宽高
+        width = Math.min(width, sourceWidth);
+        height = Math.min(height, sourceHeight);
         Map<String, Map<String, String>> position = position("id");
         String clip = ""; // 默认不剪裁
         if (args.has("clip")) {
@@ -325,7 +326,7 @@ public class FileService {
             }
         }
         String uri = args.uri();
-        if (uri.length() > 0) uri = "-" + uri;
+        if (!uri.isEmpty()) uri = "-" + uri;
         return String.format("/image/%s%s%s", id, uri, json.at("/suffix").asText(""));
     }
 
@@ -361,7 +362,7 @@ public class FileService {
             ObjectNode item = result.putObject(id);
             if (DPUtil.empty(id) || !args.isObject()) continue;
             Archive archive = archives.get(id);
-            if (1 != archive.getStatus() || archive.getDeletedTime() != 0) continue;
+            if (null ==archive || 1 != archive.getStatus() || archive.getDeletedTime() != 0) continue;
             item.put("id", archive.getId());
             item.put("name", archive.getName());
             item.put("bucket", archive.getBucket());
@@ -374,15 +375,18 @@ public class FileService {
                     uri = uri(archive.getId(), archive.getSuffix(), expire, time);
                     break;
                 case "image":
+                    args.put("id", archive.getId());
                     args.put("suffix", archive.getSuffix());
                     uri = uri(args);
                     break;
             }
             item.put("uri", uri);
+            item.put("url", url(uri));
         }
         return result;
     }
 
+    @Transactional
     public Map<String, Object> upload(HttpServletRequest request, MultipartFile file, Map<String, Object> param) {
         String bucket = DPUtil.parseString(param.get("bucket"));
         if (DPUtil.empty(bucket)) return ApiUtil.result(1001, "文件桶不能为空", bucket);
@@ -391,12 +395,25 @@ public class FileService {
         if(null == file) {
             return ApiUtil.result(1003, "获取文件句柄失败", null);
         }
+        int status = param.containsKey("status") ? DPUtil.parseInt(param.get("status")) : 1;
+        if (!archiveService.status().containsKey(status)) {
+            return ApiUtil.result(1004, "文件状态异常", status);
+        }
+        try {
+            if (!DPUtil.parseBoolean(param.get("overwrite")) && minIOService.exists(bucket, filepath)) {
+                return ApiUtil.result(1005, "文件已存在，请核对存储路径", param);
+            }
+        } catch (Exception e) {
+            return ApiUtil.result(1006, "检查文件状态失败", e.getMessage());
+        }
         Archive archive = new Archive();
         archive.setId(Archive.uuid());
         archive.setName(file.getOriginalFilename());
         archive.setBucket(bucket);
         archive.setFilepath(filepath);
         archive.setSuffix(Archive.suffix(archive.getName()));
+        archive.setSharable(DPUtil.parseBoolean(param.get("sharable")) ? 1 : 0);
+        archive.setTraceIdentity(DPUtil.parseString(param.get("traceIdentity")));
         archive.setType(file.getContentType());
         archive.setSize(file.getSize());
         InputStream stream = null;
@@ -416,14 +433,15 @@ public class FileService {
         } finally {
             FileUtil.close( stream);
         }
-        archive.setStatus(1);
+        archive.setStatus(status);
         archive = archiveService.add(archive, rbacService.uid(request));
         try {
             stream = file.getInputStream();
-            minIOService.putObject(bucket, filepath, stream, file.getContentType(), null, null);
+            minIOService.putObject(bucket, filepath, stream, file.getSize(), file.getContentType(), null, DPUtil.buildMap(
+                    String.class, String.class, "filename", file.getOriginalFilename()
+            ));
         } catch (Exception e) {
-            archive.setStatus(4);
-            archiveService.update(archive, rbacService.uid(request));
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return ApiUtil.result(1503, "存储文件失败", e.getMessage());
         } finally {
             FileUtil.close( stream);
@@ -435,7 +453,7 @@ public class FileService {
         String id = DPUtil.parseString(param.get("id"));
         ObjectNode json = DPUtil.objectNode();
         json.putObject(id).put("type", "file");
-        return url(json).at("/" + id + "/uri").asText();
+        return url(json).at("/" + id + "/url").asText();
     }
 
     public Map<String, Object> image(String filename, HttpServletResponse response) {
@@ -444,10 +462,13 @@ public class FileService {
         if (null == archive || 1 != archive.getStatus() || archive.getDeletedTime() > 0) {
             return ApiUtil.result(1404, "文件不可用", filename);
         }
+        if (1 != archive.getSharable()) {
+            return ApiUtil.result(1403, "文件不可访问", filename);
+        }
         if (!args.at("/suffix").asText("").equals(archive.getSuffix())) {
             return ApiUtil.result(1405, "文件格式不匹配", filename);
         }
-        if (!Arrays.asList("image/jpeg").contains(archive.getType())) {
+        if (!Arrays.asList("image/jpeg", "image/webp", "image/png", "image/gif", "image/bmp").contains(archive.getType())) {
             return ApiUtil.result(1406, "文件类型暂不支持", filename);
         }
         GetObjectResponse ores;
@@ -467,18 +488,51 @@ public class FileService {
         }
         float quality = ValidateUtil.filterFloat(args.at("/quality").asDouble(0.75f), true, 0.0f, 1.0f, 0.75f);
         try {
-            // 获取 JPEG 图片写入器
-            Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpeg");
+            // 根据文件类型确定输出格式
+            String formatName;
+            String contentType = archive.getType();
+            switch (contentType) {
+                case "image/webp":
+                    formatName = "webp";
+                    break;
+                case "image/png":
+                    formatName = "png";
+                    break;
+                case "image/gif":
+                    formatName = "gif";
+                    break;
+                case "image/bmp":
+                    formatName = "bmp";
+                    break;
+                default:
+                    formatName = "jpeg";
+                    contentType = "image/jpeg";
+            }
+            // 获取对应格式的图片写入器
+            Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName(formatName);
             if (!writers.hasNext()) {
-                return ApiUtil.result(1502, "No JPEG writers found", null);
+                // 回退到JPEG格式
+                formatName = "jpeg";
+                contentType = "image/jpeg";
+                writers = ImageIO.getImageWritersByFormatName(formatName);
+            }
+            if (!writers.hasNext()) {
+                return ApiUtil.result(1502, "No image writers found", null);
             }
             ImageWriter writer = writers.next();
             // 配置编码参数
             ImageWriteParam params = writer.getDefaultWriteParam();
-            params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-            params.setCompressionQuality(quality); // quality 范围 0.0f ~ 1.0f
+            if (params.canWriteCompressed()) {
+                params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                // WebP需要显式设置压缩类型，否则setCompressionQuality会抛异常
+                String[] compressionTypes = params.getCompressionTypes();
+                if (compressionTypes != null && compressionTypes.length > 0) {
+                    params.setCompressionType(compressionTypes[0]);
+                }
+                params.setCompressionQuality(quality); // quality 范围 0.0f ~ 1.0f
+            }
             // 创建图片输出流
-            response.setContentType("image/jpeg");
+            response.setContentType(contentType);
             try (ImageOutputStream ios = ImageIO.createImageOutputStream(out)) {
                 writer.setOutput(ios);
                 writer.write(null, new IIOImage(image, null, null), params);
@@ -486,7 +540,7 @@ public class FileService {
             writer.dispose();
             return ApiUtil.result(0, null, null);
         } catch (IOException e) {
-            return ApiUtil.result(1500, "JPEG encoding failed", e);
+            return ApiUtil.result(1500, "Image encoding failed", e);
         } finally {
             FileUtil.close(out, ores);
         }
@@ -547,15 +601,14 @@ public class FileService {
             }
             response.setContentType(archive.getType());
             response.addHeader("Content-Length", String.valueOf(len));
-            response.addHeader("Content-Disposition", "attachment; filename=" + archive.getName());
-            response.addHeader("Last-Modified", new SimpleDateFormat("EEE, d MMM yyyy hh:mm:ss Z", Locale.ENGLISH).format(stat.lastModified()) + " GMT");
-            byte[] buf = new byte[1024];
-            while (len > 0) {
-                ores.read(buf);
-                long l = len > 1024 ? 1024 : len;
-                out.write(buf, 0, (int) l);
+            String encodedName = URLEncoder.encode(archive.getName(), StandardCharsets.UTF_8).replace("+", "%20");
+            response.addHeader("Content-Disposition", "attachment; filename=\"" + archive.getId() + archive.getSuffix() + "\"; filename*=UTF-8''" + encodedName);
+            response.addHeader("Last-Modified", new SimpleDateFormat("EEE, d MMM yyyy hh:mm:ss Z", Locale.ENGLISH).format(Date.from(stat.lastModified().toInstant())) + " GMT");
+            byte[] buf = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = ores.read(buf)) != -1) {
+                out.write(buf, 0, bytesRead);
                 out.flush();
-                len -= l;
             }
             return ApiUtil.result(0, null, null);
         } catch (Exception e) {

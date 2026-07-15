@@ -63,6 +63,18 @@ public class SpecificationHelper<T> {
         return this;
     }
 
+    public SpecificationHelper<T> likes(String key, String... fields) {
+        String value = DPUtil.trim(DPUtil.parseString(param.get(key)));
+        if(!DPUtil.empty(value)) {
+            List<Predicate> ors = new ArrayList<>();
+            for(String field : fields) {
+                ors.add(builder.like(root.get(field), "%" + value + "%"));
+            }
+            predicates.add(builder.or(ors.toArray(new Predicate[0])));
+        }
+        return this;
+    }
+
     public SpecificationHelper<T> equalWithIntGTZero(String key) {
         return equalWithIntGTZero(key, key);
     }

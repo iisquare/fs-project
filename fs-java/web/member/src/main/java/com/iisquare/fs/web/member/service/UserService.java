@@ -35,19 +35,19 @@ import java.util.*;
 public class UserService extends JPAServiceBase {
 
     @Autowired
-    private UserDao userDao;
+    UserDao userDao;
     @Autowired
-    private Configuration configuration;
+    Configuration configuration;
     @Autowired
-    private RelationDao relationDao;
+    RelationDao relationDao;
     @Autowired
-    private RoleDao roleDao;
+    RoleDao roleDao;
     @Autowired
-    private RbacService rbacService;
+    RbacService rbacService;
     @Autowired
-    private RelationService relationService;
+    RelationService relationService;
     @Autowired
-    private SettingService settingService;
+    SettingService settingService;
     @Autowired
     CaptchaService captchaService;
     @Autowired
@@ -485,7 +485,8 @@ public class UserService extends JPAServiceBase {
         ObjectNode result = search(userDao, param, (Specification<User>) (root, query, cb) -> {
             SpecificationHelper<User> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id").deleted();
-            helper.likeExp("serial").likeExp("name").likeExp("email").likeExp("phone");
+            helper.likes("name", "name", "serial");
+            helper.likeExp("serial").likeExp("email").likeExp("phone");
             helper.equalWithIntNotEmpty("status").equal("createdIp").equal("loginIp");
             helper.betweenWithDate("createdTime").betweenWithDate("updatedTime");
             helper.betweenWithDate("loginTime").betweenWithDate("lockedTime").betweenWithDate("deletedTime");

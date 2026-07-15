@@ -25,7 +25,7 @@ import java.util.*;
 public class AgentService extends JPAServiceBase {
 
     @Autowired
-    private AgentDao agentDao;
+    AgentDao agentDao;
     @Autowired
     DefaultRbacService rbacService;
     @Autowired

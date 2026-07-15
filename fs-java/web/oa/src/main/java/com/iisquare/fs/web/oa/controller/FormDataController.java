@@ -23,9 +23,9 @@ import java.util.Map;
 public class FormDataController extends PermitControllerBase {
 
     @Autowired
-    private FormDataService formDataService;
+    FormDataService formDataService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     @RequestMapping("/info")
     @Permission("")

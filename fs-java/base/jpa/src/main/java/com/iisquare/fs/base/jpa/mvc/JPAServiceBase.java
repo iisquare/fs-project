@@ -17,8 +17,6 @@ import org.springframework.data.jpa.domain.Specification;
 import java.io.Serializable;
 import java.util.*;
 
-import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
-
 public class JPAServiceBase extends ServiceBase {
 
     public JsonNode filter(JsonNode json) {
@@ -129,14 +127,14 @@ public class JPAServiceBase extends ServiceBase {
 
     protected <T, ID extends Serializable> ObjectNode search(
             DaoBase<T, ID> dao, Map<String, Object> param, Specification<T> specification, Sort defaultSort, String... sorts) {
-        return search(dao, param, specification, 15, DPUtil.array2list(sorts), defaultSort);
+        return search(dao, param, specification, 15, defaultSort, DPUtil.array2list(sorts));
     }
 
     protected <T, ID extends Serializable> ObjectNode search(
             DaoBase<T, ID> dao, Map<String, Object> param,
-            Specification<T> specification, int defaultPageSize, Collection<String> sorts, Sort defaultSort) {
-        int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
-        int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, defaultPageSize);
+            Specification<T> specification, int defaultPageSize, Sort defaultSort, Collection<String> sorts) {
+        int page = ValidateUtil.filterInteger(param.get("page"), 1, null, 1);
+        int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), 1, 500, defaultPageSize);
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), sorts);
         if (null == sort) sort = null == defaultSort ? Sort.unsorted() : defaultSort;
         Page<T> data = dao.findAll(specification, PageRequest.of(page - 1, pageSize, sort));

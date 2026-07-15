@@ -8,6 +8,7 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
+import com.iisquare.fs.base.web.util.ServiceUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.lm.dao.CreditDao;
 import com.iisquare.fs.web.lm.dao.UsageDao;
@@ -22,9 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -45,7 +44,7 @@ public class UsageService extends JPAServiceBase {
     @Autowired
     ModelService modelService;
     @Autowired
-    private UsageMapper usageMapper;
+    UsageMapper usageMapper;
     @Autowired
     RemindService  remindService;
 
@@ -56,6 +55,9 @@ public class UsageService extends JPAServiceBase {
 
     @Transactional
     public boolean record(Usage usage, ObjectNode auth) {
+        if (null == usage.getCreditAmount()) {
+            usage.setCreditAmount(BigDecimal.ZERO);
+        }
         BigDecimal amount = usage.getCreditAmount().abs();
         try {
             creditDao.consume(usage.getUid(), amount);
@@ -88,7 +90,7 @@ public class UsageService extends JPAServiceBase {
             helper.equalWithIntGTZero("uid").equal("type").equal("place").equal("status");
             helper.equalWithIntGTZero("authId").equalWithIntGTZero("modelId").equalWithIntGTZero("providerId");
             helper.equal("requestIp").like("requestBody").like("responseBody");
-            helper.equal("finishReason").like("finishDetail");
+            helper.equal("finishReason").like("finishDetail").like("requestPrompt").like("responseCompletion");
             helper.like("auditReason").like("auditDetail").equalWithIntNotEmpty("auditUid");
             helper.betweenWithDate("beginTime").betweenWithDate("endTime").betweenWithDate("auditTime");
             return cb.and(helper.predicates());
@@ -100,6 +102,7 @@ public class UsageService extends JPAServiceBase {
             providerService.fillInfo(rows, "providerId");
             modelService.fillInfo(rows, "modelId");
         }
+        ServiceUtil.retain(rows, param.get("columns"));
         return result;
     }
 

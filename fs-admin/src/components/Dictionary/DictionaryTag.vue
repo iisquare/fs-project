@@ -1,4 +1,17 @@
 <script setup lang="ts">
+/**
+ * 字典标签展示组件 - 将字典值以标签形式展示，支持按字典节点树渲染层级路径。
+ *
+ * @v-model  {*}             字典值（双向绑定主值），支持单个值或数组
+ * @prop     {Object}        nodes       - 字典节点映射表（必填），key 为字典值，value 为 { label, parentId }
+ * @prop     {Boolean}       iteratable  - 是否迭代渲染父级路径，默认 false
+ *
+ * 节点映射结构 (nodes):
+ *   { [value: string]: { label: string, parentId: any } }
+ *
+ * @example
+ * <dictionary-tag v-model="deptId" :nodes="deptNodeMap" :iteratable="true" />
+ */
 import { computed } from 'vue';
 import DataUtil from '@/utils/DataUtil';
 

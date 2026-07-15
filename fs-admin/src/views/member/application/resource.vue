@@ -18,7 +18,7 @@ const info: any = ref({})
 
 const rows = ref([])
 const tableRef = ref<TableInstance>()
-const selection = ref([])
+const selection: any = ref([])
 const expandedRowKeys = ref([])
 const config = ref({
   ready: false,
@@ -126,7 +126,9 @@ const handleDelete = () => {
     loading.value = true
     ResourceApi.delete(ids, { success: true }).then(() => {
       handleRefresh()
-    }).catch(() => {})
+    }).catch(() => {
+      loading.value = false
+    })
   }).catch(() => {})
 }
 </script>
@@ -155,12 +157,12 @@ const handleDelete = () => {
     <el-table
       ref="tableRef"
       :data="rows"
-      :row-key="record => record.id"
+      :row-key="(record: any) => record.id"
       :expand-row-keys="expandedRowKeys"
       :border="true"
       v-loading="loading"
       table-layout="auto"
-      @selection-change="newSelection => selection = newSelection"
+      @selection-change="(s: any) => selection = s"
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns">

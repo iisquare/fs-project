@@ -8,3 +8,10 @@ spring:
     hibernate:
       naming:
         physical-strategy: com.iisquare.fs.web.lm.dsconfig.NamingStrategy
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+fs:
+  lm:
+    uploadPath: ./data/lm/

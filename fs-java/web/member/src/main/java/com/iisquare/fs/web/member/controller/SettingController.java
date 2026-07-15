@@ -21,7 +21,7 @@ import java.util.Map;
 public class SettingController extends PermitControllerBase {
 
     @Autowired
-    private SettingService settingService;
+    SettingService settingService;
 
     @RequestMapping("/get")
     @Permission("")

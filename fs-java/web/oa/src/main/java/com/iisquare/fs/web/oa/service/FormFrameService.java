@@ -26,9 +26,9 @@ import java.util.*;
 public class FormFrameService extends ServiceBase {
 
     @Autowired
-    private FormFrameDao formFrameDao;
+    FormFrameDao formFrameDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) {
         Map<String, Object> result = new LinkedHashMap<>();

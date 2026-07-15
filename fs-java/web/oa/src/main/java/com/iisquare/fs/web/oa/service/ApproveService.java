@@ -37,24 +37,24 @@ import java.util.*;
 public class ApproveService extends ServiceBase {
 
     @Autowired
-    private RepositoryService repositoryService; // 流程仓库服务，管理流程仓库，比如部署、删除、读取流程资源。
+    RepositoryService repositoryService; // 流程仓库服务，管理流程仓库，比如部署、删除、读取流程资源。
     @Autowired
-    private IdentityService identityService; // 身份服务，管理用户、组及其关系。
+    IdentityService identityService; // 身份服务，管理用户、组及其关系。
     @Autowired
-    private RuntimeService runtimeService; // 运行服务，处理所有正在运行态的流程实例、任务等。
+    RuntimeService runtimeService; // 运行服务，处理所有正在运行态的流程实例、任务等。
     @Autowired
-    private TaskService taskService; // 任务服务，管理（签收、办理、指派等）、查询任务。
+    TaskService taskService; // 任务服务，管理（签收、办理、指派等）、查询任务。
     @Autowired
-    private HistoryService historyService; // 历史服务，管理所有历史数据。
+    HistoryService historyService; // 历史服务，管理所有历史数据。
 
     @Autowired
-    private WorkflowService workflowService;
+    WorkflowService workflowService;
     @Autowired
-    private FormService formService; // 自定义表单服务（非flowable包），读取和流程、任务相关的表单数据。
+    FormService formService; // 自定义表单服务（非flowable包），读取和流程、任务相关的表单数据。
     @Autowired
-    private MemberRpc memberRpc;
+    MemberRpc memberRpc;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public String businessKey(ObjectNode frame, ObjectNode form) {
         return "fs-" + form.get(FormStorage.FIELD_ID).asText();

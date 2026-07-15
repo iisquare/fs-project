@@ -16,7 +16,7 @@ import java.util.Map;
 public class MetaController extends PermitControllerBase {
 
     @Autowired
-    private MetaService metaService;
+    MetaService metaService;
 
     @GetMapping("/statistic")
     @Permission("model:")
@@ -27,8 +27,8 @@ public class MetaController extends PermitControllerBase {
 
     @RequestMapping("/search")
     @Permission("model:")
-    public String searchAction(@RequestBody Map<?, ?> param) {
-        Map<String, Object> result = metaService.search(param, DPUtil.buildMap("withRowsArray", true));
+    public String searchAction(@RequestBody Map<String, Object> param) {
+        ObjectNode result = metaService.search(param, DPUtil.buildMap());
         return ApiUtil.echoResult(0, null, result);
     }
 

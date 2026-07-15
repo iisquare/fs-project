@@ -23,13 +23,13 @@ import java.util.*;
 public class MenuService extends JPAServiceBase {
 
     @Autowired
-    private MenuDao menuDao;
+    MenuDao menuDao;
     @Autowired
-    private UserService userService;
+    UserService userService;
     @Autowired
-    private ApplicationService applicationService;
+    ApplicationService applicationService;
     @Autowired
-    private RbacService rbacService;
+    RbacService rbacService;
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();

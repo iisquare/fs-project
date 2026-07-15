@@ -16,7 +16,7 @@ import java.util.Set;
 public class RelationService extends ServiceBase {
 
     @Autowired
-    private RelationDao relationDao;
+    RelationDao relationDao;
 
     public Set<Integer> relationIds(String type, Integer aid, Set<Integer> bids) {
         return relationIds(type, aid, bids, 0);

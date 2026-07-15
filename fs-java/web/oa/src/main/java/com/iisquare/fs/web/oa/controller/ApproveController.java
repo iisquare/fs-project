@@ -22,11 +22,11 @@ import java.util.Map;
 public class ApproveController extends PermitControllerBase {
 
     @Autowired
-    private WorkflowService workflowService;
+    WorkflowService workflowService;
     @Autowired
-    private ApproveService approveService;
+    ApproveService approveService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     @RequestMapping("/workflow")
     @Permission("workflow")

@@ -1,33 +1,20 @@
 import api from '@/core/Api'
-import axios from 'axios'
 
 export default {
-  get (url: string, data = {}, tips = {}, config = {}) {
-    return api.post('/proxy/get', {
-      app: 'Lucene',
-      uri: url,
-      data: data
-    }, tips, config)
+  get (url: string, params = {}, tips = {}, config = {}) {
+    return api.get('/lucene' + url, params, tips, config)
   },
   post (url: string, data = {}, tips = {}, config = {}) {
-    return api.post('/proxy/post', {
-      app: 'Lucene',
-      uri: url,
-      data: data
-    }, tips, config)
+    return api.post('/lucene' + url, data, tips, config)
   },
-  esPost (baseURL: string, uri: string, data: any = {}) {
-    const $axios = axios.create({ baseURL })
-    return $axios.post(uri, data)
+  ikIndex (param: any, tips = {}) {
+    return this.post('/ik/index', param, tips)
   },
-  dictIndex (baseURL: string, param: any) {
-    return this.esPost(baseURL, '/index', param)
+  ikDemo (param: any, tips = {}) {
+    return this.post('/ik/demo', param, tips)
   },
-  dictDemo (baseURL: string, param: any) {
-    return this.esPost(baseURL, '/demo', param)
-  },
-  dictReload (baseURL: string, param: any) {
-    return this.esPost(baseURL, '/reload', param)
+  ikReload (param: any, tips = {}) {
+    return this.post('/ik/reload', param, tips)
   },
   dictionaryList (param: any, tips = {}) {
     return this.post('/dictionary/list', param, tips)

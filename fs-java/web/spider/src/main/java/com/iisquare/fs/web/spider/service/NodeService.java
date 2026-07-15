@@ -79,9 +79,9 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
     @Autowired
     TemplateService templateService;
     @Autowired
-    private StringRedisTemplate redis;
+    StringRedisTemplate redis;
     @Autowired
-    private ServletWebServerApplicationContext context;
+    ServletWebServerApplicationContext context;
 
     @Override
     public void afterPropertiesSet() throws Exception {

@@ -18,7 +18,7 @@ import java.util.Map;
 public class TriggerController extends PermitControllerBase {
 
     @Autowired
-    private TriggerService triggerService;
+    TriggerService triggerService;
 
     @RequestMapping("/list")
     @Permission("job:")

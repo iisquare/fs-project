@@ -22,26 +22,26 @@ import java.util.*;
 public class ArchiveService extends JPAServiceBase {
 
     @Autowired
-    private ArchiveDao archiveDao;
+    ArchiveDao archiveDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private Configuration configuration;
+    Configuration configuration;
     @Autowired
-    private MinIOService minIOService;
+    MinIOService minIOService;
 
     public ObjectNode search(Map<String, Object> param, Map<?, ?> config) {
         ObjectNode result = search(archiveDao, param, (root, query, cb) -> {
             SpecificationHelper<Archive> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.dateFormat(configuration.getFormatDate());
-            helper.equal("id").like("name").equal("bucket")
+            helper.equal("id").like("name").equal("bucket").deleted()
                     .equal("suffix").like("type").like("filepath").between("size");
-            helper.equalWithIntNotEmpty("status")
+            helper.equalWithIntNotEmpty("status").equal("traceIdentity")
                     .betweenWithDate("createdTime").betweenWithDate("updatedTime");
             return cb.and(helper.predicates());
         }, Sort.by(Sort.Order.desc("updatedTime"))
                 , "id", "name", "filepath", "size", "status", "createdTime", "updatedTime");
-        JsonNode rows = ApiUtil.rows(result);
+        JsonNode rows = format(ApiUtil.rows(result));
         if(!DPUtil.empty(config.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
         }
@@ -49,6 +49,14 @@ public class ArchiveService extends JPAServiceBase {
             fillStatus(rows, status());
         }
         return result;
+    }
+
+    public JsonNode format(JsonNode rows) {
+        for (JsonNode row : rows) {
+            ObjectNode node = (ObjectNode) row;
+            node.put("sharable", 1 == node.at("/sharable").asInt(0));
+        }
+        return rows;
     }
 
     public boolean miss(String id) {
@@ -95,6 +103,8 @@ public class ArchiveService extends JPAServiceBase {
         info.setBucket(bucket);
         info.setFilepath(filepath);
         info.setSuffix(DPUtil.parseString(param.get("suffix")));
+        info.setSharable(DPUtil.parseBoolean(param.get("sharable")) ? 1 : 0);
+        info.setTraceIdentity(DPUtil.parseString(param.get("traceIdentity")));
         info.setType(DPUtil.parseString(param.get("type")));
         info.setSize(DPUtil.parseLong(param.get("size")));
         info.setDigest(DPUtil.parseString(param.get("digest")));
@@ -152,7 +162,6 @@ public class ArchiveService extends JPAServiceBase {
     public boolean deleteByQuery(JsonNode json, HttpServletRequest request) {
         List<Archive> archives = archiveDao.findAll((root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.gt(root.get("deletedTime"), 0));
             for (JsonNode node : json) {
                 String id = node.at("/id").asText();
                 if (!DPUtil.empty(id)) {
@@ -167,7 +176,7 @@ public class ArchiveService extends JPAServiceBase {
                     ));
                 }
             }
-            return cb.or(predicates.toArray(new Predicate[0]));
+            return cb.and(cb.equal(root.get("deletedTime"), 0), cb.or(predicates.toArray(new Predicate[0])));
         });
         return delete(archives, request);
     }

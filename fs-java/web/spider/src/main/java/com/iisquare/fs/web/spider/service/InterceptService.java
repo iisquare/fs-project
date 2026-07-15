@@ -26,11 +26,11 @@ import java.util.Map;
 public class InterceptService extends JPAServiceBase {
 
     @Autowired
-    private InterceptDao interceptDao;
+    InterceptDao interceptDao;
     @Autowired
     TemplateService templateService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();

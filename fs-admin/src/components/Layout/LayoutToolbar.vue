@@ -1,4 +1,22 @@
 <script setup lang="ts">
+/**
+ * 工具栏组件 - 渲染一组图标按钮和分隔线，支持单选/多选高亮，点击执行对应回调。
+ *
+ * @v-model  {ToolbarItem[]} 选中状态（双向绑定主值），组件会自动管理 selected 状态
+ * @prop     {ToolbarItem[]}  toolbars    - 工具栏配置数组
+ * @prop     {*}              instance    - 画布实例，在回调中传递
+ * @prop     {Boolean}        multiSelect  - 是否允许多选，默认 false
+ *
+ * 工具栏项结构 (ToolbarItem):
+ *   { type: 'divider'|'button', label: string, icon: string, selectable?: boolean, selected?: boolean, callback?: (toolbar, instance, event) => void }
+ *
+ * @example
+ * <layout-toolbar v-model="activeTools" :toolbars="[
+ *   { type: 'button', label: '指针', icon: 'Cursor', selectable: true, selected: true, callback: onSelect },
+ *   { type: 'divider' },
+ *   { type: 'button', label: '矩形', icon: 'Rectangle', selectable: true, callback: onSelect },
+ * ]" />
+ */
 import { ref } from 'vue';
 import LayoutIcon from './LayoutIcon.vue';
 import DataUtil from '@/utils/DataUtil';
@@ -8,9 +26,9 @@ const {
   instance,
   multiSelect = false,
 } = defineProps({
-  toolbars: { type: Array<any> }, // [{ type: '类型', label: '标签', icon: '图标', selectable: true, selected: true, callback (toolbar: any, instance: any, event: any) {} }]
+  toolbars: { type: Array<any> },
   instance: { type: null, required: false },
-  multiSelect: { type: Boolean, required: false }, // 是否允许多选
+  multiSelect: { type: Boolean, required: false },
 })
 
 // v-model值必须通过ref()声明，否则无法监听数据变更

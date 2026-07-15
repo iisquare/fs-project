@@ -2,6 +2,7 @@ package com.iisquare.fs.web.core.mvc;
 
 import com.iisquare.fs.base.core.util.CodeUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.web.core.rbac.MaintainControllerBase;
 import com.iisquare.fs.web.core.rbac.PermitRpc;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
@@ -36,6 +37,9 @@ public class FeignInterceptor implements RequestInterceptor {
             return true;
         }
         String name = request.getHeader(FeignInterceptor.HEADER_APP_NAME);
+        if (method.getBean() instanceof MaintainControllerBase) {
+            return DPUtil.empty(name); // 运维类不允许RPC调用
+        }
         if ("fs-admin-service".equals(name)) return false; // 禁用admin后台的转发
         String time = request.getHeader(FeignInterceptor.HEADER_APP_TIME);
         String token = request.getHeader(FeignInterceptor.HEADER_APP_TOKEN);

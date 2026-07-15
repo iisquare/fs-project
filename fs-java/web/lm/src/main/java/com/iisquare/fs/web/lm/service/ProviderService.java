@@ -30,7 +30,7 @@ import java.util.Map;
 public class ProviderService extends JPAServiceBase {
 
     @Autowired
-    private ProviderDao providerDao;
+    ProviderDao providerDao;
     @Autowired
     ModelDao modelDao;
     @Autowired

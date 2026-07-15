@@ -23,11 +23,11 @@ import java.util.*;
 public class RateService extends JPAServiceBase {
 
     @Autowired
-    private RateDao rateDao;
+    RateDao rateDao;
     @Autowired
     TemplateService templateService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
     NodeService nodeService;
 

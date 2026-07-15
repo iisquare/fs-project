@@ -23,9 +23,9 @@ import java.util.Map;
 public class SourceController extends PermitControllerBase {
 
     @Autowired
-    private SourceService sourceService;
+    SourceService sourceService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     @RequestMapping("/schema")
     @Permission

@@ -1,105 +1,119 @@
 package com.iisquare.fs.base.elasticsearch.util;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.*;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
-import org.elasticsearch.common.text.Text;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
-import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
-import org.elasticsearch.search.sort.SortOrder;
+import org.apache.http.util.EntityUtils;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.RestClient;
 
+import java.io.IOException;
 import java.util.*;
 
 public class ElasticsearchUtil {
 
-    public static List<QueryBuilder> should(List<QueryBuilder> must) {
-        BoolQueryBuilder query = QueryBuilders.boolQuery();
-        must.add(query);
-        return query.should();
-    }
+    public static final String FIELD_ID = "_id";
+    public static final String FIELD_SCORE = "_score";
+    public static final String FIELD_HIGHLIGHT = "_highlight";
 
-    public static List<String> ids(SearchHits hits) {
+    public static List<String> ids(HitsMetadata<?> hits) {
         List<String> ids = new ArrayList<>();
         if (null == hits) return ids;
-        for (SearchHit hit : hits.getHits()) {
-            ids.add(hit.getId());
+        for (Hit<?> hit : hits.hits()) {
+            ids.add(hit.id());
         }
         return ids;
     }
 
-    public static Map<String, Map<String, Object>> mapWithId(SearchHits hits) {
-        Map<String, Map<String, Object>> map = new LinkedHashMap<>();
-        if (null == hits) return map;
-        for (SearchHit hit : hits.getHits()) {
-            Map<String, Object> source = hit.getSourceAsMap();
-            if (null == source) source = new LinkedHashMap<>();
-            Map<String, List<String>> highlight = highlight(hit.getHighlightFields());
-            if (highlight.size() > 0) source.put("highlight", highlight);
-            map.put(hit.getId(), source);
+    public static long total(SearchResponse<ObjectNode> response) {
+        if (null == response || null == response.hits() || null == response.hits().total()) {
+            return -1;
         }
-        return map;
+        return response.hits().total().value();
     }
 
-    public static Map<String, List<String>> highlight(Map<String, HighlightField> map) {
-        if (null == map) return null;
-        Map<String, List<String>> result = new LinkedHashMap<>();
-        for (Map.Entry<String, HighlightField> entry : map.entrySet()) {
-            List<String> list = new ArrayList<>();
-            for (Text fragment : entry.getValue().fragments()) {
-                list.add(fragment.string());
+    public static ObjectNode sources(SearchResponse<ObjectNode> response, boolean withExtend) {
+        ObjectNode result = DPUtil.objectNode();
+        if (null == response || null == response.hits() || null == response.hits().hits()) {
+            return result;
+        }
+        for (Hit<ObjectNode> hit : response.hits().hits()) {
+            ObjectNode source = hit.source();
+            if (null == source) source = DPUtil.objectNode();
+            result.replace(hit.id(), source);
+            if (!withExtend) continue;
+            source.put(FIELD_ID, hit.id());
+            source.put(FIELD_SCORE, hit.score());
+            Map<String, List<String>> highlight = hit.highlight();
+            if (null != highlight && !highlight.isEmpty()) {
+                source.putPOJO(FIELD_HIGHLIGHT, highlight);
             }
-            result.put(entry.getKey(), list);
         }
         return result;
     }
 
-    public static <K> Map<K, Map<String, Object>> mapWithField(SearchHits hits, String field, Class<K> kType) {
-        Map<K, Map<String, Object>> map = new LinkedHashMap<>();
-        if (null == hits) return map;
-        for (SearchHit hit : hits.getHits()) {
-            map.put(hit.getFields().get(field).getValue(), hit.getSourceAsMap());
-        }
-        return map;
-    }
-
-    public static boolean order(SearchSourceBuilder search, String sort, Collection<String> fields) {
-        if (DPUtil.empty(sort)) return false;
+    public static List<SortOptions> sort(String sort, Collection<String> fields) {
+        List<SortOptions> options = new ArrayList<>();
+        if (DPUtil.empty(sort)) return options;
         String[] sorts = DPUtil.explode(",", sort);
-        boolean result = false;
         for (String item : sorts) {
             String[] explode = DPUtil.explode("\\.", item);
             String order = explode[0];
             if (!fields.contains(order)) continue;
             String direction = explode.length > 1 ? explode[1].toLowerCase() : "asc";
-            switch (direction) {
-                case "asc":
-                    search.sort(order, SortOrder.ASC);
-                    result = true;
-                    break;
-                case "desc":
-                    search.sort(order, SortOrder.DESC);
-                    result = true;
-                    break;
-            }
+            SortOrder so = "desc".equals(direction) ? SortOrder.Desc : SortOrder.Asc;
+            options.add(SortOptions.of(s -> s.field(f -> f.field(order).order(so))));
         }
-        return result;
+        return options;
     }
 
-    public static HighlightBuilder highlight(String highlight, Map<String, String> highlights, List<String> sources) {
-        HighlightBuilder highlighter = new HighlightBuilder();
-        if (DPUtil.empty(highlight)) return highlighter;
-        String[] strings =DPUtil.explode(",", highlight);
-        for (String item : strings) {
-            String field = highlights.get(item);
-            if (null == field) continue;
-            if (null != sources) sources.add(field);
-            highlighter.field(field);
+    public static List<SortOptions> sort(String sort, Collection<String> fields, boolean keepScore) {
+        if (keepScore && !fields.contains(FIELD_SCORE)) fields.add(FIELD_SCORE);
+        List<SortOptions> options = sort(sort, fields);
+        if (keepScore) {
+            options.add(SortOptions.of(s -> s.field(f -> f.field(FIELD_SCORE).order(SortOrder.Desc))));
         }
-        return highlighter;
+        return options;
+    }
+
+    public static Highlight highlight(Collection<String> highlights) {
+        if (DPUtil.empty(highlights)) return null;
+        Map<String, HighlightField> fieldMap = new LinkedHashMap<>();
+        for (String highlight : highlights) {
+            fieldMap.put(highlight, HighlightField.of(hf -> hf));
+        }
+        if (fieldMap.isEmpty()) return null;
+        return Highlight.of(h -> h.fields(fieldMap));
+    }
+
+    public static RestClient rest(ElasticsearchClient client) {
+        return ((RestClientTransport) client._transport()).restClient();
+    }
+
+    public static Response perform(ElasticsearchClient client, String endpoint, String method, String body) throws Exception {
+        Request request = new Request(method, endpoint);
+        request.setJsonEntity(body);
+        return rest(client).performRequest(request);
+    }
+
+    public static String entity(Response response) throws IOException {
+        return EntityUtils.toString(response.getEntity());
+    }
+
+    public static List<Float> vector(JsonNode arr) {
+        List<Float> vector = new ArrayList<>();
+        for (JsonNode item : arr) {
+            vector.add(item.floatValue());
+
+        }
+        return vector;
     }
 
 }

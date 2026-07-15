@@ -61,6 +61,7 @@ const RouteUtil = {
     return router.replace({
       path: route.fullPath,
       query: {
+        ...route.query,
         [this.filterKey]: this.encode(filter)
       }
     }).catch((err: any) => err)

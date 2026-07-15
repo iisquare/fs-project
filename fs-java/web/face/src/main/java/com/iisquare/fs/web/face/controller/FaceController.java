@@ -3,6 +3,7 @@ package com.iisquare.fs.web.face.controller;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
+import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
 import com.iisquare.fs.web.core.rpc.XlabRpc;
 import com.iisquare.fs.web.face.entity.User;
@@ -19,9 +20,9 @@ import java.util.Map;
 public class FaceController extends PermitControllerBase {
 
     @Autowired
-    private XlabRpc xlabRpc;
+    XlabRpc xlabRpc;
     @Autowired
-    private FaceService faceService;
+    FaceService faceService;
 
     @GetMapping("state")
     public String stateAction() {
@@ -39,7 +40,7 @@ public class FaceController extends PermitControllerBase {
         String url = DPUtil.trim(DPUtil.parseString(param.get("url")));
         if (DPUtil.empty(url)) return ApiUtil.echoResult(1001, "请输入图片地址", url);
         int maxFaceNumber = ValidateUtil.filterInteger(param.get("maxFaceNumber"), true, 0, 100, 0);
-        return xlabRpc.post("/face/detect", DPUtil.buildMap("image", url, "maxFaceNumber", maxFaceNumber));
+        return RpcUtil.string(xlabRpc.post("/face/detect", DPUtil.buildMap("image", url, "maxFaceNumber", maxFaceNumber)));
     }
 
     @RequestMapping("/compare")

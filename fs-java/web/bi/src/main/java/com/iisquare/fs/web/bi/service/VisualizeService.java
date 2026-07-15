@@ -26,13 +26,13 @@ import java.util.*;
 public class VisualizeService extends ServiceBase {
 
     @Autowired
-    private VisualizeDao visualizeDao;
+    VisualizeDao visualizeDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private DatasetService datasetService;
+    DatasetService datasetService;
     @Autowired
-    private SparkRpc sparkRpc;
+    SparkRpc sparkRpc;
 
     public Map<String, Object> search(Integer datasetId, JsonNode preview, JsonNode level) {
         if (null == preview || !preview.isObject()) {

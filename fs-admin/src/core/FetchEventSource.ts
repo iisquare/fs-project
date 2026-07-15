@@ -64,18 +64,13 @@ class FetchEventSource {
 
   send(data: Object): boolean {
     if (this.running) return false
-    const url = `${api.$axios.defaults.baseURL}/proxy/${this.method.toLowerCase()}SSE`
+    const url = `${api.$axios.defaults.baseURL}/${this.app}${this.uri}`
     this.ctrl = new AbortController()
     const _this = this
     fetchEventSource(url, {
       method: this.method,
       headers: this.headers,
-      body: JSON.stringify({
-        app: this.app,
-        uri: this.uri,
-        data: data,
-        forceEvent: true
-      }),
+      body: JSON.stringify(data),
       signal: this.ctrl.signal,
       openWhenHidden: true,
       async onopen (response) {

@@ -17,7 +17,7 @@ import java.util.*;
 public class DefaultRbacService extends RbacServiceBase {
 
     @Autowired
-    private MemberRpc memberRpc;
+    MemberRpc memberRpc;
 
     private JsonNode post(String uri, Map param, boolean nullable) {
         return RpcUtil.data(memberRpc.post("/rbac/" + uri, param), nullable);

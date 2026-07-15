@@ -28,11 +28,11 @@ import java.util.*;
 public class CiteService extends ServiceBase {
 
     @Autowired
-    private CiteDao citeDao;
+    CiteDao citeDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private Configuration configuration;
+    Configuration configuration;
 
     public Map<?, ?> status(String level) {
         Map<Integer, String> status = new LinkedHashMap<>();

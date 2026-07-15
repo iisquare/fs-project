@@ -23,9 +23,9 @@ import java.util.Map;
 public class PrintController extends PermitControllerBase {
 
     @Autowired
-    private PrintService printService;
+    PrintService printService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     @RequestMapping("/info")
     @Permission("")

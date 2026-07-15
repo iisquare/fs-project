@@ -52,7 +52,7 @@ const state = ref('')
 const reason = ref('')
 const thinking = ref(false)
 const user = useUserStore()
-const sse = new FetchEventSource('LM', '/chat/demo')
+const sse = new FetchEventSource('lm', '/chat/demo')
 sse.addHeaders({ "X-Auth-Token": user.info.token })
 sse.onOpen(() => {
   state.value = 'connect'

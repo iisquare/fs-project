@@ -21,7 +21,6 @@ public class DemoTestES extends ElasticsearchBase {
     protected ObjectNode mapping() {
         ObjectNode source = DPUtil.objectNode();
         source.putObject("_source").put("enabled", true);
-        source.putObject("_all").put("enabled", false);
         ObjectNode properties = source.putObject("properties");
         properties.putObject("id").put("type", "keyword") // 唯一标识
                 .put("index", true).put("store", true);

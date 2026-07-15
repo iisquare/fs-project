@@ -23,7 +23,7 @@ import java.util.Map;
 public class BlacklistController extends PermitControllerBase {
 
     @Autowired
-    private BlacklistService blacklistService;
+    BlacklistService blacklistService;
 
     @RequestMapping("/info")
     @Permission("")

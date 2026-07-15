@@ -8,6 +8,7 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.HttpUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
+import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.core.rpc.MemberRpc;
 import com.iisquare.fs.web.oa.dao.FormFrameDao;
 import com.iisquare.fs.web.oa.entity.FormFrame;
@@ -21,21 +22,21 @@ import java.util.*;
 public class FormService extends ServiceBase {
 
     @Autowired
-    private FormFrameDao formFrameDao;
+    FormFrameDao formFrameDao;
     @Autowired
-    private MemberRpc memberRpc;
+    MemberRpc memberRpc;
     @Autowired
-    private FormRegularService formRegularService;
+    FormRegularService formRegularService;
     @Autowired
-    private FormJDBCStorage jdbcStorage;
+    FormJDBCStorage jdbcStorage;
     @Autowired
-    private FormMongoStorage mongoStorage;
+    FormMongoStorage mongoStorage;
     @Autowired
-    private FormRestStorage restStorage;
+    FormRestStorage restStorage;
     @Autowired
-    private FormEmptyStorage emptyStorage;
+    FormEmptyStorage emptyStorage;
     @Autowired
-    private FormDefaultStorage defaultStorage;
+    FormDefaultStorage defaultStorage;
 
     public FormStorage storage(ObjectNode frame) {
         JsonNode storage = frame.at("/storage");
@@ -515,7 +516,7 @@ public class FormService extends ServiceBase {
             case "dictionary":
                 String path = options.at("/dictionary").asText();
                 JsonNode dict = DPUtil.parseJSON(
-                    memberRpc.post("/dictionary/available", DPUtil.buildMap("path", path, "formatArray", true))
+                    RpcUtil.string(memberRpc.post("/dictionary/available", DPUtil.buildMap("path", path, "formatArray", true)))
                 );
                 int code = dict.at("/code").asInt();
                 options.replace("items", 0 == code ? dict.at("/data") : DPUtil.arrayNode());

@@ -1,5 +1,8 @@
 package com.iisquare.fs.base.elasticsearch.config;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
 import org.apache.http.HttpHost;
@@ -9,7 +12,6 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -23,19 +25,19 @@ public class ElasticsearchConfiguration implements DisposableBean {
 
     @Value("${spring.elasticsearch.nodes}")
     private String nodes;
-    @Value("${spring.elasticsearch.rest.username:}")
+    @Value("${spring.elasticsearch.username:}")
     private String username;
-    @Value("${spring.elasticsearch.rest.password:}")
+    @Value("${spring.elasticsearch.password:}")
     private String password;
-    @Value("${spring.elasticsearch.rest.connectionTimeout:1000}")
+    @Value("${spring.elasticsearch.connectionTimeout:1000}")
     private Integer connectionTimeout;
-    @Value("${spring.elasticsearch.rest.readTimeout:30000}")
+    @Value("${spring.elasticsearch.readTimeout:30000}")
     private Integer readTimeout;
-    @Value("${spring.elasticsearch.rest.maxConnPerRoute:10}")
+    @Value("${spring.elasticsearch.maxConnPerRoute:10}")
     private Integer maxConnPerRoute;
-    @Value("${spring.elasticsearch.rest.maxConnTotal:30}")
+    @Value("${spring.elasticsearch.maxConnTotal:30}")
     private Integer maxConnTotal;
-    private RestHighLevelClient client;
+    private ElasticsearchClient client;
 
     @Override
     public void destroy() throws Exception {
@@ -43,7 +45,7 @@ public class ElasticsearchConfiguration implements DisposableBean {
     }
 
     @Bean
-    public RestHighLevelClient elasticClient() throws Exception {
+    public ElasticsearchClient elasticClient() throws Exception {
         List<HttpHost> hosts = new ArrayList<>();
         for (String target : DPUtil.explode(",", nodes, " ", true)) {
             String[] strings = DPUtil.explode(":", target, " ", true);
@@ -51,7 +53,7 @@ public class ElasticsearchConfiguration implements DisposableBean {
             int port = strings.length > 1 ? DPUtil.parseInt(strings[1]) : 9200;
             hosts.add(new HttpHost(host, port, "http"));
         }
-        if (hosts.size() < 1) hosts.add(new HttpHost("localhost", 9200, "http"));
+        if (hosts.isEmpty()) hosts.add(new HttpHost("localhost", 9200, "http"));
         RestClientBuilder builder = RestClient.builder(hosts.toArray(new HttpHost[0]));
         builder.setHttpClientConfigCallback(httpClientBuilder -> {
             httpClientBuilder.setMaxConnTotal(maxConnTotal);
@@ -67,7 +69,8 @@ public class ElasticsearchConfiguration implements DisposableBean {
             requestConfigBuilder.setSocketTimeout(readTimeout);
             return requestConfigBuilder;
         });
-        return this.client = new RestHighLevelClient(builder);
+        RestClientTransport transport = new RestClientTransport(builder.build(), new JacksonJsonpMapper());
+        return this.client = new ElasticsearchClient(transport);
     }
 
 }

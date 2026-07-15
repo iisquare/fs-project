@@ -4,7 +4,7 @@ import { ref } from 'vue';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 
 const es = ref('OPEN')
-const url = ref(api.$axios.defaults.baseURL + '/proxy/postSSE')
+const url = ref(api.$axios.defaults.baseURL + '/demo/sse')
 const messages: any = ref([])
 
 let ctrl: any = null
@@ -20,11 +20,7 @@ const toggle = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          app: 'Demo',
-          uri: '/sse',
-          data: {
-            foo: 'bar'
-          }
+          foo: 'bar'
         }),
         signal: ctrl.signal,
         openWhenHidden: true,

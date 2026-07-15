@@ -32,6 +32,9 @@ const UIUtil = {
       return item.value.toLowerCase().indexOf(query.toLowerCase()) !== -1
     }) : suggestions
   },
+  renderFileSize (row: any, column: any, cellValue: any, index: number) {
+    return UIUtil.prettyFileSize(cellValue)
+  },
   prettyFileSize (size: any) {
     if (Number.isNaN(size)) return ''
     const units = [{

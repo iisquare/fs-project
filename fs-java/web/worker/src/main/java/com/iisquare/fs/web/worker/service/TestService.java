@@ -19,9 +19,9 @@ public class TestService extends ServiceBase {
 
     @Lazy
     @Autowired
-    private RabbitAdmin rabbitAdmin;
+    RabbitAdmin rabbitAdmin;
     @Autowired
-    private RabbitTemplate rabbitTemplate;
+    RabbitTemplate rabbitTemplate;
 
     public static final String QUEUE_NAME = "fs-test-queue";
     public static final String EXCHANGE_NAME = "fs-test-exchange";

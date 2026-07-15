@@ -22,7 +22,7 @@ import java.util.Map;
 public class SensitiveController extends PermitControllerBase {
 
     @Autowired
-    private SensitiveService sensitiveService;
+    SensitiveService sensitiveService;
 
     @RequestMapping("/window")
     @Permission("")

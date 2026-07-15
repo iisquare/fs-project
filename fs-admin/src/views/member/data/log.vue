@@ -25,7 +25,7 @@ const rows = ref([])
 const filterRef = ref<FormInstance>()
 const filters = ref(RouteUtil.query2filter(route, { advanced: false, roleIds: [] }))
 const pagination = ref(RouteUtil.pagination(filters.value))
-const selection = ref([])
+const selection: any = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
   tableRef.value?.clearSelection()
   Object.assign(filters.value, RouteUtil.pagination2filter(pagination.value, keepPage))
@@ -52,7 +52,9 @@ const handleDelete = () => {
     loading.value = true
     DataLogApi.delete(ids, { success: true }).then(() => {
       handleRefresh(false, true)
-    }).catch(() => {})
+    }).catch(() => {
+      loading.value = false
+    })
   }).catch(() => {})
 }
 </script>
@@ -113,11 +115,11 @@ const handleDelete = () => {
     <el-table
       ref="tableRef"
       :data="rows"
-      :row-key="record => record.id"
+      :row-key="(record: any) => record.id"
       :border="true"
       v-loading="loading"
       table-layout="auto"
-      @selection-change="newSelection => selection = newSelection"
+      @selection-change="(s: any) => selection = s"
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns">
@@ -144,9 +146,9 @@ const handleDelete = () => {
       <el-descriptions-item label="请求参数" :span="3"><el-input type="textarea" v-model="form.requestParams" :rows="3" /></el-descriptions-item>
       <el-descriptions-item label="请求头部" :span="3"><el-input type="textarea" v-model="form.requestHeaders" :rows="5" /></el-descriptions-item>
       <template v-for="item in form.permitted" :key="item.id">
-        <el-descriptions-item label="权限标识">{{ item.dataSerial }}</el-descriptions-item>
-        <el-descriptions-item label="权限主键">{{ item.dataId }}</el-descriptions-item>
-        <el-descriptions-item label="记录主键">{{ item.id }}</el-descriptions-item>
+        <el-descriptions-item label="授权数据标识">{{ item.dataSerial }}</el-descriptions-item>
+        <el-descriptions-item label="授权数据主键">{{ item.dataId }}</el-descriptions-item>
+        <el-descriptions-item label="授权明细主键">{{ item.id }}</el-descriptions-item>
         <el-descriptions-item label="授权字段" :span="3"><el-input type="textarea" v-model="item.fields" :rows="3" /></el-descriptions-item>
         <el-descriptions-item label="授权范围" :span="3"><el-input type="textarea" v-model="item.filters" :rows="5" /></el-descriptions-item>
       </template>

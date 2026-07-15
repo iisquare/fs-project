@@ -21,9 +21,9 @@ import java.util.Map;
 public class PhotoController extends PermitControllerBase {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private PhotoService photoService;
+    PhotoService photoService;
 
     @RequestMapping("/list")
     @Permission("")

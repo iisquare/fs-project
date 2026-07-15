@@ -10,7 +10,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 public class RedisConfiguration implements InitializingBean {
 
     @Autowired
-    private StringRedisTemplate redis;
+    StringRedisTemplate redis;
 
     /**
      * 线程之间默认共享Redis连接句柄

@@ -28,7 +28,7 @@ import java.util.Map;
 public class McpService extends JPAServiceBase {
 
     @Autowired
-    private McpDao mcpDao;
+    McpDao mcpDao;
     @Autowired
     DefaultRbacService rbacService;
     @Autowired

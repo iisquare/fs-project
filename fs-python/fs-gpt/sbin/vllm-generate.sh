@@ -20,7 +20,6 @@ vllm serve ${MODEL_PATH} \
 --max-model-len 32768 \
 --gpu-memory-utilization 0.9 \
 --max-num-seqs 8 \
---enforce-eager \
 --host 0.0.0.0 \
 --port 6011
 EOF

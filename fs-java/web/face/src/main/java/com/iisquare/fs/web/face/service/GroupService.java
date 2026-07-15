@@ -26,9 +26,9 @@ import java.util.*;
 public class GroupService extends ServiceBase {
 
     @Autowired
-    private GroupDao groupDao;
+    GroupDao groupDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public Map<?, ?> status(String level) {
         Map<Integer, String> status = new LinkedHashMap<>();

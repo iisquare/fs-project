@@ -20,7 +20,7 @@ import java.util.List;
 public class MetaInfluenceRelation extends Neo4jRelationshipBase {
 
     @Autowired
-    private MetaInfluenceNode metaInfluenceNode;
+    MetaInfluenceNode metaInfluenceNode;
 
     public MetaInfluenceRelation() {
         this.TYPE_NAME = "GovernInfluence";

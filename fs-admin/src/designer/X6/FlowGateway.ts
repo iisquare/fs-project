@@ -1,11 +1,11 @@
 import DesignUtil from '@/utils/DesignUtil'
-import { Shape, Node } from '@antv/x6'
+import { Shape, type NodeMetadata } from '@antv/x6'
 
 export default class FlowGateway extends Shape.Polygon {
 
-  meta: Node.Metadata
+  meta: NodeMetadata
 
-  constructor (metadata?: Node.Metadata) {
+  constructor (metadata?: NodeMetadata) {
     super(metadata)
     this.meta = metadata ?? {}
     this.attr('label/text', this.meta.data.name)

@@ -36,7 +36,7 @@ onMounted(() => {
     <el-alert>Select: {{ selection }}</el-alert>
     <el-table
       :data="table.leaves"
-      :row-key="record => record.id"
+      :row-key="(record: any) => record.id"
       :border="true"
       :span-method="(data: any) => TableUtil.span(table, data.rowIndex, data.columnIndex, 2)"
     >

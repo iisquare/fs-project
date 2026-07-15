@@ -15,9 +15,9 @@ import java.util.Map;
 public class TestController extends PermitControllerBase {
 
     @Autowired
-    private BIService biService;
+    BIService biService;
     @Autowired
-    private TestService testService;
+    TestService testService;
 
     @GetMapping("/random")
     public String randomAction() {

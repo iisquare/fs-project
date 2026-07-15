@@ -1,6 +1,19 @@
 <script setup lang="ts">
 /**
- * 通过表格方式维护数据模型字段
+ * 数据字段表格编辑器 - 以表格形式维护数据模型字段，支持增删、排序（置顶/上移/下移/底部）。
+ *
+ * @v-model  {FieldRow[]}  字段行数组（双向绑定主值）
+ * @prop     {String[]}     types    - 可选的字段类型列表，通过 v-model:types 传入
+ * @prop     {Boolean}      editable - 是否可编辑，默认 false，通过 v-model:editable 传入
+ *
+ * 字段行结构 (FieldRow):
+ *   { name: string, title: string, type: string }
+ *   name  - 字段名（必填）
+ *   title - 显示名称（选填，默认为字段名）
+ *   type  - 数据类型（必填）
+ *
+ * @example
+ * <data-table v-model="fields" v-model:types="['String', 'Integer', 'Date']" v-model:editable="true" />
  */
 import { nextTick, ref } from 'vue';
 import * as ElementPlusIcons from '@element-plus/icons-vue';
@@ -10,9 +23,9 @@ import UIUtil from '@/utils/UIUtil';
 
 const model: any = defineModel()
 const tableRef = ref<TableInstance>()
-const types = defineModel('types', { type: Array<String>, default: [] })
+const types = defineModel<String[]>('types', { default: () => [] })
 const editable = defineModel('editable', { type: Boolean, default: false })
-const selection = ref([])
+const selection: any = ref([])
 const handleAdd = () => {
   model.value.push({
     name: '',
@@ -76,7 +89,7 @@ const handleBottom = () => {
       :data="model"
       :border="true"
       table-layout="auto"
-      @selection-change="newSelection => selection = newSelection"
+      @selection-change="(s: any) => selection = s"
     >
       <el-table-column type="selection" />
       <el-table-column label="字段">

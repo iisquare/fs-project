@@ -15,7 +15,7 @@ import java.sql.SQLException;
 public class WorkflowConfiguration {
 
     @Autowired
-    private DataSourceConfig dataSourceConfig;
+    DataSourceConfig dataSourceConfig;
     @Value("${flowable.databaseSchemaUpdate:false}")
     private String databaseSchemaUpdate;
 

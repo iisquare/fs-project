@@ -24,13 +24,13 @@ import java.util.*;
 public class SettingService extends JPAServiceBase {
 
     @Autowired
-    private SettingDao settingDao;
+    SettingDao settingDao;
     @Autowired
-    private UserService userService;
+    UserService userService;
     @Autowired
-    private EntityManager entityManager;
+    EntityManager entityManager;
     @Autowired
-    private RbacService rbacService;
+    RbacService rbacService;
 
     public boolean set(String type, String key, String value) {
         Setting info = settingDao.findFirstByTypeAndName(type, key);

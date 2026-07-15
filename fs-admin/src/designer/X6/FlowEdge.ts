@@ -1,11 +1,11 @@
 import DesignUtil from '@/utils/DesignUtil'
-import { Shape, Edge } from '@antv/x6'
+import { Shape, type EdgeMetadata } from '@antv/x6'
 
 export default class FlowEdge extends Shape.Edge {
 
-  meta: Edge.Metadata
-  
-  constructor (metadata?: Edge.Metadata) {
+  meta: EdgeMetadata
+
+  constructor (metadata?: EdgeMetadata) {
     super(metadata)
     this.meta = metadata ?? {}
     this.setLabels(this.meta.data?.name ?? '')

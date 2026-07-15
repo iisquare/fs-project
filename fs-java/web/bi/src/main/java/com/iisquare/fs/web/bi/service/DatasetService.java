@@ -29,13 +29,13 @@ import java.util.*;
 public class DatasetService extends ServiceBase {
 
     @Autowired
-    private DatasetDao datasetDao;
+    DatasetDao datasetDao;
     @Autowired
-    private SourceDao sourceDao;
+    SourceDao sourceDao;
     @Autowired
-    private SparkRpc sparkRpc;
+    SparkRpc sparkRpc;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public Map<String, Object> loadSource(JsonNode preview) {
         if (null == preview) return ApiUtil.result(20403, "数据源配置信息异常", null);

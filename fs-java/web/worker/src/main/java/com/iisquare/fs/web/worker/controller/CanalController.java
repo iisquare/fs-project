@@ -16,7 +16,7 @@ import java.util.Map;
 public class CanalController extends PermitControllerBase {
 
     @Autowired
-    private CanalService canalService;
+    CanalService canalService;
 
     @GetMapping("/makeCase")
     public String makeCaseAction(@RequestParam Map<?, ?> param) {

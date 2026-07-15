@@ -23,15 +23,15 @@ import java.util.*;
 public class RoleController extends PermitControllerBase {
 
     @Autowired
-    private RbacService rbacService;
+    RbacService rbacService;
     @Autowired
-    private RoleService roleService;
+    RoleService roleService;
     @Autowired
-    private MenuService menuService;
+    MenuService menuService;
     @Autowired
-    private ResourceService resourceService;
+    ResourceService resourceService;
     @Autowired
-    private RelationService relationService;
+    RelationService relationService;
 
     @RequestMapping("/info")
     @Permission("")

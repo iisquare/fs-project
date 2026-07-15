@@ -25,9 +25,9 @@ import java.util.Map;
 public class DatasetController extends PermitControllerBase {
 
     @Autowired
-    private DatasetService datasetService;
+    DatasetService datasetService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     private Map<?, ?> param;
 

@@ -21,9 +21,9 @@ import java.util.Map;
 public class GroupController extends PermitControllerBase {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private GroupService groupService;
+    GroupService groupService;
 
     @RequestMapping("/list")
     @Permission("")

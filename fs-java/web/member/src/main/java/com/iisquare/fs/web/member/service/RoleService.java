@@ -20,11 +20,11 @@ import java.util.*;
 public class RoleService extends JPAServiceBase {
 
     @Autowired
-    private RoleDao roleDao;
+    RoleDao roleDao;
     @Autowired
-    private UserService userService;
+    UserService userService;
     @Autowired
-    private RbacService rbacService;
+    RbacService rbacService;
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();

@@ -102,9 +102,9 @@ export const layouts = [{
     meta: { title: '分段管理', permit: ['lm:knowledge:'] },
     component: () => import('@/views/lm/knowledge/segment.vue')
   }, {
-    path: '/lm/knowledge/chunk',
-    meta: { title: '分块管理', permit: ['lm:knowledge:'] },
-    component: () => import('@/views/lm/knowledge/chunk.vue')
+    path: '/lm/knowledge/recall',
+    meta: { title: '知识召回', permit: ['lm:knowledge:'] },
+    component: () => import('@/views/lm/knowledge/recall.vue')
   }]
 }]
 

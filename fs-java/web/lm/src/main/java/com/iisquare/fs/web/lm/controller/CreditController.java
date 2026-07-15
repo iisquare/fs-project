@@ -23,7 +23,7 @@ import java.util.Map;
 public class CreditController extends PermitControllerBase {
 
     @Autowired
-    private CreditService creditService;
+    CreditService creditService;
 
     @RequestMapping("/info")
     @Permission("")

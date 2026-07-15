@@ -97,7 +97,7 @@ const rows = ref([
     <el-table
       ref="tableRef"
       :data="rows"
-      :row-key="record => record.id"
+      :row-key="(record: any) => record.id"
       :border="true"
       table-layout="auto"
     >

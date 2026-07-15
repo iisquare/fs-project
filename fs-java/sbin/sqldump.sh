@@ -34,6 +34,24 @@ else
   DUMP_OPT="${DUMP_OPT} --no-data"
 fi
 
+# 导出前需要清空的表（dump名称 -> 空格分割的表名列表）
+declare -A TRUNCATE_TABLES
+TRUNCATE_TABLES["member"]="fs_member_message"
+
+# 根据配置清空对应表
+if [[ -n "${TRUNCATE_TABLES[$DUMP_NAME]}" ]]; then
+  for TABLE in ${TRUNCATE_TABLES[$DUMP_NAME]}; do
+    echo "清空 ${TABLE} 表..."
+    mysql -h $DB_HOST -u $DB_USER -p$DB_PASS -D $DB_NAME -e "TRUNCATE TABLE ${TABLE};"
+    if [ $? -eq 0 ]; then
+      echo "${TABLE} 表已清空。"
+    else
+      echo "清空 ${TABLE} 表失败。"
+      exit 1
+    fi
+  done
+fi
+
 # 导出表结构和数据
 mysqldump -h $DB_HOST -u $DB_USER -p$DB_PASS $DB_NAME $TABLES ${DUMP_OPT} > $OUTPUT_FILE
 

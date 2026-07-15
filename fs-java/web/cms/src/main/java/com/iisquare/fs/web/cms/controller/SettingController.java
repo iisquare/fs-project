@@ -18,7 +18,7 @@ import java.util.Map;
 public class SettingController extends PermitControllerBase {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     @RequestMapping("/load")
     @Permission

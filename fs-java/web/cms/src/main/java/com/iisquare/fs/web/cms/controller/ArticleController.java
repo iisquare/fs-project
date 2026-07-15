@@ -26,13 +26,13 @@ import java.util.Map;
 public class ArticleController extends PermitControllerBase {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private ArticleService articleService;
+    ArticleService articleService;
     @Autowired
-    private CatalogService catalogService;
+    CatalogService catalogService;
     @Autowired
-    private Configuration configuration;
+    Configuration configuration;
 
     @RequestMapping("/info")
     @Permission("")

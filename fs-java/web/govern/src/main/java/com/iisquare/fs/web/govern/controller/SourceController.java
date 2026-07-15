@@ -19,7 +19,7 @@ import java.util.Map;
 public class SourceController extends PermitControllerBase {
 
     @Autowired
-    private SourceService sourceService;
+    SourceService sourceService;
 
     @RequestMapping("/info")
     @Permission("")

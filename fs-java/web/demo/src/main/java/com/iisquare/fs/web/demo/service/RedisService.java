@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class RedisService extends ServiceBase implements InitializingBean {
 
     @Autowired
-    private StringRedisTemplate redis;
+    StringRedisTemplate redis;
 
     /**
      * 线程之间默认共享Redis连接句柄

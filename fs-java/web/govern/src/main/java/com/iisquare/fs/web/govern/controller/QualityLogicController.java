@@ -21,9 +21,9 @@ import java.util.Map;
 public class QualityLogicController extends PermitControllerBase {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private QualityLogicService logicService;
+    QualityLogicService logicService;
 
     @RequestMapping("/tree")
     @Permission("")

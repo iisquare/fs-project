@@ -27,11 +27,11 @@ import java.util.*;
 public class CatalogService extends ServiceBase {
 
     @Autowired
-    private CatalogDao catalogDao;
+    CatalogDao catalogDao;
     @Autowired
-    private ArticleDao articleDao;
+    ArticleDao articleDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public List<Catalog> tree(Map<?, ?> param, Map<?, ?> args) {
         List<Catalog> data = catalogDao.findAll((Specification<Catalog>) (root, query, cb) -> {

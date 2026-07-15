@@ -1,12 +1,12 @@
 import DesignUtil from '@/utils/DesignUtil'
-import { Node } from '@antv/x6'
+import { Node, type NodeMetadata } from '@antv/x6'
 
 export default class FlowSubprocess extends Node {
 
-  meta: Node.Metadata
+  meta: NodeMetadata
   collapsed: Boolean = false
 
-  constructor (metadata?: Node.Metadata) {
+  constructor (metadata?: NodeMetadata) {
     super(metadata)
     this.meta = metadata ?? {}
     this.attr('label/text', this.meta.data.name)

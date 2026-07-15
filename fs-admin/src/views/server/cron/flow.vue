@@ -75,7 +75,9 @@ const handleDelete = () => {
     loading.value = true
     CronApi.flowDelete({ id: record.id }, { success: true }).then(() => {
       handleRefresh(false, true)
-    }).catch(() => {})
+    }).catch(() => {
+      loading.value = false
+    })
   }).catch(() => {})
 }
 </script>

@@ -1,6 +1,6 @@
 services:
   vllm:
-    restart: unless-stopped
+#    restart: unless-stopped
     build:
       context: ./service/vllm
       args:

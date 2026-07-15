@@ -21,25 +21,25 @@ public class SsePlainEventBuilder implements SseEmitter.SseEventBuilder {
 
     @Override
     public SseEmitter.SseEventBuilder id(String id) {
-        append("id:").append(id).append("\n");
+        append("id: ").append(id).append("\n");
         return this;
     }
 
     @Override
     public SseEmitter.SseEventBuilder name(String name) {
-        append("event:").append(name).append("\n");
+        append("event: ").append(name).append("\n");
         return this;
     }
 
     @Override
     public SseEmitter.SseEventBuilder reconnectTime(long reconnectTimeMillis) {
-        append("retry:").append(String.valueOf(reconnectTimeMillis)).append("\n");
+        append("retry: ").append(String.valueOf(reconnectTimeMillis)).append("\n");
         return this;
     }
 
     @Override
     public SseEmitter.SseEventBuilder comment(String comment) {
-        append(":").append(comment).append("\n");
+        append(": ").append(comment).append("\n");
         return this;
     }
 
@@ -50,7 +50,7 @@ public class SsePlainEventBuilder implements SseEmitter.SseEventBuilder {
 
     @Override
     public SseEmitter.SseEventBuilder data(Object object, @Nullable MediaType mediaType) {
-        append("data:");
+        append("data: ");
         saveAppendedText();
         this.dataToSend.add(new ResponseBodyEmitter.DataWithMediaType(object, mediaType));
         append("\n");

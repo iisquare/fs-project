@@ -1,6 +1,9 @@
 import base from './Api'
 
 export default {
+  info (id: any, tips = {}) {
+    return base.get('/usage/info', { id }, tips)
+  },
   list(param: any, tips = {}) {
     return base.post('/usage/list', param, tips)
   },

@@ -26,7 +26,7 @@ import java.util.*;
 public class ModelColumnService extends ServiceBase {
 
     @Autowired
-    private ModelColumnDao columnDao;
+    ModelColumnDao columnDao;
 
     public List<String> types() {
         ArrayList<String> result = new ArrayList<>(Arrays.asList(

@@ -24,9 +24,9 @@ import java.util.*;
 public class SourceService extends ServiceBase {
 
     @Autowired
-    private SourceDao sourceDao;
+    SourceDao sourceDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) {
         Map<String, Object> result = new LinkedHashMap<>();

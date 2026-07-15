@@ -40,7 +40,7 @@ public class FileController extends RpcControllerBase {
 
     @GetMapping("/download")
     public String downloadAction(@RequestParam Map<String, Object> param, HttpServletResponse response) throws Exception {
-        String url = fileService.url(fileService.download(param));
+        String url = fileService.download(param);
         if (DPUtil.empty(url)) return ApiUtil.echoResult(1404, "获取下载地址失败", param);
         return ApiUtil.echoResult(0, null, url);
     }

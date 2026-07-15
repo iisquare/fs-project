@@ -16,7 +16,7 @@ import java.util.Map;
 public class ContainerController extends PermitControllerBase {
 
     @Autowired
-    private ContainerService containerService;
+    ContainerService containerService;
 
     @RequestMapping("/submit")
     public String submitAction(@RequestBody Map<?, ?> param) {

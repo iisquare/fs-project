@@ -25,9 +25,9 @@ import java.util.Map;
 public class RateService extends JPAServiceBase {
 
     @Autowired
-    private RateDao rateDao;
+    RateDao rateDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();

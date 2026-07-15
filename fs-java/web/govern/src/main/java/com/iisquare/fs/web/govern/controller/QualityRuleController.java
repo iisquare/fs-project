@@ -21,9 +21,9 @@ import java.util.Map;
 public class QualityRuleController extends PermitControllerBase {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private QualityRuleService ruleService;
+    QualityRuleService ruleService;
 
     @RequestMapping("/infos")
     @Permission("")

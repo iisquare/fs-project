@@ -30,13 +30,13 @@ import java.util.*;
 public class PhotoService extends ServiceBase {
 
     @Autowired
-    private PhotoDao photoDao;
+    PhotoDao photoDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private UserService userService;
+    UserService userService;
     @Autowired
-    private XlabRpc xlabRpc;
+    XlabRpc xlabRpc;
 
     public Map<?, ?> status(String level) {
         Map<Integer, String> status = new LinkedHashMap<>();

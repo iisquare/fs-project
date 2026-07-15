@@ -24,13 +24,13 @@ import java.util.*;
 public class FormDefaultStorage extends FormStorage {
 
     @Autowired
-    private FormDataMongo formDataMongo;
+    FormDataMongo formDataMongo;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private FormService formService;
+    FormService formService;
     @Autowired
-    private FormDataService formDataService;
+    FormDataService formDataService;
 
     @Override
     public Map<String, Object> search(ObjectNode frame, Map<String, Object> param, Map<String, Object> config) {

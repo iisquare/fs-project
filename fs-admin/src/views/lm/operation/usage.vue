@@ -4,6 +4,7 @@ import type { FormInstance, TableInstance } from 'element-plus';
 import RouteUtil from '@/utils/RouteUtil'
 import { useRoute, useRouter } from 'vue-router';
 import UsageApi from '@/api/lm/UsageApi';
+import ApiUtil from '@/utils/ApiUtil';
 import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
 import UserApi from '@/api/member/UserApi';
@@ -35,7 +36,6 @@ const columns = ref([
   { prop: 'responseReason', label: '思考', hide: true },
   { prop: 'responseCompletion', label: '回答' },
   { prop: 'responseHeader', label: '请求头', hide: true },
-  { prop: 'responseBody', label: '响应内容', hide: true },
   { prop: 'responseTool', label: '工具调用', hide: true },
   { prop: 'finishReason', label: '完成状态' },
   { prop: 'finishDetail', label: '详细原因', hide: true },
@@ -56,10 +56,12 @@ const rows = ref([])
 const filterRef = ref<FormInstance>()
 const filters = ref(RouteUtil.query2filter(route, { advanced: false }))
 const pagination = ref(RouteUtil.pagination(filters.value))
-const selection = ref([])
+const selection: any = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
   tableRef.value?.clearSelection()
-  Object.assign(filters.value, RouteUtil.pagination2filter(pagination.value, keepPage))
+  Object.assign(filters.value, RouteUtil.pagination2filter(pagination.value, keepPage), {
+    columns: TableUtil.columns2query(columns.value)
+  })
   filter2query && RouteUtil.filter2query(route, router, filters.value)
   loading.value = true
   UsageApi.list(filters.value).then((result: any) => {
@@ -80,15 +82,25 @@ const formRef: any = ref<FormInstance>()
 const rules = ref({
   auditReason: [{ required: true, message: '请选择审核标签', trigger: 'change' }]
 })
+const loadInfo = () => {
+  formLoading.value = true
+  UsageApi.info(form.value.id).then((result: any) => {
+    Object.assign(form.value, ApiUtil.data(result))
+  }).catch(() => {}).finally(() => {
+    formLoading.value = false
+  })
+}
 const handleShow = (scope: any) => {
   form.value = Object.assign({}, scope.row)
   isAudit.value = false
   formVisible.value = true
+  loadInfo()
 }
 const handleEdit = (scope: any) => {
   form.value = Object.assign({}, scope.row)
   isAudit.value = true
   formVisible.value = true
+  loadInfo()
 }
 const handleSubmit = () => {
   formRef.value?.validate((valid: boolean) => {
@@ -112,7 +124,9 @@ const handleDelete = () => {
     loading.value = true
     UsageApi.delete(ids, { success: true }).then(() => {
       handleRefresh(false, true)
-    }).catch(() => {})
+    }).catch(() => {
+      loading.value = false
+    })
   }).catch(() => {})
 }
 </script>
@@ -194,18 +208,18 @@ const handleDelete = () => {
       <el-space>
         <button-search @click="searchable = !searchable" />
         <button-refresh @click="handleRefresh(true, true)" :loading="loading" />
-        <TableColumnSetting v-model="columns" :table="tableRef" />
+        <TableColumnSetting v-model="columns" :table="tableRef" @change="handleRefresh(true, true)" />
         <TableSort v-model="filters.sort" :columns="columns" sortable="id,beginTime,endTime,coastTotal.desc,creditAmount" @change="handleRefresh(true, true)" />
       </el-space>
     </div>
     <el-table
       ref="tableRef"
       :data="rows"
-      :row-key="record => record.id"
+      :row-key="(record: any) => record.id"
       :border="true"
       v-loading="loading"
       table-layout="auto"
-      @selection-change="newSelection => selection = newSelection"
+      @selection-change="(s: any) => selection = s"
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns" />

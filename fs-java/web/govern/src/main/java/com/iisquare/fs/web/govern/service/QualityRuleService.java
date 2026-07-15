@@ -23,11 +23,11 @@ import java.util.*;
 public class QualityRuleService extends ServiceBase {
 
     @Autowired
-    private QualityRuleDao ruleDao;
+    QualityRuleDao ruleDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private QualityLogicService logicService;
+    QualityLogicService logicService;
 
     public Map<?, ?> status(String level) {
         Map<Integer, String> status = new LinkedHashMap<>();

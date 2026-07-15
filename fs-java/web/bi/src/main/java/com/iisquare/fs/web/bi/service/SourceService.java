@@ -30,9 +30,9 @@ import java.util.*;
 public class SourceService extends ServiceBase {
 
     @Autowired
-    private SourceDao sourceDao;
+    SourceDao sourceDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public Map<String, Object> schema(Source info, String table, String dsl) {
         if (null == info || 1 != info.getStatus()) return ApiUtil.result(1404, "当前数据源暂不可用！", info);

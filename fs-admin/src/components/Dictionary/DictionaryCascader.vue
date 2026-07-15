@@ -1,4 +1,22 @@
 <script setup lang="ts">
+/**
+ * 字典级联选择器 - 基于字典数据源的级联选择组件，支持懒加载和层级限制。
+ *
+ * @v-model  {*}         选中值（双向绑定主值），多选时为数组
+ * @prop     {String}     dictionary     - 字典标识（必填），用于从后端加载字典数据
+ * @prop     {Boolean}    multiple       - 是否多选，默认 false
+ * @prop     {Boolean}    clearable      - 是否可清空，默认 false
+ * @prop     {Boolean}    filterable     - 是否可搜索，默认 false
+ * @prop     {Boolean}    lazy           - 是否懒加载，默认 false
+ * @prop     {Boolean}    checkStrictly  - 是否严格选择（父子不关联），默认 false
+ * @prop     {Boolean}    showAllLevels  - 是否显示完整路径，默认 true
+ * @prop     {String}     placeholder    - 占位文本，默认"请选择"
+ * @prop     {Number}     level          - 层级限制(0=不限制)，通过 v-model:level 传入，默认 0
+ *
+ * @example
+ * <dictionary-cascader v-model="selected" dictionary="AREA" />
+ * <dictionary-cascader v-model="selected" dictionary="DEPT" :lazy="true" v-model:level="3" />
+ */
 import DictionaryApi from '@/api/member/DictionaryApi';
 import { onMounted, ref } from 'vue';
 import type { CascaderProps } from 'element-plus'

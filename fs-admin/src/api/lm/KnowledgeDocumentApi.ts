@@ -1,6 +1,9 @@
 import base from './Api'
 
 export default {
+  info (id: any, tips = {}) {
+    return base.get('/knowledgeDocument/info', { id }, tips)
+  },
   list (param: any, tips = {}) {
     return base.post('/knowledgeDocument/list', param, tips)
   },
@@ -12,5 +15,8 @@ export default {
   },
   save (param: any, tips = {}) {
     return base.post('/knowledgeDocument/save', param, tips)
+  },
+  upload (param: any, tips = {}) {
+    return base.form('/knowledgeDocument/upload', param, tips)
   },
 }

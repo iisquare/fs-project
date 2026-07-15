@@ -21,7 +21,7 @@ import java.util.Map;
 public class AgentController extends PermitControllerBase {
 
     @Autowired
-    private AgentService agentService;
+    AgentService agentService;
 
     @RequestMapping("/list")
     @Permission("")

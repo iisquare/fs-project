@@ -1,7 +1,18 @@
 <script setup lang="ts">
+/**
+ * 密码展示组件 - 显示脱敏密码，支持切换显示/隐藏、复制到剪贴板。
+ *
+ * @v-model  {String}   密码原文（双向绑定主值）
+ * @prop     {String}   level - 脱敏级别：'high'=保留首尾2位，'medium'=保留首尾4位，默认=全星号
+ *
+ * @example
+ * <form-password v-model="password" />
+ * <form-password v-model="password" level="high" />
+ */
 import { computed, ref } from 'vue';
 import * as ElementPlusIcons from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
+import FormUtil from '@/utils/FormUtil';
 
 const model: any = defineModel()
 const {
@@ -26,7 +37,7 @@ const password = computed(() => {
   }
 })
 const handleCopy = () => {
-  navigator.clipboard.writeText(model.value).then(() => {
+  FormUtil.copyToClipboard(model.value).then(() => {
     ElMessage.success('已复制到剪贴板')
     copied.value = true
     window.setTimeout(() => {

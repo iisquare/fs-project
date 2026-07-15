@@ -29,7 +29,7 @@ import java.util.concurrent.Semaphore;
 public class SensitiveService extends JPAServiceBase {
 
     @Autowired
-    private SensitiveDao sensitiveDao;
+    SensitiveDao sensitiveDao;
     @Autowired
     DefaultRbacService rbacService;
     @Autowired

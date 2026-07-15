@@ -24,11 +24,11 @@ import java.util.Map;
 public class DAGService extends ServiceBase {
 
     @Autowired
-    private DiagramDao diagramDao;
+    DiagramDao diagramDao;
     @Autowired
-    private SparkRpc sparkRpc;
+    SparkRpc sparkRpc;
     @Autowired
-    private FlinkRpc flinkRpc;
+    FlinkRpc flinkRpc;
 
     public Map<String, Object> run(Integer id) {
         ObjectNode frame = diagram(id, DPUtil.objectNode());

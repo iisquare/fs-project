@@ -23,7 +23,7 @@ import java.util.Map;
 public class WhitelistController extends PermitControllerBase {
 
     @Autowired
-    private WhitelistService whitelistService;
+    WhitelistService whitelistService;
 
     @RequestMapping("/info")
     @Permission("")

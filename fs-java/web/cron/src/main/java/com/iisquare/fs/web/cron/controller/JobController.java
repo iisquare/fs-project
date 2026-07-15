@@ -19,9 +19,9 @@ import java.util.Map;
 public class JobController extends PermitControllerBase {
 
     @Autowired
-    private JobService jobService;
+    JobService jobService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     @RequestMapping("/list")
     @Permission("")

@@ -20,7 +20,7 @@ import java.util.Map;
 public class NodeController extends PermitControllerBase {
 
     @Autowired
-    private NodeService nodeService;
+    NodeService nodeService;
 
     @GetMapping("/state")
     public String stateAction(@RequestParam Map<String, String> param) {

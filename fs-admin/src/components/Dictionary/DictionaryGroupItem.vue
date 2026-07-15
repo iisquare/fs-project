@@ -1,5 +1,15 @@
 <script setup lang="ts">
-
+/**
+ * 字典分组选项渲染组件 - 递归渲染分组选项，将带 children 的条目渲染为 el-option-group。
+ *
+ * @prop {OptionItem[]} options - 选项列表
+ *
+ * 选项项结构 (OptionItem):
+ *   { label: string, value: any, children?: OptionItem[] }
+ *
+ * @example
+ * <dictionary-group-item :options="treeOptions" />
+ */
 defineProps<{
   options: any,
 }>()

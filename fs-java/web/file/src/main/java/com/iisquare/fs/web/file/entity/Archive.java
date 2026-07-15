@@ -32,6 +32,10 @@ public class Archive {
     @Column
     private String suffix; // 文件后缀
     @Column
+    private Integer sharable; // 可分享，0-仅通过文件方式访问，1-可通过图片模式进行访问
+    @Column
+    private String traceIdentity; // 溯源标识，业务关联标识
+    @Column
     private String type; // 文件类型
     @Column
     private Long size; // 文件大小

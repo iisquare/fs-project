@@ -7,37 +7,41 @@ import KnowledgeApi from '@/api/lm/KnowledgeApi';
 import ApiUtil from '@/utils/ApiUtil';
 import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
-import { useUserStore } from '@/stores/user';
-import ModelApi from '@/api/lm/ModelApi';
+import RoleApi from '@/api/member/RoleApi';
 
 const route = useRoute()
 const router = useRouter()
-const user = useUserStore()
 const tableRef = ref<TableInstance>()
 const loading = ref(false)
 const searchable = ref(true)
 const columns = ref([
   { prop: 'id', label: 'ID' },
-  { prop: 'name', label: '知识库名称' },
-  { prop: 'embeddingInfo.name', label: '词嵌入模型' },
-  { prop: 'rerankerInfo.name', label: '重排序模型' },
+  { prop: 'name', label: '知识库名称', slot: 'name' },
+  { prop: 'recallTypeText', label: '召回类型' },
+  { prop: 'recallScopeText', label: '召回范围' },
   { prop: 'topK', label: '召回数量' },
   { prop: 'score', label: '召回阈值' },
-  { prop: 'splitTypeText', label: '拆分方式' },
+  { prop: 'embeddingModel', label: '词嵌入模型' },
+  { prop: 'rerankModel', label: '重排序模型' },
+  { prop: 'reranked', label: '启用重排序' },
+  { prop: 'labels', label: '标签', slot: 'labels' },
+  { prop: 'role', label: '授权角色', slot: 'role' },
   { prop: 'description', label: '描述', hide: true },
   { prop: 'sort', label: '排序' },
   { prop: 'statusText', label: '状态' },
 ])
-const config = ref({
+const config: any = ref({
   ready: false,
   status: {},
-  splitTypes: {},
+  recallTypes: {},
+  recallScopes: {},
+  models: [],
 })
 const rows = ref([])
 const filterRef = ref<FormInstance>()
 const filters = ref(RouteUtil.query2filter(route, { advanced: false, agentIds: [] }))
 const pagination = ref(RouteUtil.pagination(filters.value))
-const selection = ref([])
+const selection: any = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
   tableRef.value?.clearSelection()
   Object.assign(filters.value, RouteUtil.pagination2filter(pagination.value, keepPage))
@@ -69,11 +73,14 @@ const handleAdd = () => {
   form.value = {
     status: '1',
     topK: 3,
-    splitType: 'chunk',
+    recallType: 'hybrid',
+    recallScope: 'chunk',
     splitSeparator: '\\r\\n',
     splitSegmentTokens: 2000,
     splitChunkTokens: 500,
     splitOverlayTokens: 50,
+    labels: [],
+    roleIds: [],
   }
   formVisible.value = true
 }
@@ -84,6 +91,8 @@ const handleShow = (scope: any) => {
 const handleEdit = (scope: any) => {
   form.value = Object.assign({}, scope.row, {
     status: scope.row.status + '',
+    roleIds: scope.row.roleIds || [],
+    labels: scope.row.labels || [],
   })
   formVisible.value = true
 }
@@ -104,7 +113,9 @@ const handleDelete = () => {
     loading.value = true
     KnowledgeApi.delete(ids, { success: true }).then(() => {
       handleRefresh(false, true)
-    }).catch(() => {})
+    }).catch(() => {
+      loading.value = false
+    })
   }).catch(() => {})
 }
 </script>
@@ -141,16 +152,22 @@ const handleDelete = () => {
     <el-table
       ref="tableRef"
       :data="rows"
-      :row-key="record => record.id"
+      :row-key="(record: any) => record.id"
       :border="true"
       v-loading="loading"
       table-layout="auto"
-      @selection-change="newSelection => selection = newSelection"
+      @selection-change="(s: any) => selection = s"
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns">
+        <template #name="scope">
+          <el-link type="primary" underline="never" @click="router.push({ path: '/lm/knowledge/document', query: { knowledgeId: scope.row.id } })">{{ scope.row.name }}</el-link>
+        </template>
         <template #role="scope">
           <el-space><el-tag v-for="item in scope.row.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
+        </template>
+        <template #labels="scope">
+          <el-space><el-tag v-for="item in scope.row.labels" :key="item">{{ item }}</el-tag></el-space>
         </template>
       </TableColumn>
       <el-table-column label="操作">
@@ -162,28 +179,36 @@ const handleDelete = () => {
     </el-table>
     <TablePagination v-model="pagination" @change="handleRefresh(true, true)" />
   </el-card>
-  <el-drawer v-model="infoVisible" :title="'信息查看 - ' + form.id">
-    <el-form :model="form" label-width="auto">
-      <el-form-item label="知识库名称">{{ form.name }}</el-form-item>
-      <el-form-item label="词嵌入模型">{{ form.embeddingInfo?.name }}</el-form-item>
-      <el-form-item label="重排序模型">{{ form.rerankerInfo?.name }}</el-form-item>
-      <el-form-item label="召回数量">{{ form.topK }}</el-form-item>
-      <el-form-item label="召回阈值">{{ form.score }}</el-form-item>
-      <el-form-item label="拆分方式">{{ form.splitTypeText }}</el-form-item>
-      <el-form-item label="分段长度">{{ form.splitSeparator }}</el-form-item>
-      <el-form-item label="段落分隔符">{{ form.splitSegmentTokens }}</el-form-item>
-      <el-form-item label="分块长度">{{ form.splitChunkTokens }}</el-form-item>
-      <el-form-item label="重叠长度">{{ form.splitOverlayTokens }}</el-form-item>
-      <el-form-item label="排序">{{ form.sort }}</el-form-item>
-      <el-form-item label="状态">{{ form.statusText }}</el-form-item>
-      <el-form-item label="描述">{{ form.description ? form.description : '暂无' }}</el-form-item>
-      <el-form-item label="创建者">{{ form.createdUserInfo?.name }}</el-form-item>
-      <el-form-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-form-item>
-      <el-form-item label="修改者">{{ form.updatedUserInfo?.name }}</el-form-item>
-      <el-form-item label="修改时间">{{ DateUtil.format(form.updatedTime) }}</el-form-item>
-    </el-form>
+  <el-drawer v-model="infoVisible" :title="'信息查看 - ' + form.id" size="60%">
+    <el-descriptions :column="2" border>
+      <el-descriptions-item label="知识库名称">{{ form.name }}</el-descriptions-item>
+      <el-descriptions-item label="启用重排序">{{ form.reranked }}</el-descriptions-item>
+      <el-descriptions-item label="召回类型">{{ form.recallTypeText }}</el-descriptions-item>
+      <el-descriptions-item label="召回范围">{{ form.recallScopeText }}</el-descriptions-item>
+      <el-descriptions-item label="召回数量">{{ form.topK }}</el-descriptions-item>
+      <el-descriptions-item label="召回阈值">{{ form.score }}</el-descriptions-item>
+      <el-descriptions-item label="词嵌入模型">{{ form.embeddingModel }}</el-descriptions-item>
+      <el-descriptions-item label="重排序模型">{{ form.rerankModel }}</el-descriptions-item>
+      <el-descriptions-item label="标签">
+        <el-space><el-tag v-for="item in form.labels" :key="item">{{ item }}</el-tag></el-space>
+      </el-descriptions-item>
+      <el-descriptions-item label="授权角色">
+        <el-space><el-tag v-for="item in form.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
+      </el-descriptions-item>
+      <el-descriptions-item label="段落分隔符">{{ form.splitSeparator }}</el-descriptions-item>
+      <el-descriptions-item label="分段长度">{{ form.splitSegmentTokens }}</el-descriptions-item>
+      <el-descriptions-item label="分块长度">{{ form.splitChunkTokens }}</el-descriptions-item>
+      <el-descriptions-item label="重叠长度">{{ form.splitOverlayTokens }}</el-descriptions-item>
+      <el-descriptions-item label="排序">{{ form.sort }}</el-descriptions-item>
+      <el-descriptions-item label="状态">{{ form.statusText }}</el-descriptions-item>
+      <el-descriptions-item label="描述" :span="2">{{ form.description ? form.description : '暂无' }}</el-descriptions-item>
+      <el-descriptions-item label="创建者">{{ form.createdUserInfo?.name }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-descriptions-item>
+      <el-descriptions-item label="修改者">{{ form.updatedUserInfo?.name }}</el-descriptions-item>
+      <el-descriptions-item label="修改时间">{{ DateUtil.format(form.updatedTime) }}</el-descriptions-item>
+    </el-descriptions>
   </el-drawer>
-  <el-drawer v-model="formVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true">
+  <el-drawer v-model="formVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true" size="60%">
     <template #header="{ close, titleId, titleClass }">
       <h4 :id="titleId" :class="titleClass">{{ '信息' + (form.id ? ('修改 - ' + form.id) : '添加') }}</h4>
       <el-space>
@@ -191,50 +216,54 @@ const handleDelete = () => {
         <el-button @click="close">取消</el-button>
       </el-space>
     </template>
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="auto">
-      <el-form-item label="智能体名称" prop="name">
-        <el-input v-model="form.name" />
-      </el-form-item>
-      <el-form-item label="词嵌入模型" prop="embeddingId">
-        <form-select v-model="form.embeddingId" :callback="ModelApi.list" :parameter="() => { return { type: 'embedding' } }" clearable placeholder="请输入模型名称" />
-      </el-form-item>
-      <el-form-item label="重排序模型" prop="rerankerId">
-        <form-select v-model="form.rerankerId" :callback="ModelApi.list" :parameter="() => { return { type: 'reranker' } }" clearable placeholder="请输入模型名称" />
-      </el-form-item>
-      <el-form-item label="召回数量">
-        <el-input-number v-model="form.topK" />
-      </el-form-item>
-      <el-form-item label="召回阈值">
-        <el-input-number v-model="form.score" :precision="2" :step="0.1" placeholder="为0时不限制"  />
-      </el-form-item>
-      <el-form-item label="拆分方式" prop="splitType">
-        <el-radio-group v-model="form.splitType">
-          <el-radio-button v-for="(value, key) in config.splitTypes" :key="key" :value="key" :label="value" />
-        </el-radio-group>
-      </el-form-item>
-      <el-form-item label="段落分隔符" prop="splitSeparator">
-        <el-input v-model="form.splitSeparator" />
-      </el-form-item>
-      <el-form-item label="分段长度">
-        <el-input-number v-model="form.splitSegmentTokens" />
-      </el-form-item>
-      <el-form-item label="分块长度">
-        <el-input-number v-model="form.splitChunkTokens" />
-      </el-form-item>
-      <el-form-item label="重叠长度">
-        <el-input-number v-model="form.splitOverlayTokens" />
-      </el-form-item>
-      <el-form-item label="排序">
-        <el-input-number v-model="form.sort" />
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="form.status" placeholder="请选择">
-          <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="描述">
-        <el-input type="textarea" v-model="form.description" />
-      </el-form-item>
+    <el-form ref="formRef" :model="form" :rules="rules">
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="知识库名称"><el-input v-model="form.name" /></el-descriptions-item>
+        <el-descriptions-item label="启用重排序">
+          <el-switch v-model="form.reranked" :active-value="true" :inactive-value="false" />
+        </el-descriptions-item>
+        <el-descriptions-item label="召回类型">
+          <el-radio-group v-model="form.recallType">
+            <el-radio-button v-for="(value, key) in config.recallTypes" :key="key" :value="key" :label="value" />
+          </el-radio-group>
+        </el-descriptions-item>
+        <el-descriptions-item label="召回范围">
+          <el-radio-group v-model="form.recallScope">
+            <el-radio-button v-for="(value, key) in config.recallScopes" :key="key" :value="key" :label="value" />
+          </el-radio-group>
+        </el-descriptions-item>
+        <el-descriptions-item label="召回数量"><el-input-number v-model="form.topK" /></el-descriptions-item>
+        <el-descriptions-item label="召回阈值">
+          <el-input-number v-model="form.score" :precision="2" :step="0.1" placeholder="为0时不限制" />
+        </el-descriptions-item>
+        <el-descriptions-item label="词嵌入模型">
+          <el-select v-model="form.embeddingModel" placeholder="请选择" filterable clearable>
+            <el-option v-for="(item, key) in config.models" :key="key" :value="item.id" :label="item.id" />
+          </el-select>
+        </el-descriptions-item>
+        <el-descriptions-item label="重排序模型">
+          <el-select v-model="form.rerankModel" placeholder="请选择" filterable clearable>
+            <el-option v-for="(item, key) in config.models" :key="key" :value="item.id" :label="item.id" />
+          </el-select>
+        </el-descriptions-item>
+        <el-descriptions-item label="标签">
+          <el-select v-model="form.labels" multiple filterable allow-create :reserve-keyword="false" default-first-option placeholder="输入后回车创建标签" />
+        </el-descriptions-item>
+        <el-descriptions-item label="授权角色">
+          <form-select v-model="form.roleIds" :callback="RoleApi.list" multiple clearable />
+        </el-descriptions-item>
+        <el-descriptions-item label="段落分隔符"><el-input v-model="form.splitSeparator" /></el-descriptions-item>
+        <el-descriptions-item label="分段长度"><el-input-number v-model="form.splitSegmentTokens" /></el-descriptions-item>
+        <el-descriptions-item label="分块长度"><el-input-number v-model="form.splitChunkTokens" /></el-descriptions-item>
+        <el-descriptions-item label="重叠长度"><el-input-number v-model="form.splitOverlayTokens" /></el-descriptions-item>
+        <el-descriptions-item label="排序"><el-input-number v-model="form.sort" /></el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-select v-model="form.status" placeholder="请选择">
+            <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
+          </el-select>
+        </el-descriptions-item>
+        <el-descriptions-item label="描述"><el-input type="textarea" v-model="form.description" /></el-descriptions-item>
+      </el-descriptions>
     </el-form>
   </el-drawer>
 </template>

@@ -30,17 +30,17 @@ import java.util.*;
 public class RbacService extends RbacServiceBase {
 
     @Autowired
-    private MenuDao menuDao;
+    MenuDao menuDao;
     @Autowired
-    private ResourceDao resourceDao;
+    ResourceDao resourceDao;
     @Autowired
-    private RelationDao relationDao;
+    RelationDao relationDao;
     @Autowired
-    private UserService userService;
+    UserService userService;
     @Autowired
-    private SettingService settingService;
+    SettingService settingService;
     @Autowired
-    private ApplicationDao applicationDao;
+    ApplicationDao applicationDao;
     @Autowired
     RedisIndexedSessionRepository sessionRepository;
     @Autowired

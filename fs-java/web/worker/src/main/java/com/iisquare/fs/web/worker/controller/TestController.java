@@ -18,7 +18,7 @@ import java.util.Map;
 public class TestController extends PermitControllerBase {
 
     @Autowired
-    private TestService testService;
+    TestService testService;
 
     @GetMapping("/makeCase")
     public String makeCaseAction(@RequestParam Map<?, ?> param) {

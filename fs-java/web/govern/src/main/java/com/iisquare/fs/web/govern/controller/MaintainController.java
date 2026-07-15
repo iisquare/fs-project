@@ -2,13 +2,13 @@ package com.iisquare.fs.web.govern.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.elasticsearch.util.QueryUtil;
 import com.iisquare.fs.base.jpa.core.SQLBatchCallback;
 import com.iisquare.fs.base.jpa.helper.SQLHelper;
-import com.iisquare.fs.base.web.mvc.ControllerBase;
 import com.iisquare.fs.base.web.util.CronUtil;
+import com.iisquare.fs.web.core.rbac.MaintainControllerBase;
 import com.iisquare.fs.web.govern.elasticsearch.MetaES;
 import com.iisquare.fs.web.govern.entity.Model;
 import com.iisquare.fs.web.govern.entity.ModelColumn;
@@ -17,7 +17,6 @@ import com.iisquare.fs.web.govern.neo4j.MetaBloodNode;
 import com.iisquare.fs.web.govern.neo4j.MetaBloodRelation;
 import com.iisquare.fs.web.govern.neo4j.MetaInfluenceNode;
 import com.iisquare.fs.web.govern.neo4j.MetaInfluenceRelation;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,25 +32,24 @@ import java.util.Map;
 
 @RequestMapping("/maintain")
 @RestController
-public class MaintainController extends ControllerBase {
+public class MaintainController extends MaintainControllerBase {
 
     @Autowired
-    private MetaES metaES;
+    MetaES metaES;
     @Autowired
-    private MetaBloodNode metaBloodNode;
+    MetaBloodNode metaBloodNode;
     @Autowired
-    private MetaBloodRelation metaBloodRelation;
+    MetaBloodRelation metaBloodRelation;
     @Autowired
-    private MetaInfluenceNode metaInfluenceNode;
+    MetaInfluenceNode metaInfluenceNode;
     @Autowired
-    private MetaInfluenceRelation metaInfluenceRelation;
+    MetaInfluenceRelation metaInfluenceRelation;
     @Autowired
-    private EntityManager entityManager;
+    EntityManager entityManager;
 
     @GetMapping("/schema")
     public String schemaAction(@RequestParam Map<String, Object> param) {
-        String result = metaES.create(false);
-        return result;
+        return metaES.create(false);
     }
 
     @GetMapping("/reindexES")
@@ -83,8 +81,7 @@ public class MaintainController extends ControllerBase {
                 }
             });
             CronUtil.flushString(response, true, "clean with time %d", time);
-            long total = metaES.deleteByQuery(QueryBuilders.boolQuery().mustNot(
-                    QueryBuilders.termsQuery("time", new long[]{time})));
+            long total = metaES.deleteByQuery(QueryUtil.mustNot(QueryUtil.term("time", time)));
             CronUtil.flushString(response, true, "clean es total %d", total);
             CronUtil.flushStringify(response, ApiUtil.result(0, null, param), true);
         } catch (Exception e) {

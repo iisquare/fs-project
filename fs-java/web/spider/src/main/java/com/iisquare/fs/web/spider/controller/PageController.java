@@ -23,7 +23,7 @@ import java.util.Map;
 public class PageController extends PermitControllerBase {
 
     @Autowired
-    private PageService pageService;
+    PageService pageService;
 
     @RequestMapping("/info")
     @Permission("")

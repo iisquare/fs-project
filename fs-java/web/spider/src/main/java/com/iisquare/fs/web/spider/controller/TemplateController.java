@@ -21,7 +21,7 @@ import java.util.Map;
 public class TemplateController extends PermitControllerBase {
 
     @Autowired
-    private TemplateService templateService;
+    TemplateService templateService;
 
     @RequestMapping("/info")
     @Permission("")

@@ -23,7 +23,7 @@ import java.util.Map;
 public class DataPermitController extends PermitControllerBase {
 
     @Autowired
-    private DataPermitService dataPermitService;
+    DataPermitService dataPermitService;
 
     @RequestMapping("/info")
     @Permission("")

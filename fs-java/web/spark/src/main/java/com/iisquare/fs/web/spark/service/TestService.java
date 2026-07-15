@@ -17,7 +17,7 @@ import java.util.Map;
 public class TestService {
 
     @Autowired
-    private SparkService sparkService;
+    SparkService sparkService;
 
     public Map<String, Object> mongoPushDown(Map<?, ?> arg) {
         SparkSession session = sparkService.session().newSession();

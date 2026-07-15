@@ -19,7 +19,7 @@ import java.util.Map;
 public class ModelRelationController extends PermitControllerBase {
 
     @Autowired
-    private ModelRelationService relationService;
+    ModelRelationService relationService;
 
     @RequestMapping("/list")
     @Permission("")

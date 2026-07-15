@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import io.minio.*;
+import io.minio.errors.ErrorResponseException;
 import io.minio.messages.Bucket;
 import io.minio.messages.DeleteError;
 import io.minio.messages.DeleteObject;
@@ -99,6 +100,18 @@ public class MinIOService {
         return client.statObject(builder.build());
     }
 
+    public boolean exists(String bucket, String object) throws Exception {
+        try {
+            statObject(bucket, object);
+            return true;
+        } catch (ErrorResponseException e) {
+            if ("NoSuchKey".equals(e.errorResponse().code())) {
+                return false;
+            }
+            throw e;
+        }
+    }
+
     public GetObjectResponse getObject(String bucket, String object) throws Exception {
         GetObjectArgs.Builder builder = GetObjectArgs.builder();
         builder.bucket(bucket);
@@ -106,12 +119,12 @@ public class MinIOService {
         return client.getObject(builder.build());
     }
 
-    public ObjectWriteResponse putObject(String bucket, String object, InputStream stream, String contentType, Map<String, String> headers, Map<String, String> metadata) throws Exception {
+    public ObjectWriteResponse putObject(String bucket, String object, InputStream stream, long objectSize, String contentType, Map<String, String> headers, Map<String, String> metadata) throws Exception {
         PutObjectArgs.Builder builder = PutObjectArgs.builder();
         builder.bucket(bucket);
         builder.object(object);
         if (!DPUtil.empty(contentType)) builder.contentType(contentType);
-        builder.stream(stream, -1, -1);
+        builder.stream(stream, objectSize, -1);
         if (null != headers) builder.headers(headers);
         if (null != metadata) builder.userMetadata(metadata);
         return client.putObject(builder.build());

@@ -20,7 +20,7 @@ import java.util.Map;
 public class DAGController extends PermitControllerBase {
 
     @Autowired
-    private DAGService dagService;
+    DAGService dagService;
 
     @RequestMapping("/config")
     public String configAction(ModelMap model) {

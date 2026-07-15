@@ -24,9 +24,9 @@ import java.util.Map;
 public class VisualizeController extends PermitControllerBase {
 
     @Autowired
-    private VisualizeService visualizeService;
+    VisualizeService visualizeService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     @RequestMapping("/search")
     @Permission

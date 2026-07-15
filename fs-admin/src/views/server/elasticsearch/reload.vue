@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { computed, ref } from 'vue'
 import LuceneApi from '@/api/server/LuceneApi'
-
-const ES_URL_KEY = 'elasticsearchURL'
-const DEFAULT_ES_URL = 'http://127.0.0.1:9200/_plugin/analysis-ik-online'
 
 const types: Record<string, string> = {
   word: '分词词典',
@@ -14,7 +10,6 @@ const types: Record<string, string> = {
 }
 
 const result = ref({})
-const elasticsearchURL = ref(DEFAULT_ES_URL)
 const formLoading = ref(false)
 const form = ref({
   dictSerial: '',
@@ -27,19 +22,7 @@ const form = ref({
 
 const json = computed(() => JSON.stringify(result.value, null, 4))
 
-const saveURL = (url: string) => {
-  if (window.localStorage) {
-    window.localStorage.setItem(ES_URL_KEY, url)
-  }
-  return url
-}
-
 const handleSubmit = () => {
-  saveURL(elasticsearchURL.value)
-  if (!elasticsearchURL.value) {
-    ElMessage.warning('请确认连接服务地址')
-    return
-  }
   if (formLoading.value) return
   const dicts: string[] = []
   for (const type in types) {
@@ -51,18 +34,14 @@ const handleSubmit = () => {
   }
   if (form.value.forceNode === '1') param.forceNode = form.value.forceNode
   formLoading.value = true
-  LuceneApi.dictReload(elasticsearchURL.value, param).then((res: any) => {
+  LuceneApi.ikReload(param).then((res: any) => {
+    result.value = res
+  }).catch((res: any) => {
     result.value = res
   }).finally(() => {
     formLoading.value = false
   })
 }
-
-onMounted(() => {
-  if (window.localStorage && window.localStorage[ES_URL_KEY]) {
-    elasticsearchURL.value = window.localStorage[ES_URL_KEY]
-  }
-})
 </script>
 
 <template>
@@ -75,9 +54,6 @@ onMounted(() => {
         <el-card shadow="never">
           <template #header>服务重载</template>
           <el-form :model="form" label-width="80px">
-            <el-form-item label="服务地址">
-              <el-input v-model="elasticsearchURL" placeholder="节点链接地址" clearable />
-            </el-form-item>
             <el-form-item label="词典编号">
               <el-input v-model="form.dictSerial" placeholder="词典编号" />
             </el-form-item>

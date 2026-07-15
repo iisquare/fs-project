@@ -44,7 +44,7 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
     @Autowired
     SensitiveService sensitiveService;
     @Autowired
-    private StringRedisTemplate redis;
+    StringRedisTemplate redis;
     @Autowired
     ProviderService providerService;
     @Autowired
@@ -53,6 +53,8 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
     UsageService usageService;
     @Autowired
     RemindService remindService;
+    @Autowired
+    AIService aiService;
 
     private ObjectNode cache = DPUtil.objectNode();
     private final SsePlainRequestPool pool = new SsePlainRequestPool();
@@ -439,6 +441,143 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         }
         emitter.setMediaType(res); // 需要在异步返回前，确定请求响应类型
         return emitter.async(() -> pool.process(req, res));
+    }
+
+    /** 词嵌入网关请求（非流式），沿用completion()的认证/限流/计费流水线，返回JSON */
+    public ObjectNode embedding(ObjectNode json, HttpServletRequest request, HttpServletResponse response) {
+        return nonStreamingRequest(json, request, response, "embedding");
+    }
+
+    /** 重排序网关请求（非流式），沿用completion()的认证/限流/计费流水线，返回JSON */
+    public ObjectNode rerank(ObjectNode json, HttpServletRequest request, HttpServletResponse response) {
+        return nonStreamingRequest(json, request, response, "reranker");
+    }
+
+    /**
+     * 非流式请求公共流水线：认证 → 积分检查 → 模型校验 → 速率限制 → 调用后端 → 积分计算 → 使用记录
+     */
+    private ObjectNode nonStreamingRequest(ObjectNode json, HttpServletRequest request, HttpServletResponse response, String modelType) {
+        long beginTime = System.currentTimeMillis();
+        // 1. 认证
+        ObjectNode auth = creditService.authByKey(token(request), cache);
+        if (null == auth) {
+            return error401(response);
+        }
+        if (auth.at("/credit/remained").asDouble() <= 0) {
+            response.setStatus(400);
+            return SsePlainEmitter.error("token_limited", "积分不足", "gateway", null);
+        }
+        // 2. 模型权限校验
+        String place = json.at("/model").asText("");
+        if (DPUtil.empty(place) || !auth.at("/models").has(place)) {
+            response.setStatus(403);
+            return SsePlainEmitter.error("model_denied", "暂未开通该模型权限", "gateway", null);
+        }
+        // 3. 模型/提供商选择与并发控制
+        JsonNode model = minimumConcurrencyPriority(auth, place, request);
+        if (null == model || model.isEmpty()) {
+            response.setStatus(403);
+            return SsePlainEmitter.error("model_invalid", "模型暂不可用", "gateway", null);
+        }
+        if (!modelType.equals(model.at("/type").asText(""))) {
+            response.setStatus(400);
+            return SsePlainEmitter.error("model_type_mismatch", "模型类型不匹配", "gateway", null);
+        }
+        JsonNode provider = cache.at("/providers/" + model.at("/providerId").asInt());
+        if (provider.isEmpty()) {
+            response.setStatus(403);
+            return SsePlainEmitter.error("provider_invalid", "提供商暂不可用", "gateway", null);
+        }
+        // 4. 速率限制检查
+        int uid = auth.at("/uid").asInt();
+        for (JsonNode rate : auth.at("/credit/rates")) {
+            int rateId = rate.at("/id").asInt();
+            for (Map.Entry<String, String> entry : checkRates.entrySet()) {
+                double count = rate.at("/" + entry.getKey() + "Count").asDouble();
+                int interval = rate.at("/" + entry.getKey() + "Interval").asInt();
+                if (count <= 0 || interval <= 0) continue;
+                String key = RedisKey.rate(entry.getKey(), uid, rateId, beginTime / interval / 1000);
+                double current = DPUtil.parseDouble(redis.opsForValue().get(key));
+                if (current >= count) {
+                    remindService.limited(auth, entry);
+                    response.setStatus(400);
+                    return SsePlainEmitter.error("token_limited", "间隔内" + entry.getValue() + "数量超过限制", "gateway", null);
+                }
+            }
+        }
+        // 5. 并发控制
+        String keyParallel = RedisKey.modelParallel(model.at("/id").asInt());
+        Long count = redis.opsForValue().increment(keyParallel);
+        if (null == count) {
+            response.setStatus(400);
+            return SsePlainEmitter.error("server_busy", "服务器繁忙，请稍后再试。", "gateway", null);
+        } else {
+            redis.expire(keyParallel, 30, TimeUnit.MINUTES);
+        }
+        // 6. 准备使用记录
+        Map<String, String> headers = ServletUtil.headers(request);
+        Usage.UsageBuilder usage = Usage.builder().type("consume_" + modelType).place(place);
+        usage.uid(uid).authId(auth.at("/id").asInt());
+        usage.modelId(model.at("/id").asInt()).providerId(provider.at("/id").asInt());
+        usage.status("completed").requestIp(ServletUtil.getRemoteAddr(request)).beginTime(beginTime);
+        usage.requestBody(DPUtil.stringify(json)).requestStream(0);
+        usage.requestIp(ServletUtil.getRemoteAddr(request)).requestHeader(DPUtil.stringify(headers));
+        usage.responseBody("").responseCompletion("").finishDetail("").auditDetail("");
+        // 7. 构建请求并调用后端
+        String endpoint = provider.at("/endpoint").asText();
+        String token = provider.at("/token").asText();
+        String path = "embedding".equals(modelType) ? "/embeddings" : "/rerank";
+        json.put("model", model.at("/name").asText(""));
+        Map<String, Object> backendResult = aiService.post(endpoint + path, json, aiService.authorization(token));
+        if (ApiUtil.failed(backendResult)) {
+            response.setStatus(502);
+            redis.opsForValue().decrement(keyParallel);
+            String msg = ApiUtil.message(backendResult);
+            usage.finishReason("backend_failed").finishDetail(msg);
+            usageService.record(usage.build(), auth);
+            return SsePlainEmitter.error("backend_failed", msg, "gateway", null);
+        }
+        ObjectNode result = ApiUtil.data(backendResult, ObjectNode.class);
+        // 8. 解析响应中的用量信息
+        int totalTokens = result.at("/usage/total_tokens").asInt();
+        int promptTokens = result.at("/usage/prompt_tokens").asInt();
+        if (!result.has("usage") && result.has("meta")) { // 硅基流动rerank返回结果
+            totalTokens = promptTokens = result.at("/meta/tokens/input_tokens").asInt();
+        }
+        usage.usagePromptTokens(promptTokens).usageCompletionTokens(0).usageTotalTokens(totalTokens);
+        // 9. 计算积分消耗
+        BigDecimal creditAmount = BigDecimal.ZERO;
+        BigDecimal divisor = BigDecimal.valueOf(1000000);
+        creditAmount = creditAmount.add(BigDecimal.valueOf(totalTokens).abs()
+                .multiply(new BigDecimal(model.at("/content/credits").asText()).abs())
+                .divide(divisor, 20, RoundingMode.HALF_UP));
+        usage.creditAmount(creditAmount.negate());
+        // 10. 完成记录
+        long endTime = System.currentTimeMillis();
+        usage.endTime(endTime).coastTotal((int) (endTime - beginTime));
+        usage.responseBody(DPUtil.stringify(result)).finishReason("complete");
+        redis.opsForValue().decrement(keyParallel);
+        usageService.record(usage.build(), auth);
+        // 11. 更新速率计数器
+        for (JsonNode rate : auth.at("/credit/rates")) {
+            int rateId = rate.at("/id").asInt();
+            for (Map.Entry<String, String> entry : checkRates.entrySet()) {
+                int interval = rate.at("/" + entry.getKey() + "Interval").asInt();
+                if (interval <= 0) continue;
+                double delta = switch (entry.getKey()) {
+                    case "request" -> 1;
+                    case "token" -> totalTokens;
+                    case "credit" -> creditAmount.doubleValue();
+                    default -> 0;
+                };
+                if (delta <= 0) continue;
+                String key = RedisKey.rate(entry.getKey(), uid, rateId, beginTime / interval / 1000);
+                redis.opsForValue().increment(key, delta);
+                redis.expire(key, interval, TimeUnit.SECONDS);
+            }
+        }
+        // 12. 返回结果（替换响应中的模型名称为客户端请求的模型别名）
+        return result.put("model", place);
     }
 
     private String extractMessageContent(JsonNode message) {

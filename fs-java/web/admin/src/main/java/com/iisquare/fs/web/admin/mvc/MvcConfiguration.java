@@ -21,7 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class MvcConfiguration extends WebMvcConfiguration implements HandlerExceptionResolver {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {

@@ -20,15 +20,15 @@ import java.util.*;
 public class FaceService extends ServiceBase {
 
     @Autowired
-    private PhotoService photoService;
+    PhotoService photoService;
     @Autowired
-    private GroupDao groupDao;
+    GroupDao groupDao;
     @Autowired
-    private RelationDao relationDao;
+    RelationDao relationDao;
     @Autowired
-    private UserDao userDao;
+    UserDao userDao;
     @Autowired
-    private PhotoDao photoDao;
+    PhotoDao photoDao;
 
     private long triggerLoading = 0;
     private long lastLoading = 0;

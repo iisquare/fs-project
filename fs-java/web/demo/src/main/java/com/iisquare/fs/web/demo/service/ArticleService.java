@@ -12,7 +12,7 @@ import java.util.Optional;
 public class ArticleService extends ServiceBase {
 
     @Autowired
-    private CompositeDao compositeDao;
+    CompositeDao compositeDao;
 
     public Composite info(Integer aid, Integer bid) {
         Optional<Composite> info = compositeDao.findById(Composite.IdClass.builder().aid(aid).bid(bid).build());

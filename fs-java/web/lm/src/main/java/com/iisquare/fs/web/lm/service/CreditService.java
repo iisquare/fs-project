@@ -26,15 +26,15 @@ import java.util.*;
 public class CreditService extends JPAServiceBase {
 
     @Autowired
-    private CreditDao creditDao;
+    CreditDao creditDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private RateService rateService;
+    RateService rateService;
     @Autowired
-    private AuthDao authDao;
+    AuthDao authDao;
     @Autowired
-    private RateDao rateDao;
+    RateDao rateDao;
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();

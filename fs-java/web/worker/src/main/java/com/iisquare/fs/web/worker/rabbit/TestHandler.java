@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class TestHandler extends HandlerBase {
 
     @Autowired
-    private Configuration configuration;
+    Configuration configuration;
 
     @Override
     public void onMessage(Message message, Channel channel) throws Exception {

@@ -156,7 +156,7 @@ spring:
       database: 1
       host: 127.0.0.1
       port: 6379
-      password:
+      password: admin888
       timeout: 5000
       jedis:
         pool:
@@ -182,6 +182,8 @@ spring:
     password: admin888
   elasticsearch:
     nodes: 127.0.0.1:9200
+    username: elastic
+    password: admin888
   neo4j:
     uri: neo4j://127.0.0.1:7687
     username: neo4j

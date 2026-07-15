@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BIService {
 
     @Autowired
-    private FlinkService flinkService;
+    FlinkService flinkService;
     private static Map<String, JobClient> clients = new ConcurrentHashMap<>();
     static Map<String, Class<DAGNode>> node;
     static Map<String, Class<DAGNode>> batch;

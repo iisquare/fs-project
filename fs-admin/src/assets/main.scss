@@ -40,6 +40,9 @@ body, html {
   padding-bottom: 15px !important;
   border-bottom: solid 1px var(--fs-layout-border-color);
 }
+.el-descriptions:has(.fs-markdown-editor) .el-descriptions__table {
+  table-layout: fixed; // 修复MarkdownEditor在el-descriptions中显示超宽的问题
+}
 
 ::-webkit-scrollbar {
 	width: 5px;

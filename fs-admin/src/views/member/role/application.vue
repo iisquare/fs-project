@@ -30,7 +30,7 @@ const rows = ref([])
 const filterRef = ref<FormInstance>()
 const filters = ref(RouteUtil.query2filter(route, { advanced: false, roleIds: [] }))
 const pagination = ref(RouteUtil.pagination(filters.value, { pageSize: 100 }))
-const selection = ref([])
+const selection: any = ref([])
 const permitted: any = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
   tableRef.value?.clearSelection()
@@ -86,7 +86,7 @@ const tree = reactive({
   title: '',
   visible: false,
   loading: false,
-  selection: [],
+  selection: [] as any,
   rows: [],
   expandedRowKeys: [],
   columns: [
@@ -169,11 +169,11 @@ const handleSubmit = () => {
     <el-table
       ref="tableRef"
       :data="rows"
-      :row-key="record => record.id"
+      :row-key="(record: any) => record.id"
       :border="true"
       v-loading="loading"
       table-layout="auto"
-      @selection-change="newSelection => selection = newSelection"
+      @selection-change="(s: any) => selection = s"
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns"></TableColumn>
@@ -207,7 +207,7 @@ const handleSubmit = () => {
     <el-table
       ref="treeRef"
       :data="tree.rows"
-      :row-key="record => record.id"
+      :row-key="(record: any) => record.id"
       :expand-row-keys="tree.expandedRowKeys"
       :border="true"
       v-loading="tree.loading"

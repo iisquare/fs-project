@@ -26,11 +26,11 @@ import java.util.Map;
 public class PageService extends JPAServiceBase {
 
     @Autowired
-    private PageDao pageDao;
+    PageDao pageDao;
     @Autowired
     TemplateService templateService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();

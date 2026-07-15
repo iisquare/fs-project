@@ -23,15 +23,15 @@ import java.util.*;
 public class ApplicationService extends JPAServiceBase {
 
     @Autowired
-    private ApplicationDao applicationDao;
+    ApplicationDao applicationDao;
     @Autowired
-    private UserService userService;
+    UserService userService;
     @Autowired
-    private RbacService rbacService;
+    RbacService rbacService;
     @Autowired
-    private MenuDao menuDao;
+    MenuDao menuDao;
     @Autowired
-    private ResourceDao resourceDao;
+    ResourceDao resourceDao;
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();

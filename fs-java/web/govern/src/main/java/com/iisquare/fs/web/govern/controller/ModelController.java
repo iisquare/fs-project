@@ -20,9 +20,9 @@ import java.util.Map;
 public class ModelController extends PermitControllerBase {
 
     @Autowired
-    private ModelService modelService;
+    ModelService modelService;
     @Autowired
-    private ModelColumnService columnService;
+    ModelColumnService columnService;
 
     @RequestMapping("/info")
     @Permission("")

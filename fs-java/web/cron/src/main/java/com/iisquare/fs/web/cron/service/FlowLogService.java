@@ -26,20 +26,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class FlowLogService extends JPAServiceBase implements InitializingBean, DisposableBean {
 
     @Autowired
-    private NodeService nodeService;
+    NodeService nodeService;
     @Autowired
-    private FlowLogDao logDao;
+    FlowLogDao logDao;
     @Autowired
-    private FlowStageDao stageDao;
+    FlowStageDao stageDao;
     @Autowired
-    private StringRedisTemplate redis;
+    StringRedisTemplate redis;
     private volatile long waitTimeout = 0; // 无可调度流程时，长时间等待
     private volatile StagePool pool = new StagePool();
     private final AtomicInteger atomic = new AtomicInteger(0); // 在状态修改并发冲突后，补偿调度一次
     @Autowired
-    private FlowService flowService;
+    FlowService flowService;
     @Autowired
-    private FlowLogDao flowLogDao;
+    FlowLogDao flowLogDao;
 
     @Override
     public void afterPropertiesSet() throws Exception {

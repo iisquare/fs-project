@@ -1,4 +1,19 @@
 <script setup lang="ts">
+/**
+ * Markdown 编辑器 - 基于 Vditor 的所见即所得 Markdown 编辑/预览组件。
+ *
+ * @v-model  {String}   内容（双向绑定主值）
+ * @prop     {Boolean}   readonly     - 是否只读（仅预览），默认 false
+ * @prop     {Number}    height       - 编辑器高度(px)，默认 400
+ * @prop     {String}    placeholder  - 占位提示文本
+ *
+ * @example
+ * <!-- 编辑模式 -->
+ * <markdown-editor v-model="content" />
+ *
+ * <!-- 只读预览模式 -->
+ * <markdown-editor v-model="content" :readonly="true" />
+ */
 import Vditor from 'vditor'
 import 'vditor/dist/index.css'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -43,9 +58,13 @@ const loadEditor = () => {
       'undo', 'redo', '|',
       'edit-mode', 'outline', 'fullscreen',
     ],
+    counter: {
+      enable: true,
+    },
     input(value: string) {
       model.value = value
     },
+    customWysiwygToolbar: () => {},
     after() {
       if (model.value) {
         vditor!.setValue(model.value)

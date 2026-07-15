@@ -26,11 +26,11 @@ import java.util.Map;
 public class BlacklistService extends JPAServiceBase {
 
     @Autowired
-    private BlacklistDao blacklistDao;
+    BlacklistDao blacklistDao;
     @Autowired
     TemplateService templateService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();

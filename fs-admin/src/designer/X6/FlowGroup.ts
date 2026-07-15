@@ -1,12 +1,12 @@
 import DesignUtil from '@/utils/DesignUtil'
-import { Node, Graph } from '@antv/x6'
+import { Node, Graph, type NodeMetadata } from '@antv/x6'
 
 export default class FlowGroup extends Node {
 
-  meta: Node.Metadata
+  meta: NodeMetadata
   collapsed: Boolean = false
 
-  constructor (metadata?: Node.Metadata) {
+  constructor (metadata?: NodeMetadata) {
     super(metadata)
     this.meta = metadata ?? {}
     this.attr('label/text', this.meta.data.name)

@@ -21,9 +21,9 @@ import java.util.Map;
 public class CatalogController extends PermitControllerBase {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private CatalogService catalogService;
+    CatalogService catalogService;
 
     @RequestMapping("/tree")
     @Permission("")

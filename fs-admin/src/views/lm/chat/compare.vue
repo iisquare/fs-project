@@ -32,7 +32,7 @@ const handleAgent = (success = false) => {
       agent.reason = ''
       agent.thinking = false
       agent.loading = false
-      const sse = new FetchEventSource('LM', '/chat/compare')
+      const sse = new FetchEventSource('lm', '/chat/compare')
       sse.addHeaders({ "X-Auth-Token": user.info.token })
       sse.onOpen(() => {
         agent.state = 'connect'

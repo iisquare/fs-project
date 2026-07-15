@@ -21,7 +21,7 @@ import java.util.Map;
 public class McpController extends PermitControllerBase {
 
     @Autowired
-    private McpService mcpService;
+    McpService mcpService;
 
     @RequestMapping("/info")
     @Permission("")

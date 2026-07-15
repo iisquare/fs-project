@@ -23,11 +23,11 @@ import java.util.*;
 public class DictionaryService extends JPAServiceBase {
 
     @Autowired
-    private DictionaryDao dictionaryDao;
+    DictionaryDao dictionaryDao;
     @Autowired
-    private UserService userService;
+    UserService userService;
     @Autowired
-    private RbacService rbacService;
+    RbacService rbacService;
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();

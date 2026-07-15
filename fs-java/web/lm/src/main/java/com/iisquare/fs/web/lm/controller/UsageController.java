@@ -5,10 +5,12 @@ import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
+import com.iisquare.fs.web.lm.entity.Usage;
 import com.iisquare.fs.web.lm.service.UsageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,7 +22,15 @@ import java.util.Map;
 public class UsageController extends PermitControllerBase {
 
     @Autowired
-    private UsageService usageService;
+    UsageService usageService;
+
+    @RequestMapping("/info")
+    @Permission("")
+    public String infoAction(@RequestParam Map<?, ?> param) {
+        long id = DPUtil.parseLong(param.get("id"));
+        Usage info = usageService.info(id);
+        return ApiUtil.echoResult(null == info ? 404 : 0, null, info);
+    }
 
     @RequestMapping("/list")
     @Permission("")

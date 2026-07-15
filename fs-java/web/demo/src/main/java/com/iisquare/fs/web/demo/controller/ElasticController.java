@@ -17,13 +17,12 @@ import java.util.Map;
 public class ElasticController extends ControllerBase {
 
     @Autowired
-    private DemoTestES testES;
+    DemoTestES testES;
     @Autowired
-    private AccessLogES logES;
+    AccessLogES logES;
 
     @GetMapping("/create")
     public String createAction(@RequestParam Map<String, Object> param) {
-        testES.version(DPUtil.parseInt(param.get("version")));
         boolean withAlias = !DPUtil.empty(param.get("withAlias"));
         return testES.create(withAlias);
     }

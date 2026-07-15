@@ -26,13 +26,13 @@ import java.util.*;
 public class MatrixService extends ServiceBase {
 
     @Autowired
-    private MatrixDao matrixDao;
+    MatrixDao matrixDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private DatasetService datasetService;
+    DatasetService datasetService;
     @Autowired
-    private SparkRpc sparkRpc;
+    SparkRpc sparkRpc;
 
     public Map<String, Object> search(Integer datasetId, JsonNode preview) {
         if (null == preview || !preview.isObject()) {

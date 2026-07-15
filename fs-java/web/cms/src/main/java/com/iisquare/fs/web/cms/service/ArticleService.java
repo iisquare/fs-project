@@ -25,13 +25,13 @@ import java.util.*;
 public class ArticleService extends ServiceBase {
 
     @Autowired
-    private ArticleDao articleDao;
+    ArticleDao articleDao;
     @Autowired
-    private CatalogService catalogService;
+    CatalogService catalogService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private Configuration configuration;
+    Configuration configuration;
 
     public Map<?, ?> status(String level) {
         Map<Integer, String> status = new LinkedHashMap<>();

@@ -1,4 +1,37 @@
 <script setup lang="ts">
+/**
+ * 远程搜索下拉选择器 - 通过回调函数远程搜索并展示下拉选项，支持单选/多选，自动回显已选值。
+ *
+ * @v-model  {*}                选中值（双向绑定主值），多选时为数组
+ * @prop     {Function}         callback     - 远程搜索回调（必填），签名为 (params) => Promise<{ data: { rows: Row[] } }>
+ * @prop     {Row[]}            data         - 最后一次检索结果，通过 v-model:data 传入
+ * @prop     {Row|Row[]}        selected     - 选中项对应的完整行数据，通过 v-model:selected 传入
+ * @prop     {Boolean}          multiple     - 是否多选，默认 false
+ * @prop     {Boolean}          clearable    - 是否可清空，默认 false
+ * @prop     {String}           placeholder  - 占位文本，默认"输入关键词进行查找"
+ * @prop     {String}           fieldKey     - 用作唯一标识的字段名，默认 'id'
+ * @prop     {String}           fieldValue   - 用作值的字段名，默认 'id'
+ * @prop     {String}           fieldLabel   - 用作标签的字段名，默认 'name'
+ * @prop     {*}                exceptIds    - 排除的记录 ID
+ * @prop     {Number}           pageSize     - 分页大小，默认 15
+ * @prop     {Function}         parameter    - 扩展查询参数函数，签名为 (query: string) => Object
+ *
+ * @emits    {Function} change - 选中变化，参数：(value, selected, data)
+ *                                 value    - 选中值
+ *                                 selected - 选中值对应的完整行数据
+ *                                 data     - 最后一次检索结果数组
+ *
+ * 行数据结构 (Row):
+ *   { id: any, name: string, ... } — 需包含 fieldKey、fieldValue、fieldLabel 对应的字段
+ *
+ * @example
+ * <form-select
+ *   v-model="userId"
+ *   v-model:selected="selectedUser"
+ *   :callback="UserApi.search"
+ *   placeholder="搜索用户"
+ * />
+ */
 import DataUtil from '@/utils/DataUtil';
 import { ref, watch } from 'vue';
 
@@ -17,19 +50,19 @@ const {
   multiple: { type: Boolean, required: false },
   clearable: { type: Boolean, required: false },
   placeholder: { type: String, required: false },
-  fieldKey: { type: String, required: false }, // 唯一标识
-  fieldValue: { type: String, required: false }, // 字段值
-  fieldLabel: { type: String, required: false }, // 字段标签
-  exceptIds: { required: false }, // 排除记录
-  pageSize: { type: Number, required: false }, // 分页大小
+  fieldKey: { type: String, required: false },
+  fieldValue: { type: String, required: false },
+  fieldLabel: { type: String, required: false },
+  exceptIds: { required: false },
+  pageSize: { type: Number, required: false },
   callback: Function,
-  parameter: { type: Function, required: false }, // 拓展查询参数
+  parameter: { type: Function, required: false },
 })
 
 const model: any = defineModel()
-const data = defineModel('data', { type: Array<Object>, default: [] }) // 最后一次检索结果
-const selected = defineModel('selected', { type: [Object, Array<Object>], default: null }) // 选中项对应的结果条目
-const emit = defineEmits(['change']) // 参数：选中值，选中值对应的结果条目，最后一次检索结果数据
+const data = defineModel<Object[]>('data', { default: () => [] })
+const selected = defineModel('selected', { type: [Object, Array<Object>], default: null })
+const emit = defineEmits(['change'])
 const options: any = ref([])
 const loading = ref(false)
 

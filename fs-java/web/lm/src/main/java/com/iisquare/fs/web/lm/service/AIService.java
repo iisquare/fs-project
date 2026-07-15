@@ -1,12 +1,14 @@
 package com.iisquare.fs.web.lm.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.StringEntity;
@@ -15,10 +17,12 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -26,6 +30,10 @@ public class AIService implements DisposableBean {
 
     CloseableHttpClient client;
     final RequestConfig config;
+    @Value("${fs.lm.token}")
+    private String gatewayToken;
+    @Value("${rpc.lm.rest}")
+    private String gatewayEndpoint;
 
     public AIService() {
         PoolingHttpClientConnectionManager pooling = new PoolingHttpClientConnectionManager();
@@ -42,9 +50,19 @@ public class AIService implements DisposableBean {
                 .build();
     }
 
+    public Map<String, Object> get(String url, Map<String, String> headers) {
+        HttpGet http = new HttpGet(url);
+        if (headers != null) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                http.addHeader(entry.getKey(), entry.getValue());
+            }
+        }
+        return this.execute(http);
+    }
+
     public Map<String, Object> post(String url, JsonNode json, Map<String, String> headers) {
         HttpPost http = new HttpPost(url);
-        if (headers != null && !headers.isEmpty()) {
+        if (headers != null) {
             for (Map.Entry<String, String> entry : headers.entrySet()) {
                 http.addHeader(entry.getKey(), entry.getValue());
             }
@@ -86,9 +104,35 @@ public class AIService implements DisposableBean {
     }
 
     public Map<String, String> authorization(String token) {
-        Map<String, String> headers = new HashMap<String, String>();
-        headers.put("Authorization", "Bearer " + token);
+        Map<String, String> headers = new HashMap<>();
+        if (!DPUtil.empty(token)) {
+            headers.put("Authorization", "Bearer " + token);
+        }
         return headers;
+    }
+
+    public Map<String, Object> models() {
+        String url = gatewayEndpoint + "/v1/models";
+        return get(url, authorization(gatewayToken));
+    }
+
+    public Map<String, Object> embeddings(String model, List<String> inputs) {
+        String url = gatewayEndpoint + "/v1/embeddings";
+        ObjectNode body = DPUtil.objectNode();
+        body.put("model", model);
+        body.replace("input", DPUtil.toJSON(inputs));
+        return post(url, body, authorization(gatewayToken));
+    }
+
+    public Map<String, Object> rerank(String model, String query, List<String> documents, int topN) {
+        String url = gatewayEndpoint + "/v1/rerank";
+        ObjectNode body = DPUtil.objectNode();
+        body.put("model", model);
+        body.put("query", query);
+        body.replace("documents", DPUtil.toJSON(documents));
+        body.put("return_documents", true);
+        if (topN > 0) body.put("top_n", topN);
+        return post(url, body, authorization(gatewayToken));
     }
 
 }

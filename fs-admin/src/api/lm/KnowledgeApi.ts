@@ -1,6 +1,9 @@
 import base from './Api'
 
 export default {
+  info (id: any, tips = {}) {
+    return base.get('/knowledge/info', { id }, tips)
+  },
   list (param: any, tips = {}) {
     return base.post('/knowledge/list', param, tips)
   },
@@ -15,5 +18,8 @@ export default {
   },
   embedding (param: any, tips = {}) {
     return base.post('/knowledge/embedding', param, tips)
+  },
+  recall (param: any, tips = {}) {
+    return base.post('/knowledge/recall', param, tips)
   },
 }

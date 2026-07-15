@@ -22,9 +22,9 @@ import java.util.Map;
 public class QualityPlanController extends PermitControllerBase {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private QualityPlanService planService;
+    QualityPlanService planService;
 
     @RequestMapping("/list")
     @Permission("")

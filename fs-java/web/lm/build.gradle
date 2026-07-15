@@ -1,7 +1,12 @@
 dependencies {
     implementation project(':web:core')
     implementation project(':base:jpa')
+    implementation project(':base:elasticsearch')
     implementation project(':base:mybatis')
     implementation project(':base:redis')
     implementation("org.springframework.ai:spring-ai-starter-mcp-server-webmvc:1.0.1")
+    implementation("org.apache.poi:poi:5.2.5")
+    implementation("org.apache.poi:poi-ooxml:5.2.5")
+    implementation("org.apache.poi:poi-scratchpad:5.2.5") // 旧版 doc/xls/ppt (OLE2)
+    implementation("org.apache.pdfbox:pdfbox:2.0.30") // PDF
 }

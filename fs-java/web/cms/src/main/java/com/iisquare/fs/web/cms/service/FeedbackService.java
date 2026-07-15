@@ -25,13 +25,13 @@ import java.util.*;
 public class FeedbackService extends ServiceBase {
 
     @Autowired
-    private FeedbackDao feedbackDao;
+    FeedbackDao feedbackDao;
     @Autowired
-    private ArticleDao articleDao;
+    ArticleDao articleDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private Configuration configuration;
+    Configuration configuration;
 
     public Map<?, ?> status(String level) {
         Map<Integer, String> status = new LinkedHashMap<>();

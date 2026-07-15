@@ -18,7 +18,7 @@ import java.util.Map;
 public class BIController extends PermitControllerBase {
 
     @Autowired
-    private BIService biService;
+    BIService biService;
 
     @PostMapping("/dag")
     public String dagAction(@RequestBody Map<?, ?> param) {

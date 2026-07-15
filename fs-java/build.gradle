@@ -64,8 +64,8 @@ subprojects {
         mongodbVersion = '4.5.1'
         mysqlVersion = '9.3.0'
         rabbitmqVersion = '5.10.0'
-        elasticVersion = '7.15.1'
-        flowableVersion = '7.1.0'
+        elasticVersion = '8.19.16'
+        flowableVersion = '7.2.0'
         quartzVersion = '2.3.2'
         neo4jVersion = '5.28.5'
     }

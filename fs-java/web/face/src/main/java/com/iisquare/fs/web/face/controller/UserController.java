@@ -24,13 +24,13 @@ import java.util.*;
 public class UserController extends PermitControllerBase {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private UserService userService;
+    UserService userService;
     @Autowired
-    private RelationService relationService;
+    RelationService relationService;
     @Autowired
-    private GroupService groupService;
+    GroupService groupService;
 
     @RequestMapping("/list")
     @Permission("")

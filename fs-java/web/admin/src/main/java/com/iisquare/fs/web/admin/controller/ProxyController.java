@@ -8,6 +8,7 @@ import com.iisquare.fs.base.web.sse.SsePlainEmitter;
 import com.iisquare.fs.base.web.mvc.ControllerBase;
 import com.iisquare.fs.base.web.sse.SsePlainRequest;
 import com.iisquare.fs.base.web.sse.SsePlainRequestPool;
+import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.core.mvc.FeignInterceptor;
 import com.iisquare.fs.web.core.mvc.RpcBase;
 import feign.Response;
@@ -36,17 +37,17 @@ import java.util.*;
 public class ProxyController extends ControllerBase implements InitializingBean, DisposableBean {
 
     @Autowired
-    private WebApplicationContext context;
+    WebApplicationContext context;
 
     private SsePlainRequestPool pool = new SsePlainRequestPool();
 
     @PostMapping("/post")
-    public String postAction(@RequestBody Map<?, ?> param) {
+    public String postAction(@RequestBody Map<?, ?> param) throws Exception {
         return request(RequestMethod.POST, param);
     }
 
     @PostMapping("/get")
-    public String getAction(@RequestBody Map<?, ?> param) {
+    public String getAction(@RequestBody Map<?, ?> param) throws Exception {
         return request(RequestMethod.GET, param);
     }
 
@@ -86,10 +87,10 @@ public class ProxyController extends ControllerBase implements InitializingBean,
         String json = new String(Base64.decodeBase64(DPUtil.parseString(param.get("data"))));
         Map data = DPUtil.toJSON(DPUtil.parseJSON(json), Map.class);
         if (null == data) data = new LinkedHashMap();
-        return rpc.upload(uri, data, request.getFileMap().values().toArray(new MultipartFile[0]));
+        return RpcUtil.string(rpc.form(uri, data, request.getFileMap().values().toArray(new MultipartFile[0])));
     }
 
-    private String request(RequestMethod method, Map<?, ?> param) {
+    private String request(RequestMethod method, Map<?, ?> param) throws Exception {
         RpcBase rpc;
         try {
             rpc = rpc(DPUtil.parseString(param.get("app")));
@@ -99,11 +100,14 @@ public class ProxyController extends ControllerBase implements InitializingBean,
         String uri = DPUtil.parseString(param.get("uri"));
         Map data = (Map) param.get("data");
         if (null == data) data = new HashMap();
+        Response result;
         switch (method) {
-            case POST: return rpc.post(uri, data);
-            case GET: return rpc.get(uri, data);
+            case POST: result = rpc.post(uri, data); break;
+            case GET: result = rpc.get(uri, data); break;
             default: return ApiUtil.echoResult(4032, "请求方式不支持", null);
         }
+        if (null == result) return ApiUtil.echoResult(500, "服务异常", null);
+        return IOUtils.toString(result.body().asInputStream());
     }
 
     private String response(RequestMethod method, Map<?, ?> param, HttpServletResponse response) throws Exception {
@@ -118,8 +122,8 @@ public class ProxyController extends ControllerBase implements InitializingBean,
         if (null == data) data = new HashMap();
         Response result;
         switch (method) {
-            case POST: result = rpc.postResponse(uri, data); break;
-            case GET: result = rpc.getResponse(uri, data); break;
+            case POST: result = rpc.post(uri, data); break;
+            case GET: result = rpc.get(uri, data); break;
             default: return ApiUtil.echoResult(4032, "请求方式不支持", null);
         }
         if (null == result) return ApiUtil.echoResult(500, "服务异常", null);

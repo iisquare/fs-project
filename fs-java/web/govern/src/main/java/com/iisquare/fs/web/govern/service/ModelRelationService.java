@@ -24,9 +24,9 @@ import java.util.*;
 public class ModelRelationService extends ServiceBase {
 
     @Autowired
-    private ModelRelationDao relationDao;
+    ModelRelationDao relationDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public ObjectNode relations() {
         ObjectNode result = DPUtil.objectNode();

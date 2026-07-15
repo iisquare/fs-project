@@ -31,15 +31,15 @@ import java.util.*;
 public class UserService extends ServiceBase {
 
     @Autowired
-    private UserDao userDao;
+    UserDao userDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private Configuration configuration;
+    Configuration configuration;
     @Autowired
-    private RelationDao relationDao;
+    RelationDao relationDao;
     @Autowired
-    private GroupDao groupDao;
+    GroupDao groupDao;
 
     public Map<?, ?> status(String level) {
         Map<Integer, String> status = new LinkedHashMap<>();

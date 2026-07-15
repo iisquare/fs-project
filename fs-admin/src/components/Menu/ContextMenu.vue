@@ -1,4 +1,19 @@
 <script lang="tsx">
+// 右键菜单组件 - 用 JSX 渲染的上下文菜单，在指定容器内基于鼠标事件定位显示。
+// @prop {HTMLDivElement}  container - 菜单挂载容器（必填）
+// @prop {MenuItem[]}      menus     - 菜单项配置数组
+// @prop {MouseEvent}      event     - 触发菜单的鼠标事件（必填），用于定位
+// @prop {Function}        callback  - 菜单项点击回调，参数：(menu)。menu={} 时表示取消
+//
+// 菜单项结构 (MenuItem):
+//   { type?: 'sub-menu'|'divider', key?: string, title: string, icon?: string, disabled?: boolean, children?: MenuItem[] }
+//
+// 使用示例:
+// const showMenu = (event: MouseEvent) => {
+//   const container = document.createElement('div')
+//   document.body.appendChild(container)
+//   createApp(ContextMenu, { container, event, menus: [...], callback: (menu) => { ... } }).mount(container)
+// }
 import DesignUtil from '@/utils/DesignUtil'
 import { defineComponent, render } from 'vue'
 import LayoutIcon from '@/components/Layout/LayoutIcon.vue'

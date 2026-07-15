@@ -24,9 +24,9 @@ import java.util.Map;
 @RefreshScope
 public class ArchiveController extends PermitControllerBase {
     @Autowired
-    private FileService fileService;
+    FileService fileService;
     @Autowired
-    private ArchiveService archiveService;
+    ArchiveService archiveService;
 
     @RequestMapping("/info")
     @Permission("")
@@ -78,9 +78,15 @@ public class ArchiveController extends PermitControllerBase {
     @GetMapping("/download")
     @Permission
     public String downloadAction(@RequestParam Map<String, Object> param, HttpServletResponse response) throws Exception {
-        String url = fileService.url(fileService.download(param));
+        String url = fileService.download(param);
         if (DPUtil.empty(url)) return ApiUtil.echoResult(1404, "获取下载地址失败", param);
         return redirect(response, url);
+    }
+
+    @RequestMapping("/url")
+    @Permission
+    public String urlAction(@RequestBody Map<?, ?> param) {
+        return ApiUtil.echoResult(0, null, fileService.url(DPUtil.toJSON(param)));
     }
 
 }

@@ -36,14 +36,14 @@ const TableUtil = {
   },
   toggleRow (table: TableInstance | undefined, selection: any, idField: string, childrenField: string, callback: Function) {
     table && table.$nextTick(() => {
-      (function walk (data) {
+      (function walk (data: any) {
         data && data.forEach((row: any) => {
           walk(row[childrenField])
           if (selection.indexOf(row[idField]) !== -1) {
             callback(row)
           }
         })
-      })(table.data)
+      })((table as any)?.store?.states?.data?.value)
     })
   },
   tree (rows: any, parentId: any = 0, idField = 'id', parentField = 'parentId', childField = 'children') {
@@ -123,6 +123,15 @@ const TableUtil = {
     const cell = this.span(table, rowIndex, columnIndex)
     return cell.item ? cell.item[labelField] : ''
   },
+  columns2query (columns: any, include = '', exclude = '') {
+    const includes = include ? include.split(',') : []
+    const excludes = exclude ? exclude.split(',') : []
+    return columns.filter((column: any) => {
+      if (includes.indexOf(column.prop) !== -1) return true
+      if (excludes.indexOf(column.prop) !== -1) return false
+      return !column.hide
+    }).map((column: any) => column.prop).join(',')
+  }
 }
 
 export default TableUtil

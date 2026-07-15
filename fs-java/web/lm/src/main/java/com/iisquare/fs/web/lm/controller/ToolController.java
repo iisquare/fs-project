@@ -21,7 +21,7 @@ import java.util.Map;
 public class ToolController extends PermitControllerBase {
 
     @Autowired
-    private ToolService toolService;
+    ToolService toolService;
 
     @RequestMapping("/all")
     @Permission("")

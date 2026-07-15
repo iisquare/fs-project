@@ -1,19 +1,11 @@
 import api from '@/core/Api'
 
 export default {
-  get (url: string, data = {}, tips = {}, config = {}) {
-    return api.post('/proxy/get', {
-      app: 'Cron',
-      uri: url,
-      data: data
-    }, tips, config)
+  get (url: string, params = {}, tips = {}, config = {}) {
+    return api.get('/cron' + url, params, tips, config)
   },
   post (url: string, data = {}, tips = {}, config = {}) {
-    return api.post('/proxy/post', {
-      app: 'Cron',
-      uri: url,
-      data: data
-    }, tips, config)
+    return api.post('/cron' + url, data, tips, config)
   },
   nodeStats (param: any = {}, tips = {}) {
     return this.get('/node/stats', param, tips)

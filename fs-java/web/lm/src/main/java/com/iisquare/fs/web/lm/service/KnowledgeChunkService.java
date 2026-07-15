@@ -9,7 +9,10 @@ import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.lm.dao.KnowledgeChunkDao;
+import com.iisquare.fs.web.lm.dao.KnowledgeSegmentDao;
+import com.iisquare.fs.web.lm.elasticsearch.KnowledgeChunkES;
 import com.iisquare.fs.web.lm.entity.KnowledgeChunk;
+import com.iisquare.fs.web.lm.entity.KnowledgeSegment;
 import com.iisquare.fs.web.lm.mvc.Configuration;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +27,9 @@ import java.util.Map;
 public class KnowledgeChunkService extends JPAServiceBase {
 
     @Autowired
-    private KnowledgeChunkDao chunkDao;
+    KnowledgeChunkDao chunkDao;
+    @Autowired
+    KnowledgeSegmentDao segmentDao;
     @Autowired
     DefaultRbacService rbacService;
     @Autowired
@@ -33,6 +38,8 @@ public class KnowledgeChunkService extends JPAServiceBase {
     KnowledgeService knowledgeService;
     @Autowired
     KnowledgeDocumentService documentService;
+    @Autowired
+    KnowledgeChunkES chunkES;
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();
@@ -58,13 +65,19 @@ public class KnowledgeChunkService extends JPAServiceBase {
             if(!rbacService.hasPermit(request, "knowledge", "add")) return ApiUtil.result(9403, null, null);
             info = new KnowledgeChunk();
         }
-        info.setKnowledgeId(DPUtil.parseInt(param.get("knowledgeId")));
-        info.setDocumentId(DPUtil.parseInt(param.get("documentId")));
-        info.setSegmentId(DPUtil.parseInt(param.get("segmentId")));
+        KnowledgeSegment segment = info(segmentDao, DPUtil.parseInt(param.get("segmentId")));
+        if (null == segment) {
+            return ApiUtil.result(2001, "所属分段不存在", null);
+        }
+        info.setSegmentId(segment.getId());
+        info.setDocumentId(segment.getDocumentId());
+        info.setKnowledgeId(segment.getKnowledgeId());
         info.setContent(DPUtil.parseString(param.get("content")));
         info.setEmbedding(DPUtil.parseString(param.get("embedding")));
         info.setStatus(status);
         info = save(chunkDao, info, rbacService.uid(request));
+        // 同步写入 Elasticsearch，冗余文档标题和元数据
+        chunkES.add(chunkES.format(info, documentService.info(info.getDocumentId())));
         return ApiUtil.result(0, null, info);
     }
 
@@ -97,6 +110,8 @@ public class KnowledgeChunkService extends JPAServiceBase {
     }
 
     public boolean remove(List<Integer> ids) {
+        // 同步删除 Elasticsearch 记录
+        chunkES.delete(ids);
         return remove(chunkDao, ids);
     }
 

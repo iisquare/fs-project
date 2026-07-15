@@ -27,7 +27,7 @@ public class RemindService {
     @Autowired
     MemberRpc memberRpc;
     @Autowired
-    private StringRedisTemplate redis;
+    StringRedisTemplate redis;
     @Value("${fs.lm.remind.type:}")
     private String type;
     @Value("${fs.lm.remind.secret:}")

@@ -20,7 +20,7 @@ import java.util.Map;
 public class AssessController extends PermitControllerBase {
 
     @Autowired
-    private AssessService assessService;
+    AssessService assessService;
 
     @RequestMapping("/info")
     @Permission("")

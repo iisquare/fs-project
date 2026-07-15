@@ -13,3 +13,6 @@ spring:
           resource: true
           prompt: true
           completion: true
+fs:
+  lm:
+    token: sk-just-for-knowledge-dev

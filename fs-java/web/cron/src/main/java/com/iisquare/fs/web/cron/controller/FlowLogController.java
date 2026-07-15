@@ -20,7 +20,7 @@ import java.util.Map;
 public class FlowLogController extends PermitControllerBase {
 
     @Autowired
-    private FlowLogService logService;
+    FlowLogService logService;
 
     @RequestMapping("/tick")
     @Permission("flow:")

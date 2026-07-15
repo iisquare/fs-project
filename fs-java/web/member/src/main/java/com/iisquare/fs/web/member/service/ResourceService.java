@@ -23,13 +23,13 @@ import java.util.*;
 public class ResourceService extends JPAServiceBase {
 
     @Autowired
-    private ResourceDao resourceDao;
+    ResourceDao resourceDao;
     @Autowired
-    private UserService userService;
+    UserService userService;
     @Autowired
-    private ApplicationService applicationService;
+    ApplicationService applicationService;
     @Autowired
-    private RbacService rbacService;
+    RbacService rbacService;
 
     public ArrayNode tree(Map<?, ?> param, Map<?, ?> args) {
         Sort sort = Sort.by(

@@ -24,8 +24,11 @@ export default defineConfig({
             if (id.includes('antv')) return 'antv'
             if (id.includes('vue') || id.includes('pinia')) return 'vue'
             return 'vender'
-          } else if (id.includes('/src/')) {
-            if (id.includes('/api/')) return 'api'
+          }
+          if (id.includes('plugin-vue:export-helper')) return 'vue'
+          if (id.includes('/src/')) { // 注意chunk合并规则，防止组件循环依赖
+            if (id.includes('/api/') || id.includes('/core/') || id.includes('/stores/')) return 'api'
+            if (id.includes('/utils/') || id.includes('/components/')) return 'components'
             if (id.includes('/views/')) return 'views-' + id.split('/views/')[1].split('/')[0]
             if (id.includes('/designer/')) return 'designer-' + id.split('/designer/')[1].split('/')[0]
           }

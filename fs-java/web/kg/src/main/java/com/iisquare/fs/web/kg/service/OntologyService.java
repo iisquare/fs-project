@@ -22,7 +22,7 @@ import java.util.*;
 public class OntologyService extends JPAServiceBase {
 
     @Autowired
-    private OntologyDao ontologyDao;
+    OntologyDao ontologyDao;
     @Autowired
     DefaultRbacService rbacService;
     @Autowired

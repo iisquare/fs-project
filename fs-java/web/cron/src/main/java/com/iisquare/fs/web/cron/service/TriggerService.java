@@ -22,9 +22,9 @@ import java.util.*;
 public class TriggerService extends ServiceBase {
 
     @Autowired
-    private NodeService nodeService;
+    NodeService nodeService;
     @Autowired
-    private TriggerDao triggerDao;
+    TriggerDao triggerDao;
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) throws Exception {
         Scheduler scheduler = nodeService.scheduler();

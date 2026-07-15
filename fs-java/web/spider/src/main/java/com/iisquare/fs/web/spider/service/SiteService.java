@@ -26,11 +26,11 @@ import java.util.Map;
 public class SiteService extends JPAServiceBase {
 
     @Autowired
-    private SiteDao siteDao;
+    SiteDao siteDao;
     @Autowired
     TemplateService templateService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();

@@ -23,9 +23,9 @@ import java.util.Map;
 public class DiagramController extends PermitControllerBase {
 
     @Autowired
-    private DiagramService diagramService;
+    DiagramService diagramService;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
 
     @RequestMapping("/info")
     @Permission("")

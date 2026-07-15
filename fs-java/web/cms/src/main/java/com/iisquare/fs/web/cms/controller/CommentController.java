@@ -24,11 +24,11 @@ import java.util.Map;
 public class CommentController extends PermitControllerBase {
 
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private CommentService commentService;
+    CommentService commentService;
     @Autowired
-    private MemberRpc memberRpc;
+    MemberRpc memberRpc;
 
     @RequestMapping("/list")
     @Permission("")

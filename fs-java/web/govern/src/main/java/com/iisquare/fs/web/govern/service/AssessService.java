@@ -29,15 +29,15 @@ import java.util.*;
 public class AssessService extends ServiceBase {
 
     @Autowired
-    private AssessDao assessDao;
+    AssessDao assessDao;
     @Autowired
-    private DefaultRbacService rbacService;
+    DefaultRbacService rbacService;
     @Autowired
-    private SourceService sourceService;
+    SourceService sourceService;
     @Autowired
-    private StandardService standardService;
+    StandardService standardService;
     @Autowired
-    private AssessLogDao logDao;
+    AssessLogDao logDao;
 
     public Map<?, ?> log(Map<?, ?> param, Map<?, ?> config) {
         Map<String, Object> result = new LinkedHashMap<>();

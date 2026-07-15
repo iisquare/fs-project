@@ -22,9 +22,9 @@ import java.util.Map;
 public class ResourceController extends PermitControllerBase {
 
     @Autowired
-    private ResourceService resourceService;
+    ResourceService resourceService;
     @Autowired
-    private RbacService rbacService;
+    RbacService rbacService;
 
     @RequestMapping("/tree")
     @Permission("")

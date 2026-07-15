@@ -7,6 +7,7 @@ public class PermitException extends Exception {
     public static final String NAME_TOO_SHORT = "name length less than 1";
     public static final String REQUIRED_LOGIN = "required login";
     public static final String PERMIT_DENIED = "permit denied or resource is disabled";
+    public static final String CALLER_DENIED = "callee type permit denied or resource is disabled";
 
     public PermitException() {
     }

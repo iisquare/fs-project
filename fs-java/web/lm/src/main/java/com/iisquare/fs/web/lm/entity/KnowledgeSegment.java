@@ -23,6 +23,8 @@ public class KnowledgeSegment {
     @Column
     private Integer documentId; // 所属文档
     @Column
+    private Integer tokenSize; // 字符数量
+    @Column
     private String content;
     @Column
     private Integer status;

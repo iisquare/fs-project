@@ -1,4 +1,15 @@
 <script setup lang="ts">
+/**
+ * HTML 沙箱渲染器 - 在 iframe 中安全地渲染 HTML 内容，默认禁用脚本和同源访问。
+ *
+ * @prop {String}   html            - HTML 内容字符串（必填）
+ * @prop {Boolean}  allowScripts    - 是否允许脚本执行，默认 false（为 false 时 sandbox 含 allow-scripts）
+ * @prop {Boolean}  allowSameOrigin - 是否允许同源访问，默认 false
+ *
+ * @example
+ * <layout-html-sandbox :html="'<h1>Hello</h1>'" />
+ * <layout-html-sandbox :html="htmlCode" :allow-scripts="true" />
+ */
 import { computed } from 'vue';
 
 const {

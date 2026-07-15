@@ -1,11 +1,24 @@
 <script setup lang="ts">
+/**
+ * 数据过滤条件编辑器 - 可视化构建 AND/OR 组合的过滤条件树，支持按字段、运算符、值类型进行筛选。
+ *
+ * @v-model  {FilterNode[]}  过滤条件树（双向绑定主值）
+ * @prop     {FieldItem[]}   fields   - 可选字段列表，通过 v-model:fields 传入
+ * @prop     {Boolean}       editable - 是否可编辑，默认 false，通过 v-model:editable 传入
+ *
+ * 过滤条件树节点结构 (FilterNode):
+ *   关系节点: { type: 'RELATION', value: 'AND'|'OR', children: FilterNode[] }
+ *   条件节点: { type: 'FILTER', field: string, operator: string, definition: 'STRING'|'NUMBER'|'FIELD'|'VARIABLE', value: any }
+ *
+ * 可选运算符: EQUAL, NOT_EQUAL, LESS_THAN, LESS_THAN_OR_EQUAL, GREATER_THAN, GREATER_THAN_OR_EQUAL, IS_NULL, IS_NOT_NULL, LIKE, NOT_LIKE, IN, NOT_IN
+ *
+ * @example
+ * <data-filter v-model="filterTree" v-model:fields="schemaFields" v-model:editable="true" />
+ */
 import UIUtil from '@/utils/UIUtil'
 
-/**
- * 根据数据模型字段，配置过滤条件
- */
 const model: any = defineModel()
-const fields = defineModel('fields', { type: Array<Object>, default: [] })
+const fields = defineModel<Object[]>('fields', { default: () => [] })
 const editable = defineModel('editable', { type: Boolean, default: false })
 
 const relations = [

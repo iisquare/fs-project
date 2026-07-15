@@ -1,4 +1,26 @@
 <script setup lang="ts">
+/**
+ * 组件库面板 - 展示可拖拽的组件分组列表，支持原生拖拽和 vuedraggable 两种方式。
+ *
+ * @prop {WidgetGroup[]} widgets - 组件分组配置数组
+ * @prop {Boolean}       native  - 是否使用原生 HTML5 拖拽，默认 true
+ *
+ * @emits {Function} dragStart - 拖拽开始时触发，参数：(event, widget)
+ *
+ * 组件分组结构 (WidgetGroup):
+ *   { id: any, name: string, children: WidgetItem[] }
+ *
+ * 组件项结构 (WidgetItem):
+ *   { id: any, type: string, label: string, icon: string, title?: string }
+ *
+ * @example
+ * <layout-widget :widgets="[
+ *   { id: 1, name: '基础组件', children: [
+ *     { id: 'btn', type: 'Button', label: '按钮', icon: 'Button' },
+ *     { id: 'input', type: 'Input', label: '输入框', icon: 'Edit' },
+ *   ]},
+ * ]" @drag-start="handleDragStart" />
+ */
 import { computed, onMounted, ref } from 'vue';
 import LayoutIcon from './LayoutIcon.vue';
 import draggable from 'vuedraggable'
@@ -9,7 +31,7 @@ const {
   native = true,
 } = defineProps({
   widgets: { type: Array<any>, required: false },
-  native: { type: Boolean, required: false }, // 是否采用原生DOM方式
+  native: { type: Boolean, required: false },
 })
 
 const widgetMap: any = computed(() => DesignUtil.widgetMap(widgets))

@@ -16,7 +16,7 @@ import java.util.Map;
 public class Neo4jController extends PermitControllerBase {
 
     @Autowired
-    private Neo4jService neo4jService;
+    Neo4jService neo4jService;
 
     @RequestMapping("/showIndex")
     @Permission("")

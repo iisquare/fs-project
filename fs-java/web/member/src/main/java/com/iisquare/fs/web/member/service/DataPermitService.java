@@ -21,15 +21,15 @@ import java.util.*;
 public class DataPermitService extends JPAServiceBase {
 
     @Autowired
-    private DataPermitDao dataPermitDao;
+    DataPermitDao dataPermitDao;
     @Autowired
-    private UserService userService;
+    UserService userService;
     @Autowired
-    private RbacService rbacService;
+    RbacService rbacService;
     @Autowired
-    private DataService dataService;
+    DataService dataService;
     @Autowired
-    private RoleService roleService;
+    RoleService roleService;
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();
