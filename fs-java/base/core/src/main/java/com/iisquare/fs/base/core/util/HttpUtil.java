@@ -142,7 +142,7 @@ public class HttpUtil {
         return conn;
     }
 
-    private static String buildUrlWithQueryString(String url, Map<String, String> queryParas) throws UnsupportedEncodingException {
+    public static String buildUrlWithQueryString(String url, Map<String, String> queryParas) throws UnsupportedEncodingException {
         if (queryParas == null || queryParas.isEmpty()) {
             return url;
         }
@@ -173,7 +173,7 @@ public class HttpUtil {
         return sb.toString();
     }
 
-    private static String readResponseString(HttpURLConnection conn, String charset) throws IOException {
+    public static String readResponseString(HttpURLConnection conn, String charset) throws IOException {
         StringBuilder sb = new StringBuilder();
         InputStream inputStream = null;
         try {

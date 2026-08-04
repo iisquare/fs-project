@@ -59,7 +59,7 @@ const handleSubmit = () => {
             </el-space>
           </el-form-item>
           <el-form-item label="解析结果">
-            <CodeEditor v-model="parsed" :volatile="parsed" fold-gutter :height="350" mode="javascript" />
+            <CodeEditor v-model="parsed" fold-gutter :height="350" mode="javascript" />
           </el-form-item>
         </el-form>
       </el-main>

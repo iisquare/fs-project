@@ -92,7 +92,7 @@ public class RemindService {
         }
         String name = auth.at("/identity/name").asText();
         String subject = "平方域" + entry.getValue() + "间隔内用量超限提醒";
-        Map<String, Object> result = message(subject, text("%s\n------\n用户：%s[%d]\n类型：%d",
+        Map<String, Object> result = message(subject, text("%s\n------\n用户：%s[%d]\n类型：%s",
                 subject, auth.at("/name").asText(), auth.at("/uid").asInt(), entry.getValue()
         ).toString());
         if (remindEnabled) {

@@ -11,11 +11,9 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.table.catalog.Column;
 import org.apache.flink.table.data.StringData;
 import org.apache.flink.table.types.DataType;
 import org.apache.flink.types.Row;
-import org.apache.hudi.util.HoodiePipeline;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -91,15 +89,6 @@ public class FlinkUtil {
             row.setField(i, items[i]);
         }
         return row;
-    }
-
-    public static Map<String, DataType> columns(HoodiePipeline.Builder pipeline) {
-        Map<String, DataType> result = new LinkedHashMap<>();
-        List<Column> columns = pipeline.getTableDescriptor().getResolvedCatalogTable().getResolvedSchema().getColumns();
-        for (Column column : columns) {
-            result.put(column.getName(), column.getDataType());
-        }
-        return result;
     }
 
     public static Object[] row(Map<String, DataType> columns, JsonNode data) {

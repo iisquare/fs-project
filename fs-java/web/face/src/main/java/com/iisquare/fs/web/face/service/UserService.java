@@ -64,7 +64,7 @@ public class UserService extends ServiceBase {
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
         if(DPUtil.empty(serial)) return ApiUtil.result(1001, "人员标识不能为空", serial);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));

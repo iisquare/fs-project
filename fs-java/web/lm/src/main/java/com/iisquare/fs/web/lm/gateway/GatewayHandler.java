@@ -3,31 +3,54 @@ package com.iisquare.fs.web.lm.gateway;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.web.sse.SsePlainEmitter;
+import com.iisquare.fs.web.lm.entity.Usage;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.http.Header;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.StringEntity;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * Abstract handler for LLM gateway request forwarding.
- *
- * Two concrete implementations handle pass-through forwarding:
- *   OpenAI client → OpenAI-compatible backend, Anthropic client → Anthropic backend.
- *
- * Cross-format mismatches (e.g. Anthropic client → OpenAI backend) are rejected.
+ * Three concrete implementations handle pass-through forwarding:
+ *   Chat Completions client → Chat Completions backend,
+ *   Messages client → Messages backend,
+ *   Responses API client → Responses API backend.
+ * Cross-format mismatches (e.g. Messages client → Chat Completions backend) are rejected.
  * Selection is driven by the client's request URL path and the provider's configured type.
  */
 public abstract class GatewayHandler {
 
     public static final Charset CHARSET = StandardCharsets.UTF_8;
 
-    /** Provider types that speak the OpenAI-compatible Chat Completions API. */
-    private static final Set<String> OPENAI_PROVIDER_TYPES = Set.of(
+    public static final List<String> forwardHeaderPrefixes = Arrays.asList(
+            "x-",
+            "anthropic-",
+            "user-",
+            "session-",
+            "thread-"
+    );
+
+    public static final List<String> forwardHeaderBlocks = Arrays.asList(
+            "authorization",
+            "x-api-key"
+    );
+
+    public static final List<String> forwardedResponsePrefixes = Arrays.asList( // 回传给调用端的响应头
+            "x-"
+    );
+
+    /** Provider types that speak the Chat Completions API. */
+    private static final Set<String> COMPLETIONS_PROVIDER_TYPES = Set.of(
         "vllm",
         "sglang",
         "mindie",
@@ -39,13 +62,18 @@ public abstract class GatewayHandler {
         "aliyun"
     );
 
-    /** Provider types that speak the Anthropic Messages API. */
-    private static final Set<String> ANTHROPIC_PROVIDER_TYPES = Set.of(
+    /** Provider types that speak the Messages API. */
+    private static final Set<String> MESSAGES_PROVIDER_TYPES = Set.of(
         "vllm",
         "mixed-compatible",
         "anthropic-compatible",
         "deepseek",
         "volcengine"
+    );
+
+    /** Provider types that speak the Responses API. */
+    private static final Set<String> RESPONSES_PROVIDER_TYPES = Set.of(
+        "deepseek"
     );
 
     protected String chunkId;
@@ -96,28 +124,40 @@ public abstract class GatewayHandler {
      * and the provider's configured type.
      */
     public static GatewayHandler select(HttpServletRequest request, JsonNode provider) {
-        boolean clientAnthropic = isAnthropicRequest(request);
-        if (clientAnthropic && isAnthropicProvider(provider)) return new AnthropicHandler();
-        if (!clientAnthropic && isOpenAIProvider(provider)) return new OpenAIHandler();
+        if (isResponsesRequest(request) && isResponsesProvider(provider)) return new ResponsesHandler();
+        if (isMessagesRequest(request) && isMessagesProvider(provider)) return new MessagesHandler();
+        if (!isMessagesRequest(request) && !isResponsesRequest(request) && isCompletionsProvider(provider)) return new CompletionsHandler();
         return null;
     }
 
-    /** Detect whether the incoming HTTP request uses the Anthropic /messages format. */
-    public static boolean isAnthropicRequest(HttpServletRequest request) {
+    /** Detect whether the incoming HTTP request uses the Messages API format. */
+    public static boolean isMessagesRequest(HttpServletRequest request) {
         String uri = request.getRequestURI();
         return uri != null && uri.endsWith("/messages");
     }
 
-    /** Detect whether a provider speaks the OpenAI-compatible Chat Completions API. */
-    public static boolean isOpenAIProvider(JsonNode provider) {
+    /** Detect whether a provider speaks the Chat Completions API. */
+    public static boolean isCompletionsProvider(JsonNode provider) {
         String type = provider.at("/type").asText();
-        return OPENAI_PROVIDER_TYPES.contains(type);
+        return COMPLETIONS_PROVIDER_TYPES.contains(type);
     }
 
-    /** Detect whether a provider speaks the Anthropic-native API. */
-    public static boolean isAnthropicProvider(JsonNode provider) {
+    /** Detect whether a provider speaks the Messages API. */
+    public static boolean isMessagesProvider(JsonNode provider) {
         String type = provider.at("/type").asText();
-        return ANTHROPIC_PROVIDER_TYPES.contains(type);
+        return MESSAGES_PROVIDER_TYPES.contains(type);
+    }
+
+    /** Detect whether the incoming HTTP request uses the Responses API format. */
+    public static boolean isResponsesRequest(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        return uri != null && uri.endsWith("/responses");
+    }
+
+    /** Detect whether a provider speaks the Responses API. */
+    public static boolean isResponsesProvider(JsonNode provider) {
+        String type = provider.at("/type").asText();
+        return RESPONSES_PROVIDER_TYPES.contains(type);
     }
 
     /**
@@ -131,8 +171,12 @@ public abstract class GatewayHandler {
         HttpPost request = new HttpPost(url);
         for (Map.Entry<String, String> entry : headers.entrySet()) {
             String key = entry.getKey().toLowerCase();
-            if (key.startsWith("x-") || key.startsWith("anthropic-") || key.startsWith("user-")) {
-                request.addHeader(entry.getKey(), entry.getValue());
+            if (forwardHeaderBlocks.contains(key)) continue;
+            for (String prefix : forwardHeaderPrefixes) {
+                if (key.startsWith(prefix)) {
+                    request.addHeader(key, entry.getValue());
+                    break;
+                }
             }
         }
         if (!DPUtil.empty(token)) {
@@ -143,8 +187,24 @@ public abstract class GatewayHandler {
         json.put("stream", json.at("/stream").asBoolean(false));
         transformRequest(json);
         request.setEntity(new StringEntity(json.toString(), CHARSET));
-        chunkId = "chatcmpl-" + DPUtil.random(100000, 999999);
+        chunkId = "gw-" + DPUtil.random(100000, 999999);
         return request;
+    }
+
+    public SsePlainEmitter forwardedResponseHeaders(SsePlainEmitter emitter, CloseableHttpResponse response) {
+        try {
+            emitter.setMediaType(response); // 需要在异步返回前，确定请求响应类型
+            for (Header header : response.getAllHeaders()) {
+                String name = header.getName().toLowerCase();
+                for (String prefix : forwardedResponsePrefixes) {
+                    if (name.startsWith(prefix)) {
+                        emitter.response.addHeader(name, header.getValue());
+                        break;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        return emitter;
     }
 
     /** Subclass-provided URL path for the backend API. */
@@ -168,6 +228,32 @@ public abstract class GatewayHandler {
      * Returned values are from this message only — the caller manages accumulation.
      */
     public abstract StreamContent extractStreamContent(ObjectNode data);
+
+    /**
+     * Extract prompt text from the request body for sensitive-word checking and usage logging.
+     * Each handler knows its own protocol format (Chat Completions, Messages, or Responses).
+     */
+    public abstract String extractPrompt(ObjectNode json, Usage.UsageBuilder usage);
+
+    // ---- Shared utilities ----
+
+    /** Extract text content from a message node, handling both string and content-block-array formats. */
+    protected static String extractMessageContent(JsonNode message) {
+        JsonNode content = message.at("/content");
+        if (content.isTextual()) {
+            return content.asText();
+        }
+        if (content.isArray()) {
+            StringBuilder sb = new StringBuilder();
+            for (JsonNode block : content) {
+                if ("text".equals(block.at("/type").asText())) {
+                    sb.append(block.at("/text").asText());
+                }
+            }
+            return sb.toString();
+        }
+        return "";
+    }
 
     // ---- Utility ----
 

@@ -48,7 +48,7 @@ public class WorkflowController extends PermitControllerBase {
     @RequestMapping("/publish")
     @Permission
     public String publishAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         Map<String, Object> result = workflowService.deployment(id, rbacService.uid(request));
         return ApiUtil.echoResult(result);
     }
@@ -56,7 +56,7 @@ public class WorkflowController extends PermitControllerBase {
     @RequestMapping("/info")
     @Permission("")
     public String infoAction(@RequestBody Map<?, ?> param) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         boolean withDeployment = !DPUtil.empty(param.get("withDeployment"));
         boolean withForm = !DPUtil.empty(param.get("withForm"));
         boolean withFormDetail = !DPUtil.empty(param.get("withFormDetail"));

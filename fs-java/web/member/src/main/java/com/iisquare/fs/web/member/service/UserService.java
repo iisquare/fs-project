@@ -368,7 +368,7 @@ public class UserService extends JPAServiceBase {
     }
     
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
         if(DPUtil.empty(serial) || (DPUtil.parseInt(id) <= 0 && !ValidateUtil.isUsername(serial))) {
             return ApiUtil.result(1001, "账号格式异常", serial);

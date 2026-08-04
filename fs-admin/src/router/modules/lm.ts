@@ -19,12 +19,20 @@ export const layouts = [{
     component: () => import('@/views/lm/security/sensitive.vue')
   }, {
     path: '/lm/plugin/tool',
-    meta: { title: '工具配置', permit: ['lm:tool:'], fit: true },
+    meta: { title: '工具管理', permit: ['lm:tool:'] },
     component: () => import('@/views/lm/plugin/tool.vue')
   }, {
     path: '/lm/plugin/mcp',
     meta: { title: 'MCP服务', permit: ['lm:mcp:'] },
     component: () => import('@/views/lm/plugin/mcp.vue')
+  }, {
+    path: '/lm/plugin/skill',
+    meta: { title: '技能管理', permit: ['lm:skill:'] },
+    component: () => import('@/views/lm/plugin/skill.vue')
+  }, {
+    path: '/lm/plugin/skillVersion',
+    meta: { title: '版本管理', permit: ['lm:skill:'] },
+    component: () => import('@/views/lm/plugin/skillVersion.vue')
   }, {
     path: '/lm/operation/usage',
     meta: { title: '调用日志', permit: ['lm:usage:'] },

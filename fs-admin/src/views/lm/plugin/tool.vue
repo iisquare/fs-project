@@ -1,17 +1,49 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import config from '@/designer/Agentic/config'
-import * as ElementPlusIcons from '@element-plus/icons-vue';
+import { onMounted, ref } from 'vue';
+import type { FormInstance, TableInstance } from 'element-plus';
+import RouteUtil from '@/utils/RouteUtil'
+import { useRoute, useRouter } from 'vue-router';
 import ToolApi from '@/api/lm/ToolApi';
 import ApiUtil from '@/utils/ApiUtil';
+import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
+import RoleApi from '@/api/member/RoleApi';
+import MetadataTable from '@/components/Data/MetadataTable.vue'
 
+const route = useRoute()
+const router = useRouter()
+const tableRef = ref<TableInstance>()
 const loading = ref(false)
-const rows: any = ref([])
+const searchable = ref(true)
+const columns = ref([
+  { prop: 'id', label: 'ID' },
+  { prop: 'name', label: '工具名称' },
+  { prop: 'typeText', label: '工具类型' },
+  { prop: 'url', label: '调用地址', hide: true },
+  { prop: 'labels', label: '标签', slot: 'labels' },
+  { prop: 'roles', label: '授权角色', slot: 'role' },
+  { prop: 'description', label: '描述', hide: true },
+  { prop: 'sort', label: '排序' },
+  { prop: 'statusText', label: '状态' },
+])
+const config: any = ref({
+  ready: false,
+  status: {},
+  types: {},
+})
+const rows = ref([])
+const filterRef = ref<FormInstance>()
+const filters = ref(RouteUtil.query2filter(route, { advanced: false }))
+const pagination = ref(RouteUtil.pagination(filters.value))
+const selection: any = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
+  tableRef.value?.clearSelection()
+  Object.assign(filters.value, RouteUtil.pagination2filter(pagination.value, keepPage))
+  filter2query && RouteUtil.filter2query(route, router, filters.value)
   loading.value = true
-  ToolApi.all({}).then((result: any) => {
-    rows.value = result.data
+  ToolApi.list(filters.value).then((result: any) => {
+    RouteUtil.result2pagination(pagination.value, result)
+    rows.value = result.data.rows
   }).catch(() => {}).finally(() => {
     loading.value = false
   })
@@ -19,369 +51,373 @@ const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
 onMounted(() => {
   handleRefresh(false, true)
   ToolApi.config().then((result: any) => {
-    Object.assign(config, ApiUtil.data(result))
+    Object.assign(config.value, { ready: true }, ApiUtil.data(result))
   }).catch(() => {})
 })
-
-const filter = ref({ status: 'all', query: '', })
-const tools = computed(() => {
-  const result: any = []
-  for (const tool of config.tools) {
-    const data = rows.value[tool.type] ?? { status: 1 }
-    data.status = '' + data.status
-    const item = Object.assign({}, tool, { data })
-    if (tool.name.toLowerCase().indexOf(filter.value.query.toLowerCase()) === -1) continue
-    if (filter.value.status === 'all'
-      || (filter.value.status === 'enabled' && data.status === '1')
-      || (filter.value.status === 'disbaled' && data.status !== '1')) {
-      result.push(item)
-    }
-    item.actions.forEach((action: any) => {
-      action.parent = item
-    })
-  }
-  return result
-})
-const active: any = ref({})
+const infoVisible = ref(false)
 const formVisible = ref(false)
 const formLoading = ref(false)
 const form: any = ref({})
-const handleSetting = (tool: any) => {
-  form.value = Object.assign({}, tool.data, {
-    name: tool.type,
-    content: Object.assign(tool.options(), tool.data?.content || {}),
+const formRef: any = ref<FormInstance>()
+const rules = ref({
+  name: [{ required: true, message: '请输入工具名称', trigger: 'blur' }],
+  type: [{ required: true, message: '请选择工具类型', trigger: 'change' }],
+  url: [{ required: true, message: '请输入调用地址', trigger: 'blur' }],
+  status: [{ required: true, message: '请选择状态', trigger: 'change' }]
+})
+const handleAdd = () => {
+  form.value = {
+    status: '1',
+    header: {},
+    query: {},
+    labels: [],
+    roleIds: [],
+  }
+  formVisible.value = true
+}
+const handleShow = (scope: any) => {
+  form.value = Object.assign({}, scope.row)
+  infoVisible.value = true
+}
+const handleEdit = (scope: any) => {
+  form.value = Object.assign({}, scope.row, {
+    status: scope.row.status + '',
+    roleIds: scope.row.roleIds || [],
+    labels: scope.row.labels || [],
+    header: scope.row.header || {},
+    query: scope.row.query || {},
   })
   formVisible.value = true
 }
 const handleSubmit = () => {
-  if (formLoading.value) return
+  formRef.value?.validate((valid: boolean) => {
+    if (!valid || formLoading.value) return
+    formLoading.value = true
+    ToolApi.save(form.value, { success: true }).then(result => {
+      handleRefresh(false, true)
+      formVisible.value = false
+    }).catch(() => {}).finally(() => {
+      formLoading.value = false
+    })
+  })
+}
+const handleDelete = () => {
+  TableUtil.selection(selection.value).then((ids: any) => {
+    loading.value = true
+    ToolApi.delete(ids, { success: true }).then(() => {
+      handleRefresh(false, true)
+    }).catch(() => {
+      loading.value = false
+    })
+  }).catch(() => {})
+}
+const handleJsonDemo = () => {
+  form.value.content = `{
+      "openapi": "3.1.0",
+      "info": {
+        "title": "Get weather data",
+        "description": "Retrieves current weather data for a location.",
+        "version": "v1.0.0"
+      },
+      "servers": [
+        {
+          "url": "https://weather.example.com"
+        }
+      ],
+      "paths": {
+        "/location": {
+          "get": {
+            "description": "Get temperature for a specific location",
+            "operationId": "GetCurrentWeather",
+            "parameters": [
+              {
+                "name": "location",
+                "in": "query",
+                "description": "The city and state to retrieve the weather for",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "deprecated": false
+          }
+        }
+      },
+      "components": {
+        "schemas": {}
+      }
+    }`
+}
+const handleYamlDemo = () => {
+  form.value.content = `# Taken from https://github.com/OAI/OpenAPI-Specification/blob/main/examples/v3.0/petstore.yaml
+
+    openapi: "3.0.0"
+    info:
+      version: 1.0.0
+      title: Swagger Petstore
+      license:
+        name: MIT
+    servers:
+      - url: https://petstore.swagger.io/v1
+    paths:
+      /pets:
+        get:
+          summary: List all pets
+          operationId: listPets
+          tags:
+            - pets
+          parameters:
+            - name: limit
+              in: query
+              description: How many items to return at one time (max 100)
+              required: false
+              schema:
+                type: integer
+                maximum: 100
+                format: int32
+          responses:
+            '200':
+              description: A paged array of pets
+              headers:
+                x-next:
+                  description: A link to the next page of responses
+                  schema:
+                    type: string
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/Pets"
+            default:
+              description: unexpected error
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/Error"
+        post:
+          summary: Create a pet
+          operationId: createPets
+          tags:
+            - pets
+          responses:
+            '201':
+              description: Null response
+            default:
+              description: unexpected error
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/Error"
+      /pets/{petId}:
+        get:
+          summary: Info for a specific pet
+          operationId: showPetById
+          tags:
+            - pets
+          parameters:
+            - name: petId
+              in: path
+              required: true
+              description: The id of the pet to retrieve
+              schema:
+                type: string
+          responses:
+            '200':
+              description: Expected response to a valid request
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/Pet"
+            default:
+              description: unexpected error
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/Error"
+    components:
+      schemas:
+        Pet:
+          type: object
+          required:
+            - id
+            - name
+          properties:
+            id:
+              type: integer
+              format: int64
+            name:
+              type: string
+            tag:
+              type: string
+        Pets:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/Pet"
+        Error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: integer
+              format: int32
+            message:
+              type: string`
+}
+const handleMcpSync = () => {
+  const params = {
+    url: form.value.url,
+    header: form.value.header,
+    query: form.value.query,
+  }
   formLoading.value = true
-  ToolApi.save(form.value, { success: true }).then(result => {
-    const data = ApiUtil.data(result)
-    Object.assign(active.value.data, data, { status: data.status + '' })
-    handleRefresh(false, true)
-    formVisible.value = false
+  ToolApi.mcpSync(params, { success: true }).then((result: any) => {
+    form.value.content = JSON.stringify(ApiUtil.data(result), null, 2)
   }).catch(() => {}).finally(() => {
     formLoading.value = false
   })
 }
-const handleDelete = (tool: any) => {
-  TableUtil.confirm().then(() => {
-    loading.value = true
-    ToolApi.delete(tool.type, { success: true }).then(() => {
-      handleRefresh(false, true)
-    }).catch(() => {})
-  }).catch(() => {})
-}
+
 </script>
 
 <template>
-  <div class="box">
-    <div class="left">
-       <div class="header">
-          <el-space>
-            <el-radio-group v-model="filter.status">
-              <el-radio-button label="全部" value="all" />
-              <el-radio-button label="启用" value="enabled" />
-              <el-radio-button label="禁用" value="disbaled" />
-            </el-radio-group>
-          </el-space>
-          <el-space>
-            <el-input v-model="filter.query" placeholder="搜索" :prefix-icon="ElementPlusIcons.Search" clearable />
-            <el-button @click="handleRefresh(false, true)" :icon="ElementPlusIcons.Refresh" :loading="loading" />
-          </el-space>
-        </div>
-        <div class="container">
-          <el-card shadow="hover" class="tool" v-for="tool in tools" :key="tool.type" @click="active = tool">
-            <div class="info">
-              <div class="logo" :style="`background-image: url('${tool.icon}');`"></div>
-              <div class="text">
-                <div class="title">{{ tool.name }}</div>
-                <div class="url">{{ tool.url }}</div>
-              </div>
-              <div class="state">
-                <el-tag v-if="loading" type="primary">载入中</el-tag>
-                <template v-else>
-                  <el-tag v-if="!tool.data.name" type="info">未配置</el-tag>
-                  <el-tag v-else-if="tool.data.status === '1'" type="success">已启用</el-tag>
-                  <el-tag v-else type="warning">已禁用</el-tag>
-                </template>
-              </div>
-            </div>
-            <div class="description">{{ tool.description }}</div>
-            <el-divider />
-            <el-space class="tools">
-              <el-tag type="info" v-for="action in tool.actions" :key="action.type" @click.stop="active = action">{{ action.name }}</el-tag>
-            </el-space>
-          </el-card>
-          <el-empty v-if="tools.length === 0" />
-        </div>
+  <el-card :bordered="false" shadow="never" class="fs-table-search" v-show="searchable">
+    <form-search ref="filterRef" :model="filters">
+      <form-search-item label="名称" prop="name">
+        <el-input v-model="filters.name" clearable />
+      </form-search-item>
+      <form-search-item label="类型" prop="type">
+        <el-select v-model="filters.type" placeholder="请选择" clearable>
+          <el-option v-for="(value, key) in config.types" :key="key" :value="key" :label="value" />
+        </el-select>
+      </form-search-item>
+      <form-search-item label="状态" prop="status">
+        <el-select v-model="filters.status" placeholder="请选择" clearable>
+          <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
+        </el-select>
+      </form-search-item>
+      <form-search-item>
+        <el-button type="primary" @click="handleRefresh(true, false)" :loading="loading">查询</el-button>
+        <el-button @click="filterRef?.resetFields()">重置</el-button>
+      </form-search-item>
+    </form-search>
+  </el-card>
+  <el-card :bordered="false" shadow="never" class="fs-table-card">
+    <div class="fs-table-toolbar flex-between">
+      <el-space>
+        <button-add v-permit="'lm:tool:add'" @click="handleAdd" />
+        <button-delete v-permit="'lm:tool:delete'" :disabled="selection.length === 0" @click="handleDelete" />
+      </el-space>
+      <el-space>
+        <button-search @click="searchable = !searchable" />
+        <button-refresh @click="handleRefresh(true, true)" :loading="loading" />
+        <TableColumnSetting v-model="columns" :table="tableRef" />
+      </el-space>
     </div>
-    <div class="right" v-if="active.setting">
-      <div class="tool">
-        <div class="info">
-          <div class="logo" :style="`background-image: url('${active.icon}');`"></div>
-          <div class="text">
-            <div class="title">{{ active.name }}</div>
-            <div class="url">{{ active.url }}</div>
-          </div>
-          <div class="menu">
-            <el-space>
-              <el-dropdown trigger="click">
-                <el-button :icon="ElementPlusIcons.MoreFilled" link />
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item @click="handleSetting(active)">配置</el-dropdown-item>
-                    <el-dropdown-item @click="handleDelete(active)">清除</el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
-              <el-button :icon="ElementPlusIcons.Close" link @click="active = {}" />
-            </el-space>
-          </div>
-        </div>
-        <div class="description">{{ active.description }}</div>
-      </div>
-      <el-divider />
-      <div class="count">包含  {{ active.actions.length }} 个执行器</div>
-      <div class="action" v-for="action in active.actions" :key="action.type" @click="active = action">
-        <div class="title">{{ action.name }}</div>
-        <div class="description">{{ action.description }}</div>
-      </div>
-    </div>
-    <div class="right" v-if="active.output">
-      <div class="flex-between">
-        <el-space>
-          <el-button :icon="ElementPlusIcons.Back" link @click="active = active.parent">返回</el-button>
-        </el-space>
-        <el-space>
-          <el-button :icon="ElementPlusIcons.Close" link @click="active = {}" />
-        </el-space>
-      </div>
-      <div class="section">
-        <div class="title">{{ active.name }}</div>
-        <div class="description">{{ active.description }}</div>
-      </div>
-      <div class="section">
-        <div class="title">输入参数</div>
-      </div>
-      <div class="parameter" v-for="(parameter, index) in active.input" :key="index">
-        <div class="field">
-          <div class="name">{{ parameter.name }}</div>
-          <div class="type">{{ parameter.type }}</div>
-          <div class="required" v-if="parameter.required">必填</div>
-        </div>
-        <div class="description">{{ parameter.description }}</div>
-      </div>
-      <div class="section">
-        <div class="title">输出参数</div>
-      </div>
-      <div class="parameter" v-for="(parameter, index) in active.output" :key="index">
-        <div class="field">
-          <div class="name">{{ parameter.name }}</div>
-          <div class="type">{{ parameter.type }}</div>
-          <div class="required" v-if="parameter.required">必填</div>
-        </div>
-        <div class="description">{{ parameter.description }}</div>
-      </div>
-    </div>
-  </div>
-  <el-dialog v-model="formVisible" title="工具配置" :close-on-click-modal="false" :destroy-on-close="true">
-    <template #footer>
-      <el-form :model="form">
-        <div class="parameter">
-          <div class="field">
-            <div class="name">状态</div>
-            <div class="required">必填</div>
-          </div>
-          <el-form-item label="">
-            <el-radio-group v-model="form.status">
-              <el-radio v-for="(value, key) in config.status" :key="key" :value="key">{{ value }}</el-radio>
-            </el-radio-group>
-          </el-form-item>
-        </div>
-        <div class="parameter" v-for="(parameter, index) in active.setting" :key="index">
-          <div class="field">
-            <div class="name">{{ parameter.name }}</div>
-            <div class="type">{{ parameter.type }}</div>
-            <div class="required" v-if="parameter.required">必填</div>
-          </div>
-          <div class="description">{{ parameter.description }}</div>
-          <el-form-item label="" v-if="parameter.type === 'String'">
-            <el-input v-model="form.content[parameter.name]" type="password" show-password v-if="parameter.secrecy" />
-            <el-input v-model="form.content[parameter.name]" v-else />
-          </el-form-item>
-        </div>
-      </el-form>
-      <div class="dialog-footer">
-        <el-button @click="formVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">确认</el-button>
-      </div>
+    <el-table
+      ref="tableRef"
+      :data="rows"
+      :row-key="(record: any) => record.id"
+      :border="true"
+      v-loading="loading"
+      table-layout="auto"
+      @selection-change="(s: any) => selection = s"
+    >
+      <el-table-column type="selection" />
+      <TableColumn :columns="columns">
+        <template #role="scope">
+          <el-space><el-tag v-for="item in scope.row.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
+        </template>
+        <template #labels="scope">
+          <el-space><el-tag v-for="item in scope.row.labels" :key="item">{{ item }}</el-tag></el-space>
+        </template>
+      </TableColumn>
+      <el-table-column label="操作">
+        <template #default="scope">
+          <el-button link @click="handleShow(scope)" v-permit="'lm:tool:'">查看</el-button>
+          <el-button link @click="handleEdit(scope)" v-permit="'lm:tool:modify'">编辑</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+    <TablePagination v-model="pagination" @change="handleRefresh(true, true)" />
+  </el-card>
+  <el-drawer v-model="infoVisible" :title="'信息查看 - ' + form.id" size="60%">
+    <el-descriptions :column="2" label-width="100px" border>
+      <el-descriptions-item label="工具名称">{{ form.name }}</el-descriptions-item>
+      <el-descriptions-item label="工具类型">{{ form.typeText }}</el-descriptions-item>
+      <el-descriptions-item label="标签">
+        <el-space><el-tag v-for="item in form.labels" :key="item">{{ item }}</el-tag></el-space>
+      </el-descriptions-item>
+      <el-descriptions-item label="授权角色">
+        <el-space><el-tag v-for="item in form.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
+      </el-descriptions-item>
+      <el-descriptions-item label="排序">{{ form.sort }}</el-descriptions-item>
+      <el-descriptions-item label="状态">{{ form.statusText }}</el-descriptions-item>
+      <el-descriptions-item label="描述" :span="2">{{ form.description ? form.description : '暂无' }}</el-descriptions-item>
+      <el-descriptions-item label="调用地址" :span="2">{{ form.url }}</el-descriptions-item>
+      <el-descriptions-item label="配置信息" :span="2">
+        <CodeEditor v-model="form.content" :height="300" mode="javascript" resizable />
+      </el-descriptions-item>
+      <el-descriptions-item label="请求头" :span="2"><metadata-table v-model="form.header" /></el-descriptions-item>
+      <el-descriptions-item label="查询参数" :span="2"><metadata-table v-model="form.query" /></el-descriptions-item>
+      <el-descriptions-item label="创建者">{{ form.createdUserInfo?.name }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-descriptions-item>
+      <el-descriptions-item label="修改者">{{ form.updatedUserInfo?.name }}</el-descriptions-item>
+      <el-descriptions-item label="修改时间">{{ DateUtil.format(form.updatedTime) }}</el-descriptions-item>
+    </el-descriptions>
+  </el-drawer>
+  <el-drawer v-model="formVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true" size="60%">
+    <template #header="{ close, titleId, titleClass }">
+      <h4 :id="titleId" :class="titleClass">{{ '信息' + (form.id ? ('修改 - ' + form.id) : '添加') }}</h4>
+      <el-space>
+        <el-button type="primary" @click="handleSubmit" :loading="formLoading">确定</el-button>
+        <el-button @click="close">取消</el-button>
+      </el-space>
     </template>
-  </el-dialog>
+    <el-form ref="formRef" :model="form" :rules="rules">
+      <el-descriptions :column="2" label-width="100px" border>
+        <el-descriptions-item label="工具名称"><el-input v-model="form.name" /></el-descriptions-item>
+        <el-descriptions-item label="工具类型">
+          <el-select v-model="form.type" placeholder="请选择">
+            <el-option v-for="(value, key) in config.types" :key="key" :value="key" :label="value" />
+          </el-select>
+        </el-descriptions-item>
+        <el-descriptions-item label="标签">
+          <el-select v-model="form.labels" multiple filterable allow-create :reserve-keyword="false" default-first-option placeholder="输入后回车创建标签" />
+        </el-descriptions-item>
+        <el-descriptions-item label="授权角色">
+          <form-select v-model="form.roleIds" :callback="RoleApi.list" multiple clearable />
+        </el-descriptions-item>
+        <el-descriptions-item label="排序"><el-input-number v-model="form.sort" /></el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-select v-model="form.status" placeholder="请选择">
+            <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
+          </el-select>
+        </el-descriptions-item>
+        <el-descriptions-item label="描述" :span="2"><el-input type="textarea" v-model="form.description" /></el-descriptions-item>
+        <el-descriptions-item label="调用地址" :span="2"><el-input v-model="form.url" /></el-descriptions-item>
+        <el-descriptions-item label="配置操作" :span="2">
+          <el-space>
+            <el-button @click="handleJsonDemo" :loading="formLoading">JSON样例</el-button>
+            <el-button @click="handleYamlDemo" :loading="formLoading">YAML样例</el-button>
+            <el-button @click="handleMcpSync" :loading="formLoading" :disabled="!form.url">同步MCP配置</el-button>
+          </el-space>
+        </el-descriptions-item>
+        <el-descriptions-item label="配置信息" :span="2">
+          <CodeEditor v-model="form.content" :height="300" mode="javascript" resizable />
+        </el-descriptions-item>
+        <el-descriptions-item label="请求头" :span="2">
+          <metadata-table v-model="form.header" :editable="true" />
+        </el-descriptions-item>
+        <el-descriptions-item label="查询参数" :span="2">
+          <metadata-table v-model="form.query" :editable="true" />
+        </el-descriptions-item>
+      </el-descriptions>
+    </el-form>
+  </el-drawer>
 </template>
 
 <style lang="scss" scoped>
-.box {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: space-between;
-}
-.left {
-  flex: 1;
-  height: 100%;
-  position: relative;;
-  overflow-y: auto;
-  .header {
-    position: sticky;
-    top: 0px;
-    width: 100%;
-    height: 60px;
-    padding: 0 15px;
-    box-sizing: border-box;
-    @include flex-between();
-    background-color: var(--fs-layout-background-color);
-    .el-input {
-      width: 200px;
-    }
-  }
-  .container {
-    width: 100%;
-    padding: 0 15px;
-    box-sizing: border-box;
-    .el-card {
-      cursor: pointer;
-      margin-bottom: 15px;
-      .el-divider {
-        margin: 15px 0;
-      }
-      .tools {
-        .el-tag:hover {
-          color: var(--el-color-primary);
-        }
-      }
-    }
-    .description {
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      overflow: hidden;
-    }
-  }
-}
-.right {
-  width: 600px;
-  height: 100%;
-  overflow-y: auto;
-  border-left: solid 1px var(--fs-layout-border-color);
-  padding: 15px;
-  box-sizing: border-box;
-  .el-divider {
-    margin: 15px 0;
-  }
-  .count {
-    font-size: 14px;
-    margin-bottom: 15px;
-  }
-  .section {
-    .title {
-      font-weight: 600;
-      padding: 20px 0;
-    }
-    .description {
-      font-size: 14px;
-      color: #7A7F90;
-    }
-  }
-}
-.parameter {
-  .field {
-    @include flex-start();
-    gap: 10px;
-    margin-bottom: 10px;
-    .name {
-      color: #354052;
-      font-size: 13px;
-      font-weight: 600;
-      line-height: 1.5;
-    }
-    .type {
-      color: #676f83;
-      font-size: 12px;
-      font-weight: 400;
-      line-height: 16px;
-      padding: 2px 5px;
-      background-color: #F2F3F8;
-    }
-    .required {
-      color: #f79009;
-      font-size: 12px;
-      font-weight: 500;
-      line-height: 16px;
-    }
-  }
-  .description {
-    font-size: 14px;
-    color: #7A7F90;
-    margin-bottom: 20px;
-    text-align: left;
-  }
-}
-.tool {
-  .info {
-    width: 100%;
-    gap: 15px;
-    @include flex-between();
-    .logo {
-      flex: 0 0 60px;
-      height: 60px;
-      background: center no-repeat;
-      background-size: contain;
-    }
-    .text {
-      flex: 1 1 auto;
-      justify-content: start;
-      .title {
-        font-weight: 600;
-      }
-      .url {
-        font-size: 14px;
-        color: rgb(107 114 128);
-      }
-    }
-    .state {
-      flex: 0 0 60px;
-    }
-    .menu {
-      flex: 0 0 60px;
-      text-align: right;
-    }
-  }
-  .description {
-    font-size: 14px;
-    color: #7A7F90;
-  }
-}
-.action {
-  cursor: pointer;
-  border: solid 1px rgb(16 24 40/0.08);
-  border-radius: 5px;
-  padding: 15px;
-  box-shadow: 0px 1px 2px 0px rgba(16,24,40,0.05);
-  margin-bottom: 15px;
-  .title {
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 30px;
-  }
-  .description {
-    font-size: 12px;
-    font-weight: 400;
-    line-height: 16px;
-    color: #676f83;
-  }
-}
-.action:hover {
-  background-color: #f9fafb;
-}
 </style>

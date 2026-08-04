@@ -156,7 +156,7 @@ const handleDelete = () => {
         <form-select v-model="filters.modelId" :callback="ModelApi.list" clearable />
       </form-search-item>
       <form-search-item>
-        <el-button type="primary" @click="handleRefresh(true, false)">查询</el-button>
+        <el-button type="primary" @click="handleRefresh(true, false)" :loading="loading">查询</el-button>
         <el-button @click="filterRef?.resetFields()">重置</el-button>
         <button-advanced v-model="filters.advanced" />
       </form-search-item>
@@ -272,6 +272,7 @@ const handleDelete = () => {
         <el-descriptions-item label="工具调用" :span="3"><el-input type="textarea" v-model="form.responseTool" :rows="3" /></el-descriptions-item>
         <el-descriptions-item label="请求头" :span="3"><el-input type="textarea" v-model="form.requestHeader" :rows="5" /></el-descriptions-item>
         <el-descriptions-item label="请求参数" :span="3"><el-input type="textarea" v-model="form.requestBody" :rows="5" /></el-descriptions-item>
+        <el-descriptions-item label="响应头" :span="3"><el-input type="textarea" v-model="form.responseHeader" :rows="5" /></el-descriptions-item>
         <el-descriptions-item label="响应内容" :span="3"><el-input type="textarea" v-model="form.responseBody" :rows="5" /></el-descriptions-item>
         <el-descriptions-item label="详细原因" :span="3"><el-input type="textarea" v-model="form.finishDetail" :rows="3" /></el-descriptions-item>
         <el-descriptions-item label="审核标签">{{ form.auditReason }}</el-descriptions-item>

@@ -52,4 +52,7 @@ const layout = computed(() => {
 </template>
 
 <style lang="scss" scoped>
+:deep(.el-form-item__content > .el-date-editor:only-child) {
+  width: 100%;
+}
 </style>

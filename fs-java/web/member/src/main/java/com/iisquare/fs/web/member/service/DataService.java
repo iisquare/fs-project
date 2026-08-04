@@ -59,7 +59,7 @@ public class DataService extends JPAServiceBase {
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
         if(DPUtil.empty(serial)) return ApiUtil.result(1001, "标识异常", serial);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));

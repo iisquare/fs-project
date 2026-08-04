@@ -11,6 +11,7 @@ import com.iisquare.fs.base.web.sse.SsePlainEmitter;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.base.web.sse.SsePlainRequest;
 import com.iisquare.fs.base.web.sse.SsePlainRequestPool;
+import com.iisquare.fs.base.web.util.HttpClientUtil;
 import com.iisquare.fs.base.web.util.ServletUtil;
 import com.iisquare.fs.web.lm.core.RedisKey;
 import com.iisquare.fs.web.lm.entity.*;
@@ -22,6 +23,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -55,6 +57,8 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
     RemindService remindService;
     @Autowired
     AIService aiService;
+    @Value("${fs.lm.gateway.recordDetails:false}")
+    private volatile boolean recordDetails;
 
     private ObjectNode cache = DPUtil.objectNode();
     private final SsePlainRequestPool pool = new SsePlainRequestPool();
@@ -66,10 +70,16 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         put("credit", "积分");
     }};
 
-    public static final List<String> routeHeaders = Arrays.asList(
+    public static final List<String> routeHeaders = Arrays.asList( // 按优先级排列
             "x-claude-code-session-id",
             "x-conversation-id",
-            "x-session-id"
+            "x-session-id",
+            "session-id",
+            "thread-id",
+            "x-request-id",
+            "x-trace-id",
+            "x-correlation-id",
+            "x-client-request-id"
     );
 
     @Override
@@ -103,6 +113,15 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
 
     public SsePlainRequestPool pool() {
         return pool;
+    }
+
+    public ObjectNode state(Map<String, Object> param) {
+        if (param.containsKey("recordDetails")) {
+            recordDetails = DPUtil.parseBoolean(param.get("recordDetails"));
+        }
+        ObjectNode state = DPUtil.objectNode();
+        state.put("recordDetails", recordDetails);
+        return state;
     }
 
     public Map<String, Object> test(Map<String, Object> param, HttpServletRequest request) {
@@ -295,27 +314,27 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
 
             @Override
             public boolean onMessage(ObjectNode message, boolean isEvent, boolean isStream) {
-                responseBody.append(DPUtil.stringify(message)).append("\n");
+                if (recordDetails) {
+                    responseBody.append(DPUtil.stringify(message)).append("\n");
+                }
                 ObjectNode data;
                 ObjectNode sseMessage;
                 boolean sseIsEvent;
-                if (!isStream) {
-                    // Non-streaming: full response body from backend
-                    ObjectNode backendData = GatewayHandler.parseSseData(message, isEvent);
-                    data = handler.processNonStreamResponse(backendData);
-                    sseIsEvent = true;
-                    sseMessage = DPUtil.objectNode();
-                    sseMessage.put("data", DPUtil.stringify(data));
-                } else {
+                if (isStream) {
                     // Streaming: SSE event from backend
                     StreamResult sr = handler.processStreamMessage(message, isEvent);
                     if (!sr.forward) return isRunning();
                     data = sr.data;
                     sseMessage = sr.sseMessage;
                     sseIsEvent = sr.isEvent;
-                    if (data.has("_done")) return isRunning();
+                } else {
+                    // Non-streaming: full response body from backend
+                    ObjectNode backendData = GatewayHandler.parseSseData(message, isEvent);
+                    data = handler.processNonStreamResponse(backendData);
+                    sseIsEvent = false;
+                    sseMessage = data;
                 }
-                if (data.has("error")) {
+                if (data.has("error") && !data.get("error").isNull()) {
                     usage.finishReason("backend_error").finishDetail(DPUtil.stringify(data));
                     emitter.message(sseMessage, sseIsEvent);
                     return false;
@@ -336,9 +355,11 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
                 completionTokens += sc.completionTokens;
                 totalTokens += sc.totalTokens;
                 // Replace model name
-                if (!data.isEmpty() && !data.has("_done")) {
+                if (!data.isEmpty()) {
                     data.put("model", place);
-                    sseMessage.put("data", DPUtil.stringify(data));
+                    if (isStream) {
+                        sseMessage.put("data", DPUtil.stringify(data));
+                    }
                 }
                 // Sensitive word check
                 if (securityDetectable && (sc.reasoning != null || sc.content != null)) {
@@ -385,7 +406,8 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
                     return;
                 }
                 for (JsonNode item : parsed) {
-                    int index = item.at("/index").asInt();
+                    // Use array position as fallback when index is missing (non-streaming format)
+                    int index = item.at("/index").isMissingNode() ? toolCallMeta.size() : item.at("/index").asInt();
                     if (item.has("id") && item.has("function") && item.at("/function").has("name")) {
                         toolCallMeta.putIfAbsent(index, item.deepCopy());
                     }
@@ -420,9 +442,10 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         });
         // 记录请求信息
         usage.requestBody(DPUtil.stringify(json)).requestStream(stream ? 1 : 0);
-        usage.requestIp(ServletUtil.getRemoteAddr(request)).requestHeader(DPUtil.stringify(headers));
+        usage.requestIp(ServletUtil.getRemoteAddr(request)).requestHeader("");
         usage.responseBody("").responseCompletion("").finishDetail("").auditDetail(""); // 记录默认值
-        String prompt = prompt(json, usage);
+        if (recordDetails) usage.requestHeader(DPUtil.stringify(headers));
+        String prompt = handler.extractPrompt(json, usage);
         if (securityDetectable) { // 执行提示词拦截
             List<String> check = sensitiveService.check(prompt);
             if (!check.isEmpty()) {
@@ -439,8 +462,10 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
             FileUtil.close(req);
             return emitter.error("connect_backend_failed", "连接模型端服务失败", "gateway", e.getMessage(), false).sync(400);
         }
-        emitter.setMediaType(res); // 需要在异步返回前，确定请求响应类型
-        return emitter.async(() -> pool.process(req, res));
+        if (recordDetails) {
+            usage.responseHeader(DPUtil.stringify(HttpClientUtil.responseHeaders(res)));
+        }
+        return handler.forwardedResponseHeaders(emitter, res).async(() -> pool.process(req, res));
     }
 
     /** 词嵌入网关请求（非流式），沿用completion()的认证/限流/计费流水线，返回JSON */
@@ -521,8 +546,9 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         usage.modelId(model.at("/id").asInt()).providerId(provider.at("/id").asInt());
         usage.status("completed").requestIp(ServletUtil.getRemoteAddr(request)).beginTime(beginTime);
         usage.requestBody(DPUtil.stringify(json)).requestStream(0);
-        usage.requestIp(ServletUtil.getRemoteAddr(request)).requestHeader(DPUtil.stringify(headers));
-        usage.responseBody("").responseCompletion("").finishDetail("").auditDetail("");
+        usage.requestIp(ServletUtil.getRemoteAddr(request)).requestHeader("");
+        usage.responseHeader("").responseBody("").responseCompletion("").finishDetail("").auditDetail("");
+        if (recordDetails) usage.requestHeader(DPUtil.stringify(headers));
         // 7. 构建请求并调用后端
         String endpoint = provider.at("/endpoint").asText();
         String token = provider.at("/token").asText();
@@ -578,124 +604,6 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         }
         // 12. 返回结果（替换响应中的模型名称为客户端请求的模型别名）
         return result.put("model", place);
-    }
-
-    private String extractMessageContent(JsonNode message) {
-        JsonNode content = message.at("/content");
-        if (content.isTextual()) {
-            return content.asText();
-        }
-        if (content.isArray()) {
-            StringBuilder sb = new StringBuilder();
-            for (JsonNode block : content) {
-                if ("text".equals(block.at("/type").asText())) {
-                    sb.append(block.at("/text").asText());
-                }
-            }
-            return sb.toString();
-        }
-        return "";
-    }
-
-    /**
-     * Extract tool call / tool result info from a message, covering both
-     * OpenAI (tool_calls on assistant, tool_call_id on tool role) and
-     * Anthropic (tool_use / tool_result blocks in content array) formats.
-     */
-    private String extractMessageTools(JsonNode message) {
-        StringBuilder sb = new StringBuilder();
-        // --- OpenAI format ---
-        // assistant message with tool_calls
-        JsonNode toolCalls = message.at("/tool_calls");
-        if (toolCalls.isArray() && !toolCalls.isEmpty()) {
-            sb.append("tool_calls:\n");
-            for (JsonNode tc : toolCalls) {
-                sb.append("  - id: ").append(tc.at("/id").asText()).append("\n");
-                sb.append("    function: ").append(tc.at("/function/name").asText()).append("\n");
-                sb.append("    arguments: ").append(tc.at("/function/arguments").asText()).append("\n");
-            }
-        }
-        // tool message with tool_call_id (OpenAI)
-        if ("tool".equals(message.at("/role").asText())) {
-            sb.append("[tool_call_id: ").append(message.at("/tool_call_id").asText()).append("]\n");
-        }
-        // --- Anthropic format ---
-        JsonNode content = message.at("/content");
-        if (content.isArray()) {
-            for (JsonNode block : content) {
-                String type = block.at("/type").asText();
-                if ("tool_use".equals(type)) {
-                    sb.append("tool_use:\n");
-                    sb.append("  - id: ").append(block.at("/id").asText()).append("\n");
-                    sb.append("    name: ").append(block.at("/name").asText()).append("\n");
-                    sb.append("    input: ").append(DPUtil.stringify(block.at("/input"))).append("\n");
-                } else if ("tool_result".equals(type)) {
-                    sb.append("tool_result:\n");
-                    sb.append("  - tool_use_id: ").append(block.at("/tool_use_id").asText()).append("\n");
-                    JsonNode tc = block.at("/content");
-                    if (tc.isTextual()) {
-                        sb.append("    content: ").append(tc.asText()).append("\n");
-                    } else if (tc.isArray()) {
-                        for (JsonNode b : tc) {
-                            if ("text".equals(b.at("/type").asText())) {
-                                sb.append("    content: ").append(b.at("/text").asText()).append("\n");
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return sb.toString();
-    }
-
-    public String prompt(JsonNode json, Usage.UsageBuilder usage) {
-        StringBuilder sb = new StringBuilder();
-        String systemContent = extractSystemContent(json);
-        usage.requestSystem(systemContent);
-        if (!systemContent.isEmpty()) {
-            sb.append("[system]\n").append(systemContent).append("\n");
-        }
-        String lastUserContent = "";
-        for (JsonNode message : json.at("/messages")) {
-            String role = message.at("/role").asText();
-            String content = extractMessageContent(message);
-            String tools = extractMessageTools(message);
-            sb.append("[").append(role).append("]\n");
-            sb.append(content);
-            if (!tools.isEmpty()) {
-                sb.append("\n").append(tools);
-            }
-            sb.append("\n");
-            if ("system".equals(role) && systemContent.isEmpty()) {
-                systemContent = content;
-                usage.requestSystem(systemContent);
-            }
-            if ("user".equals(role)) {
-                lastUserContent = content;
-            }
-        }
-        usage.requestUser(lastUserContent);
-        String prompt = sb.toString();
-        usage.requestPrompt(prompt);
-        return prompt;
-    }
-
-    private String extractSystemContent(JsonNode json) {
-        // Anthropic format: top-level "system" field (string or array of content blocks)
-        if (json.has("system")) {
-            JsonNode sys = json.at("/system");
-            if (sys.isTextual()) return sys.asText();
-            if (sys.isArray()) {
-                StringBuilder sb = new StringBuilder();
-                for (JsonNode block : sys) {
-                    if ("text".equals(block.at("/type").asText())) {
-                        sb.append(block.at("/text").asText());
-                    }
-                }
-                return sb.toString();
-            }
-        }
-        return "";
     }
 
     public String routeId(HttpServletRequest request) {

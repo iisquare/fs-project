@@ -19,8 +19,8 @@ public class Application {
                 "select * from d1.fs_member_user u join d2.t t on u.id=t.id limit 2"
         );
         CalciteSession session = new CalciteSession();
-        session.mysql("d1", mysql());
-        session.mysql("d2", mysql2());
+        session.jdbc("d1", mysql());
+        session.jdbc("d2", mysql2());
         for (String sql : sqlList) {
             long time = System.currentTimeMillis();
             System.out.println("sql: " + sql);

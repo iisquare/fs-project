@@ -59,6 +59,8 @@ public class Usage {
     @Column
     private String requestUser; // 用户提问
     @Column
+    private String responseHeader; // 响应头
+    @Column
     private String responseBody; // 完整响应内容
     @Column
     private String responseReason; // 思考

@@ -104,7 +104,7 @@ public class DiagramService extends ServiceBase {
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
         String engine = DPUtil.parseString(param.get("engine"));
         String model = DPUtil.parseString(param.get("model"));

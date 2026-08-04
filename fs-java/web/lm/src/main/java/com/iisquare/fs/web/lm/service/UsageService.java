@@ -53,6 +53,22 @@ public class UsageService extends JPAServiceBase {
         return info(usageDao, id);
     }
 
+    public Map<String, Object> info(Map<?, ?> param) {
+        Usage info = info(DPUtil.parseLong(param.get("id")));
+        if (null == info) return ApiUtil.result(1404, "信息不存在", null);
+        JsonNode rows = withInfo(DPUtil.toArrayNode(info));
+        JsonNode node = DPUtil.firstNode(format(rows));
+        return ApiUtil.result(0, null, node);
+    }
+
+    public JsonNode withInfo(JsonNode rows) {
+        rbacService.fillUserInfo(rows, "uid", "auditUid");
+        authService.fillInfo(rows, "authId");
+        providerService.fillInfo(rows, "providerId");
+        modelService.fillInfo(rows, "modelId");
+        return rows;
+    }
+
     @Transactional
     public boolean record(Usage usage, ObjectNode auth) {
         if (null == usage.getCreditAmount()) {
@@ -89,19 +105,17 @@ public class UsageService extends JPAServiceBase {
             helper.dateFormat(configuration.getFormatDate()).withoutDeleted().equalWithLongGTZero("id");
             helper.equalWithIntGTZero("uid").equal("type").equal("place").equal("status");
             helper.equalWithIntGTZero("authId").equalWithIntGTZero("modelId").equalWithIntGTZero("providerId");
-            helper.equal("requestIp").like("requestBody").like("responseBody");
-            helper.equal("finishReason").like("finishDetail").like("requestPrompt").like("responseCompletion");
+            helper.equal("requestIp").like("requestHeader").like("requestBody");
+            helper.like("requestPrompt").like("requestSystem").like("requestUser");
+            helper.like("responseHeader").like("responseBody");
+            helper.like("responseReason").like("responseCompletion").like("responseTool");
+            helper.equal("finishReason").like("finishDetail");
             helper.like("auditReason").like("auditDetail").equalWithIntNotEmpty("auditUid");
             helper.betweenWithDate("beginTime").betweenWithDate("endTime").betweenWithDate("auditTime");
             return cb.and(helper.predicates());
         }, Sort.by(Sort.Order.desc("id")), "id", "beginTime", "endTime", "auditTime", "coastTotal", "creditAmount");
         JsonNode rows = format(ApiUtil.rows(result));
-        if(!DPUtil.empty(args.get("withInfo"))) {
-            rbacService.fillUserInfo(rows, "uid", "auditUid");
-            authService.fillInfo(rows, "authId");
-            providerService.fillInfo(rows, "providerId");
-            modelService.fillInfo(rows, "modelId");
-        }
+        if(!DPUtil.empty(args.get("withInfo"))) withInfo(rows);
         ServiceUtil.retain(rows, param.get("columns"));
         return result;
     }

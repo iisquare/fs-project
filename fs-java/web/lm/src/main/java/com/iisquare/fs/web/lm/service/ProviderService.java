@@ -11,8 +11,10 @@ import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.lm.dao.ModelDao;
 import com.iisquare.fs.web.lm.dao.ProviderDao;
+import com.iisquare.fs.web.lm.dao.RateDao;
 import com.iisquare.fs.web.lm.entity.Model;
 import com.iisquare.fs.web.lm.entity.Provider;
+import com.iisquare.fs.web.lm.entity.Rate;
 import com.iisquare.fs.web.lm.mvc.Configuration;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,6 +35,8 @@ public class ProviderService extends JPAServiceBase {
     ProviderDao providerDao;
     @Autowired
     ModelDao modelDao;
+    @Autowired
+    RateDao rateDao;
     @Autowired
     DefaultRbacService rbacService;
     @Autowired
@@ -91,6 +95,18 @@ public class ProviderService extends JPAServiceBase {
      *             token: String
      *         }
      *     },
+     *     rates: {
+     *         [rateId]: {
+     *             id: Integer,
+     *             name: String,
+     *             requestCount: Double,
+     *             requestInterval: Integer,
+     *             tokenCount: Double,
+     *             tokenInterval: Integer,
+     *             creditCount: Double,
+     *             creditInterval: Integer,
+     *         }
+     *     },
      * }
      */
     public ObjectNode cache() {
@@ -98,6 +114,7 @@ public class ProviderService extends JPAServiceBase {
         ObjectNode models = cache.putObject("models");
         ObjectNode aliases = cache.putObject("aliases");
         ObjectNode providers = cache.putObject("providers");
+        ObjectNode rates = cache.putObject("rates");
         List<Provider> providerList = providerDao.findAll((Specification<Provider>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("status"), 1));
@@ -135,6 +152,22 @@ public class ProviderService extends JPAServiceBase {
             item.put("plan", model.getPlan());
             item.replace("content", DPUtil.parseJSON(model.getContent()));
         }
+        List<Rate> rateList = rateDao.findAll((Specification<Rate>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("status"), 1));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        });
+        for (Rate rate : rateList) {
+            ObjectNode item = rates.putObject(String.valueOf(rate.getId()));
+            item.put("id", rate.getId());
+            item.put("name", rate.getName());
+            item.put("requestCount", rate.getRequestCount());
+            item.put("requestInterval", rate.getRequestInterval());
+            item.put("tokenCount", rate.getTokenCount());
+            item.put("tokenInterval", rate.getTokenInterval());
+            item.put("creditCount", rate.getCreditCount());
+            item.put("creditInterval", rate.getCreditInterval());
+        }
         return cache;
     }
 
@@ -143,7 +176,7 @@ public class ProviderService extends JPAServiceBase {
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
         if(DPUtil.empty(type)) return ApiUtil.result(1001, "供应商类型不能为空", type);
         String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));

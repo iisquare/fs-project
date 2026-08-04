@@ -73,7 +73,7 @@ public class ArticleService extends ServiceBase {
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String title = DPUtil.trim(DPUtil.parseString(param.get("title")));
         if(DPUtil.empty(title)) return ApiUtil.result(1001, "标题异常", title);
         int status = DPUtil.parseInt(param.get("status"));

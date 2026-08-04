@@ -2,6 +2,24 @@
 dependencies {
     implementation project(':base:jpa')
     implementation project(':base:dag')
+    implementation project(':base:calcite')
     implementation project(':web:core')
     testImplementation project(':web:test')
+
+    // MongoDB
+    implementation group: 'org.mongodb', name: 'mongodb-driver-sync', version: mongodbVersion
+    // Redis
+    implementation group: 'redis.clients', name: 'jedis', version: '7.2.0'
+    // Elasticsearch
+    implementation group: 'co.elastic.clients', name: 'elasticsearch-java', version: elasticVersion
+    // Apache POI (Excel)
+    implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '5.4.0'
+    // OpenCSV
+    implementation group: 'com.opencsv', name: 'opencsv', version: '5.10'
+    // Kafka
+    implementation group: 'org.apache.kafka', name: 'kafka-clients', version: '3.9.0'
+    // JDBC drivers (runtime only)
+    runtimeOnly group: 'org.postgresql', name: 'postgresql', version: postgresqlVersion
+    runtimeOnly group: 'com.microsoft.sqlserver', name: 'mssql-jdbc', version: '12.10.0'
+    runtimeOnly group: 'com.clickhouse', name: 'clickhouse-jdbc', version: '0.7.2'
 }

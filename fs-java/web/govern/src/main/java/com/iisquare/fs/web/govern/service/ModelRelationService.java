@@ -118,7 +118,7 @@ public class ModelRelationService extends ServiceBase {
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String sourceCatalog = DPUtil.trim(DPUtil.parseString(param.get("sourceCatalog")));
         String sourceModel = DPUtil.trim(DPUtil.parseString(param.get("sourceModel")));
         String sourceColumn = DPUtil.trim(DPUtil.parseString(param.get("sourceColumn")));

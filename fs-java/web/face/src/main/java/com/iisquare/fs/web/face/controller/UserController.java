@@ -66,7 +66,7 @@ public class UserController extends PermitControllerBase {
     @RequestMapping("/tree")
     @Permission({"", "group"})
     public String treeAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         if(id < 1) return ApiUtil.echoResult(1001, "参数异常", id);
         User info = userService.info(id);
         if(null == info || -1 == info.getStatus()) return ApiUtil.echoResult(1002, "记录不存在或已删除", id);

@@ -3,15 +3,17 @@ package com.iisquare.fs.web.bi.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.base.calcite.core.CalciteSession;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
+import com.iisquare.fs.base.dag.core.DSCore;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.bi.dao.DatasetDao;
-import com.iisquare.fs.web.bi.dao.SourceDao;
+import com.iisquare.fs.web.bi.dao.DatasourceDao;
 import com.iisquare.fs.web.bi.entity.Dataset;
-import com.iisquare.fs.web.bi.entity.Source;
+import com.iisquare.fs.web.bi.entity.Datasource;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rpc.SparkRpc;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,20 +33,22 @@ public class DatasetService extends ServiceBase {
     @Autowired
     DatasetDao datasetDao;
     @Autowired
-    SourceDao sourceDao;
+    DatasourceDao datasourceDao;
     @Autowired
     SparkRpc sparkRpc;
     @Autowired
     DefaultRbacService rbacService;
+    @Autowired
+    CalciteSession calciteSession;
 
     public Map<String, Object> loadSource(JsonNode preview) {
         if (null == preview) return ApiUtil.result(20403, "数据源配置信息异常", null);
         Collection<Integer> sourceIds = DPUtil.values(preview.at("/relation/items"), Integer.class, "sourceId");
         if (null == sourceIds || sourceIds.size() < 1) return ApiUtil.result(2001, "未配置任何数据源", sourceIds);
         ObjectNode result = DPUtil.objectNode();
-        Map<Integer, Source> sources = DPUtil.list2map(sourceDao.findAllById(sourceIds), Integer.class, "id");
+        Map<Integer, Datasource> sources = DPUtil.list2map(datasourceDao.findAllById(sourceIds), Integer.class, "id");
         for (Integer sourceId : sourceIds) {
-            Source source = sources.get(sourceId);
+            Datasource source = sources.get(sourceId);
             if (null == source || 1 != source.getStatus()) return ApiUtil.result(2002, "数据源暂不可用", sourceId);
             JsonNode options = DPUtil.parseJSON(source.getContent());
             if (null == options) return ApiUtil.result(2003, "解析数据源配置异常", sourceId);
@@ -148,7 +152,7 @@ public class DatasetService extends ServiceBase {
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
         String collection = DPUtil.trim(DPUtil.parseString(param.get("collection")));
         int sort = DPUtil.parseInt(param.get("sort"));
@@ -207,6 +211,66 @@ public class DatasetService extends ServiceBase {
         if(ids.size() < 1) return list;
         Map<Integer, Dataset> data = DPUtil.list2map(datasetDao.findAllById(ids), Integer.class, "id");
         return DPUtil.fillValues(list, properties, "Name", DPUtil.values(data, String.class, "name"));
+    }
+
+    /**
+     * 获取SQL数据集的列结构（使用全局Calcite会话，数据源启动时已自动注册）
+     */
+    public Map<String, Object> sqlSchema(Integer id) {
+        Dataset info = info(id);
+        if (null == info || 1 != info.getStatus()) {
+            return ApiUtil.result(61001, "数据集状态异常", id);
+        }
+        JsonNode content = DPUtil.parseJSON(info.getContent());
+        if (null == content) return ApiUtil.result(1001, "解析数据集配置异常", id);
+        String sql = content.at("/sql").asText();
+        if (DPUtil.empty(sql)) return ApiUtil.result(1002, "SQL语句不能为空", id);
+        try {
+            ArrayNode columns = calciteSession.columnsMeta(sql);
+            for (int i = 0; i < columns.size(); i++) {
+                ObjectNode column = (ObjectNode) columns.get(i);
+                column.put("format", convertFormat(column.get("type").asText()));
+            }
+            return ApiUtil.result(0, null, columns);
+        } catch (Exception e) {
+            return ApiUtil.result(5001, "获取数据集结构失败: " + e.getMessage(), null);
+        }
+    }
+
+    /**
+     * 获取SQL数据集的样例数据（使用全局Calcite会话，数据源启动时已自动注册）
+     */
+    public Map<String, Object> sqlPreview(Integer id, Integer limit) {
+        Dataset info = info(id);
+        if (null == info || 1 != info.getStatus()) {
+            return ApiUtil.result(61001, "数据集状态异常", id);
+        }
+        JsonNode content = DPUtil.parseJSON(info.getContent());
+        if (null == content) return ApiUtil.result(1001, "解析数据集配置异常", id);
+        String sql = content.at("/sql").asText();
+        if (DPUtil.empty(sql)) return ApiUtil.result(1002, "SQL语句不能为空", id);
+        if (null == limit || limit < 1) limit = 100;
+        if (limit > 1000) limit = 1000;
+        try {
+            ArrayNode columns = calciteSession.columnsMeta(sql);
+            for (int i = 0; i < columns.size(); i++) {
+                ObjectNode column = (ObjectNode) columns.get(i);
+                column.put("format", convertFormat(column.get("type").asText()));
+            }
+            String previewSql = "SELECT * FROM (" + sql + ") t LIMIT " + limit;
+            ArrayNode rows = calciteSession.query(previewSql);
+            ObjectNode data = DPUtil.objectNode();
+            data.replace("columns", columns);
+            data.replace("rows", rows);
+            return ApiUtil.result(0, null, data);
+        } catch (Exception e) {
+            return ApiUtil.result(5001, "获取数据集预览失败: " + e.getMessage(), null);
+        }
+    }
+
+    private String convertFormat(String typeName) {
+        if (null == typeName) return "Unknown";
+        return DSCore.jdbc2format(typeName);
     }
 
 }

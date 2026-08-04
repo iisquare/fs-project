@@ -2,6 +2,7 @@ package com.iisquare.fs.base.calcite.core;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
 import org.apache.calcite.adapter.jdbc.JdbcSchema;
@@ -40,16 +41,50 @@ public class CalciteSession implements Closeable {
         return this.schema;
     }
 
-    public Schema mysql(String name, JsonNode config) throws Exception {
-        Class.forName("com.mysql.cj.jdbc.Driver");
+    public Schema jdbc(String name, JsonNode config) throws Exception {
+        String url = config.at("/url").asText();
+        String driverClassName = config.has("driverClassName") ? config.get("driverClassName").asText() : null;
+        if (null == driverClassName || driverClassName.isEmpty()) {
+            if (url.contains(":mysql:")) driverClassName = "com.mysql.cj.jdbc.Driver";
+            else if (url.contains(":postgresql:")) driverClassName = "org.postgresql.Driver";
+            else if (url.contains(":oracle:")) driverClassName = "oracle.jdbc.OracleDriver";
+            else if (url.contains(":sqlserver:")) driverClassName = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
+            else if (url.contains(":clickhouse:")) driverClassName = "com.clickhouse.jdbc.ClickHouseDriver";
+        }
+        if (null != driverClassName && !driverClassName.isEmpty()) {
+            Class.forName(driverClassName);
+        }
         BasicDataSource datasource = new BasicDataSource();
-        datasource.setUrl(config.at("/url").asText());
+        datasource.setUrl(url);
         datasource.setUsername(config.at("/username").asText());
         datasource.setPassword(config.at("/password").asText());
-        String database = config.at("/database").asText();
+        String database = config.has("database") ? config.get("database").asText() : null;
+        if (null == database || database.isEmpty()) database = null;
         Schema schema = JdbcSchema.create(this.schema, name, datasource, database, null);
         this.schema.add(name, schema);
         return schema;
+    }
+
+    public CalciteConnection connection() {
+        return this.connection;
+    }
+
+    public ArrayNode columnsMeta(String sql) throws Exception {
+        // Get column metadata without fetching data rows
+        String metaSql = "SELECT * FROM (" + sql + ") t LIMIT 0";
+        Statement statement = this.connection.createStatement();
+        ResultSet rs = statement.executeQuery(metaSql);
+        ResultSetMetaData meta = rs.getMetaData();
+        ArrayNode result = DPUtil.arrayNode();
+        for (int i = 1; i <= meta.getColumnCount(); i++) {
+            ObjectNode column = DPUtil.objectNode();
+            column.put("name", meta.getColumnName(i));
+            column.put("type", meta.getColumnTypeName(i));
+            column.put("index", i);
+            result.add(column);
+        }
+        FileUtil.close(rs, statement);
+        return result;
     }
 
     public ArrayNode query(String sql) throws Exception {

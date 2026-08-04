@@ -35,6 +35,11 @@ public class IndexController extends ControllerBase {
         return gatewayService.completion(json, request, response);
     }
 
+    @RequestMapping("/v1/responses")
+    public SseEmitter responsesAction(@RequestBody ObjectNode json, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        return gatewayService.completion(json, request, response);
+    }
+
     @RequestMapping("/v1/messages")
     public SseEmitter messagesAction(@RequestBody ObjectNode json, HttpServletRequest request, HttpServletResponse response) throws IOException {
         return gatewayService.completion(json, request, response);

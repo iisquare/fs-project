@@ -126,7 +126,7 @@ public class SensitiveService extends JPAServiceBase {
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String content = DPUtil.trim(DPUtil.parseString(param.get("content")));
         if(DPUtil.empty(content)) return ApiUtil.result(1001, "关键词内容异常", content);
         int status = DPUtil.parseInt(param.get("status"));

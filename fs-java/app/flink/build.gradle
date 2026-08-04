@@ -15,7 +15,6 @@ dependencies {
     api group: 'com.ververica', name: 'flink-connector-mongodb-cdc', version: cdcVersion
 
     api group: 'org.apache.hadoop', name: 'hadoop-common', version: hadoopVersion
-    api group: 'org.apache.hudi', name: 'hudi-flink1.17-bundle', version: hudiVersion
     testImplementation group: 'org.apache.flink', name: 'flink-table-planner_' + scalaVersion, version: flinkVersion
 
     testImplementation project(':base:test')

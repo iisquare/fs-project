@@ -4,11 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.web.lm.entity.Usage;
 
 /**
- * Pass-through handler: Anthropic-format client → Anthropic backend → Anthropic-format client.
+ * Pass-through handler: Messages client → Messages backend → Messages client.
  */
-public class AnthropicHandler extends GatewayHandler {
+public class MessagesHandler extends GatewayHandler {
 
     @Override
     protected String buildUrl(String endpoint, JsonNode provider) {
@@ -40,6 +41,86 @@ public class AnthropicHandler extends GatewayHandler {
     @Override
     public ObjectNode processNonStreamResponse(ObjectNode backendResponse) {
         return backendResponse;
+    }
+
+    @Override
+    public String extractPrompt(ObjectNode json, Usage.UsageBuilder usage) {
+        StringBuilder sb = new StringBuilder();
+        // Anthropic: top-level "system" field (string or array of content blocks)
+        String systemContent = extractSystemContent(json);
+        if (!systemContent.isEmpty()) {
+            sb.append("[system]\n").append(systemContent).append("\n");
+        }
+        usage.requestSystem(systemContent);
+        String lastUserContent = "";
+        for (JsonNode message : json.at("/messages")) {
+            String role = message.at("/role").asText();
+            String content = extractMessageContent(message);
+            String tools = extractTools(message);
+            sb.append("[").append(role).append("]\n").append(content);
+            if (!tools.isEmpty()) sb.append("\n").append(tools);
+            sb.append("\n");
+            if ("system".equals(role) && systemContent.isEmpty()) {
+                systemContent = content;
+                usage.requestSystem(systemContent);
+            }
+            if ("user".equals(role)) {
+                lastUserContent = content;
+            }
+        }
+        usage.requestUser(lastUserContent);
+        String prompt = sb.toString();
+        usage.requestPrompt(prompt);
+        return prompt;
+    }
+
+    /** Extract Anthropic top-level system content. */
+    private String extractSystemContent(ObjectNode json) {
+        if (json.has("system")) {
+            JsonNode sys = json.at("/system");
+            if (sys.isTextual()) return sys.asText();
+            if (sys.isArray()) {
+                StringBuilder sb = new StringBuilder();
+                for (JsonNode block : sys) {
+                    if ("text".equals(block.at("/type").asText())) {
+                        sb.append(block.at("/text").asText());
+                    }
+                }
+                return sb.toString();
+            }
+        }
+        return "";
+    }
+
+    /** Extract Anthropic-format tool use/result blocks from a message. */
+    private String extractTools(JsonNode message) {
+        StringBuilder sb = new StringBuilder();
+        JsonNode content = message.at("/content");
+        if (content.isArray()) {
+            for (JsonNode block : content) {
+                String type = block.at("/type").asText();
+                if ("tool_use".equals(type)) {
+                    sb.append("tool_use:\n");
+                    sb.append("  id: ").append(block.at("/id").asText()).append("\n");
+                    sb.append("  name: ").append(block.at("/name").asText()).append("\n");
+                    sb.append("  input: ").append(DPUtil.stringify(block.at("/input"))).append("\n");
+                } else if ("tool_result".equals(type)) {
+                    sb.append("tool_result:\n");
+                    sb.append("  tool_use_id: ").append(block.at("/tool_use_id").asText()).append("\n");
+                    JsonNode tc = block.at("/content");
+                    if (tc.isTextual()) {
+                        sb.append("  content: ").append(tc.asText()).append("\n");
+                    } else if (tc.isArray()) {
+                        for (JsonNode b : tc) {
+                            if ("text".equals(b.at("/type").asText())) {
+                                sb.append("  content: ").append(b.at("/text").asText()).append("\n");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return sb.toString();
     }
 
     @Override
@@ -113,7 +194,7 @@ public class AnthropicHandler extends GatewayHandler {
         int inputTokens = usage.at("/input_tokens").asInt() + msgUsage.at("/input_tokens").asInt();
         int cacheReadTokens = usage.at("/cache_read_input_tokens").asInt() + msgUsage.at("/cache_read_input_tokens").asInt();
         int cacheCreationTokens = usage.at("/cache_creation_input_tokens").asInt() + msgUsage.at("/cache_creation_input_tokens").asInt();
-        c.promptTokens = inputTokens + cacheReadTokens + cacheCreationTokens;
+        c.promptTokens = inputTokens + cacheCreationTokens;
         c.completionTokens = usage.at("/output_tokens").asInt();
         c.totalTokens = c.promptTokens + c.completionTokens;
         c.cachedPromptTokens = cacheReadTokens;

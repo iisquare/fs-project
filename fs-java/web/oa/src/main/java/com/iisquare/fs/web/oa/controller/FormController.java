@@ -29,7 +29,7 @@ public class FormController extends PermitControllerBase {
 
     @RequestMapping("/frame")
     public String frameAction(@RequestBody Map<?, ?> param) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         ObjectNode frame = formService.frame(id, DPUtil.objectNode(), false, true);
         return ApiUtil.echoResult(null == frame ? 404 : 0, null, frame);
     }

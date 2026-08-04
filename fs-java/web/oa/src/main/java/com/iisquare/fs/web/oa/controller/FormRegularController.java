@@ -42,7 +42,7 @@ public class FormRegularController extends PermitControllerBase {
     @RequestMapping("/info")
     @Permission("")
     public String infoAction(@RequestBody Map<?, ?> param) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         FormRegular info = formRegularService.info(id);
         return ApiUtil.echoResult(null == info ? 404 : 0, null, info);
     }

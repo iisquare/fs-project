@@ -5,19 +5,19 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.ssl.SSLContexts;
-import org.apache.http.util.EntityUtils;
+import org.apache.hadoop.shaded.org.apache.http.HttpEntity;
+import org.apache.hadoop.shaded.org.apache.http.client.config.RequestConfig;
+import org.apache.hadoop.shaded.org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.hadoop.shaded.org.apache.http.client.methods.HttpPost;
+import org.apache.hadoop.shaded.org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.hadoop.shaded.org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.hadoop.shaded.org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.hadoop.shaded.org.apache.http.entity.StringEntity;
+import org.apache.hadoop.shaded.org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.hadoop.shaded.org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hadoop.shaded.org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.hadoop.shaded.org.apache.http.ssl.SSLContexts;
+import org.apache.hadoop.shaded.org.apache.http.util.EntityUtils;
 
 import java.io.Closeable;
 import java.nio.charset.StandardCharsets;
@@ -70,7 +70,7 @@ public class AIHelper implements Closeable {
 
     public String post(String url, String params, Map<String, String> headers) {
         HttpPost http = new HttpPost(url);
-        if (headers != null && headers.size() > 0) {
+        if (headers != null && !headers.isEmpty()) {
             for (Map.Entry<String, String> entry : headers.entrySet()) {
                 http.addHeader(entry.getKey(), entry.getValue());
             }
@@ -125,7 +125,7 @@ public class AIHelper implements Closeable {
         String response = this.post(urlCompletion, params.toString(), headers);
         JsonNode json = DPUtil.parseJSON(response);
         JsonNode choices = json.at("/choices");
-        if (choices.size() == 0) {
+        if (choices.isEmpty()) {
             return title + "\n" + content;
         }
         return choices.get(0).at("/message/content").asText();

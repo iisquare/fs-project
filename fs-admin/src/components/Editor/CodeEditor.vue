@@ -9,8 +9,8 @@
  * @prop     {Boolean}          foldGutter   - 是否显示代码折叠，默认 false
  * @prop     {Boolean}          lineNumbers  - 是否显示行号，默认 true
  * @prop     {Boolean}          lineWrapping - 是否自动换行，默认 true
+ * @prop     {Boolean}          resizable    - 是否允许拖拽调整高度，默认 false
  * @prop     {HintItem[]}       hints        - 自定义自动提示列表
- * @prop     {*}                volatile     - 外部触发器，值变化时回写编辑器内容
  *
  * 提示项结构 (HintItem):
  *   { className: string, displayText: string, text: string }
@@ -61,8 +61,8 @@ const {
   foldGutter = false,
   lineNumbers = true,
   lineWrapping = true,
+  resizable = false,
   hints = [],
-  volatile,
 } = defineProps({
   mode: { type: String, required: false },
   height: { type: Number, required: false },
@@ -70,15 +70,44 @@ const {
   foldGutter: { type: Boolean, required: false },
   lineNumbers: { type: Boolean, required: false },
   lineWrapping: { type: Boolean, required: false },
+  resizable: { type: Boolean, required: false },
   hints: { type: Array<Object>, required: false },
-  volatile: { required: false },
 })
 
-watch(() => volatile, () => {
-  setContent(model.value)
+watch(model, (val) => {
+  if (editor && editor.getValue() !== val) {
+    editor.setValue(val || '')
+  }
 })
 const editorRef = ref()
 let editor: any = null
+const currentHeight = ref(height)
+let isResizing = false
+let startY = 0
+let startHeight = 0
+
+const onResizeMouseDown = (e: MouseEvent) => {
+  isResizing = true
+  startY = e.clientY
+  startHeight = currentHeight.value
+  document.addEventListener('mousemove', onResizeMouseMove)
+  document.addEventListener('mouseup', onResizeMouseUp)
+  e.preventDefault()
+}
+
+const onResizeMouseMove = (e: MouseEvent) => {
+  if (!isResizing) return
+  const delta = e.clientY - startY
+  currentHeight.value = Math.max(100, startHeight + delta)
+  editor?.setSize('auto', currentHeight.value + 'px')
+}
+
+const onResizeMouseUp = () => {
+  isResizing = false
+  document.removeEventListener('mousemove', onResizeMouseMove)
+  document.removeEventListener('mouseup', onResizeMouseUp)
+}
+
 const setContent = (content: any) => {
   editor?.setValue(content)
 }
@@ -116,7 +145,7 @@ const hintRender = (elt: any, data: any, cur: any) => {
 }
 const load = () => {
   editor = CodeMirror(editorRef.value, {
-    value: model.value,
+    value: model.value || '',
     mode: mode,
     theme: theme,
     foldGutter: foldGutter,
@@ -128,7 +157,7 @@ const load = () => {
     },
     gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
   })
-  editor.setSize('auto', height + 'px')
+  editor.setSize('auto', currentHeight.value + 'px')
   editor.on('change', () => {
     model.value = getContent()
   })
@@ -142,17 +171,47 @@ onMounted(() => {
 })
 onUnmounted(() => {
   model.value = getContent()
+  document.removeEventListener('mousemove', onResizeMouseMove)
+  document.removeEventListener('mouseup', onResizeMouseUp)
 })
 defineExpose({ getContent, setContent })
 </script>
 
 <template>
-  <div ref="editorRef" class="fs-code-editor"></div>
+  <div ref="editorRef" class="fs-code-editor" :class="{ 'fs-code-editor--resizable': resizable }">
+    <div v-if="resizable" class="fs-code-editor__resize-handle" @mousedown="onResizeMouseDown" />
+  </div>
 </template>
 
 <style lang="scss" scoped>
 .fs-code-editor {
   width: 100%;
   line-height: normal;
+
+  &--resizable {
+    position: relative;
+    padding-bottom: 8px;
+  }
+
+  &__resize-handle {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    cursor: ns-resize;
+    background: transparent;
+    z-index: 10;
+
+    &:hover,
+    &:active {
+      background: var(--el-color-primary, #409eff);
+      opacity: 0.3;
+    }
+  }
+
+  :deep(.CodeMirror) {
+    height: auto;
+  }
 }
 </style>

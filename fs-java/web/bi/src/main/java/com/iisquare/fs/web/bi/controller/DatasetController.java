@@ -40,7 +40,7 @@ public class DatasetController extends PermitControllerBase {
     @Permission
     public String searchAction(@RequestBody Map<?, ?> param) {
         this.param = param;
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         JsonNode preview = DPUtil.toJSON(param.get("preview"));
         if (null == preview) {
             Dataset info = datasetService.info(id);
@@ -57,7 +57,7 @@ public class DatasetController extends PermitControllerBase {
     @RequestMapping("/columns")
     @Permission("search")
     public String columnsAction(@RequestBody Map<?, ?> param) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         Dataset info = datasetService.info(id);
         if (null == info || 1 != info.getStatus()) {
             return ApiUtil.echoResult(1404, "当前数据集暂不可用", id);
@@ -69,7 +69,7 @@ public class DatasetController extends PermitControllerBase {
     @RequestMapping("/info")
     @Permission("")
     public String infoAction(@RequestBody Map<?, ?> param) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         Dataset info = datasetService.info(id);
         return ApiUtil.echoResult(null == info ? 404 : 0, null, info);
     }
@@ -103,6 +103,23 @@ public class DatasetController extends PermitControllerBase {
     public String configAction(ModelMap model) {
         model.put("status", datasetService.status("default"));
         return ApiUtil.echoResult(0, null, model);
+    }
+
+    @RequestMapping("/sqlSchema")
+    @Permission("")
+    public String sqlSchemaAction(@RequestBody Map<?, ?> param) {
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
+        Map<String, Object> result = datasetService.sqlSchema(id);
+        return ApiUtil.echoResult(result);
+    }
+
+    @RequestMapping("/sqlPreview")
+    @Permission("")
+    public String sqlPreviewAction(@RequestBody Map<?, ?> param) {
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
+        Integer limit = ValidateUtil.filterInteger(param.get("limit"), false, 1, 1000, 100);
+        Map<String, Object> result = datasetService.sqlPreview(id, limit);
+        return ApiUtil.echoResult(result);
     }
 
 }

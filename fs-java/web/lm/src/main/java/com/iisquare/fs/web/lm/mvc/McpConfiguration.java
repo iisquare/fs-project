@@ -8,9 +8,9 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * 模型上下文协议 (MCP)
- * @see(https://docs.springframework.org.cn/spring-ai/reference/api/mcp/mcp-overview.html)
+ * {@code https://docs.springframework.org.cn/spring-ai/reference/api/mcp/mcp-overview.html}
  * MCP Java SDK
- * @see(https://github.com/modelcontextprotocol/java-sdk)
+ * {@code https://github.com/modelcontextprotocol/java-sdk}
  */
 @Configuration
 public class McpConfiguration {

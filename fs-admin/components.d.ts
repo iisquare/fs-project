@@ -103,6 +103,8 @@ declare module 'vue' {
     FormUpload: typeof import('./src/components/Form/FormUpload.vue')['default']
     LayoutBack: typeof import('./src/components/Layout/LayoutBack.vue')['default']
     LayoutDesigner: typeof import('./src/components/Layout/LayoutDesigner.vue')['default']
+    LayoutHeading: typeof import('./src/components/Layout/LayoutHeading.vue')['default']
+    LayoutHeadling: typeof import('./src/components/Layout/LayoutHeadling.vue')['default']
     LayoutHtmlSandbox: typeof import('./src/components/Layout/LayoutHtmlSandbox.vue')['default']
     LayoutIcon: typeof import('./src/components/Layout/LayoutIcon.vue')['default']
     LayoutMenuItem: typeof import('./src/components/Layout/LayoutMenuItem.vue')['default']

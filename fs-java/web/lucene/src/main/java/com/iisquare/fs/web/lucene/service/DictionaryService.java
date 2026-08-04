@@ -73,7 +73,7 @@ public class DictionaryService extends ServiceBase {
     }
 
     public Map<String, Object> saveAll(Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String catalogue = DPUtil.trim(DPUtil.parseString(param.get("catalogue")));
         if(DPUtil.empty(catalogue)) return ApiUtil.result(1001, "词库目录异常", catalogue);
         String type = DPUtil.trim(DPUtil.parseString(param.get("type")));

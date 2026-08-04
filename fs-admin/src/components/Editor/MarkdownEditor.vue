@@ -6,10 +6,14 @@
  * @prop     {Boolean}   readonly     - 是否只读（仅预览），默认 false
  * @prop     {Number}    height       - 编辑器高度(px)，默认 400
  * @prop     {String}    placeholder  - 占位提示文本
+ * @prop     {Boolean}   resizable    - 是否允许拖拽调整高度，默认 false
  *
  * @example
  * <!-- 编辑模式 -->
  * <markdown-editor v-model="content" />
+ *
+ * <!-- 可调整高度的编辑模式 -->
+ * <markdown-editor v-model="content" :resizable="true" />
  *
  * <!-- 只读预览模式 -->
  * <markdown-editor v-model="content" :readonly="true" />
@@ -23,10 +27,12 @@ const {
   readonly = false,
   height = 400,
   placeholder = '',
+  resizable = false,
 } = defineProps({
   readonly: { type: Boolean, required: false },
   height: { type: Number, required: false },
   placeholder: { type: String, required: false },
+  resizable: { type: Boolean, required: false },
 })
 
 const editorRef = ref<HTMLDivElement>()
@@ -44,7 +50,7 @@ const setContent = (content: string) => {
 const loadEditor = () => {
   if (!editorRef.value) return
   vditor = new Vditor(editorRef.value, {
-    height: height + 'px',
+    height,
     mode: 'wysiwyg',
     lang: 'zh_CN',
     value: model.value ?? '',
@@ -61,10 +67,13 @@ const loadEditor = () => {
     counter: {
       enable: true,
     },
+    resize: {
+      enable: resizable,
+      position: 'bottom',
+    },
     input(value: string) {
       model.value = value
     },
-    customWysiwygToolbar: () => {},
     after() {
       if (model.value) {
         vditor!.setValue(model.value)
@@ -89,6 +98,8 @@ const loadPreview = () => {
 watch(() => model.value, () => {
   if (readonly) {
     nextTick(() => loadPreview())
+  } else {
+    vditor?.setValue(model.value ?? '')
   }
 })
 

@@ -18,9 +18,9 @@ const fmtDate = (d: Date) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
-const now = new Date()
-const monthAgo = new Date(now.getTime() - 30 * 24 * 3600 * 1000)
-const dateRange = ref<string[]>([fmtDate(monthAgo), fmtDate(now)])
+const dateNow = new Date()
+const dateAgo = new Date(dateNow.getTime() - 7 * 24 * 3600 * 1000)
+const dateRange = ref<string[]>([fmtDate(dateAgo), fmtDate(dateNow)])
 
 const loading = ref(false)
 const filterRef = ref<FormInstance>()
@@ -321,7 +321,7 @@ const extractPlaceKeys = (data: any[]): string[] => {
         </form-search-item>
       </form-search>
       <el-space direction="vertical">
-        <el-button type="primary" @click="handleSearch">查询</el-button>
+        <el-button type="primary" @click="handleSearch" :loading="loading">查询</el-button>
         <el-button @click="handleReset">重置</el-button>
       </el-space>
     </div>

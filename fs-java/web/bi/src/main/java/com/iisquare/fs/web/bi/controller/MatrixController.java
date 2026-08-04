@@ -33,7 +33,7 @@ public class MatrixController extends PermitControllerBase {
     public String searchAction(@RequestBody Map<?, ?> param) {
         Matrix info = null;
         if (param.containsKey("id")) {
-            Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+            int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
             info = matrixService.info(id);
             if (null == info || 1 != info.getStatus()) {
                 return ApiUtil.echoResult(1404, "当前矩阵表暂不可用", id);
@@ -48,7 +48,7 @@ public class MatrixController extends PermitControllerBase {
     @RequestMapping("/info")
     @Permission("")
     public String infoAction(@RequestBody Map<?, ?> param) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         Matrix info = matrixService.info(id);
         return ApiUtil.echoResult(null == info ? 404 : 0, null, info);
     }

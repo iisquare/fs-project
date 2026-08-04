@@ -113,7 +113,7 @@ public class FlowService extends JPAServiceBase {
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
         Scheduler scheduler = nodeService.scheduler();
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
         if (DPUtil.empty(name)) return ApiUtil.result(1001, "流程名称不能为空", name);
         int status = DPUtil.parseInt(param.get("status"));

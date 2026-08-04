@@ -1,16 +1,19 @@
 import base from './Api'
 
 export default {
-  all (param: any, tips = {}) {
-    return base.post('/tool/all', param, tips)
+  list (param: any, tips = {}) {
+    return base.post('/tool/list', param, tips)
   },
-  delete (names: any, tips = {}) {
-    return base.post('/tool/delete', { names }, tips)
+  delete (ids: any, tips = {}) {
+    return base.post('/tool/delete', { ids }, tips)
   },
   config (tips = {}) {
     return base.post('/tool/config', {}, tips)
   },
   save (param: any, tips = {}) {
     return base.post('/tool/save', param, tips)
+  },
+  mcpSync (param: any, tips = {}) {
+    return base.post('/tool/mcpSync', param, tips)
   },
 }

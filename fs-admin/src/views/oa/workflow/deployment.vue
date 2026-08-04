@@ -70,7 +70,7 @@ const handleViewProcess = (scope: any, env: Event) => {
         <el-input v-model="filters.category" clearable />
       </form-search-item>
       <form-search-item>
-        <el-button type="primary" @click="handleRefresh(true, false)">查询</el-button>
+        <el-button type="primary" @click="handleRefresh(true, false)" :loading="loading">查询</el-button>
         <el-button @click="filterRef?.resetFields()">重置</el-button>
       </form-search-item>
     </form-search>

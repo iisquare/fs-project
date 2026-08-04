@@ -13,6 +13,7 @@ public class DSCore {
     public static final String FMT_UNKNOWN = "Unknown"; // 未知，不受支持
 
     public static final Map<String, String> jdbc = new LinkedHashMap(){{
+        // MySQL types
         put("BIT", FMT_NUMBER);
         put("INT", FMT_NUMBER);
         put("TINYINT", FMT_NUMBER);
@@ -31,10 +32,78 @@ public class DSCore {
         put("TIME", FMT_DATE);
         put("DATETIME", FMT_DATE);
         put("TIMESTAMP", FMT_DATE);
+        // PostgreSQL types
+        put("INT2", FMT_NUMBER);
+        put("INT4", FMT_NUMBER);
+        put("INT8", FMT_NUMBER);
+        put("FLOAT4", FMT_NUMBER);
+        put("FLOAT8", FMT_NUMBER);
+        put("NUMERIC", FMT_NUMBER);
+        put("SERIAL", FMT_NUMBER);
+        put("BIGSERIAL", FMT_NUMBER);
+        put("BOOL", FMT_NUMBER);
+        put("BPCHAR", FMT_STRING);
+        put("UUID", FMT_STRING);
+        put("JSON", FMT_STRING);
+        put("JSONB", FMT_STRING);
+        put("BYTEA", FMT_STRING);
+        // Oracle types
+        put("NUMBER", FMT_NUMBER);
+        put("BINARY_FLOAT", FMT_NUMBER);
+        put("BINARY_DOUBLE", FMT_NUMBER);
+        put("NVARCHAR2", FMT_STRING);
+        put("NCHAR", FMT_STRING);
+        put("NCLOB", FMT_STRING);
+        put("CLOB", FMT_STRING);
+        put("BLOB", FMT_STRING);
+        put("RAW", FMT_STRING);
+        put("ROWID", FMT_STRING);
+        // SQL Server types
+        put("NVARCHAR", FMT_STRING);
+        put("NCHAR", FMT_STRING);
+        put("NTEXT", FMT_STRING);
+        put("MONEY", FMT_NUMBER);
+        put("SMALLMONEY", FMT_NUMBER);
+        put("UNIQUEIDENTIFIER", FMT_STRING);
+        put("XML", FMT_STRING);
+        // Generic / cross-DB types
+        put("BINARY", FMT_STRING);
+        put("VARBINARY", FMT_STRING);
+        put("LONGVARBINARY", FMT_STRING);
+        put("ARRAY", FMT_STRING);
+        put("OTHER", FMT_STRING);
+        // ClickHouse types
+        put("UINT8", FMT_NUMBER);
+        put("UINT16", FMT_NUMBER);
+        put("UINT32", FMT_NUMBER);
+        put("UINT64", FMT_NUMBER);
+        put("INT8", FMT_NUMBER);
+        put("INT16", FMT_NUMBER);
+        put("INT32", FMT_NUMBER);
+        put("INT64", FMT_NUMBER);
+        put("FLOAT32", FMT_NUMBER);
+        put("FLOAT64", FMT_NUMBER);
+        put("STRING", FMT_STRING);
+        put("FIXEDSTRING", FMT_STRING);
+        put("ENUM", FMT_STRING);
+        put("UUID", FMT_STRING);
+        put("IPv4", FMT_STRING);
+        put("IPv6", FMT_STRING);
+    }};
+
+    public static final Map<String, String> jdbcDrivers = new LinkedHashMap(){{
+        put("MySQL", "com.mysql.cj.jdbc.Driver");
+        put("PostgreSQL", "org.postgresql.Driver");
+        put("Oracle", "oracle.jdbc.OracleDriver");
+        put("SQLServer", "com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        put("ClickHouse", "com.clickhouse.jdbc.ClickHouseDriver");
+        put("H2", "org.h2.Driver");
+        put("SQLite", "org.sqlite.JDBC");
     }};
 
     public static String jdbc2format(String name) {
-        return jdbc.getOrDefault(name, FMT_UNKNOWN);
+        if (null == name) return FMT_UNKNOWN;
+        return jdbc.getOrDefault(name.toUpperCase(), FMT_UNKNOWN);
     }
 
 }

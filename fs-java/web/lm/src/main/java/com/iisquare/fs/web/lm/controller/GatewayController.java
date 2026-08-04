@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.lm.controller;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
@@ -32,6 +33,13 @@ public class GatewayController extends PermitControllerBase {
     public String testAction(@RequestParam Map<String, Object> param, HttpServletRequest request) {
         Map<String, Object> result = gatewayService.test(param, request);
         return ApiUtil.echoResult(result);
+    }
+
+    @RequestMapping("/state")
+    @Permission("")
+    public String stateAction(@RequestBody Map<String, Object> param, HttpServletRequest request) {
+        ObjectNode state = gatewayService.state(param);
+        return ApiUtil.echoResult(0, "配置信息已同步", state);
     }
 
 }

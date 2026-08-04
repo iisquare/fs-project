@@ -33,7 +33,7 @@ public class VisualizeController extends PermitControllerBase {
     public String searchAction(@RequestBody Map<?, ?> param) {
         Visualize info = null;
         if (param.containsKey("id")) {
-            Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+            int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
             info = visualizeService.info(id);
             if (null == info || 1 != info.getStatus()) {
                 return ApiUtil.echoResult(1404, "当前报表暂不可用", id);
@@ -49,7 +49,7 @@ public class VisualizeController extends PermitControllerBase {
     @RequestMapping("/info")
     @Permission("")
     public String infoAction(@RequestBody Map<?, ?> param) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         Visualize info = visualizeService.info(id);
         return ApiUtil.echoResult(null == info ? 404 : 0, null, info);
     }

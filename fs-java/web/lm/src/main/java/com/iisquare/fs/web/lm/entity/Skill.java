@@ -1,10 +1,9 @@
-package com.iisquare.fs.web.bi.entity;
+package com.iisquare.fs.web.lm.entity;
 
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
-
-import jakarta.persistence.*;
 
 @Entity
 @Getter
@@ -14,38 +13,34 @@ import jakarta.persistence.*;
 @AllArgsConstructor
 @DynamicInsert
 @DynamicUpdate
-public class Source {
+public class Skill {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     @Column
-    private String name;
+    private String name; // 技能名称
     @Column
-    private String type; // 数据源类型
-    @Transient
-    private String typeText;
+    private String type; // 技能类型
     @Column
-    private String content; // 数据源配置
+    private String labels; // 标签，英文逗号分割
+    @Column
+    private String roleIds; // 授权角色，留空为不限制
+    @Column
+    private String content; // 配置信息
     @Column
     private Integer sort;
     @Column
     private Integer status;
-    @Transient
-    private String statusText;
     @Column
     private String description;
     @Column
     private Long createdTime;
     @Column
     private Integer createdUid;
-    @Transient
-    private String createdUidName;
     @Column
     private Long updatedTime;
     @Column
     private Integer updatedUid;
-    @Transient
-    private String updatedUidName;
 
 }

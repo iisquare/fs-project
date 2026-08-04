@@ -127,7 +127,7 @@ const handleDelete = () => {
         </el-select>
       </form-search-item>
       <form-search-item>
-        <el-button type="primary" @click="handleRefresh(true, false)">查询</el-button>
+        <el-button type="primary" @click="handleRefresh(true, false)" :loading="loading">查询</el-button>
         <el-button @click="filterRef?.resetFields()">重置</el-button>
       </form-search-item>
     </form-search>
@@ -143,6 +143,7 @@ const handleDelete = () => {
         <button-search @click="searchable = !searchable" />
         <button-refresh @click="handleRefresh(true, true)" :loading="loading" />
         <TableColumnSetting v-model="columns" :table="tableRef" />
+        <TableSort v-model="filters.sort" :columns="columns" sortable="uid,sort,remained,consumed" @change="handleRefresh(true, true)" />
       </el-space>
     </div>
     <el-table

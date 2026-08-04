@@ -23,10 +23,11 @@ public class ToolController extends PermitControllerBase {
     @Autowired
     ToolService toolService;
 
-    @RequestMapping("/all")
+    @RequestMapping("/list")
     @Permission("")
     public String listAction(@RequestBody Map<String, Object> param) {
-        ObjectNode result = toolService.all(param, DPUtil.buildMap("withUserInfo", true, "withStatusText", true));
+        ObjectNode result = toolService.search(param,
+                DPUtil.buildMap("withUserInfo", true, "withStatusText", true, "withRoles", true));
         return ApiUtil.echoResult(0, null, result);
     }
 
@@ -40,8 +41,8 @@ public class ToolController extends PermitControllerBase {
     @RequestMapping("/delete")
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        List<String> names = DPUtil.parseStringList(param.get("names"));
-        boolean result = toolService.remove(names);
+        List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
+        boolean result = toolService.remove(ids);
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
     }
 
@@ -49,7 +50,15 @@ public class ToolController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", toolService.status());
+        model.put("types", toolService.types());
         return ApiUtil.echoResult(0, null, model);
+    }
+
+    @RequestMapping("/mcpSync")
+    @Permission("")
+    public String mcpSyncAction(@RequestBody Map<String, Object> param) {
+        Map<String, Object> result = toolService.mcpSync(param);
+        return ApiUtil.echoResult(result);
     }
 
 }

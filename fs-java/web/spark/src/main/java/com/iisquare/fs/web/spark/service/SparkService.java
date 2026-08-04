@@ -2,9 +2,7 @@ package com.iisquare.fs.web.spark.service;
 
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.spark.SparkApplication;
-import io.delta.sql.DeltaSparkSessionExtension;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.delta.catalog.DeltaCatalog;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,9 +35,6 @@ public class SparkService implements InitializingBean, DisposableBean, Serializa
             builder.config("spark.dynamicAllocation.initialExecutors", "1");
             builder.config("spark.dynamicAllocation.shuffleTracking.enabled", "true");
         }
-        // 必须在创建Session之前进行配置，注意检查是否存在多个getOrCreate调用导致配置无效
-        builder.config("spark.sql.extensions", DeltaSparkSessionExtension.class.getName());
-        builder.config("spark.sql.catalog.spark_catalog", DeltaCatalog.class.getName());
         session = builder.getOrCreate();
     }
 

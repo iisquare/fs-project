@@ -47,7 +47,7 @@ public class RoleController extends PermitControllerBase {
     @RequestMapping("/permit")
     @Permission({"", "application", "menu", "resource"})
     public String permitAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         if(id < 1) return ApiUtil.echoResult(1001, "参数异常", id);
         Role info = roleService.info(id);
         if(null == info || -1 == info.getStatus()) return ApiUtil.echoResult(1002, "记录不存在", id);

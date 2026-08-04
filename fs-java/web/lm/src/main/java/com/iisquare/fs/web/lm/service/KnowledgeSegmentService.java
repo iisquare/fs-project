@@ -59,7 +59,7 @@ public class KnowledgeSegmentService extends JPAServiceBase {
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         int status = DPUtil.parseInt(param.get("status"));
         if(!status().containsKey(status)) return ApiUtil.result(1003, "状态异常", status);
         KnowledgeSegment info;

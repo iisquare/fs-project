@@ -27,8 +27,8 @@ public class SsePlainEmitter {
     Consumer<Throwable> errorCallback = null;
     Runnable timeoutCallback = null;
     public Throwable failure = null; // 记录最终异常，一般为客户端断开连接
-    HttpServletRequest request;
-    HttpServletResponse response;
+    public HttpServletRequest request;
+    public HttpServletResponse response;
 
     public SsePlainEmitter(HttpServletRequest request, HttpServletResponse response) {
         this.request = request;
@@ -109,17 +109,11 @@ public class SsePlainEmitter {
     }
 
     public SsePlainEmitter line(String line) {
-        try {
-            emitter.send(event().line(line));
-        } catch (IOException ignored) {}
-        return this;
+        return send(event().line(line));
     }
 
     public SsePlainEmitter data(String line) {
-        try {
-            emitter.send(event().data(line));
-        } catch (IOException ignored) {}
-        return this;
+        return send(event().data(line));
     }
 
     public SsePlainEmitter message(ObjectNode message, boolean isEvent) {

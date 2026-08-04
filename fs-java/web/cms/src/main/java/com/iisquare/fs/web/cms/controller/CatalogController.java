@@ -52,7 +52,7 @@ public class CatalogController extends PermitControllerBase {
     @RequestMapping("/delete")
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         Map<String, Object> result = catalogService.delete(id, rbacService.uid(request));
         return ApiUtil.echoResult(result);
     }

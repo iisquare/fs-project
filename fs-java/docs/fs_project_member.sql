@@ -21,7 +21,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-62316';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-62619';
 
 --
 -- Table structure for table `fs_member_application`
@@ -58,7 +58,7 @@ LOCK TABLES `fs_member_application` WRITE;
 INSERT INTO `fs_member_application` VALUES (1,'admin','后台管理','home','/','',0,1,'是否可访问后台',1528081670164,1,1584590104125,1);
 INSERT INTO `fs_member_application` VALUES (2,'member','用户中心','User','/member/index/index','',0,1,'帐号、角色、资源、菜单、配置',1528081670164,1,1736157706223,1);
 INSERT INTO `fs_member_application` VALUES (26,'spider','数据采集','layout.spider','/spider/index/index','',0,1,'网页爬虫、节点信息、模板管理',1585195421330,1,1764317952329,1);
-INSERT INTO `fs_member_application` VALUES (31,'bi','商业智能','cluster','/bi/index/index','',0,1,'数据清洗、规则引擎、智能报表',1585384071227,1,1631754471053,1);
+INSERT INTO `fs_member_application` VALUES (31,'bi','商业智能','DataAnalysis','/bi/index/index','',0,1,'数据清洗、规则引擎、智能报表',1585384071227,1,1785120927562,1);
 INSERT INTO `fs_member_application` VALUES (44,'face','人脸识别','smile','/face/index/index','',0,1,'人脸检测、人脸识别、检索对比',1597299393466,1,1597299393466,1);
 INSERT INTO `fs_member_application` VALUES (58,'lucene','搜索引擎','','','',0,1,'',1607333327044,1,1732159710326,1);
 INSERT INTO `fs_member_application` VALUES (63,'oa','在线办公','Checked','/oa/index/index','',0,1,'表单设计、流程设计、在线审批',1618446294833,1,1754526550347,1);
@@ -4417,8 +4417,8 @@ INSERT INTO `fs_member_menu` VALUES (24,'调试工具','数据采集:调试工�
 INSERT INTO `fs_member_menu` VALUES (25,'页面解析','数据采集:调试工具:页面解析',26,24,'','/spider/tool/parse','',0,1,'',1585195373342,1,1767842085126,1);
 INSERT INTO `fs_member_menu` VALUES (27,'数据加工','后台管理:商业智能:数据加工',31,0,'apartment','/bi/diagram','',0,1,'',1585384219002,1,1634258659883,1);
 INSERT INTO `fs_member_menu` VALUES (28,'清洗规则','后台管理:商业智能:数据加工:清洗规则',31,27,'','/bi/diagram/list','',0,1,'',1585384240550,1,1637656893932,1);
-INSERT INTO `fs_member_menu` VALUES (29,'数据管理','后台管理:商业智能:数据管理',31,0,'dropbox','/bi/data','',0,1,'',1585661766299,1,1634258058714,1);
-INSERT INTO `fs_member_menu` VALUES (30,'数据源','后台管理:商业智能:数据管理:数据源',31,29,'','/bi/data/source','',0,1,'',1585661826570,1,1634258102486,1);
+INSERT INTO `fs_member_menu` VALUES (29,'数据准备','商业智能:数据准备',31,0,'basic.database','/bi/data','',0,1,'',1585661766299,1,1785372642468,1);
+INSERT INTO `fs_member_menu` VALUES (30,'数据源','商业智能:数据准备:数据源',31,29,'','/bi/data/datasource','',0,1,'',1585661826570,1,1785372650395,1);
 INSERT INTO `fs_member_menu` VALUES (31,'数据集','后台管理:商业智能:数据管理:数据集',31,29,'','/bi/data/dataset','',0,1,'',1585661841784,1,1634258119688,1);
 INSERT INTO `fs_member_menu` VALUES (32,'数据矩阵','后台管理:商业智能:智能报表:数据矩阵',31,37,'','/bi/report/matrix','',0,1,'',1585661854477,1,1634258546289,1);
 INSERT INTO `fs_member_menu` VALUES (37,'智能报表','后台管理:商业智能:智能报表',31,0,'radar-chart','/bi/report','',0,1,'',1585662611501,1,1634258458541,1);
@@ -4548,8 +4548,8 @@ INSERT INTO `fs_member_menu` VALUES (169,'安全围栏','大模型:安全围栏'
 INSERT INTO `fs_member_menu` VALUES (170,'应用管理','大模型:智能体:应用管理',304,165,'','/lm/agentic/list','',0,1,'',1755586335268,1,1755596217696,1);
 INSERT INTO `fs_member_menu` VALUES (171,'知识管理','大模型:知识库:知识管理',304,166,'','/lm/knowledge/list','',0,1,'',1755586375605,1,1755586375605,1);
 INSERT INTO `fs_member_menu` VALUES (172,'供应商配置','大模型:模型对话:供应商配置',304,144,'','/lm/model/provider','',0,1,'',1755596210727,1,1778291373701,1);
-INSERT INTO `fs_member_menu` VALUES (173,'工具配置','大模型:插件管理:工具配置',304,168,'','/lm/plugin/tool','',0,1,'',1755596243894,1,1778289797893,1);
-INSERT INTO `fs_member_menu` VALUES (174,'MCP服务','大模型:插件管理:MCP服务',304,168,'','/lm/plugin/mcp','',0,1,'',1755596261141,1,1778289708819,1);
+INSERT INTO `fs_member_menu` VALUES (173,'工具管理','大模型:插件管理:工具管理',304,168,'','/lm/plugin/tool','',0,1,'',1755596243894,1,1784530237222,1);
+INSERT INTO `fs_member_menu` VALUES (174,'技能管理','大模型:插件管理:技能管理',304,168,'','/lm/plugin/skill','',0,1,'',1755596261141,1,1784530246695,1);
 INSERT INTO `fs_member_menu` VALUES (175,'采集配置','数据采集:采集配置',26,0,'Setting','/spider/setting','',0,1,'',1764317298298,1,1764635121792,1);
 INSERT INTO `fs_member_menu` VALUES (176,'模板管理','数据采集:采集配置:模板管理',26,175,'','/spider/setting/template','',0,1,'',1764317331167,1,1764635150816,1);
 INSERT INTO `fs_member_menu` VALUES (177,'采集调度','数据采集:采集调度',26,0,'Connection','/spider/schedule','',0,1,'',1764317475890,1,1764726988239,1);
@@ -5225,10 +5225,10 @@ INSERT INTO `fs_member_resource` VALUES (32,'数据加工','商业智能:数据�
 INSERT INTO `fs_member_resource` VALUES (33,'添加','商业智能:数据加工:添加',31,32,'bi','diagram','add',0,1,'',1585384138739,1,1631754508516,1);
 INSERT INTO `fs_member_resource` VALUES (34,'修改','商业智能:数据加工:修改',31,32,'bi','diagram','modify',0,1,'',1585384152067,1,1631754517030,1);
 INSERT INTO `fs_member_resource` VALUES (35,'删除','商业智能:数据加工:删除',31,32,'bi','diagram','delete',0,1,'',1585384168964,1,1631754529772,1);
-INSERT INTO `fs_member_resource` VALUES (36,'数据源','商业智能:数据源',31,0,'bi','source','',0,1,'',1585669452789,1,1634614816541,1);
-INSERT INTO `fs_member_resource` VALUES (37,'添加','商业智能:数据源:添加',31,36,'bi','source','add',0,1,'',1585669473979,1,1634614829860,1);
-INSERT INTO `fs_member_resource` VALUES (38,'修改','商业智能:数据源:修改',31,36,'bi','source','modify',0,1,'',1585669487729,1,1634614838196,1);
-INSERT INTO `fs_member_resource` VALUES (39,'删除','商业智能:数据源:删除',31,36,'bi','source','delete',0,1,'',1585669499607,1,1634614850447,1);
+INSERT INTO `fs_member_resource` VALUES (36,'数据源','商业智能:数据源',31,0,'bi','datasource','',0,1,'',1585669452789,1,1784701497964,1);
+INSERT INTO `fs_member_resource` VALUES (37,'添加','商业智能:数据源:添加',31,36,'bi','datasource','add',0,1,'',1585669473979,1,1784701504751,1);
+INSERT INTO `fs_member_resource` VALUES (38,'修改','商业智能:数据源:修改',31,36,'bi','datasource','modify',0,1,'',1585669487729,1,1784701512056,1);
+INSERT INTO `fs_member_resource` VALUES (39,'删除','商业智能:数据源:删除',31,36,'bi','datasource','delete',0,1,'',1585669499607,1,1784701507831,1);
 INSERT INTO `fs_member_resource` VALUES (40,'数据集','商业智能:数据集',31,0,'bi','dataset','',0,1,'',1585727898953,1,1634614884425,1);
 INSERT INTO `fs_member_resource` VALUES (41,'添加','商业智能:数据集:添加',31,40,'bi','dataset','add',0,1,'',1585727916428,1,1634614892519,1);
 INSERT INTO `fs_member_resource` VALUES (42,'修改','商业智能:数据集:修改',31,40,'bi','dataset','modify',0,1,'',1585727959930,1,1634614899268,1);
@@ -5312,7 +5312,7 @@ INSERT INTO `fs_member_resource` VALUES (124,'删除','内容管理:标签:删�
 INSERT INTO `fs_member_resource` VALUES (125,'添加','内容管理:引用:添加',96,121,'cms','cite','add',0,1,'',1628841639288,1,1628841639288,1);
 INSERT INTO `fs_member_resource` VALUES (126,'修改','内容管理:引用:修改',96,121,'cms','cite','modify',0,1,'',1628841651912,1,1628841651912,1);
 INSERT INTO `fs_member_resource` VALUES (127,'删除','内容管理:引用:删除',96,121,'cms','cite','delete',0,1,'',1628841661763,1,1628841661763,1);
-INSERT INTO `fs_member_resource` VALUES (128,'结构','商业智能:数据源:结构',31,36,'bi','source','schema',0,1,'',1636543399133,1,1636543399133,1);
+INSERT INTO `fs_member_resource` VALUES (128,'结构','商业智能:数据源:结构',31,36,'bi','datasource','schema',0,1,'',1636543399133,1,1784701515716,1);
 INSERT INTO `fs_member_resource` VALUES (129,'检索','商业智能:数据集:检索',31,40,'bi','dataset','search',0,1,'',1637313631642,1,1637313631642,1);
 INSERT INTO `fs_member_resource` VALUES (130,'数据报表','商业智能:数据报表',31,0,'bi','visualize','',0,1,'',1637658795954,1,1637658795954,1);
 INSERT INTO `fs_member_resource` VALUES (131,'添加','商业智能:数据报表:添加',31,130,'bi','visualize','add',0,1,'',1637658815910,1,1637658815910,1);
@@ -5451,10 +5451,10 @@ INSERT INTO `fs_member_resource` VALUES (270,'工具','大模型:工具',304,0,'
 INSERT INTO `fs_member_resource` VALUES (271,'添加','大模型:工具:添加',304,270,'lm','tool','add',0,1,'',1755651124650,1,1755651124650,1);
 INSERT INTO `fs_member_resource` VALUES (272,'修改','大模型:工具:修改',304,270,'lm','tool','modify',0,1,'',1755651129992,1,1755651129992,1);
 INSERT INTO `fs_member_resource` VALUES (273,'删除','大模型:工具:删除',304,270,'lm','tool','delete',0,1,'',1755651135605,1,1755651135605,1);
-INSERT INTO `fs_member_resource` VALUES (274,'MCP服务','大模型:MCP服务',304,0,'lm','mcp','',0,1,'',1755651151736,1,1755651151736,1);
-INSERT INTO `fs_member_resource` VALUES (275,'添加','大模型:MCP服务:添加',304,274,'lm','mcp','add',0,1,'',1755651161148,1,1755651161148,1);
-INSERT INTO `fs_member_resource` VALUES (276,'修改','大模型:MCP服务:修改',304,274,'lm','mcp','modify',0,1,'',1755651167570,1,1755651167570,1);
-INSERT INTO `fs_member_resource` VALUES (277,'删除','大模型:MCP服务:删除',304,274,'lm','mcp','delete',0,1,'',1755651173304,1,1755651173304,1);
+INSERT INTO `fs_member_resource` VALUES (274,'技能','大模型:技能',304,0,'lm','skill','',0,1,'',1755651151736,1,1784530201165,1);
+INSERT INTO `fs_member_resource` VALUES (275,'添加','大模型:技能:添加',304,274,'lm','skill','add',0,1,'',1755651161148,1,1784530212061,1);
+INSERT INTO `fs_member_resource` VALUES (276,'修改','大模型:技能:修改',304,274,'lm','skill','modify',0,1,'',1755651167570,1,1784530220567,1);
+INSERT INTO `fs_member_resource` VALUES (277,'删除','大模型:技能:删除',304,274,'lm','skill','delete',0,1,'',1755651173304,1,1784530215818,1);
 INSERT INTO `fs_member_resource` VALUES (278,'提供商','大模型:提供商',304,0,'lm','provider','',0,1,'',1755672303474,1,1755672303474,1);
 INSERT INTO `fs_member_resource` VALUES (279,'添加','大模型:提供商:添加',304,278,'lm','provider','add',0,1,'',1755672314574,1,1755672314574,1);
 INSERT INTO `fs_member_resource` VALUES (280,'修改','大模型:提供商:修改',304,278,'lm','provider','modify',0,1,'',1755672320610,1,1755672320610,1);
@@ -5614,7 +5614,7 @@ CREATE TABLE `fs_member_user` (
 
 LOCK TABLES `fs_member_user` WRITE;
 /*!40000 ALTER TABLE `fs_member_user` DISABLE KEYS */;
-INSERT INTO `fs_member_user` VALUES (1,'admin','管理员','4bd18037cb256efcc6bd6363c558e401','iisquare163@gmail.com','12345678901','8395',0,1,'默认账户',1528081552985,'127.0.0.1',1,1781074251958,1,1782442715913,'127.0.0.1',0,0,0);
+INSERT INTO `fs_member_user` VALUES (1,'admin','管理员','4bd18037cb256efcc6bd6363c558e401','iisquare163@gmail.com','12345678901','8395',0,1,'默认账户',1528081552985,'127.0.0.1',1,1781074251958,1,1784509510158,'127.0.0.1',0,0,0);
 INSERT INTO `fs_member_user` VALUES (26,'test1','test1','04dc197e5e813659aa124599e7d7d4fd','','','0898',0,1,'',1737797630259,'127.0.0.1',1,1737798171826,1,0,'',0,1737802620607,1);
 INSERT INTO `fs_member_user` VALUES (27,'test2','test2','3dc5e4203e5e4d67b1c08a68136b7879','','','0605',0,2,'',1737803207126,'127.0.0.1',1,1781075697135,1,0,'',1781075695000,0,0);
 INSERT INTO `fs_member_user` VALUES (28,'test3','test3','30cc87d9a433944111623cb1a1a5e3c1','','','1082',0,1,'',1737803243981,'127.0.0.1',1,1737803243981,1,1780044181436,'127.0.0.1',0,0,0);
@@ -5636,4 +5636,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-09 15:18:55
+-- Dump completed on 2026-07-30  8:53:17

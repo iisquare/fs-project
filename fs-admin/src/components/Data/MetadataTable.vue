@@ -16,7 +16,13 @@ import DataUtil from '@/utils/DataUtil';
 const model = defineModel<Record<string, string>>({ default: () => ({}) })
 const tableRef = ref<TableInstance>()
 const editable = defineModel('editable', { type: Boolean, default: false })
+const sensitives = defineModel<string[]>('sensitives', { default: () => ['authorization', 'x-api-key'] })
 const selection: any = ref([])
+
+const isSensitive = (key: string) => {
+  const k = key.toLowerCase()
+  return (sensitives.value ?? []).some(f => f.toLowerCase() === k)
+}
 
 interface FieldRow {
   key: string
@@ -128,7 +134,12 @@ const handleBottom = () => {
       </el-table-column>
       <el-table-column label="字段值">
         <template #default="scope">
-          <el-input v-model="scope.row.value" placeholder="必填，字段值" />
+          <el-input
+            v-model="scope.row.value"
+            placeholder="必填，字段值"
+            :type="isSensitive(scope.row.key) ? 'password' : 'text'"
+            show-password
+          />
         </template>
       </el-table-column>
     </el-table>
@@ -140,7 +151,12 @@ const handleBottom = () => {
       table-layout="auto"
     >
       <el-table-column prop="key" label="字段名称" />
-      <el-table-column prop="value" label="字段值" />
+      <el-table-column label="字段值">
+        <template #default="scope">
+          <form-password v-if="isSensitive(scope.row.key)" v-model="scope.row.value" level="medium" />
+          <template v-else>{{ scope.row.value }}</template>
+        </template>
+      </el-table-column>
     </el-table>
   </template>
 </template>

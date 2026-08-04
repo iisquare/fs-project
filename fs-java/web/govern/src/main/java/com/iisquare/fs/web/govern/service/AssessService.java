@@ -140,7 +140,7 @@ public class AssessService extends ServiceBase {
     }
 
     public Map<String, Object> info(Map<?, ?> param) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         Assess info = info(id);
         if (null == info) return ApiUtil.result(1404, "信息不存在", id);
         ObjectNode result = DPUtil.toJSON(info, ObjectNode.class);

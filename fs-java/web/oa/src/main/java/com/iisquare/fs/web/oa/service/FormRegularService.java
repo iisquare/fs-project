@@ -108,7 +108,7 @@ public class FormRegularService extends ServiceBase {
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
-        Integer id = ValidateUtil.filterInteger(param.get("id"), true, 1, null, 0);
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
         String label = DPUtil.parseString(param.get("label"));
         String regex = DPUtil.parseString(param.get("regex"));

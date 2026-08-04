@@ -13,7 +13,6 @@ import com.iisquare.fs.web.lm.dao.CreditDao;
 import com.iisquare.fs.web.lm.dao.RateDao;
 import com.iisquare.fs.web.lm.entity.Auth;
 import com.iisquare.fs.web.lm.entity.Credit;
-import com.iisquare.fs.web.lm.entity.Rate;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -60,27 +59,20 @@ public class CreditService extends JPAServiceBase {
         result.put("name", auth.getName());
         result.put("uid", auth.getUid());
         result.put("secret", auth.getSecret());
-        ObjectNode rates = result.putObject("credit")
+        result.replace("identity", identity);
+        result.putObject("credit")
                 .put("uid", credit.getUid())
                 .put("remained", credit.getRemained())
                 .put("consumed", credit.getConsumed())
                 .put("remindEnabled", DPUtil.parseBoolean(credit.getRemindEnabled()))
-                .put("remindThreshold", credit.getRemindThreshold())
-                .putObject("rates");
-        List<Rate> rateList = rateDao.findAllById(DPUtil.parseIntList(credit.getRateIds()));
-        for (Rate rate : rateList) {
-            if (1 != rate.getStatus()) continue;
-            ObjectNode item = rates.putObject(String.valueOf(rate.getId()));
-            item.put("id", rate.getId());
-            item.put("name", rate.getName());
-            item.put("requestCount", rate.getRequestCount());
-            item.put("requestInterval", rate.getRequestInterval());
-            item.put("tokenCount", rate.getTokenCount());
-            item.put("tokenInterval", rate.getTokenInterval());
-            item.put("creditCount", rate.getCreditCount());
-            item.put("creditInterval", rate.getCreditInterval());
+                .put("remindThreshold", credit.getRemindThreshold());
+        ObjectNode rates = result.putObject("rates");
+        for (Integer rateId : DPUtil.parseIntList(credit.getRateIds())) {
+            JsonNode rate = cache.at("/rates/" + rateId);
+            if (!rate.isEmpty()) {
+                rates.replace(String.valueOf(rateId), rate);
+            }
         }
-        result.replace("identity", identity);
         ObjectNode models = result.putObject("models");
         Set<Integer> authModelIds = new HashSet<>(DPUtil.parseIntList(auth.getModelIds()));
         Set<Integer> userRoleIds = new HashSet<>(DPUtil.parseIntList(DPUtil.fields(identity.at("/roles"))));
@@ -131,7 +123,7 @@ public class CreditService extends JPAServiceBase {
             SpecificationHelper<Credit> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.equalWithIntGTZero("uid").equalWithIntNotEmpty("status");
             return cb.and(helper.predicates());
-        }, Sort.by(Sort.Order.desc("sort")), "uid", "status", "sort");
+        }, Sort.by(Sort.Order.desc("sort")), "uid", "status", "sort", "remained", "consumed");
         JsonNode rows = format(ApiUtil.rows(result));
         if (!DPUtil.empty(args.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "uid", "createdUid", "updatedUid");
