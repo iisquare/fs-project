@@ -21,7 +21,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-62696';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-72718';
 
 --
 -- Table structure for table `fs_lm_agent`
@@ -616,11 +616,9 @@ CREATE TABLE `fs_lm_usage` (
   KEY `idx_model_id` (`model_id`) USING BTREE,
   KEY `idx_provider_id` (`provider_id`) USING BTREE,
   KEY `idx_request_ip` (`request_ip`) USING BTREE,
-  KEY `idx_request_stream` (`request_stream`) USING BTREE,
   KEY `idx_finish_reason` (`finish_reason`) USING BTREE,
-  KEY `idx_begin_time` (`begin_time`) USING BTREE,
-  KEY `idx_end_time` (`end_time`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=403 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  KEY `idx_deleted_time_begin_time` (`deleted_time`,`begin_time`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=414 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -633,4 +631,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-08-04  8:44:16
+-- Dump completed on 2026-09-04  8:22:42

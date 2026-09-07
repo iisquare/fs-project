@@ -19,8 +19,8 @@ const fmtDate = (d: Date) => {
 }
 
 const dateNow = new Date()
-const dateAgo = new Date(dateNow.getTime() - 7 * 24 * 3600 * 1000)
-const dateRange = ref<string[]>([fmtDate(dateAgo), fmtDate(dateNow)])
+const dateStart = new Date(dateNow.getFullYear(), dateNow.getMonth(), dateNow.getDate() - 1, 0, 0, 0)
+const dateRange = ref<string[]>([fmtDate(dateStart), fmtDate(dateNow)])
 
 const loading = ref(false)
 const filterRef = ref<FormInstance>()
@@ -80,6 +80,7 @@ const rankingUserRef = ref()
 const rankingAuthRef = ref()
 const rankingProviderRef = ref()
 const rankingModelRef = ref()
+const rankingRoleRef = ref()
 const distStatusRef = ref()
 const distReasonRef = ref()
 const timelineCreditsRef = ref()
@@ -135,6 +136,83 @@ const renderRankingBar = (
       data: values.map((v, i) => ({ value: v, itemStyle: { color: COLORS[i % COLORS.length] } })),
       label: { show: true, position: 'right', formatter: (p: any) => Number(p.value).toFixed(6) },
     }],
+  })
+}
+
+// Role grouped ranking: one combined chart, roles as x-axis groups,
+// top users as vertical bars side by side within each role group
+const renderRoleGroupedBar = (container: any, groups: any[]) => {
+  if (!container?.value || !groups?.length) return
+  const sortedGroups = [...groups].sort((a: any, b: any) =>
+    (b.consumeCredits ?? 0) - (a.consumeCredits ?? 0))
+  const rankCount = Math.max(...sortedGroups.map((g: any) => g.users?.length || 0))
+  if (rankCount < 1) return
+  const roleName = (g: any) => g.roleInfo?.name || `角色#${g.roleId}`
+  const topTotal = sortedGroups.reduce((sum: number, g: any) =>
+    sum + Number(g.consumeCredits ?? 0), 0)
+  const instance = initChart(container.value)
+
+  instance.setOption({
+    tooltip: {
+      trigger: 'item',
+      formatter: (params: any) => {
+        const data = params.data
+        if (!data) return ''
+        return [
+          `<b>${data.roleName} · 第${data.rank}名</b>`,
+          `用户: ${data.userName}`,
+          `积分: ${data.consumeCredits ?? 0}`,
+          `调用: ${data.calls ?? 0}`,
+          `Token: ${data.tokens ?? 0}`,
+        ].join('<br/>')
+      },
+    },
+    legend: {
+      top: 8,
+      type: 'scroll',
+      data: Array.from({ length: rankCount }, (_, i) => `第${i + 1}名`),
+    },
+    grid: { left: 20, right: 20, top: 60, bottom: 10, containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: sortedGroups.map((g: any) => roleName(g)),
+      axisLabel: {
+        interval: 0,
+        fontSize: 12,
+        lineHeight: 16,
+        margin: 12,
+        formatter: (value: any, index: number) => {
+          const group = sortedGroups[index]
+          if (!group) return value
+          const ratio = topTotal > 0
+            ? ((Number(group.consumeCredits ?? 0) / topTotal) * 100).toFixed(2)
+            : '0.00'
+          return [
+            value,
+            `总积分 ${group.consumeCredits ?? 0} · 占比 ${ratio}%`,
+            `调用 ${group.calls ?? 0} · Token ${group.tokens ?? 0}`,
+          ].join('\n')
+        },
+      },
+    },
+    yAxis: { type: 'value' },
+    series: Array.from({ length: rankCount }, (_, i) => ({
+      name: `第${i + 1}名`,
+      type: 'bar',
+      barMaxWidth: 24,
+      data: sortedGroups.map((group: any) => {
+        const user = group.users?.[i]
+        return user ? {
+          value: user.consumeCredits ?? 0,
+          rank: i + 1,
+          roleName: roleName(group),
+          userName: user.uidUserInfo?.name || `用户#${user.uid}`,
+          consumeCredits: user.consumeCredits ?? 0,
+          calls: user.calls ?? 0,
+          tokens: user.tokens ?? 0,
+        } : null
+      }),
+    })),
   })
 }
 
@@ -233,6 +311,9 @@ const renderCharts = () => {
     renderRankingBar(rankingAuthRef, ranking.byAuth, (d: any) => d.authInfo?.name || `密钥#${d.authId}`, '密钥排名')
     renderRankingBar(rankingProviderRef, ranking.byProvider, (d: any) => d.providerInfo?.name || `供应商#${d.providerId}`, '供应商排名')
     renderRankingBar(rankingModelRef, ranking.byModel, (d: any) => d.modelInfo?.name || `模型#${d.modelId}`, '模型排名')
+    if (ranking.byRole?.length) {
+      renderRoleGroupedBar(rankingRoleRef, ranking.byRole)
+    }
   }
 
   // Distribution
@@ -349,6 +430,11 @@ const extractPlaceKeys = (data: any[]): string[] => {
     </el-row>
   </el-card>
 
+  <el-card v-if="statisticData?.ranking?.byRole?.length" :bordered="false" shadow="never" class="stat-section">
+    <template #header>用户角色统计</template>
+    <div ref="rankingRoleRef" class="chart chart-role-group"></div>
+  </el-card>
+
   <el-card v-if="statisticData?.distribution" :bordered="false" shadow="never" class="stat-section">
     <template #header>分布统计</template>
     <el-row :gutter="16">
@@ -391,6 +477,9 @@ const extractPlaceKeys = (data: any[]): string[] => {
 }
 .chart-bar {
   height: 300px;
+}
+.chart-role-group {
+  height: 520px;
 }
 .chart-pie {
   height: 350px;

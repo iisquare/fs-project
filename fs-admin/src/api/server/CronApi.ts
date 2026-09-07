@@ -57,5 +57,17 @@ export default {
   },
   flowLogStages (param: any, tips = {}) {
     return this.post('/flowLog/stages', param, tips)
+  },
+  rpcLogInfo (param: any, tips = {}) {
+    return this.post('/rpcLog/info', param, tips)
+  },
+  rpcLogList (param: any, tips = {}) {
+    return this.post('/rpcLog/list', param, tips)
+  },
+  rpcLogDelete (ids: any, tips = {}) {
+    return this.post('/rpcLog/delete', { ids }, tips)
+  },
+  rpcLogConfig (tips = {}) {
+    return this.post('/rpcLog/config', {}, tips)
   }
 }

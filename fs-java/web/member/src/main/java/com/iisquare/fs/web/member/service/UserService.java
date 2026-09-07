@@ -240,14 +240,14 @@ public class UserService extends JPAServiceBase {
     }
 
     public ObjectNode identity(Integer id) {
-        ObjectNode result = DPUtil.objectNode();
         User info = info(id);
-        if (null == info) return result;
+        if (null == info || 1 != info.getStatus()) return DPUtil.objectNode();
+        ObjectNode result = DPUtil.objectNode();
         result.put("id", info.getId());
+        result.put("serial", info.getSerial());
         result.put("name", info.getName());
         result.put("email", info.getEmail());
         result.put("phone", info.getPhone());
-        result.put("status", info.getStatus());
         ObjectNode roles = result.putObject("roles");
         Set<Integer> roleIds = DPUtil.values(relationDao.findAllByTypeAndAid("user_role", info.getId()), Integer.class, "bid");
         if (!roleIds.isEmpty()) {
@@ -363,8 +363,9 @@ public class UserService extends JPAServiceBase {
         info.setPassword(password);
         info.setSalt(salt);
         userDao.save(info);
-        logout(request); // 退出登录
-        return ApiUtil.result(0, null, null);
+        int count = rbacService.removeSessions(info.getId());// 使该用户所有会话失效
+        request.getSession().invalidate();
+        return ApiUtil.result(0, null, count);
     }
     
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
@@ -476,7 +477,7 @@ public class UserService extends JPAServiceBase {
     public JsonNode filter(JsonNode json) {
         for (JsonNode node : json) {
             ObjectNode item = (ObjectNode) node;
-            item.retain("id", "serial", "name");
+            item.retain("id", "serial", "name", "status");
         }
         return json;
     }
@@ -533,22 +534,31 @@ public class UserService extends JPAServiceBase {
         return delete(userDao, ids, rbacService.uid(request));
     }
 
-    public ObjectNode infoByIds(List<Integer> ids) {
-        return (ObjectNode) filter(infoByIds(userDao, ids));
-    }
-
     public ObjectNode infos(List<Integer> ids) {
         ObjectNode nodes = infoByIds(userDao, ids);
-        List<String> keys = new ArrayList<>();
-        Iterator<Map.Entry<String, JsonNode>> iterator = nodes.fields();
-        while (iterator.hasNext()) {
-            Map.Entry<String, JsonNode> entry = iterator.next();
-            if (entry.getValue().at("/status").asInt() != 1) {
-                keys.add(entry.getKey());
+        if (nodes.isEmpty()) return nodes;
+        nodes = (ObjectNode) filter(nodes);
+        List<Relation> relations = relationDao.findAllByTypeAndAidIn("user_role",
+                DPUtil.values(nodes, Integer.class, "id"));
+        Set<Integer> roleIds = DPUtil.values(relations, Integer.class, "bid");
+        Map<Integer, Role> roleMap = roleIds.isEmpty() ? null
+                : DPUtil.list2map(roleDao.findAllById(roleIds), Integer.class, Role.class, "id");
+        Map<Integer, List<Relation>> relationMap = DPUtil.list2ml(relations, Integer.class, "aid");
+        for (JsonNode node : nodes) {
+            ObjectNode user = (ObjectNode) node;
+            ObjectNode roles = user.putObject("roles");
+            List<Relation> userRelations = relationMap.get(user.at("/id").asInt());
+            if (null == userRelations) continue;
+            for (Relation relation : userRelations) {
+                Role role = null == roleMap ? null : roleMap.get(relation.getBid());
+                if (null == role) continue;
+                ObjectNode roleNode = roles.putObject(String.valueOf(role.getId()));
+                roleNode.put("id", role.getId());
+                roleNode.put("name", role.getName());
+                roleNode.put("status", role.getStatus());
             }
         }
-        nodes.remove(keys);
-        return (ObjectNode) filter(nodes);
+        return nodes;
     }
 
     public JsonNode fillInfo(JsonNode rows, String... properties) {

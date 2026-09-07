@@ -62,6 +62,33 @@ const UIUtil = {
       result[key] = highlight[key].join(glue)
     }
     return result
+  },
+  /**
+   * DataFieldMapping 专用 - 合并新旧响应字段结构，保留已勾选及已编辑的字段配置
+   */
+  mergeDataFieldMapping (oldFields: any, newSchema: any) {
+    const olds: any = {}
+    const index = (items: any) => {
+      items && items.forEach((item: any) => {
+        olds[item.path] = item
+        index(item.children)
+      })
+    }
+    index(oldFields)
+    ;(function walk(items: any) {
+      items && items.forEach((item: any) => {
+        const old = olds[item.path]
+        if (old) {
+          item.checked = old.checked
+          if (old.name) item.name = old.name
+          if (old.title) item.title = old.title
+          if (old.type) item.type = old.type
+          if (old.comment) item.comment = old.comment
+        }
+        walk(item.children)
+      })
+    })(newSchema)
+    return newSchema || []
   }
 }
 export default UIUtil

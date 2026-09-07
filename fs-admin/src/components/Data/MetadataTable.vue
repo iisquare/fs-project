@@ -16,7 +16,7 @@ import DataUtil from '@/utils/DataUtil';
 const model = defineModel<Record<string, string>>({ default: () => ({}) })
 const tableRef = ref<TableInstance>()
 const editable = defineModel('editable', { type: Boolean, default: false })
-const sensitives = defineModel<string[]>('sensitives', { default: () => ['authorization', 'x-api-key'] })
+const sensitives = defineModel<string[]>('sensitives', { default: () => ['authorization', 'x-api-key', 'x-auth-token'] })
 const selection: any = ref([])
 
 const isSensitive = (key: string) => {
@@ -138,7 +138,7 @@ const handleBottom = () => {
             v-model="scope.row.value"
             placeholder="必填，字段值"
             :type="isSensitive(scope.row.key) ? 'password' : 'text'"
-            show-password
+            :show-password="isSensitive(scope.row.key)"
           />
         </template>
       </el-table-column>

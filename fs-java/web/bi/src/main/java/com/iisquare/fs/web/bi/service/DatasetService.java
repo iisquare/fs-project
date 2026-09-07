@@ -1,170 +1,103 @@
 package com.iisquare.fs.web.bi.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.iisquare.fs.base.calcite.core.CalciteSession;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
-import com.iisquare.fs.base.dag.core.DSCore;
-import com.iisquare.fs.base.web.mvc.ServiceBase;
+import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
+import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
+import com.iisquare.fs.base.web.sse.MaintainEmitter;
 import com.iisquare.fs.base.web.util.RpcUtil;
+import com.iisquare.fs.web.bi.core.RedisKey;
 import com.iisquare.fs.web.bi.dao.DatasetDao;
-import com.iisquare.fs.web.bi.dao.DatasourceDao;
 import com.iisquare.fs.web.bi.entity.Dataset;
-import com.iisquare.fs.web.bi.entity.Datasource;
+import com.iisquare.fs.web.bi.mvc.Configuration;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
-import com.iisquare.fs.web.core.rpc.SparkRpc;
+import com.iisquare.fs.web.core.rpc.CronRpc;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import jakarta.persistence.criteria.Predicate;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
-public class DatasetService extends ServiceBase {
+public class DatasetService extends JPAServiceBase {
+
+    private static final Logger logger = LoggerFactory.getLogger(DatasetService.class);
 
     @Autowired
     DatasetDao datasetDao;
     @Autowired
-    DatasourceDao datasourceDao;
-    @Autowired
-    SparkRpc sparkRpc;
-    @Autowired
     DefaultRbacService rbacService;
     @Autowired
-    CalciteSession calciteSession;
+    Configuration configuration;
+    @Autowired
+    TrinoService trinoService;
+    @Autowired
+    CronRpc cronRpc;
+    @Autowired
+    StringRedisTemplate redis;
 
-    public Map<String, Object> loadSource(JsonNode preview) {
-        if (null == preview) return ApiUtil.result(20403, "数据源配置信息异常", null);
-        Collection<Integer> sourceIds = DPUtil.values(preview.at("/relation/items"), Integer.class, "sourceId");
-        if (null == sourceIds || sourceIds.size() < 1) return ApiUtil.result(2001, "未配置任何数据源", sourceIds);
-        ObjectNode result = DPUtil.objectNode();
-        Map<Integer, Datasource> sources = DPUtil.list2map(datasourceDao.findAllById(sourceIds), Integer.class, "id");
-        for (Integer sourceId : sourceIds) {
-            Datasource source = sources.get(sourceId);
-            if (null == source || 1 != source.getStatus()) return ApiUtil.result(2002, "数据源暂不可用", sourceId);
-            JsonNode options = DPUtil.parseJSON(source.getContent());
-            if (null == options) return ApiUtil.result(2003, "解析数据源配置异常", sourceId);
-            ObjectNode item = DPUtil.objectNode();
-            item.put("id", sourceId).put("type", source.getType()).replace("options", options);
-            result.replace(String.valueOf(sourceId), item);
-        }
-        return ApiUtil.result(0, null, result);
-    }
-
-    public Map<String, Object> dataset(Integer id) {
-        Dataset info = info(id);
-        if (null == info || 1 != info.getStatus()) {
-            return ApiUtil.result(61001, "数据集状态异常", id);
-        }
-        JsonNode dataset = DPUtil.parseJSON(info.getContent());
-        Map<String, Object> result = loadSource(dataset);
-        if (ApiUtil.failed(result)) return result;
-        ((ObjectNode) dataset).replace("sources", ApiUtil.data(result, ObjectNode.class));
-        return ApiUtil.result(0, null, dataset);
-    }
-
-    public Map<String, Object> search(JsonNode preview, JsonNode query) {
-        if (null == preview || !preview.isObject()) {
-            return ApiUtil.result(1001, "配置信息异常", null);
-        }
-        ObjectNode options = (ObjectNode) preview;
-        options.replace("query", null == query ? DPUtil.objectNode() : query);
-        Map<String, Object> result = loadSource(preview);
-        if (ApiUtil.failed(result)) return result;
-        options.replace("sources", ApiUtil.data(result, ObjectNode.class));
-        return RpcUtil.result(sparkRpc.post("/bi/dataset", options));
-    }
-
-    public Map<String, Object> columns(JsonNode options) {
-        if (null == options || !options.isObject()) {
-            return ApiUtil.result(1001, "配置信息异常", null);
-        }
-        ObjectNode result = DPUtil.objectNode();
-        ArrayNode columns = result.putArray("columns");
-        Iterator<JsonNode> iterator = options.at("/table").iterator();
-        while (iterator.hasNext()) {
-            JsonNode item = iterator.next();
-            if (!item.at("/enabled").asBoolean(false)) continue;
-            ObjectNode column = (ObjectNode) item.deepCopy();
-            column.remove("enabled");
-            columns.add(column);
-        }
-        return ApiUtil.result(0, null, result);
-    }
-
-    public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
-        int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
-        Page<Dataset> data = datasetDao.findAll((Specification<Dataset>) (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            int id = DPUtil.parseInt(param.get("id"));
-            if(id > 0) predicates.add(cb.equal(root.get("id"), id));
-            predicates.add(cb.notEqual(root.get("status"), -1));
-            String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-            if(!DPUtil.empty(name)) {
-                predicates.add(cb.like(root.get("name"), "%" + name + "%"));
-            }
-            return cb.and(predicates.toArray(new Predicate[0]));
-        }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"))));
-        List<?> rows = data.getContent();
-        if(!DPUtil.empty(config.get("withUserInfo"))) {
-            rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
-        }
-        if(!DPUtil.empty(config.get("withStatusText"))) {
-            DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
-        }
-        result.put("page", page);
-        result.put("pageSize", pageSize);
-        result.put("total", data.getTotalElements());
-        result.put("rows", rows);
-        return result;
-    }
-
-    public Map<?, ?> status(String level) {
+    public Map<Integer, String> status() {
         Map<Integer, String> status = new LinkedHashMap<>();
         status.put(1, "启用");
         status.put(2, "禁用");
-        switch (level) {
-            case "default":
-                break;
-            case "full":
-                status.put(-1, "已删除");
-                break;
-            default:
-                return null;
-        }
         return status;
     }
 
+    public Map<String, String> types() {
+        Map<String, String> types = new LinkedHashMap<>();
+        types.put("direct", "直连");
+        types.put("cron", "定时同步");
+        return types;
+    }
+
+    public List<String> fieldTypes() {
+        return Arrays.asList(
+                "string",
+                "integer",
+                "long",
+                "float",
+                "double",
+                "date",
+                "time",
+                "datetime"
+        );
+    }
+
     public Dataset info(Integer id) {
-        if(null == id || id < 1) return null;
-        Optional<Dataset> info = datasetDao.findById(id);
-        return info.isPresent() ? info.get() : null;
+        return info(datasetDao, id);
+    }
+
+    public boolean isMaterialized(String type) {
+        return "cron".equals(type);
+    }
+
+    public boolean changed(Dataset info, Map<?, ?> param) {
+        if (null == info) return true;
+        if (!DPUtil.parseString(param.get("name")).equals(info.getName())) return true;
+        if (!DPUtil.parseString(param.get("type")).equals(info.getType())) return true;
+        if (!DPUtil.parseString(param.get("content")).equals(info.getContent())) return true;
+        if (!DPUtil.implode(",", DPUtil.parseStringList(param.get("partitions"))).equals(info.getPartitions())) return true;
+        return false;
     }
 
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
         int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
-        String collection = DPUtil.trim(DPUtil.parseString(param.get("collection")));
-        int sort = DPUtil.parseInt(param.get("sort"));
+        if(DPUtil.empty(name)) return ApiUtil.result(1001, "数据集名称不能为空", name);
+        if (!ValidateUtil.isSnake(name)) return ApiUtil.result(1009, "名称不合法", name);
+        String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
+        if(!types().containsKey(type)) return ApiUtil.result(1002, "服务方式异常", type);
         int status = DPUtil.parseInt(param.get("status"));
-        String content = DPUtil.parseString(param.get("content"));
-        String description = DPUtil.parseString(param.get("description"));
-        if(param.containsKey("name") || id < 1) {
-            if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
-        }
-        if(param.containsKey("status")) {
-            if(!status("default").containsKey(status)) return ApiUtil.result(1004, "状态参数异常", status);
-        }
+        if(!status().containsKey(status)) return ApiUtil.result(1005, "状态异常", status);
         Dataset info;
         if(id > 0) {
             if(!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
@@ -174,103 +107,260 @@ public class DatasetService extends ServiceBase {
             if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
             info = new Dataset();
         }
-        if(param.containsKey("collection") || null == info.getId()) info.setCollection(collection);
-        if(param.containsKey("name") || null == info.getId()) info.setName(name);
-        if(param.containsKey("content") || null == info.getId()) info.setContent(content);
-        if(param.containsKey("description") || null == info.getId()) info.setDescription(description);
-        if(param.containsKey("sort") || null == info.getId()) info.setSort(sort);
-        if(param.containsKey("status") || null == info.getId()) info.setStatus(status);
-        int uid = rbacService.uid(request);
-        long time = System.currentTimeMillis();
-        info.setUpdatedTime(time);
-        info.setUpdatedUid(uid);
-        if(null == info.getId()) {
-            info.setCreatedTime(time);
-            info.setCreatedUid(uid);
+        int count = datasetDao.exist(name, DPUtil.parseInt(info.getId()));
+        if (count > 0) {
+            return ApiUtil.result(1501, "名称已存在", name);
         }
-        info = datasetDao.save(info);
+        boolean changed = changed(info, param);
+        String oldName = info.getName();
+        String oldType = info.getType();
+        info.setName(name);
+        info.setType(type);
+        info.setExpression(DPUtil.parseString(param.get("expression")));
+        info.setContent(DPUtil.parseString(param.get("content")));
+        info.setPks(DPUtil.implode(",", DPUtil.parseStringList(param.get("pks"))));
+        info.setPartitions(DPUtil.implode(",", DPUtil.parseStringList(param.get("partitions"))));
+        info.setFields(DPUtil.stringify(param.get("fields")));
+        info.setLabels(DPUtil.implode(",", DPUtil.parseStringList(param.get("labels"))));
+        info.setRoleIds(DPUtil.implode(",", DPUtil.parseIntList(param.get("roleIds"))));
+        info.setSort(DPUtil.parseInt(param.get("sort")));
+        info.setStatus(status);
+        info.setDescription(DPUtil.parseString(param.get("description")));
+        if ("cron".equals(type) && DPUtil.empty(info.getExpression())) {
+            return ApiUtil.result(1006, "定时同步数据集的表达式不能为空", null);
+        }
+        if (changed) {
+            Map<String, Object> syncViewResult = syncView(info, oldName, oldType);
+            if (ApiUtil.failed(syncViewResult)) return syncViewResult;
+        }
+        Map<String, Object> syncJobResult = syncJob(info);
+        if (ApiUtil.failed(syncJobResult)) return syncJobResult;
+        info = save(datasetDao, info, rbacService.uid(request));
         return ApiUtil.result(0, null, info);
-
     }
 
-    public boolean delete(List<Integer> ids, int uid) {
-        if(null == ids || ids.size() < 1) return false;
+    public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {
+        ObjectNode result = search(datasetDao, param, (root, query, cb) -> {
+            SpecificationHelper<Dataset> helper = SpecificationHelper.newInstance(root, cb, param);
+            helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id");
+            helper.equalWithIntNotEmpty("status").like("name").equal("type");
+            return cb.and(helper.predicates());
+        }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort");
+        JsonNode rows = format(ApiUtil.rows(result));
+        if(!DPUtil.empty(args.get("withUserInfo"))) {
+            rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
+        }
+        if (!DPUtil.empty(args.get("withRoles"))) {
+            rbacService.fillInfos(rows);
+        }
+        return result;
+    }
+
+    public JsonNode format(JsonNode rows) {
+        fillStatus(rows, status());
+        DPUtil.fillValues(rows, "type", "typeText", types());
+        for (JsonNode row : rows) {
+            ObjectNode node = (ObjectNode) row;
+            List<String> pks = DPUtil.parseStringList(node.at("/pks").asText(""));
+            node.replace("pks", DPUtil.toJSON(pks));
+            List<String> partitions = DPUtil.parseStringList(node.at("/partitions").asText(""));
+            node.replace("partitions", DPUtil.toJSON(partitions));
+            node.replace("fields", DPUtil.parseJSON(node.at("/fields").asText("[]")));
+            List<String> labels = DPUtil.parseStringList(node.at("/labels").asText(""));
+            node.replace("labels", DPUtil.toJSON(labels));
+            List<Integer> roleIds = DPUtil.parseIntList(node.at("/roleIds").asText(""));
+            node.replace("roleIds", DPUtil.toJSON(roleIds));
+        }
+        return rows;
+    }
+
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, "未指定有效记录", ids);
         List<Dataset> list = datasetDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        for (Dataset item : list) {
-            item.setStatus(-1);
-            item.setUpdatedTime(time);
-            item.setUpdatedUid(uid);
-        }
-        datasetDao.saveAll(list);
-        return true;
-    }
-
-    public <T> List<T> fillInfo(List<T> list, String ...properties) {
-        Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
-        if(ids.size() < 1) return list;
-        Map<Integer, Dataset> data = DPUtil.list2map(datasetDao.findAllById(ids), Integer.class, "id");
-        return DPUtil.fillValues(list, properties, "Name", DPUtil.values(data, String.class, "name"));
-    }
-
-    /**
-     * 获取SQL数据集的列结构（使用全局Calcite会话，数据源启动时已自动注册）
-     */
-    public Map<String, Object> sqlSchema(Integer id) {
-        Dataset info = info(id);
-        if (null == info || 1 != info.getStatus()) {
-            return ApiUtil.result(61001, "数据集状态异常", id);
-        }
-        JsonNode content = DPUtil.parseJSON(info.getContent());
-        if (null == content) return ApiUtil.result(1001, "解析数据集配置异常", id);
-        String sql = content.at("/sql").asText();
-        if (DPUtil.empty(sql)) return ApiUtil.result(1002, "SQL语句不能为空", id);
-        try {
-            ArrayNode columns = calciteSession.columnsMeta(sql);
-            for (int i = 0; i < columns.size(); i++) {
-                ObjectNode column = (ObjectNode) columns.get(i);
-                column.put("format", convertFormat(column.get("type").asText()));
+        if (list.isEmpty()) return ApiUtil.result(0, "未检索到有效记录", ids);
+        List<Map<String, Object>> jobs = new ArrayList<>();
+        for (Dataset info : list) {
+            try {
+                trinoService.dropView(info.getName(), isMaterialized(info.getType()));
+            } catch (Exception e) {
+                return ApiUtil.result(1501, String.format("删除视图失败, id: %d, message: %s", info.getId(), e.getMessage()), ids);
             }
-            return ApiUtil.result(0, null, columns);
-        } catch (Exception e) {
-            return ApiUtil.result(5001, "获取数据集结构失败: " + e.getMessage(), null);
+            Map<String, Object> job = new LinkedHashMap<>();
+            job.put("group", DatasetService.class.getName());
+            job.put("name", String.valueOf(info.getId()));
+            jobs.add(job);
         }
+        Map<String, Object> deleteParam = new LinkedHashMap<>();
+        deleteParam.put("jobs", jobs);
+        Map<String, Object> jobResult = RpcUtil.result(cronRpc.delete(deleteParam));
+        if (ApiUtil.failed(jobResult)) {
+            return ApiUtil.result(1502, "删除作业失败: " + ApiUtil.message(jobResult), ids);
+        }
+        boolean removed = remove(datasetDao, ids);
+        return ApiUtil.result(0, "已删除" + removed + "条记录", ids);
     }
 
-    /**
-     * 获取SQL数据集的样例数据（使用全局Calcite会话，数据源启动时已自动注册）
-     */
-    public Map<String, Object> sqlPreview(Integer id, Integer limit) {
+    public Map<String, Object> trigger(Map<?, ?> param) {
+        Integer id = DPUtil.parseInt(param.get("id"));
         Dataset info = info(id);
-        if (null == info || 1 != info.getStatus()) {
-            return ApiUtil.result(61001, "数据集状态异常", id);
+        if (null == info) return ApiUtil.result(1404, "数据集信息不存在", id);
+        if (!"cron".equals(info.getType())) {
+            return ApiUtil.result(1001, "仅定时同步数据集支持手动调度", info.getType());
         }
-        JsonNode content = DPUtil.parseJSON(info.getContent());
-        if (null == content) return ApiUtil.result(1001, "解析数据集配置异常", id);
-        String sql = content.at("/sql").asText();
-        if (DPUtil.empty(sql)) return ApiUtil.result(1002, "SQL语句不能为空", id);
-        if (null == limit || limit < 1) limit = 100;
-        if (limit > 1000) limit = 1000;
+        Map<String, Object> jobParam = jobParam(info);
+        return RpcUtil.result(cronRpc.trigger(jobParam));
+    }
+
+    public Map<String, Object> refresh(Map<?, ?> param) {
+        Integer id = DPUtil.parseInt(param.get("id"));
+        Dataset info = info(id);
+        if (null == info) return ApiUtil.result(1404, "数据集信息不存在", id);
+        if (!"cron".equals(info.getType())) return ApiUtil.result(1001, "仅定时同步数据集支持刷新", info.getType());
+        String sql;
         try {
-            ArrayNode columns = calciteSession.columnsMeta(sql);
-            for (int i = 0; i < columns.size(); i++) {
-                ObjectNode column = (ObjectNode) columns.get(i);
-                column.put("format", convertFormat(column.get("type").asText()));
-            }
-            String previewSql = "SELECT * FROM (" + sql + ") t LIMIT " + limit;
-            ArrayNode rows = calciteSession.query(previewSql);
-            ObjectNode data = DPUtil.objectNode();
-            data.replace("columns", columns);
-            data.replace("rows", rows);
-            return ApiUtil.result(0, null, data);
+            sql = trinoService.refreshView(info.getName());
+            info.setLastSyncedTime(System.currentTimeMillis());
+            datasetDao.save(info);
         } catch (Exception e) {
-            return ApiUtil.result(5001, "获取数据集预览失败: " + e.getMessage(), null);
+            return ApiUtil.result(1500, "刷新物化视图失败", e.getMessage());
+        }
+        return ApiUtil.result(0, null, sql);
+    }
+
+    public MaintainEmitter reload(MaintainEmitter emitter) {
+        if (null == emitter || !emitter.isRunning()) return emitter;
+        Boolean locked = redis.opsForValue().setIfAbsent(
+                RedisKey.datasetReloadLock(),
+                String.valueOf(System.currentTimeMillis()),
+                100,
+                TimeUnit.SECONDS);
+        if (!Boolean.TRUE.equals(locked)) {
+            emitter.error(1502, "数据集正在重建中", null);
+            return emitter;
+        }
+        try {
+            Map<String, String> steps = new LinkedHashMap<>();
+            steps.put("dropSchema", "删除数据集 Schema");
+            steps.put("rebuildViews", "重建数据集视图");
+            steps.put("syncJobs", "同步维护定时任务");
+            emitter.plan(steps);
+            emitter.start("开始重建数据集视图", "dataset");
+            List<Dataset> datasets;
+            try {
+                datasets = datasetDao.findAll((Specification<Dataset>) (root, query, cb) -> cb.equal(root.get("status"), 1), Sort.by("sort", "id"));
+                emitter.step("正在删除数据集 Schema", "dropSchema", 10, 1);
+                trinoService.dropDatasetSchema();
+                trinoService.ensureDatasetSchema();
+                emitter.log("数据集 Schema 已删除并重建", "dropSchema", 20, "success");
+
+                int total = datasets.size();
+                int success = 0;
+                emitter.step("正在重建数据集视图", "rebuildViews", 30, total);
+                for (int index = 0; index < total; index++) {
+                    Dataset info = datasets.get(index);
+                    int percent = 30 + (int) Math.round(65.0 * (index + 1) / Math.max(total, 1));
+                    emitter.log("正在创建数据集视图：" + info.getName() + " (" + (index + 1) + "/" + total + ")", "rebuildViews", percent);
+                    try {
+                        trinoService.createView(info, isMaterialized(info.getType()));
+                        success++;
+                        emitter.log("数据集视图 " + info.getName() + " 创建成功", "rebuildViews", percent, "success", index + 1, total);
+                    } catch (Exception e) {
+                        emitter.log("数据集视图 " + info.getName() + " 创建失败：" + e.getMessage(), "rebuildViews", percent, "warning", index + 1, total);
+                    }
+                }
+                emitter.log("数据集视图重建完成：成功 " + success + " 个，失败 " + (total - success) + " 个", "rebuildViews", 95);
+
+                int jobSuccess = 0;
+                emitter.step("正在同步维护定时任务", "syncJobs", 96, total);
+                for (int index = 0; index < total; index++) {
+                    Dataset info = datasets.get(index);
+                    int percent = 96 + (int) Math.round(4.0 * (index + 1) / Math.max(total, 1));
+                    try {
+                        Map<String, Object> syncJobResult = syncJob(info);
+                        if (ApiUtil.failed(syncJobResult)) {
+                            emitter.log("数据集 " + info.getName() + " 定时任务同步失败：" + ApiUtil.message(syncJobResult), "syncJobs", percent, "warning", index + 1, total);
+                        } else {
+                            jobSuccess++;
+                            emitter.log("数据集 " + info.getName() + " 定时任务同步成功", "syncJobs", percent, "success", index + 1, total);
+                        }
+                    } catch (Exception e) {
+                        emitter.log("数据集 " + info.getName() + " 定时任务同步异常：" + e.getMessage(), "syncJobs", percent, "warning", index + 1, total);
+                    }
+                }
+                emitter.log("定时任务同步完成：成功 " + jobSuccess + " 个，失败 " + (total - jobSuccess) + " 个", "syncJobs", 100);
+                ObjectNode result = DPUtil.objectNode();
+                result.put("total", total);
+                result.put("success", success);
+                result.put("jobSuccess", jobSuccess);
+                boolean failed = success < total || jobSuccess < total;
+                emitter.result(failed ? 1500 : 0, failed ? "部分数据集重建或定时任务同步失败" : "全部成功", result);
+                return emitter;
+            } catch (Exception e) {
+                emitter.error(1500, "重建数据集视图失败：" + e.getMessage(), e.getMessage());
+                return emitter;
+            }
+        } finally {
+            redis.delete(RedisKey.datasetReloadLock());
         }
     }
 
-    private String convertFormat(String typeName) {
-        if (null == typeName) return "Unknown";
-        return DSCore.jdbc2format(typeName);
+    public Map<String, Object> syncView(Dataset info, String oldName, String oldType) {
+        try {
+            trinoService.dropView(oldName, isMaterialized(oldType));
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除旧视图失败", e.getMessage());
+        }
+        try {
+            trinoService.createView(info, isMaterialized(info.getType()));
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "创建数据集视图失败", e.getMessage());
+        }
+        return ApiUtil.result(0, null, info);
     }
 
+    public Map<String, Object> syncJob(Dataset info) {
+        Map<String, Object> param = jobParam(info);
+        if ("cron".equals(info.getType())) {
+            return RpcUtil.result(cronRpc.sync(param));
+        }
+        return RpcUtil.result(cronRpc.delete(deleteParam(info)));
+    }
+
+    private Map<String, Object> deleteParam(Dataset info) {
+        Map<String, Object> job = new LinkedHashMap<>();
+        job.put("group", DatasetService.class.getName());
+        job.put("name", String.valueOf(info.getId()));
+        Map<String, Object> param = new LinkedHashMap<>();
+        param.put("jobs", List.of(job));
+        return param;
+    }
+
+    private Map<String, Object> jobParam(Dataset info) {
+        Map<String, Object> param = new LinkedHashMap<>();
+        param.put("group", DatasetService.class.getName());
+        param.put("name", String.valueOf(info.getId()));
+        if ("cron".equals(info.getType())) {
+            param.put("expression", List.of(info.getExpression()));
+        }
+        param.put("app", "bi");
+        param.put("uri", "/rpc/datasetRefresh");
+        Map<String, Object> args = new LinkedHashMap<>();
+        args.put("id", info.getId());
+        args.put("name", info.getName());
+        param.put("args", args);
+        return param;
+    }
+
+    public JsonNode fillInfo(JsonNode rows, String ...properties) {
+        return fillInfo(datasetDao, rows, properties);
+    }
+
+    public JsonNode fillInfos(JsonNode rows, String ...properties) {
+        return fillInfos(datasetDao, rows, properties);
+    }
+
+    @Override
+    public JsonNode filter(JsonNode json) {
+        return format(json);
+    }
 }

@@ -1,2 +1,19 @@
 server:
   port: 7815
+
+fs:
+  bi:
+    trino:
+      url: jdbc:trino://127.0.0.1:8443
+      user: root
+      password: admin888
+      integration-key: change-me
+      integration-self: http://hostmachine:7815
+      iceberg:
+        bucket: iceberg
+        hive-metastore-uri: thrift://hive-metastore:9083
+        s3-endpoint: http://minio:9000
+        s3-region: us-east-1
+        s3-access-key: admin
+        s3-secret-key: admin888
+        s3-path-style-access: true

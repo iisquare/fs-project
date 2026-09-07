@@ -7,8 +7,9 @@ import DataApi from '@/api/member/DataApi';
 import ApiUtil from '@/utils/ApiUtil';
 import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
-import DataTable from '@/components/Data/DataTable.vue';
-import DataSchema from '@/components/Data/DataSchema.vue';
+import DataSchemaTable from '@/components/Data/DataSchemaTable.vue';
+import DataSchemaText from '@/components/Data/DataSchemaText.vue';
+import DataFieldSelect from '@/components/Data/DataFieldSelect.vue';
 
 const route = useRoute()
 const router = useRouter()
@@ -19,7 +20,7 @@ const columns = ref([
   { prop: 'id', label: 'ID' },
   { prop: 'serial', label: '标识' },
   { prop: 'name', label: '名称' },
-  { prop: 'pks', label: '主键' },
+  { prop: 'pks', label: '主键', slot: 'pks' },
   { prop: 'sort', label: '排序' },
   { prop: 'statusText', label: '状态' },
 ])
@@ -147,7 +148,11 @@ const active = ref('table')
       @selection-change="(s: any) => selection = s"
     >
       <el-table-column type="selection" />
-      <TableColumn :columns="columns" />
+      <TableColumn :columns="columns">
+        <template #pks="scope">
+          <DataFieldSelect :model-value="scope.row.pks" multiple />
+        </template>
+      </TableColumn>
       <el-table-column label="操作">
         <template #default="scope">
           <el-button link @click="handleShow(scope)" v-permit="'member:data:'">查看</el-button>
@@ -166,9 +171,12 @@ const active = ref('table')
       <el-descriptions-item label="修改时间">{{ DateUtil.format(form.updatedTime) }}</el-descriptions-item>
       <el-descriptions-item label="排序">{{ form.sort }}</el-descriptions-item>
       <el-descriptions-item label="描述" :span="3">{{ form.description }}</el-descriptions-item>
-      <el-descriptions-item label="主键" :span="3">{{ form.pks }}</el-descriptions-item>
+      <el-descriptions-item label="主键" :span="3">
+        <DataFieldSelect v-if="form.pks?.length" :model-value="form.pks" multiple />
+        <span v-else>暂无</span>
+      </el-descriptions-item>
     </el-descriptions>
-    <DataTable v-model="form.fields" :types="config.types" />
+    <DataSchemaTable v-model="form.fields" :types="config.types" />
   </el-drawer>
   <el-drawer v-model="formVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true" size="80%">
     <template #header="{ close, titleId, titleClass }">
@@ -204,9 +212,7 @@ const active = ref('table')
         </el-col>
         <el-col :span="16">
           <el-form-item label="主键" prop="icon">
-            <el-select v-model="form.pks" multiple filterable allow-create :reserve-keyword="false">
-              <el-option v-for="(item, index) in form.fields" :key="index" :label="item.name" :value="item.name" />
-            </el-select>
+            <DataFieldSelect v-model="form.pks" v-model:fields="form.fields" editable multiple />
           </el-form-item>
         </el-col>
         <el-col :span="8">
@@ -218,10 +224,10 @@ const active = ref('table')
     </el-form>
     <el-tabs v-model="active">
       <el-tab-pane label="字段列表" name="table">
-        <DataTable v-model="form.fields" :types="config.types" editable />
+        <DataSchemaTable v-model="form.fields" :types="config.types" editable />
       </el-tab-pane>
       <el-tab-pane label="字段编辑器" name="schema">
-        <DataSchema v-model="form.fields" :types="config.types" />
+        <DataSchemaText v-model="form.fields" :types="config.types" />
       </el-tab-pane>
     </el-tabs>
   </el-drawer>

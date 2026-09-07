@@ -38,6 +38,10 @@ export const layouts = [{
     meta: { title: '调度明细', permit: ['cron:flow:'] },
     component: () => import('@/views/server/cron/flowStage.vue')
   }, {
+    path: '/server/cron/rpcLog',
+    meta: { title: 'RPC日志', permit: ['cron:rpcLog:'] },
+    component: () => import('@/views/server/cron/rpcLog.vue')
+  }, {
     path: '/server/cron/diagram',
     meta: { title: '任务编排', permit: ['cron:flow:add', 'cron:flow:modify'], fit: true },
     component: () => import('@/views/server/cron/diagram.vue')

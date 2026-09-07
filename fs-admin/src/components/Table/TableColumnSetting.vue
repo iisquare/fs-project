@@ -20,6 +20,10 @@ const model = defineModel()
 const table = defineModel('table', { type: Object as PropType<TableInstance>, required: false })
 const emit = defineEmits(['change'])
 
+const props = defineProps({
+  text: { type: Boolean, default: false },
+})
+
 const dropdown = ref<DropdownInstance>()
 const handleSubmit = () => {
   model.value = (function transform (data: any) {
@@ -88,7 +92,7 @@ onMounted(() => {
 
 <template>
   <el-dropdown ref="dropdown" placement="bottom-end" trigger="click" popper-class="fs-table-dropdown">
-    <el-button :icon="ElementPlusIcons.Operation" circle title="设置表头列" />
+    <el-button :icon="ElementPlusIcons.Operation" :circle="!props.text" :text="props.text" title="设置表头列" />
     <template #dropdown>
       <el-space class="header flex-end" spacer="/">
         <el-button link @click="tree?.setCheckedKeys(treeCheckedKeys = TreeUtil.ids(treeData))">全选</el-button>

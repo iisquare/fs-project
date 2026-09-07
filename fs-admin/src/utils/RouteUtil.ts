@@ -12,8 +12,8 @@ const RouteUtil = {
   },
   pagination (filters: any, pagination: any = {}) {
     return Object.assign({
-      [this.paginationPageKey]: filters.page,
-      pageSize: filters.pageSize,
+      [this.paginationPageKey]: filters?.page ?? 1,
+      pageSize: filters?.pageSize ?? 15,
       total: 0,
       background: true,
       layout: 'total, sizes, prev, pager, next, jumper',
@@ -53,7 +53,7 @@ const RouteUtil = {
   },
   query2filter (route: any, filters: any = {}, pagination = true) {
     return Object.assign(pagination ? {
-      [this.paginationPageKey]: 1,
+      page: 1,
       pageSize: 15,
     } : {}, filters, this.decode(route.query[this.filterKey]))
   },

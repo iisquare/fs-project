@@ -18,6 +18,7 @@ import com.iisquare.fs.web.member.entity.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.session.Session;
 import org.springframework.session.data.redis.RedisIndexedSessionRepository;
 import org.springframework.stereotype.Service;
@@ -120,7 +121,21 @@ public class RbacService extends RbacServiceBase {
             result.put(entry.getKey().toString(), entry.getValue());
         }
         ServletUtil.setSession(request, result);
+        Object uid = result.get("uid");
+        if (!DPUtil.empty(uid)) { // 建立会话索引，便于批量失效同一用户的所有会话
+            ServletUtil.setSession(request, FindByIndexNameSessionRepository.PRINCIPAL_NAME_INDEX_NAME, String.valueOf(uid));
+        }
         return result;
+    }
+
+    public int removeSessions(int uid) {
+        int count = 0;
+        Map<String, ? extends Session> sessions = sessionRepository.findByPrincipalName(String.valueOf(uid));
+        for (String id : sessions.keySet()) {
+            sessionRepository.deleteById(id);
+            count++;
+        }
+        return count;
     }
 
     public Map<String, Object> session(String id) {

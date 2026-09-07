@@ -154,7 +154,7 @@ public class ApiService implements DisposableBean {
         httpRequest.setConfig(RequestConfig.custom()
                 .setConnectTimeout(connectTimeout)
                 .setSocketTimeout(readTimeout)
-                .setConnectionRequestTimeout(5000)
+                .setConnectionRequestTimeout(connectTimeout + readTimeout)
                 .build());
     }
 

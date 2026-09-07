@@ -10,6 +10,25 @@
         </choose>
     </sql>
 
+    <select id="statisticRows" resultType="map">
+        SELECT
+            uid,
+            auth_id AS authId,
+            provider_id AS providerId,
+            model_id AS modelId,
+            status,
+            finish_reason AS finishReason,
+            place,
+            begin_time AS beginTime,
+            credit_amount AS creditAmount,
+            usage_prompt_cached_tokens AS cachedTokens,
+            usage_prompt_tokens AS inputTokens,
+            usage_completion_tokens AS outputTokens,
+            usage_total_tokens AS totalTokens
+        FROM fs_lm_usage
+        ${where}
+    </select>
+
     <select id="summary" resultType="map">
         SELECT
             COUNT(*) as calls,

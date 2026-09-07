@@ -9,7 +9,7 @@ import TableUtil from '@/utils/TableUtil';
 import DataApi from '@/api/member/DataApi';
 import RoleApi from '@/api/member/RoleApi';
 import DataFilter from '@/components/Data/DataFilter.vue';
-import DataSelect from '@/components/Data/DataSelect.vue';
+import DataFieldCheckbox from '@/components/Data/DataFieldCheckbox.vue';
 import DateUtil from '@/utils/DateUtil';
 
 const route = useRoute()
@@ -178,7 +178,7 @@ const fields = computed(() => {
     <el-divider content-position="left">行权限</el-divider>
     <DataFilter v-model:="form.filters" :fields="fields" />
     <el-divider content-position="left">列权限</el-divider>
-    <DataSelect v-model="form.fields" :fields="fields" />
+    <DataFieldCheckbox v-model="form.fields" :fields="fields" />
   </el-drawer>
   <el-drawer v-model="formVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true" size="80%">
     <template #header="{ close, titleId, titleClass }">
@@ -222,7 +222,7 @@ const fields = computed(() => {
     <el-divider content-position="left">行权限</el-divider>
     <DataFilter v-model:="form.filters" :fields="fields" editable />
     <el-divider content-position="left">列权限</el-divider>
-    <DataSelect v-model="form.fields" :fields="fields" editable />
+    <DataFieldCheckbox v-model="form.fields" :fields="fields" editable />
   </el-drawer>
 </template>
 

@@ -5,6 +5,8 @@ import java.util.Map;
 
 public interface UsageMapper {
 
+    List<Map<String, Object>> statisticRows(Map<String, Object> params);
+
     List<Map<String, Object>> summary(Map<String, Object> params);
 
     List<Map<String, Object>> rank(Map<String, Object> params);

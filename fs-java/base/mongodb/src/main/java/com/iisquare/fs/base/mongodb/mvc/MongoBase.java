@@ -102,7 +102,10 @@ public abstract class MongoBase extends MongoCore {
         return MongoUtil.id2string(set);
     }
 
-    public BulkWriteResult bulkWrite(List<Document> documents, String... insertFields) {
+    /**
+     * 更新插入，insertFields部分字段不做更新
+     */
+    public BulkWriteResult upsert(List<Document> documents, String... insertFields) {
         List<WriteModel<Document>> list = new ArrayList<>();
         for (Document document : documents) {
             document = filtration(MongoUtil.id2object(document, true));
@@ -126,6 +129,33 @@ public abstract class MongoBase extends MongoCore {
         return collection().bulkWrite(list);
     }
 
+    /**
+     * 替换：批量按_id替换，不存在则插入
+     */
+    public BulkWriteResult replace(List<Document> documents) {
+        List<WriteModel<Document>> writes = new ArrayList<>();
+        ReplaceOptions replaceOptions = new ReplaceOptions().upsert(true);
+        for (Document doc : documents) {
+            writes.add(new ReplaceOneModel<>(
+                    Filters.eq("_id", doc.get("_id")), doc, replaceOptions));
+        }
+        return collection().bulkWrite(writes);
+    }
+
+    /**
+     * 追加：批量仅插入不存在的文档，已存在则跳过
+     */
+    public BulkWriteResult append(List<Document> documents) {
+        List<WriteModel<Document>> writes = new ArrayList<>();
+        UpdateOptions updateOptions = new UpdateOptions().upsert(true);
+        for (Document doc : documents) {
+            writes.add(new UpdateOneModel<>(
+                    Filters.eq("_id", doc.get("_id")),
+                    new Document("$setOnInsert", doc), updateOptions));
+        }
+        return collection().bulkWrite(writes);
+    }
+
     public long delete(String... ids) {
         if(ids.length < 1) return 0;
         Set<ObjectId> args = new HashSet<>();
@@ -133,6 +163,11 @@ public abstract class MongoBase extends MongoCore {
             args.add(new ObjectId(id));
         }
         return delete(Filters.in(FIELD_ID, args));
+    }
+
+    public long delete(List<String> ids) {
+        if(null == ids || ids.isEmpty()) return 0;
+        return delete(Filters.in(FIELD_ID, ids));
     }
 
     public long delete(Bson filter) {

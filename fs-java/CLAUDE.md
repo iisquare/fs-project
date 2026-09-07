@@ -113,7 +113,6 @@ gradle :web:admin:test --tests com.iisquare.fs.web.admin.controller.IndexControl
 - base:elasticsearch - Elasticsearch
 - base:mongodb - MongoDB
 - base:neo4j - Neo4j
-- base:calcite - Apache Calcite SQL parser
 - base:minio - MinIO object storage
 - base:zookeeper - ZooKeeper
 - base:jsoup - HTML parsing

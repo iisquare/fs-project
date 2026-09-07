@@ -1,177 +1,106 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import type { FormInstance, TableInstance } from 'element-plus'
+import { onMounted, ref } from 'vue';
+import { ElMessage } from 'element-plus';
+import type { FormInstance, TableInstance } from 'element-plus';
 import RouteUtil from '@/utils/RouteUtil'
-import { useRoute } from 'vue-router'
-import DatasetApi, { buildDatasetContent, parseDatasetContent } from '@/api/bi/DatasetApi'
-import DatasourceApi from '@/api/bi/DatasourceApi'
-import ApiUtil from '@/utils/ApiUtil'
-import DateUtil from '@/utils/DateUtil'
-import TableUtil from '@/utils/TableUtil'
-import CodeEditor from '@/components/Editor/CodeEditor.vue'
-import DataTable from '@/components/Data/DataTable.vue'
+import { useRoute, useRouter } from 'vue-router';
+import DatasetApi from '@/api/bi/DatasetApi';
+import OlapApi from '@/api/bi/OlapApi';
+import ApiUtil from '@/utils/ApiUtil';
+import DateUtil from '@/utils/DateUtil';
+import TableUtil from '@/utils/TableUtil';
+import RoleApi from '@/api/member/RoleApi';
+import DataSchemaTable from '@/components/Data/DataSchemaTable.vue';
+import DataFieldSelect from '@/components/Data/DataFieldSelect.vue';
 
 const route = useRoute()
+const router = useRouter()
 const tableRef = ref<TableInstance>()
 const loading = ref(false)
 const searchable = ref(true)
 const columns = ref([
-  { prop: 'id', label: 'ID', width: '70' },
-  { prop: 'name', label: '数据集名称', minWidth: '160' },
-  { prop: 'sqlPreview', label: 'SQL 摘要', minWidth: '200' },
-  { prop: 'statusText', label: '状态', width: '100' },
-  { prop: 'updatedTime', label: '更新时间', width: '170' },
+  { prop: 'id', label: 'ID' },
+  { prop: 'name', label: '名称' },
+  { prop: 'typeText', label: '服务方式' },
+  { prop: 'expression', label: '定时表达式', hide: true },
+  { prop: 'content', label: '查询语句', hide: true },
+  { prop: 'pks', label: '主键字段', hide: true },
+  { prop: 'partitions', label: '分区字段', hide: true },
+  { prop: 'labels', label: '标签', slot: 'labels' },
+  { prop: 'role', label: '授权角色', slot: 'role' },
+  { prop: 'sort', label: '排序' },
+  { prop: 'statusText', label: '状态' },
+  { prop: 'description', label: '描述', hide: true },
+  { prop: 'lastSyncedTime', label: '同步时间', formatter: DateUtil.render },
 ])
-const config = ref({
+const config: any = ref({
   ready: false,
-  status: {} as Record<string, string>,
+  status: {},
+  types: {},
+  fieldTypes: [],
 })
 const rows = ref([])
 const filterRef = ref<FormInstance>()
-const filters = ref(RouteUtil.query2filter(route, { advanced: false }))
+const filters = ref(RouteUtil.query2filter(route, { advanced: false, roleIds: [] }))
 const pagination = ref(RouteUtil.pagination(filters.value))
 const selection: any = ref([])
-
-// 可用数据源列表（用于关联选择）
-const datasources = ref<any[]>([])
-
-const loadDatasources = () => {
-  DatasourceApi.list({ page: 1, pageSize: 200, status: 1 }).then((result: any) => {
-    const data = ApiUtil.data(result)
-    datasources.value = data?.rows || data?.list || []
-  }).catch(() => {})
-}
-
-function enrichRow(row: any) {
-  const { sql } = parseDatasetContent(row.content)
-  row.sqlPreview = sql ? sql.substring(0, 80) + (sql.length > 80 ? '...' : '') : '-'
-}
-
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
   tableRef.value?.clearSelection()
   Object.assign(filters.value, RouteUtil.pagination2filter(pagination.value, keepPage))
-  filter2query && RouteUtil.filter2query(route, undefined as any, filters.value)
+  filter2query && RouteUtil.filter2query(route, router, filters.value)
   loading.value = true
   DatasetApi.list(filters.value).then((result: any) => {
     RouteUtil.result2pagination(pagination.value, result)
-    const data = ApiUtil.data(result)
-    const list = data?.rows || data?.list || []
-    list.forEach(enrichRow)
-    rows.value = list
+    rows.value = result.data.rows
   }).catch(() => {}).finally(() => {
     loading.value = false
   })
 }
-
 onMounted(() => {
   handleRefresh(false, true)
-  loadDatasources()
-  DatasetApi.config().then(result => {
+  DatasetApi.config().then((result: any) => {
     Object.assign(config.value, { ready: true }, ApiUtil.data(result))
   }).catch(() => {})
 })
-
-// ==================== 表单 ====================
 const infoVisible = ref(false)
 const formVisible = ref(false)
 const formLoading = ref(false)
+const triggerLoading = ref<any>(null)
+const fieldsLoading = ref(false)
 const form: any = ref({})
 const formRef: any = ref<FormInstance>()
-const formSourceIds = ref<number[]>([])
-const formColumns = ref<{ name: string; title: string; type: string }[]>([])
-const formSql = ref('')
-const columnTypes = ref(['String', 'Integer', 'Long', 'Double', 'Boolean', 'Date', 'Timestamp', 'Unknown'])
-const columnEditable = ref(true)
-
-const rules = {
+const rules = ref({
   name: [{ required: true, message: '请输入数据集名称', trigger: 'blur' }],
-}
-
-const sourceIdOptions = computed(() => {
-  return datasources.value.map((ds: any) => ({
-    value: ds.id,
-    label: `${ds.name} (${ds.typeText || ds.type})`,
-  }))
+  type: [{ required: true, message: '请选择服务方式', trigger: 'change' }],
+  status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 })
-
 const handleAdd = () => {
-  form.value = { name: '', description: '' }
-  formSourceIds.value = []
-  formSql.value = ''
-  formColumns.value = []
+  form.value = {
+    status: '1',
+    type: 'direct',
+    labels: [],
+    roleIds: [],
+    fields: [],
+  }
   formVisible.value = true
 }
-
 const handleShow = (scope: any) => {
-  const row = scope.row
-  DatasetApi.info(row.id).then((result: any) => {
-    const info = ApiUtil.data(result)
-    const { sourceIds, sql, table, collection } = parseDatasetContent(info.content)
-    form.value = {
-      id: info.id,
-      name: info.name,
-      status: info.status,
-      statusText: info.statusText,
-      description: info.description || '',
-      collection: collection || '',
-      createdTime: info.createdTime,
-      updatedTime: info.updatedTime,
-    }
-    formSourceIds.value = sourceIds
-    formSql.value = sql
-    formColumns.value = table
-    infoVisible.value = true
-  }).catch(() => {})
+  form.value = Object.assign({}, scope.row)
+  infoVisible.value = true
 }
-
 const handleEdit = (scope: any) => {
-  const row = scope.row
-  loading.value = true
-  DatasetApi.info(row.id).then((result: any) => {
-    const info = ApiUtil.data(result)
-    const { sourceIds, sql, table, collection } = parseDatasetContent(info.content)
-    form.value = {
-      id: info.id,
-      name: info.name,
-      status: info.status,
-      description: info.description || '',
-      collection: collection || '',
-    }
-    formSourceIds.value = sourceIds
-    formSql.value = sql
-    formColumns.value = table.map((col: any) => ({
-      name: col.name || '',
-      title: col.title || col.name || '',
-      type: col.type || '',
-    }))
-    formVisible.value = true
-  }).catch(() => {}).finally(() => { loading.value = false })
+  form.value = Object.assign({}, scope.row, {
+    status: scope.row.status + '',
+    labels: scope.row.labels || [],
+    roleIds: scope.row.roleIds || [],
+  })
+  formVisible.value = true
 }
-
 const handleSubmit = () => {
   formRef.value?.validate((valid: boolean) => {
     if (!valid || formLoading.value) return
     formLoading.value = true
-    const table = formColumns.value
-      .filter(c => c.name)
-      .map(c => ({ name: c.name, title: c.title || c.name, type: c.type || 'String', format: '', enabled: true }))
-    const content = buildDatasetContent({
-      sourceIds: formSourceIds.value,
-      sql: formSql.value,
-      table,
-      collection: form.value.collection || '',
-    })
-    const params: any = {
-      name: form.value.name,
-      content,
-      description: form.value.description,
-    }
-    if (form.value.id) {
-      params.id = form.value.id
-    } else {
-      params.status = 1
-    }
-    DatasetApi.save(params, { success: true }).then(() => {
+    DatasetApi.save(form.value, { success: true }).then(() => {
       handleRefresh(false, true)
       formVisible.value = false
     }).catch(() => {}).finally(() => {
@@ -179,7 +108,15 @@ const handleSubmit = () => {
     })
   })
 }
-
+const handleTrigger = (scope: any) => {
+  if (triggerLoading.value) return
+  triggerLoading.value = scope.row.id
+  DatasetApi.trigger(scope.row.id, { success: true }).then(() => {
+    handleRefresh(false, true)
+  }).catch(() => {}).finally(() => {
+    triggerLoading.value = null
+  })
+}
 const handleDelete = () => {
   TableUtil.selection(selection.value).then((ids: any) => {
     loading.value = true
@@ -190,88 +127,60 @@ const handleDelete = () => {
     })
   }).catch(() => {})
 }
-
-// ==================== SQL Schema & Preview ====================
-const schemaVisible = ref(false)
-const schemaLoading = ref(false)
-const schemaDatasetId = ref(0)
-const schemaDatasetName = ref('')
-const schemaColumns = ref<any[]>([])
-
-const handleOpenSchema = (scope: any) => {
-  schemaDatasetId.value = scope.row.id
-  schemaDatasetName.value = scope.row.name
-  schemaColumns.value = []
-  schemaVisible.value = true
-  schemaLoading.value = true
-  DatasetApi.sqlSchema(scope.row.id).then((result: any) => {
-    const data = ApiUtil.data(result)
-    if (data && typeof data === 'object') {
-      if (Array.isArray(data)) {
-        schemaColumns.value = data
-      } else {
-        schemaColumns.value = Object.entries(data).map(([name, info]: [string, any]) => ({
-          name,
-          type: info?.type || '',
-          format: info?.format || '',
-        }))
-      }
-    }
-  }).catch(() => {}).finally(() => {
-    schemaLoading.value = false
+const handleLog = (scope: any, env: Event) => {
+  RouteUtil.forward(route, router, env, {
+    path: '/server/cron/rpcLog',
+    query: RouteUtil.filter({ jobName: String(scope.row.id), jobGroup: 'com.iisquare.fs.web.bi.service.DatasetService' })
   })
 }
-
-const previewVisible = ref(false)
-const previewLoading = ref(false)
-const previewDatasetId = ref(0)
-const previewDatasetName = ref('')
-const previewColumns = ref<string[]>([])
-const previewRows = ref<any[]>([])
-const previewLimit = ref(100)
-
-const handleOpenPreview = (scope: any) => {
-  previewDatasetId.value = scope.row.id
-  previewDatasetName.value = scope.row.name
-  previewColumns.value = []
-  previewRows.value = []
-  previewLimit.value = 100
-  previewVisible.value = true
-  loadPreview()
-}
-
-const loadPreview = () => {
-  previewLoading.value = true
-  DatasetApi.sqlPreview(previewDatasetId.value, previewLimit.value).then((result: any) => {
-    const data = ApiUtil.data(result)
-    if (data) {
-      if (data.columns) {
-        previewColumns.value = data.columns.map((c: any) => typeof c === 'string' ? c : c.name)
+const active = ref('table')
+const handleUpdateFields = () => {
+  const sql = (form.value.content || '').trim()
+  if (!sql) {
+    ElMessage.warning('请先填写查询语句')
+    return
+  }
+  if (fieldsLoading.value) return
+  fieldsLoading.value = true
+  const previousFields: Record<string, any> = {}
+  ;(form.value.fields || []).forEach((item: any) => {
+    if (item?.name) previousFields[item.name] = item
+  })
+  OlapApi.query({ sql, limit: 1 }).then((result: any) => {
+    const columns = (ApiUtil.data(result) || {}).columns || []
+    form.value.fields = columns.map((item: any) => {
+      const previous = previousFields[item.name]
+      const previousType = previous?.type || ''
+      const type = config.value.fieldTypes.includes(previousType)
+        ? previousType
+        : (item.type || previousType || '')
+      return {
+        name: item.name,
+        type,
+        title: previous?.title || item.title || '',
+        comment: previous?.comment || item.comment || '',
       }
-      previewRows.value = data.rows || data || []
-      if (previewRows.value.length > 0 && previewColumns.value.length === 0) {
-        previewColumns.value = Object.keys(previewRows.value[0])
-      }
-    }
+    })
   }).catch(() => {}).finally(() => {
-    previewLoading.value = false
+    fieldsLoading.value = false
   })
 }
 </script>
 
 <template>
-  <!-- ==================== 搜索栏 ==================== -->
   <el-card :bordered="false" shadow="never" class="fs-table-search" v-show="searchable">
     <form-search ref="filterRef" :model="filters">
       <form-search-item label="名称" prop="name">
-        <el-input v-model="filters.name" clearable placeholder="输入名称搜索" />
+        <el-input v-model="filters.name" clearable />
       </form-search-item>
-      <form-search-item label="ID" prop="id">
-        <el-input v-model="filters.id" clearable placeholder="按 ID 搜索" />
+      <form-search-item label="服务方式" prop="type">
+        <el-select v-model="filters.type" placeholder="请选择" clearable>
+          <el-option v-for="(value, key) in config.types" :key="key" :value="key" :label="value" />
+        </el-select>
       </form-search-item>
       <form-search-item label="状态" prop="status">
-        <el-select v-model="filters.status" placeholder="全部状态" clearable>
-          <el-option v-for="(v, k) in config.status" :key="k" :value="k" :label="v" />
+        <el-select v-model="filters.status" placeholder="请选择" clearable>
+          <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
         </el-select>
       </form-search-item>
       <form-search-item>
@@ -280,8 +189,6 @@ const loadPreview = () => {
       </form-search-item>
     </form-search>
   </el-card>
-
-  <!-- ==================== 表格 ==================== -->
   <el-card :bordered="false" shadow="never" class="fs-table-card">
     <div class="fs-table-toolbar flex-between">
       <el-space>
@@ -297,286 +204,139 @@ const loadPreview = () => {
     <el-table
       ref="tableRef"
       :data="rows"
-      :row-key="(r: any) => r.id"
+      :row-key="(record: any) => record.id"
       :border="true"
       v-loading="loading"
       table-layout="auto"
       @selection-change="(s: any) => selection = s"
     >
-      <el-table-column type="selection" width="42" />
+      <el-table-column type="selection" />
       <TableColumn :columns="columns">
-        <template #name="scope">
-          <span class="cell-name">{{ scope.row.name }}</span>
+        <template #labels="scope">
+          <el-space><el-tag v-for="item in scope.row.labels" :key="item">{{ item }}</el-tag></el-space>
         </template>
-        <template #sqlPreview="scope">
-          <code class="cell-sql">{{ scope.row.sqlPreview }}</code>
-        </template>
-        <template #statusText="scope">
-          <span class="cell-status" :class="`cell-status--${scope.row.status}`">
-            {{ scope.row.statusText || config.status?.[scope.row.status] || '未知' }}
-          </span>
-        </template>
-        <template #updatedTime="scope">
-          {{ DateUtil.format(scope.row.updatedTime) }}
+        <template #role="scope">
+          <el-space><el-tag v-for="item in scope.row.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
         </template>
       </TableColumn>
-      <el-table-column label="操作" width="220">
+      <el-table-column label="操作">
         <template #default="scope">
-          <el-button link type="primary" @click="handleShow(scope)" v-permit="'bi:dataset:'">查看</el-button>
-          <el-button link type="primary" @click="handleEdit(scope)" v-permit="'bi:dataset:modify'">编辑</el-button>
-          <el-button link type="primary" @click="handleOpenSchema(scope)">结构</el-button>
-          <el-button link type="primary" @click="handleOpenPreview(scope)">预览</el-button>
+          <el-button v-if="scope.row.type === 'cron'" link @click="handleTrigger(scope)" :loading="triggerLoading === scope.row.id" v-permit="'bi:dataset:'">触发</el-button>
+          <el-button link @click="(e: any) => handleLog(scope, e)" v-permit="'bi:dataset:'">日志</el-button>
+          <el-button link @click="handleShow(scope)" v-permit="'bi:dataset:'">查看</el-button>
+          <el-button link @click="handleEdit(scope)" v-permit="'bi:dataset:modify'">编辑</el-button>
         </template>
       </el-table-column>
     </el-table>
     <TablePagination v-model="pagination" @change="handleRefresh(true, true)" />
   </el-card>
-
-  <!-- ==================== 查看抽屉 ==================== -->
-  <el-drawer v-model="infoVisible" title="数据集详情" size="680px">
-    <template v-if="form.id">
-      <div class="info-hero">
-        <span class="info-hero__name">{{ form.name }}</span>
-        <span class="info-dot-status" :class="`info-dot-status--${form.status}`">
-          {{ form.statusText || config.status?.[form.status] || '未知' }}
-        </span>
-      </div>
-
-      <div class="info-section">
-        <div class="info-section__title">基本信息</div>
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="ID">{{ form.id }}</el-descriptions-item>
-          <el-descriptions-item label="数据集名称">{{ form.name }}</el-descriptions-item>
-          <el-descriptions-item label="描述" :span="2">{{ form.description || '-' }}</el-descriptions-item>
-        </el-descriptions>
-      </div>
-
-      <div class="info-section" v-if="formSourceIds.length">
-        <div class="info-section__title">关联数据源</div>
-        <el-tag v-for="sid in formSourceIds" :key="sid" style="margin-right:8px;margin-bottom:4px" type="info">
-          ds_{{ sid }}
-        </el-tag>
-      </div>
-
-      <div class="info-section" v-if="formSql">
-        <div class="info-section__title">查询 SQL</div>
-        <CodeEditor v-model="formSql" :height="200" mode="sql" />
-      </div>
-
-      <div class="info-section" v-if="formColumns.length">
-        <div class="info-section__title">字段定义</div>
-        <DataTable v-model="formColumns" v-model:types="columnTypes" />
-      </div>
-
-      <div class="info-section">
-        <div class="info-section__title">元信息</div>
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-descriptions-item>
-          <el-descriptions-item label="更新时间">{{ DateUtil.format(form.updatedTime) }}</el-descriptions-item>
-        </el-descriptions>
-      </div>
-    </template>
+  <el-drawer v-model="infoVisible" :title="'信息查看 - ' + form.id" size="60%">
+    <layout-heading title="基础信息" />
+    <el-descriptions :column="2" label-width="120px" border>
+      <el-descriptions-item label="名称">{{ form.name }}</el-descriptions-item>
+      <el-descriptions-item label="服务方式">{{ form.typeText }}</el-descriptions-item>
+      <el-descriptions-item label="定时表达式" :span="2">{{ form.expression || '暂无' }}</el-descriptions-item>
+      <el-descriptions-item label="最后同步时间" :span="2">
+        {{ form.lastSyncedTime ? DateUtil.format(form.lastSyncedTime) : '暂无' }}
+      </el-descriptions-item>
+      <el-descriptions-item label="排序">{{ form.sort }}</el-descriptions-item>
+      <el-descriptions-item label="状态">{{ form.statusText }}</el-descriptions-item>
+      <el-descriptions-item label="标签">
+        <el-space v-if="form.labels?.length"><el-tag v-for="item in form.labels" :key="item">{{ item }}</el-tag></el-space>
+        <span v-else>暂无</span>
+      </el-descriptions-item>
+      <el-descriptions-item label="授权角色">
+        <el-space v-if="form.roles?.length"><el-tag v-for="item in form.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
+        <span v-else>不限制</span>
+      </el-descriptions-item>
+      <el-descriptions-item label="描述" :span="2">{{ form.description || '暂无' }}</el-descriptions-item>
+      <el-descriptions-item label="创建者">{{ form.createdUserInfo?.name }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-descriptions-item>
+      <el-descriptions-item label="修改者">{{ form.updatedUserInfo?.name }}</el-descriptions-item>
+      <el-descriptions-item label="修改时间">{{ DateUtil.format(form.updatedTime) }}</el-descriptions-item>
+      <el-descriptions-item label="查询语句" :span="2">
+        <code-editor v-model="form.content" mode="sql" :height="120" resizable />
+      </el-descriptions-item>
+      <el-descriptions-item label="主键字段" :span="2">
+        <DataFieldSelect v-if="form.pks?.length" :model-value="form.pks" multiple />
+        <span v-else>暂无</span>
+      </el-descriptions-item>
+      <el-descriptions-item label="分区字段" :span="2">
+        <DataFieldSelect v-if="form.partitions?.length" :model-value="form.partitions" multiple />
+        <span v-else>暂无</span>
+      </el-descriptions-item>
+    </el-descriptions>
+    <layout-heading title="字段配置" style="margin-top:15px" />
+    <DataSchemaTable v-model="form.fields" :types="config.fieldTypes" />
   </el-drawer>
-
-  <!-- ==================== 编辑/新增抽屉 ==================== -->
-  <el-drawer
-    v-model="formVisible"
-    :close-on-click-modal="false"
-    :show-close="false"
-    :destroy-on-close="true"
-    size="760px"
-  >
+  <el-drawer v-model="formVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true" size="60%">
     <template #header="{ close, titleId, titleClass }">
-      <h4 :id="titleId" :class="titleClass" style="margin:0;font-size:16px">
-        {{ form.id ? '编辑数据集' : '创建数据集' }}
-      </h4>
+      <h4 :id="titleId" :class="titleClass">{{ '信息' + (form.id ? ('修改 - ' + form.id) : '添加') }}</h4>
       <el-space>
-        <el-button type="primary" @click="handleSubmit" :loading="formLoading">保存</el-button>
+        <el-button type="primary" @click="handleSubmit" :loading="formLoading">确定</el-button>
         <el-button @click="close">取消</el-button>
       </el-space>
     </template>
-
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" class="ds-form">
-
-      <div class="ds-block">
-        <div class="ds-block__title">
-          <span class="ds-block__bar"></span>
-          基本信息
-        </div>
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="form.name" placeholder="例如：用户订单统计" maxlength="60" show-word-limit />
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input type="textarea" v-model="form.description" placeholder="数据集的用途或描述" :rows="2" />
-        </el-form-item>
-      </div>
-
-      <div class="ds-block">
-        <div class="ds-block__title">
-          <span class="ds-block__bar"></span>
-          关联数据源
-        </div>
-        <el-form-item label="数据源">
-          <el-select
-            v-model="formSourceIds"
-            multiple
-            filterable
-            placeholder="选择要关联的数据源（可在 SQL 中通过 ds_{id} 引用）"
-            style="width:100%"
-          >
-            <el-option
-              v-for="opt in sourceIdOptions"
-              :key="opt.value"
-              :value="opt.value"
-              :label="opt.label"
-            />
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="auto">
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="名称" prop="name">
+          <el-input v-model="form.name" />
+        </el-descriptions-item>
+        <el-descriptions-item label="服务方式" prop="type">
+          <el-radio-group v-model="form.type">
+            <el-radio v-for="(value, key) in config.types" :key="key" :value="key" :label="value" />
+          </el-radio-group>
+        </el-descriptions-item>
+        <el-descriptions-item label="定时表达式" :span="2">
+          <form-cron v-model="form.expression" placeholder="Quartz 格式" />
+        </el-descriptions-item>
+        <el-descriptions-item label="标签">
+          <el-select v-model="form.labels" multiple filterable allow-create :reserve-keyword="false" default-first-option placeholder="输入后回车创建标签" />
+        </el-descriptions-item>
+        <el-descriptions-item label="授权角色">
+          <form-select v-model="form.roleIds" :callback="RoleApi.list" multiple clearable />
+        </el-descriptions-item>
+        <el-descriptions-item label="排序">
+          <form-input-number v-model="form.sort" />
+        </el-descriptions-item>
+        <el-descriptions-item label="状态" prop="status">
+          <el-select v-model="form.status" placeholder="请选择">
+            <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
           </el-select>
-        </el-form-item>
-        <div v-if="formSourceIds.length" style="margin-top:-8px;margin-bottom:12px;color:var(--el-text-color-secondary);font-size:12px">
-          引用方式：
-          <el-tag v-for="sid in formSourceIds" :key="sid" size="small" style="margin-right:4px" type="info">
-            ds_{{ sid }}
-          </el-tag>
-        </div>
-      </div>
-
-      <div class="ds-block">
-        <div class="ds-block__title">
-          <span class="ds-block__bar"></span>
-          SQL 查询
-        </div>
-        <el-form-item label="SQL">
-          <CodeEditor v-model="formSql" :height="220" mode="sql" />
-        </el-form-item>
-        <div style="margin-top:-8px;color:var(--el-text-color-secondary);font-size:12px">
-          使用 <code>ds_{id}</code> 引用已关联的数据源表，例如：<code>SELECT * FROM ds_1.users</code>
-        </div>
-      </div>
-
-      <div class="ds-block">
-        <div class="ds-block__title">
-          <span class="ds-block__bar"></span>
-          字段定义
-          <span class="ds-block__sub">可选，用于声明输出字段的元数据</span>
-        </div>
-        <DataTable v-model="formColumns" v-model:types="columnTypes" v-model:editable="columnEditable" />
-      </div>
-
+        </el-descriptions-item>
+        <el-descriptions-item label="描述" :span="2">
+          <el-input type="textarea" v-model="form.description" />
+        </el-descriptions-item>
+        <el-descriptions-item label="查询语句" :span="2" prop="content">
+          <el-alert title="避免非物化视图（直连）数据集间相互查询引用" type="info" show-icon />
+          <code-editor v-model="form.content" mode="sql" :height="120" resizable />
+        </el-descriptions-item>
+        <el-descriptions-item label="主键字段" :span="2">
+          <DataFieldSelect v-model="form.pks" v-model:fields="form.fields" editable multiple />
+        </el-descriptions-item>
+        <el-descriptions-item label="分区字段" :span="2">
+          <DataFieldSelect v-model="form.partitions" v-model:fields="form.fields" editable multiple placeholder="请选择分区字段，留空则不分区" />
+        </el-descriptions-item>
+      </el-descriptions>
     </el-form>
+    <layout-heading title="字段配置" description="与 SQL 查询字段保持一致，更新字段会保留已填写的名称和注释" style="margin-top:15px">
+      <template #extra>
+        <el-button text @click="handleUpdateFields" :loading="fieldsLoading">更新字段</el-button>
+      </template>
+    </layout-heading>
+    <el-tabs v-model="active">
+      <el-tab-pane label="字段列表" name="table">
+        <DataSchemaTable v-model="form.fields" :types="config.fieldTypes" editable />
+      </el-tab-pane>
+      <el-tab-pane label="字段编辑器" name="schema">
+        <DataSchemaText v-model="form.fields" :types="config.fieldTypes" />
+      </el-tab-pane>
+    </el-tabs>
   </el-drawer>
-
-  <!-- ==================== 结构查看对话框 ==================== -->
-  <el-dialog v-model="schemaVisible" :title="`SQL 结构 - ${schemaDatasetName}`" width="700px" destroy-on-close>
-    <div v-loading="schemaLoading">
-      <el-table :data="schemaColumns" max-height="450" border size="small" v-if="schemaColumns.length">
-        <el-table-column type="index" label="#" width="50" />
-        <el-table-column prop="name" label="字段名" min-width="180" />
-        <el-table-column prop="type" label="类型" width="160" />
-        <el-table-column prop="format" label="格式" min-width="120" />
-      </el-table>
-      <el-empty v-if="!schemaLoading && schemaColumns.length === 0" description="无法解析 SQL 结构" />
-    </div>
-  </el-dialog>
-
-  <!-- ==================== 数据预览对话框 ==================== -->
-  <el-dialog v-model="previewVisible" :title="`数据预览 - ${previewDatasetName}`" width="1000px" destroy-on-close>
-    <div v-loading="previewLoading">
-      <div style="margin-bottom:12px;display:flex;align-items:center;gap:12px">
-        <span>返回行数：</span>
-        <el-input-number v-model="previewLimit" :min="1" :max="500" @change="loadPreview" />
-        <el-button @click="loadPreview">刷新</el-button>
-      </div>
-      <el-table
-        v-if="previewRows.length"
-        :data="previewRows"
-        max-height="450"
-        border
-        size="small"
-        style="width:100%;overflow-x:auto"
-      >
-        <el-table-column
-          v-for="col in previewColumns"
-          :key="col"
-          :prop="col"
-          :label="col"
-          :width="Math.max(120, Math.min(200, 1800 / previewColumns.length))"
-          show-overflow-tooltip
-        />
-      </el-table>
-      <el-empty v-if="!previewLoading && previewRows.length === 0" description="无数据或 SQL 执行失败" />
-    </div>
-  </el-dialog>
 </template>
 
 <style lang="scss" scoped>
-.cell-name { font-weight: 500; }
-
-.cell-sql {
-  font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
-  font-size: 12px;
-  background: var(--el-fill-color-light);
-  padding: 2px 6px;
-  border-radius: 3px;
-  word-break: break-all;
-}
-
-.cell-status {
-  font-size: 13px;
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    margin-right: 6px;
-    vertical-align: middle;
-    margin-top: -1px;
-  }
-  &--1::before { background: var(--el-color-success); }
-  &--2::before { background: var(--el-color-warning); }
-  &---1::before { background: var(--el-color-danger); }
-}
-
-.info-hero {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 24px; padding-bottom: 16px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-  &__name { font-size: 18px; font-weight: 600; color: var(--el-text-color-primary); }
-}
-
-.info-dot-status {
-  font-size: 13px; flex-shrink: 0;
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    margin-right: 6px;
-    vertical-align: middle; margin-top: -1px;
-  }
-  &--1 { color: var(--el-color-success); &::before { background: var(--el-color-success); } }
-  &--2 { color: var(--el-color-warning); &::before { background: var(--el-color-warning); } }
-  &---1 { color: var(--el-color-danger); &::before { background: var(--el-color-danger); } }
-}
-
-.info-section {
-  margin-bottom: 20px;
-  &__title { font-size: 14px; font-weight: 600; color: var(--el-text-color-primary); margin-bottom: 10px; }
-}
-
-.ds-form {
-  padding: 4px 0 32px;
-  :deep(.el-form-item) { margin-bottom: 18px; }
-}
-
-.ds-block {
-  margin-bottom: 28px;
-  &__title {
-    display: flex; align-items: center; gap: 10px;
-    margin-bottom: 20px;
-    font-size: 15px; font-weight: 600;
-    color: var(--el-text-color-primary);
-  }
-  &__bar { width: 3px; height: 18px; border-radius: 2px; flex-shrink: 0; background: var(--el-color-primary); }
-  &__sub { font-weight: 400; font-size: 12px; color: var(--el-text-color-placeholder); }
+.el-descriptions {
+  margin-bottom: 15px;
 }
 </style>

@@ -1,6 +1,5 @@
 package com.iisquare.fs.web.core.rbac;
 
-@PermitRpc
-public abstract class MaintainControllerBase extends RpcControllerBase {
+public abstract class MaintainControllerBase extends PermitControllerBase {
 
 }

@@ -1,0 +1,146 @@
+<script setup lang="ts">
+/**
+ * 数据字段表格编辑器 - 以表格形式维护数据模型字段，支持增删、排序（置顶/上移/下移/底部）。
+ *
+ * @v-model  {FieldRow[]}  字段行数组（双向绑定主值）
+ * @prop     {String[]}     types    - 可选的字段类型列表，通过 v-model:types 传入
+ * @prop     {Boolean}      editable - 是否可编辑，默认 false，通过 v-model:editable 传入
+ *
+ * 字段行结构 (FieldRow):
+ *   { name: string, title: string, type: string, comment: string }
+ *   name    - 字段名（必填）
+ *   title   - 显示名称（选填，默认为字段名）
+ *   type    - 数据类型（必填）
+ *   comment - 注释信息（选填）
+ *
+ * @example
+ * <data-schema-table v-model="fields" v-model:types="['String', 'Integer', 'Date']" v-model:editable="true" />
+ */
+import { nextTick, ref } from 'vue';
+import * as ElementPlusIcons from '@element-plus/icons-vue';
+import type { TableInstance } from 'element-plus';
+import DataUtil from '@/utils/DataUtil';
+import UIUtil from '@/utils/UIUtil';
+
+const model: any = defineModel()
+const tableRef = ref<TableInstance>()
+const types = defineModel<String[]>('types', { default: () => [] })
+const editable = defineModel('editable', { type: Boolean, default: false })
+const selection: any = ref([])
+const handleAdd = () => {
+  model.value.push({
+    name: '',
+    title: '',
+    type: '',
+    comment: '',
+  })
+}
+const handleDelete = () => {
+  model.value = DataUtil.removeArrayItem(model.value, selection.value)
+}
+const toggleRowSelection = (rows: any, selected: boolean = true) => {
+  nextTick(() => {
+    rows.forEach((row: any) => {
+      tableRef.value?.toggleRowSelection(row, selected)
+    })
+  })
+}
+const handleTop = () => {
+  model.value = selection.value.concat(DataUtil.removeArrayItem(model.value, selection.value))
+  toggleRowSelection(selection.value)
+}
+const handleUp = () => {
+  let index = model.value.length - 1
+  selection.value.forEach((row: any) => {
+    index = Math.min(index, model.value.indexOf(row))
+  })
+  index = Math.max(0, index - 1)
+  const rows = DataUtil.removeArrayItem(model.value, selection.value)
+  rows.splice(index, 0, ...selection.value)
+  model.value = rows
+  toggleRowSelection(selection.value)
+}
+const handleDown = () => {
+  let index = 0
+  selection.value.forEach((row: any) => {
+    index = Math.max(index, model.value.indexOf(row))
+  })
+  const rows = DataUtil.removeArrayItem(model.value, selection.value)
+  index = Math.min(rows.length, index + 1)
+  rows.splice(index, 0, ...selection.value)
+  model.value = rows
+  toggleRowSelection(selection.value)
+}
+const handleBottom = () => {
+  model.value = DataUtil.removeArrayItem(model.value, selection.value).concat(selection.value)
+  toggleRowSelection(selection.value)
+}
+</script>
+<template>
+  <template v-if="editable">
+    <el-space class="toolbar">
+      <el-space>
+        <button-add @click="handleAdd" />
+        <button-delete :disabled="selection.length === 0" @click="handleDelete" />
+      </el-space>
+      <el-button-group>
+        <el-button :disabled="selection.length === 0" :icon="ElementPlusIcons.Upload" @click="handleTop" />
+        <el-button :disabled="selection.length === 0" :icon="ElementPlusIcons.Top" @click="handleUp" />
+        <el-button :disabled="selection.length === 0" :icon="ElementPlusIcons.Bottom" @click="handleDown" />
+        <el-button :disabled="selection.length === 0" :icon="ElementPlusIcons.Download" @click="handleBottom" />
+      </el-button-group>
+    </el-space>
+    <el-table
+      ref="tableRef"
+      :data="model"
+      :border="true"
+      table-layout="auto"
+      @selection-change="(s: any) => selection = s"
+    >
+      <el-table-column type="selection" />
+      <el-table-column label="字段">
+        <template #default="scope">
+          <el-input v-model="scope.row.name" placeholder="必填，字段名称" />
+        </template>
+      </el-table-column>
+      <el-table-column label="名称">
+        <template #default="scope">
+          <el-input v-model="scope.row.title" :placeholder="scope.row.name || '选填，默认为字段名称'" />
+        </template>
+      </el-table-column>
+      <el-table-column label="类型">
+        <template #default="scope">
+          <el-autocomplete v-model="scope.row.type" :fetch-suggestions="query => UIUtil.arraySuggestions(types, query)" placeholder="必填，数据类型" />
+        </template>
+      </el-table-column>
+      <el-table-column label="注释">
+        <template #default="scope">
+          <el-input v-model="scope.row.comment" placeholder="选填，注释信息" />
+        </template>
+      </el-table-column>
+    </el-table>
+  </template>
+  <template v-else>
+    <el-table
+      :data="model"
+      :border="true"
+      table-layout="auto"
+    >
+      <el-table-column prop="name" label="字段" />
+      <el-table-column label="名称">
+        <template #default="scope">{{ scope.row.title ? scope.row.title : scope.row.name }}</template>
+      </el-table-column>
+      <el-table-column prop="type" label="类型" />
+      <el-table-column prop="comment" label="注释" />
+    </el-table>
+  </template>
+</template>
+
+<style lang="scss" scoped>
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  width: 100%;
+}
+</style>

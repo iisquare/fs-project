@@ -45,12 +45,12 @@ const fieldVisible = ref(false)
           <span>字段列表</span>
           <el-button link :icon="ElementPlusIcons.EditPen" @click="fieldVisible=true" title="编辑字段" />
         </el-form-item>
-        <DataTable v-model="model.data.fields" :types="config.fieldTypes" />
+        <DataSchemaTable v-model="model.data.fields" :types="config.fieldTypes" />
       </el-form>
     </el-tab-pane>
   </el-tabs>
   <el-dialog v-model="fieldVisible" title="字段编辑" draggable>
-    <DataTable v-model="model.data.fields" :types="config.fieldTypes" editable />
+    <DataSchemaTable v-model="model.data.fields" :types="config.fieldTypes" editable />
   </el-dialog>
 </template>
 

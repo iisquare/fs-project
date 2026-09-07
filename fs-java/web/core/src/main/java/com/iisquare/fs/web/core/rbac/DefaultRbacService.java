@@ -28,16 +28,21 @@ public class DefaultRbacService extends RbacServiceBase {
     }
 
     /**
-     * 获取当前登录用户的个人信息及所属的角色信息
+     * 获取当前登录用户的个人信息及所属的启用角色信息
      * {
      *     id: Integer,
+     *     serial: String,
      *     name: String,
-     *     status: Integer,
-     *     roles: [{
-     *         id: Integer,
-     *         name: String
-     *     }]
+     *     email: String,
+     *     phone: String,
+     *     roles: {
+     *         "1": {
+     *             id: Integer,
+     *             name: String
+     *         }
+     *     }
      * }
+     * 用户不存在或未启用时 data 为 null，不包含status字段。
      */
     @Override
     public JsonNode identity(HttpServletRequest request) {
@@ -50,6 +55,15 @@ public class DefaultRbacService extends RbacServiceBase {
     @Override
     public JsonNode identity(Integer uid) {
         return RpcUtil.data(memberRpc.post("/rbac/identityById", DPUtil.buildMap("id", uid)), false);
+    }
+
+    /**
+     * 根据用户ID列表批量获取用户信息（含所属的全部角色，包含未启用角色），结果以用户ID为键
+     */
+    public JsonNode userInfos(Collection<Integer> uids) {
+        if (null == uids || uids.isEmpty()) return DPUtil.objectNode();
+        JsonNode data = post("infos", DPUtil.buildMap("userIds", uids), true);
+        return null == data ? null : data.at("/users");
     }
 
     /**
@@ -84,7 +98,7 @@ public class DefaultRbacService extends RbacServiceBase {
             }
         }
         if(ids.isEmpty()) return list;
-        JsonNode userInfos = post("listByIds", DPUtil.buildMap("ids", ids), true);
+        JsonNode userInfos = userInfos(ids);
         if (null == userInfos) return null;
         if(userInfos.isEmpty()) return list;
         for (Object item : list) {
@@ -113,7 +127,7 @@ public class DefaultRbacService extends RbacServiceBase {
         if(null == json || json.isEmpty() || properties.length < 1) return json;
         Set<Integer> ids = DPUtil.values(json, Integer.class, properties);
         if(ids.isEmpty()) return json;
-        JsonNode userInfos = post("listByIds", DPUtil.buildMap("ids", ids), true);
+        JsonNode userInfos = userInfos(ids);
         if (null == userInfos) return null;
         return DPUtil.fillValues(json, true, properties, DPUtil.suffix(properties, fromSuffix, toSuffix), userInfos);
     }

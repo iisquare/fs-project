@@ -406,7 +406,9 @@ public class ApproveService extends ServiceBase {
         Set<String> ids = new HashSet<>();
         ids.add(instance.get("startUserId").asText());
         ids.addAll(DPUtil.values((ArrayNode) workflow.get("historicTaskInstances"), String.class, "assignee"));
-        JsonNode userInfos = RpcUtil.data(memberRpc.post("/rbac/listByIds", DPUtil.buildMap("ids", ids)), false);
+        JsonNode data = RpcUtil.data(memberRpc.post("/rbac/infos", DPUtil.buildMap("userIds", ids)), false);
+        if (null == data) return false;
+        JsonNode userInfos = data.at("/users");
         if (null == userInfos) return false;
         if(userInfos.size() < 1) return true;
         instance.put("startUserName", userInfos.at("/" + instance.get("startUserId").asText() + "/name").asText());

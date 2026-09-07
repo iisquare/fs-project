@@ -19,6 +19,7 @@ const columns = ref([
   { prop: 'typeText', label: '数据源类型' },
   { prop: 'summary', label: '摘要' },
   { prop: 'sort', label: '排序' },
+  { prop: 'olapable', label: 'OLAP可用', slot: 'olapable', width: 100 },
   { prop: 'statusText', label: '状态' },
 ])
 const config: any = ref({
@@ -60,11 +61,14 @@ const rules = ref({
   type: [{ required: true, message: '请选择数据源类型', trigger: 'change' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 })
+const lastTestResult = ref<any>(null)
 const handleAdd = () => {
   form.value = {
     status: '1',
+    olapable: 0,
     content: {},
   }
+  lastTestResult.value = null
   formVisible.value = true
 }
 const handleShow = (scope: any) => {
@@ -74,7 +78,9 @@ const handleShow = (scope: any) => {
 const handleEdit = (scope: any) => {
   form.value = Object.assign({}, scope.row, {
     status: scope.row.status + '',
+    olapable: scope.row.olapable ?? 0,
   })
+  lastTestResult.value = null
   formVisible.value = true
 }
 const handleSubmit = () => {
@@ -103,7 +109,11 @@ const handleTest = () => {
   formRef.value?.validate((valid: boolean) => {
     if (!valid || formLoading.value) return
     formLoading.value = true
-    DatasourceApi.test(form.value, { success: true }).then(() => {}).catch(() => {}).finally(() => {
+    DatasourceApi.test(form.value, { success: true }).then((result: any) => {
+      lastTestResult.value = result
+    }).catch((result: any) => {
+      lastTestResult.value = result
+    }).finally(() => {
       formLoading.value = false
     })
   })
@@ -135,8 +145,8 @@ const handleTest = () => {
   <el-card :bordered="false" shadow="never" class="fs-table-card">
     <div class="fs-table-toolbar flex-between">
       <el-space>
-        <button-add v-permit="'lm:model:add'" @click="handleAdd" />
-        <button-delete v-permit="'lm:model:delete'" :disabled="selection.length === 0" @click="handleDelete" />
+        <button-add v-permit="'bi:datasource:add'" @click="handleAdd" />
+        <button-delete v-permit="'bi:datasource:delete'" :disabled="selection.length === 0" @click="handleDelete" />
       </el-space>
       <el-space>
         <button-search @click="searchable = !searchable" />
@@ -155,14 +165,14 @@ const handleTest = () => {
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns">
-        <template #role="scope">
-          <el-space><el-tag v-for="item in scope.row.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
+        <template #olapable="scope">
+          <el-tag :type="scope.row.olapable ? 'success' : 'info'">{{ scope.row.olapable ? '是' : '否' }}</el-tag>
         </template>
       </TableColumn>
       <el-table-column label="操作">
         <template #default="scope">
-          <el-button link @click="handleShow(scope)" v-permit="'lm:model:'">查看</el-button>
-          <el-button link @click="handleEdit(scope)" v-permit="'lm:model:modify'">编辑</el-button>
+          <el-button link @click="handleShow(scope)" v-permit="'bi:datasource:'">查看</el-button>
+          <el-button link @click="handleEdit(scope)" v-permit="'bi:datasource:modify'">编辑</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -176,6 +186,9 @@ const handleTest = () => {
         <el-descriptions-item label="类型">{{ form.typeText }}</el-descriptions-item>
         <el-descriptions-item label="排序">{{ form.sort }}</el-descriptions-item>
         <el-descriptions-item label="状态">{{ form.statusText }}</el-descriptions-item>
+        <el-descriptions-item label="配置参数" :span="2">
+          <el-checkbox v-model="form.olapable" disabled>作为OLAP数据源</el-checkbox>
+        </el-descriptions-item>
         <el-descriptions-item label="描述" :span="2">{{ form.description || '暂无' }}</el-descriptions-item>
         <el-descriptions-item label="创建者">{{ form.createdUserInfo?.name }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-descriptions-item>
@@ -183,13 +196,29 @@ const handleTest = () => {
         <el-descriptions-item label="修改时间">{{ DateUtil.format(form.updatedTime) }}</el-descriptions-item>
       </el-descriptions>
       <layout-heading title="连接配置" />
-      <el-descriptions border :column="2" label-width="100px" v-if="['mysql', 'doris'].includes(form.type)">
+      <el-descriptions border :column="2" label-width="100px" v-if="['mysql', 'doris', 'postgresql'].includes(form.type)">
         <el-descriptions-item label="主机地址">{{ form.content?.host }}</el-descriptions-item>
         <el-descriptions-item label="端口">{{ form.content?.port }}</el-descriptions-item>
+        <el-descriptions-item label="数据库名" :span="2">{{ form.content?.database }}</el-descriptions-item>
         <el-descriptions-item label="用户名">{{ form.content?.username }}</el-descriptions-item>
         <el-descriptions-item label="密码"><form-password v-model="form.content.password" /></el-descriptions-item>
-        <el-descriptions-item label="数据库" :span="2">{{ form.content?.database }}</el-descriptions-item>
         <el-descriptions-item label="附加参数" :span="2">{{ form.content?.paramsQueryString || '暂无' }}</el-descriptions-item>
+      </el-descriptions>
+      <el-descriptions border :column="2" label-width="100px" v-else-if="form.type === 'elasticsearch'">
+        <el-descriptions-item label="地址" :span="2">{{ form.content?.uris }}</el-descriptions-item>
+        <el-descriptions-item label="用户名">{{ form.content?.username }}</el-descriptions-item>
+        <el-descriptions-item label="密码"><form-password v-model="form.content.password" /></el-descriptions-item>
+      </el-descriptions>
+      <el-descriptions border :column="2" label-width="150px" v-else-if="form.type === 'mongodb'">
+        <el-descriptions-item label="连接地址" :span="2">{{ form.content?.uri }}</el-descriptions-item>
+        <el-descriptions-item label="用户名">{{ form.content?.username }}</el-descriptions-item>
+        <el-descriptions-item label="密码"><form-password v-model="form.content.password" /></el-descriptions-item>
+        <el-descriptions-item label="认证库">{{ form.content?.authSource }}</el-descriptions-item>
+        <el-descriptions-item label="连接超时(ms)">{{ form.content?.connectTimeout }}</el-descriptions-item>
+        <el-descriptions-item label="读取超时(ms)">{{ form.content?.readTimeout }}</el-descriptions-item>
+        <el-descriptions-item label="最小连接池">{{ form.content?.minSize }}</el-descriptions-item>
+        <el-descriptions-item label="最大连接池">{{ form.content?.maxSize }}</el-descriptions-item>
+        <el-descriptions-item label="最大等待时间(ms)" :span="2">{{ form.content?.maxWaitTime }}</el-descriptions-item>
       </el-descriptions>
       <el-empty v-else description="暂无配置项" />
     </el-form>
@@ -221,6 +250,9 @@ const handleTest = () => {
             <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
           </el-select>
         </el-descriptions-item>
+        <el-descriptions-item label="配置参数" :span="2">
+          <el-checkbox v-model="form.olapable">作为OLAP数据源</el-checkbox>
+        </el-descriptions-item>
         <el-descriptions-item label="描述信息" :span="2">
           <el-input type="textarea" v-model="form.description" />
         </el-descriptions-item>
@@ -230,15 +262,34 @@ const handleTest = () => {
           <el-button @click="handleTest" :loading="formLoading" text>测试连接</el-button>
         </template>
       </layout-heading>
-      <el-descriptions border :column="2" label-width="100px" v-if="['mysql', 'doris'].includes(form.type)">
+      <el-alert :type="ApiUtil.failed(lastTestResult) ? 'warning' : 'success'" show-icon :title="lastTestResult?.message" :description="lastTestResult?.data" :closable="false" v-if="lastTestResult" />
+      <el-descriptions border :column="2" label-width="100px" v-if="['mysql', 'doris', 'postgresql'].includes(form.type)">
         <el-descriptions-item label="主机地址"><el-input v-model="form.content.host" /></el-descriptions-item>
         <el-descriptions-item label="端口"><form-input-number v-model="form.content.port" /></el-descriptions-item>
+        <el-descriptions-item label="数据库名" :span="2">
+          <el-input v-model="form.content.database" placeholder="数据库名可为空；Postgres建议填写，不指定时默认连接用户同名数据库。" />
+        </el-descriptions-item>
         <el-descriptions-item label="用户名"><el-input v-model="form.content.username" /></el-descriptions-item>
         <el-descriptions-item label="密码"><el-input type="password" v-model="form.content.password" show-password /></el-descriptions-item>
-        <el-descriptions-item label="数据库" :span="2"><el-input v-model="form.content.database" /></el-descriptions-item>
         <el-descriptions-item label="附加参数" :span="2">
           <el-input type="textarea" v-model="form.content.paramsQueryString" placeholder="额外的JDBC连接字符串" />
         </el-descriptions-item>
+      </el-descriptions>
+      <el-descriptions border :column="2" label-width="100px" v-else-if="form.type === 'elasticsearch'">
+        <el-descriptions-item label="地址" :span="2"><el-input v-model="form.content.uris" placeholder="例如: http://localhost:9200" /></el-descriptions-item>
+        <el-descriptions-item label="用户名"><el-input v-model="form.content.username" /></el-descriptions-item>
+        <el-descriptions-item label="密码"><el-input type="password" v-model="form.content.password" show-password /></el-descriptions-item>
+      </el-descriptions>
+      <el-descriptions border :column="2" label-width="150px" v-else-if="form.type === 'mongodb'">
+        <el-descriptions-item label="连接地址" :span="2"><el-input v-model="form.content.uri" placeholder="例如: mongodb://localhost:27017/" /></el-descriptions-item>
+        <el-descriptions-item label="用户名"><el-input v-model="form.content.username" placeholder="可选，使用URI内的凭据时可不填" /></el-descriptions-item>
+        <el-descriptions-item label="密码"><el-input type="password" v-model="form.content.password" show-password placeholder="可选，使用URI内的凭据时可不填" /></el-descriptions-item>
+        <el-descriptions-item label="认证库"><el-input v-model="form.content.authSource" placeholder="admin" /></el-descriptions-item>
+        <el-descriptions-item label="连接超时(ms)"><form-input-number v-model="form.content.connectTimeout" :min="0" :step="1000" placeholder="3000" /></el-descriptions-item>
+        <el-descriptions-item label="读取超时(ms)"><form-input-number v-model="form.content.readTimeout" :min="0" :step="1000" placeholder="15000" /></el-descriptions-item>
+        <el-descriptions-item label="最小连接池"><form-input-number v-model="form.content.minSize" :min="0" placeholder="0" /></el-descriptions-item>
+        <el-descriptions-item label="最大连接池"><form-input-number v-model="form.content.maxSize" :min="1" placeholder="100" /></el-descriptions-item>
+        <el-descriptions-item label="最大等待时间(ms)" :span="2"><form-input-number v-model="form.content.maxWaitTime" :min="0" :step="100" placeholder="1000" /></el-descriptions-item>
       </el-descriptions>
       <el-empty v-else description="暂无配置项" />
     </el-form>
@@ -248,5 +299,8 @@ const handleTest = () => {
 <style lang="scss" scoped>
 .el-descriptions {
   margin-bottom: 15px;
+}
+.el-alert {
+  word-break: break-all;
 }
 </style>

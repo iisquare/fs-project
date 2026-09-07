@@ -40,6 +40,9 @@ public class DatasourceService extends JPAServiceBase {
         Map<String, String> types = new LinkedHashMap<>();
         types.put("mysql", "MySQL");
         types.put("doris", "Apache Doris");
+        types.put("postgresql", "PostgreSQL");
+        types.put("mongodb", "MongoDB");
+        types.put("elasticsearch", "Elasticsearch");
         return types;
     }
 
@@ -64,11 +67,16 @@ public class DatasourceService extends JPAServiceBase {
             if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
             info = new Datasource();
         }
+        int count = datasourceDao.exist(name, DPUtil.parseInt(info.getId()));
+        if (count > 0) {
+            return ApiUtil.result(1501, "名称已存在", name);
+        }
         info.setName(name);
         info.setType(type);
         info.setContent(DPUtil.stringify(param.get("content")));
         info.setSort(DPUtil.parseInt(param.get("sort")));
         info.setStatus(status);
+        info.setOlapable(DPUtil.parseBoolean(param.get("olapable")) ? 1 : 0);
         info.setDescription(DPUtil.parseString(param.get("description")));
         info = save(datasourceDao, info, rbacService.uid(request));
         return ApiUtil.result(0, null, info);
@@ -96,6 +104,7 @@ public class DatasourceService extends JPAServiceBase {
         Map<String, String> types = types();
         for (JsonNode row : rows) {
             ObjectNode node = (ObjectNode) row;
+            node.put("olapable", 1 == node.at("/olapable").asInt(0));
             JsonNode content = DPUtil.parseJSON(node.at("/content").asText(), k -> DPUtil.objectNode());
             node.replace("content", content);
             DatasourceConnector connector = DatasourceConnector.connector(node.at("/type").asText(), content);
@@ -114,6 +123,13 @@ public class DatasourceService extends JPAServiceBase {
 
     public JsonNode fillInfos(JsonNode rows, String ...properties) {
         return fillInfos(datasourceDao, rows, properties);
+    }
+
+    public Map<String, Object> test(Map<?, ?> param, HttpServletRequest request) {
+        String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
+        JsonNode config = DPUtil.toJSON(param.get("content"), ObjectNode.class);
+        DatasourceConnector connector = DatasourceConnector.connector(type, config);
+        return connector.test();
     }
 
 }

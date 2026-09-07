@@ -1,127 +1,91 @@
 // 基础样式，可被其他项目或独立页面复用
 @use "@/assets/mixin.scss" as *;
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-a {
-  text-decoration: none;
-}
-a:hover {
-  text-decoration: none;
-}
-textarea {
-  box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+a { text-decoration: none; }
+a:hover { text-decoration: none; }
+textarea { box-sizing: border-box; }
 
-.flex-center {
-  @include flex-center();
-}
+.flex-center { @include flex-center(); }
 
-.flex-end {
-  @include flex-end();
-}
+.flex-end { @include flex-end(); }
 
-.flex-start {
-  @include flex-start();
-}
+.flex-start { @include flex-start(); }
 
-.flex-between {
-  @include flex-between();
-}
+.flex-between { @include flex-between(); }
 
-.flex-start-column {
-  @include flex-start-column();
-}
+.flex-start-column { @include flex-start-column(); }
 
-.flex-end-column {
-  @include flex-end-column();
-}
+.flex-end-column { @include flex-end-column(); }
 
-.flex-column {
-  @include flex-column();
-}
+.flex-column { @include flex-column(); }
 
-.flex-row {
-  @include flex-row();
-}
+.flex-row { @include flex-row(); }
 
-.flex-wrap {
-  @include flex-wrap();
-}
+.flex-wrap { @include flex-wrap(); }
 
-.text-wrap {
-  @include text-wrap();
-}
+.text-wrap { @include text-wrap(); }
 
 .multiline-text { white-space: pre-line; }
 
 // https://www.tailwindcss.cn/
 
-.w-full {
-  width: 100%;
-}
+.w-full { width: 100%; }
 
-.w-screen {
-  width: 100vw;
-}
+.w-screen { width: 100vw; }
 
-.h-full {
-  height: 100%;
-}
+.h-full { height: 100%; }
 
-.h-screen {
-  height: 100vh;
-}
+.h-screen { height: 100vh; }
 
-.wh-full {
-  width: 100%;
-  height: 100%;
-}
+.wh-full { width: 100%; height: 100%; }
 
-.wh-screen {
-  width: 100vw;
-  height: 100vh;
-}
+.wh-screen { width: 100vw; height: 100vh; }
 
-.m-20 {
-  margin: 20px;
-}
+.m-10 { margin: 10px; }
+.mt-10 { margin-top: 10px; }
+.mb-10 { margin-bottom: 10px; }
+.ml-10 { margin-left: 10px; }
+.mr-10 { margin-right: 10px; }
 
-.mt-20 {
-  margin-top: 20px;
-}
+.m-15 { margin: 15px; }
+.mt-15 { margin-top: 15px; }
+.mb-15 { margin-bottom: 15px; }
+.ml-15 { margin-left: 15px; }
+.mr-15 { margin-right: 15px; }
 
-.mb-20 {
-  margin-bottom: 20px;
-}
+.m-20 { margin: 20px; }
+.mt-20 { margin-top: 20px; }
+.mb-20 { margin-bottom: 20px; }
+.ml-20 { margin-left: 20px; }
+.mr-20 { margin-right: 20px; }
 
-.ml-20 {
-  margin-left: 20px;
-}
+.m-30 { margin: 30px; }
+.mt-30 { margin-top: 30px; }
+.mb-30 { margin-bottom: 30px; }
+.ml-30 { margin-left: 30px; }
+.mr-30 { margin-right: 30px; }
 
-.mr-20 {
-  margin-right: 20px;
-}
+.p-10 { padding: 10px; }
+.pt-10 { padding-top: 10px; }
+.pb-10 { padding-bottom: 10px; }
+.pl-10 { padding-left: 10px; }
+.pr-10 { padding-right: 10px; }
 
-.p-20 {
-  padding: 20px;
-}
+.p-15 { padding: 15px; }
+.pt-15 { padding-top: 15px; }
+.pb-15 { padding-bottom: 15px; }
+.pl-15 { padding-left: 15px; }
+.pr-15 { padding-right: 15px; }
 
-.pt-20 {
-  padding-top: 20px;
-}
+.p-20 { padding: 20px; }
+.pt-20 { padding-top: 20px; }
+.pb-20 { padding-bottom: 20px; }
+.pl-20 { padding-left: 20px; }
+.pr-20 { padding-right: 20px; }
 
-.pb-20 {
-  padding-bottom: 20px;
-}
-
-.pl-20 {
-  padding-left: 20px;
-}
-
-.pr-20 {
-  padding-right: 20px;
-}
+.p-30 { padding: 30px; }
+.pt-30 { padding-top: 30px; }
+.pb-30 { padding-bottom: 30px; }
+.pl-30 { padding-left: 30px; }
+.pr-30 { padding-right: 30px; }

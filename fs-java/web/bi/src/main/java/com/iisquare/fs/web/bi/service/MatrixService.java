@@ -38,7 +38,7 @@ public class MatrixService extends ServiceBase {
         if (null == preview || !preview.isObject()) {
             return ApiUtil.result(1001, "配置信息异常", null);
         }
-        Map<String, Object> result = datasetService.dataset(datasetId);
+        Map<String, Object> result = null; // datasetService.dataset(datasetId);
         if (ApiUtil.failed(result)) return result;
         ObjectNode dataset = ApiUtil.data(result, ObjectNode.class);
         ObjectNode options = DPUtil.objectNode();
@@ -69,7 +69,7 @@ public class MatrixService extends ServiceBase {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(config.get("withDatasetInfo"))) {
-            datasetService.fillInfo(rows, "datasetId");
+//            datasetService.fillInfo(rows, "datasetId");
         }
         if(!DPUtil.empty(config.get("withStatusText"))) {
             DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));

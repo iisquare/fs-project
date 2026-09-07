@@ -100,8 +100,11 @@ export default defineComponent({
   beforeMount () {
     Object.assign(this.container.style, {
       'z-index': 999,
-      'border-radius': '3px',
-      border: '1px solid #ccc',
+      'border-radius': '6px',
+      border: '1px solid var(--el-border-color-light)',
+      'box-shadow': '0 6px 16px 0 rgba(0, 0, 0, 0.12)',
+      background: '#fff',
+      overflow: 'hidden',
       position: 'absolute',
       visibility: 'hidden',
       top: '0px',
@@ -117,7 +120,83 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-.el-divider {
-  margin: 0 auto;
+.el-menu {
+  --el-menu-base-level-padding: 12px;
+  --el-menu-level-padding: 12px;
+  --el-menu-icon-width: 16px;
+  border-right: none;
+  max-width: 280px;
+  padding: 4px;
+  background: #fff;
+}
+
+:deep(.el-menu-item) {
+  height: 32px;
+  line-height: 32px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s;
+
+  &:hover {
+    background: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
+  }
+
+  .el-icon {
+    flex-shrink: 0;
+    margin-right: 6px;
+    color: var(--el-text-color-secondary);
+    font-size: 15px;
+    transition: color 0.2s;
+  }
+
+  &:hover .el-icon {
+    color: var(--el-color-primary);
+  }
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+:deep(.el-sub-menu) {
+  .el-sub-menu__title {
+    height: 32px;
+    line-height: 32px;
+    font-size: 13px;
+    color: var(--el-text-color-regular);
+    border-radius: 4px;
+    transition: background 0.2s, color 0.2s;
+
+    &:hover {
+      background: var(--el-color-primary-light-9);
+      color: var(--el-color-primary);
+    }
+
+    .el-icon {
+      flex-shrink: 0;
+      margin-right: 6px;
+      color: var(--el-text-color-secondary);
+      font-size: 15px;
+      transition: color 0.2s;
+    }
+
+    &:hover .el-icon {
+      color: var(--el-color-primary);
+    }
+  }
+}
+
+:deep(.el-divider) {
+  margin: 4px 8px;
+  border-top-color: var(--el-border-color-lighter);
 }
 </style>

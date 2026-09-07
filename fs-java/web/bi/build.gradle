@@ -2,24 +2,20 @@
 dependencies {
     implementation project(':base:jpa')
     implementation project(':base:dag')
-    implementation project(':base:calcite')
+    implementation project(':base:mongodb')
+    implementation project(':base:elasticsearch')
+    implementation project(':base:redis')
     implementation project(':web:core')
     testImplementation project(':web:test')
 
-    // MongoDB
-    implementation group: 'org.mongodb', name: 'mongodb-driver-sync', version: mongodbVersion
-    // Redis
-    implementation group: 'redis.clients', name: 'jedis', version: '7.2.0'
-    // Elasticsearch
-    implementation group: 'co.elastic.clients', name: 'elasticsearch-java', version: elasticVersion
+    // Trino 查询引擎 JDBC 客户端
+    implementation group: 'io.trino', name: 'trino-jdbc', version: '483'
+
+    // SQL解析器
+    implementation group: 'com.github.jsqlparser', name: 'jsqlparser', version: '5.3'
+
     // Apache POI (Excel)
     implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '5.4.0'
-    // OpenCSV
-    implementation group: 'com.opencsv', name: 'opencsv', version: '5.10'
-    // Kafka
-    implementation group: 'org.apache.kafka', name: 'kafka-clients', version: '3.9.0'
-    // JDBC drivers (runtime only)
-    runtimeOnly group: 'org.postgresql', name: 'postgresql', version: postgresqlVersion
-    runtimeOnly group: 'com.microsoft.sqlserver', name: 'mssql-jdbc', version: '12.10.0'
-    runtimeOnly group: 'com.clickhouse', name: 'clickhouse-jdbc', version: '0.7.2'
+
+    implementation group: 'org.postgresql', name: 'postgresql', version: postgresqlVersion
 }

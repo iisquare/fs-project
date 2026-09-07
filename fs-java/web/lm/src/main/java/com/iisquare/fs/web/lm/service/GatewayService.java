@@ -221,7 +221,7 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
             return emitter.error("protocol_mismatch", "客户端与后端协议不兼容，当前仅支持同协议转发", "gateway", null, false).sync(403);
         }
         int uid = auth.at("/uid").asInt();
-        for (JsonNode rate : auth.at("/credit/rates")) { // 用户访问频率限制
+        for (JsonNode rate : auth.at("/rates")) { // 用户访问频率限制
             int rateId = rate.at("/id").asInt();
             for (Map.Entry<String, String> entry : checkRates.entrySet()) {
                 double count = rate.at("/" + entry.getKey() + "Count").asDouble();
@@ -293,7 +293,7 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
                         .divide(divisor, 20, RoundingMode.HALF_UP));
                 usage.creditAmount(creditAmount.negate());
                 usageService.record(usage.build(), auth);
-                for (JsonNode rate : auth.at("/credit/rates")) { // 用户访问频率限制
+                for (JsonNode rate : auth.at("/rates")) { // 用户访问频率限制
                     int rateId = rate.at("/id").asInt();
                     for (Map.Entry<String, String> entry : checkRates.entrySet()) {
                         int interval = rate.at("/" + entry.getKey() + "Interval").asInt();
@@ -463,7 +463,7 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
             return emitter.error("connect_backend_failed", "连接模型端服务失败", "gateway", e.getMessage(), false).sync(400);
         }
         if (recordDetails) {
-            usage.responseHeader(DPUtil.stringify(HttpClientUtil.responseHeaders(res)));
+            usage.responseHeader(DPUtil.stringify(HttpClientUtil.headers(res)));
         }
         return handler.forwardedResponseHeaders(emitter, res).async(() -> pool.process(req, res));
     }
@@ -515,7 +515,7 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         }
         // 4. 速率限制检查
         int uid = auth.at("/uid").asInt();
-        for (JsonNode rate : auth.at("/credit/rates")) {
+        for (JsonNode rate : auth.at("/rates")) {
             int rateId = rate.at("/id").asInt();
             for (Map.Entry<String, String> entry : checkRates.entrySet()) {
                 double count = rate.at("/" + entry.getKey() + "Count").asDouble();
@@ -585,7 +585,7 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         redis.opsForValue().decrement(keyParallel);
         usageService.record(usage.build(), auth);
         // 11. 更新速率计数器
-        for (JsonNode rate : auth.at("/credit/rates")) {
+        for (JsonNode rate : auth.at("/rates")) {
             int rateId = rate.at("/id").asInt();
             for (Map.Entry<String, String> entry : checkRates.entrySet()) {
                 int interval = rate.at("/" + entry.getKey() + "Interval").asInt();

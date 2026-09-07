@@ -35,17 +35,16 @@ public class RoleService extends JPAServiceBase {
 
     public ObjectNode infos(List<Integer> ids) {
         ObjectNode nodes = infoByIds(roleDao, ids);
-        List<String> keys = new ArrayList<>();
-        Iterator<Map.Entry<String, JsonNode>> iterator = nodes.fields();
-        while (iterator.hasNext()) {
-            Map.Entry<String, JsonNode> entry = iterator.next();
-            if (entry.getValue().at("/status").asInt() != 1) {
-                keys.add(entry.getKey());
-            } else {
-                ((ObjectNode) entry.getValue()).retain("id", "name");
-            }
+        return (ObjectNode) filter(nodes);
+    }
+
+    @Override
+    public JsonNode filter(JsonNode json) {
+        for (JsonNode node : json) {
+            ObjectNode item = (ObjectNode) node;
+            item.retain("id", "name", "status");
         }
-        return nodes.remove(keys);
+        return json;
     }
 
     public Role info(Integer id) {

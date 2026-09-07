@@ -53,4 +53,11 @@ public class DatasourceController extends PermitControllerBase {
         return ApiUtil.echoResult(0, null, model);
     }
 
+    @RequestMapping("/test")
+    @Permission({"add", "modify"})
+    public String testAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
+        Map<String, Object> result = datasourceService.test(param, request);
+        return ApiUtil.echoResult(result);
+    }
+
 }

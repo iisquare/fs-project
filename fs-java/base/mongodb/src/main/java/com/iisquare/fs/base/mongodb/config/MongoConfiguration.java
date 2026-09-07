@@ -6,6 +6,7 @@ import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoCredential;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
+import lombok.Getter;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +14,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.concurrent.TimeUnit;
 
+@Getter
 @Configuration
 public class MongoConfiguration implements DisposableBean {
 
@@ -51,6 +53,7 @@ public class MongoConfiguration implements DisposableBean {
                 password.toCharArray() // 密码
         );
         MongoClientSettings settings = MongoClientSettings.builder()
+                .applyConnectionString(new ConnectionString(uri))
                 .applyToConnectionPoolSettings(builder -> builder
                         .minSize(minSize) // 最小连接数
                         .maxSize(maxSize) // 最大连接数
@@ -61,7 +64,6 @@ public class MongoConfiguration implements DisposableBean {
                         .readTimeout(readTimeout, TimeUnit.MILLISECONDS) // 读写超时
                 )
                 .credential(credential) // 设置认证凭证
-                .applyConnectionString(new ConnectionString(uri))
                 .build();
         MongoClient client = MongoClients.create(settings);
         return this.client = client;

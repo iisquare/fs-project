@@ -19,12 +19,14 @@ public class Datasource {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-    @Column
+    @Column(unique = true)
     private String name;
     @Column
     private String type; // 数据源类型
     @Column
-    private String content; // 数据源配置
+    private Integer olapable; // 是否OLAP可用，1-是，0-否
+    @Column
+    private String content; // 数据源配置，JSON格式，配置项参考datasource.XXXConnector
     @Column
     private Integer sort;
     @Column

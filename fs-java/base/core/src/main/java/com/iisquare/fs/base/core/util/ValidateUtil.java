@@ -23,6 +23,7 @@ public class ValidateUtil {
     public static final String regexIdCard = "^(([1-9]\\d{7}((0\\d)|(1[0-2]))(([0|1|2]\\d)|3[0-1])\\d{3})|([1-9]\\d{5}[1-9]\\d{3}((0\\d)|(1[0-2]))(([0|1|2]\\d)|3[0-1])\\d{3}([0-9]|[xX]))){1}$";
     public static final String regexPostCode = "^[1-9]\\d{5}(?!\\d)$";
     public static final String regexLabel = "^[a-zA-Z][a-zA-Z0-9\\-\\.]*[a-zA-Z0-9]+$";
+    public static final String regexSnake = "^[a-zA-Z_][a-zA-Z0-9_]*$";
 
     public static boolean isNull(String object, boolean bTrim) {
         return null == object || "".endsWith(bTrim ? DPUtil.trim(object) : object);
@@ -90,6 +91,10 @@ public class ValidateUtil {
 
     public static boolean isLabel(String object) {
         return DPUtil.isMatcher(regexLabel, object);
+    }
+
+    public static boolean isSnake(String object) {
+        return DPUtil.isMatcher(regexSnake, object);
     }
 
     public static int filterInteger(Object object, Integer min, Integer max, int defaultValue) {
@@ -205,6 +210,10 @@ public class ValidateUtil {
 
     public static String filterLabel(String object, boolean bTrim, Integer min, Integer max, String defaultValue) {
         return filterRegex(regexLabel, object, bTrim, min, max, defaultValue);
+    }
+
+    public static String filterSnake(String object, boolean bTrim, Integer min, Integer max, String defaultValue) {
+        return filterRegex(regexSnake, object, bTrim, min, max, defaultValue);
     }
 
     public static String filterDateTime(String object, boolean bTrim, String format, String defaultValue) {

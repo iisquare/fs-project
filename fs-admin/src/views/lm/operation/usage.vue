@@ -24,25 +24,25 @@ const columns = ref([
   { prop: 'authInfo.name', label: '密钥', hide: true },
   { prop: 'type', label: '计费类型', hide: true },
   { prop: 'place', label: '调用服务' },
-  { prop: 'creditAmount', label: '积分数量', hide: true },
+  { prop: 'creditAmount', label: '积分数量' },
   { prop: 'status', label: '执行状态', hide: true },
   { prop: 'providerInfo.name', label: '供应商', hide: true },
   { prop: 'modelInfo.name', label: '模型', hide: true },
   { prop: 'requestIp', label: 'IP', hide: true },
   { prop: 'requestStream', label: '流式', hide: true },
   { prop: 'requestSystem', label: '系统提示词', hide: true },
-  { prop: 'requestUser', label: '用户提问' },
+  { prop: 'requestUser', label: '用户提问', hide: true },
   { prop: 'requestPrompt', label: '上下文', hide: true },
   { prop: 'responseReason', label: '思考', hide: true },
-  { prop: 'responseCompletion', label: '回答' },
+  { prop: 'responseCompletion', label: '回答', hide: true },
   { prop: 'responseHeader', label: '请求头', hide: true },
   { prop: 'responseTool', label: '工具调用', hide: true },
   { prop: 'finishReason', label: '完成状态' },
   { prop: 'finishDetail', label: '详细原因', hide: true },
-  { prop: 'usagePromptCachedTokens', label: '缓存Token', hide: true },
-  { prop: 'usagePromptTokens', label: '输入Token', hide: true },
-  { prop: 'usageCompletionTokens', label: '输出Token', hide: true },
-  { prop: 'usageTotalTokens', label: '总Token', hide: true },
+  { prop: 'usagePromptCachedTokens', label: '缓存Token' },
+  { prop: 'usagePromptTokens', label: '输入Token' },
+  { prop: 'usageCompletionTokens', label: '输出Token' },
+  { prop: 'usageTotalTokens', label: '总Token' },
   { prop: 'auditReason', label: '审核', hide: true },
   { prop: 'auditDetail', label: '审核描述', hide: true },
   { prop: 'beginTime', label: '处理开始时间', formatter: DateUtil.render },
@@ -55,6 +55,9 @@ const columns = ref([
 const rows = ref([])
 const filterRef = ref<FormInstance>()
 const filters = ref(RouteUtil.query2filter(route, { advanced: false }))
+if (!route.query.filter && !filters.value.beginTimeBegin) {
+  filters.value.beginTimeBegin = DateUtil.format(new Date(Date.now() - 7 * 24 * 3600 * 1000))
+}
 const pagination = ref(RouteUtil.pagination(filters.value))
 const selection: any = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
@@ -138,13 +141,13 @@ const handleDelete = () => {
         <form-select v-model="filters.uid" :callback="UserApi.list" clearable />
       </form-search-item>
       <form-search-item label="密钥" prop="authId">
-          <form-select v-model="filters.authId" :callback="AuthApi.list" clearable />
-        </form-search-item>
-      <form-search-item label="计费类型" prop="type">
-        <el-input v-model="filters.type" clearable />
+        <form-select v-model="filters.authId" :callback="AuthApi.list" clearable />
       </form-search-item>
-      <form-search-item label="执行状态" prop="status">
-        <el-input v-model="filters.status" clearable />
+      <form-search-item label="处理开始时间" prop="beginTimeBegin">
+        <form-date-picker v-model="filters.beginTimeBegin" placeholder="开始时间" />
+      </form-search-item>
+      <form-search-item label="处理结束时间" prop="beginTimeEnd">
+        <form-date-picker v-model="filters.beginTimeEnd" placeholder="结束时间" />
       </form-search-item>
       <form-search-item label="调用服务" prop="place">
         <el-input v-model="filters.place" clearable />
@@ -173,23 +176,23 @@ const handleDelete = () => {
         <form-search-item label="详细原因" prop="finishDetail">
           <el-input v-model="filters.finishDetail" clearable />
         </form-search-item>
-        <form-search-item label="处理开始时间" prop="beginTimeBegin">
-          <form-date-picker v-model="filters.beginTimeBegin" placeholder="开始时间" />
+        <form-search-item label="计费类型" prop="type">
+          <el-input v-model="filters.type" clearable />
         </form-search-item>
-        <form-search-item label="处理结束时间" prop="beginTimeEnd">
-          <form-date-picker v-model="filters.beginTimeEnd" placeholder="结束时间" />
-        </form-search-item>
-        <form-search-item label="完成开始时间" prop="endTimeBegin">
-          <form-date-picker v-model="filters.endTimeBegin" placeholder="开始时间" />
-        </form-search-item>
-        <form-search-item label="完成结束时间" prop="endTimeEnd">
-          <form-date-picker v-model="filters.endTimeEnd" placeholder="结束时间" />
+        <form-search-item label="执行状态" prop="status">
+          <el-input v-model="filters.status" clearable />
         </form-search-item>
         <form-search-item label="请求IP" prop="requestIp">
           <el-input v-model="filters.requestIp" clearable />
         </form-search-item>
         <form-search-item label="审核标签" prop="auditReason">
           <el-input v-model="filters.auditReason" clearable />
+        </form-search-item>
+        <form-search-item label="完成开始时间" prop="endTimeBegin">
+          <form-date-picker v-model="filters.endTimeBegin" placeholder="开始时间" />
+        </form-search-item>
+        <form-search-item label="完成结束时间" prop="endTimeEnd">
+          <form-date-picker v-model="filters.endTimeEnd" placeholder="结束时间" />
         </form-search-item>
         <form-search-item label="审核开始时间" prop="auditTimeBegin">
           <form-date-picker v-model="filters.auditTimeBegin" placeholder="开始时间" />

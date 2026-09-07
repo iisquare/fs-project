@@ -17,13 +17,15 @@ public class MongoUtil {
 
     public static Document fromJson(JsonNode json) {
         if (null == json || !json.isObject()) return null;
-        Document document = Document.parse(DPUtil.stringify(json));
-        return document;
+        return Document.parse(DPUtil.stringify(json));
     }
 
     public static Document id2string(Document document) {
         if (null == document || !document.containsKey(MongoCore.FIELD_ID)) return document;
-        document.replace(MongoCore.FIELD_ID, document.getObjectId(MongoCore.FIELD_ID).toString());
+        Object id = document.get(MongoCore.FIELD_ID);
+        if (id instanceof ObjectId) {
+            document.replace(MongoCore.FIELD_ID, id.toString());
+        }
         return document;
     }
 
@@ -35,16 +37,16 @@ public class MongoUtil {
             document.remove(MongoCore.FIELD_ID);
             return document;
         }
-        document.replace(MongoCore.FIELD_ID, new ObjectId(DPUtil.parseString(id)));
+        if (id instanceof String && ObjectId.isValid((String) id)) {
+            document.replace(MongoCore.FIELD_ID, new ObjectId((String) id));
+        }
         return document;
     }
 
     public static Bson sort(JsonNode sort, Collection<String> fields) {
         if (null == sort || sort.isNull()) return null;
         List<Bson> orders = new ArrayList<>();
-        Iterator<JsonNode> iterator = sort.iterator();
-        while (iterator.hasNext()) {
-            JsonNode item = iterator.next();
+        for (JsonNode item : sort) {
             String field = item.at("/field").asText();
             if (DPUtil.empty(field)) continue;
             if (null != fields && !fields.contains(field)) continue;
@@ -59,7 +61,7 @@ public class MongoUtil {
                     break;
             }
         }
-        if (orders.size() < 1) return null;
+        if (orders.isEmpty()) return null;
         return Sorts.orderBy(orders.toArray(new Bson[0]));
     }
 
@@ -81,7 +83,7 @@ public class MongoUtil {
                     break;
             }
         }
-        if (orders.size() < 1) return null;
+        if (orders.isEmpty()) return null;
         return Sorts.orderBy(orders.toArray(new Bson[0]));
     }
 

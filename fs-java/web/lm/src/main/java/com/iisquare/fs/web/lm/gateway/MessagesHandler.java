@@ -194,7 +194,7 @@ public class MessagesHandler extends GatewayHandler {
         int inputTokens = usage.at("/input_tokens").asInt() + msgUsage.at("/input_tokens").asInt();
         int cacheReadTokens = usage.at("/cache_read_input_tokens").asInt() + msgUsage.at("/cache_read_input_tokens").asInt();
         int cacheCreationTokens = usage.at("/cache_creation_input_tokens").asInt() + msgUsage.at("/cache_creation_input_tokens").asInt();
-        c.promptTokens = inputTokens + cacheCreationTokens;
+        c.promptTokens = inputTokens + cacheReadTokens;
         c.completionTokens = usage.at("/output_tokens").asInt();
         c.totalTokens = c.promptTokens + c.completionTokens;
         c.cachedPromptTokens = cacheReadTokens;

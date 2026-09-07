@@ -10,6 +10,7 @@
  * @prop     {Boolean}          lineNumbers  - 是否显示行号，默认 true
  * @prop     {Boolean}          lineWrapping - 是否自动换行，默认 true
  * @prop     {Boolean}          resizable    - 是否允许拖拽调整高度，默认 false
+ * @prop     {Boolean}          fill         - 是否铺满父容器高度，默认 false
  * @prop     {HintItem[]}       hints        - 自定义自动提示列表
  *
  * 提示项结构 (HintItem):
@@ -62,6 +63,7 @@ const {
   lineNumbers = true,
   lineWrapping = true,
   resizable = false,
+  fill = false,
   hints = [],
 } = defineProps({
   mode: { type: String, required: false },
@@ -71,6 +73,7 @@ const {
   lineNumbers: { type: Boolean, required: false },
   lineWrapping: { type: Boolean, required: false },
   resizable: { type: Boolean, required: false },
+  fill: { type: Boolean, required: false },
   hints: { type: Array<Object>, required: false },
 })
 
@@ -81,6 +84,9 @@ watch(model, (val) => {
 })
 const editorRef = ref()
 let editor: any = null
+// 监听容器尺寸变化，容器在抽屉/标签页过渡动画结束后尺寸才稳定，
+// CodeMirror 不会自动感知尺寸变化，需触发 refresh() 重绘，否则内容不显示
+let resizeObserver: any = null
 const currentHeight = ref(height)
 let isResizing = false
 let startY = 0
@@ -117,13 +123,20 @@ const getContent = () => {
 const refresh = () => {
   window.setTimeout(() => editor?.refresh(), 100)
 }
+const replaceSelection = (text: any) => {
+  editor?.replaceSelection(text)
+  editor?.focus()
+}
+const getSelection = () => {
+  return editor?.getSelection() || ''
+}
 const handleHint = () => {
   const cursor = editor.getCursor()
   const line = editor.getLine(cursor.line)
   let word = ''
   for (let index = cursor.ch - 1; index >= 0; index--) {
     const char = line.charAt(index)
-    if (!new RegExp('[\\w\\d_\\-\\.`]').test(char)) break
+    if (/[\s,()=;'"<>+*\/]/.test(char)) break
     word = char + word
   }
   let list: any = []
@@ -157,7 +170,7 @@ const load = () => {
     },
     gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
   })
-  editor.setSize('auto', currentHeight.value + 'px')
+  editor.setSize('auto', fill ? '100%' : currentHeight.value + 'px')
   editor.on('change', () => {
     model.value = getContent()
   })
@@ -167,18 +180,23 @@ const load = () => {
 onMounted(() => {
   nextTick(() => {
     load()
+    if (editorRef.value) {
+      resizeObserver = new ResizeObserver(() => refresh())
+      resizeObserver.observe(editorRef.value)
+    }
   })
 })
 onUnmounted(() => {
   model.value = getContent()
+  resizeObserver?.disconnect()
   document.removeEventListener('mousemove', onResizeMouseMove)
   document.removeEventListener('mouseup', onResizeMouseUp)
 })
-defineExpose({ getContent, setContent })
+defineExpose({ getContent, setContent, replaceSelection, getSelection })
 </script>
 
 <template>
-  <div ref="editorRef" class="fs-code-editor" :class="{ 'fs-code-editor--resizable': resizable }">
+  <div ref="editorRef" class="fs-code-editor" :class="[{ 'fs-code-editor--resizable': resizable, 'fs-code-editor--fill': fill }]">
     <div v-if="resizable" class="fs-code-editor__resize-handle" @mousedown="onResizeMouseDown" />
   </div>
 </template>
@@ -191,6 +209,14 @@ defineExpose({ getContent, setContent })
   &--resizable {
     position: relative;
     padding-bottom: 8px;
+  }
+
+  &--fill {
+    height: 100%;
+
+    :deep(.CodeMirror) {
+      height: 100%;
+    }
   }
 
   &__resize-handle {

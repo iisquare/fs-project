@@ -8,6 +8,7 @@ import sameSize from './same-size.svg?raw'
 import space from './space.svg?raw'
 import clean from './clean.svg?raw'
 import play from './play.svg?raw'
+import beautify from './beautify.svg?raw'
 
 export default {
   alignHorizontal,
@@ -20,4 +21,5 @@ export default {
   space,
   clean,
   play,
+  beautify,
 }

@@ -52,8 +52,9 @@ public class CreditService extends JPAServiceBase {
         Credit credit = info(auth.getUid());
         if (null == credit || 1 != credit.getStatus()) return null;
         JsonNode identity = rbacService.identity(auth.getUid());
-        if (identity.isEmpty()) return null;
-        if (1 != identity.at("/status").asInt()) return null;
+        if (null == identity || identity.isNull() || identity.isEmpty()) return null;
+        JsonNode roles = identity.at("/roles");
+        if (null == roles || roles.isEmpty()) return null;
         ObjectNode result = DPUtil.objectNode();
         result.put("id", auth.getId());
         result.put("name", auth.getName());
@@ -75,7 +76,7 @@ public class CreditService extends JPAServiceBase {
         }
         ObjectNode models = result.putObject("models");
         Set<Integer> authModelIds = new HashSet<>(DPUtil.parseIntList(auth.getModelIds()));
-        Set<Integer> userRoleIds = new HashSet<>(DPUtil.parseIntList(DPUtil.fields(identity.at("/roles"))));
+        Set<Integer> userRoleIds = new HashSet<>(DPUtil.parseIntList(DPUtil.fields(roles)));
         for (Map.Entry<String, JsonNode> entry : cache.at("/models").properties()) {
             JsonNode model = entry.getValue();
             int modelId = model.at("/id").asInt();

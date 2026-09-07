@@ -19,6 +19,22 @@ const FormUtil = {
       }
     })
   },
+  download(url: string, params: Record<string, any> = {}) {
+    const form = document.createElement('form')
+    form.method = 'post'
+    form.action = url
+    form.target = '_blank'
+    Object.keys(params).forEach((key) => {
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = key
+      input.value = String(params[key])
+      form.appendChild(input)
+    })
+    document.body.appendChild(form)
+    form.submit()
+    document.body.removeChild(form)
+  },
 }
 
 export default FormUtil
