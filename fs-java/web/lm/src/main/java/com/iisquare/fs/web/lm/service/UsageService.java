@@ -52,6 +52,18 @@ public class UsageService extends JPAServiceBase {
     RemindService  remindService;
 
 
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("beginTime", "asc");
+        sorts.put("endTime", "asc");
+        sorts.put("auditTime", "asc");
+        sorts.put("coastTotal", "asc");
+        sorts.put("creditAmount", "asc");
+        return sorts;
+    }
+
     public Usage info(Long id) {
         return info(usageDao, id);
     }
@@ -116,7 +128,7 @@ public class UsageService extends JPAServiceBase {
             helper.like("auditReason").like("auditDetail").equalWithIntNotEmpty("auditUid");
             helper.betweenWithDate("beginTime").betweenWithDate("endTime").betweenWithDate("auditTime");
             return cb.and(helper.predicates());
-        }, Sort.by(Sort.Order.desc("id")), "id", "beginTime", "endTime", "auditTime", "coastTotal", "creditAmount");
+        }, Sort.by(Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = format(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withInfo"))) withInfo(rows);
         ServiceUtil.retain(rows, param.get("columns"));

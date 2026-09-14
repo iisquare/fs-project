@@ -5,6 +5,7 @@ import com.iisquare.fs.base.web.mvc.ControllerBase;
 import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.core.rpc.MemberRpc;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 
+@Profile("!prod") // 文件上传联调接口，生产环境不可用
 @RestController
 @RequestMapping("/test")
 public class TestController extends ControllerBase {

@@ -63,6 +63,7 @@ public class RateController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", rateService.status());
+        model.put("sorts", rateService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

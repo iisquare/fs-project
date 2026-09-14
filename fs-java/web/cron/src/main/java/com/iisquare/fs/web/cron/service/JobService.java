@@ -47,7 +47,7 @@ public class JobService extends ServiceBase {
                 predicates.add(cb.like(root.get("group"), "%" + group + "%"));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "name"))));
+        }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "name"), new Sort.Order(Sort.Direction.DESC, "schedule"), new Sort.Order(Sort.Direction.DESC, "group"))));
         List<QuartzJob> rows = data.getContent();
         for (QuartzJob job : rows) {
             job.setArg(DPUtil.stringify(JDBCUtil.blob2object(job.getData())));

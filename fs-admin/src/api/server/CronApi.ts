@@ -55,6 +55,9 @@ export default {
   flowLogList (param: any, tips = {}) {
     return this.post('/flowLog/list', param, tips)
   },
+  flowLogConfig (tips = {}) {
+    return this.post('/flowLog/config', {}, tips)
+  },
   flowLogStages (param: any, tips = {}) {
     return this.post('/flowLog/stages', param, tips)
   },

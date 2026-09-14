@@ -63,6 +63,7 @@ public class DataController extends PermitControllerBase {
     public String configAction(ModelMap model) {
         model.put("status", dataService.status());
         model.put("types", dataService.types());
+        model.put("sorts", dataService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

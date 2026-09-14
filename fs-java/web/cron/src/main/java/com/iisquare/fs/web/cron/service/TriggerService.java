@@ -52,7 +52,7 @@ public class TriggerService extends ServiceBase {
                 predicates.add(cb.like(root.get("jobGroup"), "%" + jobGroup + "%"));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "name"))));
+        }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "name"), new Sort.Order(Sort.Direction.DESC, "schedule"), new Sort.Order(Sort.Direction.DESC, "group"))));
         List<QuartzTrigger> rows = data.getContent();
         for (QuartzTrigger item : rows) {
             item.setArg(DPUtil.stringify(JDBCUtil.blob2object(item.getData())));

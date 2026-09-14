@@ -595,7 +595,8 @@ public class ApproveService extends ServiceBase {
         result.put("page", page);
         result.put("pageSize", pageSize);
         result.put("total", count);
-        result.put("rows", workflowService.fillDeployment(rows));
+        // 补充运行时流程实例信息，便于前端区分「进行中/已挂起」（已结束的实例查不到，属正常情况）
+        result.put("rows", workflowService.fillProcessInstanceWithHistory(workflowService.fillDeployment(rows)));
         return result;
     }
 

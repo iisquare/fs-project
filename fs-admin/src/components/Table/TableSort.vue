@@ -7,12 +7,20 @@
  * @prop     {String}          sortable - 可排序字段列表，格式同 v-model，用于初始化可选字段
  *
  * @emits {Function} change - 确认排序变更时触发
- *
+
  * @example
  * <table-sort v-model="sortString" :columns="columns" :sortable="'createdAt.desc'" @change="fetchData" />
+ * <table-sort v-model="sortString" :columns="[...columns, { prop: 'beginTime', label: '处理开始时间' }]" :sortable="config.sorts" @change="fetchData" />
+ * const tableSortColumns = computed(() => [
+ *   ...columns.value,
+ *   { prop: 'beginTime', label: '处理开始时间' },
+ *   { prop: 'coastTotal', label: '整体耗时(ms)' },
+ * ])
+ * <TableSort v-model="filters.sort" :columns="tableSortColumns" :sortable="config.sorts" @change="handleRefresh(true, true)" />
+ * 
  */
 import * as ElementPlusIcons from '@element-plus/icons-vue'
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import type { DropdownInstance, TreeInstance } from 'element-plus'
 import TreeUtil from '@/utils/TreeUtil'
 import DataUtil from '@/utils/DataUtil'
@@ -21,8 +29,19 @@ const model = defineModel<string>({ default: '' })
 
 const props = defineProps({
   columns: { type: Array<any>, required: true },
-  sortable: { type: String, default: '' },
+  sortable: { type: [String, Object], default: '' },
 })
+
+/** 常用排序字段名称定义，可通过 columns 传入同名 prop 覆盖 */
+const BUILTIN_COLUMNS: Array<{ prop: string, label: string }> = [
+  { prop: 'id', label: 'ID' },
+  { prop: 'status', label: '状态' },
+  { prop: 'sort', label: '排序' },
+  { prop: 'state', label: '状态' },
+  { prop: 'createdTime', label: '创建时间' },
+  { prop: 'updatedTime', label: '修改时间' },
+  { prop: 'deletedTime', label: '删除时间' },
+]
 
 const emit = defineEmits(['change'])
 
@@ -45,7 +64,16 @@ const parseSortEntries = (value: string) => {
   }).filter(Boolean) as { field: string; order: 'asc' | 'desc' }[]
 }
 
-const sortableFields = computed(() => parseSortEntries(props.sortable))
+const sortableFields = computed(() => {
+  const sortable = props.sortable as any
+  if (sortable && typeof sortable === 'object') {
+    return Object.entries(sortable).map(([field, order]) => ({
+      field,
+      order: order === 'desc' ? ('desc' as const) : ('asc' as const),
+    }))
+  }
+  return parseSortEntries(sortable)
+})
 
 const tree = ref<TreeInstance>()
 const treeData = ref<any[]>([])
@@ -53,25 +81,45 @@ const treeCheckedKeys = ref<string[]>([])
 const treeCache = ref<any[]>([])
 const orderCache = ref<Record<string, string>>({})
 
+const columnLabels = computed(() => {
+  const labels = new Map<string, string>()
+  BUILTIN_COLUMNS.forEach(column => labels.set(column.prop, column.label))
+  props.columns.forEach((column: any) => {
+    if (column?.prop) labels.set(column.prop, column.label)
+  })
+  return labels
+})
+
 const handleAllowDrop = (draggingNode: any, dropNode: any, type: any) => {
   return type !== 'inner'
 }
 
-onMounted(() => {
+const initialize = () => {
   const currentSort = Object.fromEntries(parseSortEntries(model.value).map(e => [e.field, e.order]))
   treeCache.value = sortableFields.value.map(({ field, order: defaultOrder }) => {
-    const column = props.columns.find((col: any) => col.prop === field)
     const checked = field in currentSort
     const order = currentSort[field] || defaultOrder
     return {
       id: field,
-      label: column?.label || field,
+      label: columnLabels.value.get(field) || field,
       checked,
       order,
     }
   })
   treeData.value = JSON.parse(JSON.stringify(treeCache.value))
   treeCheckedKeys.value = TreeUtil.ids(treeData.value, (item: any) => !item.checked)
+}
+
+onMounted(() => {
+  initialize()
+})
+
+watch(sortableFields, () => {
+  initialize()
+})
+
+watch(columnLabels, () => {
+  initialize()
 })
 
 const handleSubmit = () => {

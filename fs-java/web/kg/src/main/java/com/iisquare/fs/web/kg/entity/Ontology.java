@@ -26,6 +26,12 @@ public class Ontology {
     @Column
     private Integer relationshipCount; // 关系数量
     @Column
+    private Integer version; // 定义版本，保存时递增，用于乐观锁
+    @Column
+    private Long definitionTime; // 定义最后保存时间
+    @Column
+    private Integer issueCount; // 定义校验问题数量
+    @Column
     private String content; // 实体关系配置信息
     @Column
     private Integer sort;

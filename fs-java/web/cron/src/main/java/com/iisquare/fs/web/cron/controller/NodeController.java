@@ -5,8 +5,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.HttpUtil;
+import com.iisquare.fs.web.core.mvc.FeignInterceptor;
+import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
 import com.iisquare.fs.web.cron.service.NodeService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +26,7 @@ public class NodeController extends PermitControllerBase {
     NodeService nodeService;
 
     @GetMapping("/state")
+    @Permission("")
     public String stateAction(@RequestParam Map<String, String> param) {
         try {
             ObjectNode data = nodeService.state();
@@ -33,12 +37,13 @@ public class NodeController extends PermitControllerBase {
     }
 
     @GetMapping("/stats")
-    public String statsAction(@RequestParam Map<String, String> param) {
+    @Permission("")
+    public String statsAction(@RequestParam Map<String, String> param, HttpServletRequest request) {
         ObjectNode data = DPUtil.objectNode();
         ObjectNode nodes = data.putObject("nodes");
         for (String node : nodeService.participants()) {
             String url = "http://" + node;
-            String content = HttpUtil.get(url + "/node/state", param);
+            String content = HttpUtil.get(url + "/node/state", param, FeignInterceptor.headers(request, null));
             if (null == content) return ApiUtil.echoResult(5001, "载入节点信息失败", url);
             JsonNode json = DPUtil.parseJSON(content);
             if (null != json) json = json.get("data");
@@ -49,6 +54,7 @@ public class NodeController extends PermitControllerBase {
     }
 
     @RequestMapping("/standby")
+    @Permission("")
     public String standbyAction(@RequestParam Map<?, ?> param) {
         String nodeId = DPUtil.parseString(param.get("nodeId"));
         Map<String, Object> result = nodeService.standby(nodeId);
@@ -56,6 +62,7 @@ public class NodeController extends PermitControllerBase {
     }
 
     @RequestMapping("/restart")
+    @Permission("")
     public String restartAction(@RequestParam Map<?, ?> param) {
         String nodeId = DPUtil.parseString(param.get("nodeId"));
         boolean modeForce = DPUtil.parseBoolean(param.get("modeForce"));
@@ -64,6 +71,7 @@ public class NodeController extends PermitControllerBase {
     }
 
     @RequestMapping("/shutdown")
+    @Permission("")
     public String shutdownAction(@RequestParam Map<?, ?> param) {
         String nodeId = DPUtil.parseString(param.get("nodeId"));
         boolean modeForce = DPUtil.parseBoolean(param.get("modeForce"));

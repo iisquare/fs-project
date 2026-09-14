@@ -11,6 +11,7 @@ import ApiUtil from '@/utils/ApiUtil';
 import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
 import UIUtil from '@/utils/UIUtil';
+import DataSchemaTable from '@/components/Data/DataSchemaTable.vue';
 
 const route = useRoute()
 const router = useRouter()
@@ -30,6 +31,7 @@ const columns = ref([
 ])
 const config: any = ref({
   ready: false,
+  sorts: {},
   status: {},
 })
 const rows = ref([])
@@ -63,8 +65,8 @@ const relationRowsFromContent = (relations: any[]) => {
     id: relation.id,
     sourceDatasetId: Number(relation.sourceDatasetId),
     targetDatasetId: Number(relation.targetDatasetId),
-    sourceField: (relation.sourceFields || [])[0] || '',
-    targetField: (relation.targetFields || [])[0] || '',
+    sourceFields: Array.isArray(relation.sourceFields) ? [...relation.sourceFields] : [],
+    targetFields: Array.isArray(relation.targetFields) ? [...relation.targetFields] : [],
     description: relation.description || '',
   }))
 }
@@ -194,8 +196,8 @@ const handleAddRelation = () => {
     id: UIUtil.uuid('r'),
     sourceDatasetId: source,
     targetDatasetId: target,
-    sourceField: '',
-    targetField: '',
+    sourceFields: [],
+    targetFields: [],
     description: '',
   })
 }
@@ -210,8 +212,13 @@ const handleSubmit = () => {
       return
     }
     for (const relation of relationRows.value) {
-      if (!relation.sourceDatasetId || !relation.sourceField || !relation.targetDatasetId || !relation.targetField) {
+      if (!relation.sourceDatasetId || !(relation.sourceFields || []).length
+        || !relation.targetDatasetId || !(relation.targetFields || []).length) {
         ElMessage.warning('字段关联需要完整的源数据集、源字段、目标数据集、目标字段')
+        return
+      }
+      if ((relation.sourceFields || []).length !== (relation.targetFields || []).length) {
+        ElMessage.warning('字段关联两侧字段数量必须一致')
         return
       }
       if (Number(relation.sourceDatasetId) === Number(relation.targetDatasetId)) {
@@ -226,8 +233,8 @@ const handleSubmit = () => {
         id: relation.id,
         sourceDatasetId: Number(relation.sourceDatasetId),
         targetDatasetId: Number(relation.targetDatasetId),
-        sourceFields: [relation.sourceField],
-        targetFields: [relation.targetField],
+        sourceFields: relation.sourceFields,
+        targetFields: relation.targetFields,
         description: relation.description || '',
       })),
     }
@@ -287,6 +294,7 @@ const handleDelete = () => {
         <button-search @click="searchable = !searchable" />
         <button-refresh @click="handleRefresh(true, true)" :loading="loading" />
         <TableColumnSetting v-model="columns" :table="tableRef" />
+        <TableSort v-model="filters.sort" :columns="columns" :sortable="config.sorts" @change="handleRefresh(true, true)" />
       </el-space>
     </div>
     <el-table
@@ -348,7 +356,13 @@ const handleDelete = () => {
         <el-descriptions-item label="描述" :span="2">{{ form.description || '暂无' }}</el-descriptions-item>
       </el-descriptions>
       <layout-heading title="数据集" />
-      <el-table :data="selectedDatasets" :border="true" table-layout="auto" class="mb-15">
+      <el-table :data="selectedDatasets" :row-key="(record: any) => record.id" :border="true" table-layout="auto" class="mb-15">
+        <el-table-column type="expand">
+          <template #default="scope">
+            <DataSchemaTable v-if="(scope.row.fields || []).length" :model-value="scope.row.fields" class="dataset-fields" />
+            <el-empty v-else :image-size="40" description="暂无字段信息" />
+          </template>
+        </el-table-column>
         <el-table-column prop="id" label="ID" />
         <el-table-column prop="name" label="数据集" />
         <el-table-column label="服务方式">
@@ -369,17 +383,29 @@ const handleDelete = () => {
       <layout-heading title="字段关联" />
       <el-empty v-if="!relationRows.length" description="暂无字段关联" />
       <el-table v-else :data="relationRows" :border="true" table-layout="auto">
-        <el-table-column label="源数据集/字段">
+        <el-table-column label="源数据集" min-width="140">
+          <template #default="scope">{{ selectedName(scope.row.sourceDatasetId) }}</template>
+        </el-table-column>
+        <el-table-column label="源数据字段" min-width="140">
           <template #default="scope">
-            {{ selectedName(scope.row.sourceDatasetId) }}.{{ scope.row.sourceField }}
+            <el-space wrap>
+              <el-tag v-for="field in (scope.row.sourceFields || [])" :key="field" type="info">{{ field }}</el-tag>
+            </el-space>
           </template>
         </el-table-column>
-        <el-table-column label="目标数据集/字段">
+        <el-table-column label="目标数据集" min-width="140">
+          <template #default="scope">{{ selectedName(scope.row.targetDatasetId) }}</template>
+        </el-table-column>
+        <el-table-column label="目标数据字段" min-width="140">
           <template #default="scope">
-            {{ selectedName(scope.row.targetDatasetId) }}.{{ scope.row.targetField }}
+            <el-space wrap>
+              <el-tag v-for="field in (scope.row.targetFields || [])" :key="field" type="info">{{ field }}</el-tag>
+            </el-space>
           </template>
         </el-table-column>
-        <el-table-column prop="description" label="说明" />
+        <el-table-column label="说明">
+          <template #default="scope">{{ scope.row.description }}</template>
+        </el-table-column>
       </el-table>
     </el-form>
   </el-drawer>
@@ -427,7 +453,13 @@ const handleDelete = () => {
         </template>
       </layout-heading>
       <el-empty v-if="!form.content.datasetIds.length" description="暂无数据集" />
-      <el-table v-else :data="selectedDatasets" :border="true" table-layout="auto" class="mb-15">
+      <el-table v-else :data="selectedDatasets" :row-key="(record: any) => record.id" :border="true" table-layout="auto" class="mb-15">
+        <el-table-column type="expand">
+          <template #default="scope">
+            <DataSchemaTable v-if="(scope.row.fields || []).length" :model-value="scope.row.fields" class="dataset-fields" />
+            <el-empty v-else :image-size="40" description="暂无字段信息" />
+          </template>
+        </el-table-column>
         <el-table-column prop="id" label="ID" />
         <el-table-column prop="name" label="数据集" />
         <el-table-column label="服务方式">
@@ -461,14 +493,14 @@ const handleDelete = () => {
         <el-table-column label="源数据集" min-width="140">
           <template #default="scope">
             <el-select v-model="scope.row.sourceDatasetId" placeholder="选择源数据集" filterable
-                       @change="scope.row.sourceField = ''">
+                       @change="scope.row.sourceFields = []">
               <el-option v-for="item in selectedDatasets" :key="'s' + item.id" :value="Number(item.id)" :label="item.name" />
             </el-select>
           </template>
         </el-table-column>
         <el-table-column label="源数据字段" min-width="140">
           <template #default="scope">
-            <el-select v-model="scope.row.sourceField" placeholder="选择源字段" filterable>
+            <el-select v-model="scope.row.sourceFields" placeholder="请选择源字段" filterable multiple clearable>
               <el-option v-for="field in fieldsOfDataset(scope.row.sourceDatasetId)" :key="field.name" :value="field.name"
                          :label="field.name + (field.title && field.title !== field.name ? ' - ' + field.title : '')" />
             </el-select>
@@ -477,14 +509,14 @@ const handleDelete = () => {
         <el-table-column label="目标数据集" min-width="140">
           <template #default="scope">
             <el-select v-model="scope.row.targetDatasetId" placeholder="选择目标数据集" filterable
-                       @change="scope.row.targetField = ''">
+                       @change="scope.row.targetFields = []">
               <el-option v-for="item in selectedDatasets" :key="'t' + item.id" :value="Number(item.id)" :label="item.name" />
             </el-select>
           </template>
         </el-table-column>
         <el-table-column label="目标数据字段" min-width="140">
           <template #default="scope">
-            <el-select v-model="scope.row.targetField" placeholder="选择目标字段" filterable>
+            <el-select v-model="scope.row.targetFields" placeholder="请选择目标字段" filterable multiple clearable>
               <el-option v-for="field in fieldsOfDataset(scope.row.targetDatasetId)" :key="field.name" :value="field.name"
                          :label="field.name + (field.title && field.title !== field.name ? ' - ' + field.title : '')" />
             </el-select>

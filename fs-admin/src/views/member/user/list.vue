@@ -33,6 +33,7 @@ const columns = ref([
 ])
 const config = ref({
   ready: false,
+  sorts: {},
   status: {},
 })
 const rows = ref([])
@@ -71,6 +72,7 @@ const rules = ref({
 const handleAdd = () => {
   form.value = {
     status: '1',
+    roleIds: [],
   }
   formVisible.value = true
 }
@@ -82,7 +84,8 @@ const handleEdit = (scope: any) => {
   form.value = Object.assign({}, scope.row, {
     status: scope.row.status + '',
     lockedTime: DateUtil.format(scope.row.lockedTime),
-    roleIds: scope.row.roles ? scope.row.roles.map((item: any) => item.id) : []
+    // 授权角色以逗号分隔维护在用户实体中，接口已转换为数组返回
+    roleIds: scope.row.roleIds ? scope.row.roleIds : (scope.row.roles ? scope.row.roles.map((item: any) => item.id) : [])
   })
   formVisible.value = true
 }
@@ -194,6 +197,7 @@ const handleDelete = () => {
         <button-search @click="searchable = !searchable" />
         <button-refresh @click="handleRefresh(true, true)" :loading="loading" />
         <TableColumnSetting v-model="columns" :table="tableRef" />
+        <TableSort v-model="filters.sort" :columns="columns" :sortable="config.sorts" @change="handleRefresh(true, true)" />
       </el-space>
     </div>
     <el-table

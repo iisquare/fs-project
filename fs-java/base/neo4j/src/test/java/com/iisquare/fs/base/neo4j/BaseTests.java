@@ -51,8 +51,8 @@ public class BaseTests extends Neo4jBase {
     }
 
     @Test
-    public void deleteByIdentityTest() {
-        long result = deleteNodeByIdentity(true, 0L, 1L, 2L, 3L);
+    public void deleteByElementIdTest() {
+        long result = deleteNodeByElementId(true, "4:0:0", "4:0:1");
         System.out.println(result);
     }
 

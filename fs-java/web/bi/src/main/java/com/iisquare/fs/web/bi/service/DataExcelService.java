@@ -46,6 +46,15 @@ public class DataExcelService extends JPAServiceBase {
     @Autowired
     ExcelMongo excelMongo;
 
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("status", "asc");
+        sorts.put("sort", "desc");
+        return sorts;
+    }
+
     public Map<Integer, String> status() {
         Map<Integer, String> status = new LinkedHashMap<>();
         status.put(1, "启用");
@@ -100,7 +109,7 @@ public class DataExcelService extends JPAServiceBase {
             helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id");
             helper.equalWithIntNotEmpty("status").like("name");
             return cb.and(helper.predicates());
-        }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort");
+        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = format(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
@@ -215,17 +224,21 @@ public class DataExcelService extends JPAServiceBase {
         if (documents.isEmpty()) return ApiUtil.result(5002, "未解析到有效数据", null);
         int total = documents.size();
         long affected = 0;
-        excelMongo.switchTable(info.getId());
-        if ("overwrite".equals(mode)) {
-            excelMongo.collection().drop();
-            affected = excelMongo.upsert(documents).getUpserts().size();
-        } else if ("replace".equals(mode)) {
-            affected = excelMongo.replace(documents).getUpserts().size();
-        } else if ("append".equals(mode)) {
-            affected = excelMongo.append(documents).getUpserts().size();
+        try {
+            excelMongo.switchTable(info.getId());
+            if ("overwrite".equals(mode)) {
+                excelMongo.collection().drop();
+                affected = excelMongo.upsert(documents).getUpserts().size();
+            } else if ("replace".equals(mode)) {
+                affected = excelMongo.replace(documents).getUpserts().size();
+            } else if ("append".equals(mode)) {
+                affected = excelMongo.append(documents).getUpserts().size();
+            }
+            return ApiUtil.result(0, null, DPUtil.buildMap(
+                    "mode", mode, "total", total, "affected", affected));
+        } catch (Exception e) {
+            return ApiUtil.result(5003, "存储数据失败，请核查数据内容", e.getMessage());
         }
-        return ApiUtil.result(0, null, DPUtil.buildMap(
-                "mode", mode, "total", total, "affected", affected));
     }
 
     /**

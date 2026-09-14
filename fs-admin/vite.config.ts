@@ -11,6 +11,9 @@ import copy from 'rollup-plugin-copy'
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    allowedHosts: ['wsl'],
+  },
   build: {
     rollupOptions: {
       output: {
@@ -30,7 +33,12 @@ export default defineConfig({
             if (id.includes('/api/') || id.includes('/core/') || id.includes('/stores/')) return 'api'
             if (id.includes('/utils/') || id.includes('/components/')) return 'components'
             if (id.includes('/views/')) return 'views-' + id.split('/views/')[1].split('/')[0]
-            if (id.includes('/designer/')) return 'designer-' + id.split('/designer/')[1].split('/')[0]
+            if (id.includes('/designer/')) {
+              const name = id.split('/designer/')[1].split('/')[0]
+              // 流程设计器需读取表单设计的字段权限，两者相互引用，合并为同一分块
+              if (name === 'FlexForm' || name === 'Workflow') return 'designer-oa'
+              return 'designer-' + name
+            }
           }
         }
       }

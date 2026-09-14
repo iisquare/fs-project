@@ -1,16 +1,17 @@
 package com.iisquare.fs.web.bi.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.bi.dao.VisualizeDao;
 import com.iisquare.fs.web.bi.entity.Visualize;
+import com.iisquare.fs.web.bi.util.AggregationUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
-import com.iisquare.fs.web.core.rpc.SparkRpc;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.persistence.criteria.Predicate;
 import jakarta.servlet.http.HttpServletRequest;
+import java.sql.SQLException;
 import java.util.*;
 
 @Service
@@ -31,21 +33,177 @@ public class VisualizeService extends ServiceBase {
     DefaultRbacService rbacService;
     @Autowired
     DatasetService datasetService;
-    @Autowired
-    SparkRpc sparkRpc;
 
     public Map<String, Object> search(Integer datasetId, JsonNode preview, JsonNode level) {
         if (null == preview || !preview.isObject()) {
             return ApiUtil.result(1001, "配置信息异常", null);
         }
-        Map<String, Object> result = null; // datasetService.dataset(datasetId);
+        Map<String, Object> result = datasetService.dataset(datasetId);
         if (ApiUtil.failed(result)) return result;
-        ObjectNode dataset = ApiUtil.data(result, ObjectNode.class);
-        ObjectNode options = DPUtil.objectNode();
-        options.replace("dataset", dataset);
-        options.replace("preview", preview);
-        options.replace("level", level);
-        return RpcUtil.result(sparkRpc.post("/bi/visualize", options));
+        try {
+            return axis(datasetService.from(ApiUtil.data(result, JsonNode.class)), preview, level);
+        } catch (Exception e) {
+            return ApiUtil.result(30500, e.getMessage(), null);
+        }
+    }
+
+    /**
+     * 基于 Trino 完成报表聚合运算：钻取层级过滤、维度取值及度量聚合。
+     * 维度取值与全部度量合并为单次分组聚合查询（FILTER 维度合并为 union all），
+     * 度量自身的过滤条件通过条件聚合内联，避免逐取值、逐度量的 N+1 次查询及数据集重复执行。
+     */
+    private Map<String, Object> axis(String from, JsonNode options, JsonNode levels) throws SQLException {
+        if (null == levels || !levels.isArray()) levels = DPUtil.arrayNode();
+        String baseFilter = AggregationUtil.filter(options.at("/filter"), null);
+        String drillFilter = levelsFilter(options, levels);
+        JsonNode bucket = options.at("/axis/buckets").get(levels.size());
+        if (null == bucket || !bucket.isObject()) {
+            return ApiUtil.result(61001, "获取所在层级维度配置异常", null);
+        }
+        ObjectNode axis = DPUtil.objectNode();
+        ObjectNode x = axis.putObject("x");
+        String aggregation = bucket.at("/aggregation").asText("");
+        String interval = bucket.at("/interval").asText("");
+        x.put("aggregation", aggregation).put("interval", interval);
+        x.put("label", bucket.at("/label").asText()); // 层级名称
+        ArrayNode data = x.putArray("data");
+        ArrayNode y = axis.putArray("y");
+        List<String> expressions = new ArrayList<>(); // 度量聚合表达式，与 y 数组下标一一对应
+        Iterator<JsonNode> metrics = options.at("/axis/metrics").iterator();
+        while (metrics.hasNext()) {
+            JsonNode metric = metrics.next();
+            ObjectNode item = y.addObject();
+            item.put("label", metric.at("/label").asText());
+            item.putArray("data");
+            String metricFilter = AggregationUtil.filter(metric.at("/filter"), null);
+            expressions.add(AggregationUtil.metric(
+                    metric.at("/aggregation").asText(""), metric.at("/field").asText(""), metricFilter));
+        }
+        ArrayNode rows;
+        switch (aggregation) {
+            case "TERM":
+            case "HISTOGRAM":
+            case "DATE_HISTOGRAM": {
+                String field = bucket.at("/field").asText();
+                if (DPUtil.empty(field)) return ApiUtil.result(61003, "维度字段配置异常", null);
+                field = axisField(field, aggregation, interval);
+                String sql = "select " + field + " as \"__value\"" + metricSelect(expressions)
+                        + " from " + from + AggregationUtil.where(baseFilter, drillFilter)
+                        + " group by " + field + " order by \"__value\" asc";
+                rows = datasetService.rows(sql);
+                for (JsonNode row : rows) {
+                    JsonNode value = row.get("__value");
+                    data.add(null == value ? NullNode.instance : value); // 空值保留为 null，避免展示为 "null" 字符串
+                    fillMetrics(y, row);
+                }
+                break;
+            }
+            case "FILTER": {
+                List<String> unions = new ArrayList<>(); // 各过滤条件为一条分支，排序字段保证前端展示顺序
+                int index = 0;
+                Iterator<JsonNode> filters = bucket.at("/filters").iterator();
+                while (filters.hasNext()) {
+                    JsonNode item = filters.next();
+                    if (expressions.isEmpty()) { // 无度量时仅返回桶标签，避免非聚合查询产生重复行
+                        data.add(item.at("/label").asText());
+                        continue;
+                    }
+                    String filter = AggregationUtil.filter(item.at("/filter"), null);
+                    String sql = "select " + index + " as \"__rank\", "
+                            + AggregationUtil.literal(item.at("/label").asText()) + " as \"__value\""
+                            + metricSelect(expressions)
+                            + " from " + from + AggregationUtil.where(baseFilter, drillFilter, filter);
+                    unions.add(sql);
+                    index++;
+                }
+                if (unions.isEmpty()) break;
+                rows = datasetService.rows(String.join(" union all ", unions) + " order by \"__rank\" asc");
+                for (JsonNode row : rows) {
+                    data.add(row.at("/__value").asText(""));
+                    fillMetrics(y, row);
+                }
+                break;
+            }
+            default:
+                return ApiUtil.result(61002, "维度类型暂不支持", aggregation);
+        }
+        axis.put("xSize", options.at("/axis/buckets").size());
+        axis.put("ySize", options.at("/axis/metrics").size());
+        axis.replace("levels", levels); // 请求的钻取历史
+        return ApiUtil.result(0, null, axis);
+    }
+
+    /**
+     * 度量聚合表达式转为查询字段片段，别名 metric_0、metric_1 与 y 数组下标一一对应
+     */
+    private String metricSelect(List<String> expressions) {
+        List<String> result = new ArrayList<>();
+        for (int index = 0; index < expressions.size(); index++) {
+            result.add(String.format(", %s as \"metric_%d\"", expressions.get(index), index));
+        }
+        return String.join("", result);
+    }
+
+    /**
+     * 将查询行中的度量结果按顺序回填至 y 数组
+     */
+    private void fillMetrics(ArrayNode y, JsonNode row) {
+        for (int index = 0; index < y.size(); index++) {
+            JsonNode value = row.get("metric_" + index);
+            ((ArrayNode) y.get(index).get("data")).add(null == value ? NullNode.instance : value);
+        }
+    }
+
+    /**
+     * 钻取历史转换为过滤条件
+     */
+    private String levelsFilter(JsonNode options, JsonNode levels) {
+        List<String> result = new ArrayList<>();
+        JsonNode buckets = options.at("/axis/buckets");
+        int levelIndex = 0;
+        Iterator<JsonNode> iterator = levels.iterator();
+        while (iterator.hasNext()) {
+            JsonNode level = iterator.next();
+            JsonNode bucket = buckets.get(levelIndex);
+            if (null == bucket) throw new RuntimeException("获取层级维度条件失败");
+            String aggregation = bucket.at("/aggregation").asText("");
+            switch (aggregation) {
+                case "TERM":
+                case "HISTOGRAM":
+                case "DATE_HISTOGRAM":
+                    String field = bucket.at("/field").asText();
+                    if (DPUtil.empty(field)) throw new RuntimeException("维度字段配置异常");
+                    field = axisField(field, aggregation, bucket.at("/interval").asText(""));
+                    JsonNode value = level.at("/x");
+                    if (null != value && value.isNull()) { // 空值钻取条件为 is null
+                        result.add(String.format("((%s) IS NULL)", field));
+                    } else {
+                        result.add(String.format("((%s)=%s)", field, AggregationUtil.literal(value.asText(""))));
+                    }
+                    break;
+                case "FILTER":
+                    JsonNode item = bucket.at("/filters").get(level.at("/index").asInt(-1));
+                    if (null == item) throw new RuntimeException("维度过滤配置异常");
+                    String filter = AggregationUtil.filter(item.at("/filter"), null);
+                    if (!DPUtil.empty(filter)) result.add("(" + filter + ")");
+                    break;
+                default:
+                    throw new RuntimeException("维度类型暂不支持");
+            }
+            levelIndex++;
+        }
+        return result.isEmpty() ? null : DPUtil.implode(" AND ", result.toArray(new String[0]));
+    }
+
+    private String axisField(String field, String aggregation, String interval) {
+        String result = AggregationUtil.identifier(field);
+        if ("HISTOGRAM".equals(aggregation)) {
+            int divider = DPUtil.parseInt(interval);
+            if (Math.abs(divider) > 1) result = String.format("floor(%s / %d)", result, divider);
+        } else if ("DATE_HISTOGRAM".equals(aggregation)) {
+            result = AggregationUtil.date(result, interval);
+        }
+        return result;
     }
 
     public Map<?, ?> search(Map<?, ?> param, Map<?, ?> config) {
@@ -68,13 +226,14 @@ public class VisualizeService extends ServiceBase {
                 predicates.add(cb.equal(root.get("datasetId"), datasetId));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"))));
+        }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"), new Sort.Order(Sort.Direction.DESC, "id"))));
         List<?> rows = data.getContent();
         if(!DPUtil.empty(config.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
         }
         if(!DPUtil.empty(config.get("withDatasetInfo"))) {
-//            datasetService.fillInfo(rows, "datasetId");
+            Set<Integer> datasetIds = DPUtil.values(rows, Integer.class, "datasetId");
+            DPUtil.fillValues(rows, new String[]{"datasetId"}, "Name", datasetService.names(datasetIds));
         }
         if(!DPUtil.empty(config.get("withStatusText"))) {
             DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));

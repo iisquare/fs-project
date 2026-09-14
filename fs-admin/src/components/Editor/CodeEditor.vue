@@ -11,6 +11,7 @@
  * @prop     {Boolean}          lineWrapping - 是否自动换行，默认 true
  * @prop     {Boolean}          resizable    - 是否允许拖拽调整高度，默认 false
  * @prop     {Boolean}          fill         - 是否铺满父容器高度，默认 false
+ * @prop     {String}           placeholder  - 空白占位提示文字
  * @prop     {HintItem[]}       hints        - 自定义自动提示列表
  *
  * 提示项结构 (HintItem):
@@ -44,6 +45,8 @@ import 'codemirror/addon/search/search.js'
 import 'codemirror/addon/hint/show-hint.css'
 import 'codemirror/addon/hint/show-hint.js'
 
+import 'codemirror/addon/display/placeholder.js'
+
 import 'codemirror/addon/fold/foldgutter.css'
 import 'codemirror/addon/fold/foldcode.js'
 import 'codemirror/addon/fold/foldgutter.js'
@@ -64,6 +67,7 @@ const {
   lineWrapping = true,
   resizable = false,
   fill = false,
+  placeholder = '',
   hints = [],
 } = defineProps({
   mode: { type: String, required: false },
@@ -74,6 +78,7 @@ const {
   lineWrapping: { type: Boolean, required: false },
   resizable: { type: Boolean, required: false },
   fill: { type: Boolean, required: false },
+  placeholder: { type: String, required: false },
   hints: { type: Array<Object>, required: false },
 })
 
@@ -164,6 +169,7 @@ const load = () => {
     foldGutter: foldGutter,
     lineNumbers: lineNumbers,
     lineWrapping: lineWrapping,
+    placeholder: placeholder,
     hintOptions: {
       completeSingle: false,
       hint: handleHint
@@ -238,6 +244,10 @@ defineExpose({ getContent, setContent, replaceSelection, getSelection })
 
   :deep(.CodeMirror) {
     height: auto;
+  }
+
+  :deep(.CodeMirror-placeholder) {
+    color: var(--el-text-color-placeholder);
   }
 }
 </style>

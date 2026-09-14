@@ -62,6 +62,7 @@ public class FavoriteController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("types", favoriteService.types());
+        model.put("sorts", favoriteService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

@@ -38,6 +38,15 @@ public class DataThemeService extends JPAServiceBase {
     @Autowired
     Configuration configuration;
 
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("status", "asc");
+        sorts.put("sort", "desc");
+        return sorts;
+    }
+
     public Map<Integer, String> status() {
         Map<Integer, String> status = new LinkedHashMap<>();
         status.put(1, "启用");
@@ -69,7 +78,7 @@ public class DataThemeService extends JPAServiceBase {
             helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id");
             helper.equalWithIntNotEmpty("status").like("name");
             return cb.and(helper.predicates());
-        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.desc("id")), "id", "status", "sort");
+        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = format(ApiUtil.rows(result), args);
         return result;
     }

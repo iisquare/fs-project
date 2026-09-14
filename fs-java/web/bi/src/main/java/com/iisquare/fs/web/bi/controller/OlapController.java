@@ -57,13 +57,6 @@ public class OlapController extends PermitControllerBase {
         return ApiUtil.echoResult(result);
     }
 
-    @RequestMapping("/datasetQuery")
-    @Permission
-    public String datasetQueryAction(@RequestParam Map<?, ?> param, HttpServletRequest request, HttpServletResponse response) {
-        Map<String, Object> result = olapService.query(param, true, request, response);
-        return ApiUtil.echoResult(result);
-    }
-
     @RequestMapping("/config")
     @Permission("")
     public String configAction(ModelMap model) {

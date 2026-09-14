@@ -46,7 +46,7 @@ public class ModelRelationService extends ServiceBase {
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")),
                 Arrays.asList("sourceCatalog", "sourceModel", "sourceColumn", "targetCatalog", "targetModel", "targetColumn"));
-        if (null == sort) sort = Sort.by(Sort.Order.asc("sourceCatalog"), Sort.Order.desc("sourceModel"), Sort.Order.desc("sourceColumn"));
+        if (null == sort) sort = Sort.by(Sort.Order.asc("sourceCatalog"), Sort.Order.desc("sourceModel"), Sort.Order.desc("sourceColumn"), Sort.Order.desc("id"));
         Page<ModelRelation> data = relationDao.findAll((Specification<ModelRelation>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             List<Predicate> sources = new ArrayList<>();

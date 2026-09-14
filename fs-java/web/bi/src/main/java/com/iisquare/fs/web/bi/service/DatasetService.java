@@ -1,6 +1,7 @@
 package com.iisquare.fs.web.bi.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
@@ -24,6 +25,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -44,6 +50,15 @@ public class DatasetService extends JPAServiceBase {
     CronRpc cronRpc;
     @Autowired
     StringRedisTemplate redis;
+
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("status", "asc");
+        sorts.put("sort", "desc");
+        return sorts;
+    }
 
     public Map<Integer, String> status() {
         Map<Integer, String> status = new LinkedHashMap<>();
@@ -74,6 +89,132 @@ public class DatasetService extends JPAServiceBase {
 
     public Dataset info(Integer id) {
         return info(datasetDao, id);
+    }
+
+    /**
+     * 解析数据集：校验状态并返回名称及其查询语句，供矩阵、报表等运算使用。
+     */
+    public Map<String, Object> dataset(Integer id) {
+        Dataset info = info(id);
+        if (null == info || 1 != info.getStatus()) return ApiUtil.result(61001, "数据集状态异常", id);
+        String sql = DPUtil.trim(info.getContent());
+        if (DPUtil.empty(sql)) return ApiUtil.result(61002, "数据集查询语句不能为空", id);
+        ObjectNode dataset = DPUtil.objectNode();
+        dataset.put("id", info.getId());
+        dataset.put("name", info.getName());
+        dataset.put("sql", sql);
+        return ApiUtil.result(0, null, dataset);
+    }
+
+    /**
+     * 将数据集查询语句包装为可参与运算的数据来源。
+     */
+    public String from(JsonNode dataset) {
+        String sql = dataset.at("/sql").asText("");
+        while (sql.endsWith(";")) {
+            sql = DPUtil.trim(sql.substring(0, sql.length() - 1));
+        }
+        String name = dataset.at("/name").asText("dataset");
+        return String.format("(%s) as %s", sql, "\"" + name.replace("\"", "\"\"") + "\"");
+    }
+
+    /**
+     * 执行数据集查询，返回 JSON 行数组。
+     */
+    public ArrayNode rows(String sql) throws SQLException {
+        ArrayNode rows = DPUtil.arrayNode();
+        try (Connection connection = trinoService.connection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setQueryTimeout(600);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                ResultSetMetaData meta = resultSet.getMetaData();
+                int count = meta.getColumnCount();
+                while (resultSet.next()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    for (int index = 1; index <= count; index++) {
+                        row.put(meta.getColumnLabel(index), resultSet.getObject(index));
+                    }
+                    rows.add(DPUtil.toJSON(row));
+                }
+            }
+        }
+        return rows;
+    }
+
+    /**
+     * 执行数据集聚合查询，返回第一行第一列的值。
+     */
+    public Object scalar(String sql) throws SQLException {
+        final Object[] value = new Object[1];
+        try (Connection connection = trinoService.connection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setQueryTimeout(600);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) value[0] = resultSet.getObject(1);
+            }
+        }
+        return value[0];
+    }
+
+    /**
+     * 获取数据集字段信息，供矩阵、报表等设计器选择字段使用。
+     */
+    public Map<String, Object> columns(Map<?, ?> param) {
+        Integer id = DPUtil.parseInt(param.get("id"));
+        Dataset info = info(id);
+        if (null == info || 1 != info.getStatus()) return ApiUtil.result(61001, "数据集状态异常", id);
+        ObjectNode result = DPUtil.objectNode();
+        ArrayNode columns = result.putArray("columns");
+        JsonNode fields = DPUtil.parseJSON(info.getFields(), k -> DPUtil.arrayNode());
+        for (JsonNode field : fields) {
+            String name = field.at("/name").asText("");
+            if (DPUtil.empty(name)) continue;
+            ObjectNode column = columns.addObject();
+            column.put("name", name);
+            column.put("title", field.at("/title").asText(name));
+            column.put("type", field.at("/type").asText(""));
+            column.put("comment", field.at("/comment").asText(""));
+        }
+        if (columns.isEmpty() && !DPUtil.empty(info.getContent())) { // 未维护字段配置时，按查询语句解析字段
+            try {
+                columns.addAll(describe(from(ApiUtil.data(dataset(id), JsonNode.class))));
+            } catch (Exception e) {
+                logger.warn("解析数据集字段失败, id: {}, message: {}", id, e.getMessage());
+            }
+        }
+        return ApiUtil.result(0, null, result);
+    }
+
+    private ArrayNode describe(String from) throws SQLException {
+        ArrayNode columns = DPUtil.arrayNode();
+        try (Connection connection = trinoService.connection();
+             PreparedStatement statement = connection.prepareStatement("select * from " + from + " limit 1")) {
+            statement.setQueryTimeout(60);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                ResultSetMetaData meta = resultSet.getMetaData();
+                for (int index = 1; index <= meta.getColumnCount(); index++) {
+                    String name = meta.getColumnLabel(index);
+                    ObjectNode column = columns.addObject();
+                    column.put("name", name);
+                    column.put("title", name);
+                    column.put("type", meta.getColumnTypeName(index));
+                    column.put("comment", "");
+                }
+            }
+        }
+        return columns;
+    }
+
+    /**
+     * 获取数据集主键与名称的映射，用于列表回显引用数据集名称。
+     */
+    public Map<Integer, String> names(Collection<Integer> ids) {
+        Map<Integer, String> result = new LinkedHashMap<>();
+        if (null == ids || ids.isEmpty()) return result;
+        for (Dataset info : datasetDao.findAllById(ids)) {
+            result.put(info.getId(), info.getName());
+        }
+        return result;
     }
 
     public boolean isMaterialized(String type) {
@@ -145,7 +286,7 @@ public class DatasetService extends JPAServiceBase {
             helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id");
             helper.equalWithIntNotEmpty("status").like("name").equal("type");
             return cb.and(helper.predicates());
-        }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort");
+        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = format(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");

@@ -310,7 +310,11 @@ const renderCharts = () => {
     renderRankingBar(rankingUserRef, ranking.byUser, (d: any) => d.uidUserInfo?.name || `用户#${d.uid}`, '用户排名')
     renderRankingBar(rankingAuthRef, ranking.byAuth, (d: any) => d.authInfo?.name || `密钥#${d.authId}`, '密钥排名')
     renderRankingBar(rankingProviderRef, ranking.byProvider, (d: any) => d.providerInfo?.name || `供应商#${d.providerId}`, '供应商排名')
-    renderRankingBar(rankingModelRef, ranking.byModel, (d: any) => d.modelInfo?.name || `模型#${d.modelId}`, '模型排名')
+    renderRankingBar(rankingModelRef, ranking.byModel, (d: any) => {
+      const name = d.modelInfo?.name || `未知模型`
+      const alias = d.modelInfo?.alias ? `(${d.modelInfo.alias})` : ''
+      return `${name}#${d.modelId}${alias}`
+    }, '模型排名')
     if (ranking.byRole?.length) {
       renderRoleGroupedBar(rankingRoleRef, ranking.byRole)
     }

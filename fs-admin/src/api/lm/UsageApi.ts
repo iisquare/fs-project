@@ -1,6 +1,9 @@
 import base from './Api'
 
 export default {
+  config (tips = {}) {
+    return base.post('/usage/config', {}, tips)
+  },
   info (id: any, tips = {}) {
     return base.get('/usage/info', { id }, tips)
   },

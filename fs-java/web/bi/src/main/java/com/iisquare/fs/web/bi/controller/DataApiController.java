@@ -55,6 +55,7 @@ public class DataApiController extends PermitControllerBase {
         model.put("contentTypes", dataApiService.contentTypes());
         model.put("status", dataApiService.status());
         model.put("fieldTypes", datasetService.fieldTypes());
+        model.put("sorts", dataApiService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

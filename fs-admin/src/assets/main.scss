@@ -114,6 +114,34 @@ body, html {
 .fs-table-toolbar {
   height: 60px;
 }
+/* 表格展开行内容统一留白，避免内容紧贴单元格边框（需覆盖 element-plus 的单元格内边距） */
+.el-table {
+  --el-table-expanded-cell-bg-color: var(--el-fill-color-lighter);
+}
+.el-table .el-table__cell.el-table__expanded-cell {
+  padding: 14px 16px 16px;
+  line-height: 1.6;
+}
+/* 表单标签置顶（label-position="top"）时，颜色选择器、开关等短控件仍保持左右结构 */
+.fs-form-inline {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  > .el-form-item__label {
+    display: inline-flex !important;
+    flex: none;
+    width: auto !important;
+    min-width: 0 !important;
+    margin-bottom: 0 !important;
+    padding-right: 12px;
+    justify-content: flex-start;
+  }
+  > .el-form-item__content {
+    flex: none;
+    margin-left: auto !important;
+    justify-content: flex-end;
+  }
+}
 .fs-table-dropdown {
   width: 260px;
 }

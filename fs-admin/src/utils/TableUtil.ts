@@ -21,8 +21,8 @@ const TableUtil = {
       return DataUtil.values(selection, idField)
     })
   },
-  async confirm () {
-    return ElementUtil.confirm('确认删除所选记录吗？')
+  async confirm (message = '确认删除所选记录吗？', title = '操作提示') {
+    return ElementUtil.confirm(message, title)
   },
   toggleRowSelection (table: TableInstance | undefined, selection: any, selected = true, idField = 'id', childrenField = 'children') {
     this.toggleRow(table, selection, idField, childrenField, (row: any) => {

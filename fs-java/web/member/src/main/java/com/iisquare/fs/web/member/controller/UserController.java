@@ -51,6 +51,7 @@ public class UserController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", userService.status());
+        model.put("sorts", userService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

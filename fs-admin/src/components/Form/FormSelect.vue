@@ -11,7 +11,8 @@
  * @prop     {String}           placeholder  - 占位文本，默认"输入关键词进行查找"
  * @prop     {String}           fieldKey     - 用作唯一标识的字段名，默认 'id'
  * @prop     {String}           fieldValue   - 用作值的字段名，默认 'id'
- * @prop     {String}           fieldLabel   - 用作标签的字段名，默认 'name'
+ * @prop     {String}           fieldLabel   - 用作标签的字段名，默认 'name'，同时作为远程搜索的关键词字段
+ * @prop     {Function}         labelFormatter - 标签内容格式化函数，签名为 (row, index) => String，未设置时取 fieldLabel 对应字段
  * @prop     {*}                exceptIds    - 排除的记录 ID
  * @prop     {Number}           pageSize     - 分页大小，默认 15
  * @prop     {Function}         parameter    - 扩展查询参数函数，签名为 (query: string) => Object
@@ -31,6 +32,12 @@
  *   :callback="UserApi.search"
  *   placeholder="搜索用户"
  * />
+ * <form-select
+ *   v-model="modelIds"
+ *   :callback="ModelApi.list"
+ *   :labelFormatter="(row, index) => row.alias ? row.name + '(' + row.alias + ')' : row.name"
+ *   multiple
+ * />
  */
 import DataUtil from '@/utils/DataUtil';
 import { ref, watch } from 'vue';
@@ -42,6 +49,7 @@ const {
   fieldKey = 'id',
   fieldValue = 'id',
   fieldLabel = 'name',
+  labelFormatter = undefined,
   exceptIds = '',
   pageSize = 15,
   callback,
@@ -53,6 +61,7 @@ const {
   fieldKey: { type: String, required: false },
   fieldValue: { type: String, required: false },
   fieldLabel: { type: String, required: false },
+  labelFormatter: { type: Function, required: false },
   exceptIds: { required: false },
   pageSize: { type: Number, required: false },
   callback: Function,
@@ -65,6 +74,11 @@ const selected = defineModel('selected', { type: [Object, Array<Object>], defaul
 const emit = defineEmits(['change'])
 const options: any = ref([])
 const loading = ref(false)
+
+// 标签内容：由调用端通过 labelFormatter 自行组装，未设置时取 fieldLabel 对应字段
+const label = (item: any, index: number) => {
+  return labelFormatter ? labelFormatter(item, index) : item[fieldLabel]
+}
 
 const handleCallback = async (params: any) => {
   if (!callback) return
@@ -79,8 +93,8 @@ const handleCallback = async (params: any) => {
       const map = DataUtil.array2map(result.data.rows, fieldValue)
       selected.value = map[model.value]
     }
-    return result.data.rows.map((item: any) => {
-      return { key: item[fieldKey], value: item[fieldValue], label: item[fieldLabel], }
+    return result.data.rows.map((item: any, index: number) => {
+      return { key: item[fieldKey], value: item[fieldValue], label: label(item, index), }
     })
   }).catch(() => []).finally(() => {
     loading.value = false
@@ -93,6 +107,13 @@ const handleParameter = (params: any, query: string) => {
 
 watch(model, (value, oldValue) => {
   if (value === oldValue || DataUtil.empty(value)) return
+  // 用户从下拉选项中选择时，选中项已存在于当前选项或回显数据中，无需再次远程检索
+  const known = new Set<string>()
+  options.value.forEach((item: any) => known.add(String(item.value)))
+  const selectedRows = DataUtil.isArray(selected.value) ? selected.value : (selected.value ? [selected.value] : [])
+  selectedRows.forEach((item: any) => item && known.add(String(item[fieldValue])))
+  const values = DataUtil.isArray(value) ? value : [value]
+  if (values.every((item: any) => known.has(String(item)))) return
   const size = Math.max(pageSize, DataUtil.isArray(model.value) ? model.value.length : 1)
   handleCallback(handleParameter({ [fieldValue]: model.value, pageSize: size }, ''))
 }, { immediate: true })
@@ -117,6 +138,7 @@ const handleChange = (value: any) => {
 <template>
   <el-select
     v-model="model"
+    autocomplete="off"
     :multiple="multiple"
     filterable
     remote

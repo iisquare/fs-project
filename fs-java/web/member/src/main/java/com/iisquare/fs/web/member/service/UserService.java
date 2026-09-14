@@ -11,12 +11,12 @@ import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.base.web.util.ServletUtil;
 import com.iisquare.fs.web.member.core.RedisKey;
-import com.iisquare.fs.web.member.dao.RelationDao;
 import com.iisquare.fs.web.member.dao.RoleDao;
 import com.iisquare.fs.web.member.dao.UserDao;
-import com.iisquare.fs.web.member.entity.Relation;
+import com.iisquare.fs.web.member.dao.UserRoleDao;
 import com.iisquare.fs.web.member.entity.Role;
 import com.iisquare.fs.web.member.entity.User;
+import com.iisquare.fs.web.member.entity.UserRole;
 import com.iisquare.fs.web.member.mvc.Configuration;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.servlet.http.HttpSession;
@@ -25,6 +25,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -39,13 +40,11 @@ public class UserService extends JPAServiceBase {
     @Autowired
     Configuration configuration;
     @Autowired
-    RelationDao relationDao;
-    @Autowired
     RoleDao roleDao;
     @Autowired
-    RbacService rbacService;
+    UserRoleDao userRoleDao;
     @Autowired
-    RelationService relationService;
+    RbacService rbacService;
     @Autowired
     SettingService settingService;
     @Autowired
@@ -56,6 +55,17 @@ public class UserService extends JPAServiceBase {
     MessageService messageService;
 
     public static final Integer LOGIN_TRY_TIMES = 6;
+    public static final Integer VERIFY_TRY_TIMES = 5; // 邮箱验证码最大尝试次数
+    public static final Integer PASSWORD_TRY_TIMES = 5; // 修改密码时原密码最大尝试次数
+
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("status", "asc");
+        sorts.put("sort", "desc");
+        return sorts;
+    }
 
     public String password(String password, String salt) {
         return CodeUtil.md5(CodeUtil.md5(password) + salt);
@@ -128,14 +138,10 @@ public class UserService extends JPAServiceBase {
                 cb.equal(root.get("name"), name),
                 cb.equal(root.get("email"), email)
         ));
-        if (DPUtil.values(users, String.class, "serial").contains(serial)) {
-            return ApiUtil.result(1011, "用户名已存在", serial);
-        }
-        if (DPUtil.values(users, String.class, "name").contains(name)) {
-            return ApiUtil.result(1012, "昵称已存在", name);
-        }
-        if (DPUtil.values(users, String.class, "email").contains(email)) {
-            return ApiUtil.result(1013, "邮箱地址已存在", email);
+        if (DPUtil.values(users, String.class, "serial").contains(serial)
+                || DPUtil.values(users, String.class, "name").contains(name)
+                || DPUtil.values(users, String.class, "email").contains(email)) {
+            return ApiUtil.result(1011, "注册信息已存在", null); // 统一文案，避免账号枚举
         }
         if ("email".equals(action)) { // 发送邮箱验证码
             String code = DPUtil.random(6);
@@ -146,7 +152,12 @@ public class UserService extends JPAServiceBase {
             redis.opsForValue().set(redisKey, verify.toString(), Duration.ofMinutes(5));
             return messageService.signup(email, code);
         }
-        if (DPUtil.empty(verifyCode) || !verifyCode.equals(verify.at("/code").asText())) {
+        if (DPUtil.empty(verifyCode)) {
+            return ApiUtil.result(13402, "邮箱验证码错误或已过期，请重新输入", param.get("verify"));
+        }
+        if (!verifyCode.equals(verify.at("/code").asText())) {
+            Map<String, Object> retry = verifyRetry(redisKey, verify);
+            if (null != retry) return retry;
             return ApiUtil.result(13402, "邮箱验证码错误或已过期，请重新输入", param.get("verify"));
         }
         redis.delete(redisKey); // 清理验证码
@@ -211,7 +222,10 @@ public class UserService extends JPAServiceBase {
                 cb.equal(root.get("status"), 1)
         )).orElse(null);
         if (null == user) {
-            return ApiUtil.result(1404, "邮箱地址不存在或用户状态异常", email);
+            if ("email".equals(action)) {
+                return ApiUtil.result(0, "验证码已发送，请注意查收", email); // 不发送也不提示邮箱是否存在，避免枚举
+            }
+            return ApiUtil.result(13402, "验证码错误或已过期，请重新输入", param.get("verify")); // 不提示邮箱是否存在
         }
         if ("email".equals(action)) { // 发送邮箱验证码
             String code = DPUtil.random(6);
@@ -222,7 +236,12 @@ public class UserService extends JPAServiceBase {
             redis.opsForValue().set(redisKey, verify.toString(), Duration.ofMinutes(5));
             return messageService.forgot(email, code);
         }
-        if (DPUtil.empty(verifyCode) || !verifyCode.equals(verify.at("/code").asText())) {
+        if (DPUtil.empty(verifyCode)) {
+            return ApiUtil.result(13402, "邮箱验证码错误或已过期，请重新输入", param.get("verify"));
+        }
+        if (!verifyCode.equals(verify.at("/code").asText())) {
+            Map<String, Object> retry = verifyRetry(redisKey, verify);
+            if (null != retry) return retry;
             return ApiUtil.result(13402, "邮箱验证码错误或已过期，请重新输入", param.get("verify"));
         }
         redis.delete(redisKey); // 清理验证码
@@ -233,42 +252,61 @@ public class UserService extends JPAServiceBase {
         try {
             logout(request);
             user = userDao.save(user);
+            rbacService.removeSessions(user.getId()); // 密码重置后使该用户所有会话失效
             return ApiUtil.result(0, "密码重置成功", DPUtil.firstNode(filter(DPUtil.toArrayNode(user))));
         } catch (Exception e) {
             return ApiUtil.result(1500, "密码重置失败，请稍后再试", e.getMessage());
         }
     }
 
+    /**
+     * 验证码校验失败时递增尝试次数，超过上限后作废验证码，需重新获取
+     */
+    private Map<String, Object> verifyRetry(String redisKey, ObjectNode verify) {
+        int retry = verify.at("/retry").asInt(0) + 1;
+        if (retry >= VERIFY_TRY_TIMES) {
+            redis.delete(redisKey);
+            return ApiUtil.result(13403, "验证码尝试次数过多，请重新获取", retry);
+        }
+        verify.put("retry", retry);
+        redis.opsForValue().set(redisKey, verify.toString(), Duration.ofMinutes(5));
+        return null;
+    }
+
+    /**
+     * 用户身份信息，全部由用户与角色缓存组装，不直接访问数据库
+     * 用户不存在、已删除或账号锁定期间返回空对象，视为不可用
+     */
     public ObjectNode identity(Integer id) {
-        User info = info(id);
-        if (null == info || 1 != info.getStatus()) return DPUtil.objectNode();
+        ObjectNode permit = rbacService.userPermit(id);
+        if (1 != permit.at("/status").asInt() || 0 != permit.at("/deletedTime").asLong()
+                || permit.at("/lockedTime").asLong() > System.currentTimeMillis()) {
+            return DPUtil.objectNode();
+        }
         ObjectNode result = DPUtil.objectNode();
-        result.put("id", info.getId());
-        result.put("serial", info.getSerial());
-        result.put("name", info.getName());
-        result.put("email", info.getEmail());
-        result.put("phone", info.getPhone());
+        result.put("id", permit.at("/id").asInt());
+        result.put("serial", permit.at("/serial").asText());
+        result.put("name", permit.at("/name").asText());
+        result.put("email", permit.at("/email").asText());
+        result.put("phone", permit.at("/phone").asText());
         ObjectNode roles = result.putObject("roles");
-        Set<Integer> roleIds = DPUtil.values(relationDao.findAllByTypeAndAid("user_role", info.getId()), Integer.class, "bid");
-        if (!roleIds.isEmpty()) {
-            for (Role item : roleDao.findAllById(roleIds)) {
-                if (1 != item.getStatus()) continue;
-                ObjectNode role = roles.putObject(String.valueOf(item.getId()));
-                role.put("id", item.getId());
-                role.put("name", item.getName());
-            }
+        Set<Integer> roleIds = new TreeSet<>();
+        for (JsonNode roleId : permit.at("/roles")) {
+            roleIds.add(roleId.asInt());
+        }
+        for (ObjectNode role : rbacService.rolePermits(roleIds)) {
+            if (1 != role.at("/status").asInt()) continue; // 角色不存在或未启用时不返回
+            ObjectNode node = roles.putObject(String.valueOf(role.at("/id").asInt()));
+            node.put("id", role.at("/id").asInt());
+            node.put("name", role.at("/name").asText());
         }
         return result;
     }
 
     public Map<String, Object> logout(HttpServletRequest request) {
         HttpSession session = request.getSession();
-        session.invalidate();
-        Long deleted = redis.delete(Arrays.asList( // 也可使用SessionStatus.setComplete()清理
-                "spring:session:sessions:" + session.getId(),
-                "spring:session:sessions:expires:" + session.getId()
-        ));
-        return ApiUtil.result(0, null, deleted);
+        session.invalidate(); // Spring Session 会同步清理 Redis 中的会话及索引数据
+        return ApiUtil.result(0, null, null);
     }
 
     public Map<String, Object> login(Map<?, ?> param, HttpServletRequest request) {
@@ -279,7 +317,7 @@ public class UserService extends JPAServiceBase {
         if(DPUtil.empty(serial)) {
             session = rbacService.currentInfo(request, null);
             info = info(DPUtil.parseInt(session.get("uid")));
-            if (null != info && (1 != info.getStatus() || info.getLockedTime() > System.currentTimeMillis())) {
+            if (null != info && (1 != info.getStatus() || 0 != info.getDeletedTime() || info.getLockedTime() > System.currentTimeMillis())) {
                 info = null;
                 logout(request);
             }
@@ -293,20 +331,19 @@ public class UserService extends JPAServiceBase {
             info = userDao.findOne((Specification<User>) (root, query, cb) -> {
                 return cb.equal(root.get("serial"), serial);
             }).orElse(null);
-            if(null == info || 0 != info.getDeletedTime()) {
-                return ApiUtil.result(1001, "账号不存在或密码错误", null);
+            String redisKey = RedisKey.login(serial); // 按账号计数，账号不存在时同样累计，避免账号枚举
+            if (DPUtil.parseLong(redis.opsForValue().get(redisKey)) >= LOGIN_TRY_TIMES) {
+                return ApiUtil.result(1401, "登录失败次数过多，请稍后再试", null);
             }
-            String redisKey = RedisKey.login(info.getId());
-            if (DPUtil.parseInt(redis.opsForValue().get(redisKey)) > LOGIN_TRY_TIMES) {
-                return ApiUtil.result(1401, "登录失败次数过多，请稍后再试", info.getId());
-            }
-            if(!info.getPassword().equals(password(DPUtil.parseString(param.get("password")), info.getSalt()))) {
+            if(null == info || 0 != info.getDeletedTime()
+                    || !info.getPassword().equals(password(DPUtil.parseString(param.get("password")), info.getSalt()))) {
                 long increment = DPUtil.parseLong(redis.opsForValue().increment(redisKey, 1));
                 if (1 == increment) {
                     redis.expire(redisKey, Duration.ofMinutes(30));
                 }
-                return ApiUtil.result(1002, String.format("登录失败，剩余%d次机会", LOGIN_TRY_TIMES - increment), null);
+                return ApiUtil.result(1001, "账号不存在或密码错误", null); // 统一文案，避免账号枚举
             }
+            redis.delete(redisKey); // 登录成功，清理失败计数
             if(1 != info.getStatus() || info.getLockedTime() > System.currentTimeMillis()) {
                 return ApiUtil.result(1003, "账号已锁定，请联系管理人员", null);
             }
@@ -315,6 +352,7 @@ public class UserService extends JPAServiceBase {
             userDao.save(info);
             // Session中仅存储标识信息，详情数据需单独存取，避免缓存不同步
             rbacService.currentInfo(request, DPUtil.buildMap("uid", info.getId()));
+            request.changeSessionId(); // 登录成功后轮换会话标识，避免会话固定攻击
         }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("info", info(request, info));
@@ -355,9 +393,16 @@ public class UserService extends JPAServiceBase {
         if(!password.equals(passwordNew)) return ApiUtil.result(1003, "两次密码输入不一致", null);
         User info = info(rbacService.uid(request));
         if(null == info) return ApiUtil.result(1004, "用户未登录或登录超时", null);
+        String redisKey = RedisKey.password(info.getId()); // 按用户计数，防止暴力猜解原密码
+        if (DPUtil.parseLong(redis.opsForValue().get(redisKey)) >= PASSWORD_TRY_TIMES) {
+            return ApiUtil.result(1401, "尝试次数过多，请稍后再试", null);
+        }
         if(!info.getPassword().equals(password(passwordOld, info.getSalt()))) {
+            long increment = DPUtil.parseLong(redis.opsForValue().increment(redisKey, 1));
+            if (1 == increment) redis.expire(redisKey, Duration.ofMinutes(30));
             return ApiUtil.result(1005, "原密码错误", null);
         }
+        redis.delete(redisKey); // 原密码校验通过，清理失败计数
         String salt = DPUtil.random(4);
         password = password(password, salt);
         info.setPassword(password);
@@ -368,6 +413,7 @@ public class UserService extends JPAServiceBase {
         return ApiUtil.result(0, null, count);
     }
     
+    @Transactional
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
         int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
@@ -452,17 +498,42 @@ public class UserService extends JPAServiceBase {
                 info.setLockedTime(DPUtil.dateTime2millis(lockedTime, configuration.getFormatDate()));
             }
         }
-        info = save(userDao, info, rbacService.uid(request));
-        // 用户角色，新增时需要先保存用户
-        List<Integer> roleIds = DPUtil.parseIntList(param.get("roleIds"));
-        Set<Integer> permitted = relationService.relationIds("user_role", info.getId(), null);
-        if (!relationService.same(roleIds, permitted)) {
-            if(!rbacService.hasPermit(request, "role")) {
-                return ApiUtil.result(0, "用户保存成功，无角色操作权限", info);
-            }
-            relationService.relationIds("user_role", info.getId(), new HashSet<>(roleIds));
+        // 授权角色维护在独立关联表中，无操作权限时保留原值
+        Set<Integer> roleIds = new TreeSet<>(DPUtil.parseIntList(param.get("roleIds")));
+        if (!roleIds.isEmpty() && !roleIds.equals(DPUtil.values(roleDao.findAllById(roleIds), Integer.class, "id"))) {
+            return ApiUtil.result(1006, "授权角色不存在或已删除", null);
         }
-        return ApiUtil.result(0, null, info);
+        if(null != info.getId()) userDao.findByIdForUpdate(info.getId()); // 悲观锁，避免并发覆盖
+        Set<Integer> permitted = new TreeSet<>(userRoleDao.findRoleIdsByUserId(info.getId()));
+        boolean roleDenied = !roleIds.equals(permitted) && !rbacService.hasPermit(request, "role");
+        info = save(userDao, info, rbacService.uid(request));
+        if(!roleDenied) updateUserRole(info.getId(), permitted, roleIds, rbacService.uid(request));
+        if(1 != DPUtil.parseInt(info.getStatus()) || DPUtil.parseLong(info.getLockedTime()) > System.currentTimeMillis()) {
+            rbacService.removeSessions(info.getId()); // 禁用或锁定后立即失效在线会话
+        }
+        rbacService.evictUserPermit(info.getId()); // 用户角色或状态变更后同步清理该用户的资源缓存
+        JsonNode node = DPUtil.firstNode(hide(DPUtil.toArrayNode(info))); // 不返回密码、密码盐等敏感字段
+        if (roleDenied) return ApiUtil.result(0, "用户保存成功，无角色操作权限", node);
+        return ApiUtil.result(0, null, node);
+    }
+
+    /**
+     * 增量更新用户角色，仅写入新增与解除的部分，未改动的授权保持原样
+     */
+    private void updateUserRole(Integer userId, Set<Integer> current, Set<Integer> target, int uid) {
+        Set<Integer> added = new TreeSet<>(target);
+        added.removeAll(current);
+        Set<Integer> removed = new TreeSet<>(current);
+        removed.removeAll(target);
+        if (added.isEmpty() && removed.isEmpty()) return; // 无变更时不做任何写入
+        if (!removed.isEmpty()) userRoleDao.deleteByUserIdAndRoleIdIn(userId, removed);
+        if (added.isEmpty()) return;
+        long time = System.currentTimeMillis();
+        List<UserRole> list = new ArrayList<>(added.size());
+        for (Integer roleId : added) {
+            list.add(UserRole.builder().userId(userId).roleId(roleId).createdTime(time).createdUid(uid).build());
+        }
+        userRoleDao.saveAll(list);
     }
 
     public JsonNode hide(JsonNode json) {
@@ -492,19 +563,18 @@ public class UserService extends JPAServiceBase {
             helper.betweenWithDate("createdTime").betweenWithDate("updatedTime");
             helper.betweenWithDate("loginTime").betweenWithDate("lockedTime").betweenWithDate("deletedTime");
             List<Integer> roleIds = DPUtil.parseIntList(param.get("roleIds"));
-            if(!roleIds.isEmpty() && null != query) {
-                var subquery = query.subquery(Relation.class);
-                var subRoot = subquery.from(Relation.class);
+            if(!roleIds.isEmpty() && null != query) { // 按关联表子查询过滤授权角色
+                var subquery = query.subquery(UserRole.class);
+                var subRoot = subquery.from(UserRole.class);
                 subquery.select(subRoot)
                         .where(cb.and(
-                                cb.equal(subRoot.get("aid"), root.get("id")),
-                                cb.equal(subRoot.get("type"), "user_role"),
-                                subRoot.get("bid").in(roleIds)
+                                cb.equal(subRoot.get("userId"), root.get("id")),
+                                subRoot.get("roleId").in(roleIds)
                         ));
                 helper.add(cb.exists(subquery));
             }
             return cb.and(helper.predicates());
-        }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort");
+        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = hide(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             fillInfo(rows, "createdUid", "updatedUid", "deletedUid");
@@ -512,45 +582,63 @@ public class UserService extends JPAServiceBase {
         if(!DPUtil.empty(args.get("withStatusText"))) {
             fillStatus(rows, status());
         }
-        if(!DPUtil.empty(args.get("withRoles")) && rows.size() > 0) {
-            ObjectNode rowsMap = DPUtil.json2object(rows, "id");
-            Set<Integer> ids = DPUtil.values(rowsMap, Integer.class, "id");
-            List<Relation> relations = relationDao.findAllByTypeAndAidIn("user_role", ids);
-            Set<Integer> roleIds = DPUtil.values(relations, Integer.class, "bid");
+        if(!DPUtil.empty(args.get("withRoles")) && !rows.isEmpty()) {
+            Map<Integer, Set<Integer>> userRoleMap = new LinkedHashMap<>();
+            Set<Integer> roleIds = new TreeSet<>();
+            for (UserRole item : userRoleDao.findAllByUserIdIn(DPUtil.values(rows, Integer.class, "id"))) {
+                userRoleMap.computeIfAbsent(item.getUserId(), key -> new TreeSet<>()).add(item.getRoleId());
+                roleIds.add(item.getRoleId());
+            }
             Map<Integer, Role> roleMap = DPUtil.list2map(roleDao.findAllById(roleIds), Integer.class, Role.class, "id");
-            for (Relation relation : relations) {
-                ObjectNode item = (ObjectNode) rowsMap.at("/" + relation.getAid());
-                if(null == item) continue;
-                ArrayNode roles = item.has("roles") ? (ArrayNode) item.at("/roles") : item.putArray("roles");
-                Role role = roleMap.get(relation.getBid());
-                if(null == role) continue;
-                roles.add(DPUtil.toJSON(role));
+            for (JsonNode row : rows) {
+                ObjectNode item = (ObjectNode) row;
+                Set<Integer> value = userRoleMap.getOrDefault(item.at("/id").asInt(), Collections.emptySet());
+                item.replace("roleIds", DPUtil.toJSON(value));
+                ArrayNode roles = item.putArray("roles");
+                for (Integer roleId : value) {
+                    Role role = roleMap.get(roleId);
+                    if (null == role) continue;
+                    ObjectNode node = roles.addObject();
+                    node.put("id", role.getId());
+                    node.put("name", role.getName());
+                    node.put("status", role.getStatus());
+                }
             }
         }
         return result;
     }
 
+    @Transactional
     public boolean delete(List<Integer> ids, HttpServletRequest request) {
-        return delete(userDao, ids, rbacService.uid(request));
+        boolean result = delete(userDao, ids, rbacService.uid(request));
+        if(result && null != ids) { // 删除后立即失效在线会话
+            for (Integer id : ids) {
+                rbacService.removeSessions(id);
+                rbacService.evictUserPermit(id); // 用户变更后同步清理该用户的资源缓存
+            }
+        }
+        return result;
     }
 
     public ObjectNode infos(List<Integer> ids) {
-        ObjectNode nodes = infoByIds(userDao, ids);
-        if (nodes.isEmpty()) return nodes;
-        nodes = (ObjectNode) filter(nodes);
-        List<Relation> relations = relationDao.findAllByTypeAndAidIn("user_role",
-                DPUtil.values(nodes, Integer.class, "id"));
-        Set<Integer> roleIds = DPUtil.values(relations, Integer.class, "bid");
-        Map<Integer, Role> roleMap = roleIds.isEmpty() ? null
-                : DPUtil.list2map(roleDao.findAllById(roleIds), Integer.class, Role.class, "id");
-        Map<Integer, List<Relation>> relationMap = DPUtil.list2ml(relations, Integer.class, "aid");
+        if(null == ids || ids.isEmpty()) return DPUtil.objectNode();
+        List<User> users = userDao.findAllById(ids);
+        ObjectNode nodes = (ObjectNode) filter(DPUtil.json2object(DPUtil.toJSON(users, ArrayNode.class), "id"));
+        Set<Integer> roleIds = new TreeSet<>();
+        Map<Integer, Set<Integer>> userRoleMap = new LinkedHashMap<>();
+        Set<Integer> userIds = DPUtil.values(nodes, Integer.class, "id");
+        if(!userIds.isEmpty()) {
+            for (UserRole item : userRoleDao.findAllByUserIdIn(userIds)) {
+                userRoleMap.computeIfAbsent(item.getUserId(), key -> new TreeSet<>()).add(item.getRoleId());
+                roleIds.add(item.getRoleId());
+            }
+        }
+        Map<Integer, Role> roleMap = DPUtil.list2map(roleDao.findAllById(roleIds), Integer.class, Role.class, "id");
         for (JsonNode node : nodes) {
             ObjectNode user = (ObjectNode) node;
             ObjectNode roles = user.putObject("roles");
-            List<Relation> userRelations = relationMap.get(user.at("/id").asInt());
-            if (null == userRelations) continue;
-            for (Relation relation : userRelations) {
-                Role role = null == roleMap ? null : roleMap.get(relation.getBid());
+            for (Integer roleId : userRoleMap.getOrDefault(user.at("/id").asInt(), Collections.emptySet())) {
+                Role role = roleMap.get(roleId);
                 if (null == role) continue;
                 ObjectNode roleNode = roles.putObject(String.valueOf(role.getId()));
                 roleNode.put("id", role.getId());

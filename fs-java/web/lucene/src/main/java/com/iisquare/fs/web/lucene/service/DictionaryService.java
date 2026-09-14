@@ -133,7 +133,7 @@ public class DictionaryService extends ServiceBase {
         int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("content", "createdTime", "updatedTime"));
-        if (null == sort) sort = Sort.by(Sort.Order.desc("updatedTime"));
+        if (null == sort) sort = Sort.by(Sort.Order.desc("updatedTime"), Sort.Order.desc("id"));
         Page<Dictionary> data = dictionaryDao.findAll((Specification<Dictionary>) (root, query, cb) -> {
             SpecificationHelper<Dictionary> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.equal("catalogue").equal("type").like("content").in("source");

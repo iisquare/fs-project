@@ -62,6 +62,7 @@ public class WhitelistController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", whitelistService.status());
+        model.put("sorts", whitelistService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

@@ -42,7 +42,7 @@ public class ModelColumnService extends ServiceBase {
         int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("catalog", "model", "code", "type", "sort"));
-        if (null == sort) sort = Sort.by(Sort.Order.asc("sort"));
+        if (null == sort) sort = Sort.by(Sort.Order.asc("sort"), Sort.Order.asc("catalog"), Sort.Order.asc("model"), Sort.Order.asc("code"));
         Page<ModelColumn> data = columnDao.findAll((Specification<ModelColumn>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             String catalog = DPUtil.trim(DPUtil.parseString(param.get("catalog")));

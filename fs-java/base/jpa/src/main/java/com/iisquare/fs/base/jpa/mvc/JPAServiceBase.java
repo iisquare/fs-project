@@ -17,7 +17,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.io.Serializable;
 import java.util.*;
 
-public class JPAServiceBase extends ServiceBase {
+public abstract class JPAServiceBase extends ServiceBase {
 
     public JsonNode filter(JsonNode json) {
         return json;
@@ -120,14 +120,24 @@ public class JPAServiceBase extends ServiceBase {
         return DPUtil.json2object(data, "id");
     }
 
+    /**
+     * 支持的排序字段，字段名称->默认顺序（asc/desc）
+     */
+    public abstract Map<String, String> sorts();
+
     protected <T, ID extends Serializable> ObjectNode search(
             DaoBase<T, ID> dao, Map<String, Object> param, Specification<T> specification) {
-        return search(dao, param, specification, 15, null, null);
+        return search(dao, param, specification, 15, null, sorts().keySet());
     }
 
     protected <T, ID extends Serializable> ObjectNode search(
             DaoBase<T, ID> dao, Map<String, Object> param, Specification<T> specification, Sort defaultSort, String... sorts) {
         return search(dao, param, specification, 15, defaultSort, DPUtil.array2list(sorts));
+    }
+
+    protected <T, ID extends Serializable> ObjectNode search(
+            DaoBase<T, ID> dao, Map<String, Object> param, Specification<T> specification, Sort defaultSort, Collection<String> sorts) {
+        return search(dao, param, specification, 15, defaultSort, sorts);
     }
 
     protected <T, ID extends Serializable> ObjectNode search(

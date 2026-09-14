@@ -30,18 +30,12 @@ public class RoleController extends PermitControllerBase {
     MenuService menuService;
     @Autowired
     ResourceService resourceService;
-    @Autowired
-    RelationService relationService;
 
     @RequestMapping("/info")
     @Permission("")
     public String infoAction(@RequestParam Map<?, ?> param) {
-        int id = DPUtil.parseInt(param.get("id"));
-        Role info = roleService.info(id);
-        if (null == info) {
-            return ApiUtil.echoResult(0, null, DPUtil.objectNode());
-        }
-        return ApiUtil.echoResult(0, null, info);
+        Map<String, Object> result = roleService.info(param);
+        return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/permit")
@@ -50,39 +44,34 @@ public class RoleController extends PermitControllerBase {
         int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         if(id < 1) return ApiUtil.echoResult(1001, "参数异常", id);
         Role info = roleService.info(id);
-        if(null == info || -1 == info.getStatus()) return ApiUtil.echoResult(1002, "记录不存在", id);
+        if(null == info) return ApiUtil.echoResult(1002, "记录不存在", id);
         Map<String, Object> result = new LinkedHashMap<>();
         String type = DPUtil.parseString(param.get("type"));
         if(!rbacService.hasPermit(request, type)) return ApiUtil.echoResult(9403, null, null);
         int applicationId = DPUtil.parseInt(param.get("applicationId"));
         if(param.containsKey("bids")) {
+            if (!roleService.PERMIT_TYPES.containsKey(type)) return ApiUtil.echoResult(1003, "类型异常", id);
+            if (!"application".equals(type) && applicationId < 1) return ApiUtil.echoResult(1001, "参数异常", applicationId);
+            Set<Integer> bids = new HashSet<>((Collection<Integer>) param.get("bids"));
+            bids = roleService.permit(info.getId(), type, bids, applicationId, rbacService.uid(request));
+            return ApiUtil.echoResult(0, null, bids);
+        } else {
+            // 授权树固定覆盖指定应用下的全部节点（不按状态过滤），不受调用方传入的状态条件影响
+            Map<Object, Object> treeParam = DPUtil.buildMap("applicationId", applicationId);
             switch (type) {
-                case "application":
                 case "menu":
+                    result.put("tree", menuService.tree(treeParam, DPUtil.buildMap("withStatusText", true)));
+                    break;
                 case "resource":
-                    Set<Integer> bids = new HashSet<>();
-                    bids.addAll((Collection<Integer>) param.get("bids"));
-                    if ("application".equals(type)) {
-                        bids = relationService.relationIds("role_" + type, id, bids);
-                    } else {
-                        bids = relationService.relationIds("role_" + type, id, bids, applicationId);
-                    }
-                    return ApiUtil.echoResult(null == bids ? 500 : 0, null, bids);
+                    result.put("tree", resourceService.tree(treeParam, DPUtil.buildMap("withStatusText", true)));
+                    break;
+                case "application":
+                    result.put("tree", new ArrayList<>());
+                    break;
                 default:
                     return ApiUtil.echoResult(1003, "类型异常", id);
             }
-        } else {
-            switch (type) {
-                case "menu":
-                    result.put("tree", menuService.tree(param, DPUtil.buildMap("applicationId", applicationId)));
-                    break;
-                case "resource":
-                    result.put("tree", resourceService.tree(param, DPUtil.buildMap("applicationId", applicationId)));
-                    break;
-                default:
-                    result.put("tree", new ArrayList<>());
-            }
-            result.put("checked", relationService.relationIds("role_" + type, info.getId(), null, applicationId));
+            result.put("checked", roleService.permit(info.getId(), type, null, applicationId, 0));
             return ApiUtil.echoResult(0, null, result);
         }
     }
@@ -90,7 +79,8 @@ public class RoleController extends PermitControllerBase {
     @RequestMapping("/list")
     @Permission("")
     public String listAction(@RequestBody Map<String, Object> param) {
-        ObjectNode result = roleService.search(param, DPUtil.buildMap("withUserInfo", true, "withStatusText", true));
+        ObjectNode result = roleService.search(param, DPUtil.buildMap(
+                "withUserInfo", true, "withStatusText", true, "withApplications", true));
         return ApiUtil.echoResult(0, null, result);
     }
 
@@ -113,6 +103,7 @@ public class RoleController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", roleService.status());
+        model.put("sorts", roleService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

@@ -32,6 +32,15 @@ public class SiteService extends JPAServiceBase {
     @Autowired
     DefaultRbacService rbacService;
 
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("status", "asc");
+        sorts.put("sort", "desc");
+        return sorts;
+    }
+
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();
         status.put(1, "正常");
@@ -104,7 +113,7 @@ public class SiteService extends JPAServiceBase {
                 predicates.add(cb.like(root.get("domain"), domain));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort");
+        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = format(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");

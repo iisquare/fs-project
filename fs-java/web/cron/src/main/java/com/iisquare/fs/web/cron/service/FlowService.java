@@ -29,6 +29,16 @@ public class FlowService extends JPAServiceBase {
     @Autowired
     NodeService nodeService;
 
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("name", "asc");
+        sorts.put("sort", "desc");
+        sorts.put("status", "asc");
+        return sorts;
+    }
+
     public String group() {
         return this.getClass().getName();
     }
@@ -55,7 +65,7 @@ public class FlowService extends JPAServiceBase {
                 predicates.add(cb.like(root.get("name"), "%" + name + "%"));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, Sort.by(Sort.Order.desc("sort")), "id", "name", "sort", "status");
+        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = format(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withTriggerInfo"))) {
             for (JsonNode flow : rows) {

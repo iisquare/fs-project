@@ -19,4 +19,10 @@ export default {
   config(tips = {}) {
     return base.post('/dataset/config', {}, tips)
   },
+  columns(id: any, tips = {}) {
+    return base.post('/dataset/columns', { id }, tips)
+  },
+  query(params: any = {}, tips = {}) {
+    return base.form('/dataset/query', params, tips)
+  },
 }

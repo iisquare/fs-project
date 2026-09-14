@@ -125,7 +125,7 @@ public class CommentService extends ServiceBase {
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")),
                 Arrays.asList("id", "publishTime", "auditTime", "countApprove", "countOppose"));
-        if (null == sort) sort = Sort.by(Sort.Order.desc("publishTime"));
+        if (null == sort) sort = Sort.by(Sort.Order.desc("publishTime"), Sort.Order.desc("id"));
         Page<Comment> data = commentDao.findAll((Specification<Comment>) (root, query, cb) -> {
             SpecificationHelper<Comment> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.dateFormat(configuration.getFormatDate());

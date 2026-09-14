@@ -6,6 +6,7 @@ import CronApi from '@/api/server/CronApi';
 import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
 import Flow from '@/designer/X6/flow'
+import X6Container from '@/designer/X6/X6Container.vue';
 
 const route = useRoute()
 const router = useRouter()
@@ -102,7 +103,7 @@ onMounted(() => {
       <el-descriptions-item label="结束时间">{{ DateUtil.format(form.updatedTime) }}</el-descriptions-item>
       <el-descriptions-item label="持续时间" :span="3">{{ form.durationPretty }}</el-descriptions-item>
     </el-descriptions>
-    <div class="flow"><X6Container ref="flowRef" v-bind="options" /></div>
+    <div class="flow"><X6Container ref="flowRef" :options="options" /></div>
     <el-table
       ref="tableRef"
       :data="form.stages"

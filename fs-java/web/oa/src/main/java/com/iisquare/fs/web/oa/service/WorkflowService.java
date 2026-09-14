@@ -468,7 +468,7 @@ public class WorkflowService extends ServiceBase {
                 predicates.add(cb.equal(root.get("formId"), formId));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"))));
+        }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"), new Sort.Order(Sort.Direction.DESC, "id"))));
         List<Workflow> rows = data.getContent();
         if(!DPUtil.empty(config.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid", "deploymentUid");
@@ -494,6 +494,16 @@ public class WorkflowService extends ServiceBase {
             node.put("description", row.getDescription());
         }
         return nodes;
+    }
+
+    /**
+     * 根据数据列表中的流程标识批量填充名称（列表展示用，不落库）
+     */
+    public <T> List<T> fillInfo(List<T> list, String ...properties) {
+        Set<Integer> ids = DPUtil.values(list, Integer.class, properties);
+        if (ids.size() < 1) return list;
+        Map<Integer, Workflow> data = DPUtil.list2map(workflowDao.findAllById(ids), Integer.class, "id");
+        return DPUtil.fillValues(list, properties, "Name", DPUtil.values(data, String.class, "name"));
     }
 
     public Map<?, ?> status(String level) {

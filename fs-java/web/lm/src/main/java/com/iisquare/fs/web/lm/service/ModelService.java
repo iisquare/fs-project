@@ -62,6 +62,15 @@ public class ModelService extends JPAServiceBase {
         parameters.replace("credits", parameter("消耗积分数", "number", "积分/百万词元"));
     }
 
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("status", "asc");
+        sorts.put("sort", "desc");
+        return sorts;
+    }
+
     public static ObjectNode parameter(String name, String type, String unit) {
         ObjectNode parameter = DPUtil.objectNode();
         parameter.put("name", name);
@@ -139,9 +148,9 @@ public class ModelService extends JPAServiceBase {
             SpecificationHelper<Model> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id");
             helper.equalWithIntGTZero("providerId");
-            helper.equalWithIntNotEmpty("status").like("name").equal("type");
+            helper.equalWithIntNotEmpty("status").likes("name", "name", "alias").equal("type");
             return cb.and(helper.predicates());
-        }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort");
+        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = format(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withProviderInfo"))) {
             providerService.fillInfo(rows, "providerId");
@@ -162,8 +171,8 @@ public class ModelService extends JPAServiceBase {
         Map<String, String> types = types();
         for (JsonNode row : rows) {
             ObjectNode node = (ObjectNode) row;
-            List<Integer> ids = DPUtil.parseIntList(node.at("/roleIds").asText(""));
-            node.replace("roleIds", DPUtil.toJSON(ids));
+            List<Integer> roleIds = DPUtil.parseIntList(node.at("/roleIds").asText(""));
+            node.replace("roleIds", DPUtil.toJSON(roleIds));
             node.replace("content", DPUtil.parseJSON(node.at("/content").asText()));
             String type = node.at("/type").asText();
             node.put("typeText", types.getOrDefault(type, ""));

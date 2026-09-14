@@ -76,6 +76,7 @@ public class SensitiveController extends PermitControllerBase {
             return ApiUtil.echoResult(1001, "获取字典失败", null);
         }
         model.put("risk", risk);
+        model.put("sorts", sensitiveService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

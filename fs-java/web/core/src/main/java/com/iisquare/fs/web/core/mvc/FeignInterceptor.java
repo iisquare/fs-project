@@ -7,6 +7,7 @@ import com.iisquare.fs.web.core.rbac.PermitRpc;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.method.HandlerMethod;
@@ -14,7 +15,9 @@ import org.springframework.web.method.HandlerMethod;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FeignInterceptor implements RequestInterceptor {
 
@@ -49,7 +52,29 @@ public class FeignInterceptor implements RequestInterceptor {
     }
 
     public static String token(String name, String time) {
-        return CodeUtil.md5(CodeUtil.md5(CodeUtil.md5(name) + time) + secret).substring(0, 6);
+        // 使用完整摘要作为签名，避免短截断带来的碰撞风险
+        return CodeUtil.md5(CodeUtil.md5(CodeUtil.md5(name) + time) + secret);
+    }
+
+    public static Map<String, String> headers(HttpServletRequest request, Environment environment) {
+        Map<String, String> result = new HashMap<>();
+        if (null != request) {
+            for (String name : headers) {
+                String header = request.getHeader(name);
+                if (!DPUtil.empty(header)) {
+                    result.put(name, header);
+                }
+            }
+        }
+        String appName = null;
+        if (null != environment) appName = environment.getProperty("spring.application.name");
+        if (!DPUtil.empty(appName)) {
+            String time = String.valueOf(System.currentTimeMillis());
+            result.put(HEADER_APP_NAME, appName);
+            result.put(HEADER_APP_TIME, time);
+            result.put(HEADER_APP_TOKEN, token(appName, time));
+        }
+        return result;
     }
 
     @Override

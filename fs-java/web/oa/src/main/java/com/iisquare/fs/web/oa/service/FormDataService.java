@@ -30,6 +30,8 @@ public class FormDataService extends ServiceBase {
     DefaultRbacService rbacService;
     @Autowired
     FormFrameService formFrameService;
+    @Autowired
+    WorkflowService workflowService;
 
     public Map<?, ?> sort() {
         Map<String, String> sort = new LinkedHashMap<>();
@@ -58,10 +60,14 @@ public class FormDataService extends ServiceBase {
         long total = formDataMongo.count(filter);
         List<Document> rows = format(total > 0 ? formDataMongo.all(filter, sort, page, pageSize) : Arrays.asList());
         if(!DPUtil.empty(config.get("withUserInfo"))) {
-            rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
+            // 按标识批量填充用户名称，避免把名称冗余写入表单数据
+            rbacService.fillUserInfo(rows, "createdUid", "updatedUid", "bpmStartUserId");
         }
         if(!DPUtil.empty(config.get("withFormFrameInfo"))) {
             formFrameService.fillInfo(rows, "frameId");
+        }
+        if(!DPUtil.empty(config.get("withWorkflowInfo"))) {
+            workflowService.fillInfo(rows, "bpmWorkflowId");
         }
         result.put("page", page);
         result.put("pageSize", pageSize);

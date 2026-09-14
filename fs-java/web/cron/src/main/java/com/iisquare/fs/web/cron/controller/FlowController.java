@@ -43,12 +43,14 @@ public class FlowController extends PermitControllerBase {
     }
 
     @RequestMapping("/save")
+    @Permission("")
     public String saveAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         Map<String, Object> result = flowService.save(param, request);
         return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/delete")
+    @Permission("")
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         Map<String, Object> result = flowService.delete(param, request);
         return ApiUtil.echoResult(result);
@@ -58,6 +60,7 @@ public class FlowController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", flowService.status());
+        model.put("sorts", flowService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

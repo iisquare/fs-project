@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.ui.ModelMap;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -49,6 +50,13 @@ public class SettingController extends PermitControllerBase {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
         boolean result = settingService.remove(ids);
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
+    }
+
+    @RequestMapping("/config")
+    @Permission("")
+    public String configAction(ModelMap model) {
+        model.put("sorts", settingService.sorts());
+        return ApiUtil.echoResult(0, null, model);
     }
 
 }

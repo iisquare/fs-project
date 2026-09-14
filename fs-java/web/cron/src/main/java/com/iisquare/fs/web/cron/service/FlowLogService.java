@@ -42,6 +42,17 @@ public class FlowLogService extends JPAServiceBase implements InitializingBean, 
     FlowLogDao flowLogDao;
 
     @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("flowId", "asc");
+        sorts.put("state", "asc");
+        sorts.put("createdTime", "desc");
+        sorts.put("updatedTime", "asc");
+        return sorts;
+    }
+
+    @Override
     public void afterPropertiesSet() throws Exception {
         new Thread(() -> { // 启动时的首次触发，由NodeService.onApplicationEvent在准备完成后进行唤起
             while (null != pool) {
@@ -282,7 +293,7 @@ public class FlowLogService extends JPAServiceBase implements InitializingBean, 
                 predicates.add(cb.equal(root.get("state"), state));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, Sort.by(Sort.Order.desc("createdTime")), "id", "flowId", "state", "createdTime", "updatedTime");
+        }, Sort.by(Sort.Order.desc("createdTime"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = format(ApiUtil.rows(result));
         if (!DPUtil.empty(config.get("withFlowInfo"))) {
             flowService.fillInfo(rows, "flowId");

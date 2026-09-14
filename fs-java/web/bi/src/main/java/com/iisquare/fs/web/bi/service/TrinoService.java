@@ -85,7 +85,7 @@ public class TrinoService extends ServiceBase {
             Map<String, String> fsBiProperties = new LinkedHashMap<>();
             fsBiProperties.put("base-uri", trinoIntegrationService.getIntegrationSelf());
             fsBiProperties.put("api-key", trinoIntegrationService.getIntegrationKey());
-            CatalogDefinition fsBiCatalog = new CatalogDefinition("fs_bi", "fs_trino", fsBiProperties);
+            CatalogDefinition fsBiCatalog = new CatalogDefinition("fs_bi", "fs_http", fsBiProperties);
             emitter.step("正在创建内置目录 fs_bi", "createFsBi", 10, 1);
             try {
                 createCatalog(fsBiCatalog);
@@ -252,7 +252,8 @@ public class TrinoService extends ServiceBase {
         if ("https".equalsIgnoreCase(scheme)) {
             properties.put("elasticsearch.tls.enabled", "true");
         }
-        return List.of(new CatalogDefinition(datasource.getName(), "elasticsearch", properties));
+        properties.put("elasticsearch.ignore-publish-address", "true"); // 避免容器内网IP地址不可达
+        return List.of(new CatalogDefinition(datasource.getName(), "fs_elasticsearch", properties));
     }
 
     private String trinoConnectorName(String type) {
@@ -405,6 +406,17 @@ public class TrinoService extends ServiceBase {
                 }
             }
         }
+    }
+
+    /**
+     * 获取数据集查询连接：默认上下文为内置 Iceberg 目录的 dataset Schema，
+     * 便于数据集查询语句直接引用其他数据集名称。
+     */
+    public Connection connection() throws SQLException {
+        Connection connection = trinoDataSource.getConnection();
+        connection.setCatalog(ICEBERG_CATALOG);
+        connection.setSchema(DATASET_SCHEMA);
+        return connection;
     }
 
     public static class CatalogDefinition {

@@ -9,41 +9,53 @@ import org.neo4j.driver.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public abstract class Neo4jBase {
 
+    /**
+     * 批量创建语句中引用同一语句内局部变量的字段名，注意它不是图数据库的元素标识
+     */
+    protected static final String FIELD_VARIABLE_START = "start";
+    protected static final String FIELD_VARIABLE_END = "end";
+
     @Autowired
     protected Driver driver;
 
     /**
-     * 根据主键删除节点，节点与关系的主键相互独立非互斥
-     * 节点：(n:Label1:Label2:Label2 { k1: v1, k2: v2 })
+     * 按元素标识删除节点
+     *
+     * elementId 仅用于数据排查与会话内的元素定位，不能作为业务标识使用；
+     * 业务数据请按本体（或业务）定义的主键删除。
      */
-    public long deleteNodeByIdentity(boolean withDetach, Long... ids) {
-        if (ids.length == 0) return 0;
-        StringBuilder sb = new StringBuilder("MATCH (n) WHERE id(n) IN [");
-        sb.append(DPUtil.implode(", ", ids)).append("]");
-        if (withDetach) sb.append(" DETACH");
-        sb.append(" DELETE n RETURN COUNT(n)");
+    public long deleteNodeByElementId(boolean withDetach, String... ids) {
+        if (null == ids || ids.length == 0) return 0;
+        String cql = "MATCH (n) WHERE elementId(n) IN $ids" + (withDetach ? " DETACH" : "")
+                + " DELETE n RETURN COUNT(n)";
+        Map<String, Object> parameters = new LinkedHashMap<>();
+        parameters.put("ids", Arrays.asList(ids));
         try (Session session = driver.session()) {
-            return Neo4jUtil.singleLong(session.run(sb.toString()));
+            return Neo4jUtil.singleLong(session.run(cql, Neo4jUtil.parameters(parameters)));
         }
     }
 
     /**
-     * 根据主键删除关系，节点与关系的主键相互独立非互斥
-     * 关系：()-[r:Type { k1: v1, k2: v2 }]->()
+     * 按元素标识删除关系
+     *
+     * elementId 仅用于数据排查与会话内的元素定位，不能作为业务标识使用；
+     * 业务数据请按本体（或业务）定义的主键删除。
      */
-    public long deleteRelationshipByIdentity(Long... ids) {
-        if (ids.length == 0) return 0;
-        StringBuilder sb = new StringBuilder("MATCH ()-[r]->() WHERE id(r) IN [");
-        sb.append(DPUtil.implode(", ", ids)).append("]");
-        sb.append(" DELETE r RETURN COUNT(r)");
+    public long deleteRelationshipByElementId(String... ids) {
+        if (null == ids || ids.length == 0) return 0;
+        String cql = "MATCH ()-[r]->() WHERE elementId(r) IN $ids DELETE r RETURN COUNT(r)";
+        Map<String, Object> parameters = new LinkedHashMap<>();
+        parameters.put("ids", Arrays.asList(ids));
         try (Session session = driver.session()) {
-            return Neo4jUtil.singleLong(session.run(sb.toString()));
+            return Neo4jUtil.singleLong(session.run(cql, Neo4jUtil.parameters(parameters)));
         }
     }
 
@@ -97,13 +109,15 @@ public abstract class Neo4jBase {
     }
 
     /**
-     * 根据关联主键创建关系
+     * 根据两端元素的 elementId 创建关系
+     *
+     * elementId 仅用于数据排查与会话内的元素定位，业务数据请按主键匹配两端节点。
      */
     protected ObjectNode relationshipCreate(ObjectNode r) {
         CypherParameter parameter = new CypherParameter();
         StringBuilder sb = new StringBuilder("MATCH (a), (b)");
-        sb.append(" WHERE id(a)=").append(r.at("/" + Neo4jUtil.FIELD_START_NODE_ID).asLong(-1));
-        sb.append(" AND id(b)=").append(r.at("/" + Neo4jUtil.FIELD_END_NODE_ID).asLong(-1));
+        sb.append(" WHERE elementId(a) = ").append(parameter.variable(r.at("/" + Neo4jUtil.FIELD_START_ELEMENT_ID).asText("")));
+        sb.append(" AND elementId(b) = ").append(parameter.variable(r.at("/" + Neo4jUtil.FIELD_END_ELEMENT_ID).asText("")));
         sb.append(" CREATE (a)-[r").append(parameter.type(r)).append(parameter.properties(r)).append("]->(b)");
         sb.append(" RETURN r");
         try (Session session = driver.session()) {
@@ -130,7 +144,7 @@ public abstract class Neo4jBase {
      *     "a": Node,
      *     "b": Node,
      *     "r": { // Relationship
-     *         start: "a",
+     *         start: "a", // 同一语句内的局部变量名，不是 elementId
      *         end: "b"
      *     }
      * }
@@ -147,9 +161,9 @@ public abstract class Neo4jBase {
             keys.add(key);
             JsonNode item = entry.getValue();
             if (item.has(Neo4jUtil.FIELD_TYPE)) {
-                sb.append("(").append(item.at("/" + Neo4jUtil.FIELD_START_NODE_ID).asText()).append(")").append("-[");
+                sb.append("(").append(item.at("/" + FIELD_VARIABLE_START).asText()).append(")").append("-[");
                 sb.append(key).append(parameter.type(item)).append(parameter.properties(item));
-                sb.append("]->(").append(item.at("/" + Neo4jUtil.FIELD_END_NODE_ID).asText()).append(")");
+                sb.append("]->(").append(item.at("/" + FIELD_VARIABLE_END).asText()).append(")");
             } else {
                 sb.append("(").append(key).append(parameter.labels(item));
                 sb.append(parameter.properties(item)).append(")");

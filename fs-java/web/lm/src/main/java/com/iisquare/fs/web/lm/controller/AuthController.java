@@ -63,6 +63,7 @@ public class AuthController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", authService.status());
+        model.put("sorts", authService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

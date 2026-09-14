@@ -9,6 +9,7 @@ import com.iisquare.fs.web.member.service.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.ui.ModelMap;
 
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,13 @@ public class MessageController extends PermitControllerBase {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
         boolean result = messageService.delete(ids, request);
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
+    }
+
+    @RequestMapping("/config")
+    @Permission("")
+    public String configAction(ModelMap model) {
+        model.put("sorts", messageService.sorts());
+        return ApiUtil.echoResult(0, null, model);
     }
 
 }

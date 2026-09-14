@@ -20,6 +20,14 @@ const config: any = {
   },
   generateFilterOperation () {
     return { id: this.uuidFilter(), enabled: true, type: 'FILTER', operation: 'EQUAL', field: '', value: '' }
+  },
+  selectorItemMap (items: any) {
+    const result: any = {}
+    for (const index in items) {
+      const item = items[index]
+      result[item.value] = item
+    }
+    return result
   }
 }
 
@@ -120,6 +128,60 @@ export default Object.assign(config, {
       type: 'divider', label: '分割线', icon: 'form.divider', filterable: false, viewable: false, sortable: false, editable: false, options: DividerOptions, property: () => import('./DividerProperty.vue')
     }]
   }]),
+  reservedFields: [{
+    type: 'number', label: '提交者', icon: 'reserved', filterable: true, viewable: false, sortable: false, editable: false, options: { field: 'createdUid', value: '' }
+  }, {
+    type: 'number', label: '提交人', icon: 'reserved', filterable: false, viewable: true, sortable: false, editable: false, options: { field: 'createdUidName', value: '' }
+  }, {
+    type: 'number', label: '提交时间', icon: 'reserved', filterable: true, viewable: true, sortable: true, editable: false, options: { field: 'createdTime', value: '' }
+  }, {
+    type: 'number', label: '更新者', icon: 'reserved', filterable: true, viewable: false, sortable: false, editable: false, options: { field: 'updatedUid', value: '' }
+  }, {
+    type: 'number', label: '更新人', icon: 'reserved', filterable: false, viewable: true, sortable: false, editable: false, options: { field: 'updatedUidName', value: '' }
+  }, {
+    type: 'number', label: '更新时间', icon: 'reserved', filterable: true, viewable: true, sortable: true, editable: false, options: { field: 'updatedTime', value: '' }
+  }, {
+    type: 'text', label: '流程模型标识', icon: 'reserved', filterable: false, viewable: true, sortable: false, editable: false, options: { field: 'bpmWorkflowId', value: '' }
+  }, {
+    type: 'text', label: '流程模型名称', icon: 'reserved', filterable: false, viewable: true, sortable: false, editable: false, options: { field: 'bpmWorkflowIdName', value: '' }
+  }, {
+    type: 'text', label: '流程实例标识', icon: 'reserved', filterable: true, viewable: true, sortable: false, editable: false, options: { field: 'bpmInstanceId', value: '' }
+  }, {
+    type: 'text', label: '发起人标识', icon: 'reserved', filterable: false, viewable: true, sortable: false, editable: false, options: { field: 'bpmStartUserId', value: '' }
+  }, {
+    type: 'text', label: '发起人名称', icon: 'reserved', filterable: false, viewable: true, sortable: false, editable: false, options: { field: 'bpmStartUserIdName', value: '' }
+  }],
+  idField: { type: 'text', label: '主键', icon: 'reserved', filterable: true, viewable: true, sortable: true, editable: false, options: { field: '_id', value: '' } },
+  relations: [{
+    label: '并且（AND）', value: 'AND'
+  }, {
+    label: '或者（OR）', value: 'OR'
+  }],
+  filters: [{
+    label: '等于（=）', value: 'EQUAL'
+  }, {
+    label: '不等于（!=）', value: 'NOT_EQUAL'
+  }, {
+    label: '小于（<）', value: 'LESS_THAN'
+  }, {
+    label: '小于等于（<=）', value: 'LESS_THAN_OR_EQUAL'
+  }, {
+    label: '大于（>）', value: 'GREATER_THAN'
+  }, {
+    label: '大于等于（>=）', value: 'GREATER_THAN_OR_EQUAL'
+  }, {
+    label: '为空（is null）', value: 'IS_NULL'
+  }, {
+    label: '不为空（is not null）', value: 'IS_NOT_NULL'
+  }, {
+    label: '包含（like）', value: 'LIKE'
+  }, {
+    label: '不包含（not like）', value: 'NOT_LIKE'
+  }, {
+    label: '在列表中（in）', value: 'IN'
+  }, {
+    label: '不在列表中（not in）', value: 'NOT_IN'
+  }],
   toolbars: [{
     type: 'pc', label: '电脑', icon: 'device.pc', selectable: true, callback (toolbar: any, instance: any, event: any) { instance.width = '100%' }
   }, {

@@ -27,6 +27,15 @@ public class FavoriteService extends JPAServiceBase {
     @Autowired
     RbacService rbacService;
 
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("name", "asc");
+        sorts.put("sort", "desc");
+        return sorts;
+    }
+
     public Map<?, ?> types() {
         Map<String, String> types = new LinkedHashMap<>();
         types.put("sql", "查询语句");
@@ -99,7 +108,7 @@ public class FavoriteService extends JPAServiceBase {
                     break;
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.asc("name"), Sort.Order.desc("id")), "id", "name", "sort");
+        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.asc("name"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = format(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(rows, "createdUid", "updatedUid");

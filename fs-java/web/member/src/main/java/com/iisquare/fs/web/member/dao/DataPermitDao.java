@@ -16,4 +16,12 @@ public interface DataPermitDao extends DaoBase<DataPermit, Integer> {
     @Query("delete from DataPermit where dataId=:ids")
     Integer deleteByDataIds(@Param("ids") Collection<Integer> ids);
 
+    /**
+     * 角色删除时清理数据行权限
+     */
+    @Modifying
+    @Transactional
+    @Query("delete from DataPermit where roleId in (:roleIds)")
+    Integer deleteByRoleIds(@Param("roleIds") Collection<Integer> roleIds);
+
 }

@@ -51,6 +51,7 @@ public class ProviderController extends PermitControllerBase {
     public String configAction(ModelMap model) {
         model.put("types", providerService.types());
         model.put("status", providerService.status());
+        model.put("sorts", providerService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

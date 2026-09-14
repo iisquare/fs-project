@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.ui.ModelMap;
 
 import java.util.Map;
 
@@ -45,16 +46,25 @@ public class FlowLogController extends PermitControllerBase {
     }
 
     @GetMapping("/state")
+    @Permission("flow:")
     public String stateAction() {
         ObjectNode state = logService.state();
         return ApiUtil.echoResult(0, null, state);
     }
 
     @RequestMapping("/submit")
+    @Permission("flow:")
     public String submitAction(@RequestBody Map<?, ?> param) {
         JsonNode json = DPUtil.toJSON(param);
         Map<String, Object> result = logService.submit(json.at("/stage"), (ObjectNode) json.at("/config"));
         return ApiUtil.echoResult(result);
+    }
+
+    @RequestMapping("/config")
+    @Permission("flow:")
+    public String configAction(ModelMap model) {
+        model.put("sorts", logService.sorts());
+        return ApiUtil.echoResult(0, null, model);
     }
 
 }

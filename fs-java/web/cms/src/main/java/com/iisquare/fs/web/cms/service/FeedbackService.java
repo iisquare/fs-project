@@ -120,7 +120,7 @@ public class FeedbackService extends ServiceBase {
         int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "publishTime", "auditTime"));
-        if (null == sort) sort = Sort.by(Sort.Order.desc("publishTime"));
+        if (null == sort) sort = Sort.by(Sort.Order.desc("publishTime"), Sort.Order.desc("id"));
         Page<Feedback> data = feedbackDao.findAll((Specification<Feedback>) (root, query, cb) -> {
             SpecificationHelper<Feedback> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.dateFormat(configuration.getFormatDate());

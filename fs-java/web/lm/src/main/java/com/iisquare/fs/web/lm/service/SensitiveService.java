@@ -41,6 +41,15 @@ public class SensitiveService extends JPAServiceBase {
 
     private final Semaphore semaphore = new Semaphore(1);
 
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("status", "asc");
+        sorts.put("sort", "desc");
+        return sorts;
+    }
+
     public boolean rebuild() {
         if (!semaphore.tryAcquire()) return false;
         int level = 0;
@@ -155,7 +164,7 @@ public class SensitiveService extends JPAServiceBase {
             helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id");
             helper.equalWithIntNotEmpty("status").like("content").functionFindInSet("risk");
             return cb.and(helper.predicates());
-        }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort");
+        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = format(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");

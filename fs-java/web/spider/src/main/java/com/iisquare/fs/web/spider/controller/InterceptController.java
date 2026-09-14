@@ -62,6 +62,7 @@ public class InterceptController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", interceptService.status());
+        model.put("sorts", interceptService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

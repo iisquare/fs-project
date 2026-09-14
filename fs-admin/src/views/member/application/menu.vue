@@ -29,7 +29,8 @@ const columns = ref([
   { prop: 'fullName', label: '全称' },
   { prop: 'id', label: 'ID' },
   { prop: 'parentId', label: '父级ID' },
-  { prop: 'url', label: '链接',slot: 'url' },
+  { prop: 'icon', label: '图标', slot: 'icon' },
+  { prop: 'url', label: '链接' },
   { prop: 'sort', label: '排序' },
   { prop: 'statusText', label: '状态' },
 ])
@@ -163,7 +164,7 @@ const handleDelete = () => {
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns">
-        <template #url="scope">
+        <template #icon="scope">
           <LayoutIcon :name="scope.row.icon" />
           <RouterLink :to="scope.row.url" :title="scope.row.url" target="_blank">{{ scope.row.target ? scope.row.target : (scope.row.url ? '_self' : '无链接') }}</RouterLink>
         </template>

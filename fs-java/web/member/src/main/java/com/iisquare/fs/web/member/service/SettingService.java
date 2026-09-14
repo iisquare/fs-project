@@ -32,6 +32,14 @@ public class SettingService extends JPAServiceBase {
     @Autowired
     RbacService rbacService;
 
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("sort", "desc");
+        return sorts;
+    }
+
     public boolean set(String type, String key, String value) {
         Setting info = settingDao.findFirstByTypeAndName(type, key);
         if(null == info) return false;
@@ -133,7 +141,7 @@ public class SettingService extends JPAServiceBase {
                 predicates.add(cb.like(root.get("content"), "%" + content + "%"));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, Sort.by(Sort.Order.desc("sort")), "id", "sort");
+        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = ApiUtil.rows(result);
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(rows, "createdUid", "updatedUid");

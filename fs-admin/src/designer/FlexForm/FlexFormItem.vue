@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import FlexSubform from './FlexSubform.vue'
+
 const model: any = defineModel()
 const {
   config = {} as any,
@@ -14,7 +16,9 @@ const pretty = (widget: any) => {
   return config.validator.prettyWidget(widget, model.value[widget.options.field])
 }
 const viewable = (widget: any) => {
-  return authority[widget.id]?.viewable
+  const item = authority[widget.id]
+  // 未配置该字段权限时按只读展示，避免整项空白（如流程节点权限未覆盖到的新增字段）
+  return item ? !!item.viewable : true
 }
 const editable = (widget: any) => {
   return authority[widget.id]?.editable
@@ -27,45 +31,67 @@ const editable = (widget: any) => {
       <el-input v-model="model[element.options.field]" :placeholder="element.options.placeholder" v-if="editable(element)" />
       <template v-else-if="viewable(element)">{{ pretty(element) }}</template>
     </el-form-item>
-    <el-form-item :label="element.label" v-else-if="element.type === 'textarea'">
-      <el-input v-model="element.options.value" type="textarea" :placeholder="element.options.placeholder" />
+    <el-form-item :label="element.label" :prop="element.options.field" v-else-if="element.type === 'textarea'">
+      <el-input v-model="model[element.options.field]" type="textarea" :placeholder="element.options.placeholder" v-if="editable(element)" />
+      <template v-else-if="viewable(element)">{{ pretty(element) }}</template>
     </el-form-item>
-    <el-form-item :label="element.label" v-else-if="element.type === 'password'">
-      <el-input v-model="element.options.value" type="password" :placeholder="element.options.placeholder" show-password />
+    <el-form-item :label="element.label" :prop="element.options.field" v-else-if="element.type === 'password'">
+      <el-input v-model="model[element.options.field]" type="password" show-password :placeholder="element.options.placeholder" v-if="editable(element)" />
+      <template v-else-if="viewable(element)">{{ pretty(element) }}</template>
     </el-form-item>
-    <el-form-item :label="element.label" v-else-if="element.type === 'number'">
-      <el-input-number v-model="element.options.value" :placeholder="element.options.placeholder" :controls="element.options.controls" :controls-position="element.options.controlsPosition">
-        <template #prefix>
-          <span>{{ element.options.prefix }}</span>
-        </template>
-        <template #suffix>
-          <span>{{ element.options.suffix }}</span>
-        </template>
-      </el-input-number>
+    <el-form-item :label="element.label" :prop="element.options.field" v-else-if="element.type === 'number'">
+      <el-space v-if="editable(element) || viewable(element)">
+        <el-input-number
+          v-model="model[element.options.field]"
+          v-if="editable(element)"
+          :placeholder="element.options.placeholder"
+          :controls="element.options.controls"
+          :controls-position="element.options.controlsPosition">
+          <template #prefix>
+            <span>{{ element.options.prefix }}</span>
+          </template>
+          <template #suffix>
+            <span>{{ element.options.suffix }}</span>
+          </template>
+        </el-input-number>
+        <template v-else>{{ pretty(element) }}</template>
+        <span>{{ element.options.suffix }}</span>
+      </el-space>
     </el-form-item>
-    <el-form-item :label="element.label" v-else-if="element.type === 'radio'">
-      <el-radio-group v-model="element.options.value" :class="`fs-${element.options.display}`">
+    <el-form-item :label="element.label" :prop="element.options.field" v-else-if="element.type === 'radio'">
+      <el-radio-group v-model="model[element.options.field]" :class="`fs-${element.options.display}`" v-if="editable(element)">
         <el-radio :key="k" :value="v.value" v-for="(v, k) in element.options.items">{{ v.label }}</el-radio>
       </el-radio-group>
+      <template v-else-if="viewable(element)">{{ pretty(element) }}</template>
     </el-form-item>
-    <el-form-item :label="element.label" v-else-if="element.type === 'checkbox'">
-      <el-checkbox-group v-model="element.options.value" :class="`fs-${element.options.display}`">
+    <el-form-item :label="element.label" :prop="element.options.field" v-else-if="element.type === 'checkbox'">
+      <el-checkbox-group v-model="model[element.options.field]" :class="`fs-${element.options.display}`" v-if="editable(element)">
         <el-checkbox :key="k" :value="v.value" v-for="(v, k) in element.options.items" :label="v.label" />
       </el-checkbox-group>
+      <template v-else-if="viewable(element)">{{ pretty(element) }}</template>
     </el-form-item>
-    <el-form-item :label="element.label" v-else-if="element.type === 'select'">
+    <el-form-item :label="element.label" :prop="element.options.field" v-else-if="element.type === 'select'">
       <el-select
-        v-model="element.options.value"
-        :multiple="element.options.multiple"
+        v-model="model[element.options.field]"
+        v-if="editable(element)"
+        :multiple="element.options.mode === 'multiple' || element.options.mode === 'tags'"
         :clearable="element.options.clearable"
         :filterable="element.options.filterable"
-        :allow-create="element.options.allowCreate"
-        :reserve-keyword="element.options.reserveKeyword">
+        :allow-create="element.options.mode === 'combobox' || element.options.mode === 'tags'"
+        :reserve-keyword="element.options.reserveKeyword"
+        :placeholder="element.options.placeholder">
         <el-option v-for="(item, index) in element.options.items" :key="index" :label="item.label" :value="item.value" />
       </el-select>
+      <template v-else-if="viewable(element)">{{ pretty(element) }}</template>
     </el-form-item>
-    <el-form-item :label="element.label" v-else-if="element.type === 'switch'">
-      <el-switch v-model="element.options.value" inline-prompt :active-text="element.options.active" :inactive-text="element.options.inactive" />
+    <el-form-item :label="element.label" :prop="element.options.field" v-else-if="element.type === 'switch'">
+      <el-switch
+        v-model="model[element.options.field]"
+        inline-prompt
+        :active-text="element.options.active"
+        :inactive-text="element.options.inactive"
+        v-if="editable(element)" />
+      <template v-else-if="viewable(element)">{{ pretty(element) }}</template>
     </el-form-item>
     <el-form-item :label="element.label" v-else-if="element.type === 'txt'" :label-width="element.label ? '' : '0px'">
       <div class="fs-txt">{{ element.options.txt }}</div>
@@ -86,10 +112,18 @@ const editable = (widget: any) => {
         <el-alert title="注意：当前栅格中未设置任何列" type="warning" show-icon :closable="false" />
       </el-col>
     </el-row>
-    <el-form-item :label="element.label" v-else-if="element.type === 'subform'">{{ element.options.formId }}</el-form-item>
+    <el-form-item :label="element.label" v-else-if="element.type === 'subform'">
+      <FlexSubform
+        v-model="model[element.options.field]"
+        :config="config"
+        :subform="element"
+        :authority="authority"
+        v-if="model[element.options.field] && (editable(element) || viewable(element))" />
+    </el-form-item>
     <el-form-item :label="element.label" v-else>{{ `异常组件 ${element.type} - ${element.id}` }}</el-form-item>
   </div>
 </template>
 
 <style lang="scss" scoped>
+@import url('./design.scss');
 </style>

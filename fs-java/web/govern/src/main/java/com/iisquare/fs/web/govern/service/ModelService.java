@@ -51,7 +51,7 @@ public class ModelService extends ServiceBase {
         int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("catalog", "code", "type", "sort"));
-        if (null == sort) sort = Sort.by(Sort.Order.asc("type"), Sort.Order.desc("sort"));
+        if (null == sort) sort = Sort.by(Sort.Order.asc("type"), Sort.Order.desc("sort"), Sort.Order.asc("catalog"), Sort.Order.asc("code"));
         Page<Model> data = modelDao.findAll((Specification<Model>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             String catalog = DPUtil.trim(DPUtil.parseString(param.get("catalog")));

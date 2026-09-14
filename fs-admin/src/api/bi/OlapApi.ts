@@ -39,7 +39,4 @@ export default {
   query(params: any = {}, tips = {}) {
     return base.form('/olap/query', params, tips)
   },
-  datasetQuery(params: any = {}, tips = {}) {
-    return base.form('/olap/datasetQuery', params, tips)
-  }
 }

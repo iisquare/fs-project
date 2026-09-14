@@ -18,22 +18,6 @@ export const layouts = [{
     meta: { title: '拦截关键词', permit: ['lm:sensitive:'] },
     component: () => import('@/views/lm/security/sensitive.vue')
   }, {
-    path: '/lm/plugin/tool',
-    meta: { title: '工具管理', permit: ['lm:tool:'] },
-    component: () => import('@/views/lm/plugin/tool.vue')
-  }, {
-    path: '/lm/plugin/mcp',
-    meta: { title: 'MCP服务', permit: ['lm:mcp:'] },
-    component: () => import('@/views/lm/plugin/mcp.vue')
-  }, {
-    path: '/lm/plugin/skill',
-    meta: { title: '技能管理', permit: ['lm:skill:'] },
-    component: () => import('@/views/lm/plugin/skill.vue')
-  }, {
-    path: '/lm/plugin/skillVersion',
-    meta: { title: '版本管理', permit: ['lm:skill:'] },
-    component: () => import('@/views/lm/plugin/skillVersion.vue')
-  }, {
     path: '/lm/operation/usage',
     meta: { title: '调用日志', permit: ['lm:usage:'] },
     component: () => import('@/views/lm/operation/usage.vue')
@@ -77,42 +61,6 @@ export const layouts = [{
     path: '/lm/setting/clientEndpoint',
     meta: { title: '客户端端点', permit: ['lm:clientEndpoint:'] },
     component: () => import('@/views/lm/setting/clientEndpoint.vue')
-  }, {
-    path: '/lm/setting/agent',
-    meta: { title: '智能体管理', permit: ['lm:agent:'] },
-    component: () => import('@/views/lm/setting/agent.vue')
-  }, {
-    path: '/lm/chat/demo',
-    meta: { title: '模型调试', fit: true, permit: ['lm:chat:demo'] },
-    component: () => import('@/views/lm/chat/demo.vue')
-  }, {
-    path: '/lm/chat/compare',
-    meta: { title: '模型对比', permit: ['lm:chat:compare'] },
-    component: () => import('@/views/lm/chat/compare.vue')
-  }, {
-    path: '/lm/chat/dialog',
-    meta: { title: '模型对话', fit: true, permit: ['lm:chat:dialog'] },
-    component: () => import('@/views/lm/chat/dialog.vue')
-  }, {
-    path: '/lm/agentic/list',
-    meta: { title: '智能体', permit: ['lm:agentic:'] },
-    component: () => import('@/views/lm/agentic/list.vue')
-  }, {
-    path: '/lm/knowledge/list',
-    meta: { title: '知识库', permit: ['lm:knowledge:'] },
-    component: () => import('@/views/lm/knowledge/list.vue')
-  }, {
-    path: '/lm/knowledge/document',
-    meta: { title: '文档管理', permit: ['lm:knowledge:'] },
-    component: () => import('@/views/lm/knowledge/document.vue')
-  }, {
-    path: '/lm/knowledge/segment',
-    meta: { title: '分段管理', permit: ['lm:knowledge:'] },
-    component: () => import('@/views/lm/knowledge/segment.vue')
-  }, {
-    path: '/lm/knowledge/recall',
-    meta: { title: '知识召回', permit: ['lm:knowledge:'] },
-    component: () => import('@/views/lm/knowledge/recall.vue')
   }]
 }]
 

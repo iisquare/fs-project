@@ -16,16 +16,19 @@
  * @example
  * <data-schema-table v-model="fields" v-model:types="['String', 'Integer', 'Date']" v-model:editable="true" />
  */
-import { nextTick, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import * as ElementPlusIcons from '@element-plus/icons-vue';
 import type { TableInstance } from 'element-plus';
 import DataUtil from '@/utils/DataUtil';
 import UIUtil from '@/utils/UIUtil';
 
+const FLAG_LABELS: any = { required: '必填', display: '画布展示', unique: '唯一', indexed: '索引' }
 const model: any = defineModel()
 const tableRef = ref<TableInstance>()
 const types = defineModel<String[]>('types', { default: () => [] })
 const editable = defineModel('editable', { type: Boolean, default: false })
+const flags = defineModel<string[]>('flags', { default: () => [] })
+const flagColumns = computed(() => (flags.value ?? []).map(key => ({ key, label: FLAG_LABELS[key] ?? key })))
 const selection: any = ref([])
 const handleAdd = () => {
   model.value.push({
@@ -97,25 +100,36 @@ const handleBottom = () => {
       table-layout="auto"
       @selection-change="(s: any) => selection = s"
     >
-      <el-table-column type="selection" />
-      <el-table-column label="字段">
+      <el-table-column type="selection" width="42" />
+      <el-table-column label="字段" min-width="140">
         <template #default="scope">
           <el-input v-model="scope.row.name" placeholder="必填，字段名称" />
         </template>
       </el-table-column>
-      <el-table-column label="名称">
+      <el-table-column label="名称" min-width="140">
         <template #default="scope">
           <el-input v-model="scope.row.title" :placeholder="scope.row.name || '选填，默认为字段名称'" />
         </template>
       </el-table-column>
-      <el-table-column label="类型">
+      <el-table-column label="类型" min-width="130">
         <template #default="scope">
           <el-autocomplete v-model="scope.row.type" :fetch-suggestions="query => UIUtil.arraySuggestions(types, query)" placeholder="必填，数据类型" />
         </template>
       </el-table-column>
-      <el-table-column label="注释">
+      <el-table-column label="注释" min-width="160">
         <template #default="scope">
           <el-input v-model="scope.row.comment" placeholder="选填，注释信息" />
+        </template>
+      </el-table-column>
+      <el-table-column v-for="item in flagColumns" :key="item.key" :label="item.label" width="96" align="center">
+        <template #default="scope">
+          <el-tooltip :content="item.label" placement="top">
+            <el-switch
+              :model-value="!!scope.row[item.key]"
+              size="small"
+              @update:model-value="(value: any) => scope.row[item.key] = value"
+            />
+          </el-tooltip>
         </template>
       </el-table-column>
     </el-table>
@@ -126,17 +140,27 @@ const handleBottom = () => {
       :border="true"
       table-layout="auto"
     >
-      <el-table-column prop="name" label="字段" />
-      <el-table-column label="名称">
+      <el-table-column prop="name" label="字段" min-width="120" />
+      <el-table-column label="名称" min-width="120">
         <template #default="scope">{{ scope.row.title ? scope.row.title : scope.row.name }}</template>
       </el-table-column>
-      <el-table-column prop="type" label="类型" />
-      <el-table-column prop="comment" label="注释" />
+      <el-table-column prop="type" label="类型" min-width="110" />
+      <el-table-column prop="comment" label="注释" min-width="140" />
+      <el-table-column v-for="item in flagColumns" :key="item.key" :label="item.label" width="96" align="center">
+        <template #default="scope">
+          <el-tag v-if="scope.row[item.key]" size="small" effect="plain" type="success">是</el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
     </el-table>
   </template>
 </template>
 
 <style lang="scss" scoped>
+/* 表头不换行，避免"画布展示"这类较长列名折行 */
+:deep(.el-table th.el-table__cell > .cell) {
+  white-space: nowrap;
+}
 .toolbar {
   display: flex;
   justify-content: space-between;

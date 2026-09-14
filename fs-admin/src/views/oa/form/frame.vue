@@ -23,6 +23,8 @@ const config = ref({
   ready: false,
   status: {},
 })
+const infoVisible = ref(false)
+const infoRow = ref<any>({})
 const rows = ref([])
 const filterRef = ref<FormInstance>()
 const filters = ref(RouteUtil.query2filter(route, {}))
@@ -57,6 +59,18 @@ const handleEdit = (scope: any, env: Event) => {
     query: {
       id: scope.row.id
     }
+  })
+}
+const handleShow = (scope: any) => {
+  infoRow.value = Object.assign({}, scope.row, {
+    description: scope.row.description ? scope.row.description : '暂无'
+  })
+  infoVisible.value = true
+}
+const handleData = (scope: any) => {
+  RouteUtil.forward(route, router, undefined, {
+    path: '/oa/form/list',
+    query: { id: scope.row.id }
   })
 }
 const handleDelete = () => {
@@ -113,19 +127,30 @@ const handleDelete = () => {
       @selection-change="(newSelection: any) => selection = newSelection"
     >
       <el-table-column type="selection" />
-      <TableColumn :columns="columns">
-        <template #role="scope">
-          <el-space><el-tag v-for="item in scope.row.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
-        </template>
-      </TableColumn>
-      <el-table-column label="操作">
+      <TableColumn :columns="columns" />
+      <el-table-column label="操作" width="180">
         <template #default="scope">
+          <el-button link v-permit="'oa:formFrame:'" @click="() => handleShow(scope)">查看</el-button>
           <el-button link @click="(e: any) => handleEdit(scope, e)" v-permit="'oa:formFrame:modify'">编辑</el-button>
+          <el-button link @click="() => handleData(scope)">数据</el-button>
         </template>
       </el-table-column>
     </el-table>
     <TablePagination v-model="pagination" @change="handleRefresh(true, true)" />
   </el-card>
+
+  <el-dialog v-model="infoVisible" :title="`信息查看 - ${infoRow.id}`" width="500">
+    <el-descriptions :column="1" border>
+      <el-descriptions-item label="名称">{{ infoRow.name }}</el-descriptions-item>
+      <el-descriptions-item label="排序">{{ infoRow.sort }}</el-descriptions-item>
+      <el-descriptions-item label="状态">{{ infoRow.statusText }}</el-descriptions-item>
+      <el-descriptions-item label="描述">{{ infoRow.description }}</el-descriptions-item>
+      <el-descriptions-item label="创建者">{{ infoRow.createdUidName }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{ infoRow.createdTime }}</el-descriptions-item>
+      <el-descriptions-item label="修改者">{{ infoRow.updatedUidName }}</el-descriptions-item>
+      <el-descriptions-item label="修改时间">{{ infoRow.updatedTime }}</el-descriptions-item>
+    </el-descriptions>
+  </el-dialog>
 </template>
 
 <style lang="scss" scoped>

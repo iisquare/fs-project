@@ -33,6 +33,17 @@ public class AuthService extends JPAServiceBase {
     @Autowired
     ModelService modelService;
 
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("status", "asc");
+        sorts.put("createdTime", "asc");
+        sorts.put("updatedTime", "asc");
+        sorts.put("deletedTime", "asc");
+        return sorts;
+    }
+
     public Map<String, String> status() {
         Map<String, String> status = new LinkedHashMap<>();
         status.put("valid", "已启用");
@@ -90,7 +101,7 @@ public class AuthService extends JPAServiceBase {
             helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id").deleted();
             helper.equal("status").equalWithIntGTZero("uid").like("name").equal("secret");
             return cb.and(helper.predicates());
-        }, Sort.by(Sort.Order.desc("id")), "id", "status", "createdTime", "updatedTime", "deletedTime");
+        }, Sort.by(Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = format(ApiUtil.rows(result));
         if (!DPUtil.empty(args.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "uid", "createdUid", "updatedUid", "deletedUid");

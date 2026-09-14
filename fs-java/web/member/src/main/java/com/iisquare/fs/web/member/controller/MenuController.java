@@ -62,6 +62,7 @@ public class MenuController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", menuService.status());
+        model.put("sorts", menuService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

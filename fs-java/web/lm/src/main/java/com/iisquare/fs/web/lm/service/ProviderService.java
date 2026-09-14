@@ -42,6 +42,16 @@ public class ProviderService extends JPAServiceBase {
     @Autowired
     Configuration configuration;
 
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("status", "asc");
+        sorts.put("sort", "desc");
+        sorts.put("serial", "asc");
+        return sorts;
+    }
+
     public Map<String, String> types() {
         Map<String, String> types = new LinkedHashMap<>();
         types.put("vllm", "vLLM");
@@ -223,7 +233,7 @@ public class ProviderService extends JPAServiceBase {
             helper.equal("type").equal("serial").like("site");
             helper.equalWithIntNotEmpty("status").like("name").like("endpoint");
             return cb.and(helper.predicates());
-        }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort", "serial");
+        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = format(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");

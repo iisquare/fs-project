@@ -1,5 +1,13 @@
 
 dependencies {
-    implementation project(':base:worker')
+    implementation project(':web:core')
+    implementation (group: 'org.apache.curator', name: 'curator-recipes', version: curatorVersion) { // ZooKeeper
+        exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+    }
+    implementation (group: 'org.apache.zookeeper', name: 'zookeeper', version: zookeeperVersion) {
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    }
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-amqp', version: springBootVersion
+
     testImplementation project(':web:test')
 }

@@ -7,14 +7,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
+import com.iisquare.fs.base.elasticsearch.util.ElasticsearchUtil;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.util.EntityUtils;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -64,12 +69,28 @@ public class ElasticsearchConnector extends DatasourceConnector<ElasticsearchCli
         FileUtil.close(client);
     }
 
+    /**
+     * 8.x Java API Client 的传输层（ElasticsearchTransportBase）对每个高层 API 响应都会
+     * 强制校验 X-Elastic-Product: Elasticsearch 响应头，且该校验无法通过配置关闭。
+     * 使用client.info()校验ES 7.x会抛出 Missing [X-Elastic-Product] header。
+     * 底层 RestClient 不做该产品头校验，可同时兼容 ES 7.x 与 8.x。
+     */
     @Override
     public Map<String, Object> test() {
         ElasticsearchClient client = null;
         try {
             client = open();
-            return ApiUtil.result(0, "连接成功", client.info().toString());
+            Response response = ElasticsearchUtil.rest(client).performRequest(new Request("GET", "/"));
+            int status = response.getStatusLine().getStatusCode();
+            String body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+            if (status < 200 || status >= 300) {
+                return ApiUtil.result(1500, "连接失败", "HTTP " + status + " - " + body);
+            }
+            JsonNode json = DPUtil.parseJSON(body);
+            if (null == json) {
+                return ApiUtil.result(1500, "响应结果解析失败", body);
+            }
+            return ApiUtil.result(0, "连接成功", json);
         } catch (Exception e) {
             return ApiUtil.result(1500, "连接失败", e.getMessage());
         } finally {

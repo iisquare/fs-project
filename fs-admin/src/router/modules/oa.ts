@@ -1,10 +1,6 @@
 import { layout } from '../config'
 
 export const blanks = [{
-  path: '/oa/workflow/model',
-  meta: { title: '流程设计', fit: true, permit: ['oa:workflow:'] },
-  component: () => import('@/views/oa/workflow/model.vue')
-}, {
   path: '/oa/print/model',
   meta: { title: '打印设计', fit: true, permit: ['oa:print:'] },
   component: () => import('@/views/oa/print/model.vue')
@@ -41,6 +37,10 @@ export const layouts = [{
     path: '/oa/workflow/list',
     meta: { title: '流程模型', permit: ['oa:workflow:'] },
     component: () => import('@/views/oa/workflow/list.vue')
+  }, {
+    path: '/oa/workflow/model',
+    meta: { title: '流程设计', fit: true, permit: ['oa:workflow:'] },
+    component: () => import('@/views/oa/workflow/model.vue')
   }, {
     path: '/oa/workflow/deployment',
     meta: { title: '流程部署', permit: ['oa:workflow:'] },

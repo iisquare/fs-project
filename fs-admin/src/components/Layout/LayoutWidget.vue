@@ -95,39 +95,63 @@ onMounted(() => {
   --el-collapse-header-bg-color: var(--fs-layout-background-color);
   --el-collapse-content-bg-color: var(--fs-layout-background-color);
   :deep(.el-collapse-item__header) {
-    padding: 0 10px 0 10px;
+    padding: 0 12px;
     box-sizing: border-box;
   }
   :deep(.el-collapse-item__content) {
-    padding: 0px 16px 16px 16px;
+    padding: 0 12px 12px 12px;
   }
   ul {
-    position: relative;
-    overflow: hidden;
-    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+    gap: 8px;
     margin: 0;
-    @include flex-between();
-    flex-wrap: wrap;
-    row-gap: 10px;
+    padding: 0;
+    list-style: none;
   }
   .widget-item {
-    flex: 0 0 36%;
+    min-width: 0;
+    height: 30px;
+    padding: 0 8px;
+    box-sizing: border-box;
     font-size: 12px;
-    line-height: 26px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     color: #333;
     cursor: move;
     background: #f4f6fc;
     border: 1px solid #f4f6fc;
-    padding: 3px 10px;
+    border-radius: 4px;
     @include flex-start();
-    gap: 8px;
+    gap: 6px;
+    transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+    > .el-icon {
+      flex: none;
+    }
+    > span {
+      flex: 1;
+      min-width: 0;
+      @include text-wrap();
+    }
     &:hover {
-      color: #409eff;
-      border: 1px dashed #409eff;
+      color: var(--el-color-primary);
+      background: var(--el-color-primary-light-9);
+      border: 1px dashed var(--el-color-primary);
     }
   }
+}
+
+// vuedraggable 拖拽占位元素会脱离组件作用域，需使用全局样式
+:global(li.widget-item.ghost) {
+  width: 92px;
+  height: 30px;
+  padding: 0 8px;
+  box-sizing: border-box;
+  list-style: none;
+  font-size: 12px;
+  color: var(--el-color-primary);
+  background: #f4f6fc;
+  border: 1px dashed var(--el-color-primary);
+  border-radius: 4px;
+  @include flex-start();
+  gap: 6px;
 }
 </style>

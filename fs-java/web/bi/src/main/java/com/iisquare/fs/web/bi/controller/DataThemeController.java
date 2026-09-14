@@ -59,6 +59,7 @@ public class DataThemeController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", dataThemeService.status());
+        model.put("sorts", dataThemeService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

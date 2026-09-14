@@ -55,6 +55,7 @@ public class DataExcelController extends PermitControllerBase {
         model.put("modes", dataExcelService.modes());
         model.put("status", dataExcelService.status());
         model.put("fieldTypes", datasetService.fieldTypes());
+        model.put("sorts", dataExcelService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

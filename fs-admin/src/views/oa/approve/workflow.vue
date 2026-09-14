@@ -4,6 +4,7 @@ import type { FormInstance, TableInstance } from 'element-plus'
 import RouteUtil from '@/utils/RouteUtil'
 import { useRoute, useRouter } from 'vue-router'
 import ApproveApi from '@/api/oa/ApproveApi'
+import DateUtil from '@/utils/DateUtil'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,9 +13,8 @@ const loading = ref(false)
 const searchable = ref(true)
 const columns = ref([
   { prop: 'id', label: 'ID' },
-  { prop: 'name', label: '流程名称' },
-  { prop: 'category', label: '分类' },
-  { prop: 'version', label: '版本' },
+  { prop: 'name', label: '名称', slot: 'name' },
+  { prop: 'deploymentInfo.deploymentTime', label: '发布时间', formatter: DateUtil.render },
 ])
 const rows = ref([])
 const filterRef = ref<FormInstance>()
@@ -40,7 +40,7 @@ onMounted(() => {
 const handleStart = (scope: any, env: Event) => {
   RouteUtil.forward(route, router, env, {
     path: '/oa/approve/form',
-    query: { deploymentId: scope.row.id }
+    query: { id: scope.row.id }
   })
 }
 </script>
@@ -59,7 +59,9 @@ const handleStart = (scope: any, env: Event) => {
   </el-card>
   <el-card :bordered="false" shadow="never" class="fs-table-card">
     <div class="fs-table-toolbar flex-between">
-      <el-space />
+      <el-space>
+        <h5>流程单据，可以多次填报</h5>
+      </el-space>
       <el-space>
         <button-search @click="searchable = !searchable" />
         <button-refresh @click="handleRefresh(true, true)" :loading="loading" />
@@ -74,10 +76,14 @@ const handleStart = (scope: any, env: Event) => {
       v-loading="loading"
       table-layout="auto"
     >
-      <TableColumn :columns="columns" />
-      <el-table-column label="操作">
+      <TableColumn :columns="columns">
+        <template #name="scope">
+          <el-link type="primary" @click="(e: any) => handleStart(scope, e)">{{ scope.row.name }}</el-link>
+        </template>
+      </TableColumn>
+      <el-table-column label="操作" width="90">
         <template #default="scope">
-          <el-button link @click="(e: any) => handleStart(scope, e)" v-permit="'oa:approve:start'">发起</el-button>
+          <el-button link @click="(e: any) => handleStart(scope, e)" v-permit="['oa:workflow:', 'oa:approve:workflow']">填报</el-button>
         </template>
       </el-table-column>
     </el-table>

@@ -1,6 +1,9 @@
 import base from './Api'
 
 export default {
+  config (tips = {}) {
+    return base.post('/dataLog/config', {}, tips)
+  },
   check (param: any, tips = {}) {
     return base.post('/dataLog/check', param, tips)
   },

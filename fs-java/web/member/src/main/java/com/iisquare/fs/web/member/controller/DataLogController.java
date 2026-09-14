@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.ui.ModelMap;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -47,6 +48,13 @@ public class DataLogController extends PermitControllerBase {
         List<Long> ids = DPUtil.parseLongList(param.get("ids"));
         boolean result = dataLogService.remove(ids);
         return ApiUtil.echoResult(result ? 0 : 500, null, result);
+    }
+
+    @RequestMapping("/config")
+    @Permission("")
+    public String configAction(ModelMap model) {
+        model.put("sorts", dataLogService.sorts());
+        return ApiUtil.echoResult(0, null, model);
     }
 
 }

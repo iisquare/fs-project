@@ -31,6 +31,7 @@ const columns = ref([
 ])
 const config = ref({
   ready: false,
+  sorts: {},
   status: {},
 })
 const rows = ref([])
@@ -38,6 +39,8 @@ const filterRef = ref<FormInstance>()
 const filters = ref(RouteUtil.query2filter(route, { advanced: false, modelIds: [], deleted: 'without' }))
 const pagination = ref(RouteUtil.pagination(filters.value))
 const selection: any = ref([])
+
+const modelName = (item: any, index: any) => item.name + '#' + item.id + (item.alias ? '(' + item.alias + ')' : '')
 
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
   tableRef.value?.clearSelection()
@@ -155,6 +158,7 @@ const handleDelete = () => {
         <button-search @click="searchable = !searchable" />
         <button-refresh @click="handleRefresh(true, true)" :loading="loading" />
         <TableColumnSetting v-model="columns" :table="tableRef" />
+        <TableSort v-model="filters.sort" :columns="columns" :sortable="config.sorts" @change="handleRefresh(true, true)" />
       </el-space>
     </div>
     <el-table
@@ -172,8 +176,8 @@ const handleDelete = () => {
           <form-password v-model="scope.row.secret" level="medium" />
         </template>
         <template #modelIds="scope">
-          <el-space wrap v-if="scope.row.models?.length">
-            <el-tag v-for="item in scope.row.models" :key="item.id">{{ item.name }}</el-tag>
+          <el-space direction="vertical" alignment="flex-start" :size="4" v-if="scope.row.models?.length">
+            <el-tag v-for="(item, index) in scope.row.models" :key="item.id">{{ modelName(item, index) }}</el-tag>
           </el-space>
           <el-tag type="info" v-else>不限</el-tag>
         </template>
@@ -197,8 +201,8 @@ const handleDelete = () => {
       <el-descriptions-item label="用户账号">{{ form.uidUserInfo?.serial }}</el-descriptions-item>
       <el-descriptions-item label="用户昵称">{{ form.uidUserInfo?.name }}</el-descriptions-item>
       <el-descriptions-item label="模型限制" :span="2">
-        <el-space wrap v-if="form.models?.length">
-          <el-tag v-for="item in form.models" :key="item.id">{{ item.name }}</el-tag>
+        <el-space direction="vertical" alignment="flex-start" :size="4" v-if="form.models?.length">
+          <el-tag v-for="(item, index) in form.models" :key="item.id">{{ modelName(item, index) }}</el-tag>
         </el-space>
         <span v-else>不限</span>
       </el-descriptions-item>
@@ -236,7 +240,7 @@ const handleDelete = () => {
         <el-input v-model="form.secret" type="password" show-password placeholder="留空时自动生成" />
       </el-form-item>
       <el-form-item prop="modelIds" label="模型限制">
-        <form-select v-model="form.modelIds" :callback="ModelApi.list" multiple clearable />
+        <form-select v-model="form.modelIds" :callback="ModelApi.list" :labelFormatter="modelName" multiple clearable />
       </el-form-item>
       <el-form-item prop="expiredTime" label="过期时间">
          <form-date-picker v-model="form.expiredTime" placeholder="留空为永久有效" />

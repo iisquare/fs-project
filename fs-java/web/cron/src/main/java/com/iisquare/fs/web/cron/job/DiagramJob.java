@@ -41,7 +41,7 @@ public class DiagramJob implements Job {
         }
         // 解析流程变量
         JsonNode data = DPUtil.parseJSON(flow.getData());
-        if (null != data || !data.isObject()) data = DPUtil.objectNode();
+        if (null == data || !data.isObject()) data = DPUtil.objectNode();
         ((ObjectNode) data).setAll(DPUtil.toJSON(detail.getJobDataMap(), ObjectNode.class));
         ((ObjectNode) data).setAll(DPUtil.toJSON(trigger.getJobDataMap(), ObjectNode.class));
         // 生成调度日志

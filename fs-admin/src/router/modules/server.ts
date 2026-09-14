@@ -10,9 +10,9 @@ export const layouts = [{
     meta: { title: '工作面板' },
     component: layout.default
   }, {
-    path: '/server/rabbit/dashboard',
-    meta: { title: '消息队列', permit: ['rabbit::'] },
-    component: () => import('@/views/server/rabbit/dashboard.vue')
+    path: '/server/worker/dashboard',
+    meta: { title: '消息队列', permit: ['worker::'] },
+    component: () => import('@/views/server/worker/dashboard.vue')
   }, {
     path: '/server/cron/node',
     meta: { title: '工作节点', permit: ['cron::'] },

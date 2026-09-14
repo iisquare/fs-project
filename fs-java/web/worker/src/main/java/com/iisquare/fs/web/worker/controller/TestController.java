@@ -3,8 +3,10 @@ package com.iisquare.fs.web.worker.controller;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
+import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
 import com.iisquare.fs.web.worker.service.TestService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,19 +23,28 @@ public class TestController extends PermitControllerBase {
     TestService testService;
 
     @GetMapping("/makeCase")
+    @Permission("")
     public String makeCaseAction(@RequestParam Map<?, ?> param) {
         Map<String, Object> result = testService.makeCase();
         return ApiUtil.echoResult(result);
     }
 
     @GetMapping("/sendMessage")
+    @Permission("")
     public String sendMessageAction(@RequestParam Map<?, ?> param) {
         String message = DPUtil.parseString(param.get("message"));
-        int count = ValidateUtil.filterInteger(param.get("count"), true, 1, 10000, 1);
+        int count = ValidateUtil.filterInteger(param.get("count"), 1, 10000, 1);
         for (int i = 0; i < count; i++) {
             testService.sendMessage(message);
         }
         return ApiUtil.echoResult(0, null, param);
+    }
+
+    @GetMapping("/submit")
+    @Permission("")
+    public String submitAction(@RequestParam Map<?, ?> param, HttpServletRequest request) {
+        Map<String, Object> result = testService.submit(request);
+        return ApiUtil.echoResult(result);
     }
 
 }

@@ -16,6 +16,7 @@
     "@element-plus/icons-vue": "^2.3.2",
     "@microsoft/fetch-event-source": "^2.0.1",
     "axios": "^1.18.1",
+    "bpmn-js": "8.8.2",
     "codemirror": "^5.65.21",
     "cron-parser": "^5.6.1",
     "echarts": "^5.6.0",

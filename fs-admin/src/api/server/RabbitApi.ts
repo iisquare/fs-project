@@ -2,37 +2,10 @@ import api from '@/core/Api'
 
 export default {
   get (url: string, params = {}, tips = {}, config = {}) {
-    return api.get('/rabbit' + url, params, tips, config)
+    return api.get('/worker' + url, params, tips, config)
   },
   post (url: string, data = {}, tips = {}, config = {}) {
-    return api.post('/rabbit' + url, data, tips, config)
-  },
-  containerSubmit (param: any, tips = {}) {
-    return this.post('/container/submit', param, tips)
-  },
-  containerCreate (param: any, tips = {}) {
-    return this.post('/container/create', param, tips)
-  },
-  containerChange (param: any, tips = {}) {
-    return this.post('/container/change', param, tips)
-  },
-  containerRemove (param: any, tips = {}) {
-    return this.post('/container/remove', param, tips)
-  },
-  containerStart (param: any, tips = {}) {
-    return this.post('/container/start', param, tips)
-  },
-  containerStop (param: any, tips = {}) {
-    return this.post('/container/stop', param, tips)
-  },
-  containerState (tips = {}) {
-    return this.get('/container/state', tips)
-  },
-  taskTransient (param: any, tips = {}) {
-    return this.get('/task/transient', param, tips)
-  },
-  taskNode (tips = {}) {
-    return this.get('/task/node', tips)
+    return api.post('/worker' + url, data, tips, config)
   },
   taskNodes (param: any, tips = {}) {
     return this.get('/task/nodes', param, tips)

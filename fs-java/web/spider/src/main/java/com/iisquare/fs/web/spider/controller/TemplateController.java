@@ -59,6 +59,7 @@ public class TemplateController extends PermitControllerBase {
     public String configAction(ModelMap model) {
         model.put("status", templateService.status());
         model.put("types", templateService.types());
+        model.put("sorts", templateService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

@@ -170,7 +170,7 @@ const exhibition = {
     const result = []
     for (const item of sorted) {
       if (!item.enabled) continue
-      result.push({ title: item.label, dataIndex: item.field })
+      result.push({ label: item.label, prop: item.field })
     }
     return result
   },

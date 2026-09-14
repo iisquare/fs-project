@@ -116,7 +116,7 @@ public class QualityPlanService extends ServiceBase {
         int page = ValidateUtil.filterInteger(param.get("page"), true, 1, null, 1);
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "sort"));
-        if (null == sort) sort = Sort.by(Sort.Order.desc("sort"));
+        if (null == sort) sort = Sort.by(Sort.Order.desc("sort"), Sort.Order.desc("id"));
         Page<QualityPlan> data = planDao.findAll((Specification<QualityPlan>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             int id = DPUtil.parseInt(param.get("id"));

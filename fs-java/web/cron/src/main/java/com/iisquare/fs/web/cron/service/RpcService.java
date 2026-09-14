@@ -202,11 +202,10 @@ public class RpcService implements DisposableBean {
                     .setConnectionRequestTimeout(30 * 60 * 1000)
                     .build());
             post.setHeader("Content-Type", "application/json;charset=UTF-8");
-            String appName = environment.getProperty("spring.application.name", "fs-cron-service");
-            String time = String.valueOf(System.currentTimeMillis());
-            post.setHeader(FeignInterceptor.HEADER_APP_NAME, appName);
-            post.setHeader(FeignInterceptor.HEADER_APP_TIME, time);
-            post.setHeader(FeignInterceptor.HEADER_APP_TOKEN, FeignInterceptor.token(appName, time));
+            Map<String, String> headers = FeignInterceptor.headers(null, environment);
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                post.setHeader(entry.getKey(), entry.getValue());
+            }
             if (!DPUtil.empty(requestBody)) {
                 post.setEntity(new StringEntity(requestBody, StandardCharsets.UTF_8));
             }

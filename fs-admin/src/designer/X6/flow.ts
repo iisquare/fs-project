@@ -230,7 +230,12 @@ class Flow {
     X6.Graph.unregisterNode('flow-node')
     X6VueShape.register({ shape: 'flow-node', component: FlowNode, ports: Port2RL, })
     X6.Graph.unregisterNode('kg-node')
-    X6VueShape.register({ shape: 'kg-node', component: KGNode, ports: Port4TRBL, })
+    // options.ports=false 时不注册连接锚点，用于只读的图探索画布
+    X6VueShape.register({
+      shape: 'kg-node',
+      component: KGNode,
+      ports: false === this.options.ports ? { groups: {}, items: [] } : Port4TRBL,
+    })
 
     X6.Graph.unregisterNode('flow-group')
     X6.Graph.registerNode('flow-group', FlowGroup)

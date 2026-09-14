@@ -133,7 +133,7 @@ public class ArticleService extends ServiceBase {
         int pageSize = ValidateUtil.filterInteger(param.get("pageSize"), true, 1, 500, 15);
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")),
                 Arrays.asList("id", "sort", "publishTime", "createdTime", "updatedTime", "countView", "countApprove", "countOppose", "countComment"));
-        if (null == sort) sort = Sort.by(Sort.Order.desc("updatedTime"));
+        if (null == sort) sort = Sort.by(Sort.Order.desc("updatedTime"), Sort.Order.desc("id"));
         Page<?> data = articleDao.findAll((Specification<Article>) (root, query, cb) -> {
             SpecificationHelper<Article> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.dateFormat(configuration.getFormatDate());

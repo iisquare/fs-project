@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router';
 import SettingApi from '@/api/member/SettingApi';
 import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
+import ApiUtil from '@/utils/ApiUtil';
 
 const route = useRoute()
 const router = useRouter()
@@ -21,6 +22,7 @@ const columns = ref([
 ])
 const config = ref({
   ready: false,
+  sorts: {},
   status: {},
 })
 const rows = ref([])
@@ -42,6 +44,9 @@ const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
 }
 onMounted(() => {
   handleRefresh(false, true)
+  SettingApi.config().then((result: any) => {
+    Object.assign(config.value, { ready: true }, ApiUtil.data(result))
+  }).catch(() => {})
 })
 const infoVisible = ref(false)
 const formVisible = ref(false)
@@ -122,6 +127,7 @@ const handleDelete = () => {
         <button-search @click="searchable = !searchable" />
         <button-refresh @click="handleRefresh(true, true)" :loading="loading" />
         <TableColumnSetting v-model="columns" :table="tableRef" />
+        <TableSort v-model="filters.sort" :columns="columns" :sortable="config.sorts" @change="handleRefresh(true, true)" />
       </el-space>
     </div>
     <el-table

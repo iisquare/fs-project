@@ -27,6 +27,17 @@ public class RpcLogService extends JPAServiceBase {
     @Autowired
     Configuration configuration;
 
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("requestTime", "desc");
+        sorts.put("status", "asc");
+        sorts.put("state", "asc");
+        sorts.put("duration", "asc");
+        return sorts;
+    }
+
     public Map<String, String> states() {
         Map<String, String> status = new LinkedHashMap<>();
         status.put(RpcLog.State.RUNNING.name(), "正在调度");
@@ -44,7 +55,7 @@ public class RpcLogService extends JPAServiceBase {
             helper.equal("app").like("uri").equal("state");
             helper.betweenWithDate("requestTime");
             return cb.and(helper.predicates());
-        }, Sort.by(Sort.Order.desc("requestTime")), "id", "requestTime", "status", "state", "duration");
+        }, Sort.by(Sort.Order.desc("requestTime"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = ApiUtil.rows(result);
         ServiceUtil.retain(rows, param.get("columns"));
         return result;

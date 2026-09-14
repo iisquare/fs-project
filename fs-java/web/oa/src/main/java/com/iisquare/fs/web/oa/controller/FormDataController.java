@@ -39,7 +39,7 @@ public class FormDataController extends PermitControllerBase {
     @Permission("")
     public String listAction(@RequestBody Map<?, ?> param) {
         Map<?, ?> result = formDataService.search(param, DPUtil.buildMap(
-            "withUserInfo", true, "withFormFrameInfo", true
+            "withUserInfo", true, "withFormFrameInfo", true, "withWorkflowInfo", true
         ));
         return ApiUtil.echoResult(0, null, result);
     }

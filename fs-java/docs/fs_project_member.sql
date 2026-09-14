@@ -21,7 +21,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-62931';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-84492';
 
 --
 -- Table structure for table `fs_member_application`
@@ -46,7 +46,7 @@ CREATE TABLE `fs_member_application` (
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `unq_serial` (`serial`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=307 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=308 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -188,7 +188,7 @@ CREATE TABLE `fs_member_favorite` (
   `updated_uid` int NOT NULL DEFAULT '0',
   `updated_time` bigint NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -216,7 +216,7 @@ CREATE TABLE `fs_member_menu` (
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_application_id` (`application_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=189 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=193 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -246,24 +246,6 @@ CREATE TABLE `fs_member_message` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `fs_member_relation`
---
-
-DROP TABLE IF EXISTS `fs_member_relation`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `fs_member_relation` (
-  `id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `aid` int NOT NULL DEFAULT '0',
-  `bid` int NOT NULL DEFAULT '0',
-  `cid` int NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`) USING BTREE,
-  KEY `idx_type` (`type`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `fs_member_resource`
 --
 
@@ -288,7 +270,7 @@ CREATE TABLE `fs_member_resource` (
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_application_id` (`application_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=332 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=346 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -309,7 +291,58 @@ CREATE TABLE `fs_member_role` (
   `updated_time` bigint NOT NULL DEFAULT '0',
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_member_role_application`
+--
+
+DROP TABLE IF EXISTS `fs_member_role_application`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_member_role_application` (
+  `role_id` int NOT NULL DEFAULT '0',
+  `application_id` int NOT NULL DEFAULT '0',
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`role_id`,`application_id`) USING BTREE,
+  KEY `idx_application_id` (`application_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_member_role_menu`
+--
+
+DROP TABLE IF EXISTS `fs_member_role_menu`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_member_role_menu` (
+  `role_id` int NOT NULL DEFAULT '0',
+  `menu_id` int NOT NULL DEFAULT '0',
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`role_id`,`menu_id`) USING BTREE,
+  KEY `idx_menu_id` (`menu_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_member_role_resource`
+--
+
+DROP TABLE IF EXISTS `fs_member_role_resource`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_member_role_resource` (
+  `role_id` int NOT NULL DEFAULT '0',
+  `resource_id` int NOT NULL DEFAULT '0',
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`role_id`,`resource_id`) USING BTREE,
+  KEY `idx_resource_id` (`resource_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -366,7 +399,24 @@ CREATE TABLE `fs_member_user` (
   UNIQUE KEY `unq_serial` (`serial`),
   KEY `idx_email` (`email`) USING BTREE,
   KEY `idx_phone` (`phone`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_member_user_role`
+--
+
+DROP TABLE IF EXISTS `fs_member_user_role`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_member_user_role` (
+  `user_id` int NOT NULL DEFAULT '0',
+  `role_id` int NOT NULL DEFAULT '0',
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`user_id`,`role_id`) USING BTREE,
+  KEY `idx_role_id` (`role_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -379,4 +429,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-08-28  9:23:47
+-- Dump completed on 2026-09-11 10:29:43

@@ -19,12 +19,19 @@ import java.util.Map;
 
 public class Neo4jUtil {
 
-    public static final String FIELD_IDENTITY = "identity";
+    /**
+     * 元素标识字段
+     *
+     * elementId 由图数据库生成，仅用于数据排查与会话内的元素定位（画布渲染、行定位、单次删除等）。
+     * 数据库重建、备份还原、跨库复制后会变化，请勿写入业务表或在业务逻辑中强依赖；
+     * 业务唯一标识请使用本体（或业务）定义的主键字段。
+     */
+    public static final String FIELD_ELEMENT_ID = "elementId";
     public static final String FIELD_LABELS = "labels";
     public static final String FIELD_PROPERTIES = "properties";
     public static final String FIELD_TYPE = "type";
-    public static final String FIELD_START_NODE_ID = "start";
-    public static final String FIELD_END_NODE_ID = "end";
+    public static final String FIELD_START_ELEMENT_ID = "startElementId";
+    public static final String FIELD_END_ELEMENT_ID = "endElementId";
 
     public static List<String> labels(JsonNode node) {
         List<String> result = new ArrayList<>();
@@ -40,7 +47,7 @@ public class Neo4jUtil {
     /**
      * 节点格式示例：
      * {
-     *     "identity": 0,
+     *     "elementId": "4:0d3f5c1a-8a2b-4b1e-9f1a-1c2d3e4f5a6b:12",
      *     "labels": [
      *         "Person"
      *     ],
@@ -48,10 +55,12 @@ public class Neo4jUtil {
      *         "name": "John"
      *     }
      * }
+     *
+     * elementId 仅用于数据排查与会话内的元素定位，不参与业务逻辑，请勿持久化。
      */
     public static ObjectNode node2json(Node node) {
         ObjectNode result = DPUtil.objectNode();
-        result.put(FIELD_IDENTITY, node.id());
+        result.put(FIELD_ELEMENT_ID, node.elementId());
         ArrayNode labels = result.putArray(FIELD_LABELS);
         Iterator<String> iterator = node.labels().iterator();
         while (iterator.hasNext()) {
@@ -64,21 +73,23 @@ public class Neo4jUtil {
     /**
      * 关系格式示例：
      * {
-     *     "identity": 8,
-     *     "start": 17,
-     *     "end": 18,
+     *     "elementId": "4:0d3f5c1a-8a2b-4b1e-9f1a-1c2d3e4f5a6b:8",
+     *     "startElementId": "4:0d3f5c1a-8a2b-4b1e-9f1a-1c2d3e4f5a6b:17",
+     *     "endElementId": "4:0d3f5c1a-8a2b-4b1e-9f1a-1c2d3e4f5a6b:18",
      *     "type": "RL",
      *     "properties": {
      *         "title": "Teach"
      *     }
      * }
+     *
+     * 三个 elementId 同样仅用于数据排查与会话内的元素定位，不参与业务逻辑，请勿持久化。
      */
     public static ObjectNode relationship2json(Relationship relationship) {
         ObjectNode result = DPUtil.objectNode();
-        result.put(FIELD_IDENTITY, relationship.id());
+        result.put(FIELD_ELEMENT_ID, relationship.elementId());
         result.put(FIELD_TYPE, relationship.type());
-        result.put(FIELD_START_NODE_ID, relationship.startNodeId());
-        result.put(FIELD_END_NODE_ID, relationship.endNodeId());
+        result.put(FIELD_START_ELEMENT_ID, relationship.startNodeElementId());
+        result.put(FIELD_END_ELEMENT_ID, relationship.endNodeElementId());
         result.replace(FIELD_PROPERTIES, DPUtil.toJSON(relationship.asMap()));
         return result;
     }
@@ -162,12 +173,12 @@ public class Neo4jUtil {
         Iterator<JsonNode> iterator = paths.iterator();
         while (iterator.hasNext()) {
             JsonNode path = iterator.next().at("/" + key);
-            nodes.replace(path.at("/start/identity").asText(), path.at("/start"));
-            nodes.replace(path.at("/end/identity").asText(), path.at("/end"));
+            nodes.replace(path.at("/start/elementId").asText(), path.at("/start"));
+            nodes.replace(path.at("/end/elementId").asText(), path.at("/end"));
             Iterator<JsonNode> it = path.at("/relationships").iterator();
             while (it.hasNext()) {
                 JsonNode relationship = it.next();
-                relations.replace(relationship.at("/identity").asText(), relationship);
+                relations.replace(relationship.at("/elementId").asText(), relationship);
             }
         }
         return result;

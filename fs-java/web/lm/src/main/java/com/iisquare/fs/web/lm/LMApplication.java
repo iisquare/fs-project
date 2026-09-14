@@ -8,11 +8,13 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.ComponentScan;
 
+/**
+ * 大模型服务：请求代理、系统配置、运营监控、安全围栏
+ */
 @SpringBootApplication
 @ComponentScan(basePackages = {
         "com.iisquare.fs.base.core.*",
         "com.iisquare.fs.base.jpa.*",
-        "com.iisquare.fs.base.elasticsearch.*",
         "com.iisquare.fs.web.core.*",
         "com.iisquare.fs.web.lm",
 })

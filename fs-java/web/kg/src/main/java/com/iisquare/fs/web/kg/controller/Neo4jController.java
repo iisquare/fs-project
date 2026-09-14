@@ -19,44 +19,65 @@ public class Neo4jController extends PermitControllerBase {
     Neo4jService neo4jService;
 
     @RequestMapping("/showIndex")
-    @Permission("")
+    @Permission("kg:ontology:schema")
     public String showIndexAction(@RequestBody Map<String, Object> param) {
         Map<String, Object> result = neo4jService.showIndex(param);
         return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/createIndex")
-    @Permission("")
+    @Permission("kg:ontology:schema")
     public String createIndexAction(@RequestBody Map<String, Object> param) {
         Map<String, Object> result = neo4jService.createIndex(param);
         return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/dropIndex")
-    @Permission("")
+    @Permission("kg:ontology:schema")
     public String dropIndexAction(@RequestBody Map<String, Object> param) {
         Map<String, Object> result = neo4jService.dropIndex(param);
         return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/showConstraint")
-    @Permission("")
+    @Permission("kg:ontology:schema")
     public String showConstraintAction(@RequestBody Map<String, Object> param) {
         Map<String, Object> result = neo4jService.showConstraint(param);
         return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/createConstraint")
-    @Permission("")
+    @Permission("kg:ontology:schema")
     public String createConstraintAction(@RequestBody Map<String, Object> param) {
         Map<String, Object> result = neo4jService.createConstraint(param);
         return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/dropConstraint")
-    @Permission("")
+    @Permission("kg:ontology:schema")
     public String dropConstraintAction(@RequestBody Map<String, Object> param) {
         Map<String, Object> result = neo4jService.dropConstraint(param);
+        return ApiUtil.echoResult(result);
+    }
+
+    @RequestMapping("/showSchema")
+    @Permission("kg:ontology:schema")
+    public String showSchemaAction(@RequestBody Map<String, Object> param) {
+        Map<String, Object> result = neo4jService.showSchema(param);
+        return ApiUtil.echoResult(result);
+    }
+
+    @RequestMapping("/createSchema")
+    @Permission("kg:ontology:schema")
+    public String createSchemaAction(@RequestBody Map<String, Object> param) {
+        Map<String, Object> result = neo4jService.createSchema(param);
+        return ApiUtil.echoResult(result);
+    }
+
+    @RequestMapping("/dropSchema")
+    @Permission("kg:ontology:schema")
+    public String dropSchemaAction(@RequestBody Map<String, Object> param) {
+        Map<String, Object> result = neo4jService.dropSchema(param);
         return ApiUtil.echoResult(result);
     }
 

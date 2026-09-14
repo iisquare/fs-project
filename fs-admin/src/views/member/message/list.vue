@@ -6,12 +6,17 @@ import { useRoute, useRouter } from 'vue-router';
 import MessageApi from '@/api/member/MessageApi';
 import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
+import ApiUtil from '@/utils/ApiUtil';
 
 const route = useRoute()
 const router = useRouter()
 const tableRef = ref<TableInstance>()
 const loading = ref(false)
 const searchable = ref(true)
+const config = ref({
+  ready: false,
+  sorts: {},
+})
 const columns = ref([
   { prop: 'id', label: 'ID' },
   { prop: 'type', label: '消息类型' },
@@ -41,6 +46,9 @@ const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
 }
 onMounted(() => {
   handleRefresh(false, true)
+  MessageApi.config().then((result: any) => {
+    Object.assign(config.value, { ready: true }, ApiUtil.data(result))
+  }).catch(() => {})
 })
 const infoVisible = ref(false)
 const form: any = ref({})
@@ -108,6 +116,7 @@ const handleDelete = () => {
         <button-search @click="searchable = !searchable" />
         <button-refresh @click="handleRefresh(true, true)" :loading="loading" />
         <TableColumnSetting v-model="columns" :table="tableRef" />
+        <TableSort v-model="filters.sort" :columns="columns" :sortable="config.sorts" @change="handleRefresh(true, true)" />
       </el-space>
     </div>
     <el-table

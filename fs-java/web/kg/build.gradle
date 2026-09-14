@@ -2,4 +2,10 @@ dependencies {
     implementation project(':web:core')
     implementation project(':base:jpa')
     implementation project(':base:neo4j')
+    implementation group: 'org.apache.poi', name: 'poi-ooxml', version: poiVersion
+    testImplementation project(':base:test')
+}
+
+test {
+    enabled = true
 }

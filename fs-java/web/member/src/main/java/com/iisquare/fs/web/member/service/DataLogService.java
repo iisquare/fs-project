@@ -38,6 +38,14 @@ public class DataLogService extends JPAServiceBase {
     @Autowired
     Configuration configuration;
 
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("requestTime", "desc");
+        return sorts;
+    }
+
     public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {
         ObjectNode result = search(dataLogDao, param, (Specification<DataLog>) (root, query, cb) -> {
             SpecificationHelper<DataLog> helper = SpecificationHelper.newInstance(root, cb, param);
@@ -46,7 +54,7 @@ public class DataLogService extends JPAServiceBase {
             helper.like("requestUrl").equal("requestIp").like("requestHeaders");
             helper.like("requestParams").betweenWithDate("requestTime");
             return cb.and(helper.predicates());
-        }, Sort.by(Sort.Order.desc("requestTime")), "id", "requestTime");
+        }, Sort.by(Sort.Order.desc("requestTime"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = ApiUtil.rows(result);
         if (rows.isEmpty()) return result;
         List<DataPermitLog> permitLogList = dataPermitLogDao.findAll((Specification<DataPermitLog>) (root, query, cb) -> {

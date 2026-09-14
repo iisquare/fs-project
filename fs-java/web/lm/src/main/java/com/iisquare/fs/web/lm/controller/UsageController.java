@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.ui.ModelMap;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -57,6 +58,13 @@ public class UsageController extends PermitControllerBase {
     public String statisticAction(@RequestBody Map<String, Object> param) {
         Map<String, Object> result = usageService.statistic(param);
         return ApiUtil.echoResult(result);
+    }
+
+    @RequestMapping("/config")
+    @Permission("")
+    public String configAction(ModelMap model) {
+        model.put("sorts", usageService.sorts());
+        return ApiUtil.echoResult(0, null, model);
     }
 
 }

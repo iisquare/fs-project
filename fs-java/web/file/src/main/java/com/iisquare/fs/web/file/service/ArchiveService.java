@@ -30,6 +30,19 @@ public class ArchiveService extends JPAServiceBase {
     @Autowired
     MinIOService minIOService;
 
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("name", "asc");
+        sorts.put("filepath", "asc");
+        sorts.put("size", "asc");
+        sorts.put("status", "asc");
+        sorts.put("createdTime", "asc");
+        sorts.put("updatedTime", "desc");
+        return sorts;
+    }
+
     public ObjectNode search(Map<String, Object> param, Map<?, ?> config) {
         ObjectNode result = search(archiveDao, param, (root, query, cb) -> {
             SpecificationHelper<Archive> helper = SpecificationHelper.newInstance(root, cb, param);
@@ -39,8 +52,8 @@ public class ArchiveService extends JPAServiceBase {
             helper.equalWithIntNotEmpty("status").equal("traceIdentity")
                     .betweenWithDate("createdTime").betweenWithDate("updatedTime");
             return cb.and(helper.predicates());
-        }, Sort.by(Sort.Order.desc("updatedTime"))
-                , "id", "name", "filepath", "size", "status", "createdTime", "updatedTime");
+        }, Sort.by(Sort.Order.desc("updatedTime"), Sort.Order.desc("id"))
+                , sorts().keySet());
         JsonNode rows = format(ApiUtil.rows(result));
         if(!DPUtil.empty(config.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");

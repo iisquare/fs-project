@@ -24,6 +24,7 @@ const columns = ref([
 ])
 const config = ref({
   ready: false,
+  sorts: {},
   status: {},
 })
 const rows = ref([])
@@ -44,7 +45,7 @@ const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
 }
 onMounted(() => {
   handleRefresh(false, true)
-  CronApi.flowConfig().then((result: any) => {
+  CronApi.flowLogConfig().then((result: any) => {
     Object.assign(config.value, { ready: true }, ApiUtil.data(result))
   })
 })
@@ -112,6 +113,7 @@ const handleStatistics = () => {
         <button-search @click="searchable = !searchable" />
         <button-refresh @click="handleRefresh(true, true)" :loading="loading" />
         <TableColumnSetting v-model="columns" :table="tableRef" />
+        <TableSort v-model="filters.sort" :columns="columns" :sortable="config.sorts" @change="handleRefresh(true, true)" />
       </el-space>
     </div>
     <el-table

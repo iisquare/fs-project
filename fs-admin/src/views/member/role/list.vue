@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue';
 import type { FormInstance, TableInstance } from 'element-plus';
 import RouteUtil from '@/utils/RouteUtil'
 import { useRoute, useRouter } from 'vue-router';
+import ApplicationApi from '@/api/member/ApplicationApi';
 import RoleApi from '@/api/member/RoleApi';
 import ApiUtil from '@/utils/ApiUtil';
 import DateUtil from '@/utils/DateUtil';
@@ -21,6 +22,7 @@ const columns = ref([
 ])
 const config = ref({
   ready: false,
+  sorts: {},
   status: {},
 })
 const rows = ref([])
@@ -69,7 +71,6 @@ const handleEdit = (scope: any) => {
   form.value = Object.assign({}, scope.row, {
     status: scope.row.status + '',
     lockedTime: DateUtil.format(scope.row.lockedTime),
-    roleIds: scope.row.roles ? scope.row.roles.map((item: any) => item.id) : []
   })
   formVisible.value = true
 }
@@ -128,6 +129,7 @@ const handleApplication = (scope: any) => {
         <button-search @click="searchable = !searchable" />
         <button-refresh @click="handleRefresh(true, true)" :loading="loading" />
         <TableColumnSetting v-model="columns" :table="tableRef" />
+        <TableSort v-model="filters.sort" :columns="columns" :sortable="config.sorts" @change="handleRefresh(true, true)" />
       </el-space>
     </div>
     <el-table
@@ -140,12 +142,8 @@ const handleApplication = (scope: any) => {
       @selection-change="(s: any) => selection = s"
     >
       <el-table-column type="selection" />
-      <TableColumn :columns="columns">
-        <template #role="scope">
-          <el-space><el-tag v-for="item in scope.row.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
-        </template>
-      </TableColumn>
-      <el-table-column label="操作">
+      <TableColumn :columns="columns"></TableColumn>
+      <el-table-column label="操作" width="180px">
         <template #default="scope">
           <el-button link @click="handleShow(scope)" v-permit="'member:role:'">查看</el-button>
           <el-button link @click="handleEdit(scope)" v-permit="'member:role:modify'">编辑</el-button>
@@ -160,6 +158,9 @@ const handleApplication = (scope: any) => {
       <el-form-item label="名称">{{ form.name }}</el-form-item>
       <el-form-item label="排序">{{ form.sort }}</el-form-item>
       <el-form-item label="状态">{{ form.statusText }}</el-form-item>
+      <el-form-item label="应用">
+        <el-space><el-tag v-for="item in form.applications" :key="item.id">{{ item.name }}</el-tag></el-space>
+      </el-form-item>
       <el-form-item label="描述">{{ form.description ? form.description : '暂无' }}</el-form-item>
       <el-form-item label="创建者">{{ form.createdUserInfo?.name }}</el-form-item>
       <el-form-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-form-item>

@@ -36,6 +36,7 @@ import org.apache.http.util.EntityUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -66,6 +67,15 @@ public class MessageService extends JPAServiceBase implements DisposableBean {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("status", "asc");
+        sorts.put("createdTime", "desc");
+        return sorts;
     }
 
     public MessageService() {
@@ -124,7 +134,7 @@ public class MessageService extends JPAServiceBase implements DisposableBean {
             helper.equal("type").equal("recipient").like("subject").equal("status");
             helper.like("requestBody").like("responseBody").betweenWithDate("createdTime");
             return cb.and(helper.predicates());
-        }, Sort.by(Sort.Order.desc("createdTime")), "id", "status", "createdTime");
+        }, Sort.by(Sort.Order.desc("createdTime"), Sort.Order.desc("id")), sorts().keySet());
         return result;
     }
 

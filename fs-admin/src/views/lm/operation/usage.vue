@@ -17,6 +17,10 @@ const router = useRouter()
 const tableRef = ref<TableInstance>()
 const loading = ref(false)
 const searchable = ref(true)
+const config = ref({
+  ready: false,
+  sorts: {},
+})
 const columns = ref([
   { prop: 'id', label: 'ID' },
   { prop: 'uid', label: '用户ID', hide: true },
@@ -76,6 +80,9 @@ const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
 }
 onMounted(() => {
   handleRefresh(false, true)
+  UsageApi.config().then((result: any) => {
+    Object.assign(config.value, { ready: true }, ApiUtil.data(result))
+  }).catch(() => {})
 })
 const isAudit = ref(false)
 const formVisible = ref(false)
@@ -212,7 +219,7 @@ const handleDelete = () => {
         <button-search @click="searchable = !searchable" />
         <button-refresh @click="handleRefresh(true, true)" :loading="loading" />
         <TableColumnSetting v-model="columns" :table="tableRef" @change="handleRefresh(true, true)" />
-        <TableSort v-model="filters.sort" :columns="columns" sortable="id,beginTime,endTime,coastTotal.desc,creditAmount" @change="handleRefresh(true, true)" />
+        <TableSort v-model="filters.sort" :columns="columns" :sortable="config.sorts" @change="handleRefresh(true, true)" />
       </el-space>
     </div>
     <el-table

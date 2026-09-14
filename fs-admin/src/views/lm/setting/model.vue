@@ -31,6 +31,7 @@ const columns = ref([
 ])
 const config: any = ref({
   ready: false,
+  sorts: {},
   status: {},
   types: {},
   plans: {},
@@ -47,7 +48,7 @@ const parameters = computed(() => {
 })
 const rows = ref([])
 const filterRef = ref<FormInstance>()
-const filters = ref(RouteUtil.query2filter(route, { advanced: false, modelIds: [] }))
+const filters = ref(RouteUtil.query2filter(route, { advanced: false }))
 const pagination = ref(RouteUtil.pagination(filters.value))
 const selection: any = ref([])
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
@@ -127,8 +128,8 @@ const handleDelete = () => {
       <form-search-item label="供应商" prop="providerId">
         <form-select v-model="filters.providerId" :callback="ProviderApi.list" clearable />
       </form-search-item>
-      <form-search-item label="模型名称" prop="model">
-        <el-input v-model="filters.model" clearable />
+      <form-search-item label="模型名称" prop="name">
+        <el-input v-model="filters.name" clearable />
       </form-search-item>
       <form-search-item label="状态" prop="status">
         <el-select v-model="filters.status" placeholder="请选择" clearable>
@@ -151,6 +152,7 @@ const handleDelete = () => {
         <button-search @click="searchable = !searchable" />
         <button-refresh @click="handleRefresh(true, true)" :loading="loading" />
         <TableColumnSetting v-model="columns" :table="tableRef" />
+        <TableSort v-model="filters.sort" :columns="columns" :sortable="config.sorts" @change="handleRefresh(true, true)" />
       </el-space>
     </div>
     <el-table

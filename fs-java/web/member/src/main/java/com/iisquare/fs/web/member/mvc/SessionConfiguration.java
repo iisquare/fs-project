@@ -9,7 +9,7 @@ import org.springframework.session.web.http.HttpSessionIdResolver;
 import java.time.Duration;
 
 @Configuration
-@EnableRedisIndexedHttpSession(maxInactiveIntervalInSeconds = 1296000)
+@EnableRedisIndexedHttpSession(maxInactiveIntervalInSeconds = 2592000) // 与 server.servlet.session.timeout 保持一致（30天）
 public class SessionConfiguration {
 
     @Value("${server.servlet.session.cookie.max-age}")

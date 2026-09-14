@@ -48,6 +48,7 @@ public class RpcLogController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("states", rpcLogService.states());
+        model.put("sorts", rpcLogService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

@@ -80,9 +80,8 @@ public abstract class RbacServiceBase extends ServiceBase {
         JsonNode resource = resource(request);
         if (null == name2boolean || name2boolean.isEmpty()) return resource;
         ObjectNode result = DPUtil.objectNode();
-        for (Map.Entry<String, Boolean> entry : name2boolean.entrySet()) {
-            String key = entry.getKey();
-            result.put(key, result.has(key) ? result.get(key).asBoolean() : entry.getValue());
+        for (String key : name2boolean.keySet()) {
+            result.put(key, resource.has(key) && resource.get(key).asBoolean());
         }
         return result;
     }

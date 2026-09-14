@@ -4,6 +4,9 @@ export default {
   info (param: any, tips = {}) {
     return base.post('/ontology/info', param, tips)
   },
+  model (param: any, tips = {}) {
+    return base.post('/ontology/model', param, tips)
+  },
   list (param: any, tips = {}) {
     return base.post('/ontology/list', param, tips)
   },

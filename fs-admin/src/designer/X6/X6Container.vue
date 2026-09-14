@@ -12,8 +12,8 @@ const { // 在defineProps的回调函数中，不允许引用setup本地变量�
   options = {} as any,
   activeItem = {} as any,
 } = defineProps<{
-  options: { type: null, required: false },
-  activeItem: { type: null, required: true },
+  options?: Record<string, any>,
+  activeItem?: Record<string, any>,
 }>()
 if (!options.onBlankClick) options.onBlankClick = () => {
   emit('update:activeItem', {})

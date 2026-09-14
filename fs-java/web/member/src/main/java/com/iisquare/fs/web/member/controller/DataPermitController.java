@@ -64,6 +64,7 @@ public class DataPermitController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", dataPermitService.status());
+        model.put("sorts", dataPermitService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

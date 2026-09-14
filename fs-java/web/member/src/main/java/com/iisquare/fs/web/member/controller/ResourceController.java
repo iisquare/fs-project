@@ -62,6 +62,7 @@ public class ResourceController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", resourceService.status());
+        model.put("sorts", resourceService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

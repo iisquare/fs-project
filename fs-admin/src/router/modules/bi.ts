@@ -30,6 +30,22 @@ export const layouts = [{
     meta: { title: '接口管理', permit: ['bi:dataApi:'] },
     component: () => import('@/views/bi/data/api.vue')
   }, {
+    path: '/bi/olap/visualize',
+    meta: { title: '数据报表', permit: ['bi:visualize:'] },
+    component: () => import('@/views/bi/report/visualize/list.vue')
+  }, {
+    path: '/bi/design/visualize',
+    meta: { title: '报表设计', fit: true, permit: ['bi:visualize:'] },
+    component: () => import('@/views/bi/report/visualize/model.vue')
+  }, {
+    path: '/bi/olap/matrix',
+    meta: { title: '数据矩阵', permit: ['bi:matrix:'] },
+    component: () => import('@/views/bi/report/matrix/list.vue')
+  }, {
+    path: '/bi/design/matrix',
+    meta: { title: '矩阵设计', fit: true, permit: ['bi:matrix:'] },
+    component: () => import('@/views/bi/report/matrix/model.vue')
+  }, {
     path: '/bi/setting/state',
     meta: { title: '运行状态', permit: ['bi:maintain:'] },
     component: () => import('@/views/bi/setting/state.vue')

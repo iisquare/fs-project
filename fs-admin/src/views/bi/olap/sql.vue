@@ -10,6 +10,7 @@ import ApiUtil from '@/utils/ApiUtil';
 import SqlUtil from '@/utils/SqlUtil';
 import FormUtil from '@/utils/FormUtil';
 import MenuUtil from '@/utils/MenuUtil';
+import DatasetApi from '@/api/bi/DatasetApi';
 
 const treeRef = ref()
 const treeKey = ref(0)
@@ -168,7 +169,10 @@ const loadColumns = async (data: any): Promise<{ name: string; type?: string }[]
 }
 
 const selectText = (columns: { name: string; type?: string }[], data: any) => {
-  return 'SELECT ' + buildSelectFields(columns) + ' FROM ' + qualifyTable(data.catalog, data.schema, data.name)
+  const table = data.kind === 'column'
+    ? (data.table || treeRef.value?.getNode(data)?.parent?.data?.name || '')
+    : data.name
+  return 'SELECT ' + buildSelectFields(columns) + ' FROM ' + qualifyTable(data.catalog, data.schema, table)
 }
 
 const insertName = (data: any) => {
@@ -283,7 +287,7 @@ const handleExport = (command: string | number | object) => {
   const all = command === 'all'
   exportLoading.value = true
   const url = activeResult.value.dataset
-    ? import.meta.env.VITE_APP_API_URL + '/bi/olap/datasetQuery'
+    ? import.meta.env.VITE_APP_API_URL + '/bi/dataset/query'
     : import.meta.env.VITE_APP_API_URL + '/bi/olap/query'
   const params: any = {
     sql: activeResult.value.sql,
@@ -335,7 +339,7 @@ const runQuery = (explain: boolean, selection: boolean) => {
   const started = Date.now()
   const queryLimit = limit.value
   const queryTimeout = timeout.value
-  const request = datasetMode.value ? OlapApi.datasetQuery : OlapApi.query
+  const request = datasetMode.value ? DatasetApi.query : OlapApi.query
   request({ sql: querySql, limit: queryLimit, timeout: queryTimeout, explain }).then((result: any) => {
     const data = ApiUtil.data(result) || {}
     const tab: any = {

@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: fs-agent-service
+  profiles:
+    active: dev,idev
+  jpa:
+    show-sql: true
+    hibernate:
+      naming:
+        physical-strategy: com.iisquare.fs.web.agent.dsconfig.NamingStrategy
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB

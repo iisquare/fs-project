@@ -12,9 +12,11 @@ import RoleApi from '@/api/member/RoleApi';
 import * as ElementPlusIcons from '@element-plus/icons-vue';
 import DataUtil from '@/utils/DataUtil';
 import TableUtil from '@/utils/TableUtil';
+import { useUserStore } from '@/stores/user';
 
 const route = useRoute()
 const router = useRouter()
+const user = useUserStore()
 const tableRef = ref<TableInstance>()
 const loading = ref(false)
 const searchable = ref(true)
@@ -75,6 +77,7 @@ const handlePermit = (bids: any) => {
   loading.value = true
   const params = { id: route.query.id, type: 'application', bids }
   RoleApi.permit(params, { success: true }).then(result => {
+    user.reload() // 授权变更后刷新当前账号的权限与菜单
     handleRefresh(false, true)
   }).catch(() => {})
 }
@@ -91,7 +94,8 @@ const tree = reactive({
   expandedRowKeys: [],
   columns: [
     { label: '名称', prop: 'name' },
-    { label: '全称', prop: 'fullName' }
+    { label: '全称', prop: 'fullName' },
+    { label: '状态', prop: 'statusText', slot: 'statusText' }
   ]
 })
 const treeRef = ref<TableInstance>()
@@ -126,6 +130,7 @@ const handleSubmit = () => {
   }
   RoleApi.permit(params, { success: true }).then(() => {
     tree.visible = false
+    user.reload() // 授权变更后刷新当前账号的权限与菜单
     handleRefresh(false, true)
   }).catch(() => {}).finally(() => {
     tree.loading = false
@@ -186,7 +191,7 @@ const handleSubmit = () => {
     </el-table>
     <TablePagination v-model="pagination" @change="handleRefresh(true, true)" />
   </el-card>
-  <el-drawer v-model="tree.visible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true">
+  <el-drawer v-model="tree.visible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true" size="50%">
     <template #header="{ close, titleId, titleClass }">
       <h4 :id="titleId" :class="titleClass">{{ tree.title }}</h4>
       <el-space>
@@ -216,7 +221,13 @@ const handleSubmit = () => {
       @selection-change="newSelection => tree.selection = newSelection"
     >
       <el-table-column type="selection" />
-      <TableColumn :columns="tree.columns"></TableColumn>
+      <TableColumn :columns="tree.columns">
+        <template #statusText="scope">
+          <el-tag :type="scope.row.status === 1 ? 'success' : 'info'">
+            {{ scope.row.statusText || scope.row.status }}
+          </el-tag>
+        </template>
+      </TableColumn>
     </el-table>
   </el-drawer>
 </template>

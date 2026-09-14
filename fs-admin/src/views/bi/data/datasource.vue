@@ -24,6 +24,7 @@ const columns = ref([
 ])
 const config: any = ref({
   ready: false,
+  sorts: {},
   status: {},
   types: {},
 })
@@ -152,6 +153,7 @@ const handleTest = () => {
         <button-search @click="searchable = !searchable" />
         <button-refresh @click="handleRefresh(true, true)" :loading="loading" />
         <TableColumnSetting v-model="columns" :table="tableRef" />
+        <TableSort v-model="filters.sort" :columns="columns" :sortable="config.sorts" @change="handleRefresh(true, true)" />
       </el-space>
     </div>
     <el-table

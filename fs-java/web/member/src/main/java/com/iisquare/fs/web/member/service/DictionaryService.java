@@ -29,6 +29,17 @@ public class DictionaryService extends JPAServiceBase {
     @Autowired
     RbacService rbacService;
 
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "asc");
+        sorts.put("name", "asc");
+        sorts.put("pinyin", "asc");
+        sorts.put("status", "asc");
+        sorts.put("sort", "desc");
+        return sorts;
+    }
+
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();
         status.put(1, "启用");
@@ -167,7 +178,7 @@ public class DictionaryService extends JPAServiceBase {
                 predicates.add(cb.equal(root.get("content"), content));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, sort, "id", "name", "pinyin", "status", "sort");
+        }, sort, sorts().keySet());
         JsonNode rows = format(ApiUtil.rows(result));
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(rows, "createdUid", "updatedUid");

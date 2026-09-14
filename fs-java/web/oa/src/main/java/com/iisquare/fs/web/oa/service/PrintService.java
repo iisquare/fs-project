@@ -38,7 +38,7 @@ public class PrintService extends ServiceBase {
                 predicates.add(cb.like(root.get("name"), "%" + name + "%"));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"))));
+        }, PageRequest.of(page - 1, pageSize, Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"), new Sort.Order(Sort.Direction.DESC, "id"))));
         List<?> rows = data.getContent();
         if(!DPUtil.empty(config.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");

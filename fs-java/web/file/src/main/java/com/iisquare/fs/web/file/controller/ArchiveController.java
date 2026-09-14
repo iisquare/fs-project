@@ -65,6 +65,7 @@ public class ArchiveController extends PermitControllerBase {
         model.put("status", archiveService.status());
         model.put("scale", fileService.scale("id"));
         model.put("position", fileService.position("id"));
+        model.put("sorts", archiveService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

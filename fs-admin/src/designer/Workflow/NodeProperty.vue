@@ -1,41 +1,57 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 const active = ref('property')
-const model: any = defineModel()
-const tips: any = defineModel('tips', { type: null })
 const props = defineProps<{
-  config: any,
-  instance: any,
+  bpmn: any,
+  element: any,
+  workflow: any,
 }>()
 
-const handleDelete = () => {
-  props.instance.flow.remove(model.value)
+const form = ref<any>({})
+// 由元素同步数据时，避免反向触发模型更新
+let syncing = false
+
+const formatted = (element: any) => {
+  if (!element) return {}
+  const obj = element.businessObject
+  return {
+    id: obj.id,
+    name: obj.name || '',
+    documentation: props.bpmn.parseDocumentation(element)
+  }
 }
+
+const updateProperties = (obj: any) => {
+  if (!obj.id) return false
+  props.bpmn.modeling.updateProperties(props.element, {
+    id: obj.id,
+    name: obj.name,
+    documentation: props.bpmn.createDocumentation(obj.documentation)
+  })
+  return true
+}
+
+watch(() => props.element, (element) => {
+  syncing = true
+  form.value = formatted(element)
+  syncing = false
+}, { immediate: true })
+
+watch(form, (obj) => {
+  if (syncing) return
+  updateProperties(obj)
+}, { deep: true, flush: 'sync' })
 </script>
 
 <template>
   <el-tabs v-model="active" class="tab-property">
     <el-tab-pane label="节点属性" name="property">
-      <el-form :model="model">
-        <el-form-item label="" class="title">
-          <span>基础信息</span>
-          <el-popconfirm title="确认删除该元素？" @confirm="handleDelete" width="180">
-            <template #reference>
-              <LayoutIcon name="Delete" class="delete" />
-            </template>
-          </el-popconfirm>
-        </el-form-item>
-        <el-form-item label="类型">{{ model.data.type }}</el-form-item>
-        <el-form-item label="标识">
-          <el-input v-model="model.id" />
-        </el-form-item>
-        <el-form-item label="名称">
-          <el-input v-model="model.data.name" />
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input type="textarea" v-model="model.data.documentation" />
-        </el-form-item>
+      <el-form :model="form">
+        <el-form-item label="类型">{{ element?.type }}</el-form-item>
+        <el-form-item label="标识"><el-input v-model="form.id" autocomplete="off" /></el-form-item>
+        <el-form-item label="名称"><el-input v-model="form.name" autocomplete="off" /></el-form-item>
+        <el-form-item label="描述"><el-input type="textarea" v-model="form.documentation" /></el-form-item>
       </el-form>
     </el-tab-pane>
   </el-tabs>

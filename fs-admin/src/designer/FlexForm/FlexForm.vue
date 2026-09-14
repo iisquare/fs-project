@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import FlexFormItem from './FlexFormItem.vue';
 import type { FormInstance } from 'element-plus';
+import DesignUtil from '@/utils/DesignUtil';
 
 const model: any = defineModel()
 const {
@@ -15,11 +16,15 @@ const {
 }>()
 
 const formLayout = computed(() => {
-  return config.exhibition.formLayout(frame.content)
+  return config.exhibition.formLayout(DesignUtil.frameOptions(frame))
+})
+
+const widgets = computed(() => {
+  return DesignUtil.frameWidgets(frame)
 })
 
 const rules = computed(() => {
-  return config.validator.generate(frame.content.widgets, authority)
+  return config.validator.generate(widgets.value, authority)
 })
 
 const formRef: any = ref<FormInstance>()
@@ -28,13 +33,21 @@ const validate = (callback: Function) => {
   formRef.value?.validate((valid: boolean) => callback(valid))
 }
 
+const formatted = (obj: any) => {
+  return Object.assign({}, obj, config.validator.format(widgets.value, obj))
+}
+
+onMounted(() => {
+  model.value = formatted(model.value || {})
+})
+
 defineExpose({ validate })
 </script>
 
 <template>
   <el-form ref="formRef" :model="model" :rules="rules" v-bind="formLayout">
-    <FlexFormItem v-model="model" :config="config" :widgets="frame.content.widgets" :authority="authority" />
-    <el-empty description="无可用组件" v-if="frame.content.widgets.length === 0" />
+    <FlexFormItem v-model="model" :config="config" :widgets="widgets" :authority="authority" />
+    <el-empty description="无可用组件" v-if="widgets.length === 0" />
   </el-form>
 </template>
 

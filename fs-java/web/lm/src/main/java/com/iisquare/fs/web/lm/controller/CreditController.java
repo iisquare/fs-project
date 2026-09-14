@@ -66,6 +66,7 @@ public class CreditController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", creditService.status());
+        model.put("sorts", creditService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

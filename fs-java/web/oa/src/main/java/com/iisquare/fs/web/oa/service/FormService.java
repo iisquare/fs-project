@@ -10,8 +10,11 @@ import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.core.rpc.MemberRpc;
+import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.oa.dao.FormFrameDao;
+import com.iisquare.fs.web.oa.dao.WorkflowDao;
 import com.iisquare.fs.web.oa.entity.FormFrame;
+import com.iisquare.fs.web.oa.entity.Workflow;
 import com.iisquare.fs.web.oa.storage.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,7 +27,11 @@ public class FormService extends ServiceBase {
     @Autowired
     FormFrameDao formFrameDao;
     @Autowired
+    WorkflowDao workflowDao;
+    @Autowired
     MemberRpc memberRpc;
+    @Autowired
+    DefaultRbacService rbacService;
     @Autowired
     FormRegularService formRegularService;
     @Autowired
@@ -50,7 +57,26 @@ public class FormService extends ServiceBase {
     }
 
     public Map<String, Object> search(ObjectNode frame, Map<String, Object> param, Map<String, Object> config) {
-        return storage(frame).search(frame, param, config);
+        Map<String, Object> result = storage(frame).search(frame, param, config);
+        fillInfo(result);
+        return result;
+    }
+
+    /**
+     * 表单数据列表展示信息填充：按标识批量查询流程名称、发起人名称，不落库，
+     * 避免因用户改名、流程改名导致历史数据中的名称失真。
+     * 说明：此处不能注入 WorkflowService（其依赖了本服务，会形成循环依赖），故直接使用 WorkflowDao。
+     */
+    public void fillInfo(Map<String, Object> result) {
+        if (null == result) return;
+        Object rows = result.get("rows");
+        if (!(rows instanceof List) || ((List<?>) rows).isEmpty()) return;
+        List<?> list = (List<?>) rows;
+        rbacService.fillUserInfo(list, "bpmStartUserId");
+        Set<Integer> ids = DPUtil.values(list, Integer.class, "bpmWorkflowId");
+        if (ids.size() < 1) return;
+        Map<Integer, Workflow> data = DPUtil.list2map(workflowDao.findAllById(ids), Integer.class, "id");
+        DPUtil.fillValues(list, new String[]{"bpmWorkflowId"}, "Name", DPUtil.values(data, String.class, "name"));
     }
 
     public ObjectNode save(ObjectNode frame, ObjectNode info, int uid) {

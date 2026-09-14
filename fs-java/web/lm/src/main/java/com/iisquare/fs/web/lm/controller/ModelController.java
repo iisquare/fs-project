@@ -52,6 +52,7 @@ public class ModelController extends PermitControllerBase {
         model.put("status", modelService.status());
         model.put("types", modelService.types());
         model.put("plans", modelService.plans());
+        model.put("sorts", modelService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

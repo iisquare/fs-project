@@ -39,7 +39,7 @@ const filters = ref(RouteUtil.query2filter(route, { deleted: 'without' }))
 const pagination = ref(RouteUtil.pagination(filters.value))
 const selection: any = ref([])
 
-const config: any = ref({ ready: false, status: {} })
+const config: any = ref({ ready: false, status: {}, sorts: {} })
 
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
   tableRef.value?.clearSelection()
@@ -228,6 +228,7 @@ const handleDownload = (record: any) => {
           <button-search @click="searchable = !searchable" />
           <button-refresh @click="handleRefresh(true, true)" :loading="loading" />
           <TableColumnSetting v-model="columns" :table="tableRef" />
+          <TableSort v-model="filters.sort" :columns="columns" :sortable="config.sorts" @change="handleRefresh(true, true)" />
         </el-space>
       </div>
       <el-table

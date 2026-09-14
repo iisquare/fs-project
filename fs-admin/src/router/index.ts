@@ -10,6 +10,7 @@ import cms from './modules/cms'
 import face from './modules/face'
 import govern from './modules/govern'
 import lm from './modules/lm'
+import agent from './modules/agent'
 import oa from './modules/oa'
 import server from './modules/server'
 import spider from './modules/spider'
@@ -30,7 +31,7 @@ const layouts: any = [] // 布局页面
  */
 const routes: any = []
 
-;([member, demo, bi, cms, face, govern, lm, oa, server, spider, kg] as any).forEach((module: any) => {
+;([member, demo, bi, cms, face, govern, lm, agent, oa, server, spider, kg] as any).forEach((module: any) => {
   module.blanks && blanks.push(...module.blanks)
   module.layouts && layouts.push(...module.layouts)
 })

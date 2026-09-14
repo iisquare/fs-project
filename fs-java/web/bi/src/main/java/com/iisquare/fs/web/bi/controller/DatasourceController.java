@@ -50,6 +50,7 @@ public class DatasourceController extends PermitControllerBase {
     public String configAction(ModelMap model) {
         model.put("status", datasourceService.status());
         model.put("types", datasourceService.types());
+        model.put("sorts", datasourceService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

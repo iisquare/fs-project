@@ -9,11 +9,17 @@ import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.web.member.dao.ApplicationDao;
 import com.iisquare.fs.web.member.dao.MenuDao;
 import com.iisquare.fs.web.member.dao.ResourceDao;
+import com.iisquare.fs.web.member.dao.RoleApplicationDao;
+import com.iisquare.fs.web.member.dao.RoleMenuDao;
+import com.iisquare.fs.web.member.dao.RoleResourceDao;
 import com.iisquare.fs.web.member.entity.Application;
+import com.iisquare.fs.web.member.entity.Menu;
+import com.iisquare.fs.web.member.entity.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Predicate;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,6 +38,21 @@ public class ApplicationService extends JPAServiceBase {
     MenuDao menuDao;
     @Autowired
     ResourceDao resourceDao;
+    @Autowired
+    RoleApplicationDao roleApplicationDao;
+    @Autowired
+    RoleMenuDao roleMenuDao;
+    @Autowired
+    RoleResourceDao roleResourceDao;
+
+    @Override
+    public Map<String, String> sorts() {
+        Map<String, String> sorts = new LinkedHashMap<>();
+        sorts.put("id", "desc");
+        sorts.put("status", "asc");
+        sorts.put("sort", "desc");
+        return sorts;
+    }
 
     public Map<?, ?> status() {
         Map<Integer, String> status = new LinkedHashMap<>();
@@ -48,6 +69,7 @@ public class ApplicationService extends JPAServiceBase {
         return fillInfo(applicationDao, rows, properties);
     }
 
+    @Transactional
     public Map<String, Object> save(Map<?, ?> param, HttpServletRequest request) {
         int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String serial = DPUtil.trim(DPUtil.parseString(param.get("serial")));
@@ -78,14 +100,16 @@ public class ApplicationService extends JPAServiceBase {
         info.setStatus(status);
         info.setDescription(DPUtil.parseString(param.get("description")));
         info = save(applicationDao, info, rbacService.uid(request));
+        rbacService.evictAllPermit(); // 应用标识、状态变化会影响所有角色的资源缓存
         return ApiUtil.result(0, null, info);
     }
 
     public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {
         ObjectNode result = search(applicationDao, param, (Specification<Application>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            int id = DPUtil.parseInt(param.get("id"));
-            if (id > 0) predicates.add(cb.equal(root.get("id"), id));
+            Set<Integer> ids = new TreeSet<>(DPUtil.parseIntList(param.get("id"))); // 支持下拉选择器批量回显
+            ids.removeIf(item -> item < 1);
+            if (!ids.isEmpty()) predicates.add(root.get("id").in(ids));
             int status = DPUtil.parseInt(param.get("status"));
             if (!"".equals(DPUtil.parseString(param.get("status")))) {
                 predicates.add(cb.equal(root.get("status"), status));
@@ -99,7 +123,7 @@ public class ApplicationService extends JPAServiceBase {
                 predicates.add(cb.like(root.get("name"), "%" + name + "%"));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
-        }, Sort.by(Sort.Order.desc("sort")), "id", "status", "sort");
+        }, Sort.by(Sort.Order.desc("sort"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = ApiUtil.rows(result);
         if(!DPUtil.empty(args.get("withUserInfo"))) {
             userService.fillInfo(rows, "createdUid", "updatedUid");
@@ -110,11 +134,19 @@ public class ApplicationService extends JPAServiceBase {
         return result;
     }
 
+    @Transactional
     public boolean remove(List<Integer> ids) {
         if(null == ids || ids.isEmpty()) return false;
-        menuDao.deleteByApplicationIds(ids);
-        resourceDao.deleteByApplicationIds(ids);
+        roleApplicationDao.deleteByApplicationIdIn(ids); // 应用硬删除时清理授权关联
+        List<Menu> menus = menuDao.findAll((Specification<Menu>) (root, query, cb) -> root.get("applicationId").in(ids));
+        if(!menus.isEmpty()) roleMenuDao.deleteByMenuIdIn(DPUtil.values(menus, Integer.class, "id"));
+        List<Resource> resources = resourceDao.findAll(
+                (Specification<Resource>) (root, query, cb) -> root.get("applicationId").in(ids));
+        if(!resources.isEmpty()) roleResourceDao.deleteByResourceIdIn(DPUtil.values(resources, Integer.class, "id"));
+        menuDao.deleteAllByIdInBatch(DPUtil.values(menus, Integer.class, "id"));
+        resourceDao.deleteAllByIdInBatch(DPUtil.values(resources, Integer.class, "id"));
         applicationDao.deleteInBatch(applicationDao.findAllById(ids));
+        rbacService.evictAllPermit();
         return true;
     }
 

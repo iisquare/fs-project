@@ -7,6 +7,7 @@ import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
 import com.iisquare.fs.web.kg.service.OntologyService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,6 +31,13 @@ public class OntologyController extends PermitControllerBase {
         return ApiUtil.echoResult(result);
     }
 
+    @RequestMapping("/model")
+    @Permission("")
+    public String modelAction(@RequestBody Map<?, ?> param) {
+        Map<String, Object> result = ontologyService.model(param);
+        return ApiUtil.echoResult(result);
+    }
+
     @RequestMapping("/list")
     @Permission("")
     public String listAction(@RequestBody Map<String, Object> param) {
@@ -41,8 +49,14 @@ public class OntologyController extends PermitControllerBase {
     @RequestMapping("/save")
     @Permission({"add", "modify"})
     public String saveAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        Map<String, Object> result = ontologyService.save(param, request);
-        return ApiUtil.echoResult(result);
+        try {
+            Map<String, Object> result = ontologyService.save(param, request);
+            return ApiUtil.echoResult(result);
+        } catch (DataIntegrityViolationException e) {
+            return ApiUtil.echoResult(500, "本体保存失败：定义存在重复或冲突，请检查实体、关系与字段名称", null);
+        } catch (Exception e) {
+            return ApiUtil.echoResult(500, "本体保存失败：" + e.getMessage(), null);
+        }
     }
 
     @RequestMapping("/delete")
@@ -57,6 +71,7 @@ public class OntologyController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", ontologyService.status());
+        model.put("sorts", ontologyService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 

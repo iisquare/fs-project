@@ -6,5 +6,8 @@ export default {
   },
   post (url: string, data = {}, tips = {}, config = {}) {
     return api.post('/kg' + url, data, tips, config)
+  },
+  form (url: string, data: any = {}, tips = {}, config = {}) {
+    return api.form('/kg' + url, data, tips, config)
   }
 }

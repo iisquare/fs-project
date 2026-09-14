@@ -69,6 +69,7 @@ public class DictionaryController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", dictionaryService.status());
+        model.put("sorts", dictionaryService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }
 
