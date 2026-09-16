@@ -19,8 +19,10 @@ import com.iisquare.fs.web.agent.elasticsearch.KnowledgeChunkES;
 import com.iisquare.fs.web.agent.entity.Knowledge;
 import com.iisquare.fs.web.agent.entity.KnowledgeChunk;
 import com.iisquare.fs.web.agent.entity.KnowledgeDocument;
+import com.iisquare.fs.web.agent.entity.KnowledgeImage;
 import com.iisquare.fs.web.agent.entity.KnowledgeSegment;
 import com.iisquare.fs.web.agent.tool.DocumentParser;
+import com.iisquare.fs.web.agent.tool.ParsedDocument;
 import com.iisquare.fs.web.agent.tool.TextSplitter;
 import com.iisquare.fs.web.agent.mvc.Configuration;
 import jakarta.servlet.http.HttpServletRequest;
@@ -57,6 +59,8 @@ public class KnowledgeDocumentService extends JPAServiceBase {
     FileRpc fileRpc;
     @Autowired
     AIService aiService;
+    @Autowired
+    KnowledgeImageService knowledgeImageService;
     @Autowired
     KnowledgeChunkES chunkES;
 
@@ -98,15 +102,15 @@ public class KnowledgeDocumentService extends JPAServiceBase {
         if (!DocumentParser.supported(filename)) {
             return ApiUtil.result(1003, "不支持的文件类型", DocumentParser.suffix(filename));
         }
-        // 解析为 Markdown
-        String markdown;
+        // 解析为 Markdown，同时抽取文档中的图片
+        ParsedDocument parsed;
         try {
-            markdown = DocumentParser.parse(filename, file.getInputStream());
+            parsed = DocumentParser.parse(filename, file.getInputStream());
         } catch (Exception e) {
             logger.warn("parse document failed: {} - {}", filename, e.getMessage());
             return ApiUtil.result(1502, "解析文件失败", e.getMessage());
         }
-        if (DPUtil.empty(markdown)) markdown = "";
+        String markdown = DPUtil.empty(parsed.getMarkdown()) ? "" : parsed.getMarkdown();
         // 写入文档记录
         String date = new SimpleDateFormat("yyyyMMdd").format(new Date());
         String suffix = DocumentParser.suffix(filename);
@@ -118,6 +122,10 @@ public class KnowledgeDocumentService extends JPAServiceBase {
         document.setTokenSize(markdown.length());
         document.setMetadata(DPUtil.stringify(DPUtil.objectNode()));
         document.setStatus(1);
+        document = save(documentDao, document, uid);
+        // 图片入库并回填正文引用
+        markdown = knowledgeImageService.attach(knowledgeId, document.getId(), parsed.getImages(), markdown, uid);
+        document.setTokenSize(markdown.length());
         document = save(documentDao, document, uid);
         // 按召回范围分流写入分段/分块
         String scope = DPUtil.parseString(knowledge.getRecallScope());
@@ -136,7 +144,11 @@ public class KnowledgeDocumentService extends JPAServiceBase {
                     DPUtil.parseInt(knowledge.getSplitChunkTokens()), DPUtil.parseInt(knowledge.getSplitOverlayTokens()));
             JsonNode embeddings = DPUtil.arrayNode();
             if (!DPUtil.empty(knowledge.getEmbeddingModel())) {
-                Map<String, Object> result = aiService.embeddings(knowledge.getEmbeddingModel(), chunkContents);
+                List<String> embeddingTexts = new ArrayList<>();
+                for (String chunkContent : chunkContents) {
+                    embeddingTexts.add(KnowledgeImageService.plain(chunkContent));
+                }
+                Map<String, Object> result = aiService.embeddings(knowledge.getEmbeddingModel(), embeddingTexts);
                 if (ApiUtil.failed(result)) return result;
                 embeddings = ApiUtil.data(result, ObjectNode.class).at("/data");
             }
@@ -256,6 +268,14 @@ public class KnowledgeDocumentService extends JPAServiceBase {
             item.put("bucket", bucket);
             item.put("filepath", document.getFilepath());
         }
+        // 文档中的图片与文档本体一并删除
+        List<KnowledgeImage> images = knowledgeImageService.listByDocument(ids);
+        for (KnowledgeImage image : images) {
+            ObjectNode item = args.addObject();
+            item.put("id", image.getId());
+            item.put("bucket", DPUtil.parseString(image.getBucket()));
+            item.put("filepath", DPUtil.parseString(image.getFilepath()));
+        }
         Map<String, Object> result = RpcUtil.result(fileRpc.post("/file/delete", args));
         if (ApiUtil.failed(result)) return false;
         if (!ids.isEmpty()) {
@@ -263,6 +283,7 @@ public class KnowledgeDocumentService extends JPAServiceBase {
         }
         removeByParentId(segmentDao, "documentId", ids);
         removeByParentId(chunkDao, "documentId", ids);
+        knowledgeImageService.remove(images);
         return remove(documentDao, ids);
     }
 

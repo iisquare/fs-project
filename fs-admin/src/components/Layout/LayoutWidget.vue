@@ -34,7 +34,14 @@ const {
   native: { type: Boolean, required: false },
 })
 
-const widgetMap: any = computed(() => DesignUtil.widgetMap(widgets))
+const items: any = computed(() => Array.isArray(widgets) ? widgets : [])
+const widgetMap: any = computed(() => DesignUtil.widgetMap(items.value))
+// 隐藏项（如容器内自动创建的固定节点）不展示在组件库
+const groups: any = computed(() => items.value
+  .map((group: any) => Object.assign({}, group, {
+    children: (group.children ?? []).filter((item: any) => !item.hide),
+  }))
+  .filter((group: any) => group.children.length > 0))
 
 const emit = defineEmits<{
   dragStart: [event: any, widget: any]
@@ -50,13 +57,13 @@ const handleNativeDragStart = (event: any, widget: any) => {
 
 const active: any = ref([])
 onMounted(() => {
-  active.value = widgets.map((group: any) => group.id)
+  active.value = groups.value.map((group: any) => group.id)
 })
 </script>
 
 <template>
   <el-collapse v-model="active" expand-icon-position="left" class="widget">
-    <el-collapse-item :title="group.name" :name="group.id" v-for="group in widgets">
+    <el-collapse-item :title="group.name" :name="group.id" v-for="group in groups">
       <ul v-if="native">
         <li
           draggable="true"

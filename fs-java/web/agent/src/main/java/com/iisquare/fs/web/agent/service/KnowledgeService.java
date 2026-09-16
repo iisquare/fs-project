@@ -52,6 +52,8 @@ public class KnowledgeService extends JPAServiceBase {
     @Autowired
     KnowledgeDocumentService knowledgeDocumentService;
     @Autowired
+    KnowledgeImageService knowledgeImageService;
+    @Autowired
     KnowledgeSegmentService knowledgeSegmentService;
 
     @Override
@@ -188,6 +190,7 @@ public class KnowledgeService extends JPAServiceBase {
             return root.get("knowledgeId").in(ids);
         });
         if (count > 0) return false;
+        knowledgeImageService.remove(knowledgeImageService.listByKnowledge(ids));
         return remove(knowledgeDao, ids);
     }
 

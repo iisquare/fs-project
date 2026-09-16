@@ -2,10 +2,12 @@ import * as X6 from '@antv/x6'
 import * as X6VueShape from '@antv/x6-vue-shape'
 import FlowEdge from './FlowEdge'
 import FlowGroup from './FlowGroup'
-import FlowSubprocess from './FlowSubprocess'
+import FlowSubprocess, { SubprocessStroke } from './FlowSubprocess'
 import FlowGateway from './FlowGateway'
 import KGNode from './KGNode.vue'
 import FlowNode from './FlowNode.vue'
+import AgentNode from './AgentNode.vue'
+import SwitchNode from './SwitchNode.vue'
 
 class Flow {
 
@@ -17,7 +19,7 @@ class Flow {
   constructor (container: any, options: any) {
     this.options = Object.assign({}, defaults, options)
     const _this = this
-    this.graph = new X6.Graph({
+    const graphOptions: any = {
       container,
       background: {
         color: '#F2F7FA',
@@ -43,7 +45,7 @@ class Flow {
         createEdge () {
           return new FlowEdge()
         },
-        validateConnection ({ targetMagnet, sourceCell, targetCell }) {
+        validateConnection ({ targetMagnet, sourceCell, targetCell }: any) {
           if (!targetMagnet) return false
           return _this.subprocess(sourceCell) === _this.subprocess(targetCell)
         }
@@ -55,16 +57,25 @@ class Flow {
       panning: this.options.panning,
       embedding: {
         enabled: true,
-        findParent ({ node }) {
+        findParent (this: any, { node }: any) {
           const bbox = node.getBBox()
-          return this.getNodes().filter((node) => {
+          return this.getNodes().filter((node: any) => {
             if (!(node instanceof FlowGroup) && !(node instanceof FlowSubprocess)) return false
             const targetBBox = node.getBBox()
             return bbox.isIntersectWithRect(targetBBox)
           })
         }
       },
-    })
+    }
+    if (this.options.interacting) {
+      // 支持按单元格控制交互（如禁止拖动连线标签）
+      const interacting = this.options.interacting
+      graphOptions.interacting = (view: any) => Object.assign(
+        { edgeLabelMovable: false },
+        'function' === typeof interacting ? interacting(view) : interacting,
+      )
+    }
+    this.graph = new X6.Graph(graphOptions)
     this.dnd = new X6.Dnd({
       target: this.graph,
     })
@@ -90,6 +101,11 @@ class Flow {
 
   fitting () {
      // 将画布中元素缩小或者放大一定级别，让画布正好容纳所有元素，可以通过 maxScale 配置最大缩放级别
+    // 视口尚未拿到真实尺寸时（如分隔面板初次渲染宽度为 0）直接跳过：此时算出的缩放会被
+    // clampScale 夹到最小值写进画布，节点会缩小到不可见，且 zoomToFit 以当前缩放为基数
+    // 计算，退化缩放一旦写入就无法通过再次自适应恢复
+    const size: any = this.graph.transform.getComputedSize()
+    if (!size.width || !size.height) return this
     this.graph.zoomToFit({ maxScale: 1 })
     this.graph.centerContent()
     return this
@@ -105,6 +121,7 @@ class Flow {
         if (cell.zIndex > this.counter) this.counter = cell.zIndex
       }
     })
+    this.syncCells() // 动态锚点不随图形数据持久化，载入后按节点数据重建
     fitting && this.fitting()
   }
 
@@ -135,22 +152,25 @@ class Flow {
   startDrag (event: any, widget: any) {
     this.counter++
     const point: any = this.graph.pageToLocal(event.pageX, event.pageY)
-    const shape = NodeShapes[widget.shape]
+    const data: any = Object.assign(widget.options(), {
+      name: `${widget.label}_${this.counter}`,
+      icon: widget.icon,
+      type: widget.type,
+      description: widget.title,
+    })
+    // 节点尺寸可由组件自行计算（如条件分支按分支数量决定高度）
+    const size: any = widget.size ? widget.size(data) : NodeShapes[widget.shape]
     const metadata: X6.NodeMetadata = {
       shape: widget.shape,
-      x: point.x - shape.offsetX,
-      y: point.y - shape.offsetY,
-      width: shape.width,
-      height: shape.height,
+      x: point.x - size.width / 2,
+      y: point.y - size.height / 2,
+      width: size.width,
+      height: size.height,
       zIndex: this.counter,
-      data: Object.assign(widget.options(), {
-        name: `${widget.label}_${this.counter}`,
-        icon: widget.icon,
-        type: widget.type,
-        description: widget.title,
-      })
+      data,
     }
     const node: any = this.graph.createNode(metadata)
+    this.syncCell(node)
     this.dnd.start(node, event)
     return node
   }
@@ -161,7 +181,23 @@ class Flow {
     if (!cell) return false
     cell.removeData() // fixed: 事件change:data无法深度监听的问题
     cell.setData(item.data)
+    this.syncCell(cell)
     return true
+  }
+
+  /**
+   * 同步节点尺寸与动态锚点，具体规则由调用方通过 options.onCellSync 提供
+   */
+  syncCell (cell: any) {
+    if (!cell || !this.options.onCellSync) return false
+    return this.options.onCellSync(cell)
+  }
+
+  syncCells () {
+    this.graph.getNodes().forEach((node: any) => {
+      this.syncCell(node)
+    })
+    return this
   }
 
   cell2meta (cell: any) {
@@ -229,6 +265,10 @@ class Flow {
   regist (): Flow { // 需要在处理数据前完成图形注册
     X6.Graph.unregisterNode('flow-node')
     X6VueShape.register({ shape: 'flow-node', component: FlowNode, ports: Port2RL, })
+    X6.Graph.unregisterNode('agent-node')
+    X6VueShape.register({ shape: 'agent-node', component: AgentNode, ports: Port4TRBL, })
+    X6.Graph.unregisterNode('agent-switch')
+    X6VueShape.register({ shape: 'agent-switch', component: SwitchNode, ports: { groups: {}, items: [] } })
     X6.Graph.unregisterNode('kg-node')
     // options.ports=false 时不注册连接锚点，用于只读的图探索画布
     X6VueShape.register({
@@ -287,12 +327,11 @@ class Flow {
       container: this.options.minimap,
     }))
     if (this.options.readonly) return this
+    // resizing 支持布尔与函数（按节点判定，如仅容器可缩放）；传对象时按需覆盖 minWidth/minHeight
+    const resizing: any = this.options.resizing
     this.graph.use(new X6.Transform({
-      resizing: {
-        enabled: this.options.resizing,
-        minWidth: 50,
-        minHeight: 50,
-      },
+      resizing: Object.assign({ minWidth: 50, minHeight: 50 },
+        resizing && 'object' === typeof resizing ? resizing : { enabled: resizing }),
       rotating: this.options.rotating,
     }))
     this.graph.use(new X6.Snapline({
@@ -313,6 +352,7 @@ class Flow {
 
   showPorts (ports: any, show: Boolean) {
     for (let i = 0, len = ports.length; i < len; i = i + 1) {
+      if ('always' === ports[i].getAttribute('data-anchor')) continue // 常驻锚点不参与悬停显隐
       ports[i].style.visibility = show ? 'visible' : 'hidden'
     }
   }
@@ -404,7 +444,10 @@ class Flow {
       cell.removeTools()
     })
     this.graph.on('edge:connected', (data: any) => {
-      data.isNew && data.edge.setData({ name: '', description: '' })
+      if (data.isNew) {
+        const extra = this.options.edgeData ? this.options.edgeData(data.edge) : null
+        data.edge.setData(Object.assign({ name: '', description: '' }, extra))
+      }
       this.options.onEdgeConnected(data)
     })
     this.graph.on('node:added', (data: any) => {
@@ -458,8 +501,10 @@ class Flow {
     this.graph.on('node:unselected', (data: any) => {
       switch (data.cell.shape) {
         case 'flow-group':
-        case 'flow-subprocess':
           data.node.attr('body', { stroke: 'rgb(34, 36, 42)' })
+          break
+        case 'flow-subprocess':
+          data.node.attr('body', { stroke: SubprocessStroke })
           break
         case 'flow-gateway':
           data.node.attr('body', { stroke: 'rgb(204, 204, 204)' })
@@ -483,6 +528,18 @@ const NodeShapes: any = {
     height: 60,
     offsetX: 30,
     offsetY: 30,
+  },
+  'agent-node': {
+    width: 220,
+    height: 60,
+    offsetX: 110,
+    offsetY: 30,
+  },
+  'agent-switch': {
+    width: 240,
+    height: 96,
+    offsetX: 120,
+    offsetY: 48,
   },
   'flow-group': {
     width: 300,
@@ -577,6 +634,8 @@ const defaults = {
   onBlankContextmenu ({ e, x, y } = {} as any) {},
   onNodeAdded ({ node, index, options } = {} as any) {},
   onEdgeConnected () {},
+  onCellSync (cell: any) {},
+  interacting: null,
 }
 
 export default Object.assign(Flow, {

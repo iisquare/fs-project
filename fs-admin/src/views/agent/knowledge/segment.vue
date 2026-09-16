@@ -11,6 +11,7 @@ import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
 import { useUserStore } from '@/stores/user';
 import KnowledgeDocumentApi from '@/api/agent/KnowledgeDocumentApi';
+import KnowledgeImageEditor from '@/views/agent/components/KnowledgeImageEditor.vue';
 
 const truncateLength = 200
 
@@ -315,7 +316,7 @@ const handleChunkDelete = (segmentId: any) => {
        <el-descriptions-item label="创建时间" :span="2">{{ DateUtil.format(form.createdTime) }}</el-descriptions-item>
       <el-descriptions-item label="修改者">{{ form.updatedUserInfo?.name }}</el-descriptions-item>
       <el-descriptions-item label="修改时间" :span="2">{{ DateUtil.format(form.updatedTime) }}</el-descriptions-item>
-      <el-descriptions-item label="分段内容" :span="3"><markdown-editor v-model="form.content" readonly :height="600" resizable /></el-descriptions-item>
+      <el-descriptions-item label="分段内容" :span="3"><knowledge-image-editor v-model="form.content" readonly :height="600" resizable :knowledge-id="String(route.query.knowledgeId || '')" :document-id="String(form.documentId || route.query.documentId || '')" /></el-descriptions-item>
     </el-descriptions>
   </el-drawer>
   <el-drawer v-model="formVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true" size="80%">
@@ -333,7 +334,7 @@ const handleChunkDelete = (segmentId: any) => {
           <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
         </el-select>
       </el-descriptions-item>
-      <el-descriptions-item label="分段内容" :span="2"><markdown-editor v-model="form.content" :height="600" resizable /></el-descriptions-item>
+      <el-descriptions-item label="分段内容" :span="2"><knowledge-image-editor v-model="form.content" :height="600" resizable :knowledge-id="String(route.query.knowledgeId || '')" :document-id="String(form.documentId || route.query.documentId || '')" /></el-descriptions-item>
     </el-descriptions>
   </el-drawer>
   <el-drawer v-model="chunkFormVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true" size="800px">
@@ -351,7 +352,7 @@ const handleChunkDelete = (segmentId: any) => {
         </el-select>
       </el-form-item>
       <el-form-item label="分块内容">
-        <el-input type="textarea" v-model="chunkForm.content" :rows="20" />
+        <knowledge-image-editor v-model="chunkForm.content" :height="400" resizable :knowledge-id="String(route.query.knowledgeId || '')" :document-id="String(chunkForm.documentId || route.query.documentId || '')" />
       </el-form-item>
       <el-form-item label="操作">
         <el-button type="primary" @click="handleChunkEmbedding" :loading="chunkEmbeddingLoading" :disabled="!chunkForm.content">生成词向量</el-button>

@@ -8,7 +8,7 @@ import ApproveApi from '@/api/oa/ApproveApi'
 import WorkflowApi from '@/api/oa/WorkflowApi'
 import UserApi from '@/api/member/UserApi'
 import DateUtil from '@/utils/DateUtil'
-import ProcessStatus from './ProcessStatus.vue'
+import ProcessStatus from '@/views/oa/components/ProcessStatus.vue'
 
 const route = useRoute()
 const router = useRouter()

@@ -64,11 +64,24 @@ Route meta supports: `title` (page title), `fit` (remove padding), `to` (breadcr
 - `Spider/` — web crawler configuration panels
 - `Workflow/` — OA workflow designer
 
-### Shared Components
+### Component Placement
 
-`src/components/` provides reusable Element Plus wrappers: Button variants, Form helpers (search, date picker, password, autocomplete), Table (pagination, column settings, radio), Dictionary (select, cascader, tag, group), Layout (designer shell, toolbar, property panel), Chat, CodeEditor, ContextMenu.
+Components are organized by scope. Route pages never live in a shared folder:
 
-Auto-imported via `unplugin-vue-components` with ElementPlusResolver — no manual imports needed for Element Plus components.
+| Directory | Scope |
+| --- | --- |
+| `src/components/` | **Shared components** — reusable across modules: Button variants, Form helpers (search, date picker, password, autocomplete), Table (pagination, column settings, radio), Dictionary (select, cascader, tag, group), Layout (designer shell, toolbar, property panel), Chat, CodeEditor, ContextMenu. |
+| `src/designer/` | **Designer components** — the AntV X6 visual editors: X6, FlexForm, TaskFlow, KnowledgeGraph, Agentic, Spider, Workflow. |
+| `src/views/{module}/components/` | **Module components** — only used inside that one module, e.g. `src/views/kg/components/`, `src/views/oa/components/`, `src/views/bi/components/`. |
+
+Rules:
+
+- A route page stays where the router expects it (`src/views/{module}/{sub}/page.vue`). Any component that is **not** a route page belongs in `src/views/{module}/components/`.
+- **No route-less files outside component folders.** Apart from `src/components/`, `src/designer/` and `src/views/{module}/components/`, every file under `src/views/` must be the target of a route in `src/router/`. Helper pages parked next to route pages are not allowed — move them into the module `components/` folder (or delete them if unused).
+- The `components` folder name itself stays lowercase. Sub-folders and `.vue` component files inside it use PascalCase (`KnowledgeImageEditor.vue`, `Chunk.vue`); other files keep their normal naming (`config.ts`). Route page filenames stay lowercase exactly as the router imports them (`list.vue`, `model.vue`).
+- Promote a component into `src/components/` as soon as it is shared by two or more modules.
+- Import module components through the alias, e.g. `import ProcessStatus from '@/views/oa/components/ProcessStatus.vue'`.
+- Only `src/components/` is auto-scanned by `unplugin-vue-components`; module components are imported explicitly. Element Plus components still need no import (ElementPlusResolver).
 
 ### SCSS
 
@@ -77,6 +90,7 @@ Global mixins in `src/assets/mixin.scss` are auto-injected into every component.
 ## Conventions
 
 - Path alias: `@` maps to `src/`.
+- Component placement: `src/components/` holds shared components, `src/designer/` holds designer components, `src/views/{module}/components/` holds module components. Outside these three folders, every file under `src/views/` must be route-targeted.
 - Environment: `VITE_APP_API_URL` controls backend base URL (empty string in production = same-origin).
 - The `.env.develoment` filename has a typo (missing 'p') — this is intentional and matches the vite `--mode develoment` flag. Do not rename.
 - Editor tab size: 2 spaces.

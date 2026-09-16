@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import KnowledgeApi from '@/api/agent/KnowledgeApi'
 import ApiUtil from '@/utils/ApiUtil'
 import MetadataTable from '@/components/Data/MetadataTable.vue'
+import KnowledgeImageEditor from '@/views/agent/components/KnowledgeImageEditor.vue'
 
 const loading = ref(false)
 const form: any = ref({ metadata: {} })
@@ -176,7 +177,7 @@ const getScoreType = (score: number) => {
           <metadata-table v-model="drawerData.metadata" />
         </el-descriptions-item>
         <el-descriptions-item label="内容" :span="2">
-          <MarkdownEditor v-model="drawerData.content" />
+          <knowledge-image-editor v-model="drawerData.content" :knowledge-id="String(form.id || '')" :document-id="String(drawerData.documentId || '')" />
         </el-descriptions-item>
       </el-descriptions>
     </template>
@@ -189,7 +190,7 @@ const getScoreType = (score: number) => {
           <metadata-table v-model="drawerData.metadata" />
         </el-descriptions-item>
         <el-descriptions-item label="内容" :span="2">
-          <MarkdownEditor v-model="drawerData.content" />
+          <knowledge-image-editor v-model="drawerData.content" :knowledge-id="String(form.id || '')" :document-id="String(drawerData.documentId || '')" />
         </el-descriptions-item>
       </el-descriptions>
     </template>

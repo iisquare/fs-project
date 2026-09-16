@@ -45,22 +45,6 @@ export const layouts = [{
     path: '/lm/setting/model',
     meta: { title: '模型配置', permit: ['lm:model:'] },
     component: () => import('@/views/lm/setting/model.vue')
-  }, {
-    path: '/lm/setting/server',
-    meta: { title: '服务端管理', permit: ['lm:server:'] },
-    component: () => import('@/views/lm/setting/server.vue')
-  }, {
-    path: '/lm/setting/serverEndpoint',
-    meta: { title: '服务端端点', permit: ['lm:serverEndpoint:'] },
-    component: () => import('@/views/lm/setting/serverEndpoint.vue')
-  }, {
-    path: '/lm/setting/client',
-    meta: { title: '客户端管理', permit: ['lm:client:'] },
-    component: () => import('@/views/lm/setting/client.vue')
-  }, {
-    path: '/lm/setting/clientEndpoint',
-    meta: { title: '客户端端点', permit: ['lm:clientEndpoint:'] },
-    component: () => import('@/views/lm/setting/clientEndpoint.vue')
   }]
 }]
 

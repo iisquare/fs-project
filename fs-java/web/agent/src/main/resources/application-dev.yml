@@ -16,3 +16,7 @@ spring:
 fs:
   lm:
     token: sk-just-for-knowledge-dev
+  agent:
+    image:
+      expire: 1800000
+      placeholder: /images/loading.svg

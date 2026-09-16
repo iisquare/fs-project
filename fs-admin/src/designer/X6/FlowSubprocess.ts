@@ -1,6 +1,9 @@
 import DesignUtil from '@/utils/DesignUtil'
 import { Node, type NodeMetadata } from '@antv/x6'
 
+// 容器节点边框与画布内其它节点卡片保持一致（浅灰细边框 + 圆角）
+export const SubprocessStroke = '#d5dae0'
+
 export default class FlowSubprocess extends Node {
 
   meta: NodeMetadata
@@ -74,14 +77,14 @@ FlowSubprocess.config({
   ],
   attrs: {
     body: {
-      rx: 10,
-      ry: 10,
+      rx: 8,
+      ry: 8,
       refWidth: '100%',
       refHeight: '100%',
-      stroke: 'rgb(34, 36, 42)',
-      strokeWidth: '1px',
+      stroke: SubprocessStroke,
+      strokeWidth: 1,
       fill: '#ffffff',
-      fillOpacity: 0.3
+      fillOpacity: 0.5
     },
     buttonGroup: {
       refX: 8,

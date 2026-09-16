@@ -7,14 +7,10 @@ import AgentApi from '@/api/agent/AgentApi';
 import ApiUtil from '@/utils/ApiUtil';
 import DateUtil from '@/utils/DateUtil';
 import TableUtil from '@/utils/TableUtil';
-import ServerApi from '@/api/lm/ServerApi';
-import { useUserStore } from '@/stores/user';
-import ClientApi from '@/api/lm/ClientApi';
 import RoleApi from '@/api/member/RoleApi';
 
 const route = useRoute()
 const router = useRouter()
-const user = useUserStore()
 const tableRef = ref<TableInstance>()
 const loading = ref(false)
 const searchable = ref(true)
@@ -209,12 +205,10 @@ const handleFormat = () => {
         <el-input v-model="form.name" />
       </el-form-item>
       <el-form-item label="模型名称" prop="model">
-        <form-autocomplete v-model="form.model" :callback="ServerApi.list" fieldLabel="model" clearable placeholder="请输入模型名称" v-if="user.hasPermit('lm:server:')" />
-        <el-input v-model="form.model" clearable placeholder="请输入模型名称" v-else />
+        <el-input v-model="form.model" clearable placeholder="请输入模型名称" />
       </el-form-item>
       <el-form-item label="认证标识">
-        <form-autocomplete v-model="form.token" :callback="ClientApi.list" fieldLabel="token" clearable placeholder="请输入认证标识" v-if="user.hasPermit('lm:client:')" />
-        <el-input v-model="form.token" clearable placeholder="请输入认证标识" v-else />
+        <el-input v-model="form.token" clearable placeholder="请输入认证标识" />
       </el-form-item>
       <el-form-item label="系统提示词">
         <el-input type="textarea" v-model="form.systemPrompt" placeholder="留空为不增加系统提示词" />

@@ -9,7 +9,7 @@ import FlexForm from '@/designer/FlexForm/FlexForm.vue'
 import flexFormConfig from '@/designer/FlexForm/config'
 import workflowConfig from '@/designer/Workflow/config'
 import { useUserStore } from '@/stores/user'
-import FormAudit from './FormAudit.vue'
+import FormAudit from '@/views/oa/components/FormAudit.vue'
 
 const route = useRoute()
 const router = useRouter()

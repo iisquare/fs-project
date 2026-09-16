@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="160" viewBox="0 0 240 160" role="img" aria-label="图片加载中">
+  <rect x="0.5" y="0.5" width="239" height="159" rx="8" fill="#f5f7fa" stroke="#e4e7ed" />
+  <g transform="translate(120, 64)" fill="none" stroke="#c0c4cc" stroke-width="3" stroke-linecap="round">
+    <circle cx="0" cy="0" r="14" stroke-opacity="0.25" />
+    <path d="M0,-14 A14,14 0 0 1 14,0">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1s" repeatCount="indefinite" />
+    </path>
+  </g>
+  <text x="120" y="110" text-anchor="middle" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#909399">图片加载中</text>
+</svg>

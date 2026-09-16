@@ -6,7 +6,7 @@ import ApproveApi from '@/api/oa/ApproveApi'
 import ProcessViewer from '@/designer/Workflow/ProcessViewer.vue'
 import FlexForm from '@/designer/FlexForm/FlexForm.vue'
 import flexFormConfig from '@/designer/FlexForm/config'
-import FormAudit from './FormAudit.vue'
+import FormAudit from '@/views/oa/components/FormAudit.vue'
 
 const route = useRoute()
 const router = useRouter()

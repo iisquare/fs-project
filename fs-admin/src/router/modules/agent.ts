@@ -11,8 +11,12 @@ export const layouts = [{
     component: layout.default
   }, {
     path: '/agent/agentic/list',
-    meta: { title: '应用管理', permit: ['agent:agent:'] },
+    meta: { title: '应用管理', permit: ['agent:agentic:'] },
     component: () => import('@/views/agent/agentic/list.vue')
+  }, {
+    path: '/agent/agentic/model',
+    meta: { title: '应用编排', fit: true, permit: ['agent:agentic:'] },
+    component: () => import('@/views/agent/agentic/model.vue')
   }, {
     path: '/agent/setting/agent',
     meta: { title: '智能体管理', permit: ['agent:agent:'] },

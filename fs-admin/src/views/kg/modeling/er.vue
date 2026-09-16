@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import LayoutDesigner from '@/components/Layout/LayoutDesigner.vue';
+import LayoutBack from '@/components/Layout/LayoutBack.vue';
 import LayoutProperty from '@/components/Layout/LayoutProperty.vue';
 import X6Container from '@/designer/X6/X6Container.vue';
 import OutlineList from '@/designer/KnowledgeGraph/OutlineList.vue';
 import { computed, onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import config from '@/designer/KnowledgeGraph/config'
 import LayoutToolbar from '@/components/Layout/LayoutToolbar.vue';
 import LayoutIcon from '@/components/Layout/LayoutIcon.vue';
@@ -13,7 +14,6 @@ import OntologyApi from '@/api/kg/OntologyApi';
 import DesignUtil from '@/utils/DesignUtil';
 
 const route = useRoute()
-const router = useRouter()
 const flowRef = ref()
 const tips: any = ref({})
 const diagram:any = ref(Object.assign(config.canvas.options(), { status: '1', notify: {} }))
@@ -88,10 +88,13 @@ onMounted(() => {
       <OutlineList :instance="flowRef" :active-item="activeItem" @update:active-item="(v: any) => activeItem = v" />
     </template>
     <template #top>
-      <LayoutToolbar :toolbars="config.toolbars" :instance="flowRef" />
+      <el-space>
+        <LayoutBack to="/kg/modeling/ontology" variant="text" label="返回" />
+        <el-divider direction="vertical" />
+        <LayoutToolbar :toolbars="config.toolbars" :instance="flowRef" />
+      </el-space>
       <el-space>
         <el-button type="primary" @click="handleSubmit" :loading="loading">保存</el-button>
-        <el-button @click="router.go(-1)">返回</el-button>
       </el-space>
     </template>
     <template #default>

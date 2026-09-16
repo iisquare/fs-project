@@ -8,7 +8,7 @@ import LayoutDesigner from '@/components/Layout/LayoutDesigner.vue';
 import LayoutBack from '@/components/Layout/LayoutBack.vue';
 import LayoutHeading from '@/components/Layout/LayoutHeading.vue';
 import LayoutIcon from '@/components/Layout/LayoutIcon.vue';
-import MatrixTable from './MatrixTable.vue';
+import MatrixTable from '@/views/bi/components/MatrixTable.vue';
 import DataQueryFilter from '@/components/Data/DataQueryFilter.vue';
 import MatrixApi from '@/api/bi/MatrixApi';
 import DatasetApi from '@/api/bi/DatasetApi';

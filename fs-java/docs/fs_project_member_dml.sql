@@ -70,8 +70,6 @@ INSERT INTO `fs_member_menu` VALUES (17,'配置列表','后台管理:用户中�
 INSERT INTO `fs_member_menu` VALUES (18,'个人中心','后台管理:个人中心',1,0,'UserFilled','/account','',0,1,'',1584601522091,1,1735874319316,1);
 INSERT INTO `fs_member_menu` VALUES (19,'个人信息','后台首页:个人中心:个人信息',1,18,'','/account/profile','',0,1,'',1584601559031,1,1735874283677,1);
 INSERT INTO `fs_member_menu` VALUES (20,'修改密码','后台首页:个人中心:修改密码',1,18,'','/account/password','',0,1,'',1584601575033,1,1584601575033,1);
-INSERT INTO `fs_member_menu` VALUES (22,'模板管理','后台管理:网页爬虫:模板管理',26,0,'code','/spider/template','',0,1,'',1585195263054,1,1585195263054,1);
-INSERT INTO `fs_member_menu` VALUES (23,'模板列表','后台管理:网页爬虫:模板管理:模板列表',26,22,'','/spider/template/list','',0,1,'',1585195284371,1,1585195284371,1);
 INSERT INTO `fs_member_menu` VALUES (24,'调试工具','数据采集:调试工具',26,0,'MagicStick','/spider/tool','',0,1,'',1585195333832,1,1767842065712,1);
 INSERT INTO `fs_member_menu` VALUES (25,'页面解析','数据采集:调试工具:页面解析',26,24,'','/spider/tool/parse','',0,1,'',1585195373342,1,1767842085126,1);
 INSERT INTO `fs_member_menu` VALUES (27,'数据加工','后台管理:商业智能:数据加工',31,0,'apartment','/bi/diagram','',0,1,'',1585384219002,1,1634258659883,1);
@@ -445,10 +443,6 @@ INSERT INTO `fs_member_resource` VALUES (216,'用户积分','大模型:用户积
 INSERT INTO `fs_member_resource` VALUES (217,'添加','大模型:用户积分:添加',304,216,'lm','credit','add',0,1,'',1738374491858,1,1778638296946,1);
 INSERT INTO `fs_member_resource` VALUES (218,'修改','大模型:用户积分:修改',304,216,'lm','credit','modify',0,1,'',1738374511424,1,1778638305684,1);
 INSERT INTO `fs_member_resource` VALUES (219,'删除','大模型:用户积分:删除',304,216,'lm','credit','delete',0,1,'',1738374527491,1,1778638301397,1);
-INSERT INTO `fs_member_resource` VALUES (220,'客户端','大模型:客户端',304,0,'lm','client','',0,1,'',1738374554516,1,1738374554516,1);
-INSERT INTO `fs_member_resource` VALUES (221,'添加','大模型:客户端:添加',304,220,'lm','client','add',0,1,'',1738374569481,1,1738374569481,1);
-INSERT INTO `fs_member_resource` VALUES (222,'修改','大模型:客户端:修改',304,220,'lm','client','modify',0,1,'',1738374709078,1,1738374709078,1);
-INSERT INTO `fs_member_resource` VALUES (223,'删除','大模型:客户端:删除',304,220,'lm','client','delete',0,1,'',1738374728780,1,1738374728780,1);
 INSERT INTO `fs_member_resource` VALUES (224,'授权密钥','大模型:授权密钥',304,0,'lm','auth','',0,1,'',1738374753969,1,1778663685121,1);
 INSERT INTO `fs_member_resource` VALUES (225,'添加','大模型:授权密钥:添加',304,224,'lm','auth','add',0,1,'',1738375694452,1,1778663694723,1);
 INSERT INTO `fs_member_resource` VALUES (226,'修改','大模型:授权密钥:修改',304,224,'lm','auth','modify',0,1,'',1738375950883,1,1778663703634,1);
@@ -597,4 +591,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-09-14 10:33:15
+-- Dump completed on 2026-09-16 10:52:42

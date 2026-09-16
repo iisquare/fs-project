@@ -38,4 +38,14 @@ public class IndexController extends PermitControllerBase {
         return null;
     }
 
+    /**
+     * 原图内联展示，必须携带时效校验码：/raw/{id}{suffix}?time=xxx&expire=xxx&token=xxx
+     */
+    @GetMapping("/raw/{filename:.+}")
+    public String rawAction(@PathVariable("filename") String filename, @RequestParam Map<String, Object> param, HttpServletResponse response) throws Exception {
+        Map<String, Object> result = fileService.raw(filename, param, response);
+        if (ApiUtil.failed(result)) return displayJSON(response, result);
+        return null;
+    }
+
 }

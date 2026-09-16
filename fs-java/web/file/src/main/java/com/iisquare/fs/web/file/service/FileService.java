@@ -44,6 +44,8 @@ public class FileService {
 
     @Value("${fs.file.shareKey:}")
     private String shareKey; // 文件分享校验码
+    @Value("${fs.file.wmEnable:true}")
+    private boolean wmEnable; // 水印总开关，关闭后不再为图片添加水印
     @Value("${fs.file.digest:512}")
     private int digest; // 文件头部摘要提取长度
     @Value("${fs.file.wmPath:}")
@@ -243,7 +245,7 @@ public class FileService {
                 break;
         }
         graphics.drawImage(background, 0, 0, width, height, x, y, w, h, null);
-        if (null == watermark || (width < wmWidth && height < wmHeight)) {
+        if (null == watermark || !wmEnable || (width < wmWidth && height < wmHeight)) {
             graphics.dispose();
             return ApiUtil.result(0, null, image);
         }
@@ -334,9 +336,17 @@ public class FileService {
      * 获取文件URI
      */
     public String uri(String id, String suffix, int expire, Long time) {
+        return uri("file", id, suffix, expire, time);
+    }
+
+    /**
+     * 获取带时效校验码的资源URI
+     * type 取值：file-下载，raw-原图内联展示
+     */
+    public String uri(String type, String id, String suffix, int expire, Long time) {
         if (null == time) time = System.currentTimeMillis();
         String token = encode(id, expire, time);
-        return String.format("/file/%s%s?time=%d&expire=%d&token=%s", id, suffix, time, expire, token);
+        return String.format("/%s/%s%s?time=%d&expire=%d&token=%s", type, id, suffix, time, expire, token);
     }
 
     /**
@@ -368,12 +378,15 @@ public class FileService {
             item.put("bucket", archive.getBucket());
             item.put("filepath", archive.getFilepath());
             String uri = "";
-            switch (args.at("/type").asText("")) {
+            String type = args.at("/type").asText("");
+            switch (type) {
                 case "file":
+                case "raw": {
                     long time = args.at("/time").asLong(millis);
                     int expire = args.at("/expire").asInt(300000);
-                    uri = uri(archive.getId(), archive.getSuffix(), expire, time);
+                    uri = uri(type, archive.getId(), archive.getSuffix(), expire, time);
                     break;
+                }
                 case "image":
                     args.put("id", archive.getId());
                     args.put("suffix", archive.getSuffix());
@@ -544,6 +557,91 @@ public class FileService {
         } finally {
             FileUtil.close(out, ores);
         }
+    }
+
+    /**
+     * 输出原图：携带时效校验码访问，不校验分享标记，不做缩放、转码与水印处理
+     * 地址形如 /raw/{id}{suffix}?time=xxx&expire=xxx&token=xxx
+     */
+    public Map<String, Object> raw(String filename, Map<String, Object> param, HttpServletResponse response) {
+        String[] strings = DPUtil.explode("\\.", filename);
+        if (!decode(strings[0], param)) {
+            return ApiUtil.result(1403, "文件已过期", filename);
+        }
+        Archive archive = archiveService.info(strings[0]);
+        if (null == archive || 1 != archive.getStatus() || archive.getDeletedTime() > 0) {
+            return ApiUtil.result(1404, "文件不可用", filename);
+        }
+        if (!filename.equals(archive.getId() + archive.getSuffix())) {
+            return ApiUtil.result(1405, "文件格式不匹配", filename);
+        }
+        String contentType = contentType(archive);
+        if (!Arrays.asList("image/jpeg", "image/webp", "image/png", "image/gif", "image/bmp").contains(contentType)) {
+            return ApiUtil.result(1406, "文件类型暂不支持", filename);
+        }
+        StatObjectResponse stat;
+        GetObjectResponse ores;
+        try {
+            stat = minIOService.statObject(archive.getBucket(), archive.getFilepath());
+            ores = minIOService.getObject(archive.getBucket(), archive.getFilepath());
+        } catch (Exception e) {
+            return ApiUtil.result(1501, "获取文件对象失败", e.getMessage());
+        }
+        ServletOutputStream out;
+        try {
+            out = response.getOutputStream();
+        } catch (IOException e) {
+            return ApiUtil.result(1505, "获取输出流失败", e.getMessage());
+        }
+        try {
+            response.setContentType(contentType);
+            response.addHeader("Content-Disposition", "inline");
+            response.addHeader("Content-Length", String.valueOf(stat.size()));
+            response.addHeader("Cache-Control", cacheControl(param));
+            byte[] buf = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = ores.read(buf)) != -1) {
+                out.write(buf, 0, bytesRead);
+                out.flush();
+            }
+            return ApiUtil.result(0, null, null);
+        } catch (Exception e) {
+            return ApiUtil.result(1503, "读取文件异常", e.getMessage());
+        } finally {
+            FileUtil.close(out, ores);
+        }
+    }
+
+    /**
+     * 获取文件内容类型，优先使用文件记录中的类型，缺失时按后缀推断
+     */
+    public String contentType(Archive archive) {
+        if (!DPUtil.empty(archive.getType())) return archive.getType();
+        switch (DPUtil.parseString(archive.getSuffix()).toLowerCase()) {
+            case ".jpg":
+            case ".jpeg":
+                return "image/jpeg";
+            case ".png":
+                return "image/png";
+            case ".gif":
+                return "image/gif";
+            case ".bmp":
+                return "image/bmp";
+            case ".webp":
+                return "image/webp";
+            default:
+                return "application/octet-stream";
+        }
+    }
+
+    /**
+     * 私有缓存时长取剩余有效期，避免缓存已失效的地址
+     */
+    private String cacheControl(Map<String, Object> param) {
+        long maxAge = (DPUtil.parseLong(param.get("time")) + DPUtil.parseLong(param.get("expire"))
+                - System.currentTimeMillis()) / 1000;
+        if (maxAge < 1) maxAge = 1;
+        return "private, max-age=" + maxAge;
     }
 
     public Map<String, Object> file(String filename, Map<String, Object> param, HttpServletRequest request, HttpServletResponse response) {
