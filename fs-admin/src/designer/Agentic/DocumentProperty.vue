@@ -31,9 +31,6 @@ defineProps<{
               types="File,Array<File>"
               placeholder="请选择文档变量" />
           </el-form-item>
-          <el-form-item label="保留图片" class="fs-form-inline">
-            <el-switch v-model="model.data.keepImages" />
-          </el-form-item>
           <el-form-item label="输出变量名">
             <el-input v-model="model.data.outputName" placeholder="如 text" />
           </el-form-item>

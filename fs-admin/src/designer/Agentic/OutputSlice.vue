@@ -4,15 +4,18 @@
  * 迭代/循环容器的容器内变量（元素、索引、循环变量）单独分组：它们只对容器自身与其内部的节点可见。
  *
  * @prop {*}      data  - 节点 data
+ * @prop {*}      instance - 画布实例，用于把引用型输出（变量赋值写入的变量）还原为「节点名称.变量名称」
  * @prop {String} title - 清单分组标题，默认「输出变量」；节点内已有同名可编辑分组时由调用方改名，避免两处同名
  */
 import { computed } from 'vue'
 import LayoutHelp from '@/components/Layout/LayoutHelp.vue'
 import config from './config'
 import SectionSlice from './SectionSlice.vue'
+import { variableReference } from './variable'
 
 const props = withDefaults(defineProps<{
   data?: any,
+  instance?: any,
   title?: string,
 }>(), {
   title: '输出变量',
@@ -20,7 +23,14 @@ const props = withDefaults(defineProps<{
 
 const list = (scope: boolean) => {
   const items: any[] = config.outputs?.[props.data?.type]?.(props.data) ?? []
-  return items.filter((item: any) => Boolean(item?.scope) === scope)
+  return items.filter((item: any) => Boolean(item?.scope) === scope).map((item: any) => {
+    if (!item?.reference) return item
+    // 被写入的变量属于容器或会话作用域：按它在画布上的名称展示，取不到时回落到引用本身
+    const source = variableReference(props.instance, String(item.name))
+    return source ? Object.assign({}, item, {
+      name: source.name, label: source.label, type: source.type,
+    }) : item
+  })
 }
 
 const groups = computed<any[]>(() => [{

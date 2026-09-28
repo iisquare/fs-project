@@ -67,15 +67,20 @@ public class TimeNodeHandler implements AgenticNodeHandler {
     protected ObjectNode time(AgenticNodeContext ctx, ObjectNode data) {
         String operation = data.at("/operation").asText("current");
         ZoneId zone = ZoneId.of(DPUtil.empty(data.at("/timezone").asText("")) ? "Asia/Shanghai" : data.at("/timezone").asText(""));
-        String format = DPUtil.empty(data.at("/format").asText("")) ? "yyyy-MM-dd HH:mm:ss" : data.at("/format").asText("");
-        ZonedDateTime source = moment(ctx.value(data.at("/variable").asText("")), zone, format);
+        // 面板与文档统一用 java.time 标准写法（如 yyyy-MM-dd HH:mm:ss），这里兼容历史数据里的 Moment 写法
+        String format = pattern(data.at("/format").asText(""));
+        // 取值优先级：时间变量 → 固定时间值 → 当前时间（面板上固定值的说明就是「时间变量为空时使用」）
+        Object input = ctx.value(data.at("/variable").asText(""));
+        if (ctx.blank(input)) input = ctx.text(data.at("/datetime").asText(""));
+        ZonedDateTime source = moment(input, zone, format);
         Object value;
         switch (operation) {
             case "now2timestamp":
                 value = ZonedDateTime.now(zone).toInstant().toEpochMilli();
                 break;
             case "time2timestamp":
-                value = parse(ctx.text(data.at("/datetime").asText("")), format, zone).toInstant().toEpochMilli();
+                // 与其它操作一致：用统一解析出来的时间，不再只认固定时间值
+                value = source.toInstant().toEpochMilli();
                 break;
             case "timezone":
                 value = source.withZoneSameInstant(ZoneId.of(data.at("/targetTimezone").asText("Asia/Shanghai")))
@@ -118,6 +123,43 @@ public class TimeNodeHandler implements AgenticNodeHandler {
         }
     }
 
+    /**
+     * 历史数据兼容：早期面板按 Moment 语法配置格式，而 DateTimeFormatter 里同名标记含义不同
+     * （DD 是一年中的第几天、YYYY 是周历年份），会把 2026-09-28 渲染成 2026-09-271。
+     * 标准写法是 java.time 语法，这里只把 Moment 与 Java 不同名的常用标记换掉；其余原样保留，
+     * 所以标准的 yyyy-MM-dd HH:mm:ss 转换后不变。
+     */
+    protected String pattern(String format) {
+        if (DPUtil.empty(format)) return "yyyy-MM-dd HH:mm:ss";
+        StringBuilder result = new StringBuilder();
+        Matcher matcher = Pattern.compile("([A-Za-z])\\1*").matcher(format);
+        int index = 0;
+        while (matcher.find()) {
+            result.append(format, index, matcher.start());
+            result.append(token(matcher.group()));
+            index = matcher.end();
+        }
+        result.append(format.substring(index));
+        return result.toString();
+    }
+
+    /**
+     * Moment 与 Java 不同名的常用标记：年、日与星期。
+     * Moment 的 dd 是星期缩写，但与 Java 的「日」同名且后者是常见写法，这里保留 Java 语义不动
+     */
+    protected String token(String token) {
+        switch (token) {
+            case "YYYY": return "yyyy";
+            case "YY": return "yy";
+            case "DD": return "dd";
+            case "D": return "d";
+            case "dddd": return "EEEE";
+            case "ddd": return "EEE";
+            case "A": return "a";
+            default: return token;
+        }
+    }
+
     protected ZonedDateTime moment(Object value, ZoneId zone, String format) {
         String text = DPUtil.parseString(value);
         if (DPUtil.empty(text)) return ZonedDateTime.now(zone);
@@ -134,10 +176,6 @@ public class TimeNodeHandler implements AgenticNodeHandler {
             }
         }
         return ZonedDateTime.now(zone);
-    }
-
-    protected ZonedDateTime parse(String text, String format, ZoneId zone) {
-        return LocalDateTime.parse(text, DateTimeFormatter.ofPattern(format)).atZone(zone);
     }
 
 }

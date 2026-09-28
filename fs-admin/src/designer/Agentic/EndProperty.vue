@@ -24,6 +24,9 @@ const modeText = computed(() => 'chat' === mode.value ? '对话流' : '工作流
 const columns = computed(() => [{
   prop: 'name', label: '输出名', icon: 'PriceTag', placeholder: '输出变量名，如 result', default: '',
 }, {
+  // 标题名称仅用于展示，为空时展示输出名
+  prop: 'label', label: '标题名称', icon: 'Memo', placeholder: '展示名称（选填），为空时展示输出名', default: '',
+}, {
   prop: 'type', type: 'select', options: 'types', icon: 'Grid', default: 'String', placeholder: '输出类型',
 }, {
   prop: 'variable', type: 'variable', label: '输出内容', icon: 'Aim', placeholder: '请选择变量',

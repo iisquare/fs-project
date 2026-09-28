@@ -31,6 +31,7 @@ onMounted(() => {
       <div
         class="row"
         :class="{ 'is-default': defaultPortId === item.id }"
+        :data-branch="item.id"
         :key="item.id"
         :style="{ height: SwitchLayout.row + 'px' }"
         v-for="item in rows">
@@ -103,13 +104,37 @@ onMounted(() => {
       }
       &.is-default {
         color: #6b7280;
-        background: #fafbfc;
+        /* 半透明底：运行态下卡片的状态色能透出来，避免这一行始终显示成白色 */
+        background: rgba(148, 163, 184, 0.08);
         .dot {
           background: #cbd5e1;
         }
       }
     }
   }
+}
+
+/* 命中分支行：卡片标记命中分支后，未命中的分支行淡化、命中行加粗（运行态清除时一并还原） */
+.agent-switch.is-branch-marked {
+  .row:not(.is-hit) {
+    opacity: 0.45;
+  }
+  .row.is-hit {
+    font-weight: 500;
+  }
+}
+
+/* 命中分支行的圆点跟随运行状态着色：默认分支命中时同样变色 */
+:global(.x6-run-running .agent-switch.is-branch-marked .body .row.is-hit .dot) {
+  background: var(--el-color-primary);
+}
+
+:global(.x6-run-success .agent-switch.is-branch-marked .body .row.is-hit .dot) {
+  background: var(--el-color-success);
+}
+
+:global(.x6-run-failed .agent-switch.is-branch-marked .body .row.is-hit .dot) {
+  background: var(--el-color-danger);
 }
 
 :global(.x6-node-selected .agent-switch) {

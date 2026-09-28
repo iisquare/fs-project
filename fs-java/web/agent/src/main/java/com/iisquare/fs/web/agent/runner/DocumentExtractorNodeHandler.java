@@ -11,6 +11,7 @@ import com.iisquare.fs.web.agent.core.AgenticNodeContext;
 import com.iisquare.fs.web.agent.core.AgenticNodeHandler;
 import com.iisquare.fs.web.agent.core.AgenticRuntime;
 import com.iisquare.fs.web.agent.tool.DocumentParser;
+import com.iisquare.fs.web.agent.tool.FileFetcher;
 import com.hubspot.jinjava.Jinjava;
 import com.iisquare.fs.web.core.rpc.FileRpc;
 import java.io.ByteArrayInputStream;
@@ -74,8 +75,15 @@ public class DocumentExtractorNodeHandler implements AgenticNodeHandler {
             String id = DPUtil.parseString(item.get("id"));
             if (DPUtil.empty(id)) continue;
             String name = DPUtil.parseString(item.get("name"));
-            byte[] bytes = fileRpc.get("/file/download", DPUtil.buildMap("id", id)).body().asInputStream().readAllBytes();
-            texts.add(DocumentParser.parse(name, new ByteArrayInputStream(bytes)).getMarkdown());
+            String url = FileFetcher.url(fileRpc, id, name);
+            if (DPUtil.empty(name)) name = FileFetcher.filename(url);
+            byte[] bytes = FileFetcher.bytes(url, name);
+            if (0 == bytes.length) throw new IllegalStateException("文件内容为空：" + name);
+            try {
+                texts.add(DocumentParser.parse(name, new ByteArrayInputStream(bytes)).getMarkdown());
+            } catch (Exception e) {
+                throw new IllegalStateException("解析文件失败：" + name + "：" + e.getMessage(), e);
+            }
         }
         if (texts.isEmpty()) throw new IllegalStateException("文档变量为空，请选择用户上传的文件");
         ObjectNode result = DPUtil.objectNode();

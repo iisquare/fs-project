@@ -28,6 +28,9 @@ const inputColumns = computed(() => [{
 const outputColumns = computed(() => [{
   prop: 'name', label: '返回值名', placeholder: 'return 的键名，如 result', default: '',
 }, {
+  // 标题名称仅用于展示，为空时展示返回值名
+  prop: 'label', label: '标题名称', placeholder: '展示名称（选填），为空时展示返回值名', default: '',
+}, {
   prop: 'type', type: 'select', options: 'types', default: 'String', placeholder: '返回值类型',
 }])
 

@@ -2,6 +2,7 @@ package com.iisquare.fs.web.agent;
 
 import com.iisquare.fs.base.web.mvc.BeanNameGenerator;
 import com.iisquare.fs.web.core.mvc.FeignInterceptor;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -24,6 +25,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 })
 @EntityScan(basePackages = {"com.iisquare.fs.web.agent.entity"})
 @EnableJpaRepositories(basePackages = {"com.iisquare.fs.web.agent.dao"})
+@MapperScan("com.iisquare.fs.web.agent.mapper")
 @EnableFeignClients(basePackages = {
         "com.iisquare.fs.web.core.rpc"
 }, defaultConfiguration = { FeignInterceptor.class })

@@ -40,6 +40,11 @@ public class AgenticRunner implements AgenticScheduler {
     @Autowired
     List<AgenticNodeHandler> nodeHandlers;
     private final Map<String, AgenticNodeHandler> handlers = new LinkedHashMap<>();
+    /**
+     * 当前线程上正在执行的编排层数：0 为最外层（结束时状态留在原处，失败日志要读本次步骤），
+     * 嵌套层退出时把挂起的外层状态恢复回去
+     */
+    private final ThreadLocal<Integer> runDepthThread = ThreadLocal.withInitial(() -> 0);
 
     @PostConstruct
     public void init() {
@@ -66,6 +71,47 @@ public class AgenticRunner implements AgenticScheduler {
      */
     public ObjectNode execute(JsonNode content, ObjectNode inputs, ArrayNode history, Map<String, Object> system) {
         long begin = System.currentTimeMillis();
+        // 嵌套运行（编排工具把另一个编排当工具调用）跑在同一线程上，这里先把外层状态挂起、
+        // 换成本次运行自己的步骤日志，结束后原样恢复：否则子流程会清掉外层的画布结构、
+        // 容器作用域与步骤日志（外层容器随后就找不到自己的子节点了）
+        int depth = runDepthThread.get();
+        Map<String, ObjectNode> outerNodes = new LinkedHashMap<>(runtime.nodeMap());
+        Map<String, List<Map<String, String>>> outerEdges = new LinkedHashMap<>(runtime.edgeMap());
+        Map<String, ObjectNode> outerScopes = new LinkedHashMap<>(runtime.scopes());
+        Map<String, Object> outerSystem = new LinkedHashMap<>(runtime.system());
+        ArrayNode outerSteps = runtime.steps();
+        String outerCurrent = runtime.currentNode();
+        String outerAnswerSource = runtime.answerSource();
+        ObjectNode outerRequest = runtime.lastRequest();
+        runtime.steps(DPUtil.arrayNode());
+        runDepthThread.set(depth + 1);
+        try {
+            return run(content, inputs, history, system, begin);
+        } finally {
+            runDepthThread.set(depth);
+            // 最外层运行结束后状态留在原处（失败日志要读本次运行的步骤），只有嵌套层退出时才恢复外层状态
+            if (depth > 0) {
+                runtime.nodeMap().clear();
+                runtime.nodeMap().putAll(outerNodes);
+                runtime.edgeMap().clear();
+                runtime.edgeMap().putAll(outerEdges);
+                runtime.scopes().clear();
+                runtime.scopes().putAll(outerScopes);
+                runtime.system().clear();
+                runtime.system().putAll(outerSystem);
+                runtime.steps(outerSteps);
+                runtime.currentNode(outerCurrent);
+                runtime.answerSource(outerAnswerSource);
+                runtime.lastRequest(outerRequest);
+            }
+        }
+    }
+
+    /**
+     * 运行主体：按本次运行的画布内容重建节点表、连线与作用域，从开始节点沿连线执行到结束节点
+     */
+    protected ObjectNode run(JsonNode content, ObjectNode inputs, ArrayNode history,
+                             Map<String, Object> system, long begin) {
         Map<String, ObjectNode> nodes = new LinkedHashMap<>();
         Map<String, List<Map<String, String>>> targets = new LinkedHashMap<>();
         read(content, nodes, targets);
@@ -91,7 +137,6 @@ public class AgenticRunner implements AgenticScheduler {
         runtime.answerSource(answerSource(nodes));
         Map<String, ObjectNode> outputs = new LinkedHashMap<>();
         Map<String, Object> variables = new LinkedHashMap<>(); // 会话变量等可写变量
-        runtime.steps().removeAll();
         Queue<String> queue = new LinkedList<>();
         Set<String> visited = new LinkedHashSet<>();
         queue.add(startId);
@@ -148,6 +193,8 @@ public class AgenticRunner implements AgenticScheduler {
         ObjectNode result = DPUtil.objectNode();
         result.put("status", null == error ? 1 : 2);
         result.put("error", null == error ? "" : error);
+        // 结束节点位于容器（迭代/循环）内部时不会经过顶层调度：按执行顺序回退取最后一次结束节点的回复
+        if (DPUtil.empty(answer)) answer = containerAnswer(outputs);
         result.put("answer", null == answer ? "" : answer);
         result.set("outputs", DPUtil.toJSON(outputs));
         result.set("conversation", DPUtil.toJSON(variables));
@@ -162,6 +209,25 @@ public class AgenticRunner implements AgenticScheduler {
 
     public String type(ObjectNode node) {
         return node.at("/data/type").asText("");
+    }
+
+    /**
+     * 容器（迭代/循环）内部结束节点的回复：容器内的节点由所在的容器调度执行，
+     * 顶层调度只认顶层的结束节点，因此按步骤执行顺序回退取最后一次成功执行的结束节点回复。
+     * 容器内节点每轮都会重新执行，取最后一次即为容器结束后应返回的回复。
+     */
+    protected String containerAnswer(Map<String, ObjectNode> outputs) {
+        ArrayNode steps = runtime.steps();
+        for (int i = steps.size() - 1; i >= 0; i--) {
+            JsonNode step = steps.get(i);
+            if (2 == step.at("/status").asInt(1)) continue;
+            if (!"End".equals(step.at("/type").asText(""))) continue;
+            ObjectNode output = outputs.get(step.at("/id").asText(""));
+            if (null == output) continue;
+            String answer = output.at("/answer").asText("");
+            if (!DPUtil.empty(answer)) return answer;
+        }
+        return "";
     }
 
     /**

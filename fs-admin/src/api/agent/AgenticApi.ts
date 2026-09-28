@@ -79,4 +79,12 @@ export default {
   chatFeedback (param: any, tips = {}) {
     return base.post('/agentic/chatFeedback', param, tips)
   },
+  /**
+   * 流程统计：会话数量与对话轮次按时间轴聚合，另出流程排名与用户排名；
+   * 同时返回对话类型分布与执行状态分布（状态分布不带状态筛选）；
+   * 支持时间、流程、用户、对话类型、对话状态、执行状态（成功 / 失败）与时间聚合层级筛选
+   */
+  statistic (param: any = {}, tips = {}) {
+    return base.post('/agentic/statistic', param, tips)
+  },
 }

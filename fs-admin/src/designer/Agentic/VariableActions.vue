@@ -4,7 +4,7 @@
  *
  * @prop {*} instance   - 画布实例（X6Container 暴露的 flow）
  * @prop {*} activeItem - 当前激活的节点，用于排除自身
- * @prop {Function} copy - 复制回调，返回 Promise<Boolean>；成功后按钮短暂显示对号
+ * @prop {Function} copy - 复制回调，返回 Promise<Boolean>；未传时不展示复制按钮，成功后按钮短暂显示对号
  * @emits insert - 选中变量后抛出变量引用（`节点ID.变量名` 或 `sys.变量名`）
  */
 import { computed, ref } from 'vue'
@@ -65,8 +65,8 @@ const handleInsert = (value: string) => {
         唤起变量提示
       </div>
     </el-popover>
-    <!-- 复制走统一组件：成功后 3.5 秒内显示对号 -->
-    <ButtonCopy :copy="copy" />
+    <!-- 复制走统一组件：未传回调时不展示（如 HTTP 地址只保留插入变量）；成功后 3.5 秒内显示对号 -->
+    <ButtonCopy v-if="'function' === typeof copy" :copy="copy" />
   </el-space>
 </template>
 

@@ -6,12 +6,15 @@
  *                      手工输入的会话变量（`conversation.xxx`）同样转成占位符，其它文本按原文写入
  * @prop     {*}        instance   - 画布实例（X6Container 暴露的 flow）
  * @prop     {*}        activeItem - 当前激活的节点，用于排除自身
- * @prop     {String}   types      - 允许的变量类型，多个以英文逗号分隔
+ * @prop     {String}   types      - 允许的变量类型，多个以英文逗号分隔；
+ *                                   容器元素变量的类型由容器输入决定（静态未知），不参与该过滤
  * @prop     {Boolean}  inner      - 只列出当前节点内部的节点变量（容器收集输出时用），默认 false
  * @prop     {Boolean}  allowCreate - 是否允许输入自定义内容，默认 false
  * @prop     {String}   icon       - Element Plus 图标名称，作为下拉框的前缀图标
  * @prop     {Boolean}  writable   - 只列出可写入变量（容器内的元素/索引/循环变量），默认 false；
  *                                   用于变量赋值的目标变量，会话变量仍由手工输入
+ * @prop     {Boolean}  outer      - 只取容器外部变量（容器自身的元素/索引/循环变量不作为取值来源），默认 false；
+ *                                   用于循环变量初始值这类必须取自容器外部的取值
  */
 import { computed, ref, watch } from 'vue'
 import LayoutIcon from '@/components/Layout/LayoutIcon.vue'
@@ -28,6 +31,7 @@ const {
   types = '',
   icon = '',
   writable = false,
+  outer = false,
 } = defineProps<{
   instance?: any,
   activeItem?: any,
@@ -38,13 +42,14 @@ const {
   types?: string,
   icon?: string,
   writable?: boolean,
+  outer?: boolean,
 }>()
 
 const version = ref(0)
 // 展开下拉时重新收集变量，兼容画布中节点的增删
 const all = computed(() => {
   version.value
-  return variableGroups(instance, activeItem, inner)
+  return variableGroups(instance, activeItem, inner, outer)
 })
 // 画布中全部可引用的变量引用：用于把历史数据里的裸引用升级为占位符
 const references = computed(() => {
@@ -57,7 +62,8 @@ const groups = computed(() => {
   if (types) {
     const allowed = types.split(',')
     list = list.map((group: any) => Object.assign({}, group, {
-      variables: group.variables.filter((item: any) => allowed.indexOf(item.type) >= 0),
+      // 容器元素变量（动态类型）放行，否则迭代/循环内部的节点选不到「当前元素」
+      variables: group.variables.filter((item: any) => item.dynamic || allowed.indexOf(item.type) >= 0),
     }))
   }
   if (writable) {

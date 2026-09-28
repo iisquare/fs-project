@@ -70,7 +70,6 @@ public class ListOperatorNodeHandler implements AgenticNodeHandler {
         items.removeIf(item -> !matchList(ctx, item, filter));
         List<Map<String, Object>> sorts = new ArrayList<>();
         for (JsonNode item : data.at("/sorts")) {
-            if (DPUtil.empty(item.at("/variable").asText(""))) continue;
             Map<String, Object> sort = new LinkedHashMap<>();
             sort.put("field", item.at("/variable").asText(""));
             sort.put("desc", "desc".equals(item.at("/order").asText("asc")));
@@ -79,7 +78,8 @@ public class ListOperatorNodeHandler implements AgenticNodeHandler {
         if (!sorts.isEmpty()) {
             items.sort((left, right) -> {
                 for (Map<String, Object> sort : sorts) {
-                    int result = ctx.compare(ctx.field(left, DPUtil.parseString(sort.get("field"))), ctx.field(right, DPUtil.parseString(sort.get("field"))));
+                    String field = DPUtil.parseString(sort.get("field"));
+                    int result = ctx.compare(itemValue(ctx, left, field), itemValue(ctx, right, field));
                     if (0 != result) return Boolean.TRUE.equals(sort.get("desc")) ? -result : result;
                 }
                 return 0;
@@ -103,12 +103,22 @@ public class ListOperatorNodeHandler implements AgenticNodeHandler {
         if (conditions.isEmpty()) return true;
         boolean any = "or".equals(filter.at("/logic").asText("and"));
         for (JsonNode condition : conditions) {
-            boolean current = ctx.compareWith(DPUtil.parseString(ctx.field(item, condition.at("/variable").asText(""))),
-                    condition.at("/operator").asText("eq"), condition.at("/value").asText(""));
+            // 比较值与条件分支、循环终止条件同一口径：支持变量引用，取值不是字段名
+            boolean current = ctx.compareWith(itemValue(ctx, item, condition.at("/variable").asText("")),
+                    condition.at("/operator").asText("eq"), ctx.text(condition.at("/value").asText("")));
             if (any && current) return true;
             if (!any && !current) return false;
         }
         return !any;
+    }
+
+    /**
+     * 列表项取值：字段名为空时按元素本身取值（字符串等标量数组的过滤与排序都用它），
+     * 否则按字段名逐层取值（支持 a.b 形式）
+     */
+    protected String itemValue(AgenticNodeContext ctx, Object item, String field) {
+        if (DPUtil.empty(field)) return ctx.runtime().scalar(item);
+        return DPUtil.parseString(ctx.field(item, field));
     }
 
 }

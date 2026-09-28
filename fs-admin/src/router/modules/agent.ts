@@ -30,6 +30,10 @@ export const layouts = [{
       meta: { title: '流程对话', fit: true, permit: ['agent:agentic:'] },
       component: () => import('@/views/agent/agentic/dialog.vue')
     }, {
+      path: '/agent/agentic/statistic',
+      meta: { title: '流程统计', permit: ['agent:agentic:'] },
+      component: () => import('@/views/agent/agentic/statistic.vue')
+    }, {
     path: '/agent/chat/compare',
     meta: { title: '模型对比', fit: true, permit: ['agent:compare:'] },
     component: () => import('@/views/agent/chat/compare.vue')

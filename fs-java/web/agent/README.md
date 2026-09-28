@@ -121,6 +121,33 @@
 | POST `/agentic/chatList`、`/agentic/chatInfo` | 对话历史列表、详情（消息 + 每轮运行记录） | `agent:agentic:` |
 | POST `/agentic/chatDelete` | 删除会话（连同消息与运行日志） | `agent:agentic:delete` |
 | POST `/agentic/chatFeedback` | 消息反馈：点赞/点踩（可附标签与说明），再次提交同一情绪表示取消 | `agent:agentic:` |
+| POST `/agentic/statistic` | 流程统计：会话数量与对话轮次时间轴、流程排名、用户排名 | `agent:agentic:` |
+
+#### 流程统计
+
+- 会话数量取会话表（按创建时间）、对话轮次取运行日志（一轮对话一条），两侧共用
+  「流程 + 用户 + 对话类型 + 对话状态」四个条件，两张时间轴看的是同一批对话；
+- 入参：`beginTime` / `endTime`（毫秒，默认近一周）、`agenticId`、`uid`、
+  `type`（draft 调试运行 / published 发布应用）、`deleted`（only 已删除 / without 未删除 / 空 全部）、
+  `status`（success 成功 / failed 失败 / 空 全部，按执行状态筛选）、
+  `aggregation`（hour / day / week / month，默认 day，周取周一、小时取整点，按东八区切分）；
+- 时间切分固定用东八区（与 `sys.datetime` 同一口径），服务所在时区（容器常见为 UTC）不影响分桶；
+  周桶的键是周号（`2026-W39`），天/小时/月的键分别是 `2026-09-28` / `2026-09-28 10:00` / `2026-09`；
+  区间内的空桶会补齐 0，趋势图不会因为没数据的时段而断线；
+- 区间上限：整体 1 年，按小时 31 天（745 个桶）——明细是全量取回在内存里聚合的，超限返回 `1002`；
+- 执行状态：轮次看运行日志自身的状态（1 成功 / 2 失败），会话看它自己的轮次——
+  有一轮失败即为失败，全成功才算成功；会话状态由轮次推导，所以状态筛选不落到 SQL
+  （先取回全量轮次再在内存里筛），筛选只影响统计结果，不影响会话状态的判定；
+- 返回：`summary`（会话数量、对话轮次、参与用户、覆盖流程、成功率、平均耗时）、
+  `timeline`（每个时间桶的会话数量 / 对话轮次 / 参与用户 / 覆盖流程 / 成功失败轮次 / 成功失败会话，键升序）、
+  `types`（按对话类型的会话数量与对话轮次）、
+  `statuses`（执行状态分布：成功 / 失败的会话数量与对话轮次，
+  **不含执行状态筛选**——先记分布再按筛选决定算不算数，筛「失败」时也能看到两边的盘面）、
+  `flows`（流程排名：会话数量、对话轮次、参与用户、成功率、平均耗时、最近对话）、
+  `users`（用户排名：会话数量、对话轮次、覆盖流程、成功率、最近对话）；
+- 排名按会话数量降序、轮次数量次之；明细经 MyBatis（`AgenticStatisticMapper`）按条件取回，
+  只取聚合需要的列（不读标题、入参、输出、步骤等大字段），分桶、排名与去重都在服务层内存里完成
+  ——与 lm 的用量统计同一套做法：SQL 不写数据库方言的日期函数，也不必为每种条件组合各写一条查询。
 
 多轮对话：`run` / `invoke` 支持传 `chatId`（0 或空表示新建），会话落在 `fs_agent_agentic_chat` 与
 `fs_agent_agentic_dialog`，类型区分 `published`（发布应用）与 `draft`（调试运行），且只能续写
@@ -331,6 +358,7 @@ POST /knowledgeImage/url
 | --- | --- |
 | `/agent/agentic/list` | 智能体应用管理 |
 | `/agent/agentic/model` | 智能体应用编排（画布：新增、修改、调试运行、发布） |
+| `/agent/agentic/statistic` | 流程统计（会话数量与对话轮次时间轴、流程排名、用户排名） |
 | `/agent/chat/demo`、`/agent/chat/dialog`、`/agent/chat/compare` | 模型调试、模型对话、模型对比 |
 | `/agent/knowledge/list`、`/agent/knowledge/document`、`/agent/knowledge/segment`、`/agent/knowledge/recall` | 知识库管理 |
 | `/agent/plugin/tool`、`/agent/plugin/mcp`、`/agent/plugin/skill`、`/agent/plugin/skillVersion` | 插件管理 |
@@ -357,6 +385,8 @@ JPA 表前缀策略为 `com.iisquare.fs.web.agent.dsconfig.NamingStrategy`。
   `fs_agent_knowledge`、`fs_agent_knowledge_chunk`、`fs_agent_knowledge_document`、`fs_agent_knowledge_image`、
   `fs_agent_knowledge_segment`、`fs_agent_skill`、`fs_agent_skill_version`、`fs_agent_tool`，
   建表语句见 `docs/fs_project_agent.sql`，存量库改造见 `docs/fs_project_agent_migrate.sql`。
+- 流程统计的明细查询走 MyBatis（`mapper/AgenticStatisticMapper.xml`），与 JPA 共用同一数据源
+  （`spring.datasource.agent`，即 `@Primary` 的 `agentDataSource`）。
 - Elasticsearch：检索块集合 `fs_lm_knowledge_chunk`。
 - 文件服务：桶 `fs-lm-knowledge`、`fs-lm-skill`。
 

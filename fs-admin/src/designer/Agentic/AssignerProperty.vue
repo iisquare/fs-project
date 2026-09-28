@@ -59,7 +59,7 @@ const columns = computed(() => [{
             <tip-text text="目标变量需为可写入变量：容器（循环/迭代）内的变量可直接选择，会话变量按 conversation.xxx 输入；赋值结果可在后续节点中引用" />
           </el-form-item>
         </SectionSlice>
-        <OutputSlice :data="model.data" />
+        <OutputSlice :data="model.data" :instance="$props.instance" />
       </el-form>
     </el-tab-pane>
   </el-tabs>

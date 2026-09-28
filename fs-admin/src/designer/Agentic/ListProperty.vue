@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
  * 列表操作节点属性 - 用于过滤或排序数组内容。
- * 过滤条件与排序字段都针对「输入列表里的每一项」：填的是列表项里的字段名（支持 a.b），不是画布变量。
+ * 过滤条件与排序字段都针对「输入列表里的每一项」：填的是列表项里的字段名（支持 a.b），不是画布变量；
+ * 字符串等标量数组没有字段，字段名留空即按元素本身过滤/排序。
  */
 import { computed, ref } from 'vue'
 import LayoutHelp from '@/components/Layout/LayoutHelp.vue'
@@ -21,7 +22,7 @@ defineProps<{
 }>()
 
 const columns = computed(() => [{
-  prop: 'variable', label: '排序字段', placeholder: '字段名，如 score，支持 a.b', default: '',
+  prop: 'variable', label: '排序字段', placeholder: '字段名，如 score，支持 a.b；字符串数组留空即元素本身', default: '',
 }, {
   prop: 'order', type: 'select', options: 'sortOrders', default: 'asc', placeholder: '排序方式',
 }])
@@ -45,7 +46,7 @@ const columns = computed(() => [{
         <SectionSlice title="过滤条件">
           <template #title>
             过滤条件
-            <LayoutHelp text="条件作用于输入列表的每一项：字段名填列表项里的键，如 name、user.age" />
+            <LayoutHelp text="条件作用于输入列表的每一项：字段名填列表项里的键，如 name、user.age；字符串数组字段名留空，直接比较元素本身" />
           </template>
           <el-form-item label="">
             <ConditionSlice
@@ -58,7 +59,7 @@ const columns = computed(() => [{
         <SectionSlice title="排序规则">
           <template #title>
             排序规则
-            <LayoutHelp text="按输入列表里每一项的字段排序，字段名支持 a.b 形式，如 score、user.age" />
+            <LayoutHelp text="按输入列表里每一项的字段排序，字段名支持 a.b 形式，如 score、user.age；字符串数组字段名留空，按元素本身排序" />
           </template>
           <el-form-item label="">
             <FieldSlice

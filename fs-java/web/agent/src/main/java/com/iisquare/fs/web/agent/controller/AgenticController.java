@@ -20,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -216,6 +217,19 @@ public class AgenticController extends PermitControllerBase {
         data.put("feedbackContent", DPUtil.parseString(dialog.getFeedbackContent()));
         data.put("feedbackTime", null == dialog.getFeedbackTime() ? 0L : dialog.getFeedbackTime());
         return ApiUtil.echoResult(0, null, data);
+    }
+
+    /**
+     * 流程统计：会话数量与对话轮次按时间轴聚合，另出流程排名与用户排名
+     * 入参：beginTime / endTime（毫秒）、agenticId、uid、type（draft / published）、
+     * deleted（only 已删除 / without 未删除 / 空 全部）、status（success 成功 / failed 失败 / 空 全部）、
+     * aggregation（hour / day / week / month）
+     * 区间上限：整体 1 年；按小时的区间不超过 31 天
+     */
+    @RequestMapping("/statistic")
+    @Permission("")
+    public String statisticAction(@RequestBody(required = false) Map<String, Object> param) {
+        return ApiUtil.echoResult(agenticService.statistic(null == param ? new HashMap<>() : param));
     }
 
 }

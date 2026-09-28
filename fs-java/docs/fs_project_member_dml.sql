@@ -235,6 +235,7 @@ INSERT INTO `fs_member_menu` VALUES (415,'运行状态','智能体:系统配置:
 INSERT INTO `fs_member_menu` VALUES (416,'运行监控','商业智能:运行监控',31,0,'Stamp','/bi/monitor','',0,1,'',1789948800000,1,1789972930606,1);
 INSERT INTO `fs_member_menu` VALUES (417,'查询日志','商业智能:运行监控:查询日志',31,416,'','/bi/monitor/queryLog','',0,1,'',1789948800000,1,1789948800000,1);
 INSERT INTO `fs_member_menu` VALUES (418,'对比统计','智能体:模型对话:对比统计',308,401,'','/agent/chat/statistic','',90,1,'',1790229311854,1,1790229311854,1);
+INSERT INTO `fs_member_menu` VALUES (419,'流程统计','智能体:智能体:流程统计',308,406,'','/agent/agentic/statistic','',90,1,'',1790553600000,1,1790553600000,1);
 /*!40000 ALTER TABLE `fs_member_menu` ENABLE KEYS */;
 UNLOCK TABLES;
 

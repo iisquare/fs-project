@@ -266,8 +266,9 @@ const IterationOptions = () => {
 
 const LoopOptions = () => {
   return {
-    // 循环变量：初始值来源可为固定值或引用变量，容器内的节点可通过变量赋值覆盖其取值
-    variables: [{ name: 'index', type: 'Integer', source: 'constant', variable: '', value: '' }],
+    // 循环变量：初始值来源可为固定值或引用变量，容器内的节点可通过变量赋值覆盖其取值；
+    // 标题名称仅用于展示，为空时展示变量名
+    variables: [{ name: 'index', label: '循环变量', type: 'Integer', source: 'constant', variable: '', value: '' }],
     condition: { logic: 'and', conditions: [{ variable: '', operator: 'lt', value: '10' }] },
     maxIterations: 100,
   }
@@ -374,7 +375,7 @@ const AggregatorRepair = (data: any) => {
 }
 
 const DocumentOptions = () => {
-  return { input: '', outputName: 'text', keepImages: true }
+  return { input: '', outputName: 'text' }
 }
 
 const AssignerOptions = () => {
@@ -403,7 +404,8 @@ const ParameterOptions = () => {
     // 多模态输入参数：{ name, type, variable }
     multimodalEnabled: false,
     multimodal: [],
-    parameters: [{ name: 'language', type: 'String', required: true, description: '编程语言名称' }],
+    // 参数名是模型返回值的键（英文标识），标题名称用于输出变量等处的展示
+    parameters: [{ name: 'language', label: '编程语言', type: 'String', required: true, description: '编程语言名称' }],
   }
 }
 
@@ -501,7 +503,7 @@ const TimeOptions = () => {
     variable: '',
     variable2: '',
     datetime: '',
-    format: 'YYYY-MM-DD HH:mm:ss',
+    format: 'yyyy-MM-dd HH:mm:ss',
     targetTimezone: 'Asia/Shanghai',
     amount: 1,
     unit: 'day',
@@ -543,10 +545,12 @@ const outputs: any = {
   Knowledge: () => [
     { name: 'result', label: '召回结果', type: 'Array<Object>', description: '召回结果列表' },
     { name: 'text', label: '召回内容', type: 'String', description: '召回内容拼接文本' },
+    { name: 'documents', label: '召回文档', type: 'Array<Object>', description: '本次召回涉及的文档（含文档标识、名称与元数据），按文档去重' },
   ],
   QuestionClassifier: () => [
     { name: 'classId', label: '命中分类标识', type: 'String', description: '命中分类的标识' },
     { name: 'className', label: '命中分类名称', type: 'String', description: '命中分类的名称' },
+    { name: 'text', label: '模型输出', type: 'String', description: '分类模型返回的原始内容' },
   ],
   SwitchCase: () => [],
   // 迭代/循环容器不再有固定入口节点：元素、索引与循环变量由容器节点自身提供，
@@ -556,11 +560,14 @@ const outputs: any = {
     { name: data.itemName || 'item', label: '当前元素', type: 'Object', description: '当前迭代的元素', scope: true },
     { name: data.indexName || 'index', label: '当前索引', type: 'Integer', description: '当前迭代的索引', scope: true },
   ],
-  // 循环节点没有输出变量：循环变量即循环的状态，只对容器自身与其内部的节点可见，
-  // 内部节点可通过变量赋值覆盖其取值
-  Loop: (data: any) => (data.variables ?? []).filter((item: any) => item?.name).map((item: any) => ({
+  // 循环变量即循环的状态，只对容器自身与其内部的节点可见，内部节点可通过变量赋值覆盖其取值；
+  // 循环结束时容器作用域回收，容器外的节点只能引用 variables（循环变量的取值集合）
+  Loop: (data: any) => [{
+    name: 'variables', label: '循环变量快照', type: 'Object',
+    description: '循环结束时的变量取值集合（容器外引用循环结果用）',
+  }].concat((data.variables ?? []).filter((item: any) => item?.name).map((item: any) => ({
     name: item.name, label: item.label || item.name, type: item.type, description: '循环变量的当前取值', scope: true,
-  })),
+  }))),
   Code: (data: any) => (data.outputs ?? []).filter((item: any) => item?.name).map((item: any) => ({
     name: item.name, label: item.label || item.name, type: item.type,
   })),
@@ -569,18 +576,30 @@ const outputs: any = {
   ],
   // 每个分组产出一个变量，变量名取分组名称，类型取分组上配置的输出类型
   VariableAggregator: (data: any) => (data.groups ?? []).filter((group: any) => group?.name).map((group: any) => ({
-    name: group.name, label: group.name, type: group.outputType || 'String', description: '聚合后的变量',
+    name: group.name, label: group.label || group.name, type: group.outputType || 'String', description: '聚合后的变量',
   })),
   DocumentExtractor: (data: any) => [
     { name: data.outputName || 'text', label: '解析文本', type: 'String', description: '文档解析出的文本' },
   ],
-  VariableAssigner: (data: any) => (data.assignments ?? []).filter((item: any) => item?.target).map((item: any) => ({
-    name: item.target, label: item.target, type: 'String', description: '赋值后的变量',
-  })),
+  // 变量赋值写入的是既有变量（容器变量 / 会话变量），自身没有输出变量：
+  // 这里把赋值目标按统一规范的引用列出供下游引用，引用里的容器标识由 variable.ts 还原为节点名称展示
+  VariableAssigner: (data: any) => {
+    const references: string[] = []
+    ;(data.assignments ?? []).forEach((item: any) => {
+      const matched = String(item?.target ?? '').trim().match(/^\{\{#([^#{}]+)#\}\}$/)
+      const reference = matched ? matched[1].trim() : ''
+      if (reference && references.indexOf(reference) < 0) references.push(reference)
+    })
+    return references.map((reference: string) => ({
+      name: reference, label: reference, type: 'String', description: '赋值后的变量', reference: true,
+    }))
+  },
   ParameterExtractor: (data: any) => [{
     name: '__isSuccess', label: '是否提取成功', type: 'Boolean', description: '是否提取成功',
   }, {
     name: '__reason', label: '提取说明', type: 'String', description: '提取结果说明',
+  }, {
+    name: 'text', label: '模型输出', type: 'String', description: '参数提取模型返回的原始内容',
   }].concat((data.parameters ?? []).filter((item: any) => item?.name).map((item: any) => ({
     name: item.name, label: item.label || item.name, type: item.type, description: item.description,
   }))),

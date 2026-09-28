@@ -18,6 +18,7 @@ import com.iisquare.fs.web.agent.entity.AgenticDialog;
 import com.iisquare.fs.web.agent.entity.AgenticLog;
 import com.iisquare.fs.web.agent.entity.Tool;
 import com.iisquare.fs.web.agent.entity.ToolMethod;
+import com.iisquare.fs.web.agent.mapper.AgenticStatisticMapper;
 import com.iisquare.fs.web.agent.mvc.Configuration;
 import com.iisquare.fs.web.agent.runner.ChartNodeHandler;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
@@ -37,9 +38,12 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.text.SimpleDateFormat;
+import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -77,12 +81,22 @@ public class AgenticService extends JPAServiceBase {
     @Autowired
     AgenticDialogDao agenticDialogDao;
     @Autowired
+    AgenticStatisticMapper agenticStatisticMapper;
+    @Autowired
     FileRpc fileRpc;
     @Autowired
     KnowledgeService knowledgeService;
 
     /** 编排调试上传的文件桶：与知识库共用文件服务存储，路径按 agentic 前缀隔离 */
     public static final String BUCKET = "fs-lm-knowledge";
+
+    /** 编排工具（子编排）允许的最大嵌套层数：防止 A→B→A 这类相互调用无限嵌套 */
+    private static final int MAX_NESTED_DEPTH = 5;
+    /**
+     * 当前线程上子编排的嵌套层数：编排工具在同一线程内递归执行，
+     * 用线程局部变量计数，超限直接报错而不是把线程/栈耗尽
+     */
+    private final ThreadLocal<Integer> nestedDepthThread = ThreadLocal.withInitial(() -> 0);
 
     /**
      * 调试运行的文件上传：走文件服务存储，返回文件标识、原始名称、类型、后缀与大小，
@@ -470,6 +484,12 @@ public class AgenticService extends JPAServiceBase {
     public ObjectNode toolInvoke(Integer agenticId, String query, Integer uid, HttpServletRequest request) {
         Agentic info = null == agenticId || agenticId < 1 ? null : info(agenticId);
         if (null == info) throw new IllegalStateException("编排应用不存在：" + agenticId);
+        // 嵌套层级保护：A 的工具指向 B、B 又指回 A（或自引用）时会无限嵌套，这里直接拦住
+        int depth = nestedDepthThread.get();
+        if (depth >= MAX_NESTED_DEPTH) {
+            throw new IllegalStateException("编排嵌套调用层级过深（上限 " + MAX_NESTED_DEPTH
+                    + " 层）：请检查是否存在相互调用的编排应用，当前为「" + info.getName() + "」");
+        }
         int version = null == info.getPublishedVersion() ? 0 : info.getPublishedVersion();
         if (version < 1 || DPUtil.empty(info.getPublishedContent())) {
             throw new IllegalStateException("编排应用尚未发布：" + info.getName());
@@ -491,10 +511,13 @@ public class AgenticService extends JPAServiceBase {
         agenticRunner.streamSink(null);
         agenticRunner.stepSink(null);
         agenticRunner.roundSink(null);
+        // 真正开始执行子编排时才计数，避免上面几处提前抛错把层级计数留在线程上
+        nestedDepthThread.set(depth + 1);
         ObjectNode result;
         try {
             result = agenticRunner.execute(content, inputs, DPUtil.arrayNode(), system(info, null, uid, request));
         } finally {
+            nestedDepthThread.set(depth);
             agenticRunner.streamSink(sink);
             agenticRunner.stepSink(stepSink);
             agenticRunner.roundSink(roundSink);
@@ -1358,6 +1381,412 @@ public class AgenticService extends JPAServiceBase {
             save(agenticLogDao, log, 0);
         }
         return true;
+    }
+
+    /* ------------------------------- 流程统计 ------------------------------- */
+
+    /** 统计时区：与 sys.datetime 一样按东八区切分，服务所在时区（容器常见为 UTC）不影响分桶 */
+    private static final ZoneId STATISTIC_ZONE = ZoneId.of("Asia/Shanghai");
+    /**
+     * 时间聚合层级的日期格式：键是可排序的日期文本，用 TreeMap 直接得到时间升序；
+     * 周用「周号」（2026-W39）而不是周一日期，看图时不必再换算这是哪一周
+     */
+    private static final Map<String, DateTimeFormatter> STATISTIC_FORMATTER = Map.of(
+            "hour", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:00"),
+            "day", DateTimeFormatter.ofPattern("yyyy-MM-dd"),
+            "week", DateTimeFormatter.ofPattern("YYYY-'W'ww"),
+            "month", DateTimeFormatter.ofPattern("yyyy-MM"));
+    /** 统计区间上限：整体 1 年；按小时再收紧到 31 天（745 个桶），明细全量取回，区间必须封顶 */
+    private static final long MAX_STATISTIC_RANGE = 366L * 24 * 60 * 60 * 1000;
+    private static final long MAX_HOUR_RANGE = 31L * 24 * 60 * 60 * 1000;
+
+    /** 排名行：会话/轮次/成败/耗时，members 是另一个维度的去重成员（流程看用户、用户看流程） */
+    private static class StatRank {
+        long sessions;
+        long rounds;
+        long succeeded;
+        long failed;
+        long duration;
+        long durationCount;
+        long lastTime;
+        final Set<Integer> members = new LinkedHashSet<>();
+    }
+
+    /**
+     * 流程统计：会话数量与对话轮次按时间轴聚合，另出流程排名与用户排名。
+     *
+     * - 会话取会话表（按创建时间），对话轮次取运行日志（一轮对话一条），两侧共用
+     *   「流程 + 用户 + 类型 + 删除状态」四个条件，两张时间轴看的是同一批对话；
+     * - 支持时间、流程、用户、对话类型（draft / published）、对话状态（全部 / 未删除 / 已删除）
+     *   执行状态（全部 / 成功 / 失败）与时间聚合层级（hour / day / week / month），默认近一周、按天；
+     * - 数据经 MyBatis 取回（与 lm 用量统计同一套做法）：SQL 只按条件取聚合需要的列
+     *   （不读标题、入参、输出、步骤等大字段），分桶、排名与去重都在服务层内存里完成，
+     *   既免了为每种筛选组合各写一条 SQL，也不用数据库方言的日期函数；
+     * - 执行状态：会话状态由它自己的轮次推导（有一轮失败即失败，全成功才算成功），
+     *   轮次状态就是运行日志的状态；筛选只影响统计结果，不影响会话状态的推导；
+     * - 时间轴按东八区切分（周取周一、小时取整点）并按键升序返回，成功 / 失败分开给；
+     *   额外的状态分布（statuses）不带执行状态筛选：先记分布再按筛选决定算不算数，
+     *   筛「失败」时分布图里仍能看到成功与失败各占多少，一眼看出筛选前的基础盘；
+     * - 区间内的空桶会补齐 0：没有对话的时段照样占一格，趋势图不会因为缺桶而断线；
+     * - 区间上限：整体 1 年，按小时 31 天（明细全量取回在内存里聚合，区间不封顶会有风险）；
+     *   排名按会话数量降序、轮次数量次之，数量相同时按标识升序保证结果稳定。
+     */
+    public Map<String, Object> statistic(Map<String, Object> param) {
+        long endTime = DPUtil.parseLong(param.get("endTime"));
+        if (endTime < 1) endTime = System.currentTimeMillis();
+        long beginTime = DPUtil.parseLong(param.get("beginTime"));
+        if (beginTime < 1) beginTime = endTime - 7 * 24 * 60 * 60 * 1000L;
+        if (beginTime > endTime) {
+            long swap = beginTime;
+            beginTime = endTime;
+            endTime = swap;
+        }
+        if (endTime - beginTime > MAX_STATISTIC_RANGE) {
+            return ApiUtil.result(1002, "统计区间不能超过 1 年", null);
+        }
+        String aggregation = statisticAggregation(DPUtil.parseString(param.get("aggregation")));
+        if ("hour".equals(aggregation) && endTime - beginTime > MAX_HOUR_RANGE) {
+            return ApiUtil.result(1002, "按小时统计的区间不能超过 31 天，请改用按天", null);
+        }
+        int status = statisticStatus(param.get("status"));
+        // 明细经 MyBatis 取回：会话侧按 type 过滤、日志侧按 source 过滤，其余条件两边一致
+        // 执行状态不落到 SQL：会话状态要由它自己的轮次推导，得先拿到全量轮次
+        List<Map<String, Object>> chats = agenticStatisticMapper.chatRows(
+                statisticParam(param, beginTime, endTime, "type"));
+        List<Map<String, Object>> logs = agenticStatisticMapper.logRows(
+                statisticParam(param, beginTime, endTime, "source"));
+
+        // 会话的执行状态：同一会话只要有一轮失败就算失败，全成功才算成功
+        Map<Integer, Integer> failedRounds = new HashMap<>();
+        for (Map<String, Object> log : logs) {
+            if (2 != DPUtil.parseInt(log.get("status"))) continue;
+            int chatId = DPUtil.parseInt(log.get("chatId"));
+            if (chatId < 1) continue;
+            failedRounds.merge(chatId, 1, Integer::sum);
+        }
+
+        Map<String, long[]> timeline = new TreeMap<>();
+        // 时间桶 -> [会话数量, 对话轮次, 参与用户, 覆盖流程, 成功轮次, 失败轮次, 成功会话, 失败会话]
+        Map<String, Set<Integer>> timelineUsers = new TreeMap<>();
+        Map<String, Set<Integer>> timelineFlows = new TreeMap<>();
+        Map<String, long[]> typeRows = new LinkedHashMap<>(); // 对话类型 -> [会话数量, 对话轮次]
+        // 执行状态分布：先记分布再按筛选决定算不算数，所以这里不带执行状态筛选
+        Map<Integer, long[]> statusRows = new LinkedHashMap<>();
+        Map<Integer, StatRank> flowRanks = new LinkedHashMap<>();
+        Map<Integer, StatRank> userRanks = new LinkedHashMap<>();
+        Set<Integer> users = new LinkedHashSet<>();
+        Set<Integer> flows = new LinkedHashSet<>();
+        long sessions = 0, rounds = 0, succeeded = 0, duration = 0, durationCount = 0;
+
+        // 会话数量：按会话创建时间落桶；用户与流程两个维度也从这里开始累计
+        for (Map<String, Object> chat : chats) {
+            long created = DPUtil.parseLong(chat.get("createdTime"));
+            if (created < 1) continue;
+            int flowId = DPUtil.parseInt(chat.get("agenticId"));
+            int owner = DPUtil.parseInt(chat.get("createdUid"));
+            boolean failed = failedRounds.getOrDefault(DPUtil.parseInt(chat.get("id")), 0) > 0;
+            statisticStatusRow(statusRows, failed ? 2 : 1)[0]++;
+            if (1 == status && failed) continue;
+            if (2 == status && !failed) continue;
+            String key = statisticTimeKey(created, aggregation);
+            long[] cell = timeline.computeIfAbsent(key, k -> new long[8]);
+            sessions++;
+            cell[0]++;
+            cell[failed ? 7 : 6]++;
+            timelineUsers.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(owner);
+            timelineFlows.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(flowId);
+            users.add(owner);
+            flows.add(flowId);
+            statisticTypeRow(typeRows, DPUtil.parseString(chat.get("type")))[0]++;
+            StatRank flow = statisticRank(flowRanks, flowId);
+            flow.sessions++;
+            flow.members.add(owner);
+            flow.lastTime = Math.max(flow.lastTime, created);
+            StatRank user = statisticRank(userRanks, owner);
+            user.sessions++;
+            user.members.add(flowId);
+            user.lastTime = Math.max(user.lastTime, created);
+        }
+
+        // 对话轮次：一轮对话一条日志，成败与耗时都按日志统计（会话删除时日志一并打删除标记）
+        for (Map<String, Object> log : logs) {
+            long created = DPUtil.parseLong(log.get("createdTime"));
+            if (created < 1) continue;
+            boolean succeed = 2 != DPUtil.parseInt(log.get("status"));
+            statisticStatusRow(statusRows, succeed ? 1 : 2)[1]++;
+            // 执行状态筛选只作用于统计结果，不影响上面推导出来的会话状态
+            if (1 == status && !succeed) continue;
+            if (2 == status && succeed) continue;
+            int flowId = DPUtil.parseInt(log.get("agenticId"));
+            int owner = DPUtil.parseInt(log.get("createdUid"));
+            long cost = DPUtil.parseLong(log.get("duration"));
+            String key = statisticTimeKey(created, aggregation);
+            long[] cell = timeline.computeIfAbsent(key, k -> new long[8]);
+            rounds++;
+            if (succeed) succeeded++;
+            if (cost > 0) {
+                duration += cost;
+                durationCount++;
+            }
+            cell[1]++;
+            cell[succeed ? 4 : 5]++;
+            timelineUsers.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(owner);
+            timelineFlows.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(flowId);
+            users.add(owner);
+            flows.add(flowId);
+            statisticTypeRow(typeRows, DPUtil.parseString(log.get("source")))[1]++;
+            StatRank flow = statisticRank(flowRanks, flowId);
+            flow.rounds++;
+            if (succeed) flow.succeeded++;
+            else flow.failed++;
+            if (cost > 0) {
+                flow.duration += cost;
+                flow.durationCount++;
+            }
+            flow.members.add(owner);
+            flow.lastTime = Math.max(flow.lastTime, created);
+            StatRank user = statisticRank(userRanks, owner);
+            user.rounds++;
+            if (succeed) user.succeeded++;
+            else user.failed++;
+            if (cost > 0) {
+                user.duration += cost;
+                user.durationCount++;
+            }
+            user.members.add(flowId);
+            user.lastTime = Math.max(user.lastTime, created);
+        }
+
+        ObjectNode result = DPUtil.objectNode();
+        result.put("beginTime", beginTime);
+        result.put("endTime", endTime);
+        result.put("aggregation", aggregation);
+        result.put("status", status);
+        ObjectNode summary = result.putObject("summary");
+        summary.put("sessions", sessions);
+        summary.put("rounds", rounds);
+        summary.put("users", users.size());
+        summary.put("flows", flows.size());
+        summary.put("succeeded", succeeded);
+        summary.put("failed", rounds - succeeded);
+        summary.put("successRate", rounds < 1 ? 0L : Math.round(succeeded * 100d / rounds));
+        summary.put("avgDuration", durationCount < 1 ? 0L : Math.round(duration * 1d / durationCount));
+
+        // 补齐区间内的空桶：没有数据的时段也给 0，趋势图才连续（缺桶会让折线与柱距看起来不均匀）
+        statisticFillTimeline(timeline, beginTime, endTime, aggregation);
+
+        ArrayNode timelineNodes = result.putArray("timeline");
+        for (Map.Entry<String, long[]> entry : timeline.entrySet()) {
+            long[] cell = entry.getValue();
+            ObjectNode row = timelineNodes.addObject();
+            row.put("time", entry.getKey());
+            row.put("sessions", cell[0]);
+            row.put("rounds", cell[1]);
+            // 参与用户与覆盖流程按桶内去重：同一用户在同一个桶里聊了十轮，仍然算一个人
+            row.put("users", timelineUsers.getOrDefault(entry.getKey(), Collections.emptySet()).size());
+            row.put("flows", timelineFlows.getOrDefault(entry.getKey(), Collections.emptySet()).size());
+            row.put("succeeded", cell[4]);
+            row.put("failed", cell[5]);
+            row.put("succeededSessions", cell[6]);
+            row.put("failedSessions", cell[7]);
+        }
+
+        ArrayNode typeNodes = result.putArray("types");
+        for (Map.Entry<String, long[]> entry : typeRows.entrySet()) {
+            ObjectNode row = typeNodes.addObject();
+            row.put("type", entry.getKey());
+            row.put("typeText", CHAT_PUBLISHED.equals(entry.getKey()) ? "发布应用" : "调试运行");
+            row.put("sessions", entry.getValue()[0]);
+            row.put("rounds", entry.getValue()[1]);
+        }
+
+        // 执行状态分布：固定「成功在前、失败在后」，与页面上的分布图顺序一致；
+        // 这里不套用执行状态筛选（其余筛选照常生效），筛选后仍能看到两边的盘面
+        ArrayNode statusNodes = result.putArray("statuses");
+        for (int value = 1; value <= 2; value++) {
+            long[] cell = statusRows.getOrDefault(value, new long[2]);
+            ObjectNode row = statusNodes.addObject();
+            row.put("status", value);
+            row.put("statusText", 1 == value ? "成功" : "失败");
+            row.put("sessions", cell[0]);
+            row.put("rounds", cell[1]);
+        }
+
+        // 流程排名：会话数量为主序；编排名称按 agenticId 关联填充，仓库里不冗余存
+        ArrayNode flowNodes = result.putArray("flows");
+        for (Map.Entry<Integer, StatRank> entry : statisticSorted(flowRanks)) {
+            StatRank item = entry.getValue();
+            ObjectNode row = flowNodes.addObject();
+            row.put("agenticId", entry.getKey());
+            row.put("sessions", item.sessions);
+            row.put("rounds", item.rounds);
+            row.put("users", item.members.size());
+            row.put("succeeded", item.succeeded);
+            row.put("failed", item.failed);
+            row.put("successRate", item.rounds < 1 ? 0L : Math.round(item.succeeded * 100d / item.rounds));
+            row.put("avgDuration", item.durationCount < 1 ? 0L : Math.round(item.duration * 1d / item.durationCount));
+            row.put("lastTime", item.lastTime);
+        }
+        fillAgenticName(flowNodes);
+
+        // 用户排名：与流程排名同一套排序，成员集合换成「覆盖了几个流程」
+        ArrayNode userNodes = result.putArray("users");
+        for (Map.Entry<Integer, StatRank> entry : statisticSorted(userRanks)) {
+            StatRank item = entry.getValue();
+            ObjectNode row = userNodes.addObject();
+            row.put("createdUid", entry.getKey());
+            row.put("sessions", item.sessions);
+            row.put("rounds", item.rounds);
+            row.put("flows", item.members.size());
+            row.put("succeeded", item.succeeded);
+            row.put("failed", item.failed);
+            row.put("successRate", item.rounds < 1 ? 0L : Math.round(item.succeeded * 100d / item.rounds));
+            row.put("avgDuration", item.durationCount < 1 ? 0L : Math.round(item.duration * 1d / item.durationCount));
+            row.put("lastTime", item.lastTime);
+        }
+        rbacService.fillUserInfo(userNodes, "createdUid");
+        return ApiUtil.result(0, null, result);
+    }
+
+    /**
+     * 统计的查询条件：把页面上的「空串 / 0 即不过滤」翻成带命名参数的 where 片段，
+     * 与 lm 用量统计的写法一致（条件片段放进 params 的 where 键，取值一律走 #{}）。
+     *
+     * typeColumn 是会话类型列：会话表叫 type、运行日志叫 source，取值同为 draft / published，
+     * 两边的明细查询共用这段逻辑，只有列名不同。
+     */
+    protected Map<String, Object> statisticParam(Map<String, Object> param,
+                                                 long beginTime, long endTime, String typeColumn) {
+        Map<String, Object> filters = new LinkedHashMap<>();
+        StringBuilder where = new StringBuilder(" WHERE 1 = 1");
+        where.append(" AND created_time >= #{beginTime}");
+        filters.put("beginTime", beginTime);
+        where.append(" AND created_time <= #{endTime}");
+        filters.put("endTime", endTime);
+        int agenticId = DPUtil.parseInt(param.get("agenticId"));
+        if (agenticId > 0) {
+            where.append(" AND agentic_id = #{agenticId}");
+            filters.put("agenticId", agenticId);
+        }
+        int uid = DPUtil.parseInt(param.get("uid"));
+        if (uid > 0) {
+            where.append(" AND created_uid = #{uid}");
+            filters.put("uid", uid);
+        }
+        String type = DPUtil.trim(DPUtil.parseString(param.get("type")));
+        if (CHAT_DRAFT.equals(type) || CHAT_PUBLISHED.equals(type)) {
+            where.append(" AND ").append(typeColumn).append(" = #{type}");
+            filters.put("type", type);
+        }
+        int deleted = statisticDeleted(param.get("deleted"));
+        if (1 == deleted) where.append(" AND deleted_time > 0");
+        else if (0 == deleted) where.append(" AND deleted_time = 0");
+        filters.put("where", where.toString());
+        return filters;
+    }
+
+    /** 时间聚合层级：只认四种，其余按天（与 lm 用量统计同一组取值） */
+    protected String statisticAggregation(String value) {
+        return STATISTIC_FORMATTER.containsKey(value) ? value : "day";
+    }
+
+    /** 对话状态（与列表页 form-deleted 一致）：only 只看已删除、without 只看未删除，其余为全部 */
+    protected int statisticDeleted(Object value) {
+        String mode = DPUtil.parseString(value);
+        if ("only".equals(mode)) return 1;
+        if ("without".equals(mode)) return 0;
+        return -1;
+    }
+
+    /**
+     * 执行状态：success 只看成功、failed 只看失败，其余为全部。
+     * 轮次看运行日志自身的状态（1 成功 / 2 失败），会话看它自己的轮次有没有失败。
+     */
+    protected int statisticStatus(Object value) {
+        String mode = DPUtil.parseString(value);
+        if ("success".equals(mode)) return 1;
+        if ("failed".equals(mode)) return 2;
+        return 0;
+    }
+
+    /** 时间轴分桶：东八区切分，周取周一、小时取整点 */
+    protected String statisticTimeKey(long time, String aggregation) {
+        return statisticTimeKey(Instant.ofEpochMilli(time).atZone(STATISTIC_ZONE), aggregation);
+    }
+
+    protected String statisticTimeKey(ZonedDateTime datetime, String aggregation) {
+        if ("week".equals(aggregation)) datetime = datetime.with(DayOfWeek.MONDAY);
+        return datetime.format(STATISTIC_FORMATTER.getOrDefault(aggregation, STATISTIC_FORMATTER.get("day")));
+    }
+
+    /**
+     * 补齐区间内的空桶：从区间起点所在桶走到终点所在桶，缺的补 0。
+     * 桶数由区间上限兜住（最多 745 个），不会因为补齐而把返回体撑大。
+     */
+    protected void statisticFillTimeline(Map<String, long[]> timeline,
+                                         long beginTime, long endTime, String aggregation) {
+        ZonedDateTime cursor = statisticBucketStart(beginTime, aggregation);
+        ZonedDateTime last = statisticBucketStart(endTime, aggregation);
+        while (!cursor.isAfter(last)) {
+            timeline.computeIfAbsent(statisticTimeKey(cursor, aggregation), k -> new long[8]);
+            cursor = statisticNextBucket(cursor, aggregation);
+        }
+    }
+
+    /** 桶起点：小时取整点、天取零点、周取周一、月取 1 号（东八区） */
+    protected ZonedDateTime statisticBucketStart(long time, String aggregation) {
+        ZonedDateTime datetime = Instant.ofEpochMilli(time).atZone(STATISTIC_ZONE);
+        switch (aggregation) {
+            case "hour":
+                return datetime.truncatedTo(ChronoUnit.HOURS);
+            case "month":
+                return datetime.withDayOfMonth(1).truncatedTo(ChronoUnit.DAYS);
+            case "week":
+                return datetime.with(DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS);
+            default:
+                return datetime.truncatedTo(ChronoUnit.DAYS);
+        }
+    }
+
+    protected ZonedDateTime statisticNextBucket(ZonedDateTime datetime, String aggregation) {
+        switch (aggregation) {
+            case "hour":
+                return datetime.plusHours(1);
+            case "month":
+                return datetime.plusMonths(1);
+            case "week":
+                return datetime.plusWeeks(1);
+            default:
+                return datetime.plusDays(1);
+        }
+    }
+
+    /** 对话类型行：[会话数量, 对话轮次]，键归一成 draft / published（日志侧叫 source，取值相同） */
+    protected long[] statisticTypeRow(Map<String, long[]> rows, String type) {
+        String key = CHAT_PUBLISHED.equals(type) ? CHAT_PUBLISHED : CHAT_DRAFT;
+        return rows.computeIfAbsent(key, k -> new long[2]);
+    }
+
+    /** 执行状态分布行：[会话数量, 对话轮次]，键 1 成功 / 2 失败 */
+    protected long[] statisticStatusRow(Map<Integer, long[]> rows, int status) {
+        return rows.computeIfAbsent(1 == status ? 1 : 2, k -> new long[2]);
+    }
+
+    protected StatRank statisticRank(Map<Integer, StatRank> rows, Integer id) {
+        return rows.computeIfAbsent(null == id ? 0 : id, k -> new StatRank());
+    }
+
+    /** 排名排序：会话数量降序 -> 轮次数量降序 -> 标识升序（数量相同时结果稳定） */
+    protected List<Map.Entry<Integer, StatRank>> statisticSorted(Map<Integer, StatRank> rows) {
+        List<Map.Entry<Integer, StatRank>> list = new ArrayList<>(rows.entrySet());
+        list.sort((a, b) -> {
+            int compare = Long.compare(b.getValue().sessions, a.getValue().sessions);
+            if (0 != compare) return compare;
+            compare = Long.compare(b.getValue().rounds, a.getValue().rounds);
+            if (0 != compare) return compare;
+            return Integer.compare(a.getKey(), b.getKey());
+        });
+        return list;
     }
 
     protected String cut(String text, int length) {

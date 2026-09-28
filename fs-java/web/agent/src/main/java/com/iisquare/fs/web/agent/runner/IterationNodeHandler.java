@@ -121,6 +121,9 @@ public class IterationNodeHandler implements AgenticNodeHandler {
         // 运行态同样不随线程传播：流式回调、最终回复来源节点、编排调用器都需要子线程继承
         Consumer<JsonNode> parentSink = ctx.runtime().streamSink();
         Consumer<JsonNode> parentStepSink = ctx.runtime().stepSink();
+        Consumer<JsonNode> parentRoundSink = ctx.runtime().roundSink();
+        // 步骤日志按线程保存：并行迭代的子线程要共用父线程这一份，否则容器内的步骤不会进运行日志
+        ArrayNode parentSteps = ctx.runtime().steps();
         String parentAnswerSource = ctx.runtime().answerSource();
         java.util.function.BiFunction<Integer, String, ObjectNode> parentInvoker = agenticInvokeTool.invoker();
         int threads = Math.min(items.size(), Math.max(1, data.at("/parallelCount").asInt(1)));
@@ -142,6 +145,9 @@ public class IterationNodeHandler implements AgenticNodeHandler {
                     // 流式回调、最终回复来源、编排调用器：并行迭代内的节点同样可用
                     ctx.runtime().streamSink(parentSink);
                     ctx.runtime().stepSink(parentStepSink);
+                    // ReAct 轮次进度与步骤日志同样继承：否则并行迭代里的工具调用过程与节点步骤都看不到
+                    ctx.runtime().roundSink(parentRoundSink);
+                    ctx.runtime().steps(parentSteps);
                     ctx.runtime().answerSource(parentAnswerSource);
                     agenticInvokeTool.invoker(parentInvoker);
                     // 子线程继承画布结构，容器内节点才能在并行迭代里继续执行
@@ -171,6 +177,7 @@ public class IterationNodeHandler implements AgenticNodeHandler {
                         ctx.scopes().remove(containerId);
                         ctx.runtime().streamSink(null);
                         ctx.runtime().stepSink(null);
+                        ctx.runtime().roundSink(null);
                         agenticInvokeTool.invoker(null);
                         RequestContextHolder.resetRequestAttributes();
                     }

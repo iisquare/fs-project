@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iisquare.fs.web.agent.mapper.AgenticStatisticMapper">
+
+    <!--
+      流程统计：与 lm 的 UsageMapper 同一套路。
+      只取聚合需要的列：会话侧的标题与日志侧的入参 / 输出 / 步骤都是大字段，统计一眼也用不上；
+      筛选条件用「为空即不过滤」的写法拼接（见 AgenticService.statisticParam），
+      省得为每种条件组合各写一条查询。时间轴分桶放在服务层按东八区切，SQL 里不写日期函数。
+    -->
+    <select id="chatRows" resultType="map">
+        SELECT
+            id,
+            agentic_id AS agenticId,
+            type AS type,
+            created_time AS createdTime,
+            created_uid AS createdUid
+        FROM fs_agent_agentic_chat
+        ${where}
+    </select>
+
+    <select id="logRows" resultType="map">
+        SELECT
+            agentic_id AS agenticId,
+            chat_id AS chatId,
+            source AS source,
+            status AS status,
+            duration AS duration,
+            created_time AS createdTime,
+            created_uid AS createdUid
+        FROM fs_agent_agentic_log
+        ${where}
+    </select>
+
+</mapper>

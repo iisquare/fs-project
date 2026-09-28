@@ -20,11 +20,14 @@ defineProps<{
 }>()
 
 const columns = computed(() => [{
-  prop: 'name', label: '参数名', placeholder: '参数名，如 language', default: '',
+  prop: 'name', label: '参数名', icon: 'PriceTag', placeholder: '参数名，如 language', default: '',
 }, {
-  prop: 'type', type: 'select', options: 'types', default: 'String', placeholder: '参数类型',
+  // 标题名称与开始节点的自定义参数同一口径：只用于展示，为空时展示参数名
+  prop: 'label', label: '标题名称', icon: 'Memo', placeholder: '展示名称（选填），为空时展示参数名', default: '',
 }, {
-  prop: 'description', label: '参数说明', placeholder: '参数含义，指导模型提取', default: '',
+  prop: 'type', type: 'select', options: 'types', icon: 'Grid', default: 'String', placeholder: '参数类型',
+}, {
+  prop: 'description', label: '参数说明', icon: 'InfoFilled', placeholder: '参数含义，指导模型提取', default: '',
 }, {
   prop: 'required', type: 'switch', label: '是否必填', default: false,
 }])

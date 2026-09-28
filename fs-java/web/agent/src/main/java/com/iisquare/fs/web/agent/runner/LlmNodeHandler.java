@@ -159,7 +159,9 @@ public class LlmNodeHandler implements AgenticNodeHandler {
         ObjectNode value = DPUtil.objectNode();
         value.put("text", choice.at("/message/content").asText(""));
         value.put("reasoning", choice.at("/message/reasoning_content").asText(""));
-        value.set("usage", result.at("/usage"));
+        // 网关未返回 usage（或字段缺失）时补一个空对象，避免把 MissingNode 写进输出与步骤日志
+        JsonNode usage = result.at("/usage");
+        value.set("usage", null == usage || usage.isNull() || usage.isMissingNode() ? DPUtil.objectNode() : usage);
         value.set("calls", calls);
         value.set("rounds", rounds);
         // 便于核对多轮上下文：用过工具时把最后一轮请求的消息链（system/user/assistant/tool）一并记录

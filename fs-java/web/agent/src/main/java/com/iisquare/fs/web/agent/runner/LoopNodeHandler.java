@@ -99,8 +99,10 @@ public class LoopNodeHandler implements AgenticNodeHandler {
             String reference = item.at("/variable").asText("");
             Object value = ctx.scoped(scopeId, reference);
             if (null == value) value = ctx.value(reference);
-            boolean current = ctx.compareWith(DPUtil.parseString(value),
-                    item.at("/operator").asText("eq"), item.at("/value").asText(""));
+            // 取值可能是输出 JsonNode，文本节点用 String.valueOf 会带上一对引号，必须按标量文本比较；
+            // 比较值与条件分支同一口径：支持变量引用（整串是变量取该变量取值，否则按文本解析占位符）
+            boolean current = ctx.compareWith(ctx.runtime().scalar(value),
+                    item.at("/operator").asText("eq"), ctx.text(item.at("/value").asText("")));
             if (any && current) return true;
             if (!any && !current) return false;
         }

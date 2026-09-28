@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.agent.core.AgenticRuntime;
+import com.iisquare.fs.web.agent.tool.FileFetcher;
 import com.iisquare.fs.web.core.rpc.FileRpc;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -13,6 +14,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.config.RequestConfig;
@@ -263,6 +265,14 @@ public class AgenticRuntime {
 
     public ArrayNode steps() {
         return stepsThread.get();
+    }
+
+    /**
+     * 替换当前线程的步骤日志：
+     * 嵌套运行（编排工具）要挂起外层的步骤、并让并行迭代的子线程共用同一份日志
+     */
+    public void steps(ArrayNode steps) {
+        stepsThread.set(null == steps ? DPUtil.arrayNode() : steps);
     }
 
     /** 记录当前节点解析后的实际入参（写步骤日志用） */
@@ -547,7 +557,9 @@ public class AgenticRuntime {
 
     public Object field(Object item, String path) {
         if (DPUtil.empty(path)) return "";
-        JsonNode node = "string" == DPUtil.parseString(item).getClass().getSimpleName() ? null : DPUtil.toJSON(item);
+        // 字符串等标量元素没有字段可取（字符串数组直接比较元素本身，见列表操作节点的 itemValue）
+        if (item instanceof CharSequence) return "";
+        JsonNode node = DPUtil.toJSON(item);
         if (null == node) return "";
         for (String key : DPUtil.parseString(path).split("\\.")) {
             if (null == node) return "";
@@ -576,7 +588,13 @@ public class AgenticRuntime {
             case "notContains": return !left.contains(right);
             case "startsWith": return left.startsWith(right);
             case "endsWith": return left.endsWith(right);
-            case "regex": return left.matches(right);
+            // 正则写错时给出明确原因，而不是把 PatternSyntaxException 原文抛给使用方
+            case "regex":
+                try {
+                    return left.matches(right);
+                } catch (PatternSyntaxException e) {
+                    throw new IllegalStateException("正则表达式无效：" + right);
+                }
             case "gt": return DPUtil.parseDouble(left) > DPUtil.parseDouble(right);
             case "gte": return DPUtil.parseDouble(left) >= DPUtil.parseDouble(right);
             case "lt": return DPUtil.parseDouble(left) < DPUtil.parseDouble(right);
@@ -694,7 +712,7 @@ public class AgenticRuntime {
                 String filename = DPUtil.parseString(info.get("name"));
                 if ("image".equals(type)) {
                     parts.addObject().put("type", "image_url")
-                            .putObject("image_url").put("url", dataUrl(id, DPUtil.parseString(info.get("type"))));
+                            .putObject("image_url").put("url", dataUrl(id, filename, DPUtil.parseString(info.get("type"))));
                     continue;
                 }
                 ObjectNode part = parts.addObject();
@@ -706,9 +724,10 @@ public class AgenticRuntime {
         return parts;
     }
 
-    public String dataUrl(String fileId, String contentType) {
+    public String dataUrl(String fileId, String filename, String contentType) {
         try {
-            byte[] bytes = fileRpc.get("/file/download", DPUtil.buildMap("id", fileId)).body().asInputStream().readAllBytes();
+            String url = FileFetcher.url(fileRpc, fileId, filename);
+            byte[] bytes = FileFetcher.bytes(url, filename);
             String type = DPUtil.empty(contentType) ? "image/png" : contentType;
             return "data:" + type + ";base64," + Base64.getEncoder().encodeToString(bytes);
         } catch (Exception e) {

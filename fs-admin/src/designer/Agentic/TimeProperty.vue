@@ -21,7 +21,8 @@ const operation = computed(() => model.value.data.operation)
 const noInputOperations = ['current', 'now2timestamp']
 // 时间内容既可直接填写，也可引用上游变量
 const needInput = computed(() => noInputOperations.indexOf(operation.value) < 0)
-const needFormat = computed(() => ['timestamp2time', 'format', 'timezone', 'add', 'weekday'].indexOf(operation.value) >= 0)
+// 获取当前时间同样支持自定义输出格式（后端按格式标记渲染当前时间）
+const needFormat = computed(() => ['current', 'timestamp2time', 'format', 'timezone', 'add', 'weekday'].indexOf(operation.value) >= 0)
 const needTimezone = computed(() => ['current', 'now2timestamp', 'timestamp2time', 'time2timestamp', 'format', 'add', 'weekday'].indexOf(operation.value) >= 0)
 const needAmount = computed(() => 'add' === operation.value)
 </script>
@@ -64,7 +65,10 @@ const needAmount = computed(() => 'add' === operation.value)
             </el-form-item>
           </template>
           <el-form-item label="输出格式" v-if="needFormat">
-            <el-input v-model="model.data.format" placeholder="如 YYYY-MM-DD HH:mm:ss" />
+            <el-input v-model="model.data.format" placeholder="如 yyyy-MM-dd HH:mm:ss" />
+          </el-form-item>
+          <el-form-item label="" v-if="needFormat">
+            <tip-text text="格式标记按 java.time 标准写法：yyyy 年、MM 月、dd 日、HH 时（24 小时制）、mm 分、ss 秒" />
           </el-form-item>
           <el-form-item label="目标时区" v-if="'timezone' === operation">
             <el-select v-model="model.data.targetTimezone" filterable allow-create default-first-option placeholder="请选择目标时区">

@@ -210,12 +210,23 @@ const applyDetail = (data: any) => {
 }
 
 /**
+ * 保存后把编排标识写回路由 - 新建流程首次保存时后端才生成 id，
+ * 不同步到地址栏的话刷新（或分享链接）会被当成新建，重新又得到一个空编排
+ */
+const syncRouteId = () => {
+  const id = diagram.value.id
+  if (!id || String(route.query.id ?? '') === String(id)) return
+  router.replace({ query: Object.assign({}, route.query, { id }) })
+}
+
+/**
  * 保存草稿：保存后的内容仅用于调试运行，对外提供的内容以发布版本为准
  */
 const save = () => {
   loading.value = true
   return AgenticApi.save(params(), { success: true }).then((result: any) => {
     applyDetail(ApiUtil.data(result))
+    syncRouteId()
     return true
   }).catch(() => false).finally(() => {
     loading.value = false
@@ -527,6 +538,63 @@ const markEdge = (flow: any, cell: any, state: string) => {
   cell.attr('line/targetMarker/fill', color)
 }
 
+/** 连线还原：恢复首次着色前记录的描边（与 clearRunState 同一口径，供单条连线使用） */
+const restoreEdge = (cell: any) => {
+  if (!edgeStrokes.has(cell.id)) return
+  const stroke = edgeStrokes.get(cell.id)
+  if (undefined === stroke || null === stroke) cell.removeAttrByPath?.('line/stroke')
+  else cell.attr('line/stroke', stroke)
+  cell.removeAttrByPath?.('line/targetMarker/fill')
+  edgeStrokes.delete(cell.id)
+}
+
+/** 已按命中分支着色的分支节点：其出边不再按「上一步 → 当前步」推断，避免未命中的分支被连带着色 */
+const branchPainted = new Set<string>()
+
+/**
+ * 分支节点着色：命中分支由后端随步骤下发（条件分支 case-{标识}、默认分支 default、问题分类器 class-{标识}），
+ * 与连线起点锚点同一口径，据此只给命中的那条连线着色，其余分支恢复原描边。
+ * 老数据的锚点与连线对不上时退回按分支名称匹配；仍定位不到（锚点标识已丢失）就给该节点的
+ * 分支连线一起着色，至少能看出这一层分支的走向，不会出现命中了却一条都不亮的情况
+ */
+const markBranch = (flow: any, cell: any, branch: string, state: string) => {
+  if (!branch) return
+  const edges: any[] = (flow?.graph?.getEdges?.() ?? []).filter((edge: any) => cell.id === edge.getSourceCellId?.())
+  if (!edges.length) return
+  // 锚点标识：终端里存的是标识本身，个别数据可能存的是锚点对象，两种都归一成标识
+  const portId = (edge: any) => {
+    const port: any = edge.getSourcePortId?.()
+    return port && 'object' === typeof port ? String(port.id ?? '') : String(port ?? '')
+  }
+  let hit = edges.filter((edge: any) => branch === portId(edge))
+  // 兜底一：按分支名称匹配（分支名会同步成连线名称，如 否则（默认））
+  if (!hit.length) {
+    const rows: any[] = SwitchLayout.rows(cell.getData?.() ?? {})
+    const name = String(rows.find((row: any) => row.id === branch)?.name ?? '')
+    if (name) hit = edges.filter((edge: any) => name === String(edge.getData?.()?.name ?? ''))
+  }
+  // 兜底二：无法确定命中分支时按用户口径把该节点的分支连线一起着色
+  if (!hit.length) {
+    // 留一条排查线索：命中分支与画布锚点都对不上时，把两侧的标识打出来（正常数据不会走到这里）
+    console.warn('[agentic-branch] 未匹配到命中分支的连线，按该节点的全部分支着色', {
+      branch, ports: edges.map(portId),
+    })
+    hit = edges
+  }
+  hit.forEach((edge: any) => markEdge(flow, edge, state))
+  edges.filter((edge: any) => hit.indexOf(edge) < 0).forEach((edge: any) => restoreEdge(edge))
+  branchPainted.add(cell.id)
+  // 命中分支行：卡片里点亮命中的那一行、其余行淡化，默认分支命中时同样点亮
+  const card: any = cellElement(flow, cell)?.querySelector?.('.agent-switch')
+  if (card) {
+    card.classList.add('is-branch-marked')
+    const hits = hit.map(portId)
+    card.querySelectorAll('.row[data-branch]').forEach((row: any) => {
+      row.classList.toggle('is-hit', hits.indexOf(String(row.dataset.branch ?? '')) >= 0)
+    })
+  }
+}
+
 /** 两个节点之间的连线（含分支、容器内的连线） */
 const edgesBetween = (flow: any, sourceId: string, targetId: string) => {
   return (flow?.graph?.getEdges?.() ?? []).filter((edge: any) => {
@@ -534,27 +602,34 @@ const edgesBetween = (flow: any, sourceId: string, targetId: string) => {
   })
 }
 
+/** 相邻节点之间的连线着色：出边已按命中分支着色的分支节点不再重复推断 */
+const markEdgesBetween = (flow: any, sourceId: string, targetId: string, state: string) => {
+  edgesBetween(flow, sourceId, targetId).forEach((edge: any) => {
+    if (branchPainted.has(edge.getSourceCellId?.())) return
+    markEdge(flow, edge, state)
+  })
+}
+
 /** 清空画布运行态：节点去掉状态类，连线恢复原描边 */
 const clearRunState = () => {
   const flow: any = flowRef.value?.flow
   if (!flow?.graph) return
+  branchPainted.clear()
   flow.graph.getCells?.().forEach((cell: any) => {
-    cellElement(flow, cell)?.classList.remove(...RUN_NODE_CLASSES)
+    const element: HTMLElement | null = cellElement(flow, cell)
+    element?.classList.remove(...RUN_NODE_CLASSES)
+    // 分支卡片的命中分支标记一并还原（命中行加粗、未命中行淡化）
+    element?.querySelectorAll?.('.agent-switch.is-branch-marked').forEach((card: any) => {
+      card.classList.remove('is-branch-marked')
+      card.querySelectorAll('.row.is-hit').forEach((row: any) => row.classList.remove('is-hit'))
+    })
     if (nodeFills.has(cell.id)) {
       const fill = nodeFills.get(cell.id)
       if (undefined === fill || null === fill) cell.removeAttrByPath?.('body/fill')
       else cell.attr('body/fill', fill)
       nodeFills.delete(cell.id)
     }
-    if (!edgeStrokes.has(cell.id)) return
-    const stroke = edgeStrokes.get(cell.id)
-    if (undefined === stroke || null === stroke) {
-      cell.removeAttrByPath?.('line/stroke')
-    } else {
-      cell.attr('line/stroke', stroke)
-    }
-    cell.removeAttrByPath?.('line/targetMarker/fill')
-    edgeStrokes.delete(cell.id)
+    restoreEdge(cell)
   })
 }
 
@@ -572,13 +647,15 @@ const markRunStep = (step: any) => {
   if (!cell) return
   liveStepCount++
   if ('running' === step.state) {
-    if (livePreviousId) edgesBetween(flow, livePreviousId, step.id).forEach((edge: any) => markEdge(flow, edge, 'running'))
+    if (livePreviousId) markEdgesBetween(flow, livePreviousId, step.id, 'running')
     markNode(flow, cell, 'running')
     return
   }
   const state = 2 === step.status ? 'failed' : 'success'
   markNode(flow, cell, state)
-  if (livePreviousId) edgesBetween(flow, livePreviousId, step.id).forEach((edge: any) => markEdge(flow, edge, state))
+  if (livePreviousId) markEdgesBetween(flow, livePreviousId, step.id, state)
+  // 分支节点：命中分支的输出连线（默认分支同样着色）在这一步结尾定型
+  markBranch(flow, cell, String(step.branch ?? ''), state)
   livePreviousId = step.id
 }
 /** 开始新一轮运行：清掉上一轮着色与实时进度计数 */
@@ -608,7 +685,7 @@ const playSteps = async (steps: any[], failed = '') => {
     const cell: any = flow.graph.getCellById?.(step.id)
     if (!cell) continue
     // 连线先按执行中着色，随后与该节点的结果一起定型
-    if (previous) edgesBetween(flow, previous.id, cell.id).forEach((edge: any) => markEdge(flow, edge, 'running'))
+    if (previous) markEdgesBetween(flow, previous.id, cell.id, 'running')
     markNode(flow, cell, 'running')
     cell.select?.()
     // 必须用 cell2meta 的普通对象：activeItem 变化会触发 updateCell(cell)，
@@ -619,7 +696,9 @@ const playSteps = async (steps: any[], failed = '') => {
     if (token !== playToken) return
     const state = 2 === step.status ? 'failed' : 'success'
     markNode(flow, cell, state)
-    if (previous) edgesBetween(flow, previous.id, cell.id).forEach((edge: any) => markEdge(flow, edge, state))
+    if (previous) markEdgesBetween(flow, previous.id, cell.id, state)
+    // 分支节点：命中分支的输出连线（默认分支同样着色）与节点结果一起定型
+    markBranch(flow, cell, String(step.branch ?? ''), state)
     previous = cell
   }
   const target: any = failed ? flow.graph.getCellById?.(failed) : null

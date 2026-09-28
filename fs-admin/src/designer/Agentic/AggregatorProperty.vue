@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * 变量聚合器节点属性 - 把多路分支的变量按分组聚合，分组名称即输出变量名，供下游统一引用。
+ * 变量聚合器节点属性 - 把多路分支的变量按分组聚合，分组名称即输出变量名（标题名称仅用于展示），供下游统一引用。
  * 分组先定输出类型，组内只能选同类型的变量，保证聚合结果类型一致。
  */
 import { ref, watch } from 'vue'
-import { Delete, Plus } from '@element-plus/icons-vue'
+import { Close, Delete, Plus } from '@element-plus/icons-vue'
 import DesignUtil from '@/utils/DesignUtil'
 import LayoutIcon from '@/components/Layout/LayoutIcon.vue'
 import NodeSlice from './NodeSlice.vue'
@@ -33,6 +33,7 @@ watch(model, (value: any) => {
   value.data.groups.forEach((group: any) => {
     if (!group) return
     if (undefined === group.outputType) group.outputType = 'String'
+    if (undefined === group.label) group.label = ''
     if (!Array.isArray(group.variables)) group.variables = []
   })
 }, { immediate: true })
@@ -58,6 +59,8 @@ const handleAddGroup = () => {
   model.value.data.groups.push({
     id: DesignUtil.uuid(),
     name: 'output',
+    // 标题名称仅用于展示，为空时展示输出变量名
+    label: '聚合结果',
     outputType: 'String',
     variables: defaultVariables(),
   })
@@ -104,7 +107,7 @@ const handleTypeChange = (group: any) => {
               :key="item.id"
               v-for="(item, index) in model.data.groups as any[]"
               class="group">
-              <!-- 第一行：输出变量名 + 输出类型 + 删除分组；下面紧跟这个分组的变量清单 -->
+              <!-- 标题行：输出变量名 + 输出类型 + 删除分组（整组删除用垃圾桶，与移除变量的叉号区分） -->
               <div class="group-head">
                 <el-input v-model="item.name" placeholder="输出变量名">
                   <template #prefix><LayoutIcon name="PriceTag" /></template>
@@ -115,6 +118,12 @@ const handleTypeChange = (group: any) => {
                 </el-select>
                 <el-icon class="delete" title="删除该分组" @click="handleRemoveGroup(index)"><Delete /></el-icon>
               </div>
+              <!-- 标题名称独立一行：右侧让出与移除变量图标等宽的位置，与下面的变量选择器右边界对齐 -->
+              <div class="group-title">
+                <el-input v-model="item.label" placeholder="标题名称（选填），为空时展示输出变量名">
+                  <template #prefix><LayoutIcon name="Memo" /></template>
+                </el-input>
+              </div>
               <div class="variable-row" :key="vi" v-for="(variable, vi) in (item.variables ?? []) as any[]">
                 <VariableSelect
                   v-model="variable.variable"
@@ -123,12 +132,13 @@ const handleTypeChange = (group: any) => {
                   :types="item.outputType"
                   icon="Aim"
                   :placeholder="variablePlaceholder(item)" />
-                <el-icon class="delete" title="删除该变量" @click="handleRemoveVariable(item, vi)"><Delete /></el-icon>
+                <!-- 与「删除分组」区分开：整组删除用垃圾桶，移除一行变量用叉号 -->
+                <el-icon class="delete" title="移除该变量" @click="handleRemoveVariable(item, vi)"><Close /></el-icon>
               </div>
               <el-button link type="primary" :icon="Plus" @click="handleAddVariable(item)">添加变量</el-button>
             </div>
             <el-button class="group-add" link type="primary" :icon="Plus" @click="handleAddGroup">添加分组</el-button>
-            <tip-text text="每个分组按变量清单顺序聚合成一个变量，变量名取分组名称，各路分支只需各自连线到本节点" />
+            <tip-text text="每个分组按变量清单顺序聚合成一个变量，变量名取分组名称（标题名称仅用于展示），各路分支只需各自连线到本节点" />
           </div>
         </SectionSlice>
         <OutputSlice :data="model.data" />
@@ -139,7 +149,7 @@ const handleTypeChange = (group: any) => {
 
 <style lang="scss" scoped>
 /**
- * 分组卡片：第一行是「输出变量名 + 输出类型 + 删除分组」，下面跟着这个分组的变量清单，
+ * 分组卡片：第一行是「输出变量名 + 输出类型 + 删除分组」，下面依次是标题名称与这个分组的变量清单，
  * 用缩进与卡片底色表达从属关系；变量选择器只列与分组类型一致的变量
  */
 .group-slice {
@@ -169,6 +179,21 @@ const handleTypeChange = (group: any) => {
         margin-left: auto;
       }
     }
+    .group-title {
+      @include flex-start();
+      gap: 6px;
+      margin-top: 6px;
+      .el-input {
+        flex: 1;
+        min-width: 0;
+      }
+      /* 与移除变量的图标等宽，标题名称的右边界因此和下面的变量选择器对齐 */
+      &::after {
+        content: '';
+        flex: none;
+        width: 16px;
+      }
+    }
     .variable-row {
       @include flex-start();
       gap: 6px;
@@ -180,6 +205,10 @@ const handleTypeChange = (group: any) => {
     }
     .delete {
       flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
       color: var(--el-text-color-placeholder);
       cursor: pointer;
       &:hover {

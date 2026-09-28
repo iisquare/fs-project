@@ -2,6 +2,8 @@
 dependencies {
     implementation project(':web:core')
     implementation project(':base:jpa')
+    // 流程统计与 lm 用量统计同一套做法：MyBatis 取明细列，聚合在服务层内存里做
+    implementation project(':base:mybatis')
     implementation project(':base:elasticsearch')
     implementation group: 'org.springframework.ai', name: 'spring-ai-starter-mcp-server-webmvc', version: '1.1.8'
     implementation group: 'io.swagger.parser.v3', name: 'swagger-parser', version: '2.1.22'

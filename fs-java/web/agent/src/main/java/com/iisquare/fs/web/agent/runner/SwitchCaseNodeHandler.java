@@ -69,7 +69,8 @@ public class SwitchCaseNodeHandler implements AgenticNodeHandler {
         String matched = null;
         for (JsonNode item : data.at("/cases")) {
             String logic = item.at("/logic").asText("and");
-            boolean hit = true;
+            // 任一（or）的初值必须是 false，否则第一次迭代就恒为真；全部（and）的初值为 true（0 条条件视为命中）
+            boolean hit = !"or".equals(logic);
             for (JsonNode condition : item.at("/conditions")) {
                 boolean current = match(ctx, condition);
                 hit = "or".equals(logic) ? (hit || current) : (hit && current);
@@ -87,8 +88,9 @@ public class SwitchCaseNodeHandler implements AgenticNodeHandler {
     protected boolean match(AgenticNodeContext ctx, JsonNode condition) {
         String operator = condition.at("/operator").asText("eq");
         Object value = ctx.value(condition.at("/variable").asText(""));
-        // 比较规则与列表过滤、循环终止条件共用 compareWith
-        return ctx.compareWith(DPUtil.parseString(value), operator, ctx.text(condition.at("/value").asText("")));
+        // 比较规则与列表过滤、循环终止条件共用 compareWith；
+        // 取值可能是节点的输出 JsonNode，文本节点用 String.valueOf 会带上一对引号，必须按标量文本比较
+        return ctx.compareWith(ctx.runtime().scalar(value), operator, ctx.text(condition.at("/value").asText("")));
     }
 
 }
