@@ -31,7 +31,7 @@ const handleScope = (value: string) => {
         <span>记忆范围</span>
         <LayoutHelp text="完整对话：带上一轮的用户提问与助手回复（多轮对话需要）；仅用户提问：只带上一轮的用户提问，适合分类器、参数提取器、输出图表这类只关心问题的节点" />
       </template>
-      <el-select :model-value="scope" @change="handleScope">
+      <el-select :model-value="scope" class="memory-scope" @change="handleScope">
         <el-option label="完整对话" value="conversation" />
         <el-option label="仅用户提问" value="user" />
       </el-select>
@@ -50,4 +50,12 @@ const handleScope = (value: string) => {
 </template>
 
 <style lang="scss" scoped>
+/**
+ * 记忆范围下拉框：行内布局的取值区按内容收缩，下拉框默认的 100% 宽在这种收缩容器里
+ * 会被压到只剩后缀箭头（选中项文字看不见），因此显式给宽度；
+ * 与下方「记忆窗口大小」的数值框同宽，两条取值右边缘对齐。
+ */
+.memory-scope {
+  width: 150px;
+}
 </style>

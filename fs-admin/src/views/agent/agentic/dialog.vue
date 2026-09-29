@@ -137,8 +137,9 @@ const handleDeleteChat = (item: any) => {
  */
 const handleSend = () => {
   const text = String(message.value ?? '').trim()
-  // 允许只发附件：有文件没有文字时同样提交（query 传空）
-  if (!text && !runFiles.value.length) return
+  // 允许只发附件：有文件没有文字时同样提交（query 传空）；
+  // 开始节点关闭「用户输入」时没有可填的内容，直接发送（只带参数运行）
+  if (queryInput.value && !text && !runFiles.value.length) return
   if (!agenticId.value) {
     ElMessage.warning('请先选择要对话的流程')
     return
@@ -148,12 +149,16 @@ const handleSend = () => {
     ElMessage.warning(`请填写必填参数：${missingText.value}`)
     return
   }
-  const files = runFiles.value.slice()
+  // 关闭文件列表后不再提交附件（切换开关前已选的附件也不带上）
+  const files = filesInput.value ? runFiles.value.slice() : []
   message.value = ''
   runFiles.value = []
   // 续写位置：会话当前分支尾（没有分支时就是最后一条消息）
   sendRound({ text, files, parentId: branch.activeLeaf.value })
 }
+
+/** 发送按钮可用性：关闭用户输入时可直接发送，否则至少要有文字或附件 */
+const canSend = computed(() => !queryInput.value || !!String(message.value ?? '').trim() || runFiles.value.length > 0)
 
 /**
  * 起一轮对话：普通提问落「用户气泡 + 回复气泡」，重新生成（reuseQuestion）只落回复气泡。
@@ -174,7 +179,9 @@ const sendRound = (options: any) => {
   let question: any = null
   if (!reuseQuestion) {
     // 先补一条提问，避免等待期间看不到自己发的内容
-    question = { role: 'user', content: text || `（上传了 ${files.length} 个文件）`, createdTime: Date.now(), notice: null, parentId }
+    // 没有用户输入也没有附件时（开始节点关闭了固定输入）只说明「按参数运行」
+    const content = text || (files.length ? `（上传了 ${files.length} 个文件）` : '（按参数运行）')
+    question = { role: 'user', content, createdTime: Date.now(), notice: null, parentId }
     if (files.length) question.files = files
     list.push(question)
   }
@@ -210,8 +217,13 @@ const sendRound = (options: any) => {
     // 分支位置：新消息接在 parentId 之后；reuseQuestion 表示这是重新生成
     parentId,
     reuseQuestion,
-    // 自定义参数随每轮入参一起提交：固定输入为 query / files，其余来自参数表单
-    inputs: { query: text, files, ...paramInputs() },
+    // 固定输入按开始节点的启用情况提交：关闭的输入不入参（与调试运行同一口径），
+    // 自定义参数随每轮入参一起提交
+    inputs: {
+      ...paramInputs(),
+      ...(queryInput.value ? { query: text } : {}),
+      ...(filesInput.value ? { files } : {}),
+    },
   })
 }
 
@@ -470,12 +482,16 @@ const handleChangeAgentic = () => {
 }
 
 /**
- * 新建会话的自定义参数：清单取自开始节点配置（与调试运行的「参数配置」同一份口径），
- * 固定输入 query / files 由底部输入区承载，这里只取自定义参数
+ * 开始节点的输入清单：清单取自开始节点配置（与调试运行的「参数配置」同一份口径）。
+ * 固定输入 query / files 由底部输入区承载，只在开始节点启用时展示；
+ * 自定义参数进新建会话的参数表单（startParams），固定输入关闭后输入区同样收起。
  */
 const startParams = ref<any[]>([])
 const paramValues = ref<Record<string, any>>({})
-const paramCache = ref<Record<string, any[]>>({})
+const paramCache = ref<Record<string, any>>({})
+/** 固定输入：为空表示开始节点关闭了该项，底部输入区不展示对应入口 */
+const queryInput = ref<any>(null)
+const filesInput = ref<any>(null)
 
 /** 参数默认值：布尔取假值，数值留空，其余按文本（与调试运行一致） */
 const paramDefault = (type: string) => {
@@ -504,30 +520,53 @@ const paramInputs = () => {
   return inputs
 }
 
-/** 应用开始节点配置：过滤掉固定输入（query/files），并初始化表单取值 */
-const applyStartParams = (start: any) => {
-  const id = String(agenticId.value ?? '')
-  startParams.value = AgenticUtil.startInputs(start)
-    .filter((item: any) => 'query' !== item.name && 'Array<File>' !== item.type)
-  paramCache.value[id] = startParams.value
+/** 开始节点的输入清单：拆出固定输入（query / files）与自定义参数 */
+const startConfigOf = (start: any) => {
+  const inputs = AgenticUtil.startInputs(start)
+  return {
+    query: inputs.find((item: any) => 'query' === item.name) ?? null,
+    files: inputs.find((item: any) => 'Array<File>' === item.type) ?? null,
+    params: inputs.filter((item: any) => 'query' !== item.name && 'Array<File>' !== item.type),
+  }
+}
+
+/**
+ * 把开始节点配置搬到当前会话：固定输入决定底部输入区展示，其余作为新建会话的参数表单。
+ * 配置缺失（未选中流程、流程详情接口异常等）时按空开始节点的默认口径（固定输入都启用）处理，
+ * 不把输入区整块收起。
+ */
+const applyStartConfig = (config: any) => {
+  const item = config ?? startConfigOf({})
+  queryInput.value = item.query ?? null
+  filesInput.value = item.files ?? null
+  startParams.value = item.params ?? []
+  // 关闭文件列表后：已选附件不再回显，也不会随入参提交
+  if (!filesInput.value) runFiles.value = []
   // 表单取值：切换流程后按新参数重建，同名参数沿用已填写的值
   const values: Record<string, any> = {}
-  startParams.value.forEach((item: any) => {
-    values[item.name] = undefined === paramValues.value[item.name] ? paramDefault(item.type) : paramValues.value[item.name]
+  startParams.value.forEach((param: any) => {
+    values[param.name] = undefined === paramValues.value[param.name] ? paramDefault(param.type) : paramValues.value[param.name]
   })
   paramValues.value = values
+}
+
+/** 应用开始节点配置：解析该流程的输入清单并缓存 */
+const applyStartParams = (start: any) => {
+  const id = String(agenticId.value ?? '')
+  paramCache.value[id] = startConfigOf(start)
+  applyStartConfig(paramCache.value[id])
 }
 
 /** 读取所选流程的参数清单：已发布配置优先，按流程缓存，切换流程时才重新拉取 */
 const loadStartParams = () => {
   const id = String(agenticId.value ?? '')
   if (!id) {
-    startParams.value = []
+    applyStartConfig(null)
     return
   }
   const cached = paramCache.value[id]
   if (cached) {
-    startParams.value = cached
+    applyStartConfig(cached)
     return
   }
   /**
@@ -545,7 +584,7 @@ const loadStartParams = () => {
     const start: any = cells.find((cell: any) => 'Start' === cell?.data?.type)?.data ?? {}
     applyStartParams(start)
   }).catch(() => {
-    startParams.value = []
+    applyStartConfig(null)
   })
 }
 
@@ -691,7 +730,12 @@ onBeforeUnmount(() => {
               @open="loadSteps(item)" />
           </template>
         </ChatMessage>
-            <el-empty class="dialog-empty" description="还没有对话，输入内容开始吧" :image-size="80" v-if="!messages.length && !sending" />
+            <!-- 空状态：关闭用户输入时没有可填内容，文案改为直接发送 -->
+            <el-empty
+              class="dialog-empty"
+              :description="queryInput ? '还没有对话，输入内容开始吧' : '还没有对话，点击发送开始运行'"
+              :image-size="80"
+              v-if="!messages.length && !sending" />
           </div>
         <!-- 电梯导航：按用户消息生成右侧横条，点击定位到对应气泡（组件见 components/Chat） -->
         <ChatElevator
@@ -731,7 +775,8 @@ onBeforeUnmount(() => {
               </el-form-item>
             </el-form>
           </div>
-          <!-- 与调试面板一致：一个圆角输入框，内部上为文本区、下为按钮行 -->
+          <!-- 与调试面板一致：一个圆角输入框，内部上为文本区、下为按钮行；
+               开始节点关闭「用户输入」时不展示文本区，关闭「文件列表」时不展示上传入口 -->
           <div class="composer-box">
             <!-- 第 1 行：附件回显（没有附件时整行不占位） -->
             <div class="composer-files" v-if="runFiles.length">
@@ -746,6 +791,7 @@ onBeforeUnmount(() => {
                 closable>{{ file.name || file.id }}</el-tag>
             </div>
             <el-input
+              v-if="queryInput"
               class="composer-input"
               v-model="message"
               type="textarea"
@@ -755,12 +801,12 @@ onBeforeUnmount(() => {
               @keydown.enter="handleComposerSend" />
             <div class="composer-tools">
               <div class="composer-tools-main">
-                <el-upload :show-file-list="false" :before-upload="handleUpload">
+                <el-upload v-if="filesInput" :show-file-list="false" :before-upload="handleUpload">
                   <el-tooltip content="上传文件" placement="top">
                     <el-button class="composer-attach" link :icon="Paperclip" :loading="uploading" />
                   </el-tooltip>
                 </el-upload>
-                <span class="composer-tips">Enter 发送，Shift + Enter 换行</span>
+                <span class="composer-tips">{{ queryInput ? 'Enter 发送，Shift + Enter 换行' : '开始节点未启用用户输入，可直接发送' }}</span>
               </div>
               <div class="composer-tools-end">
                 <el-button
@@ -770,7 +816,7 @@ onBeforeUnmount(() => {
                   :icon="Promotion"
                   title="发送"
                   :loading="sending"
-                  :disabled="!String(message ?? '').trim() && !runFiles.length"
+                  :disabled="!canSend"
                   @click="handleSend" />
               </div>
             </div>
@@ -1229,6 +1275,10 @@ $dialog-row-max: $dialog-max + $dialog-inset * 2;  /* 860px：消息行总宽 */
       @include flex-between();
       gap: 8px;
       margin-top: 4px;
+      /* 文本区不展示时（开始节点关闭用户输入）工具行成为首行：与盒子内边距对齐，不再多留一段间距 */
+      &:first-child {
+        margin-top: 0;
+      }
       .composer-tools-main {
         @include flex-start();
         min-width: 0;

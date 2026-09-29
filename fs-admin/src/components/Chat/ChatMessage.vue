@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
  * 消息气泡 - 对话三页（流程对话 / 对话历史详情 / 模型对话）共用的一行消息：
- * 头像 + 气泡（思考过程、正文与图表、空回复占位、输出状态、工具条）+ 气泡外的异常图标。
+ * 头像 + 气泡（思考过程、正文与图表、空回复占位、输出状态、工具条）+ 气泡外的异常图标
+ * （助手回复的图标排在气泡右侧，用户请求级异常的图标与气泡同排、随气泡垂直居中）。
  *
  * 页面差异走插槽：`#steps`（执行过程：时间线 / 执行明细）、`#extra`（页面自有的补充内容，如模型的原始输出）；
  * 视觉差异走页面覆盖：气泡尺寸与配色、头像尺寸等由页面用 `:deep()` 覆盖，组件这里只给统一底座。
@@ -132,78 +133,83 @@ const streamingText = computed(() => {
       <el-avatar class="chat-avatar" v-if="avatar" :icon="isUser ? UserFilled : MagicStick" />
       <!-- 消息主体：助手直接是气泡（display:contents 不改变原有布局）；用户是「气泡 + 气泡外操作条」的列容器 -->
       <div class="chat-main">
-        <div class="chat-bubble">
-          <!-- 执行过程（页面自定义）：流程对话的时间线置顶，其它页的执行明细按各自位置传入 -->
-          <slot name="steps" />
-          <!-- 思考过程：流式时直接展示，输出完成后收进折叠面板（与调试面板一致） -->
-          <div class="chat-reasoning-text" v-if="isAssistant && item.reasoning && isStreaming">{{ item.reasoning }}</div>
-          <el-collapse class="chat-reasoning" v-else-if="isAssistant && item.reasoning">
-            <el-collapse-item title="思考过程">
-              <div class="chat-reasoning-text">{{ item.reasoning }}</div>
-            </el-collapse-item>
-          </el-collapse>
-          <!-- 用户提问保持原文 -->
-          <div class="chat-content" v-if="isUser && !editing" data-chat-text>{{ item.content }}</div>
-          <!-- 编辑提问：改完重新发送会在同一处新起一条分支（原提问与原回复都保留） -->
-          <div class="chat-edit" v-if="isUser && editing">
-            <el-input
-              ref="editRef"
-              v-model="draft"
-              type="textarea"
-              :autosize="{ minRows: 1, maxRows: 8 }"
-              resize="none"
-              @keydown.enter="handleEditEnter" />
-            <div class="chat-edit-tools">
-              <el-button link size="small" @click="cancelEdit">取消</el-button>
-              <el-button type="primary" size="small" :disabled="!String(draft ?? '').trim()" @click="submitEdit">重新发送</el-button>
+        <!-- 气泡行：用户消息把「请求级异常」图标放进气泡这一排，图标才能随气泡垂直居中 -->
+        <div class="chat-bubble-row">
+          <!-- 请求级异常（必填缺失等）：排在气泡前，视觉在气泡左侧 -->
+          <ChatNotice v-if="isUser" :notice="item.notice" />
+          <div class="chat-bubble">
+            <!-- 执行过程（页面自定义）：流程对话的时间线置顶，其它页的执行明细按各自位置传入 -->
+            <slot name="steps" />
+            <!-- 思考过程：流式时直接展示，输出完成后收进折叠面板（与调试面板一致） -->
+            <div class="chat-reasoning-text" v-if="isAssistant && item.reasoning && isStreaming">{{ item.reasoning }}</div>
+            <el-collapse class="chat-reasoning" v-else-if="isAssistant && item.reasoning">
+              <el-collapse-item title="思考过程">
+                <div class="chat-reasoning-text">{{ item.reasoning }}</div>
+              </el-collapse-item>
+            </el-collapse>
+            <!-- 用户提问保持原文 -->
+            <div class="chat-content" v-if="isUser && !editing" data-chat-text>{{ item.content }}</div>
+            <!-- 编辑提问：改完重新发送会在同一处新起一条分支（原提问与原回复都保留） -->
+            <div class="chat-edit" v-if="isUser && editing">
+              <el-input
+                ref="editRef"
+                v-model="draft"
+                type="textarea"
+                :autosize="{ minRows: 1, maxRows: 8 }"
+                resize="none"
+                @keydown.enter="handleEditEnter" />
+              <div class="chat-edit-tools">
+                <el-button link size="small" @click="cancelEdit">取消</el-button>
+                <el-button type="primary" size="small" :disabled="!String(draft ?? '').trim()" @click="submitEdit">重新发送</el-button>
+              </div>
             </div>
-          </div>
-          <!-- 助手回复按 Markdown 渲染
-               （显式判断角色：上面插了用户消息的判断后，这里若继续用 v-else 就会串到那个 v-if 上，
-                非历史页会因此把用户消息再按助手回复渲染一遍） -->
-          <template v-if="isAssistant">
-            <template :key="partIndex" v-for="(part, partIndex) in parts">
-              <MarkdownEditor
-                class="chat-markdown"
-                v-if="'text' === part.type"
-                :model-value="part.text"
-                :resolve-images="resolveImages"
-                readonly />
-              <DataResultChart
-                class="chat-chart"
-                v-else
-                :type="part.chart.type"
-                :title="part.chart.title"
-                :source="part.chart.source"
-                :categories="part.chart.categories"
-                :series="part.chart.series" />
+            <!-- 助手回复按 Markdown 渲染
+                 （显式判断角色：上面插了用户消息的判断后，这里若继续用 v-else 就会串到那个 v-if 上，
+                  非历史页会因此把用户消息再按助手回复渲染一遍） -->
+            <template v-if="isAssistant">
+              <template :key="partIndex" v-for="(part, partIndex) in parts">
+                <MarkdownEditor
+                  class="chat-markdown"
+                  v-if="'text' === part.type"
+                  :model-value="part.text"
+                  :resolve-images="resolveImages"
+                  readonly />
+                <DataResultChart
+                  class="chat-chart"
+                  v-else
+                  :type="part.chart.type"
+                  :title="part.chart.title"
+                  :source="part.chart.source"
+                  :categories="part.chart.categories"
+                  :series="part.chart.series" />
+              </template>
             </template>
-          </template>
-          <!-- 没有正文的异常轮次（如角色授权被撤销）：失败原因直接显示在气泡里，不必点图标才知道原因 -->
-          <div class="chat-notice-text" v-if="isAssistant && item.notice && !item.content && !isStreaming">
-            {{ item.notice.summary }}
+            <!-- 没有正文的异常轮次（如角色授权被撤销）：失败原因直接显示在气泡里，不必点图标才知道原因 -->
+            <div class="chat-notice-text" v-if="isAssistant && item.notice && !item.content && !isStreaming">
+              {{ item.notice.summary }}
+            </div>
+            <!-- 空回复：给出占位，避免只剩一个空气泡 -->
+            <div class="chat-content" v-else-if="empty">（无回复内容）</div>
+            <!-- 流式输出中：内容下方显示输出状态 -->
+            <div class="chat-streaming" v-if="isAssistant && isStreaming">
+              <ChatLoading />
+              <span>{{ streamingText }}</span>
+            </div>
+            <!-- 回复工具条：复制 / 反馈 / 时间（空回复与流式中不展示） -->
+            <ChatToolbar
+              class="chat-toolbar"
+              v-if="isAssistant && !isStreaming && (item.content || parts.length)"
+              :item="item"
+              :disabled="disabled"
+              :feedback="feedback"
+              :regenerable="regenerable"
+              :branch="branch"
+              @submit="(payload: any) => emit('submit', payload)"
+              @regenerate="emit('regenerate')"
+              @switch="(step: number) => emit('switch', step)" />
+            <!-- 页面自有的补充内容 -->
+            <slot name="extra" />
           </div>
-          <!-- 空回复：给出占位，避免只剩一个空气泡 -->
-          <div class="chat-content" v-else-if="empty">（无回复内容）</div>
-          <!-- 流式输出中：内容下方显示输出状态 -->
-          <div class="chat-streaming" v-if="isAssistant && isStreaming">
-            <ChatLoading />
-            <span>{{ streamingText }}</span>
-          </div>
-          <!-- 回复工具条：复制 / 反馈 / 时间（空回复与流式中不展示） -->
-          <ChatToolbar
-            class="chat-toolbar"
-            v-if="isAssistant && !isStreaming && (item.content || parts.length)"
-            :item="item"
-            :disabled="disabled"
-            :feedback="feedback"
-            :regenerable="regenerable"
-            :branch="branch"
-            @submit="(payload: any) => emit('submit', payload)"
-            @regenerate="emit('regenerate')"
-            @switch="(step: number) => emit('switch', step)" />
-          <!-- 页面自有的补充内容 -->
-          <slot name="extra" />
         </div>
         <!-- 用户消息工具条：复制 / 修改 / 切换分支，放在气泡外（气泡下方，右边缘与气泡对齐） -->
         <div class="chat-user-toolbar" v-if="isUser && !editing && !isStreaming">
@@ -222,8 +228,6 @@ const streamingText = computed(() => {
       </div>
       <!-- 节点回复的异常图标：排在回复气泡右侧 -->
       <ChatNotice v-if="!isUser" :notice="item.notice" />
-      <!-- 请求级异常（必填缺失等）：用户消息行方向反转，DOM 在后即视觉在气泡左侧 -->
-      <ChatNotice v-if="isUser" :notice="item.notice" />
     </template>
   </div>
 </template>
@@ -264,6 +268,22 @@ const streamingText = computed(() => {
   flex-direction: column;
   align-items: flex-end;
   flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+/**
+ * 气泡行：默认 display: contents 完全透明，助手消息的布局、页面按 .chat-bubble 覆盖的口径都不变；
+ * 用户消息改成一排弹性布局，把「请求级异常」图标与气泡放进同一排，
+ * 图标因此按 align-items: center 随气泡垂直居中，不再跟着气泡下方的用户操作条一起下沉。
+ */
+.chat-bubble-row {
+  display: contents;
+}
+.chat-message.is-user .chat-bubble-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
   min-width: 0;
   max-width: 100%;
 }

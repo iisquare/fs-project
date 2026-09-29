@@ -99,9 +99,10 @@ const handleDelete = () => {
 const handleDesign = (scope: any) => {
   router.push({ path: '/agent/agentic/model', query: { id: scope.row.id } })
 }
-// 运行日志：按编排标识带上链接参数，日志页打开即筛出该编排的运行记录
+// 运行日志：与其它列表页一致，把筛选条件编码进 filter 参数，
+// 日志页打开即选中该编排并筛出它的运行记录
 const handleLog = (scope: any) => {
-  router.push({ path: '/agent/agentic/log', query: { agenticId: scope.row.id } })
+  router.push({ path: '/agent/agentic/log', query: RouteUtil.filter({ agenticId: scope.row.id }) })
 }
 const modeText = (mode: any) => {
   const item = config.modes.find((item: any) => item.value === mode)
