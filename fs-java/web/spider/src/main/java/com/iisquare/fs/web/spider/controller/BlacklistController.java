@@ -54,8 +54,7 @@ public class BlacklistController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = blacklistService.remove(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(blacklistService.remove(ids));
     }
 
     @RequestMapping("/config")

@@ -114,7 +114,7 @@ public class WhitelistService extends JPAServiceBase {
         return result;
     }
 
-    public boolean remove(List<Integer> ids) {
+    public Map<String, Object> remove(List<Integer> ids) {
         return remove(whitelistDao, ids);
     }
 

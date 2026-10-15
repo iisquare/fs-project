@@ -53,7 +53,7 @@ public class DefaultRbacService extends RbacServiceBase {
      * 根据ID获取用户的个人信息及所属的角色信息
      */
     @Override
-    public JsonNode identity(Integer uid) {
+    public JsonNode identityById(Integer uid) {
         return RpcUtil.data(memberRpc.post("/rbac/identityById", DPUtil.buildMap("id", uid)), false);
     }
 
@@ -64,6 +64,19 @@ public class DefaultRbacService extends RbacServiceBase {
         if (null == uids || uids.isEmpty()) return DPUtil.objectNode();
         JsonNode data = post("infos", DPUtil.buildMap("userIds", uids), true);
         return null == data ? null : data.at("/users");
+    }
+
+    /**
+     * 根据会话令牌（Spring Session 标识）获取用户身份，结构同 identityById(Integer uid)。
+     * 不依赖当前请求携带的会话，供按调用方令牌记账的服务使用（如模型网关的用户代理）；
+     * 令牌为空、会话不存在或已过期、用户不可用时返回 null。
+     */
+    @Override
+    public JsonNode identityByToken(String token) {
+        if (DPUtil.empty(token)) return null;
+        JsonNode data = post("identityByToken", DPUtil.buildMap("token", token), true);
+        if (null == data || data.isNull() || !data.isObject()) return null;
+        return data.isEmpty() ? null : data;
     }
 
     /**

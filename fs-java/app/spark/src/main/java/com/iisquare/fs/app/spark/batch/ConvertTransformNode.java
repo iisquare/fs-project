@@ -2,9 +2,11 @@ package com.iisquare.fs.app.spark.batch;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.app.spark.core.SparkCore;
+import com.iisquare.fs.app.spark.core.SparkTypes;
 import com.iisquare.fs.app.spark.util.SparkUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.DAGCore;
+import com.iisquare.fs.base.dag.core.DAGType;
 import com.iisquare.fs.base.dag.transform.AbstractConvertTransform;
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.Dataset;
@@ -14,10 +16,16 @@ import org.apache.spark.sql.types.*;
 
 import java.util.*;
 
-public class ConvertTransformNode extends AbstractConvertTransform {
+public class ConvertTransformNode extends AbstractConvertTransform<Dataset<Row>> {
+
     @Override
-    public Object process() {
-        Dataset<Row> dataset = SparkUtil.union(Dataset.class, sources);
+    public DAGType<Dataset<Row>> outputType() {
+        return SparkTypes.DATASET;
+    }
+
+    @Override
+    public Dataset<Row> process() {
+        Dataset<Row> dataset = SparkUtil.union(inputs(SparkTypes.DATASET));
         StructType schema = dataset.schema();
         Map<String, StructField> sources = SparkUtil.field(schema); // 源字段类型
         String mode = options.at("/mode").asText(""); // 处理方式
@@ -84,7 +92,7 @@ public class ConvertTransformNode extends AbstractConvertTransform {
                 data.add(row.get(reflect.get(entry.getKey())));
             }
             return SparkUtil.row(data);
-        }, RowEncoder.apply(DataTypes.createStructType(list.toArray(new StructField[0]))));
+        }, RowEncoder.encoderFor(DataTypes.createStructType(list.toArray(new StructField[0]))));
     }
 
 }

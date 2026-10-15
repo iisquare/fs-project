@@ -1,4 +1,5 @@
 import DesignUtil from '@/utils/DesignUtil'
+import SwitchLayout from '@/designer/X6/switch'
 
 const config = {
 }
@@ -29,6 +30,22 @@ const CommandTaskOptions = () => {
 
 const ConditionGatewayOptions = () => {
   return { condition: '' }
+}
+
+/**
+ * 条件分支 - switch/case-default 形式，分支按顺序求值、命中第一个为真的分支，均未命中走默认分支；
+ * 节点高度与输出锚点由分支数量决定（见 /designer/X6/switch.ts），
+ * 未命中分支上的节点在调度时跳过执行，参见后台 SwitchCaseStage 与 FlowLogService。
+ */
+const SwitchOptions = () => {
+  return {
+    defaultName: '否则（默认）',
+    cases: [{
+      id: DesignUtil.uuid(),
+      name: '条件1',
+      condition: '',
+    }],
+  }
 }
 
 export default Object.assign(config, {
@@ -68,6 +85,12 @@ export default Object.assign(config, {
       type: 'ConditionGateway', label: '网关', title: '分支判断', icon: 'flow.gateway'
     }, {
       shape: 'flow-gateway', options: ConditionGatewayOptions, property: () => import('./ConditionGatewayProperty.vue')
+    }), Object.assign({
+      type: 'SwitchCase', label: '条件分支', title: '按条件命中分支，每个分支与默认分支均可连线', icon: 'flow.exclusiveGateway'
+    }, {
+      shape: 'agent-switch', options: SwitchOptions, property: () => import('./SwitchProperty.vue'),
+      size: (data: any) => ({ width: SwitchLayout.width, height: SwitchLayout.height(data) }),
+      ports: (data: any) => SwitchLayout.ports(data),
     })]
   }]),
   toolbars: [{

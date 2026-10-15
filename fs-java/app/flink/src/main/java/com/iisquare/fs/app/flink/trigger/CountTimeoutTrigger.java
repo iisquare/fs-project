@@ -4,14 +4,16 @@ import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.state.ReducingState;
 import org.apache.flink.api.common.state.ReducingStateDescriptor;
 import org.apache.flink.api.common.typeutils.base.LongSerializer;
-import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.windowing.triggers.Trigger;
 import org.apache.flink.streaming.api.windowing.triggers.TriggerResult;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 
 
 /**
- * 带超时的计数窗口触发器
+ * 带超时的计数窗口触发器。
+ *
+ * Flink 2.x 已移除 TimeCharacteristic，改用 eventTime 布尔标记选择生效的时间语义
+ * （默认处理时间；EventTime 场景传入 true）。
  */
 public class CountTimeoutTrigger<T> extends Trigger<T, TimeWindow> {
 
@@ -20,9 +22,9 @@ public class CountTimeoutTrigger<T> extends Trigger<T, TimeWindow> {
      */
     private final int maxCount;
     /**
-     * event time / process time
+     * 是否采用事件时间语义
      */
-    private final TimeCharacteristic characteristic;
+    private final boolean eventTime;
     /**
      * 用于储存窗口当前数据量的状态对象
      */
@@ -30,12 +32,12 @@ public class CountTimeoutTrigger<T> extends Trigger<T, TimeWindow> {
             new ReducingStateDescriptor<>("counter", new Sum(), LongSerializer.INSTANCE);
 
     public CountTimeoutTrigger(int maxCount) {
-        this(maxCount, TimeCharacteristic.ProcessingTime);
+        this(maxCount, false);
     }
 
-    public CountTimeoutTrigger(int maxCount, TimeCharacteristic characteristic) {
+    public CountTimeoutTrigger(int maxCount, boolean eventTime) {
         this.maxCount = maxCount;
-        this.characteristic = characteristic;
+        this.eventTime = eventTime;
     }
 
     private TriggerResult fireAndPurge(TimeWindow window, TriggerContext ctx) throws Exception {
@@ -60,7 +62,7 @@ public class CountTimeoutTrigger<T> extends Trigger<T, TimeWindow> {
 
     @Override
     public TriggerResult onProcessingTime(long time, TimeWindow window, TriggerContext ctx) throws Exception {
-        if (characteristic != TimeCharacteristic.ProcessingTime) {
+        if (eventTime) {
             return TriggerResult.CONTINUE;
         }
         if (time >= window.getEnd()) {
@@ -72,7 +74,7 @@ public class CountTimeoutTrigger<T> extends Trigger<T, TimeWindow> {
 
     @Override
     public TriggerResult onEventTime(long time, TimeWindow window, TriggerContext ctx) throws Exception {
-        if (characteristic != TimeCharacteristic.EventTime) {
+        if (!eventTime) {
             return TriggerResult.CONTINUE;
         }
         if (time >= window.getEnd()) {

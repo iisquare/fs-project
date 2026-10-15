@@ -1,0 +1,111 @@
+@use 'sass:math';
+
+/**
+ * 调用过程的时间线：一轮、一次思考、一次工具调用都是这条线上的一个节点。
+ *
+ * - 大小与颜色即层级：轮次最大（空心）、思考次之（灰）、工具调用最小（按状态取色）；
+ * - 主轴由每一格自己画满、首尾两格各截掉一段拼成，线因此刚好起止在两端的节点上，
+ *   既不需要知道整条线有多长，也不怕某一格里的内容（思考正文、参数与返回）展开后变高；
+ * - 格与格之间不留外边距，工具调用那一格由子组件按片段给出，跨组件也是连续的一条线。
+ *
+ * 用法：节点元素 `@include node(6px)`，再按类型覆盖 `::after` 圆点的颜色。
+ */
+
+/** 主轴的一段：颜色与粗细只有这一处定义 */
+@mixin rail {
+  content: '';
+  position: absolute;
+  /* 落在整数像素上：1px 的线压在半像素上会被摊成两条浅影，几乎看不见 */
+  left: 5px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--el-border-color-darker);
+}
+
+@mixin node($size) {
+  position: relative;
+  padding: 3px 0 3px 18px;
+
+  /* 主轴：画满自己这一格 */
+  &::before {
+    @include rail;
+  }
+
+  /* 第一格：线从自己的圆点起头 */
+  &:first-child::before {
+    top: 13px - math.div($size, 2);
+  }
+
+  /* 最后一格：线到自己的圆点为止 */
+  &:last-child::before {
+    bottom: auto;
+    height: 13px + math.div($size, 2);
+  }
+
+  /* 节点圆点：横向落在主轴上，纵向对齐这一行文字的中线 */
+  &::after {
+    content: '';
+    position: absolute;
+    left: 5px - math.div($size, 2);
+    top: 13px - math.div($size, 2);
+    width: $size;
+    height: $size;
+    border-radius: 50%;
+    background: var(--el-text-color-placeholder);
+  }
+
+  .step-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    font-size: 12px;
+    line-height: 20px;
+    color: var(--el-text-color-secondary);
+  }
+
+  /* 行头就是节点自己的开关：思考过程与每一次调用都点行头展开 */
+  button.step-head {
+    padding: 0;
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: 12px;
+    line-height: 20px;
+    text-align: left;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .step-title {
+    flex: none;
+  }
+
+  .step-summary {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .step-meta {
+    flex: none;
+    color: var(--el-text-color-placeholder);
+  }
+
+  .step-caret {
+    flex: none;
+    color: var(--el-text-color-placeholder);
+    transition: transform 0.2s;
+  }
+
+  .step-body {
+    margin-top: 2px;
+  }
+
+  &.open .step-caret {
+    transform: rotate(90deg);
+  }
+}

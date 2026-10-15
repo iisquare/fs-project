@@ -47,8 +47,7 @@ public class ScheduleController extends ControllerBase {
         if (null == param) return ApiUtil.echoResult(1001, "解析参数失败", param);
         String type = param.at("/type").asText();
         String id = param.at("/id").asText();
-        boolean result = scheduleService.remove(type, id);
-        return ApiUtil.echoResult(result ? 0: 500, null, id);
+        return ApiUtil.echoResult(scheduleService.remove(type, id));
     }
 
     public String listAction(ChannelHandlerContext context, FullHttpRequest request) throws Exception {

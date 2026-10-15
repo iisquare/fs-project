@@ -73,8 +73,7 @@ public class FormRegularController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = formRegularService.delete(ids, rbacService.uid(request));
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(formRegularService.delete(ids, rbacService.uid(request)));
     }
 
     @RequestMapping("/config")

@@ -12,6 +12,8 @@ import org.bson.BsonDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Optional;
+
 public class FSMongoPartitionReader implements PartitionReader<InternalRow> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FSMongoPartitionReader.class);
     private final MongoInputPartition partition;
@@ -40,11 +42,15 @@ public class FSMongoPartitionReader implements PartitionReader<InternalRow> {
     @Override
     public boolean next() {
         Assertions.ensureState(() -> !closed, () -> "Cannot call next() on a closed PartitionReader.");
-        boolean hasNext = getCursor().hasNext();
-        if (hasNext) {
-            currentRow = bsonDocumentToRowConverter.toInternalRow(getCursor().next());
+        // 结构不匹配且配置为容忍时，转换结果为空，需跳过该文档继续读取
+        while (getCursor().hasNext()) {
+            Optional<InternalRow> row = bsonDocumentToRowConverter.toInternalRow(getCursor().next());
+            if (row.isPresent()) {
+                currentRow = row.get();
+                return true;
+            }
         }
-        return hasNext;
+        return false;
     }
 
     /** Return the current record. This method should return same value until `next` is called. */

@@ -9,7 +9,6 @@ import com.iisquare.fs.web.agent.entity.Tool;
 import com.iisquare.fs.web.agent.entity.ToolMethod;
 import com.iisquare.fs.web.agent.core.AgenticNodeContext;
 import com.iisquare.fs.web.agent.core.AgenticNodeHandler;
-import com.iisquare.fs.web.agent.core.AgenticNodeException;
 import com.iisquare.fs.web.agent.core.AgenticRuntime;
 import com.iisquare.fs.web.agent.tool.DocumentParser;
 import com.hubspot.jinjava.Jinjava;
@@ -54,6 +53,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class LlmNodeHandler implements AgenticNodeHandler {
 
+    /**
+     * 「接续次数」的缺省值与上限：跑满一批（节点配置的「迭代次数」）而模型仍在请求工具时自动接续的批次数，
+     * 由节点配置 continueCount 决定（历史数据没有该字段时按缺省值处理），**不含首批**——
+     * 配 0 表示跑满一批即收尾，配 2 表示总共跑 3 批；与客户端 MAX_ROUNDS_CONTINUE 同口径。
+     * 接续用完后再额外做一轮不带工具的收尾调用（不占批次）。上限兜一道：节点数据可能被导入或直接改库，
+     * 避免单个节点无限接续。
+     */
+    protected static final int DEFAULT_CONTINUE_COUNT = 2;
+    protected static final int MAX_CONTINUE_COUNT = 5;
+
     @Override
     public String type() {
         return "LLM";
@@ -97,13 +106,40 @@ public class LlmNodeHandler implements AgenticNodeHandler {
         JsonNode result = null;
         ctx.lastRequest(json.deepCopy());
         // ReAct 循环迭代：每轮返回工具调用就执行并把结果回填上下文继续推理；
+        // 跑满一批（配置的「迭代次数」）仍在请求工具时自动接续下一批，接续点补一条提醒；
+        // 接续用完（共 1 + 接续次数 批）则禁用工具做一次收尾调用，不再按节点异常中断。
+        // 收尾是额外加的第 maxRounds 轮、不占用批次数：每一批都是完整的 batchRounds 轮，
+        // 否则「迭代次数配 1、接续次数配 0」这种极值会只剩一个收尾轮、一次工具都调不到。
         // FunctionCalling 只执行一轮，直接返回该轮（含工具调用）的输出
-        int maxRounds = react ? Math.max(1, data.at("/maxIterations").asInt(5)) : 1;
-        boolean limited = true;
+        int batchRounds = react ? Math.max(1, data.at("/maxIterations").asInt(5)) : 1;
+        // 接续次数由节点配置：跑满一批仍在调工具就接续下一批，配 0 表示跑满一批即收尾
+        int continueCount = react
+                ? Math.max(0, Math.min(MAX_CONTINUE_COUNT, data.at("/continueCount").asInt(DEFAULT_CONTINUE_COUNT)))
+                : 0;
+        int maxRounds = react ? batchRounds * (1 + continueCount) + 1 : 1;
+        // 接续提醒在消息链里的下标：只保留最新一条，-1 表示当前链上没有提醒
+        int hintIndex = -1;
+        // 收尾标记：达到总上限后工具被禁用、模型按已有信息作答，调用方可据此提示用户或提高上限
+        boolean wrapped = false;
         for (int round = 0; round < maxRounds; round++) {
+            boolean closing = react && round == maxRounds - 1;
+            if (closing) {
+                // 收尾轮：撤掉还在链上的接续提醒，换成收尾引导语（两条并存只会互相打架）
+                if (hintIndex >= 0) {
+                    messages.remove(hintIndex);
+                    hintIndex = -1;
+                }
+                messages.addObject().put("role", "user").put("content", wrapupPrompt(maxRounds - 1));
+            } else if (react && round > 0 && 0 == round % batchRounds) {
+                // 接续点：跑满一批仍在调工具，只留最新一条提醒（换掉上一条），随下一批一起交给模型
+                if (hintIndex >= 0) messages.remove(hintIndex);
+                messages.addObject().put("role", "user")
+                        .put("content", continuePrompt(round, maxRounds, batchRounds));
+                hintIndex = messages.size() - 1;
+            }
             // 实时进度：本轮开始模型推理（ReAct 过程要实时返回给前端，不能等节点跑完）
             ctx.runtime().emitRound(roundEvent(round + 1, maxRounds, "running", null));
-            result = ctx.completion(json);
+            result = ctx.completion(closing ? withoutTools(json) : json);
             JsonNode message = result.at("/choices/0/message");
             ObjectNode roundNode = rounds.addObject();
             roundNode.put("round", round + 1);
@@ -113,7 +149,13 @@ public class LlmNodeHandler implements AgenticNodeHandler {
             // 没有工具调用（或该字段缺失）时结束循环：at() 取不到返回 MissingNode，不能直接强转
             JsonNode toolCalls = message.at("/tool_calls");
             if (null == toolCalls || !toolCalls.isArray() || toolCalls.isEmpty()) {
-                limited = false;
+                // 收尾轮给出正文即完成收尾；其余轮没有工具调用就是模型自然结束
+                wrapped = closing;
+                break;
+            }
+            if (closing) {
+                // 收尾轮没有下发工具定义，模型正常不会再要工具：万一要了也不执行，按这一轮已有的内容收尾
+                wrapped = true;
                 break;
             }
             messages.add(message.deepCopy());
@@ -166,12 +208,9 @@ public class LlmNodeHandler implements AgenticNodeHandler {
         value.set("rounds", rounds);
         // 便于核对多轮上下文：用过工具时把最后一轮请求的消息链（system/user/assistant/tool）一并记录
         if (!calls.isEmpty()) value.set("context", messages.deepCopy());
-        // 只有 ReAct 循环才有「超限」概念：跑满上限仍在请求工具时按节点异常处理，
-        // 异常里带上已产生的输出（calls / rounds），调试面板仍能展示完整的调用链
-        if (react && limited) {
-            throw new AgenticNodeException("工具调用已达最大迭代次数（" + maxRounds
-                    + " 次），模型仍在请求工具：请调整提示词或提高「最大迭代次数」", value);
-        }
+        // 收尾标记：只有 ReAct 循环才会置位——跑满总上限后工具被禁用，模型按已有信息作答，
+        // 节点仍按成功返回（复杂任务不该因为跑满轮数而失败）；需要提示用户或重试时由流程按它分支
+        value.put("wrapped", wrapped);
         return value;
     }
 
@@ -187,6 +226,37 @@ public class LlmNodeHandler implements AgenticNodeHandler {
         node.put("state", DPUtil.parseString(state));
         if (null != call) node.set("call", call);
         return node;
+    }
+
+    /**
+     * 接续提醒：跑满一批仍在请求工具时，随下一批的请求一起交给模型。
+     * 讲清已跑多少轮、还剩多少轮，点名无效轮转的风险（反复调同一个工具、同样的失败反复出现、
+     * 拿不到新信息），同时说明没有上述情况就照常推进——提醒是链尾的 user 消息，比用户输入更「新」，
+     * 少了这一句，模型可能为了省轮数提前收尾。
+     */
+    protected String continuePrompt(int round, int maxRounds, int batchRounds) {
+        // 剩余的工具往返轮数：扣掉最后那一轮收尾（它不执行工具）
+        int left = maxRounds - round - 1;
+        return "（系统提示：本节点已连续调用工具 " + round + " 轮仍在继续，工具往返上限是 " + (maxRounds - 1)
+                + " 轮，剩余 " + left + " 轮，用完后还有一次不带工具的收尾。"
+                + "请注意无效轮转的风险：如果发现自己在重复调用同一个工具、"
+                + "用同样的参数反复失败，或已经拿不到新信息，请立即改变做法——换参数或换工具、"
+                + "把多次调用合并成一次，或者基于已完成的工作直接给出结论并说明卡在哪里；"
+                + "没有上述情况就照常推进原计划，不要为了省轮数提前收尾。已经成功过的调用不要重复执行。"
+                + (left <= batchRounds ? "这是最后一次接续，用完即进入收尾（不再执行工具）。" : "") + "）";
+    }
+
+    /** 收尾引导语：工具已禁用，让模型按已完成的工作给出结论（而不是把节点判为失败） */
+    protected String wrapupPrompt(int toolRounds) {
+        return "（系统提示：本节点已连续调用工具 " + toolRounds + " 轮，达到上限，工具已禁用。"
+                + "请基于以上已经完成的工作直接给出最终答复：说明已完成的部分、尚未完成的部分，以及下一步建议。）";
+    }
+
+    /** 收尾请求：不下发工具定义（模型只能给结论），其余参数与正式请求一致 */
+    protected ObjectNode withoutTools(ObjectNode json) {
+        ObjectNode copy = json.deepCopy();
+        copy.remove("tools");
+        return copy;
     }
 
 }

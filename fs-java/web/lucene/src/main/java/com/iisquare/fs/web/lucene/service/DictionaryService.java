@@ -153,10 +153,14 @@ public class DictionaryService extends ServiceBase {
         return result;
     }
 
-    public boolean delete(List<Integer> ids) {
-        if(null == ids || ids.size() < 1) return false;
-        dictionaryDao.deleteInBatch(dictionaryDao.findAllById(ids));
-        return true;
+    public Map<String, Object> delete(List<Integer> ids) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            dictionaryDao.deleteInBatch(dictionaryDao.findAllById(ids));
+            return ApiUtil.result(0, null, ids.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除词典失败", e.getMessage());
+        }
     }
 
 }

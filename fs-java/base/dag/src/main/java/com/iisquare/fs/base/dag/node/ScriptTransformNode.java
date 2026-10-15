@@ -3,12 +3,24 @@ package com.iisquare.fs.base.dag.node;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.base.core.JarClassLoader;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.dag.core.DAGException;
 import com.iisquare.fs.base.dag.core.DAGTransform;
+import com.iisquare.fs.base.dag.core.DAGType;
 import com.iisquare.fs.base.dag.transform.AbstractScriptTransform;
 
-public class ScriptTransformNode extends AbstractScriptTransform {
+/**
+ * 脚本转换节点：加载外部插件（DAGTransform 子类）并执行。
+ *
+ * 插件输出类型在运行期才能确定，故本节点声明为 OBJECT，由下游节点自行做类型校验。
+ */
+public class ScriptTransformNode extends AbstractScriptTransform<Object> {
 
-    JsonNode[] configs;
+    private JsonNode[] configs;
+
+    @Override
+    public DAGType<Object> outputType() {
+        return DAGType.OBJECT;
+    }
 
     @Override
     public boolean configure(JsonNode... configs) {
@@ -28,21 +40,17 @@ public class ScriptTransformNode extends AbstractScriptTransform {
             cls = JarClassLoader.fromUrl(jarURI, getClass().getClassLoader()).loadClass(pkgClass);
         }
         if (!DAGTransform.class.isAssignableFrom(cls)) {
-            throw new RuntimeException(String.format("class %s is not instanceof DAGTransform!", pkgClass));
+            throw new DAGException(this, String.format("class %s is not instanceof DAGTransform!", pkgClass));
         }
-        DAGTransform instance = (DAGTransform) cls.newInstance();
+        DAGTransform<?> instance = (DAGTransform<?>) cls.getDeclaredConstructor().newInstance();
         instance.setId(getId());
         instance.setName(getName());
         instance.setParallelism(getParallelism());
         instance.setRunner(getRunner());
         instance.setOptions(getOptions());
-        instance.setSources(getSources());
-        instance.setTargets(getTargets());
+        instance.getSources().addAll(getSources());
+        instance.getTargets().addAll(getTargets());
         instance.configure(configs);
-        instance.setConfigured(true);
-        Object result = instance.process();
-        instance.setResult(result);
-        instance.setProcessed(true);
-        return result;
+        return instance.process();
     }
 }

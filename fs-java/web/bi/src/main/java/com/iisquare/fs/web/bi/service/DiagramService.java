@@ -1,10 +1,14 @@
 package com.iisquare.fs.web.bi.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
+import com.iisquare.fs.web.bi.dao.ClusterDao;
 import com.iisquare.fs.web.bi.dao.DiagramDao;
+import com.iisquare.fs.web.bi.entity.Cluster;
 import com.iisquare.fs.web.bi.entity.Diagram;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +27,8 @@ public class DiagramService extends ServiceBase {
 
     @Autowired
     DiagramDao diagramDao;
+    @Autowired
+    ClusterDao clusterDao;
     @Autowired
     DefaultRbacService rbacService;
 
@@ -59,6 +65,9 @@ public class DiagramService extends ServiceBase {
         }
         if(!DPUtil.empty(config.get("withModelText"))) {
             DPUtil.fillValues(rows, new String[]{"model"}, new String[]{"modelText"}, models());
+        }
+        if(!DPUtil.empty(config.get("withClusterName"))) {
+            fillClusterName(rows);
         }
         result.put("page", page);
         result.put("pageSize", pageSize);
@@ -97,6 +106,17 @@ public class DiagramService extends ServiceBase {
         return types;
     }
 
+    public void fillClusterName(List<?> rows) {
+        JsonNode json = DPUtil.toJSON(rows, ArrayNode.class);
+        Set<Integer> ids = DPUtil.values(json, Integer.class, "clusterId");
+        if (ids.isEmpty()) return;
+        Map<Integer, String> map = new LinkedHashMap<>();
+        for (Cluster item : clusterDao.findAllById(ids)) {
+            map.put(item.getId(), item.getName());
+        }
+        DPUtil.fillValues(rows, new String[]{"clusterId"}, new String[]{"clusterIdName"}, map);
+    }
+
     public Diagram info(Integer id) {
         if(null == id || id < 1) return null;
         Optional<Diagram> info = diagramDao.findById(id);
@@ -110,7 +130,7 @@ public class DiagramService extends ServiceBase {
         String model = DPUtil.parseString(param.get("model"));
         int sort = DPUtil.parseInt(param.get("sort"));
         int status = DPUtil.parseInt(param.get("status"));
-        String content = DPUtil.parseString(param.get("content"));
+        String content = DPUtil.stringify(param.get("content"));
         String description = DPUtil.parseString(param.get("description"));
         if(param.containsKey("name") || id < 1) {
             if(DPUtil.empty(name)) return ApiUtil.result(1001, "名称异常", name);
@@ -136,7 +156,13 @@ public class DiagramService extends ServiceBase {
         if(param.containsKey("name") || null == info.getId()) info.setName(name);
         if(param.containsKey("engine") || null == info.getId()) info.setEngine(engine);
         if(param.containsKey("model") || null == info.getId()) info.setModel(model);
+        if(param.containsKey("clusterId") || null == info.getId()) info.setClusterId(DPUtil.parseInt(param.get("clusterId")));
         if(param.containsKey("content") || null == info.getId()) info.setContent(content);
+        if(param.containsKey("expression") || null == info.getId()) info.setExpression(DPUtil.trim(DPUtil.parseString(param.get("expression"))));
+        if(param.containsKey("schedule") || null == info.getId()) info.setSchedule(DPUtil.parseBoolean(param.get("schedule")) ? 1 : 0);
+        if(param.containsKey("notify") || null == info.getId()) info.setNotify(DPUtil.stringify(param.get("notify")));
+        if(param.containsKey("autoRecover") || null == info.getId()) info.setAutoRecover(DPUtil.parseBoolean(param.get("autoRecover")) ? 1 : 0);
+        if(param.containsKey("maxRetry") || null == info.getId()) info.setMaxRetry(DPUtil.parseInt(param.get("maxRetry")));
         if(param.containsKey("description") || null == info.getId()) info.setDescription(description);
         if(param.containsKey("sort") || null == info.getId()) info.setSort(sort);
         if(param.containsKey("status") || null == info.getId()) info.setStatus(status);
@@ -153,17 +179,21 @@ public class DiagramService extends ServiceBase {
 
     }
 
-    public boolean delete(List<Integer> ids, int uid) {
-        if(null == ids || ids.size() < 1) return false;
-        List<Diagram> list = diagramDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        for (Diagram item : list) {
-            item.setStatus(-1);
-            item.setUpdatedTime(time);
-            item.setUpdatedUid(uid);
+    public Map<String, Object> delete(List<Integer> ids, int uid) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            List<Diagram> list = diagramDao.findAllById(ids);
+            long time = System.currentTimeMillis();
+            for (Diagram item : list) {
+                item.setStatus(-1);
+                item.setUpdatedTime(time);
+                item.setUpdatedUid(uid);
+            }
+            diagramDao.saveAll(list);
+            return ApiUtil.result(0, null, list.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除图表失败", e.getMessage());
         }
-        diagramDao.saveAll(list);
-        return true;
     }
 
 }

@@ -56,8 +56,7 @@ public class DataPermitController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = dataPermitService.remove(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(dataPermitService.remove(ids));
     }
 
     @RequestMapping("/config")

@@ -2,5 +2,5 @@ package com.iisquare.fs.base.dag.sink;
 
 import com.iisquare.fs.base.dag.core.DAGSink;
 
-public abstract class AbstractJDBCSink extends DAGSink {
+public abstract class AbstractJDBCSink<OUT> extends DAGSink<OUT> {
 }

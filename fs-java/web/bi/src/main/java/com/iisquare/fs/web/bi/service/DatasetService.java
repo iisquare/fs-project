@@ -337,8 +337,9 @@ public class DatasetService extends JPAServiceBase {
         if (ApiUtil.failed(jobResult)) {
             return ApiUtil.result(1502, "删除作业失败: " + ApiUtil.message(jobResult), ids);
         }
-        boolean removed = remove(datasetDao, ids);
-        return ApiUtil.result(0, "已删除" + removed + "条记录", ids);
+        Map<String, Object> removed = remove(datasetDao, ids);
+        if (ApiUtil.failed(removed)) return removed;
+        return ApiUtil.result(0, "已删除" + ApiUtil.data(removed, Object.class) + "条记录", ids);
     }
 
     public Map<String, Object> trigger(Map<?, ?> param) {

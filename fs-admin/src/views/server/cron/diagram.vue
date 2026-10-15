@@ -12,6 +12,7 @@ import LayoutIcon from '@/components/Layout/LayoutIcon.vue';
 import CronApi from '@/api/server/CronApi';
 import ApiUtil from '@/utils/ApiUtil';
 import DesignUtil from '@/utils/DesignUtil';
+import SwitchLayout from '@/designer/X6/switch';
 
 const route = useRoute()
 const flowRef = ref()
@@ -22,7 +23,54 @@ const property = computed(() => {
   return DesignUtil.widgetFlowProperty(activeItem.value, config)
 })
 
+/**
+ * 条件分支节点按分支数量决定高度，且每个分支对应一个输出锚点，
+ * 锚点不随图形数据结构持久化，统一在节点数据变化与载入后重建
+ */
+const handleCellSync = (cell: any) => {
+  const data = cell.getData() ?? {}
+  const widget: any = DesignUtil.widgetByType(data.type, config)
+  if (!widget) return
+  if (widget.size) {
+    const size = widget.size(data)
+    const current = cell.getSize()
+    if (current.width !== size.width || current.height !== size.height) {
+      cell.resize(size.width, size.height)
+    }
+  }
+  if (widget.ports) {
+    const ports = widget.ports(data)
+    const signature = JSON.stringify(ports)
+    if (cell.__portsSignature !== signature) {
+      cell.__portsSignature = signature
+      cell.setProp('ports', ports)
+    }
+  }
+  if ('agent-switch' === cell.shape) {
+    // 分支名称同步到连线标签：分支重命名后已有连线跟随更新
+    const rows = SwitchLayout.rows(data)
+    // 无连线时 getOutgoingEdges 返回 null，需兜底为空数组
+    const edges: any[] = (cell.model ? cell.model.getOutgoingEdges(cell) : null) ?? []
+    edges.forEach((edge: any) => {
+      const item: any = rows.find((row: any) => row.id === edge.getSourcePortId())
+      if (!item) return
+      const edgeData = edge.getData() ?? {}
+      if (edgeData.name === item.name) return
+      edge.setData(Object.assign({}, edgeData, { name: item.name }))
+    })
+  }
+}
+
 const options: any = {
+  onCellSync: handleCellSync,
+  // 条件分支的连线标签按分支名展示，创建连线时即写入分支名称
+  edgeData: (edge: any) => {
+    const source: any = edge.getSourceCell()
+    const portId = edge.getSourcePortId()
+    if (!source || !portId || 'agent-switch' !== source.shape) return {}
+    const item: any = SwitchLayout.rows(source.getData() ?? {}).find((row: any) => row.id === portId)
+    return item ? { name: item.name } : {}
+  },
 }
 const handleDragStart = (event: any, widget: any) => {
    flowRef.value.flow.startDrag(event, widget)

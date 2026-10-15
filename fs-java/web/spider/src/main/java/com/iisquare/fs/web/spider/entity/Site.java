@@ -34,7 +34,7 @@ public class Site implements Serializable {
     @Column
     private String collection; // 采集结果存储到Mongo中的集合名称
     @Column
-    private String bucket; // 附件存储到MinIO中的桶名称
+    private String bucket; // 附件存储到S3对象存储中的桶名称
     @Column
     private Integer retainQuery; // 保留请求参数
     @Column

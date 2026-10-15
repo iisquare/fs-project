@@ -377,16 +377,20 @@ public class RoleService extends JPAServiceBase {
     }
 
     @Transactional
-    public boolean remove(List<Integer> ids) {
-        if(null == ids || ids.isEmpty()) return false;
-        for (Integer id : ids) {
-            rbacService.evictRolePermit(id); // 角色变更后同步清理角色资源缓存
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            for (Integer id : ids) {
+                rbacService.evictRolePermit(id); // 角色变更后同步清理角色资源缓存
+            }
+            roleApplicationDao.deleteByRoleIdIn(ids);
+            roleMenuDao.deleteByRoleIdIn(ids);
+            roleResourceDao.deleteByRoleIdIn(ids);
+            userRoleDao.deleteByRoleIdIn(ids);
+            dataPermitDao.deleteByRoleIds(ids); // 清理该角色的数据行权限
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除角色失败", e.getMessage());
         }
-        roleApplicationDao.deleteByRoleIdIn(ids);
-        roleMenuDao.deleteByRoleIdIn(ids);
-        roleResourceDao.deleteByRoleIdIn(ids);
-        userRoleDao.deleteByRoleIdIn(ids);
-        dataPermitDao.deleteByRoleIds(ids); // 清理该角色的数据行权限
         return remove(roleDao, ids);
     }
 

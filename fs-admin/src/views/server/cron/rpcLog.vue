@@ -27,7 +27,7 @@ const columns = ref([
   { prop: 'responseHeaders', label: '响应头', hide: true },
   { prop: 'status', label: '状态码' },
   { prop: 'responseBody', label: '响应体', hide: true },
-  { prop: 'state', label: '调用状态' },
+  { prop: 'state', label: '调用状态', slot: 'state' },
   { prop: 'message', label: '状态描述', hide: true },
   { prop: 'requestTime', label: '请求时间', formatter: DateUtil.render },
   { prop: 'responseTime', label: '响应时间', formatter: DateUtil.render, hide: true },
@@ -96,6 +96,15 @@ const handleDelete = () => {
     })
   }).catch(() => {})
 }
+
+const stateTagType = (state: string) => {
+  if ('SUCCEED' === state) return 'success'
+  if ('FAILED' === state) return 'danger'
+  if ('RUNNING' === state) return 'warning'
+  return 'info'
+}
+
+const stateText = (state: string) => (config.value.states as any)[state] ?? state ?? ''
 </script>
 
 <template>
@@ -163,7 +172,11 @@ const handleDelete = () => {
       @selection-change="(s: any) => selection = s"
     >
       <el-table-column type="selection" />
-      <TableColumn :columns="columns"></TableColumn>
+      <TableColumn :columns="columns">
+        <template #state="scope">
+          <el-tag :type="stateTagType(scope.row.state)" size="small" effect="plain">{{ stateText(scope.row.state) }}</el-tag>
+        </template>
+      </TableColumn>
       <el-table-column label="操作" width="80px">
         <template #default="scope">
           <el-button link @click="handleShow(scope)" v-permit="'cron::'">查看</el-button>
@@ -192,7 +205,9 @@ const handleDelete = () => {
         <el-descriptions-item label="状态码">{{ form.status }}</el-descriptions-item>
         <el-descriptions-item label="触发器名称">{{ form.triggerName }}</el-descriptions-item>
         <el-descriptions-item label="触发器分组">{{ form.triggerGroup }}</el-descriptions-item>
-        <el-descriptions-item label="调用状态">{{ form.state }}</el-descriptions-item>
+        <el-descriptions-item label="调用状态">
+          <el-tag :type="stateTagType(form.state)" size="small" effect="plain">{{ stateText(form.state) }}</el-tag>
+        </el-descriptions-item>
         <el-descriptions-item label="请求时间">{{ DateUtil.format(form.requestTime) }}</el-descriptions-item>
         <el-descriptions-item label="响应时间">{{ DateUtil.format(form.responseTime) }}</el-descriptions-item>
         <el-descriptions-item label="耗时(ms)">{{ form.duration }}</el-descriptions-item>

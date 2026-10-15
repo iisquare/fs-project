@@ -218,11 +218,16 @@ public class ResourceService extends JPAServiceBase {
     }
 
     @Transactional
-    public boolean remove(List<Integer> ids) {
-        if(null == ids || ids.isEmpty()) return false;
-        List<Integer> all = subtreeIds(ids); // 级联删除子孙节点，避免出现父节点悬空的孤儿节点
-        roleResourceDao.deleteByResourceIdIn(all); // 资源硬删除时清理授权关联
-        rbacService.evictAllPermit();
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        List<Integer> all;
+        try {
+            all = subtreeIds(ids); // 级联删除子孙节点，避免出现父节点悬空的孤儿节点
+            roleResourceDao.deleteByResourceIdIn(all); // 资源硬删除时清理授权关联
+            rbacService.evictAllPermit();
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除资源失败", e.getMessage());
+        }
         return remove(resourceDao, all);
     }
 

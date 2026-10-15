@@ -12,6 +12,9 @@ import RoleApi from '@/api/member/RoleApi';
 import MetadataTable from '@/components/Data/MetadataTable.vue'
 import { paramDetailText, paramHint, schemaSample } from '@/designer/Agentic/tool'
 
+// 「MCP样例」按钮的兜底地址：正常取后端配置（fs.agent.mcp.sampleUrl，即本服务自带的 MCP 服务）
+const MCP_SAMPLE_URL = 'http://localhost:7827/sse'
+
 const route = useRoute()
 const router = useRouter()
 const tableRef = ref<TableInstance>()
@@ -34,6 +37,7 @@ const config: any = ref({
   sorts: {},
   status: {},
   types: {},
+  mcpSampleUrl: '',
 })
 const rows = ref([])
 const filterRef = ref<FormInstance>()
@@ -110,7 +114,10 @@ const handleSubmit = () => {
     ToolApi.save(form.value, { success: true }).then(result => {
       handleRefresh(false, true)
       formVisible.value = false
-    }).catch(() => {}).finally(() => {
+    }).catch((error: any) => {
+      // 保存失败多半是配置解析失败（如 OpenAPI 文档错误、MCP 内容里没有方法清单）：原因留在方法清单上方
+      formParseError.value = ApiUtil.message(error) ?? ''
+    }).finally(() => {
       formLoading.value = false
     })
   })
@@ -281,17 +288,32 @@ const handleYamlDemo = () => {
               type: string`
 }
 const handleMcpSync = () => {
+  // 点「同步MCP配置」就意味着这个工具是 MCP 服务：顺手把类型切过来，
+  // 否则内容按 OpenAPI 解析，页面只会显示「未解析到方法」，看不出是类型没选对
+  form.value.type = 'mcp'
   const params = {
     url: form.value.url,
     header: form.value.header,
     query: form.value.query,
   }
   formLoading.value = true
+  formParseError.value = ''
   ToolApi.mcpSync(params, { success: true }).then((result: any) => {
     form.value.content = JSON.stringify(ApiUtil.data(result), null, 2)
-  }).catch(() => {}).finally(() => {
+    formParseError.value = ''
+  }).catch((error: any) => {
+    // 服务地址不通、握手失败、服务端没有 tools 能力：把原因留在页面上，别只剩一句「未解析到方法」
+    formParseError.value = ApiUtil.message(error) ?? '同步 MCP 配置失败'
+  }).finally(() => {
     formLoading.value = false
   })
+}
+
+// MCP样例：填入本服务自带的 MCP 服务地址（/sse），并立刻同步一次解析，方法清单直接可见
+const handleMcpDemo = () => {
+  form.value.type = 'mcp'
+  form.value.url = config.value.mcpSampleUrl || MCP_SAMPLE_URL
+  handleMcpSync()
 }
 
 /* ------------------------------- 方法清单 ------------------------------- */
@@ -322,8 +344,9 @@ const loadFormMethods = (immediate = false) => {
     return
   }
   formMethods.value = []
-  formParseError.value = ''
+  // 没有内容时不重置错误：同步失败的原因要留在页面上
   if (!form.value.type || !form.value.content) return
+  formParseError.value = ''
   const param = { type: form.value.type, content: form.value.content }
   ToolApi.parse(param).then((result: any) => {
     formMethods.value = ApiUtil.data(result) ?? []
@@ -577,6 +600,7 @@ const handleTestSubmit = () => {
             </template>
           </el-table-column>
         </el-table>
+        <el-text type="danger" size="small" v-else-if="form.parseError">{{ form.parseError }}</el-text>
         <el-text type="info" size="small" v-else>
           未解析到方法：可直接点「编辑」里的「重新解析」按已保存配置重解析；schema 工具需为 OpenAPI 文档（JSON / YAML），MCP 工具请先同步 MCP 配置
         </el-text>
@@ -623,6 +647,7 @@ const handleTestSubmit = () => {
           <el-space>
             <el-button @click="handleJsonDemo" :loading="formLoading">JSON样例</el-button>
             <el-button @click="handleYamlDemo" :loading="formLoading">YAML样例</el-button>
+            <el-button @click="handleMcpDemo" :loading="formLoading">MCP样例</el-button>
             <el-button @click="handleMcpSync" :loading="formLoading" :disabled="!form.url">同步MCP配置</el-button>
             <!-- 编辑中的内容与已保存的不一致时，重新解析没有意义：保存时会自动解析 -->
             <el-button
@@ -650,7 +675,7 @@ const handleTestSubmit = () => {
           </el-table>
           <el-text type="danger" size="small" v-else-if="formParseError">{{ formParseError }}</el-text>
           <el-text type="info" size="small" v-else>
-            未解析到方法：schema 工具需为 OpenAPI 文档（JSON / YAML），MCP 工具请先同步 MCP 配置
+            未解析到方法：schema 工具需为 OpenAPI 文档（JSON / YAML）；MCP 工具先选类型「MCP服务」再点「同步MCP配置」，服务地址填服务给出的 MCP 地址（SSE 的 /sse 与流式 HTTP 的 /mcp 都支持，需后端能直接访问）
           </el-text>
         </el-descriptions-item>
         <el-descriptions-item label="请求头" :span="2">

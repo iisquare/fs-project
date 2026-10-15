@@ -1,13 +1,16 @@
 package com.iisquare.fs.app.flink.stream;
 
 import com.iisquare.fs.app.flink.core.FlinkRunner;
+import com.iisquare.fs.app.flink.core.FlinkTypes;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.dag.core.DAGType;
 import com.iisquare.fs.base.dag.source.AbstractKafkaSource;
-import com.ververica.cdc.connectors.mysql.source.MySqlSource;
-import com.ververica.cdc.connectors.mysql.source.MySqlSourceBuilder;
-import com.ververica.cdc.connectors.mysql.table.StartupOptions;
-import com.ververica.cdc.debezium.JsonDebeziumDeserializationSchema;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.cdc.connectors.mysql.source.MySqlSource;
+import org.apache.flink.cdc.connectors.mysql.source.MySqlSourceBuilder;
+import org.apache.flink.cdc.connectors.mysql.table.StartupOptions;
+import org.apache.flink.cdc.debezium.JsonDebeziumDeserializationSchema;
+import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 
 import java.util.Properties;
@@ -15,9 +18,15 @@ import java.util.Properties;
 /**
  * @see(https://ververica.github.io/flink-cdc-connectors/master/content/connectors/mysql-cdc.html)
  */
-public class MySQLCaptureNode extends AbstractKafkaSource {
+public class MySQLCaptureNode extends AbstractKafkaSource<DataStream<String>> {
+
     @Override
-    public Object process() {
+    public DAGType<DataStream<String>> outputType() {
+        return FlinkTypes.DATASTREAM_STRING;
+    }
+
+    @Override
+    public DataStream<String> process() {
         String[] database = DPUtil.explode("\n", options.at("/database").asText());
         if (database.length == 0) database = new String[]{".*"};
         String[] table = DPUtil.explode("\n", options.at("/table").asText());
@@ -39,7 +48,7 @@ public class MySQLCaptureNode extends AbstractKafkaSource {
         if (null != startup) builder.startupOptions(startup);
         builder.jdbcProperties(properties(options.at("/jdbcProperties").asText()));
         builder.debeziumProperties(properties(options.at("/debeziumProperties").asText()));
-        DataStreamSource<String> source = runner(FlinkRunner.class).stream()
+        DataStream<String> source = runner(FlinkRunner.class).stream()
                 .fromSource(builder.build(), WatermarkStrategy.noWatermarks(), getClass().getSimpleName()).setParallelism(parallelism);
         return source;
     }

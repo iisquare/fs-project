@@ -185,12 +185,29 @@ public class KnowledgeService extends JPAServiceBase {
         return rows;
     }
 
-    public boolean remove(List<Integer> ids) {
-        long count = knowledgeDocumentDao.count((Specification<KnowledgeDocument>) (root, query, cb) -> {
-            return root.get("knowledgeId").in(ids);
-        });
-        if (count > 0) return false;
-        knowledgeImageService.remove(knowledgeImageService.listByKnowledge(ids));
+    /**
+     * 删除知识库，存在文档时拒绝删除并说明原因
+     */
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        long count;
+        try {
+            count = knowledgeDocumentDao.count((Specification<KnowledgeDocument>) (root, query, cb) -> {
+                return root.get("knowledgeId").in(ids);
+            });
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "统计知识库文档失败", e.getMessage());
+        }
+        if (count > 0) return ApiUtil.result(1003, "知识库下存在文档，请先删除文档", ids);
+        Map<String, Object> images;
+        try {
+            images = knowledgeImageService.remove(knowledgeImageService.listByKnowledge(ids));
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "清理知识库图片失败", e.getMessage());
+        }
+        if (ApiUtil.failed(images)) {
+            return ApiUtil.result(ApiUtil.code(images), ApiUtil.message(images), ApiUtil.data(images, Object.class));
+        }
         return remove(knowledgeDao, ids);
     }
 

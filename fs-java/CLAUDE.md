@@ -113,7 +113,7 @@ gradle :web:admin:test --tests com.iisquare.fs.web.admin.controller.IndexControl
 - base:elasticsearch - Elasticsearch
 - base:mongodb - MongoDB
 - base:neo4j - Neo4j
-- base:minio - MinIO object storage
+- base:s3 - S3 object storage (RustFS compatible)
 - base:zookeeper - ZooKeeper
 - base:jsoup - HTML parsing
 

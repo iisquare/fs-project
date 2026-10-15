@@ -135,19 +135,23 @@ public class ApplicationService extends JPAServiceBase {
     }
 
     @Transactional
-    public boolean remove(List<Integer> ids) {
-        if(null == ids || ids.isEmpty()) return false;
-        roleApplicationDao.deleteByApplicationIdIn(ids); // 应用硬删除时清理授权关联
-        List<Menu> menus = menuDao.findAll((Specification<Menu>) (root, query, cb) -> root.get("applicationId").in(ids));
-        if(!menus.isEmpty()) roleMenuDao.deleteByMenuIdIn(DPUtil.values(menus, Integer.class, "id"));
-        List<Resource> resources = resourceDao.findAll(
-                (Specification<Resource>) (root, query, cb) -> root.get("applicationId").in(ids));
-        if(!resources.isEmpty()) roleResourceDao.deleteByResourceIdIn(DPUtil.values(resources, Integer.class, "id"));
-        menuDao.deleteAllByIdInBatch(DPUtil.values(menus, Integer.class, "id"));
-        resourceDao.deleteAllByIdInBatch(DPUtil.values(resources, Integer.class, "id"));
-        applicationDao.deleteInBatch(applicationDao.findAllById(ids));
-        rbacService.evictAllPermit();
-        return true;
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            roleApplicationDao.deleteByApplicationIdIn(ids); // 应用硬删除时清理授权关联
+            List<Menu> menus = menuDao.findAll((Specification<Menu>) (root, query, cb) -> root.get("applicationId").in(ids));
+            if(!menus.isEmpty()) roleMenuDao.deleteByMenuIdIn(DPUtil.values(menus, Integer.class, "id"));
+            List<Resource> resources = resourceDao.findAll(
+                    (Specification<Resource>) (root, query, cb) -> root.get("applicationId").in(ids));
+            if(!resources.isEmpty()) roleResourceDao.deleteByResourceIdIn(DPUtil.values(resources, Integer.class, "id"));
+            menuDao.deleteAllByIdInBatch(DPUtil.values(menus, Integer.class, "id"));
+            resourceDao.deleteAllByIdInBatch(DPUtil.values(resources, Integer.class, "id"));
+            applicationDao.deleteInBatch(applicationDao.findAllById(ids));
+            rbacService.evictAllPermit();
+            return ApiUtil.result(0, null, ids.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除应用失败", e.getMessage());
+        }
     }
 
 }

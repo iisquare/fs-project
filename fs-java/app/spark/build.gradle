@@ -2,25 +2,39 @@ dependencies {
     api project(':base:dag')
     api group: 'org.apache.spark', name: 'spark-core_' + scalaVersion, version: sparkVersion
     api group: 'org.apache.spark', name: 'spark-sql_' + scalaVersion, version: sparkVersion
-
     api group: 'org.apache.spark', name: 'spark-streaming_' + scalaVersion, version: sparkVersion
-    api group: 'org.apache.spark', name: 'spark-streaming-kafka-0-10_' + scalaVersion, version: sparkVersion
 
-
-    api group: 'org.mongodb.spark', name: 'mongo-spark-connector', version: '10.0.4'
-    api (group: 'org.mongodb.spark', name: 'mongo-spark-connector_' + scalaVersion, version: '3.0.2') {
+    // https://www.mongodb.com/zh-cn/docs/spark-connector/upcoming/release-notes/
+    api (group: 'org.mongodb.spark', name: 'mongo-spark-connector_' + scalaVersion, version: '10.7.0') {
         exclude group: 'org.mongodb', module: 'mongodb-driver-sync'
     }
     api group: 'org.mongodb', name: 'mongodb-driver-sync', version: mongodbVersion
-    api group: 'org.elasticsearch', name: 'elasticsearch-spark-30_' + scalaVersion, version: '7.15.1'
+    // 8.17.10 / 8.18.x / 8.19.x 的 elasticsearch-spark-30 只发布了 Gradle variant 元数据：
+    // apiElements / runtimeElements 的 capability 是 org.elasticsearch.spark.sql.variant:spark30scala212，
+    // 不含默认 capability，直接声明会报 "No matching variant"。
+    // 另外它声明的运行期伴随构件（elasticsearch-hadoop-mr -> org.elasticsearch:thirdparty 与
+    // elasticsearch-spark_2.12）没有发布到 Maven 中央仓库，这些类本身已经打进该 jar。
+    api(group: 'org.elasticsearch', name: 'elasticsearch-spark-30_' + scalaVersion, version: elasticVersion) {
+        capabilities {
+            requireCapability 'org.elasticsearch.spark.sql.variant:spark30scala212'
+        }
+        exclude group: 'org.elasticsearch', module: 'elasticsearch-hadoop-mr'
+        exclude group: 'org.elasticsearch', module: 'elasticsearch-spark_' + scalaVersion
+    }
     api group: 'org.apache.spark', name: 'spark-sql-kafka-0-10_' + scalaVersion, version: sparkVersion
+    api group: 'org.apache.spark', name: 'spark-streaming-kafka-0-10_' + scalaVersion, version: sparkVersion
+
     api group: 'org.postgresql', name: 'postgresql', version: postgresqlVersion
-
     api group: 'com.clickhouse', name: 'clickhouse-jdbc', version: '0.4.6'
-
     api group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: neo4jVersion
 
-    api group: 'com.crealytics', name: 'spark-excel_' + scalaVersion, version: sparkVersion + '_0.20.3'
+    api (group: 'com.crealytics', name: 'spark-excel_' + scalaVersion, version: '3.5.1_0.20.4') {
+        exclude group: 'org.apache.logging.log4j', module: 'log4j-core'
+        exclude group: 'org.scala-lang', module: 'scala-library'
+        exclude group: 'org.apache.spark', module: 'spark-core_' + scalaVersion
+        exclude group: 'org.apache.spark', module: 'spark-sql_' + scalaVersion
+        exclude group: 'org.apache.spark', module: 'spark-hive_' + scalaVersion
+    }
 
     testImplementation project(':base:test')
 }

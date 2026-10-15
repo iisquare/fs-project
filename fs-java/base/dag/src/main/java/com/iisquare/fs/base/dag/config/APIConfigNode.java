@@ -7,7 +7,7 @@ import com.iisquare.fs.base.dag.util.DAGUtil;
 
 public class APIConfigNode extends DAGConfig {
     @Override
-    public Object process() throws Exception {
+    public JsonNode process() throws Exception {
         String url = options.at("/url").asText();
         String checkField = options.at("/checkField").asText();
         String checkValue = options.at("/checkValue").asText();

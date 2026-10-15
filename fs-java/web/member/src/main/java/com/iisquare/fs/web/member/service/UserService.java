@@ -636,13 +636,12 @@ public class UserService extends JPAServiceBase {
     }
 
     @Transactional
-    public boolean delete(List<Integer> ids, HttpServletRequest request) {
-        boolean result = delete(userDao, ids, rbacService.uid(request));
-        if(result && null != ids) { // 删除后立即失效在线会话
-            for (Integer id : ids) {
-                rbacService.removeSessions(id);
-                rbacService.evictUserPermit(id); // 用户变更后同步清理该用户的资源缓存
-            }
+    public Map<String, Object> delete(List<Integer> ids, HttpServletRequest request) {
+        Map<String, Object> result = delete(userDao, ids, rbacService.uid(request));
+        if (ApiUtil.failed(result) || null == ids) return result;
+        for (Integer id : ids) {
+            rbacService.removeSessions(id);
+            rbacService.evictUserPermit(id); // 用户变更后同步清理该用户的资源缓存
         }
         return result;
     }

@@ -27,7 +27,7 @@ public class JD2CKJob {
                 }
             }
             return RowFactory.create(arr);
-        }, RowEncoder.apply(DataTypes.createStructType(Arrays.asList(
+        }, RowEncoder.encoderFor(DataTypes.createStructType(Arrays.asList(
                 DataTypes.createStructField("name", DataTypes.StringType, false),
                 DataTypes.createStructField("mail", DataTypes.StringType, false),
                 DataTypes.createStructField("phone", DataTypes.StringType, false),

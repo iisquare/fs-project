@@ -40,8 +40,7 @@ public class RpcLogController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param) {
         List<Long> ids = DPUtil.parseLongList(param.get("ids"));
-        boolean result = rpcLogService.remove(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(rpcLogService.remove(ids));
     }
 
     @RequestMapping("/config")

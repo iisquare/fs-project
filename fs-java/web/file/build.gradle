@@ -1,7 +1,7 @@
 
 dependencies {
     implementation project(':base:jpa')
-    implementation project(':base:minio')
+    implementation project(':base:s3')
     implementation project(':web:core')
     implementation group: 'com.github.gotson', name: 'webp-imageio', version: '0.2.2'
     implementation group: 'net.coobird', name: 'thumbnailator', version: '0.4.21'

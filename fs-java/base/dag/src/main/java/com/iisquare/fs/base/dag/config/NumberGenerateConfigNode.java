@@ -9,7 +9,7 @@ import com.iisquare.fs.base.dag.util.DAGUtil;
 public class NumberGenerateConfigNode extends DAGConfig {
 
     @Override
-    public Object process() {
+    public JsonNode process() {
         int start = options.at("/start").asInt(0);
         int step = options.at("/step").asInt(0);
         int end = options.at("/end").asInt(0);

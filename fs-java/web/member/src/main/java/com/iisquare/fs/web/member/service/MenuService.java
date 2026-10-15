@@ -212,11 +212,16 @@ public class MenuService extends JPAServiceBase {
     }
 
     @Transactional
-    public boolean remove(List<Integer> ids) {
-        if(null == ids || ids.isEmpty()) return false;
-        List<Integer> all = subtreeIds(ids); // 级联删除子孙节点，避免出现父节点悬空的孤儿节点
-        roleMenuDao.deleteByMenuIdIn(all); // 菜单硬删除时清理授权关联
-        rbacService.evictAllPermit(); // 菜单变更后同步清理资源缓存
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        List<Integer> all;
+        try {
+            all = subtreeIds(ids); // 级联删除子孙节点，避免出现父节点悬空的孤儿节点
+            roleMenuDao.deleteByMenuIdIn(all); // 菜单硬删除时清理授权关联
+            rbacService.evictAllPermit(); // 菜单变更后同步清理资源缓存
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除菜单失败", e.getMessage());
+        }
         return remove(menuDao, all);
     }
 

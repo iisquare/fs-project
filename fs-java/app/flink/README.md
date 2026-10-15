@@ -22,10 +22,15 @@ stream.returns(Types.LIST(Types.STRING));
 
 ### 数据交互
 
-- 批处理算子
-```
-DataSet
-```
+Flink 2.x 已移除 DataSet API，流批统一基于 DataStream API，通过执行环境上的
+`RuntimeExecutionMode`（`STREAMING`/`BATCH`）切换：
+
+- `model=stream` → `RuntimeExecutionMode.STREAMING`
+- `model=batch` → `RuntimeExecutionMode.BATCH`，数据源必须声明为有界（BOUNDED）
+
+批处理SQL算子借助Table API（`StreamTableEnvironment`）实现，运行时依赖
+`flink-table-planner-loader` 与 `flink-table-runtime`。
+
 - 流处理算子
 ```
 DataStream

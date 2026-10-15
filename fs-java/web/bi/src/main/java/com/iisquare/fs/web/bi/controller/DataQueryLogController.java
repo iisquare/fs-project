@@ -40,8 +40,7 @@ public class DataQueryLogController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param) {
         List<Long> ids = DPUtil.parseLongList(param.get("ids"));
-        boolean result = dataQueryLogService.remove(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(dataQueryLogService.remove(ids));
     }
 
     @RequestMapping("/config")

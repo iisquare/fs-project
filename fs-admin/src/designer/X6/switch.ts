@@ -48,7 +48,8 @@ const rows = (data: any = {}): SwitchRow[] => {
   const result: SwitchRow[] = cases.map((item: any) => ({
     id: casePortId(item),
     name: item.name || '未命名分支',
-    summary: `${(item.conditions ?? []).length} 个条件`,
+    // 条件分支（智能体编排）按条件数量表述；任务编排的分支是单个表达式，只表述是否已配置
+    summary: Array.isArray(item.conditions) ? `${item.conditions.length} 个条件` : (item.condition ? '已配置条件' : '未配置条件'),
   }))
   result.push({
     id: defaultPortId,

@@ -143,8 +143,20 @@ public class RbacService extends RbacServiceBase {
     }
 
     @Override
-    public JsonNode identity(Integer uid) {
+    public JsonNode identityById(Integer uid) {
         return userService.identity(uid);
+    }
+
+    /**
+     * 根据会话令牌（Spring Session 标识）解析用户身份，供服务端按调用方令牌识别用户；
+     * 令牌为空、会话不存在或已过期、会话未记录用户时返回 null；
+     * 用户不可用（不存在、已删除、已锁定）时返回空对象，调用方一律按 null 处理
+     */
+    @Override
+    public JsonNode identityByToken(String token) {
+        if (DPUtil.empty(token)) return null;
+        Map<String, Object> session = session(token);
+        return identityById(DPUtil.parseInt(session.get("uid")));
     }
 
     public Map<String, Object> currentInfo(HttpServletRequest request, Map<?, ?> info) {

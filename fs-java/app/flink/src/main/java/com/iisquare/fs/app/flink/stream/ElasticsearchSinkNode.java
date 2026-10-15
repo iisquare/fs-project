@@ -1,34 +1,41 @@
 package com.iisquare.fs.app.flink.stream;
 
+import co.elastic.clients.elasticsearch.core.bulk.CreateOperation;
+import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
+import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperationVariant;
+import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.app.flink.core.FlinkTypes;
 import com.iisquare.fs.app.flink.util.ElasticUtil;
 import com.iisquare.fs.app.flink.util.FlinkUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.dag.core.DAGType;
 import com.iisquare.fs.base.dag.sink.AbstractElasticsearchSink;
-import org.apache.flink.api.common.functions.RuntimeContext;
+import org.apache.flink.api.connector.sink2.SinkWriter;
+import org.apache.flink.connector.elasticsearch.sink.Elasticsearch8AsyncSink;
+import org.apache.flink.connector.elasticsearch.sink.Elasticsearch8AsyncSinkBuilder;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchSinkFunction;
-import org.apache.flink.streaming.connectors.elasticsearch.RequestIndexer;
-import org.apache.flink.streaming.connectors.elasticsearch7.ElasticsearchSink;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.client.Requests;
+import org.apache.http.HttpHost;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+/**
+ * Elasticsearch 写入节点。
+ *
+ * Flink 2.x 采用新版连接器 flink-connector-elasticsearch8，写入语义通过 BulkOperation 表达：
+ * index-覆盖写入（等价upsert）、create-仅新增、update-局部更新。
+ *
+ * 配置项：servers、collection、idField、tableField、mode、username、password、batchSize、flushInterval
+ */
+public class ElasticsearchSinkNode extends AbstractElasticsearchSink<Void> {
 
-public class ElasticsearchSinkNode extends AbstractElasticsearchSink implements ElasticsearchSinkFunction<JsonNode> {
+    String collection, idField, tableField, mode;
+    Elasticsearch8AsyncSink<JsonNode> sink;
 
-    public static final Map<String, DocWriteRequest.OpType> modes = new LinkedHashMap(){{
-        put("index", DocWriteRequest.OpType.INDEX);
-        put("create", DocWriteRequest.OpType.CREATE);
-        put("update", DocWriteRequest.OpType.UPDATE);
-        put("upsert", DocWriteRequest.OpType.UPDATE);
-    }};
-
-    String collection, idField, tableField;
-    DocWriteRequest.OpType mode;
-    ElasticsearchSink<JsonNode> sink;
+    @Override
+    public DAGType<Void> outputType() {
+        return FlinkTypes.VOID;
+    }
 
     @Override
     public boolean configure(JsonNode... configs) {
@@ -36,36 +43,56 @@ public class ElasticsearchSinkNode extends AbstractElasticsearchSink implements 
         collection = options.at("/collection").asText();
         idField = options.at("/idField").asText();
         tableField = options.at("/tableField").asText();
-        mode = modes.getOrDefault(options.at("/mode").asText(), DocWriteRequest.OpType.INDEX);
-        ElasticsearchSink.Builder<JsonNode> builder = new ElasticsearchSink.Builder<>(
-                ElasticUtil.hosts(options.at("/servers").asText()), this);
-        builder.setRestClientFactory(ElasticUtil.client(
-                30, 10, options.at("/username").asText(), options.at("/password").asText()));
+        mode = options.at("/mode").asText("index");
+        Elasticsearch8AsyncSinkBuilder<JsonNode> builder = Elasticsearch8AsyncSinkBuilder.<JsonNode>builder()
+                .setHosts(ElasticUtil.hosts(options.at("/servers").asText()).toArray(new HttpHost[0]))
+                .setElementConverter(this::convert);
+        String username = options.at("/username").asText();
+        if (!DPUtil.empty(username)) {
+            builder.setUsername(username).setPassword(options.at("/password").asText());
+        }
         int batchSize = options.at("/batchSize").asInt();
-        builder.setBulkFlushMaxActions(batchSize > 0 ? batchSize : -1);
-        builder.setBulkFlushInterval(Math.max(-1, options.at("/flushInterval").asInt()));
+        if (batchSize > 0) builder.setMaxBatchSize(batchSize);
+        int flushInterval = options.at("/flushInterval").asInt();
+        if (flushInterval > 0) builder.setMaxTimeInBufferMS(flushInterval);
         sink = builder.build();
         return true;
     }
 
     @Override
-    public Object process() {
-        FlinkUtil.union(DataStream.class, sources).addSink(sink).setParallelism(parallelism).name(getClass().getSimpleName());
+    public Void process() {
+        FlinkUtil.<JsonNode>union(inputs()).sinkTo(sink)
+                .setParallelism(parallelism).name(getClass().getSimpleName());
         return null;
     }
 
-    @Override
-    public void process(JsonNode element, RuntimeContext ctx, RequestIndexer indexer) {
-        String collection = this.collection;
-        if(element.has(tableField)) {
-            collection = element.get(tableField).asText().replaceAll("\\{table\\}", collection);
+    /**
+     * 将输入元素转换为Elasticsearch批量写入操作
+     */
+    public BulkOperationVariant convert(JsonNode element, SinkWriter.Context context) {
+        String index = collection;
+        if (!DPUtil.empty(tableField) && element.has(tableField)) {
+            index = element.get(tableField).asText().replace("{table}", collection);
             ((ObjectNode) element).remove(tableField);
         }
+        if (DPUtil.empty(index)) index = "default";
         String id = null;
-        if(element.has(idField)) {
+        if (!DPUtil.empty(idField) && element.has(idField)) {
             id = element.get(idField).asText();
             ((ObjectNode) element).remove(idField);
         }
-        indexer.add(Requests.indexRequest().opType(mode).index(collection).id(id).source(DPUtil.toJSON(element, Map.class)));
+        JsonData document = JsonData.fromJson(DPUtil.stringify(element));
+        final String target = index;
+        final String docId = id;
+        switch (DPUtil.empty(mode) ? "index" : mode) {
+            case "create":
+                return CreateOperation.of(o -> o.index(target).id(docId).document(document));
+            case "update":
+            case "upsert":
+                return UpdateOperation.of(o -> o.index(target).id(docId)
+                        .action(a -> a.doc(document).docAsUpsert(true)));
+            default:
+                return IndexOperation.of(o -> o.index(target).id(docId).document(document));
+        }
     }
 }

@@ -153,6 +153,7 @@ public class FlowLogService extends JPAServiceBase implements InitializingBean, 
         }
         for (Map.Entry<Integer, Map<String, FlowStage>> entry : stages.entrySet()) { // 提取作业可执行状态
             Integer logId = entry.getKey();
+            branchSkip(stageDao, entry.getValue()); // 条件分支：未命中分支上的节点跳过执行
             Set<String> done = new HashSet<>();
             Set<String> available = new HashSet<>();
             Map<String, String> state = new LinkedHashMap<>();
@@ -240,6 +241,58 @@ public class FlowLogService extends JPAServiceBase implements InitializingBean, 
             }
         }
         return ApiUtil.result(0, null, param);
+    }
+
+    /**
+     * 条件分支调度：条件分支节点执行完成后，未命中分支上的节点（连同挂在未命中分支下的下游节点）标记为跳过执行。
+     *
+     * 判定依据（仅在本次引入的跳过集合内传播，不影响「跳过执行」节点配置的既有语义）：
+     * 1. 节点绑定的分支（DiagramJob 按连线起点锚点写入 data.branch/data.branchOf）与条件分支节点实际命中的分支不一致；
+     * 2. 节点的全部依赖均已因分支未命中而跳过：只存在于未命中分支之下的节点同样不会被调度。
+     * 命中分支上的节点保持原状，依赖完成后正常调度；分支汇聚点有多条入边，不属于跳过集合。
+     */
+    protected int branchSkip(FlowStageDao stageDao, Map<String, FlowStage> stages) {
+        Map<String, String> selected = new LinkedHashMap<>(); // 条件分支节点 -> 命中分支
+        for (FlowStage stage : stages.values()) {
+            if (!FlowStage.isFinished(stage.getState())) continue; // 尚未执行完成，分支未确定
+            JsonNode content = DPUtil.parseJSON(stage.getContent());
+            String branch = null == content ? "" : content.at("/branch").asText("");
+            if (DPUtil.empty(branch)) continue;
+            selected.put(stage.getStageId(), branch);
+        }
+        if (selected.isEmpty()) return 0;
+        Set<String> skipped = new LinkedHashSet<>();
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (FlowStage stage : stages.values()) {
+                if (!FlowStage.State.WAITING.name().equals(stage.getState())) continue;
+                if (!branchSkipped(stage, selected, skipped)) continue;
+                stageDao.finish(stage.getLogId(), stage.getStageId(), FlowStage.State.SKIPPED.name(), System.currentTimeMillis());
+                stage.setState(FlowStage.State.SKIPPED.name());
+                skipped.add(stage.getStageId());
+                changed = true;
+            }
+        }
+        return skipped.size();
+    }
+
+    /** 节点是否因条件分支未命中而跳过 */
+    protected boolean branchSkipped(FlowStage stage, Map<String, String> selected, Set<String> skipped) {
+        JsonNode data = DPUtil.parseJSON(stage.getData());
+        if (null != data) {
+            String branch = data.at("/branch").asText("");
+            String gateway = data.at("/branchOf").asText("");
+            // 绑定的分支已确定且不是命中分支：该节点只挂在未命中的分支上
+            if (!DPUtil.empty(branch) && selected.containsKey(gateway) && !branch.equals(selected.get(gateway))) return true;
+        }
+        // 全部依赖均已跳过：同样只存在于未命中的分支之下
+        String[] depend = DPUtil.explode(",", stage.getDepend());
+        if (depend.length == 0) return false;
+        for (String item : depend) {
+            if (!skipped.contains(item)) return false;
+        }
+        return true;
     }
 
     public ObjectNode config(FlowLog log, Map<Integer, Map<String, String>> stateMap) {

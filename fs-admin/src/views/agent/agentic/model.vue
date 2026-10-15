@@ -2,15 +2,17 @@
 /**
  * 智能体编排 - 编排画布，左侧节点库、中间流程画布、右侧节点属性、底部状态栏。
  * 节点配置以 content.cells 形式整体保存，由后端按应用标识存储。
+ * 顶部「文件」菜单支持把整套编排导出为 JSON 文件，或从文件导入覆盖当前画布，
+ * 便于在不同环境之间搬运编排。
  *
  * 与 server/cron/diagram.vue 的主要差异：本画布由前端定义节点目录（config.ts），
  * 节点尺寸与锚点随数据重建，迭代/循环容器的变量由容器节点自身提供。
  * 新建编排的适配时机由 Flow.fitting 统一处理（见 designer/X6/flow.ts）。
  */
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
-import { CircleCloseFilled, Paperclip, Plus, Promotion } from '@element-plus/icons-vue'
+import { CircleCloseFilled, Download, Paperclip, Plus, Promotion, Upload } from '@element-plus/icons-vue'
 import ChatMessage from '@/components/Chat/ChatMessage.vue'
 import ChatTextBlock from '@/components/Chat/ChatTextBlock.vue'
 import AgenticSteps from '@/components/Agentic/AgenticSteps.vue'
@@ -336,6 +338,109 @@ const handleReload = () => {
 watch(() => diagram.value.mode, (mode: string) => {
   config.mode = mode || 'workflow'
 })
+
+/**
+ * 导入导出：文件是编排的完整快照（编辑字段 + 画布内容），用于在不同环境之间搬运编排。
+ * 导入复用载入路径上的形状升级（normalizeCells）与字段修复（repairCells），
+ * 外来文件与接口返回的历史数据因此走同一套兼容处理。
+ */
+const fileInputRef = ref<HTMLInputElement>()
+// 文件标识与版本：先校验再落到画布，避免结构不符的文件把当前编排清空
+const fileFormat = 'fs-agentic'
+const fileVersion = 1
+
+const handleFileCommand = (command: string) => {
+  if ('import' === command) return handleImportClick()
+  if ('export' === command) return handleExport()
+}
+
+const handleExport = () => {
+  const flow: any = flowRef.value?.flow
+  if (!flow) return
+  const data = {
+    format: fileFormat,
+    version: fileVersion,
+    exportedTime: Date.now(),
+    name: diagram.value.name ?? '',
+    mode: diagram.value.mode ?? 'workflow',
+    icon: diagram.value.icon ?? '',
+    tags: diagram.value.tags ?? [],
+    description: diagram.value.description ?? '',
+    content: flow.toJSON(),
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  // 编排名称作为文件名，去掉文件系统不允许的字符
+  link.download = `${String(diagram.value.name || '编排').replace(/[\\/:*?"<>|]/g, '_')}.json`
+  link.click()
+  window.URL.revokeObjectURL(url)
+  ElMessage.success('导出完成')
+}
+
+// 触发文件选择前清空上一次的选择值，保证连续导入同一个文件也能触发 change
+const handleImportClick = () => {
+  const input = fileInputRef.value
+  if (!input) return
+  input.value = ''
+  input.click()
+}
+
+const handleImportChange = (event: any) => {
+  const file = event?.target?.files?.[0]
+  if (file) handleImportFile(file)
+}
+
+const handleImportFile = (file: File) => {
+  const reader = new FileReader()
+  reader.onload = () => applyImport(String(reader.result ?? ''))
+  reader.onerror = () => ElMessage.error('导入失败：文件读取异常')
+  reader.readAsText(file)
+}
+
+const applyImport = (text: string) => {
+  let data: any = null
+  try {
+    data = JSON.parse(text)
+  } catch (error) {
+    ElMessage.error('导入失败：文件不是有效的 JSON')
+    return
+  }
+  if (!data || ('string' === typeof data.format && fileFormat !== data.format)) {
+    ElMessage.error('导入失败：文件不是本系统的编排文件')
+    return
+  }
+  const cells = data.content?.cells
+  if (!Array.isArray(cells)) {
+    ElMessage.error('导入失败：文件缺少编排内容（content.cells）')
+    return
+  }
+  // 当前版本未登记的节点类型导入后无法渲染，提前提示而不是静默丢弃
+  const isEdge = (cell: any) => ['flow-edge', 'edge'].indexOf(cell?.shape) !== -1
+  const unknown = cells.filter((cell: any) => !isEdge(cell) && !DesignUtil.widgetByType(cell?.data?.type, config))
+  ElMessageBox.confirm('导入会覆盖当前画布上的编排内容（保存后生效），是否继续？', '导入编排', { type: 'warning' }).then(() => {
+    const flow: any = flowRef.value?.flow
+    if (!flow) return
+    // 应用类型既决定结束节点的配置形态，也决定右侧属性面板的实例，需在载入前同步
+    config.mode = data.mode || 'workflow'
+    Object.assign(diagram.value, {
+      name: data.name || diagram.value.name,
+      mode: data.mode || diagram.value.mode,
+      icon: data.icon ?? diagram.value.icon,
+      description: data.description ?? diagram.value.description,
+      tags: Array.isArray(data.tags) ? data.tags : (diagram.value.tags ?? []),
+    })
+    flow.fromJSON(normalizeCells(cells))
+    repairCells()
+    // 画布内容已被整体替换，清掉右侧属性面板上残留的旧节点
+    activeItem.value = {}
+    ElMessage.success('导入完成，保存后生效')
+    if (unknown.length) {
+      ElMessage.warning(`其中 ${unknown.length} 个节点类型当前版本不支持，导入后可能无法正常显示`)
+    }
+  }).catch(() => {})
+}
 
 const runVisible = ref(false)
 const runLoading = ref(false)
@@ -1056,6 +1161,17 @@ onMounted(() => {
         <el-tag :type="publishState.type" size="small" effect="plain">{{ publishState.text }}</el-tag>
       </el-space>
       <el-space>
+        <!-- 文件菜单：导入/导出当前编排，导出内容为可回灌的完整快照 -->
+        <el-dropdown popper-class="fs-designer-menu" @command="handleFileCommand">
+          <el-button text><LayoutIcon name="FolderOpened" /><span>文件</span></el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="import" :icon="Upload">导入编排</el-dropdown-item>
+              <el-dropdown-item command="export" :icon="Download">导出编排</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+        <input ref="fileInputRef" type="file" accept=".json,application/json" style="display: none" @change="handleImportChange" />
         <el-button text @click="handleRun"><LayoutIcon name="VideoPlay" /><span>调试运行</span></el-button>
         <el-button text @click="handleSubmit" :loading="loading"><LayoutIcon name="Check" /><span>保存</span></el-button>
         <el-button text type="primary" @click="handlePublish" :loading="publishing"><LayoutIcon name="Promotion" /><span>发布</span></el-button>

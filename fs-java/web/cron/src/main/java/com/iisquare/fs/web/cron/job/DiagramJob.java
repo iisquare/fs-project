@@ -64,6 +64,9 @@ public class DiagramJob implements Job {
         FlowLog flowLog = flowLogDao.save(logBuilder.build());
         // 解析流程节点
         ObjectNode cells = DPUtil.json2object(json.at("/cells"), "id");
+        Map<String, Integer> incoming = new LinkedHashMap<>(); // 节点入度：仅一条入边的节点才可能只属于某个分支
+        Map<String, String> branchPort = new LinkedHashMap<>(); // 节点 -> 分支锚点（条件分支的连线起点锚点）
+        Map<String, String> branchNode = new LinkedHashMap<>(); // 节点 -> 条件分支节点标识
         Iterator<JsonNode> iterator = json.at("/cells").iterator();
         while (iterator.hasNext()) {
             ObjectNode node = (ObjectNode) iterator.next();
@@ -75,6 +78,14 @@ public class DiagramJob implements Job {
                 ObjectNode target = (ObjectNode) cells.get(targetId);
                 ArrayNode depend = target.has("depend") ? (ArrayNode) target.get("depend") : target.putArray("depend");
                 depend.add(sourceId);
+                incoming.put(targetId, incoming.getOrDefault(targetId, 0) + 1);
+                String portId = node.at("/source/port").asText("");
+                ObjectNode source = cells.has(sourceId) ? (ObjectNode) cells.get(sourceId) : null;
+                // 条件分支：连线起点锚点即分支标识，目标节点据此判定是否跳过执行
+                if (null != source && "agent-switch".equals(source.at("/shape").asText()) && !DPUtil.empty(portId)) {
+                    branchPort.put(targetId, portId);
+                    branchNode.put(targetId, sourceId);
+                }
                 continue;
             }
             // 更改所属节点
@@ -102,8 +113,20 @@ public class DiagramJob implements Job {
         List<FlowStage> stages = new ArrayList<>();
         while (iterator.hasNext()) {
             JsonNode node = iterator.next();
+            String id = node.at("/id").asText();
+            /**
+             * 条件分支上的节点绑定分支标识：仅有一条入边且该入边来自条件分支时才绑定，
+             * 多入边的节点是分支汇聚点，任意分支命中都应执行
+             */
+            if (1 == incoming.getOrDefault(id, 0) && branchPort.containsKey(id)) {
+                JsonNode nodeData = node.at("/data");
+                if (nodeData instanceof ObjectNode) {
+                    ((ObjectNode) nodeData).put("branch", branchPort.get(id));
+                    ((ObjectNode) nodeData).put("branchOf", branchNode.get(id));
+                }
+            }
             FlowStage.FlowStageBuilder stageBuilder = FlowStage.builder();
-            stageBuilder.logId(flowLog.getId()).stageId(node.at("/id").asText());
+            stageBuilder.logId(flowLog.getId()).stageId(id);
             stageBuilder.parentId(node.at("/parent").asText(""));
             stageBuilder.depend(DPUtil.implode(",", DPUtil.toJSON(node.at("/depend"), List.class)));
             stageBuilder.type(node.at("/data/type").asText(""));

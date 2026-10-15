@@ -58,6 +58,10 @@ public class TrinoService extends ServiceBase {
     String icebergS3PathStyleAccess;
     @Value("${fs.bi.trino.iceberg.bucket:iceberg}")
     String icebergBucket;
+    @Value("${fs.bi.trino.query-timeout:5}")
+    int queryTimeout;
+    @Value("${fs.bi.trino.offline-timeout:1800}")
+    int offlineTimeout;
 
     public MaintainEmitter reload(Map<?, ?> param, MaintainEmitter emitter) {
         Boolean locked = redis.opsForValue().setIfAbsent(
@@ -318,9 +322,17 @@ public class TrinoService extends ServiceBase {
     }
 
     public void execute(String sql) throws SQLException {
+        execute(sql, queryTimeout);
+    }
+
+    /**
+     * 执行SQL并指定查询超时（秒）。Trino JDBC 会将超时下发为会话属性 query_max_run_time，
+     * 传0表示不限时（由服务端默认策略约束）。
+     */
+    public void execute(String sql, int timeoutSeconds) throws SQLException {
         try (Connection connection = trinoDataSource.getConnection();
             Statement statement = connection.createStatement()) {
-            statement.setQueryTimeout(5);
+            statement.setQueryTimeout(timeoutSeconds);
             statement.execute(sql);
         }
     }
@@ -355,12 +367,14 @@ public class TrinoService extends ServiceBase {
             sql.append("\n)");
         }
         sql.append("\nAS\n").append(content);
-        execute(sql.toString());
+        // 物化视图构建属于离线处理，放宽执行超时
+        execute(sql.toString(), bMaterialized ? offlineTimeout : queryTimeout);
     }
 
     public String refreshView(String name) throws SQLException {
         String sql = "REFRESH MATERIALIZED VIEW " + viewName(name);
-        execute(sql);
+        // 物化视图刷新属于离线处理，放宽执行超时
+        execute(sql, offlineTimeout);
         return sql;
     }
 

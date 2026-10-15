@@ -44,8 +44,7 @@ public class UserController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = userService.delete(ids, request);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(userService.delete(ids, request));
     }
 
     @RequestMapping("/config")

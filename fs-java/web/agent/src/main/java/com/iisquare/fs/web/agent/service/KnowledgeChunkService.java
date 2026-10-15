@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
+import com.iisquare.fs.base.elasticsearch.mvc.ElasticsearchBase;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.base.web.sse.MaintainEmitter;
@@ -201,9 +202,16 @@ public class KnowledgeChunkService extends JPAServiceBase {
         return emitter;
     }
 
-    public boolean remove(List<Integer> ids) {
+    /**
+     * 删除检索块，先清理 Elasticsearch 记录，索引删除失败时不再删除数据库记录，便于重试
+     */
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
         // 同步删除 Elasticsearch 记录
-        chunkES.delete(ids);
+        long indexed = chunkES.delete(ids);
+        if (ElasticsearchBase.STATE_FAILED == indexed) {
+            return ApiUtil.result(1500, "删除检索索引失败", ids);
+        }
         return remove(chunkDao, ids);
     }
 

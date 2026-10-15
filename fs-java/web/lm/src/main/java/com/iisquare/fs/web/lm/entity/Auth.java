@@ -30,6 +30,8 @@ public class Auth implements Serializable {
     @Column
     private String secret; // 密钥，唯一
     @Column
+    private Integer proxyable; // 是否允许用户代理，1-是，0-否，调用方带会话令牌时按令牌对应的用户记账
+    @Column
     private String modelIds; // 仅指定模型可用，留空为不限制
     @Column
     private String status;

@@ -24,7 +24,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 数据查询日志服务：记录即席查询（SQL查询）、数据集查询与数据主题查询的执行情况，
+ * 数据查询日志服务：记录即席查询（SQL查询）、数据集查询与数据主题查询的执行情况。
+ * 日志只针对真正执行的 SQL 查询（用于审计业务数据），获取主题字典等元数据操作不入日志；
  * 日志包含查询时间、查询用户、来源IP、耗时与结果状态等关键信息。
  */
 @Service
@@ -98,9 +99,11 @@ public class DataQueryLogService extends JPAServiceBase {
 
     /**
      * 写入查询日志：日志失败不影响查询结果，仅输出告警。
+     * 未记录 SQL 的日志直接跳过——查询日志只用于审计实际执行的 SQL。
      */
     public DataQueryLog record(DataQueryLog log) {
         if (null == log) return null;
+        if (DPUtil.empty(log.getSqlText())) return null;
         try {
             if (null == log.getCreatedTime() || log.getCreatedTime() < 1) {
                 log.setCreatedTime(System.currentTimeMillis());
@@ -151,10 +154,14 @@ public class DataQueryLogService extends JPAServiceBase {
         return rows;
     }
 
-    public boolean remove(List<Long> ids) {
-        if (null == ids || ids.isEmpty()) return false;
-        dataQueryLogDao.deleteAllByIdInBatch(ids);
-        return true;
+    public Map<String, Object> remove(List<Long> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            dataQueryLogDao.deleteAllByIdInBatch(ids);
+            return ApiUtil.result(0, null, ids.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除查询日志失败", e.getMessage());
+        }
     }
 
 }

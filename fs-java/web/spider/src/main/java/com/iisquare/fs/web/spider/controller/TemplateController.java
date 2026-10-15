@@ -50,8 +50,7 @@ public class TemplateController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = templateService.delete(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(templateService.delete(ids));
     }
 
     @RequestMapping("/config")

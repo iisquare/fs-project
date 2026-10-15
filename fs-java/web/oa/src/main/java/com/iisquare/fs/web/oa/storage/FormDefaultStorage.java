@@ -67,7 +67,7 @@ public class FormDefaultStorage extends FormStorage {
 
     @Override
     public long delete(ObjectNode frame, List<String> ids, int uid) {
-        return formDataService.delete(ids, uid);
+        return formDataService.deleteRows(ids);
     }
 
     @Override

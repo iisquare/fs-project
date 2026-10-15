@@ -476,7 +476,7 @@ public class UsageService extends JPAServiceBase {
         return rows;
     }
 
-    public boolean delete(List<Long> ids, HttpServletRequest request) {
+    public Map<String, Object> delete(List<Long> ids, HttpServletRequest request) {
         return delete(usageDao, ids, rbacService.uid(request));
     }
 

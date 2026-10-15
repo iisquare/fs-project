@@ -12,7 +12,7 @@ include 'base:elasticsearch'
 include 'base:mongodb'
 include 'base:dag'
 include 'base:neo4j'
-include 'base:minio'
+include 'base:s3'
 include 'base:zookeeper'
 include 'base:jsoup'
 

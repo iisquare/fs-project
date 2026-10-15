@@ -114,17 +114,21 @@ public class PrintService extends ServiceBase {
         return ApiUtil.result(0, null, info);
     }
 
-    public boolean delete(List<Integer> ids, int uid) {
-        if(null == ids || ids.size() < 1) return false;
-        List<Print> list = printDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        for (Print item : list) {
-            item.setStatus(-1);
-            item.setUpdatedTime(time);
-            item.setUpdatedUid(uid);
+    public Map<String, Object> delete(List<Integer> ids, int uid) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            List<Print> list = printDao.findAllById(ids);
+            long time = System.currentTimeMillis();
+            for (Print item : list) {
+                item.setStatus(-1);
+                item.setUpdatedTime(time);
+                item.setUpdatedUid(uid);
+            }
+            printDao.saveAll(list);
+            return ApiUtil.result(0, null, list.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除打印模板失败", e.getMessage());
         }
-        printDao.saveAll(list);
-        return true;
     }
 
 }

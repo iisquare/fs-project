@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @ComponentScan(basePackages = {
@@ -18,6 +19,7 @@ import org.springframework.context.annotation.ComponentScan;
 @EnableFeignClients(basePackages = {
         "com.iisquare.fs.web.core.rpc"
 }, defaultConfiguration = { FeignInterceptor.class })
+@EnableScheduling
 public class BIApplication {
 
     public static void main(String[] args) {

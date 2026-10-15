@@ -151,23 +151,31 @@ public class QualityPlanService extends ServiceBase {
         return result;
     }
 
-    public boolean remove(List<Integer> ids) {
-        if(null == ids || ids.size() < 1) return false;
-        planDao.deleteInBatch(planDao.findAllById(ids));
-        return true;
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            planDao.deleteInBatch(planDao.findAllById(ids));
+            return ApiUtil.result(0, null, ids.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除质检方案失败", e.getMessage());
+        }
     }
 
-    public boolean delete(List<Integer> ids, int uid) {
-        if(null == ids || ids.size() < 1) return false;
-        List<QualityPlan> list = planDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        for (QualityPlan item : list) {
-            item.setStatus(-1);
-            item.setUpdatedTime(time);
-            item.setUpdatedUid(uid);
+    public Map<String, Object> delete(List<Integer> ids, int uid) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            List<QualityPlan> list = planDao.findAllById(ids);
+            long time = System.currentTimeMillis();
+            for (QualityPlan item : list) {
+                item.setStatus(-1);
+                item.setUpdatedTime(time);
+                item.setUpdatedUid(uid);
+            }
+            planDao.saveAll(list);
+            return ApiUtil.result(0, null, list.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除质检方案失败", e.getMessage());
         }
-        planDao.saveAll(list);
-        return true;
     }
 
     public Map<String, Object> check(Map<?, ?> param, HttpServletRequest request) {

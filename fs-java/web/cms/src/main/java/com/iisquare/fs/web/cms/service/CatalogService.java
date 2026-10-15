@@ -181,10 +181,14 @@ public class CatalogService extends ServiceBase {
         return result;
     }
 
-    public boolean remove(List<Integer> ids) {
-        if(null == ids || ids.size() < 1) return false;
-        catalogDao.deleteInBatch(catalogDao.findAllById(ids));
-        return true;
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            catalogDao.deleteInBatch(catalogDao.findAllById(ids));
+            return ApiUtil.result(0, null, ids.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除栏目失败", e.getMessage());
+        }
     }
 
     public Map<String, Object> delete(Integer id, int uid) {

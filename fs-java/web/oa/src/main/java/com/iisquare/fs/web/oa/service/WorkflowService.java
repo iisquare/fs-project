@@ -600,17 +600,21 @@ public class WorkflowService extends ServiceBase {
         return ApiUtil.result(0, null, info);
     }
 
-    public boolean delete(List<Integer> ids, int uid) {
-        if(null == ids || ids.size() < 1) return false;
-        List<Workflow> list = workflowDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        for (Workflow item : list) {
-            item.setStatus(-1);
-            item.setUpdatedTime(time);
-            item.setUpdatedUid(uid);
+    public Map<String, Object> delete(List<Integer> ids, int uid) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            List<Workflow> list = workflowDao.findAllById(ids);
+            long time = System.currentTimeMillis();
+            for (Workflow item : list) {
+                item.setStatus(-1);
+                item.setUpdatedTime(time);
+                item.setUpdatedUid(uid);
+            }
+            workflowDao.saveAll(list);
+            return ApiUtil.result(0, null, list.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除流程失败", e.getMessage());
         }
-        workflowDao.saveAll(list);
-        return true;
     }
 
     public List<Workflow> fillDeployment(List<Workflow> list) {

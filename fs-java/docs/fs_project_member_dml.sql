@@ -72,8 +72,8 @@ INSERT INTO `fs_member_menu` VALUES (19,'个人信息','后台首页:个人中�
 INSERT INTO `fs_member_menu` VALUES (20,'修改密码','后台首页:个人中心:修改密码',1,18,'','/account/password','',0,1,'',1584601575033,1,1584601575033,1);
 INSERT INTO `fs_member_menu` VALUES (24,'调试工具','数据采集:调试工具',26,0,'MagicStick','/spider/tool','',0,1,'',1585195333832,1,1767842065712,1);
 INSERT INTO `fs_member_menu` VALUES (25,'页面解析','数据采集:调试工具:页面解析',26,24,'','/spider/tool/parse','',0,1,'',1585195373342,1,1767842085126,1);
-INSERT INTO `fs_member_menu` VALUES (27,'数据加工','后台管理:商业智能:数据加工',31,0,'apartment','/bi/diagram','',0,1,'',1585384219002,1,1634258659883,1);
-INSERT INTO `fs_member_menu` VALUES (28,'清洗规则','后台管理:商业智能:数据加工:清洗规则',31,27,'','/bi/diagram/list','',0,1,'',1585384240550,1,1637656893932,1);
+INSERT INTO `fs_member_menu` VALUES (27,'数据加工','商业智能:数据加工',31,0,'Box','/bi/diagram','',0,1,'',1585384219002,1,1791445422210,1);
+INSERT INTO `fs_member_menu` VALUES (28,'计算编排','商业智能:数据加工:计算编排',31,27,'','/bi/diagram/list','',0,1,'',1585384240550,1,1791445442878,1);
 INSERT INTO `fs_member_menu` VALUES (29,'数据准备','商业智能:数据准备',31,0,'basic.database','/bi/data','',0,1,'',1585661766299,1,1785372642468,1);
 INSERT INTO `fs_member_menu` VALUES (30,'数据源','商业智能:数据准备:数据源',31,29,'','/bi/data/datasource','',0,1,'',1585661826570,1,1785372650395,1);
 INSERT INTO `fs_member_menu` VALUES (31,'数据集','后台管理:商业智能:数据管理:数据集',31,29,'','/bi/data/dataset','',0,1,'',1585661841784,1,1634258119688,1);
@@ -236,6 +236,10 @@ INSERT INTO `fs_member_menu` VALUES (416,'运行监控','商业智能:运行监�
 INSERT INTO `fs_member_menu` VALUES (417,'查询日志','商业智能:运行监控:查询日志',31,416,'','/bi/monitor/queryLog','',0,1,'',1789948800000,1,1789948800000,1);
 INSERT INTO `fs_member_menu` VALUES (418,'对比统计','智能体:模型对话:对比统计',308,401,'','/agent/chat/statistic','',90,1,'',1790229311854,1,1790229311854,1);
 INSERT INTO `fs_member_menu` VALUES (419,'流程统计','智能体:智能体:流程统计',308,406,'','/agent/agentic/statistic','',90,1,'',1790553600000,1,1790553600000,1);
+INSERT INTO `fs_member_menu` VALUES (420,'集群配置','商业智能:数据加工:集群配置',31,27,'','/bi/diagram/cluster','',0,1,'',1791445775290,1,1791445775290,1);
+INSERT INTO `fs_member_menu` VALUES (421,'作业监控','商业智能:数据加工:作业监控',31,27,'','/bi/diagram/job','',0,1,'',1791445792408,1,1791445792408,1);
+INSERT INTO `fs_member_menu` VALUES (422,'客户端','智能体:客户端',308,0,'Promotion','/agent/bot','',0,1,'',1791982671108,1,1791982671108,1);
+INSERT INTO `fs_member_menu` VALUES (423,'项目共享','智能体:客户端:项目共享',308,422,'','/agent/bot/projectShare','',0,1,'',1791982780256,1,1791982780256,1);
 /*!40000 ALTER TABLE `fs_member_menu` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -581,6 +585,16 @@ INSERT INTO `fs_member_resource` VALUES (425,'重建检索块','智能体:维护
 INSERT INTO `fs_member_resource` VALUES (426,'查询日志','商业智能:查询日志',31,0,'bi','dataQueryLog','',0,1,'',1789948800000,1,1789948800000,1);
 INSERT INTO `fs_member_resource` VALUES (427,'删除','商业智能:查询日志:删除',31,426,'bi','dataQueryLog','delete',0,1,'',1789948800000,1,1789948800000,1);
 INSERT INTO `fs_member_resource` VALUES (428,'模型对比','智能体:模型对比',308,0,'agent','compare','',0,1,'',1790217079731,1,1790217079731,1);
+INSERT INTO `fs_member_resource` VALUES (429,'集群','商业智能:集群',31,0,'bi','cluster','',0,1,'',1791445190234,1,1791445343564,1);
+INSERT INTO `fs_member_resource` VALUES (430,'作业','商业智能:作业',31,0,'bi','job','',0,1,'',1791445209170,1,1791445359586,1);
+INSERT INTO `fs_member_resource` VALUES (431,'添加','商业智能:集群:添加',31,429,'bi','cluster','add',0,1,'',1791445608637,1,1791445608637,1);
+INSERT INTO `fs_member_resource` VALUES (432,'修改','商业智能:集群:修改',31,429,'bi','cluster','modify',0,1,'',1791445615596,1,1791445615596,1);
+INSERT INTO `fs_member_resource` VALUES (433,'删除','商业智能:集群:删除',31,429,'bi','cluster','delete',0,1,'',1791445622243,1,1791445622243,1);
+INSERT INTO `fs_member_resource` VALUES (434,'本地客户端','智能体:本地客户端',308,0,'agent','bot','',0,1,'',1791794631297,1,1791794631297,1);
+INSERT INTO `fs_member_resource` VALUES (435,'项目分享','智能体:项目分享',308,0,'agent','projectShare','',0,1,'',1791982490757,1,1791982490757,1);
+INSERT INTO `fs_member_resource` VALUES (436,'添加','智能体:项目分享:添加',308,435,'agent','projectShare','add',0,1,'',1791983346959,1,1791983346959,1);
+INSERT INTO `fs_member_resource` VALUES (437,'修改','智能体:项目分享:修改',308,435,'agent','projectShare','modify',0,1,'',1791983356275,1,1791983356275,1);
+INSERT INTO `fs_member_resource` VALUES (438,'删除','智能体:项目分享:删除',308,435,'agent','projectShare','delete',0,1,'',1791983365286,1,1791983365286,1);
 /*!40000 ALTER TABLE `fs_member_resource` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -593,4 +607,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-09-24 13:56:59
+-- Dump completed on 2026-10-14 21:09:56

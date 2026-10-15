@@ -68,10 +68,14 @@ public class RpcLogService extends JPAServiceBase {
         return ApiUtil.result(0, null, info);
     }
 
-    public boolean remove(List<Long> ids) {
-        if (null == ids || ids.isEmpty()) return false;
-        rpcLogDao.deleteAllByIdInBatch(ids);
-        return true;
+    public Map<String, Object> remove(List<Long> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            rpcLogDao.deleteAllByIdInBatch(ids);
+            return ApiUtil.result(0, null, ids.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除调用日志失败", e.getMessage());
+        }
     }
 
 }

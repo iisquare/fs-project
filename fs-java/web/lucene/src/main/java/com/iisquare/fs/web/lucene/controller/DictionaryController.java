@@ -71,8 +71,7 @@ public class DictionaryController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = dictionaryService.delete(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(dictionaryService.delete(ids));
     }
 
     @RequestMapping("/unique")

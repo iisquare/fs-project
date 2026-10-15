@@ -15,7 +15,7 @@ public class SparkApplication {
 
     public static void main(String... args) throws Exception {
         JsonNode diagram = DAGUtil.loadDiagram(args[0]);
-        Map<String, Class<DAGNode>> nodes = DAGUtil.scanNodes(
+        Map<String, Class<? extends DAGNode<?>>> nodes = DAGUtil.scanNodes(
                 SparkApplication.class.getPackage().getName() + ".node",
                 SparkApplication.class.getPackage().getName() + "." + diagram.at("/model").asText(),
                 DAGCore.class.getPackage().getName() + ".node",
@@ -24,7 +24,12 @@ public class SparkApplication {
         SparkConf config = new SparkConf().setAppName(appName);
         if (DPUtil.empty(System.getenv("spark.master"))) config.setMaster("local");
         try (SparkSession session = SparkSession.builder().config(config).getOrCreate()) {
-            new SparkRunner(session, diagram, nodes).execute();
+            SparkRunner runner = new SparkRunner(session, diagram, nodes);
+            runner.execute();
+            if (runner.isStreaming()) {
+                // 流式作业持续运行，等待任意流查询终止
+                session.streams().awaitAnyTermination();
+            }
         }
     }
 

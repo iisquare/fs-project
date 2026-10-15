@@ -142,7 +142,19 @@ public class RbacController extends RpcControllerBase {
      */
     @PostMapping("/identityById")
     public String identityByIdAction(@RequestBody Map<String, Object> param, HttpServletRequest request) {
-        JsonNode identity = rbacService.identity(DPUtil.parseInt(param.get("id")));
+        JsonNode identity = rbacService.identityById(DPUtil.parseInt(param.get("id")));
+        return ApiUtil.echoResult(0, null, identity == null || identity.isEmpty() ? null : identity);
+    }
+
+    /**
+     * 根据会话令牌获取用户身份信息，返回结构与 /identity 一致。
+     * 供服务端按调用方令牌识别用户（如模型网关的用户代理记账）：
+     * 令牌不经过当前请求的会话，直接按令牌读取 Spring Session；
+     * 令牌为空、会话不存在或已过期、用户不可用时 data 返回 null。
+     */
+    @PostMapping("/identityByToken")
+    public String identityByTokenAction(@RequestBody Map<String, Object> param, HttpServletRequest request) {
+        JsonNode identity = rbacService.identityByToken(DPUtil.parseString(param.get("token")));
         return ApiUtil.echoResult(0, null, identity == null || identity.isEmpty() ? null : identity);
     }
 

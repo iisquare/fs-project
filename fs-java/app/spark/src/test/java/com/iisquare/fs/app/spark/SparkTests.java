@@ -11,7 +11,6 @@ import org.apache.spark.api.java.function.ForeachPartitionFunction;
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.catalog.Catalog;
-import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder;
 import org.apache.spark.sql.catalyst.encoders.RowEncoder;
 import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.types.DataTypes;
@@ -112,7 +111,7 @@ public class SparkTests implements Serializable {
             public Row call(Row row) throws Exception {
                 return RowFactory.create(row.getString(4));
             }
-        }, RowEncoder.apply(DataTypes.createStructType(Arrays.asList(
+        }, RowEncoder.encoderFor(DataTypes.createStructType(Arrays.asList(
                 DataTypes.createStructField("module", DataTypes.StringType, false)
         )))).show();
         dataset.map(new MapFunction<Row, Row>() {
@@ -120,7 +119,7 @@ public class SparkTests implements Serializable {
             public Row call(Row row) throws Exception {
                 return RowFactory.create(row.getString(5), row.getString(6));
             }
-        }, RowEncoder.apply(DataTypes.createStructType(Arrays.asList(
+        }, RowEncoder.encoderFor(DataTypes.createStructType(Arrays.asList(
                 DataTypes.createStructField("controller", DataTypes.StringType, false),
                 DataTypes.createStructField("action", DataTypes.StringType, false)
         )))).show();
@@ -130,7 +129,7 @@ public class SparkTests implements Serializable {
     @Test
     public void memoryTest() {
         SparkSession spark = SparkSession.builder().appName("write-test").master("local").getOrCreate();
-        ExpressionEncoder<Row> encoder = RowEncoder.apply(DataTypes.createStructType(Arrays.asList(
+        Encoder<Row> encoder = RowEncoder.encoderFor(DataTypes.createStructType(Arrays.asList(
                 DataTypes.createStructField("t", DataTypes.StringType, false),
                 DataTypes.createStructField("j", DataTypes.IntegerType, false),
                 DataTypes.createStructField("score", DataTypes.DoubleType, false),
@@ -186,7 +185,7 @@ public class SparkTests implements Serializable {
         spark.createDataset(Arrays.asList(
                 RowFactory.create(1, 1),
                 RowFactory.create(2, 1)
-        ), RowEncoder.apply(DataTypes.createStructType(Arrays.asList(
+        ), RowEncoder.encoderFor(DataTypes.createStructType(Arrays.asList(
                 DataTypes.createStructField("aid", DataTypes.IntegerType, false),
                 DataTypes.createStructField("score", DataTypes.IntegerType, false)
         )))).createOrReplaceTempView("t_a");
@@ -195,7 +194,7 @@ public class SparkTests implements Serializable {
                 RowFactory.create(2, 2),
                 RowFactory.create(3, 0),
                 RowFactory.create(4, 1)
-        ), RowEncoder.apply(DataTypes.createStructType(Arrays.asList(
+        ), RowEncoder.encoderFor(DataTypes.createStructType(Arrays.asList(
                 DataTypes.createStructField("bid", DataTypes.IntegerType, false),
                 DataTypes.createStructField("aid", DataTypes.IntegerType, false)
         )))).createOrReplaceTempView("t_b");
@@ -203,7 +202,7 @@ public class SparkTests implements Serializable {
                 RowFactory.create(1, 1, "2021"),
                 RowFactory.create(2, 2, "2021"),
                 RowFactory.create(3, 3, "2022")
-        ), RowEncoder.apply(DataTypes.createStructType(Arrays.asList(
+        ), RowEncoder.encoderFor(DataTypes.createStructType(Arrays.asList(
                 DataTypes.createStructField("cid", DataTypes.IntegerType, false),
                 DataTypes.createStructField("bid", DataTypes.IntegerType, false),
                 DataTypes.createStructField("time", DataTypes.StringType, false)

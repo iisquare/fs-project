@@ -198,7 +198,8 @@ public class CompareService extends JPAServiceBase implements DisposableBean {
 
     /**
      * 可调试的模型清单：取自网关的 /v1/models，也就是这个服务级密钥实际够得着的模型。
-     * 归一成 `{ rows: [{ name, ownedBy }] }`，页面的下拉与手输都用它。
+     * 归一成 `{ rows: [{ name, ownedBy, contextLength }] }`，页面的下拉与手输都用它。
+     * contextLength 是模型的上下文长度（词元数），与客户端 bot 接口同一口径。
      */
     public Map<String, Object> models() {
         Map<String, Object> result = aiService.models();
@@ -213,8 +214,18 @@ public class CompareService extends JPAServiceBase implements DisposableBean {
             ObjectNode row = rows.addObject();
             row.put("name", name);
             row.put("ownedBy", item.at("/owned_by").asText(""));
+            row.put("contextLength", contextLength(item));
         }
         return ApiUtil.result(0, null, data);
+    }
+
+    /**
+     * 模型上下文长度：取网关 /v1/models 给出的 context_length（网关按模型的「上下文长度」配置算出）。
+     * 网关没给时退回上下文长度参数的本名 max_position_embeddings，两处都没有就是 0（未知）。
+     */
+    protected int contextLength(JsonNode item) {
+        int length = item.at("/context_length").asInt(0);
+        return length > 0 ? length : item.at("/max_position_embeddings").asInt(0);
     }
 
     /* ------------------------------- 工作区 ------------------------------- */
@@ -316,22 +327,26 @@ public class CompareService extends JPAServiceBase implements DisposableBean {
     }
 
     /** 删除工作区：标记删除，只作用于自己的；对比记录不受影响 */
-    public boolean workspaceDelete(List<Integer> ids, HttpServletRequest request) {
-        if (null == ids || ids.isEmpty()) return false;
-        int uid = rbacService.uid(request);
-        List<CompareWorkspace> rows = workspaceDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        List<CompareWorkspace> targets = new ArrayList<>();
-        for (CompareWorkspace item : rows) {
-            if (item.getDeletedTime() > 0) continue;
-            if (!Objects.equals(item.getCreatedUid(), uid)) continue;
-            item.setDeletedTime(time);
-            item.setDeletedUid(uid);
-            targets.add(item);
+    public Map<String, Object> workspaceDelete(List<Integer> ids, HttpServletRequest request) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            int uid = rbacService.uid(request);
+            List<CompareWorkspace> rows = workspaceDao.findAllById(ids);
+            long time = System.currentTimeMillis();
+            List<CompareWorkspace> targets = new ArrayList<>();
+            for (CompareWorkspace item : rows) {
+                if (item.getDeletedTime() > 0) continue;
+                if (!Objects.equals(item.getCreatedUid(), uid)) continue;
+                item.setDeletedTime(time);
+                item.setDeletedUid(uid);
+                targets.add(item);
+            }
+            if (targets.isEmpty()) return ApiUtil.result(1404, "没有可删除的工作区", ids);
+            workspaceDao.saveAll(targets);
+            return ApiUtil.result(0, null, targets.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除工作区失败", e.getMessage());
         }
-        if (targets.isEmpty()) return false;
-        workspaceDao.saveAll(targets);
-        return true;
     }
 
     /** 投影 → 摘要行：列表用 */
@@ -524,27 +539,33 @@ public class CompareService extends JPAServiceBase implements DisposableBean {
     }
 
     /** 删除运行记录：标记删除，只作用于自己的记录 */
-    public boolean runRemove(List<Integer> ids, HttpServletRequest request) {
-        if (null == ids || ids.isEmpty()) return false;
-        int uid = rbacService.uid(request);
-        List<CompareRun> rows = runDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        List<CompareRun> targets = new ArrayList<>();
-        for (CompareRun item : rows) {
-            if (item.getDeletedTime() > 0) continue;
-            if (!Objects.equals(item.getCreatedUid(), uid)) continue;
-            item.setDeletedTime(time);
-            item.setDeletedUid(uid);
-            targets.add(item);
+    public Map<String, Object> runRemove(List<Integer> ids, HttpServletRequest request) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            int uid = rbacService.uid(request);
+            List<CompareRun> rows = runDao.findAllById(ids);
+            long time = System.currentTimeMillis();
+            List<CompareRun> targets = new ArrayList<>();
+            for (CompareRun item : rows) {
+                if (item.getDeletedTime() > 0) continue;
+                if (!Objects.equals(item.getCreatedUid(), uid)) continue;
+                item.setDeletedTime(time);
+                item.setDeletedUid(uid);
+                targets.add(item);
+            }
+            if (targets.isEmpty()) return ApiUtil.result(1404, "没有可删除的运行记录", ids);
+            runDao.saveAll(targets);
+            // 明细与反馈是纯派生数据，跟着运行记录一起清掉，不占用「已删除」的空间
+            List<Integer> ids2 = new ArrayList<>();
+            for (CompareRun item : targets) ids2.add(item.getId());
+            Map<String, Object> calls = removeByParentId(callDao, "runId", ids2);
+            if (ApiUtil.failed(calls)) return calls;
+            Map<String, Object> feedbacks = removeByParentId(feedbackDao, "runId", ids2);
+            if (ApiUtil.failed(feedbacks)) return feedbacks;
+            return ApiUtil.result(0, null, targets.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除运行记录失败", e.getMessage());
         }
-        if (targets.isEmpty()) return false;
-        runDao.saveAll(targets);
-        // 明细与反馈是纯派生数据，跟着运行记录一起清掉，不占用「已删除」的空间
-        List<Integer> ids2 = new ArrayList<>();
-        for (CompareRun item : targets) ids2.add(item.getId());
-        removeByParentId(callDao, "runId", ids2);
-        removeByParentId(feedbackDao, "runId", ids2);
-        return true;
     }
 
     /**
@@ -552,23 +573,29 @@ public class CompareService extends JPAServiceBase implements DisposableBean {
      * 单独开一个口子是因为列表有分页与检索：页面上拿到的只是当前一页的 id，
      * 拿它去删就成了「只删这一页」。
      */
-    public boolean runClear(HttpServletRequest request) {
-        int uid = rbacService.uid(request);
-        if (uid < 1) return false;
-        List<CompareRun> rows = runDao.findAll((root, query, cb) -> cb.and(
-                cb.equal(root.get("createdUid"), uid), cb.equal(root.get("deletedTime"), 0L)));
-        if (rows.isEmpty()) return false;
-        long time = System.currentTimeMillis();
-        List<Integer> ids = new ArrayList<>();
-        for (CompareRun item : rows) {
-            item.setDeletedTime(time);
-            item.setDeletedUid(uid);
-            ids.add(item.getId());
+    public Map<String, Object> runClear(HttpServletRequest request) {
+        try {
+            int uid = rbacService.uid(request);
+            if (uid < 1) return ApiUtil.result(9403, null, null);
+            List<CompareRun> rows = runDao.findAll((root, query, cb) -> cb.and(
+                    cb.equal(root.get("createdUid"), uid), cb.equal(root.get("deletedTime"), 0L)));
+            if (rows.isEmpty()) return ApiUtil.result(0, null, 0);
+            long time = System.currentTimeMillis();
+            List<Integer> ids = new ArrayList<>();
+            for (CompareRun item : rows) {
+                item.setDeletedTime(time);
+                item.setDeletedUid(uid);
+                ids.add(item.getId());
+            }
+            runDao.saveAll(rows);
+            Map<String, Object> calls = removeByParentId(callDao, "runId", ids);
+            if (ApiUtil.failed(calls)) return calls;
+            Map<String, Object> feedbacks = removeByParentId(feedbackDao, "runId", ids);
+            if (ApiUtil.failed(feedbacks)) return feedbacks;
+            return ApiUtil.result(0, null, ids.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "清空运行记录失败", e.getMessage());
         }
-        runDao.saveAll(rows);
-        removeByParentId(callDao, "runId", ids);
-        removeByParentId(feedbackDao, "runId", ids);
-        return true;
     }
 
     /* ------------------------------- 反馈与统计 ------------------------------- */

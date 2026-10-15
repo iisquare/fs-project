@@ -63,8 +63,7 @@ public class SensitiveController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = sensitiveService.remove(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(sensitiveService.remove(ids));
     }
 
     @RequestMapping("/config")

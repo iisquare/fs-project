@@ -8,7 +8,7 @@ import lombok.Setter;
 
 @Setter
 @Getter
-public abstract class DAGSource extends DAGNode {
+public abstract class DAGSource<OUT> extends DAGNode<OUT> {
     protected String kvConfigPrefix;
 
     @Override

@@ -76,7 +76,8 @@
   `method` 工具方法（含参数级执行变量绑定）、`knowledge` 知识库（模型给 query，节点召回后回填）、
   `agentic` 编排应用（模型给 query，作为开始节点入参调用另一个编排的发布内容，子编排不写会话与日志）、
   `theme` 数据主题（对应 /bi/data/theme 的主题：不带 sql 返回主题数据字典——数据集与字段、关联关系，
-  带 sql 则按主题范围内已发布数据集执行查询并返回结果，查询会带上主题标识，供 BI 侧记录数据主题查询日志）；
+  带 sql 则按主题范围内已发布数据集执行查询并返回结果，查询会带上主题标识，供 BI 侧记录数据主题查询日志；
+  只取数据字典（不带 sql）属于元数据读取，不写查询日志）；
   `ontology` 知识图谱本体（KG 模块，每个本体定义一个工具：本体内声明的实体类型作为参数枚举暴露给模型，
   模型给出实体类型与关键词后走 `/graph/search` 返回命中的实体数据）；
   知识库与编排工具的参数固定为 `query`，数据主题工具的参数为 `sql` / `limit`（均选填）；
@@ -232,6 +233,56 @@
 | POST `/chat/dialog` | 模型对话（SSE） | `agent:chat:dialog` |
 | POST `/chat/compare` | 模型对比（SSE） | `agent:chat:compare` |
 
+### 本地客户端（bot）
+
+- 客户端自用的接口单独收在 `BotController` / `BotService`（权限键 `agent:bot:`），
+  与编排（agentic）、模型对比（compare）互不依赖：客户端需要的口径在这里维护，
+  不必借道调试接口、也不用为了列个模型去要调试权限。
+- 模型清单：`/bot/models` 返回模型网关里这个服务级密钥实际够得着的模型
+  （`{ rows: [{ name, ownedBy, contextLength }] }`，与「模型对比」同一份数据来源，各自按权限面暴露）。
+  `contextLength` 是模型的上下文长度（词元数，取自网关模型配置里的「上下文长度」），
+  服务端没配时为 `0`：客户端据此显示「上下文用量圆环」，未知时由用户在客户端手工指定。
+- 模型对话：`/bot/chat`（SSE）由客户端自带会话历史（`messages`），服务端逐段推送
+  `{ type: delta | error, data }`：`delta.data` 为 `{ content, reasoning, finishReason }`，
+  与编排的流式接口同一套报文格式，客户端用同一套解析即可。
+- 工具调用：客户端驱动调用循环（`tools` 定义由客户端拼好，含本地文件工具），服务端只做两件事：
+  `/bot/tools` 把项目里选中的工具（工具方法 / 知识库 / 数据主题 / 知识图谱本体 / 编排应用）
+  补全成模型可见的 function 定义，`/bot/tool` 执行其中一次调用。
+  `messages` 支持完整的调用链（`assistant` 的 `toolCalls` 与 `tool` 角色的 `toolCallId` / `name`），
+  原样透传给网关；流式增量里的 `delta.data.toolCalls` 是网关按 OpenAI 规范分片推送的工具调用，
+  客户端按 `index` 累积。
+- 文件上传：客户端手上的本机文件按 multipart 直传 `/bot/upload`（`file`，可选 `name`），
+  服务端转存文件服务后返回文件标识等信息（`{ id, name, type, suffix, size }`）。
+  服务端读不到客户端的磁盘，本机路径进不了工具方法（如 `multimodalAnalyze`），
+  所以本地文件的顺序是「先传一次拿 `id`，再把 `id` 交给工具方法」；
+  类型以客户端给的 contentType 为准，缺省（含 `application/octet-stream`）时按文件名后缀补齐。
+  默认落到 `fs.agent.bot.upload.bucket`（`fs-mcp`）指定的桶，单文件上限 `fs.agent.bot.upload.maxSize`（100MB）。
+- 会话历史、落库与标题都在客户端侧（本地库），服务端只负责这一轮模型调用，
+  因此这里不写运行日志、也不产生服务端会话。
+- 用户代理记账：客户端以登录会话作为 Bearer 令牌访问本服务，`/bot/chat` 把该会话标识原样透传给模型网关
+  （请求头 `x-auth-token`，常量取 `web.core` 的 `FeignInterceptor.HEADER_AUTH_TOKEN`）。
+  密钥在网关侧开启「允许用户代理」后，这一轮调用的用量与积分
+  就记到该用户、而不是服务级密钥所属用户；网关解析后不会把令牌转发给供应商。
+
+| 接口 | 说明 | 权限 |
+| --- | --- | --- |
+| POST `/bot/models` | 可用模型清单：出参 `{ rows: [{ name, ownedBy, contextLength }] }` | `agent:bot:` |
+| POST `/bot/chat` | 模型对话（SSE，客户端自带 messages 历史） | `agent:bot:` |
+| POST `/bot/tools` | 工具定义清单：入参 `{ tools: [{ kind, id, name, toolId, methodName }] }`，出参 `{ rows: [{ ref, function }] }` | `agent:bot:` |
+| POST `/bot/tool` | 执行一次工具调用：入参 `{ tool: ref, args }`，出参 `{ data: <工具返回> }` | `agent:bot:` |
+| POST `/bot/upload` | 上传本机文件（multipart：`file`、可选 `name`）：出参 `{ id, name, type, suffix, size }`，供后续按标识引用 | `agent:bot:` |
+| POST `/bot/project/mine` | 我分享过的项目：入参 `{ name?, page?, pageSize? }`，出参 `{ page, pageSize, total, rows }`（行带 `versionCount` 与 `latestVersion`） | `agent:bot:` |
+| POST `/bot/project/browse` | 浏览分享的项目：只给「已启用 + 授权命中」，出参同上并带 `mine` 标记 | `agent:bot:` |
+| POST `/bot/project/versions` | 某个分享项目的版本清单：入参 `{ projectId, page?, pageSize?, name? }`（默认每页 20、上限 100，`name` 按版本号模糊检索），出参 `{ project, page, pageSize, total, rows }`（不含配置原文） | `agent:bot:` |
+| POST `/bot/project/version` | 单个版本详情：入参 `{ id }`，出参 `{ project, version: { ..., content } }`，供导出 / 创建本地项目 | `agent:bot:` |
+| POST `/bot/project/publish` | 发布一个版本：入参 `{ projectId, name, icon, description, version, versionDescription, content }`，出参 `{ project, version }` | `agent:bot:` |
+
+工具定义与调用的口径与编排里的大语言模型节点完全一致（同一套 `AgenticToolService`），
+因此函数名按 `[0-9a-zA-Z_-]` 归一后随 `ref.functionName` 回带；客户端调用时把该 ref 原样带回即可定位到同一只工具。
+
+项目分享的五个接口是客户端侧的入口：项目配置（模型、提示词、工具、环境变量、工作区等）由客户端序列化成 JSON
+提交，服务端只当版本快照保存，不解释其结构；浏览与导出走同一套可见性口径（见「项目分享」一节）。
+
 ### 知识库
 
 - 知识库：配置词嵌入模型、重排模型、召回数量与阈值、召回方式（向量、全文、混合）、
@@ -323,8 +374,12 @@ POST /knowledgeImage/url
   执行变量绑定（引用变量 / 固定值）有取值；校验通过后把方法定义（名称、描述、参数、调用信息）快照进发布内容，
   工具后续变动不影响已发布编排。
 - 技能与技能版本：维护技能基本信息与版本包，版本包上传至文件服务。
-- MCP 服务：以 `spring-ai-mcp-server-webmvc` 暴露本地工具（`DemoTool`、`BiTool`），
-  供模型通过模型上下文协议调用。
+  客户端的可用技能清单（`/skill/available`）只给名称、类型、标签、描述与版本概况
+  （`versionCount` + `latestVersion`：逐项 COUNT 与「只取最新一条」的轻量查询，不读文件字段），
+  不下发配置内容；版本下拉展开时再按 `/skillVersion/available` 取该技能的整份启用版本清单。
+- MCP 服务：以 `spring-ai-mcp-server-webmvc` 暴露本地工具（`multimodalAnalyze` 多模态分析），
+  供模型通过模型上下文协议调用。文件按内容（base64 文本 / 字节数组）、可访问地址或文件服务标识给出，
+  不接受本机路径；文件上传走文件服务的 multipart 接口（前端上传后按 id 引用）。
 
 | 接口 | 说明 | 权限 |
 | --- | --- | --- |
@@ -336,6 +391,47 @@ POST /knowledgeImage/url
 | POST `/tool/test` | 方法测试：按配置真正发起一次调用（MCP `tools/call` 或 OpenAPI 请求） | `agent:tool:` |
 | POST `/tool/methodSave` | 方法启用 / 停用与排序（描述与参数由解析结果决定） | `agent:tool:add`、`agent:tool:modify` |
 | POST `/skill/*`、`/skillVersion/*` | 技能与技能版本维护 | `agent:skill:*` |
+
+### 项目分享（projectShare / projectVersion）
+
+- **一个分享项目 = 基本信息 + 若干版本**：`fs_agent_project_share` 存名称、图标、描述、授权角色与状态，
+  `fs_agent_project_version` 存每次发布的**项目配置快照**（`content`，客户端提交的 JSON 原文）、版本号（`name`）
+  与版本说明（`description`）。客户端分享一次就追加一条版本，历史版本一直保留。
+- **客户端发布**（`/bot/project/publish`）：入参
+  `{ projectId, name, icon, description, version, versionDescription, content }`；
+  `projectId = 0` 表示新建分享项目（此时 `name` 必填），否则在指定项目下追加版本——
+  **只有分享人本人**能往自己的项目里追加版本（否则 `9403`）。
+  项目名称 / 图标 / 描述随本次发布同步（留空则保持原值），所以分享一个改过名的本地项目后，列表里看到的就是新名字。
+  `content` 要求是合法的 JSON 对象（客户端直接给对象或已序列化的文本都可以），上限 256KB。
+  同一个分享项目下的**版本号不重复**：重复时返回 `1006` 让发布人换一个号（要修正已发布的版本就发新版本号，
+  旧版本可以停用或删除）——两条 `v1.0` 谁也说不清哪条是哪条，使用者也对不上版本说明。
+- **客户端浏览**（`/bot/project/browse`）：只返回「已启用 + 授权角色命中」的项目，出参带 `mine` 标记；
+  版本数量与最新版本一并给出（浏览他人项目时只统计**已启用**的版本）。
+  授权角色是逗号拼接的字符串，SQL 表达不了「与调用人角色有交集」，因此与 `/skill/available` 同一口径：
+  先按名称 / 状态取回，再在内存里按角色过滤与分页（分享的项目量级与技能相当）。
+- **我分享过的项目**（`/bot/project/mine`）：按分享人过滤，停用的项目与停用的版本对自己都可见，
+  供「再次分享时选择历史项目」与回看版本记录使用。
+- **版本详情**（`/bot/project/version`）：带 `content` 原文，客户端按它**导出配置文件**或**创建本地项目**；
+  别人的项目要求项目已启用、版本已启用且授权命中，本人不受限。
+  版本清单（`/bot/project/versions`）不带 `content`，只给版本号、说明、状态、大小（配置原文的 UTF-8 字节数）与时间，**按页取**
+  （默认每页 20、上限 100，出参带 `total`；可传 `name` 按版本号模糊检索）：一个项目攒下几百个版本时，
+  客户端的版本下拉先列最近几条、再按需「加载更多」，检索也走这个参数（不在前端过滤已取回的那一页）——
+  卡片不会被版本数一次撑开，也不在卡片里套内嵌滚动条（页面本身就在滚）。
+- **列表行的版本数量与最新版本走轻量查询**：逐个项目各一条 `COUNT` 与一条「只取最新一条」的索引查询
+  （`idx_project_id`），而不是把涉及项目的全部版本记录（含 `content` 配置原文）一次查回内存里分组——
+  后者在版本数上百时会把几 MB 甚至几十 MB 原文拖进来只为数一个数字。列表一页最多 60 个项目，
+  这些固定的小查询换来的是「版本数涨多少，列表接口都不会跟着变重」。
+- **管理端**（`/projectShare/*`、`/projectVersion/*`）：查看与管理**所有用户**分享的项目与版本记录——
+  项目可按名称 / 分享人 / 状态检索、设排序与授权角色、停用、删除（删除项目时版本一并清理）；
+  版本可按项目 / 版本号 / 状态检索，改版本号、版本说明与启用状态，查看配置原文（`/projectVersion/info`），
+  停用或删除单个版本。管理端不修改 `content`：配置以发布时的快照为准。
+
+| 接口 | 说明 | 权限 |
+| --- | --- | --- |
+| POST `/projectShare/list`、`/projectShare/info`、`/projectShare/config` | 分享项目列表、详情、下拉数据 | `agent:projectShare:` |
+| POST `/projectShare/save`、`/projectShare/delete` | 保存（含授权角色与状态）、删除（连版本一并清理） | `agent:projectShare:add`、`agent:projectShare:modify`、`agent:projectShare:delete` |
+| POST `/projectVersion/list`、`/projectVersion/info`、`/projectVersion/config` | 版本列表（不含配置原文）、详情（含原文）、下拉数据 | `agent:projectShare:` |
+| POST `/projectVersion/save`、`/projectVersion/delete` | 改版本号 / 说明 / 状态、删除版本 | `agent:projectShare:modify`、`agent:projectShare:delete` |
 
 ## 权限
 
@@ -349,6 +445,8 @@ POST /knowledgeImage/url
 | `agent:knowledge:` | KnowledgeController、KnowledgeDocumentController、KnowledgeSegmentController、KnowledgeChunkController | 知识库：知识管理、文档管理、分段管理、知识召回 |
 | `agent:tool:` | ToolController | 插件管理：工具管理、MCP 服务 |
 | `agent:skill:` | SkillController、SkillVersionController | 插件管理：技能管理、版本管理 |
+| `agent:projectShare:` | ProjectShareController、ProjectVersionController | 项目分享：分享的项目、版本记录 |
+| `agent:bot:` | BotController | 本地客户端：模型清单、模型对话 |
 
 ## 前端页面
 
@@ -362,6 +460,7 @@ POST /knowledgeImage/url
 | `/agent/chat/demo`、`/agent/chat/dialog`、`/agent/chat/compare` | 模型调试、模型对话、模型对比 |
 | `/agent/knowledge/list`、`/agent/knowledge/document`、`/agent/knowledge/segment`、`/agent/knowledge/recall` | 知识库管理 |
 | `/agent/plugin/tool`、`/agent/plugin/mcp`、`/agent/plugin/skill`、`/agent/plugin/skillVersion` | 插件管理 |
+| `/agent/bot/projectShare`、`/agent/bot/projectVersion` | 项目分享管理、版本记录（客户端发布上来的分享项目） |
 
 ## 部署配置
 
@@ -383,12 +482,14 @@ JPA 表前缀策略为 `com.iisquare.fs.web.agent.dsconfig.NamingStrategy`。
 - MySQL：`fs_agent_agentic`（编排草稿与发布内容）、`fs_agent_agentic_chat`（会话）、
   `fs_agent_agentic_dialog`（会话消息）、`fs_agent_agentic_log`（运行日志）、
   `fs_agent_knowledge`、`fs_agent_knowledge_chunk`、`fs_agent_knowledge_document`、`fs_agent_knowledge_image`、
-  `fs_agent_knowledge_segment`、`fs_agent_skill`、`fs_agent_skill_version`、`fs_agent_tool`，
+  `fs_agent_knowledge_segment`、`fs_agent_project_share`（分享的项目）、`fs_agent_project_version`（项目版本）、
+  `fs_agent_skill`、`fs_agent_skill_version`、`fs_agent_tool`，
   建表语句见 `docs/fs_project_agent.sql`，存量库改造见 `docs/fs_project_agent_migrate.sql`。
 - 流程统计的明细查询走 MyBatis（`mapper/AgenticStatisticMapper.xml`），与 JPA 共用同一数据源
   （`spring.datasource.agent`，即 `@Primary` 的 `agentDataSource`）。
 - Elasticsearch：检索块集合 `fs_lm_knowledge_chunk`。
-- 文件服务：桶 `fs-lm-knowledge`、`fs-lm-skill`。
+- 文件服务：桶按用途分开 —— 知识库文档与内嵌图片 `fs-knowledge`、技能版本包 `fs-skill`、
+  编排调试附件 `fs-agentic`、MCP 工具上传与本地客户端上传 `fs-mcp`（桶需先在建好的 MinIO / S3 里存在）。
 
 #### 会话表结构说明
 
@@ -399,3 +500,55 @@ JPA 表前缀策略为 `com.iisquare.fs.web.agent.dsconfig.NamingStrategy`。
   另建审核表留痕（多次审核）比在消息行上放单值列更合适。
 - `fs_agent_tool.content_hash` / `parse_status` 已删除：标注为「解析缓存 / 解析状态」用，
   但保存与手动重解析都会真实重解析，页面提示读的是 `parse_error`，两者从未被读取。
+
+#### 项目分享的存量库改造与权限初始化
+
+存量库补两张表（新库直接执行 `docs/fs_project_agent.sql` 里的建表语句）：
+
+```sql
+CREATE TABLE `fs_agent_project_share` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) NOT NULL DEFAULT '',
+  `icon` varchar(500) NOT NULL DEFAULT '',
+  `role_ids` varchar(2048) NOT NULL DEFAULT '',
+  `sort` tinyint NOT NULL DEFAULT '0',
+  `status` tinyint NOT NULL DEFAULT '0',
+  `description` text NOT NULL,
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_created_uid` (`created_uid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `fs_agent_project_version` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `project_id` int NOT NULL DEFAULT '0',
+  `name` varchar(128) NOT NULL DEFAULT '',
+  `content` longtext NOT NULL,
+  `status` tinyint NOT NULL DEFAULT '0',
+  `description` text NOT NULL,
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_project_id` (`project_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+管理端的菜单与资源在「用户中心 → 菜单管理 / 资源管理」里维护（也可以按下面的字段值直接插库），
+资源归属智能体应用（`application_id = 308`）：
+
+| 表 | 层级 | 名称 | 字段值 |
+| --- | --- | --- | --- |
+| `fs_member_resource` | 一级 | 项目分享 | module `agent`、controller `projectShare`、action 空 |
+| `fs_member_resource` | 二级 | 添加 / 修改 / 删除 | 父级为上一条，action 分别 `add` / `modify` / `delete` |
+| `fs_member_menu` | 一级 | 项目分享 | 应用 308、url `/agent/bot`、图标 `Share`（可自定） |
+| `fs_member_menu` | 二级 | 分享的项目 | 父级为上一条、url `/agent/bot/projectShare` |
+| `fs_member_menu` | 二级 | 版本记录 | 父级为上一条、url `/agent/bot/projectVersion` |
+
+建好资源后还要在「角色管理 → 资源授权」里把 `agent:projectShare:`（含 `add` / `modify` / `delete`）
+授予需要管理分享项目的角色，否则页面与接口都会返回 9403。
+客户端侧不需要新增资源：项目分享的客户端接口挂在 `BotController` 下，沿用既有的 `agent:bot:`。

@@ -147,11 +147,16 @@ public class TemplateService extends JPAServiceBase {
         return rows;
     }
 
-    public boolean delete(List<Integer> ids) {
-        removeByParentId(rateDao, "templateId", ids);
-        removeByParentId(siteDao, "templateId", ids);
-        removeByParentId(whitelistDao, "templateId", ids);
-        removeByParentId(blacklistDao, "templateId", ids);
+    public Map<String, Object> delete(List<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        Map<String, Object> rates = removeByParentId(rateDao, "templateId", ids);
+        if (ApiUtil.failed(rates)) return rates;
+        Map<String, Object> sites = removeByParentId(siteDao, "templateId", ids);
+        if (ApiUtil.failed(sites)) return sites;
+        Map<String, Object> whitelists = removeByParentId(whitelistDao, "templateId", ids);
+        if (ApiUtil.failed(whitelists)) return whitelists;
+        Map<String, Object> blacklists = removeByParentId(blacklistDao, "templateId", ids);
+        if (ApiUtil.failed(blacklists)) return blacklists;
         return remove(templateDao, ids);
     }
 

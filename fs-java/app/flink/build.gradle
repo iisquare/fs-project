@@ -1,18 +1,23 @@
 dependencies {
     api project(':base:dag')
-//    api group: 'org.glassfish.jersey.core', name: 'jersey-client', version: '2.27'
-    api group: 'org.apache.flink', name: 'flink-java', version: flinkVersion
     api group: 'org.apache.flink', name: 'flink-clients', version: flinkVersion
     api group: 'org.apache.flink', name: 'flink-streaming-java', version: flinkVersion
     api group: 'org.apache.flink', name: 'flink-table-api-java', version: flinkVersion
     api group: 'org.apache.flink', name: 'flink-table-api-java-bridge', version: flinkVersion
+    // Table API（批处理SQL节点）运行所需的规划器实现，loader为官方推荐的shaded版本
+    runtimeOnly group: 'org.apache.flink', name: 'flink-table-planner-loader', version: flinkVersion
+    runtimeOnly group: 'org.apache.flink', name: 'flink-table-runtime', version: flinkVersion
 
-    api group: 'org.apache.flink', name: 'flink-connector-kafka', version: flinkVersion
-    api group: 'org.apache.flink', name: 'flink-connector-elasticsearch7', version: '3.0.1-1.17'
+    api group: 'org.apache.flink', name: 'flink-connector-kafka', version: '5.0.0-2.2'
+    api group: 'org.apache.flink', name: 'flink-connector-elasticsearch8', version: '4.0.0-2.0'
 
-    api group: 'com.ververica', name: 'flink-connector-mysql-cdc', version: cdcVersion
-    api group: 'com.ververica', name: 'flink-connector-postgres-cdc', version: cdcVersion
-    api group: 'com.ververica', name: 'flink-connector-mongodb-cdc', version: cdcVersion
+    api group: 'org.apache.flink', name: 'flink-connector-mysql-cdc', version: cdcVersion
+    api group: 'org.apache.flink', name: 'flink-connector-postgres-cdc', version: cdcVersion
+    api group: 'org.apache.flink', name: 'flink-connector-mongodb-cdc', version: cdcVersion
+
+    // 批处理JDBC数据源依赖的驱动
+    api group: 'com.mysql', name: 'mysql-connector-j', version: mysqlVersion
+    api group: 'org.postgresql', name: 'postgresql', version: postgresqlVersion
 
     api group: 'org.apache.hadoop', name: 'hadoop-common', version: hadoopVersion
     testImplementation group: 'org.apache.flink', name: 'flink-table-planner_' + scalaVersion, version: flinkVersion

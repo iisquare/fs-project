@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.core.DAGSink;
 
-public abstract class AbstractConsoleSink extends DAGSink {
+public abstract class AbstractConsoleSink<OUT> extends DAGSink<OUT> {
 
     @Override
     public boolean configure(JsonNode... configs) {

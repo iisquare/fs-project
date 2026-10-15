@@ -2,5 +2,5 @@ package com.iisquare.fs.base.dag.transform;
 
 import com.iisquare.fs.base.dag.core.DAGTransform;
 
-public abstract class AbstractJSONParseTransform extends DAGTransform {
+public abstract class AbstractJSONParseTransform<OUT> extends DAGTransform<OUT> {
 }

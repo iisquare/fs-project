@@ -6,7 +6,13 @@ import lombok.Setter;
 
 @Setter
 @Getter
-public abstract class DAGConfig extends DAGNode {
+public abstract class DAGConfig extends DAGNode<JsonNode> {
+
+    @Override
+    public DAGType<JsonNode> outputType() {
+        return DAGType.JSON;
+    }
+
     @Override
     public boolean configure(JsonNode... configs) {
         return true;

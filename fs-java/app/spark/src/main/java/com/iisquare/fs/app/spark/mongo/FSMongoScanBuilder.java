@@ -2,9 +2,9 @@ package com.iisquare.fs.app.spark.mongo;
 
 import com.mongodb.spark.sql.connector.config.MongoConfig;
 import com.mongodb.spark.sql.connector.config.ReadConfig;
-import com.mongodb.spark.sql.connector.read.MongoScanBuilder;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.connector.read.Scan;
+import org.apache.spark.sql.connector.read.ScanBuilder;
 import org.apache.spark.sql.sources.Filter;
 import org.apache.spark.sql.types.StructType;
 import org.bson.BsonDocument;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
 
-public class FSMongoScanBuilder extends MongoScanBuilder {
+public class FSMongoScanBuilder implements ScanBuilder {
 
     private final StructType schema;
     private final ReadConfig readConfig;
@@ -25,7 +25,6 @@ public class FSMongoScanBuilder extends MongoScanBuilder {
     private StructType prunedSchema;
 
     public FSMongoScanBuilder(StructType schema, ReadConfig readConfig) {
-        super(schema, readConfig);
         this.schema = schema;
         this.readConfig = readConfig;
         this.prunedSchema = schema;

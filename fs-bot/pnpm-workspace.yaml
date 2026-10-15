@@ -1,0 +1,6 @@
+allowBuilds:
+  '@parcel/watcher': true
+  better-sqlite3-multiple-ciphers: true
+  electron: true
+  electron-winstaller: true
+  esbuild: true

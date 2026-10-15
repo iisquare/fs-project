@@ -204,10 +204,11 @@ spring:
     uri: neo4j://127.0.0.1:7687
     username: neo4j
     password: admin888
-  minio:
+  s3:
     endpoint: http://127.0.0.1:9000
-    accessKey: fs-project
-    secretKet: full-policy
+    accessKey: admin
+    secretKey: admin888
+    region: us-east-1
 
   datasource:
     primary:

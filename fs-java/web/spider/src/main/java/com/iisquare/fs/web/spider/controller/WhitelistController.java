@@ -54,8 +54,7 @@ public class WhitelistController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = whitelistService.remove(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(whitelistService.remove(ids));
     }
 
     @RequestMapping("/config")

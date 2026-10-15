@@ -157,17 +157,21 @@ public class FormRegularService extends ServiceBase {
         return ApiUtil.result(null == info ? 500 : 0, null, info);
     }
 
-    public boolean delete(List<Integer> ids, int uid) {
-        if(null == ids || ids.size() < 1) return false;
-        List<FormRegular> list = formRegularDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        for (FormRegular item : list) {
-            item.setStatus(-1);
-            item.setUpdatedTime(time);
-            item.setUpdatedUid(uid);
+    public Map<String, Object> delete(List<Integer> ids, int uid) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            List<FormRegular> list = formRegularDao.findAllById(ids);
+            long time = System.currentTimeMillis();
+            for (FormRegular item : list) {
+                item.setStatus(-1);
+                item.setUpdatedTime(time);
+                item.setUpdatedUid(uid);
+            }
+            formRegularDao.saveAll(list);
+            return ApiUtil.result(0, null, list.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除表单校验失败", e.getMessage());
         }
-        formRegularDao.saveAll(list);
-        return true;
     }
 
 }

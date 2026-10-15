@@ -65,8 +65,12 @@ public class DAGUtil {
         return DPUtil.toJSON(text);
     }
 
-    public static Map<String, Class<DAGNode>> scanNodes(String... packages) throws ClassNotFoundException {
-        Map<String, Class<DAGNode>> nodes = new LinkedHashMap<>();
+    /**
+     * 扫描指定包下的节点实现，键为节点类型（类名去掉 Node 后缀）
+     */
+    @SuppressWarnings("unchecked")
+    public static Map<String, Class<? extends DAGNode<?>>> scanNodes(String... packages) throws ClassNotFoundException {
+        Map<String, Class<? extends DAGNode<?>>> nodes = new LinkedHashMap<>();
         for (String pkg : packages) {
             List<String> list = ReflectUtil.getClassName(pkg);
             for (String item : list) {
@@ -74,7 +78,8 @@ public class DAGUtil {
                 if (!DAGNode.class.isAssignableFrom(cls)) continue;
                 String name = cls.getSimpleName();
                 if (!name.endsWith("Node")) continue;
-                nodes.put(name.substring(0, name.length() - 4), (Class<DAGNode>) cls);
+                // 泛型擦除：节点输出类型由各节点自行声明，此处仅注册其类型
+                nodes.put(name.substring(0, name.length() - 4), (Class<? extends DAGNode<?>>) cls);
             }
         }
         return nodes;

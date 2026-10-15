@@ -6,8 +6,6 @@ import com.iisquare.fs.base.core.tool.ArgumentBuilder;
 import com.iisquare.fs.base.core.util.*;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.file.entity.Archive;
-import io.minio.GetObjectResponse;
-import io.minio.StatObjectResponse;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -19,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -67,7 +68,7 @@ public class FileService {
     @Value("${fs.site.urls.file}")
     private String fileUrl;
     @Autowired
-    MinIOService minIOService;
+    S3Service s3Service;
 
     public Map<String, Map<String, String>> scale(String field) {
         java.util.List<Map<String, String>> scale = Arrays.asList(new LinkedHashMap<>() {{
@@ -413,7 +414,7 @@ public class FileService {
             return ApiUtil.result(1004, "文件状态异常", status);
         }
         try {
-            if (!DPUtil.parseBoolean(param.get("overwrite")) && minIOService.exists(bucket, filepath)) {
+            if (!DPUtil.parseBoolean(param.get("overwrite")) && s3Service.exists(bucket, filepath)) {
                 return ApiUtil.result(1005, "文件已存在，请核对存储路径", param);
             }
         } catch (Exception e) {
@@ -450,7 +451,7 @@ public class FileService {
         archive = archiveService.add(archive, rbacService.uid(request));
         try {
             stream = file.getInputStream();
-            minIOService.putObject(bucket, filepath, stream, file.getSize(), file.getContentType(), null, DPUtil.buildMap(
+            s3Service.putObject(bucket, filepath, stream, file.getSize(), file.getContentType(), DPUtil.buildMap(
                     String.class, String.class, "filename", file.getOriginalFilename()
             ));
         } catch (Exception e) {
@@ -484,9 +485,9 @@ public class FileService {
         if (!Arrays.asList("image/jpeg", "image/webp", "image/png", "image/gif", "image/bmp").contains(archive.getType())) {
             return ApiUtil.result(1406, "文件类型暂不支持", filename);
         }
-        GetObjectResponse ores;
+        ResponseInputStream<GetObjectResponse> ores;
         try {
-            ores = minIOService.getObject(archive.getBucket(), archive.getFilepath());
+            ores = s3Service.getObject(archive.getBucket(), archive.getFilepath());
         } catch (Exception e) {
             return ApiUtil.result(1501, "获取文件对象失败", e.getMessage());
         }
@@ -579,11 +580,11 @@ public class FileService {
         if (!Arrays.asList("image/jpeg", "image/webp", "image/png", "image/gif", "image/bmp").contains(contentType)) {
             return ApiUtil.result(1406, "文件类型暂不支持", filename);
         }
-        StatObjectResponse stat;
-        GetObjectResponse ores;
+        HeadObjectResponse stat;
+        ResponseInputStream<GetObjectResponse> ores;
         try {
-            stat = minIOService.statObject(archive.getBucket(), archive.getFilepath());
-            ores = minIOService.getObject(archive.getBucket(), archive.getFilepath());
+            stat = s3Service.statObject(archive.getBucket(), archive.getFilepath());
+            ores = s3Service.getObject(archive.getBucket(), archive.getFilepath());
         } catch (Exception e) {
             return ApiUtil.result(1501, "获取文件对象失败", e.getMessage());
         }
@@ -596,7 +597,7 @@ public class FileService {
         try {
             response.setContentType(contentType);
             response.addHeader("Content-Disposition", "inline");
-            response.addHeader("Content-Length", String.valueOf(stat.size()));
+            response.addHeader("Content-Length", String.valueOf(stat.contentLength()));
             response.addHeader("Cache-Control", cacheControl(param));
             byte[] buf = new byte[8192];
             int bytesRead;
@@ -656,15 +657,15 @@ public class FileService {
         if (!filename.equals(archive.getId() + archive.getSuffix())) {
             return ApiUtil.result(1405, "文件格式不匹配", filename);
         }
-        StatObjectResponse stat;
+        HeadObjectResponse stat;
         try {
-            stat = minIOService.statObject(archive.getBucket(), archive.getFilepath());
+            stat = s3Service.statObject(archive.getBucket(), archive.getFilepath());
         } catch (Exception e) {
             return ApiUtil.result(1500, "获取文件状态失败", e.getMessage());
         }
-        GetObjectResponse ores;
+        ResponseInputStream<GetObjectResponse> ores;
         try {
-            ores = minIOService.getObject(archive.getBucket(), archive.getFilepath());
+            ores = s3Service.getObject(archive.getBucket(), archive.getFilepath());
         } catch (Exception e) {
             return ApiUtil.result(1501, "获取文件对象失败", e.getMessage());
         }
@@ -674,12 +675,12 @@ public class FileService {
         if (split.length >= 2) {
             begin = Long.parseLong(split[1]);
         }
-        long end = stat.size() - 1;
+        long end = stat.contentLength() - 1;
         if (split.length >= 3) {
             end = Long.parseLong(split[2]);
         }
         long len = (end - begin) + 1;
-        if (end > stat.size()) {
+        if (end > stat.contentLength()) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             return ApiUtil.result(1502, "结束位置溢出", filename);
         }
@@ -693,7 +694,7 @@ public class FileService {
             ores.skip(begin);
             if (!DPUtil.empty(range)) {
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT); // 响应状态 206 部分内容
-                response.addHeader("Content-Range", "bytes " + begin + "-" + end + "/" + stat.size());
+                response.addHeader("Content-Range", "bytes " + begin + "-" + end + "/" + stat.contentLength());
                 response.addHeader("Accept-Ranges", "bytes");
                 response.addHeader("Cache-control", "private");
             }
@@ -701,7 +702,7 @@ public class FileService {
             response.addHeader("Content-Length", String.valueOf(len));
             String encodedName = URLEncoder.encode(archive.getName(), StandardCharsets.UTF_8).replace("+", "%20");
             response.addHeader("Content-Disposition", "attachment; filename=\"" + archive.getId() + archive.getSuffix() + "\"; filename*=UTF-8''" + encodedName);
-            response.addHeader("Last-Modified", new SimpleDateFormat("EEE, d MMM yyyy hh:mm:ss Z", Locale.ENGLISH).format(Date.from(stat.lastModified().toInstant())) + " GMT");
+            response.addHeader("Last-Modified", new SimpleDateFormat("EEE, d MMM yyyy hh:mm:ss Z", Locale.ENGLISH).format(Date.from(stat.lastModified())) + " GMT");
             byte[] buf = new byte[8192];
             int bytesRead;
             while ((bytesRead = ores.read(buf)) != -1) {

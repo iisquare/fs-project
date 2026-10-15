@@ -87,8 +87,8 @@ public class AgenticService extends JPAServiceBase {
     @Autowired
     KnowledgeService knowledgeService;
 
-    /** 编排调试上传的文件桶：与知识库共用文件服务存储，路径按 agentic 前缀隔离 */
-    public static final String BUCKET = "fs-lm-knowledge";
+    /** 编排调试上传的文件桶：编排会话的附件单独成桶，路径按 agentic 前缀隔离 */
+    public static final String BUCKET = "fs-agentic";
 
     /** 编排工具（子编排）允许的最大嵌套层数：防止 A→B→A 这类相互调用无限嵌套 */
     private static final int MAX_NESTED_DEPTH = 5;
@@ -1154,30 +1154,34 @@ public class AgenticService extends JPAServiceBase {
      * 删除会话：标记删除（保留消息与运行日志，便于追溯），
      * 会话、消息、运行日志一起打删除标记；默认列表与模型历史都不再取到
      */
-    public boolean chatRemove(List<Integer> ids, HttpServletRequest request) {
-        if (null == ids || ids.isEmpty()) return false;
-        int uid = rbacService.uid(request);
-        long time = System.currentTimeMillis();
-        for (Integer id : ids) {
-            AgenticChat chat = id > 0 ? info(agenticChatDao, id) : null;
-            if (null == chat) continue;
-            markDeleted(chat, uid, time);
-            save(agenticChatDao, chat, uid);
-            // 只处理未删除的子记录：已删除消息/日志不再重复打标记
-            List<AgenticDialog> dialogs = agenticDialogDao.findAll((root, query, cb) -> cb.and(
-                    cb.equal(root.get("chatId"), id), cb.equal(root.get("deletedTime"), 0L)));
-            for (AgenticDialog dialog : dialogs) {
-                markDeleted(dialog, uid, time);
-                save(agenticDialogDao, dialog, uid);
+    public Map<String, Object> chatRemove(List<Integer> ids, HttpServletRequest request) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            int uid = rbacService.uid(request);
+            long time = System.currentTimeMillis();
+            for (Integer id : ids) {
+                AgenticChat chat = id > 0 ? info(agenticChatDao, id) : null;
+                if (null == chat) continue;
+                markDeleted(chat, uid, time);
+                save(agenticChatDao, chat, uid);
+                // 只处理未删除的子记录：已删除消息/日志不再重复打标记
+                List<AgenticDialog> dialogs = agenticDialogDao.findAll((root, query, cb) -> cb.and(
+                        cb.equal(root.get("chatId"), id), cb.equal(root.get("deletedTime"), 0L)));
+                for (AgenticDialog dialog : dialogs) {
+                    markDeleted(dialog, uid, time);
+                    save(agenticDialogDao, dialog, uid);
+                }
+                List<AgenticLog> logs = agenticLogDao.findAll((root, query, cb) -> cb.and(
+                        cb.equal(root.get("chatId"), id), cb.equal(root.get("deletedTime"), 0L)));
+                for (AgenticLog log : logs) {
+                    markDeleted(log, uid, time);
+                    save(agenticLogDao, log, uid);
+                }
             }
-            List<AgenticLog> logs = agenticLogDao.findAll((root, query, cb) -> cb.and(
-                    cb.equal(root.get("chatId"), id), cb.equal(root.get("deletedTime"), 0L)));
-            for (AgenticLog log : logs) {
-                markDeleted(log, uid, time);
-                save(agenticLogDao, log, uid);
-            }
+            return ApiUtil.result(0, null, ids.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除会话失败", e.getMessage());
         }
-        return true;
     }
 
     /** 打删除标记：会话、消息、运行日志共用（deletedTime=0 表示未删除） */
@@ -1371,16 +1375,20 @@ public class AgenticService extends JPAServiceBase {
         }
     }
 
-    public boolean logRemove(List<Integer> ids) {
-        if (null == ids || ids.isEmpty()) return false;
-        long time = System.currentTimeMillis();
-        for (Integer id : ids) {
-            AgenticLog log = id > 0 ? info(agenticLogDao, id) : null;
-            if (null == log) continue;
-            markDeleted(log, 0, time);
-            save(agenticLogDao, log, 0);
+    public Map<String, Object> logRemove(List<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            long time = System.currentTimeMillis();
+            for (Integer id : ids) {
+                AgenticLog log = id > 0 ? info(agenticLogDao, id) : null;
+                if (null == log) continue;
+                markDeleted(log, 0, time);
+                save(agenticLogDao, log, 0);
+            }
+            return ApiUtil.result(0, null, ids.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除运行日志失败", e.getMessage());
         }
-        return true;
     }
 
     /* ------------------------------- 流程统计 ------------------------------- */
@@ -1794,7 +1802,7 @@ public class AgenticService extends JPAServiceBase {
         return value.length() <= length ? value : value.substring(0, length);
     }
 
-    public boolean remove(List<Integer> ids) {
+    public Map<String, Object> remove(List<Integer> ids) {
         return remove(agenticDao, ids);
     }
 

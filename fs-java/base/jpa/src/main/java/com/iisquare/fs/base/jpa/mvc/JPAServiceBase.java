@@ -91,27 +91,40 @@ public abstract class JPAServiceBase extends ServiceBase {
         return rows;
     }
 
-    protected <T, ID extends Serializable> boolean delete(DaoBase<T, ID> dao, List<ID> ids, int uid) {
-        if(null == ids || ids.isEmpty()) return false;
-        List<T> list = dao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        for (T item : list) {
-            ReflectUtil.setPropertyValue(item, "deletedTime", new Class[]{Long.class}, new Object[]{time});
-            ReflectUtil.setPropertyValue(item, "deletedUid", new Class[]{Integer.class}, new Object[]{uid});
+    protected <T, ID extends Serializable> Map<String, Object> delete(DaoBase<T, ID> dao, List<ID> ids, int uid) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            List<T> list = dao.findAllById(ids);
+            long time = System.currentTimeMillis();
+            for (T item : list) {
+                ReflectUtil.setPropertyValue(item, "deletedTime", new Class[]{Long.class}, new Object[]{time});
+                ReflectUtil.setPropertyValue(item, "deletedUid", new Class[]{Integer.class}, new Object[]{uid});
+            }
+            dao.saveAll(list);
+            return ApiUtil.result(0, null, list.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "标记删除失败", e.getMessage());
         }
-        dao.saveAll(list);
-        return true;
     }
 
-    protected <T, ID extends Serializable> boolean remove(DaoBase<T, ID> dao, List<ID> ids) {
-        if(null == ids || ids.isEmpty()) return false;
-        dao.deleteAllByIdInBatch(ids);
-        return true;
+    protected <T, ID extends Serializable> Map<String, Object> remove(DaoBase<T, ID> dao, List<ID> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            dao.deleteAllByIdInBatch(ids);
+            return ApiUtil.result(0, null, ids.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除记录失败", e.getMessage());
+        }
     }
 
-    protected <T, ID extends Serializable> long removeByParentId(DaoBase<T, ID> dao, String field, List<ID> ids) {
-        if(null == ids || ids.isEmpty()) return 0;
-        return dao.delete((Specification<T>) (root, query, cb) -> root.get(field).in(ids));
+    protected <T, ID extends Serializable> Map<String, Object> removeByParentId(DaoBase<T, ID> dao, String field, List<ID> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            long count = dao.delete((Specification<T>) (root, query, cb) -> root.get(field).in(ids));
+            return ApiUtil.result(0, null, count);
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除关联记录失败", e.getMessage());
+        }
     }
 
     protected <T, ID extends Serializable> ObjectNode infoByIds(DaoBase<T, ID> dao, List<ID> ids) {

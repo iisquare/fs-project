@@ -52,7 +52,8 @@ public class KnowledgeImageService extends JPAServiceBase {
 
     private static final Logger logger = LoggerFactory.getLogger(KnowledgeImageService.class);
 
-    public static final String bucket = "fs-lm-knowledge";
+    /** 知识库文档内嵌图片的文件桶：与文档同桶，按 traceIdentity 归属到具体文档 */
+    public static final String bucket = "fs-knowledge";
 
     /** 图片引用：![说明](占位地址#kb:文件标识)，兼容仅带标识的写法 */
     private static final Pattern IMAGE_REF = Pattern.compile("!\\[([^\\]]*)\\]\\([^)]*kb:[^)\\s]+\\)");
@@ -108,8 +109,8 @@ public class KnowledgeImageService extends JPAServiceBase {
     /**
      * 删除图片：对象存储中的原图与图片记录一并清理
      */
-    public boolean remove(List<KnowledgeImage> images) {
-        if (null == images || images.isEmpty()) return true;
+    public Map<String, Object> remove(List<KnowledgeImage> images) {
+        if (null == images || images.isEmpty()) return ApiUtil.result(0, null, 0);
         ArrayNode args = DPUtil.arrayNode();
         List<String> ids = new ArrayList<>();
         for (KnowledgeImage image : images) {
@@ -119,13 +120,18 @@ public class KnowledgeImageService extends JPAServiceBase {
             item.put("filepath", DPUtil.parseString(image.getFilepath()));
             ids.add(image.getId());
         }
-        Map<String, Object> result = RpcUtil.result(fileRpc.post("/file/delete", args));
+        Map<String, Object> result;
+        try {
+            result = RpcUtil.result(fileRpc.post("/file/delete", args));
+        } catch (Exception e) {
+            logger.warn("remove knowledge image failed", e);
+            return ApiUtil.result(1500, "调用文件服务删除失败", e.getMessage());
+        }
         if (ApiUtil.failed(result)) {
             logger.warn("remove knowledge image failed: {}", ApiUtil.message(result));
-            return false;
+            return ApiUtil.result(ApiUtil.code(result), ApiUtil.message(result), ApiUtil.data(result, Object.class));
         }
-        remove(imageDao, ids);
-        return true;
+        return remove(imageDao, ids);
     }
 
     /**
@@ -300,7 +306,7 @@ public class KnowledgeImageService extends JPAServiceBase {
         String date = new SimpleDateFormat("yyyyMMdd").format(new Date());
         String filepath = String.format("knowledge-%d/image/%s/%s%s", knowledgeId, date,
                 UUID.randomUUID().toString().replace("-", ""), suffix);
-        String traceIdentity = String.format("fs-lm-knowledge-%d-document-%s-image", knowledgeId, documentId);
+        String traceIdentity = String.format("fs-knowledge-%d-document-%s-image", knowledgeId, documentId);
         Map<String, Object> result = RpcUtil.result(fileRpc.form("/file/upload", DPUtil.buildMap(
                 "bucket", bucket, "filepath", filepath, "traceIdentity", traceIdentity
         ), new ByteArrayMultipartFile("file", name, type, data)));

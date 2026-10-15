@@ -100,8 +100,7 @@ public class CompareController extends PermitControllerBase {
     @Permission("")
     public String workspaceDeleteAction(@RequestBody Map<String, Object> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = compareService.workspaceDelete(ids, request);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(compareService.workspaceDelete(ids, request));
     }
 
     /**
@@ -140,8 +139,7 @@ public class CompareController extends PermitControllerBase {
     @Permission("")
     public String runDeleteAction(@RequestBody Map<String, Object> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = compareService.runRemove(ids, request);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(compareService.runRemove(ids, request));
     }
 
     /**
@@ -150,8 +148,7 @@ public class CompareController extends PermitControllerBase {
     @RequestMapping("/runClear")
     @Permission("")
     public String runClearAction(HttpServletRequest request) {
-        boolean result = compareService.runClear(request);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(compareService.runClear(request));
     }
 
     /**

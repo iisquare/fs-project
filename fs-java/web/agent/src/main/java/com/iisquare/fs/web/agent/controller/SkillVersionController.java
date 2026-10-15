@@ -51,8 +51,7 @@ public class SkillVersionController extends PermitControllerBase {
     @Permission("skill:delete")
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = versionService.remove(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(versionService.remove(ids));
     }
 
     @GetMapping("/download")
@@ -63,8 +62,29 @@ public class SkillVersionController extends PermitControllerBase {
         return redirect(response, ApiUtil.data(result, JsonNode.class).asText());
     }
 
+    /**
+     * 客户端版本清单：已启用技能下已启用的版本，不含归档标识与存储路径
+     */
+    @RequestMapping("/available")
+    @Permission("skill:")
+    public String availableAction(@RequestBody Map<String, Object> param, HttpServletRequest request) {
+        return ApiUtil.echoResult(versionService.available(param, request));
+    }
+
+    /**
+     * 客户端下载技能包：技能与版本都需启用且授权命中，通过后重定向到文件服务地址
+     */
+    @GetMapping("/package")
+    @Permission("skill:")
+    public String packageAction(@RequestParam Map<String, Object> param, HttpServletRequest request,
+            HttpServletResponse response) throws Exception {
+        Map<String, Object> result = versionService.packageDownload(param, request);
+        if (ApiUtil.failed(result)) return ApiUtil.echoResult(result);
+        return redirect(response, ApiUtil.data(result, JsonNode.class).asText());
+    }
+
     @RequestMapping("/config")
-    @Permission("")
+    @Permission("skill:")
     public String configAction(ModelMap model) {
         model.put("sorts", versionService.sorts());
         return ApiUtil.echoResult(0, null, model);

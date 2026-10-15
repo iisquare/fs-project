@@ -74,6 +74,14 @@ export const layouts = [{
     meta: { title: '版本管理', permit: ['agent:skill:'] },
     component: () => import('@/views/agent/plugin/skillVersion.vue')
   }, {
+    path: '/agent/bot/projectShare',
+    meta: { title: '分享的项目', permit: ['agent:projectShare:'] },
+    component: () => import('@/views/agent/bot/projectShare.vue')
+  }, {
+    path: '/agent/bot/projectVersion',
+    meta: { title: '版本记录', permit: ['agent:projectShare:'] },
+    component: () => import('@/views/agent/bot/projectVersion.vue')
+  }, {
     path: '/agent/setting/state',
     meta: { title: '运行状态', permit: ['agent:maintain:reindexChunk'] },
     component: () => import('@/views/agent/setting/state.vue')

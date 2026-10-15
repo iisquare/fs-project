@@ -204,11 +204,15 @@ public class OntologyService extends JPAServiceBase {
     }
 
     @Transactional
-    public boolean remove(List<Integer> ids) {
-        if (null == ids || ids.isEmpty()) return false;
-        for (Integer id : ids) {
-            ontologyDefinitionService.remove(id);
-            modelCache.remove(id);
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            for (Integer id : ids) {
+                ontologyDefinitionService.remove(id);
+                modelCache.remove(id);
+            }
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除本体定义失败", e.getMessage());
         }
         return remove(ontologyDao, ids);
     }

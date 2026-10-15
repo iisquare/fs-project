@@ -138,23 +138,31 @@ public class GroupService extends ServiceBase {
         return result;
     }
 
-    public boolean remove(List<Integer> ids) {
-        if(null == ids || ids.size() < 1) return false;
-        groupDao.deleteInBatch(groupDao.findAllById(ids));
-        return true;
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            groupDao.deleteInBatch(groupDao.findAllById(ids));
+            return ApiUtil.result(0, null, ids.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除人脸分组失败", e.getMessage());
+        }
     }
 
-    public boolean delete(List<Integer> ids, int uid) {
-        if(null == ids || ids.size() < 1) return false;
-        List<Group> list = groupDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        for (Group item : list) {
-            item.setStatus(-1);
-            item.setUpdatedTime(time);
-            item.setUpdatedUid(uid);
+    public Map<String, Object> delete(List<Integer> ids, int uid) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            List<Group> list = groupDao.findAllById(ids);
+            long time = System.currentTimeMillis();
+            for (Group item : list) {
+                item.setStatus(-1);
+                item.setUpdatedTime(time);
+                item.setUpdatedUid(uid);
+            }
+            groupDao.saveAll(list);
+            return ApiUtil.result(0, null, list.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除人脸分组失败", e.getMessage());
         }
-        groupDao.saveAll(list);
-        return true;
     }
 
 }

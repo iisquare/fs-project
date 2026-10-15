@@ -49,4 +49,24 @@ public class BIController extends PermitControllerBase {
         return ApiUtil.echoResult(biService.visualize(dataset, preview, level));
     }
 
+    @PostMapping("/cluster/test")
+    public String clusterTestAction(@RequestBody Map<?, ?> param) {
+        JsonNode content = DPUtil.toJSON(param.get("content"));
+        return ApiUtil.echoResult(biService.clusterTest(content));
+    }
+
+    @PostMapping("/job/status")
+    public String jobStatusAction(@RequestBody Map<?, ?> param) {
+        JsonNode content = DPUtil.toJSON(param.get("content"));
+        String jobId = DPUtil.parseString(param.get("jobId"));
+        return ApiUtil.echoResult(biService.jobStatus(content, jobId));
+    }
+
+    @PostMapping("/job/cancel")
+    public String jobCancelAction(@RequestBody Map<?, ?> param) {
+        JsonNode content = DPUtil.toJSON(param.get("content"));
+        String jobId = DPUtil.parseString(param.get("jobId"));
+        return ApiUtil.echoResult(biService.jobCancel(content, jobId));
+    }
+
 }

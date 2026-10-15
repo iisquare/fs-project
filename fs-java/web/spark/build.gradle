@@ -5,6 +5,9 @@ dependencies {
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
         exclude group: 'com.google.code.gson', module: 'gson'
         exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
+        // Spark 3.5 携带的 log4j-slf4j2-impl 与 spring-boot-starter-logging 的 log4j-to-slf4j 冲突，
+        // 会导致 Log4jLoggerFactory 初始化直接抛异常，服务无法启动；统一由 logback 承担日志实现
+        exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j2-impl'
     }
     testImplementation project(':web:test')
 }

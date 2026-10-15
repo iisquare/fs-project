@@ -34,13 +34,9 @@ const {
 }>()
 
 /**
- * 思考强度是否可配：自身开关开启，且思考模式未显式关闭
- * （思考模式开关关闭时忽略其取值，视为未显式关闭）
+ * 思考强度是否可配
  */
-const effortEnabled = computed(() => {
-  if (false === data.value?.thinkEffortEnabled) return false
-  return false === data.value?.thinkModeEnabled || 'off' !== data.value?.thinkMode
-})
+const effortEnabled = computed(() => false !== data.value?.thinkEffortEnabled)
 </script>
 
 <template>

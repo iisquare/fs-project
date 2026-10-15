@@ -1,5 +1,6 @@
 package com.iisquare.fs.web.cron.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
@@ -218,8 +219,22 @@ public class RpcService implements DisposableBean {
                 rpcLog.setStatus(status);
                 rpcLog.setResponseHeaders(headers(response.getAllHeaders()));
                 rpcLog.setResponseBody(body);
-                rpcLog.setState(status >= 200 && status < 300 ? RpcLog.State.SUCCEED.name() : RpcLog.State.FAILED.name());
-                rpcLog.setMessage(response.getStatusLine().getReasonPhrase());
+                boolean succeed = status >= 200 && status < 300;
+                String message = response.getStatusLine().getReasonPhrase();
+                if (succeed) {
+                    // 业务型接口始终返回HTTP 200，需按响应体中的code判定成败
+                    JsonNode payload = DPUtil.parseJSON(body);
+                    if (null != payload && payload.isObject() && payload.has(ApiUtil.FIELD_CODE)) {
+                        int code = payload.path(ApiUtil.FIELD_CODE).asInt();
+                        if (0 != code) {
+                            succeed = false;
+                            String text = payload.path(ApiUtil.FIELD_MSG).asText();
+                            message = DPUtil.empty(text) ? "响应码：" + code : text;
+                        }
+                    }
+                }
+                rpcLog.setState(succeed ? RpcLog.State.SUCCEED.name() : RpcLog.State.FAILED.name());
+                rpcLog.setMessage(message);
             }
         } catch (Exception e) {
             responseTime = System.currentTimeMillis();

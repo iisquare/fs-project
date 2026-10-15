@@ -58,8 +58,7 @@ public class CreditController extends PermitControllerBase {
         if(uids.isEmpty()) {
             uids = DPUtil.parseIntList(param.get("ids"));
         }
-        boolean result = creditService.remove(uids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(creditService.remove(uids));
     }
 
     @RequestMapping("/config")

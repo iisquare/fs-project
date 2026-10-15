@@ -138,7 +138,7 @@ public class MessageService extends JPAServiceBase implements DisposableBean {
         return result;
     }
 
-    public boolean delete(List<Integer> ids, HttpServletRequest request) {
+    public Map<String, Object> delete(List<Integer> ids, HttpServletRequest request) {
         return delete(messageDao, ids, rbacService.uid(request));
     }
 

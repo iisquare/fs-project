@@ -1,19 +1,21 @@
 package com.iisquare.fs.app.flink;
 
-import com.ververica.cdc.connectors.mongodb.MongoDBSource;
-import com.ververica.cdc.connectors.mysql.source.MySqlSource;
-import com.ververica.cdc.connectors.mysql.source.MySqlSourceBuilder;
-import com.ververica.cdc.connectors.mysql.table.StartupOptions;
-import com.ververica.cdc.connectors.postgres.PostgreSQLSource;
-import com.ververica.cdc.debezium.JsonDebeziumDeserializationSchema;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.cdc.connectors.mongodb.MongoDBSource;
+import org.apache.flink.cdc.connectors.mysql.source.MySqlSource;
+import org.apache.flink.cdc.connectors.mysql.source.MySqlSourceBuilder;
+import org.apache.flink.cdc.connectors.mysql.table.StartupOptions;
+import org.apache.flink.cdc.connectors.postgres.PostgreSQLSource;
+import org.apache.flink.cdc.debezium.JsonDebeziumDeserializationSchema;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.RestOptions;
+import org.apache.flink.connector.base.DeliveryGuarantee;
+import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
+import org.apache.flink.connector.kafka.sink.KafkaSink;
+import org.apache.flink.connector.kafka.sink.KafkaSinkBuilder;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
-import org.apache.flink.streaming.connectors.kafka.KafkaSerializationSchema;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.Test;
 
@@ -26,7 +28,7 @@ public class CDCTests {
     public void mysqlTest() throws Exception {
         Configuration config = new Configuration();
         config.set(CoreOptions.DEFAULT_PARALLELISM, 1);
-        config.setString(RestOptions.BIND_PORT, "8080-8089");
+        config.set(RestOptions.BIND_PORT, "8080-8089");
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(config);
         env.enableCheckpointing(30000);
         MySqlSourceBuilder<String> builder = MySqlSource.<String>builder()
@@ -39,20 +41,21 @@ public class CDCTests {
                 builder.build(), WatermarkStrategy.noWatermarks(), getClass().getSimpleName());
         source.print();
 
-        Properties properties = new Properties();
-        properties.setProperty("bootstrap.servers", "kafka:9092");
-        KafkaSerializationSchema<String> schema = (element, timestamp) -> new ProducerRecord<>(
+        KafkaRecordSerializationSchema<String> schema = (element, context, timestamp) -> new ProducerRecord<>(
                 "fs_cdc_test", null, null, null, element.getBytes(StandardCharsets.UTF_8));
-        source.addSink(new FlinkKafkaProducer<>(
-                "fs_cdc_test", schema, properties, FlinkKafkaProducer.Semantic.AT_LEAST_ONCE));
+        KafkaSinkBuilder<String> sink = KafkaSink.<String>builder()
+                .setBootstrapServers("kafka:9092")
+                .setRecordSerializer(schema)
+                .setDeliveryGuarantee(DeliveryGuarantee.AT_LEAST_ONCE);
+        source.sinkTo(sink.build());
         env.execute("cdc-test");
     }
 
     @Test
     public void postgresTest() throws Exception {
         Configuration config = new Configuration();
-        config.setString(RestOptions.BIND_PORT,"8080-8089");
-        config.setInteger(CoreOptions.DEFAULT_PARALLELISM, 1);
+        config.set(RestOptions.BIND_PORT, "8080-8089");
+        config.set(CoreOptions.DEFAULT_PARALLELISM, 1);
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(config);
         env.enableCheckpointing(1000);
         PostgreSQLSource.Builder<String> builder = PostgreSQLSource.<String>builder()
@@ -80,8 +83,8 @@ public class CDCTests {
     @Test
     public void mongoTest() throws Exception {
         Configuration config = new Configuration();
-        config.setString(RestOptions.BIND_PORT,"8080-8089");
-        config.setInteger(CoreOptions.DEFAULT_PARALLELISM, 1);
+        config.set(RestOptions.BIND_PORT, "8080-8089");
+        config.set(CoreOptions.DEFAULT_PARALLELISM, 1);
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(config);
         env.enableCheckpointing(1000); // 重启时需要手动加载检查点文件
         MongoDBSource.Builder<String> builder = MongoDBSource.<String>builder()

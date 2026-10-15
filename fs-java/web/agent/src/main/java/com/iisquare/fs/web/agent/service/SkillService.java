@@ -1,6 +1,7 @@
 package com.iisquare.fs.web.agent.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
@@ -17,8 +18,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class SkillService extends JPAServiceBase {
@@ -126,9 +130,58 @@ public class SkillService extends JPAServiceBase {
         return rows;
     }
 
-    public boolean remove(List<Integer> ids) {
-        for (Skill skill : skillDao.findAllById(ids)) {
-            versionService.deleteBySkillId(skill.getId());
+    /**
+     * 客户端可用技能：供桌面端 / 移动端等调用方使用。
+     *
+     * 只返回「已启用 + 授权角色命中」的技能基础信息，且刻意不下发 content —— 技能配置里
+     * 可能有内部约定与凭据，调用方只需要名称、标签与描述来展示与选择。
+     *
+     * 同时给出 `versionCount` 与 `latestVersion`（版本数量与最新的启用版本）：
+     * 客户端的版本下拉据此直接显示版本号，展开时再去取整份版本清单，不必为了显示一个版本号
+     * 在进页面时把每个技能的版本都请求一遍。
+     */
+    public Map<String, Object> available(HttpServletRequest request) {
+        List<Skill> rows = skillDao.findAll((root, query, cb) -> cb.equal(root.get("status"), 1),
+                Sort.by(Sort.Order.desc("sort"), Sort.Order.desc("id")));
+        ArrayNode items = DPUtil.arrayNode();
+        for (Skill info : rows) {
+            if (!authorized(info, request)) continue;
+            ObjectNode item = items.addObject();
+            item.put("id", info.getId());
+            item.put("name", DPUtil.parseString(info.getName()));
+            item.put("type", DPUtil.parseString(info.getType()));
+            item.put("typeText", types().get(info.getType()));
+            item.set("labels", DPUtil.toJSON(DPUtil.parseStringList(info.getLabels())));
+            item.put("description", DPUtil.parseString(info.getDescription()));
+            item.put("updatedTime", null == info.getUpdatedTime() ? 0L : info.getUpdatedTime());
+            item.put("versionCount", versionService.countEnabled(info.getId()));
+            item.set("latestVersion", versionService.latestEnabled(info.getId()));
+        }
+        ObjectNode result = DPUtil.objectNode();
+        result.set("rows", items);
+        return ApiUtil.result(0, null, result);
+    }
+
+    /**
+     * 技能授权校验：没有配置授权角色时所有登录用户可用；配置后要求调用人的角色与之有交集。
+     * 与编排应用的 authorized 同一套口径（mine 只在需要时取，避免无谓的 RPC）。
+     */
+    public boolean authorized(Skill info, HttpServletRequest request) {
+        if (null == info) return false;
+        Set<Integer> allowed = new LinkedHashSet<>(DPUtil.parseIntList(info.getRoleIds()));
+        if (allowed.isEmpty()) return true;
+        Set<Integer> mine = rbacService.roleIds(request);
+        return !Collections.disjoint(allowed, mine);
+    }
+
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            for (Skill skill : skillDao.findAllById(ids)) {
+                versionService.deleteBySkillId(skill.getId());
+            }
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除技能版本失败", e.getMessage());
         }
         return remove(skillDao, ids);
     }

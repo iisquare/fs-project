@@ -27,7 +27,9 @@ public class FeignInterceptor implements RequestInterceptor {
     public static final String HEADER_APP_NAME = "fs-app-name";
     public static final String HEADER_APP_TIME = "fs-app-time";
     public static final String HEADER_APP_TOKEN = "fs-app-token";
-    public static final List<String> headers = Arrays.asList("x-auth-token", "cookie", "user-agent", "authorization");
+    /** 会话令牌请求头：member 的 SessionIdResolver 按它识别会话，服务间调用经此拦截器放行传递 */
+    public static final String HEADER_AUTH_TOKEN = "x-auth-token";
+    public static final List<String> headers = Arrays.asList(HEADER_AUTH_TOKEN, "cookie", "user-agent", "authorization");
 
     @Value("${fs.rpc.secret}")
     public void setSecret(String secret) {

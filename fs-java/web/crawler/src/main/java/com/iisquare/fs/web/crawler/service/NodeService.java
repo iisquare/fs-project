@@ -7,7 +7,6 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.crawler.core.*;
-import io.minio.MinioClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPool;
@@ -17,6 +16,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.S3Client;
 
 import java.util.List;
 import java.util.Map;
@@ -48,7 +48,7 @@ public class NodeService extends ServiceBase implements Runnable, DisposableBean
     @Value("${fs.crawler.worker.maxTotal}")
     private Integer workerMaxTotal;
     @Autowired
-    MinioClient minioClient;
+    S3Client s3Client;
 
 
     private ZooKeeperClient zookeeper;
@@ -96,8 +96,8 @@ public class NodeService extends ServiceBase implements Runnable, DisposableBean
         fetcherPool = null;
     }
 
-    public MinioClient minio() {
-        return this.minioClient;
+    public S3Client s3Client() {
+        return this.s3Client;
     }
 
     public ZooKeeperClient zookeeper() {

@@ -2,7 +2,7 @@
 buildscript {
     ext {
         springBootVersion = '3.5.15'
-        shadowVersion = '4.0.3'
+        shadowVersion = '6.1.0'
     }
     repositories {
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
@@ -47,15 +47,15 @@ subprojects {
         resilience4jVersion = '3.3.3' // based on cloud version
         mybatisVersion = '3.5.17' // based on springboot version
         scalaVersion = '2.12' // based on spark and flink version
-        sparkVersion = '3.3.3'
-        flinkVersion = '1.17.1'
+        sparkVersion = '3.5.9'
+        flinkVersion = '2.2.1'
         /**
          * CDC Connectors Supported Flink Versions
-         * https://ververica.github.io/flink-cdc-connectors/master/content/about.html
+         * https://nightlies.apache.org/flink/flink-cdc-docs-release-3.7/zh/docs/get-started/introduction/
          */
-        cdcVersion = '2.4.2'
+        cdcVersion = '3.6.0-2.2'
         hudiVersion = '0.14.0'
-        hadoopVersion = '3.3.6' // based on spark version
+        hadoopVersion = '3.5.0' // based on spark version
         swaggerVersion = '2.9.2'
         torchVersion = '1.10.0'
         tensorflowVersion = '1.12.0'

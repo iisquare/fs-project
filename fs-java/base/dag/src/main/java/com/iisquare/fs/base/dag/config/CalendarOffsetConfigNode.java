@@ -21,7 +21,7 @@ public class CalendarOffsetConfigNode extends DAGConfig {
     }
 
     @Override
-    public Object process() {
+    public JsonNode process() {
         String arg = options.at("/arg").asText("");
         String reference = options.at("/reference").asText("");
         long offset = options.at("/offset").asLong(0);

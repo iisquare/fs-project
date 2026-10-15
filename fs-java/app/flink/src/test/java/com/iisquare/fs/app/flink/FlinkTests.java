@@ -5,26 +5,25 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.app.flink.func.ExampleBroadcastProcessFunction;
 import com.iisquare.fs.app.flink.func.ExampleProcessAllWindowFunction;
 import com.iisquare.fs.app.flink.func.ExampleRandomSourceFunction;
-import com.iisquare.fs.app.flink.output.EmptyOutput;
 import com.iisquare.fs.app.flink.trigger.CountTimeoutTrigger;
 import com.iisquare.fs.app.flink.util.FlinkUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
 import com.iisquare.fs.base.core.util.TypeUtil;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
-import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.RestOptions;
+import org.apache.flink.configuration.TaskManagerOptions;
+import org.apache.flink.connector.kafka.source.KafkaSource;
+import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.datastream.BroadcastStream;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
-import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
@@ -32,19 +31,10 @@ import org.apache.flink.util.CloseableIterator;
 import org.junit.Test;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.*;
 
 public class FlinkTests implements Serializable {
-
-    @Test
-    public void batchTest() throws Exception {
-        final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        List<Integer> data = Arrays.asList(1, 2, 3, 4, 5);
-        DataSource<Integer> source = env.fromCollection(data);
-        source.print();
-        source.output(new EmptyOutput<>());
-        env.execute("batch-test");
-    }
 
     @Test
     public void streamTest() throws Exception {
@@ -55,10 +45,16 @@ public class FlinkTests implements Serializable {
         properties.setProperty("auto.commit.enable", "false");
 //        properties.setProperty("auto.commit.interval.ms", "1000");
         properties.setProperty("group.id", "fs-test");
-        FlinkKafkaConsumer<String> consumer = new FlinkKafkaConsumer<>("fs-access-log", new SimpleStringSchema(), properties);
-        consumer.setCommitOffsetsOnCheckpoints(true);
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        DataStreamSource<String> stream = env.addSource(consumer, getClass().getSimpleName());
+        // Flink 2.x：新版KafkaSource替代FlinkKafkaConsumer
+        KafkaSource<String> source = KafkaSource.<String>builder()
+                .setBootstrapServers("kafka:9092")
+                .setTopics("fs-access-log")
+                .setGroupId("fs-test")
+                .setStartingOffsets(OffsetsInitializer.earliest())
+                .setValueOnlyDeserializer(new SimpleStringSchema())
+                .build();
+        DataStreamSource<String> stream = env.fromSource(source, WatermarkStrategy.noWatermarks(), getClass().getSimpleName());
         stream.print();
         env.execute("stream-test");
     }
@@ -128,8 +124,8 @@ public class FlinkTests implements Serializable {
     @Test
     public void restTest() throws Exception {
         Configuration config = new Configuration();
-        config.setString(RestOptions.BIND_PORT,"8081");
-        config.setInteger("taskmanager.numberOfTaskSlots", 3);
+        config.set(RestOptions.BIND_PORT, "8081");
+        config.set(TaskManagerOptions.NUM_TASK_SLOTS, 3);
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(config);
         // nc -l 8888
         DataStreamSource<String> source = env.socketTextStream("127.0.0.1", 8888);
@@ -167,7 +163,7 @@ public class FlinkTests implements Serializable {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(config);
         DataStreamSource<String> source = env.addSource(new ExampleRandomSourceFunction());
         SingleOutputStreamOperator<List<String>> process = source
-                .windowAll(TumblingProcessingTimeWindows.of(Time.seconds(3)))
+                .windowAll(TumblingProcessingTimeWindows.of(Duration.ofSeconds(3)))
                 .trigger(new CountTimeoutTrigger<>(5)).process(new ExampleProcessAllWindowFunction<>());
         process.print();
         env.execute("window-test");

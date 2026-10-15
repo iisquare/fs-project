@@ -22,7 +22,7 @@ public class Shunfeng2CKJob {
         data = data.map((MapFunction<Row, Row>) row -> {
             List<String> strings = DPUtil.matcher("VALUES \\(N'(.*?)', N'(.*?)', N'(.*?)', N'(.*?)', N'(.*?)', N'(.*?)'\\)", row.getString(0), true);
             return RowFactory.create(strings.subList(1, strings.size()).toArray(new Object[0]));
-        }, RowEncoder.apply(DataTypes.createStructType(Arrays.asList(
+        }, RowEncoder.encoderFor(DataTypes.createStructType(Arrays.asList(
                 DataTypes.createStructField("name", DataTypes.StringType, false),
                 DataTypes.createStructField("phone", DataTypes.StringType, false),
                 DataTypes.createStructField("province", DataTypes.StringType, false),

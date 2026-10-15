@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
+import com.iisquare.fs.base.elasticsearch.mvc.ElasticsearchBase;
 import com.iisquare.fs.base.elasticsearch.util.QueryUtil;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
@@ -134,11 +135,17 @@ public class KnowledgeSegmentService extends JPAServiceBase {
         return rows;
     }
 
-    public boolean remove(List<Integer> ids) {
-        if (!ids.isEmpty()) {
-            chunkES.deleteByQuery(QueryUtil.terms("segment_id", ids));
+    /**
+     * 删除分段，先清理下级检索块与 Elasticsearch 记录，索引删除失败时不再继续，便于重试
+     */
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        long indexed = chunkES.deleteByQuery(QueryUtil.terms("segment_id", ids));
+        if (ElasticsearchBase.STATE_FAILED == indexed) {
+            return ApiUtil.result(1500, "删除检索索引失败", ids);
         }
-        removeByParentId(chunkDao, "segmentId", ids);
+        Map<String, Object> children = removeByParentId(chunkDao, "segmentId", ids);
+        if (ApiUtil.failed(children)) return children;
         return remove(segmentDao, ids);
     }
 

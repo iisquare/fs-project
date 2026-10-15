@@ -138,11 +138,15 @@ public class DataService extends JPAServiceBase {
         return rows;
     }
 
-    public boolean remove(List<Integer> ids) {
-        if(null == ids || ids.isEmpty()) return false;
-        dataPermitDao.deleteByDataIds(ids);
-        dataDao.deleteInBatch(dataDao.findAllById(ids));
-        return true;
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            dataPermitDao.deleteByDataIds(ids);
+            dataDao.deleteInBatch(dataDao.findAllById(ids));
+            return ApiUtil.result(0, null, ids.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除数据失败", e.getMessage());
+        }
     }
 
 }

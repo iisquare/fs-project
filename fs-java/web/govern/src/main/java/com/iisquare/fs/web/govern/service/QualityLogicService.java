@@ -163,23 +163,31 @@ public class QualityLogicService extends ServiceBase {
         return result;
     }
 
-    public boolean remove(List<Integer> ids) {
-        if(null == ids || ids.size() < 1) return false;
-        logicDao.deleteInBatch(logicDao.findAllById(ids));
-        return true;
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            logicDao.deleteInBatch(logicDao.findAllById(ids));
+            return ApiUtil.result(0, null, ids.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除质检逻辑失败", e.getMessage());
+        }
     }
 
-    public boolean delete(List<Integer> ids, int uid) {
-        if(null == ids || ids.size() < 1) return false;
-        List<QualityLogic> list = logicDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        for (QualityLogic item : list) {
-            item.setStatus(-1);
-            item.setUpdatedTime(time);
-            item.setUpdatedUid(uid);
+    public Map<String, Object> delete(List<Integer> ids, int uid) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            List<QualityLogic> list = logicDao.findAllById(ids);
+            long time = System.currentTimeMillis();
+            for (QualityLogic item : list) {
+                item.setStatus(-1);
+                item.setUpdatedTime(time);
+                item.setUpdatedUid(uid);
+            }
+            logicDao.saveAll(list);
+            return ApiUtil.result(0, null, list.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除质检逻辑失败", e.getMessage());
         }
-        logicDao.saveAll(list);
-        return true;
     }
 
 }

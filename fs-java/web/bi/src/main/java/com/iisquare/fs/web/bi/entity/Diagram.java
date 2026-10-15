@@ -30,7 +30,25 @@ public class Diagram {
     @Transient
     private String modelText;
     @Column
+    private Integer clusterId; // 计算集群
+    @Transient
+    private String clusterIdName;
+    @Column
     private String content;
+    @Column
+    private String expression; // 定时调度Cron表达式
+    @Column
+    private Integer schedule; // 是否启用定时调度，1-启用，0-禁用
+    @Column
+    private String notify; // 消息通知配置
+    @Column
+    private Integer autoRecover; // 是否自动恢复，1-是，0-否
+    @Column
+    private Integer maxRetry; // 自动恢复最大次数
+    @Column
+    private Long lastTime; // 最近调度时间
+    @Column
+    private Long nextTime; // 下次调度时间
     @Column
     private Integer sort;
     @Column

@@ -3,9 +3,11 @@ package com.iisquare.fs.app.flink.script;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.app.flink.core.FlinkTypes;
 import com.iisquare.fs.app.flink.util.FlinkUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.core.DAGTransform;
+import com.iisquare.fs.base.dag.core.DAGType;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.streaming.api.datastream.DataStream;
 
@@ -16,7 +18,12 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class FAnalyseScript extends DAGTransform implements MapFunction<JsonNode, JsonNode> {
+public class FAnalyseScript extends DAGTransform<DataStream<JsonNode>> implements MapFunction<JsonNode, JsonNode> {
+
+    @Override
+    public DAGType<DataStream<JsonNode>> outputType() {
+        return FlinkTypes.DATASTREAM_JSON;
+    }
 
     public static final String ANALYSE_PREFIX = "/analyse.gif?";
 
@@ -44,8 +51,8 @@ public class FAnalyseScript extends DAGTransform implements MapFunction<JsonNode
     }};
 
     @Override
-    public Object process() throws Exception {
-        return FlinkUtil.union(DataStream.class, sources).map(this);
+    public DataStream<JsonNode> process() throws Exception {
+        return FlinkUtil.<JsonNode>union(inputs()).map(this);
     }
 
     public Date date(String datetime) {

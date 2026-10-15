@@ -116,7 +116,7 @@ public class DataPermitService extends JPAServiceBase {
         return rows;
     }
 
-    public boolean remove(List<Integer> ids) {
+    public Map<String, Object> remove(List<Integer> ids) {
         return remove(dataPermitDao, ids);
     }
 

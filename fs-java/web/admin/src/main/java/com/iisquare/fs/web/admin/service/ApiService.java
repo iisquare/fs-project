@@ -40,7 +40,7 @@ public class ApiService implements DisposableBean {
     private final CloseableHttpClient client;
 
     public static final List<String> FORWARD_HEADERS = Arrays.asList(
-            "x-auth-token", "cookie", "user-agent", "authorization",
+            FeignInterceptor.HEADER_AUTH_TOKEN, "cookie", "user-agent", "authorization",
             "content-disposition", "range", "accept", "accept-encoding"
     );
 

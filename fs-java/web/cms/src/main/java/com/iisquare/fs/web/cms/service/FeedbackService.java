@@ -144,23 +144,31 @@ public class FeedbackService extends ServiceBase {
         return result;
     }
 
-    public boolean remove(List<Integer> ids) {
-        if(null == ids || ids.size() < 1) return false;
-        feedbackDao.deleteInBatch(feedbackDao.findAllById(ids));
-        return true;
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            feedbackDao.deleteInBatch(feedbackDao.findAllById(ids));
+            return ApiUtil.result(0, null, ids.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除反馈失败", e.getMessage());
+        }
     }
 
-    public boolean delete(List<Integer> ids, int uid) {
-        if(null == ids || ids.size() < 1) return false;
-        List<Feedback> list = feedbackDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        for (Feedback item : list) {
-            item.setStatus(-1);
-            item.setAuditTime(time);
-            item.setAuditUid(uid);
+    public Map<String, Object> delete(List<Integer> ids, int uid) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            List<Feedback> list = feedbackDao.findAllById(ids);
+            long time = System.currentTimeMillis();
+            for (Feedback item : list) {
+                item.setStatus(-1);
+                item.setAuditTime(time);
+                item.setAuditUid(uid);
+            }
+            feedbackDao.saveAll(list);
+            return ApiUtil.result(0, null, list.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除反馈失败", e.getMessage());
         }
-        feedbackDao.saveAll(list);
-        return true;
     }
 
 }

@@ -247,9 +247,16 @@ public class TaskService extends ServiceBase implements InitializingBean, Dispos
         return task;
     }
 
-    public boolean remove(String type, String id) {
-        if (!Arrays.asList("task").contains(type)) return false;
-        return zookeeper.save("/" + type + "/" + id, null);
+    public Map<String, Object> remove(String type, String id) {
+        if (!Arrays.asList("task").contains(type)) return ApiUtil.result(1001, "不支持的任务类型", type);
+        try {
+            if (!zookeeper.save("/" + type + "/" + id, null)) {
+                return ApiUtil.result(1500, "删除任务失败", id);
+            }
+            return ApiUtil.result(0, null, id);
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除任务失败", e.getMessage());
+        }
     }
 
     public Map<String, Task> tasks() {

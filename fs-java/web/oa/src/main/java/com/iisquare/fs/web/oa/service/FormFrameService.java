@@ -139,17 +139,21 @@ public class FormFrameService extends ServiceBase {
         return ApiUtil.result(0, null, info);
     }
 
-    public boolean delete(List<Integer> ids, int uid) {
-        if(null == ids || ids.size() < 1) return false;
-        List<FormFrame> list = formFrameDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        for (FormFrame item : list) {
-            item.setStatus(-1);
-            item.setUpdatedTime(time);
-            item.setUpdatedUid(uid);
+    public Map<String, Object> delete(List<Integer> ids, int uid) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            List<FormFrame> list = formFrameDao.findAllById(ids);
+            long time = System.currentTimeMillis();
+            for (FormFrame item : list) {
+                item.setStatus(-1);
+                item.setUpdatedTime(time);
+                item.setUpdatedUid(uid);
+            }
+            formFrameDao.saveAll(list);
+            return ApiUtil.result(0, null, list.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除表单框架失败", e.getMessage());
         }
-        formFrameDao.saveAll(list);
-        return true;
     }
 
     public <T> List<T> fillInfo(List<T> list, String ...properties) {

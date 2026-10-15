@@ -115,9 +115,18 @@ public class ScheduleService extends ServiceBase implements Closeable {
         return object;
     }
 
-    public boolean remove(String type, String id) {
-        if (!Arrays.asList("schedule", "group", "proxy", "history").contains(type)) return false;
-        return nodeService.zookeeper().save("/" + type + "/" + id, null);
+    public Map<String, Object> remove(String type, String id) {
+        if (!Arrays.asList("schedule", "group", "proxy", "history").contains(type)) {
+            return ApiUtil.result(1001, "不支持的调度类型", type);
+        }
+        try {
+            if (!nodeService.zookeeper().save("/" + type + "/" + id, null)) {
+                return ApiUtil.result(1500, "删除调度节点失败", id);
+            }
+            return ApiUtil.result(0, null, id);
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除调度节点失败", e.getMessage());
+        }
     }
 
     public void start() {

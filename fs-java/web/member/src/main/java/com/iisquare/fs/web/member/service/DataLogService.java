@@ -131,11 +131,15 @@ public class DataLogService extends JPAServiceBase {
         return ApiUtil.result(0, null, result);
     }
 
-    public boolean remove(List<Long> ids) {
-        if(null == ids || ids.isEmpty()) return false;
-        dataPermitLogDao.deleteByLogIds(ids);
-        dataLogDao.deleteInBatch(dataLogDao.findAllById(ids));
-        return true;
+    public Map<String, Object> remove(List<Long> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            dataPermitLogDao.deleteByLogIds(ids);
+            dataLogDao.deleteInBatch(dataLogDao.findAllById(ids));
+            return ApiUtil.result(0, null, ids.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除数据日志失败", e.getMessage());
+        }
     }
 
 }

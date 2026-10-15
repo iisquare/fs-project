@@ -15,10 +15,25 @@ Since Spark 4.0.0, it’s Scala 2.13.
 - Run/Debug Configurations > Add Run Options > Add VM options
 ```
 -Dfile.encoding=UTF-8
-# fixed: module java.base does not "opens java.io" to unnamed module
+-XX:+IgnoreUnrecognizedVMOptions
+# fixed: module java.base does not export sun.nio.ch to unnamed module (Spark >= 3.4，StorageUtils 引用 sun.nio.ch.DirectBuffer)
+--add-opens java.base/sun.nio.ch=ALL-UNNAMED
+# 以下为 Spark 3.5 官方默认模块参数，等同于 org.apache.spark.launcher.JavaModuleOptions#defaultModuleOptions()
+--add-opens java.base/java.lang=ALL-UNNAMED
+--add-opens java.base/java.lang.invoke=ALL-UNNAMED
+--add-opens java.base/java.lang.reflect=ALL-UNNAMED
 --add-opens java.base/java.io=ALL-UNNAMED
-# fixed: module java.base does not export sun.nio.ch to unnamed module
---add-exports java.base/sun.nio.ch=ALL-UNNAMED
+--add-opens java.base/java.net=ALL-UNNAMED
+--add-opens java.base/java.nio=ALL-UNNAMED
+--add-opens java.base/java.util=ALL-UNNAMED
+--add-opens java.base/java.util.concurrent=ALL-UNNAMED
+--add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
+--add-opens java.base/jdk.internal.ref=ALL-UNNAMED
+--add-opens java.base/sun.nio.cs=ALL-UNNAMED
+--add-opens java.base/sun.security.action=ALL-UNNAMED
+--add-opens java.base/sun.util.calendar=ALL-UNNAMED
+--add-opens java.security.jgss/sun.security.krb5=ALL-UNNAMED
+-Djdk.reflect.useDirectMethodHandle=false
 ```
 
 ## 最佳实践
@@ -33,7 +48,7 @@ StructType schema = DataTypes.createStructType(Arrays.asList(
     DataTypes.createStructField("table", DataTypes.StringType, false),
     DataTypes.createStructField("message", DataTypes.StringType, true)
 ));
-ExpressionEncoder<Row> encoder = RowEncoder.apply(schema);
+Encoder<Row> encoder = RowEncoder.encoderFor(schema);
 Encoder<YourBean> encoder = Encoders.bean(YourBean.class);
 Encoder<JsonNode> encoder = Encoders.javaSerialization(JsonNode.class);
 ```

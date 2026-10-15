@@ -1,26 +1,26 @@
 package com.iisquare.fs.app.spark;
 
 import com.iisquare.fs.app.spark.mongo.FSMongoTableProvider;
-import com.iisquare.fs.app.spark.util.SparkUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
 import com.iisquare.fs.base.core.util.PropertiesUtil;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.spark.MongoSpark;
-import com.mongodb.spark.config.ReadConfig;
-import com.mongodb.spark.rdd.api.java.JavaMongoRDD;
-import org.apache.spark.api.java.JavaSparkContext;
+import com.mongodb.spark.sql.connector.config.MongoConfig;
+import com.mongodb.spark.sql.connector.config.ReadConfig;
 import org.apache.spark.api.java.function.ForeachPartitionFunction;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.sql.*;
-import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder;
+import org.apache.spark.sql.AnalysisException;
+import org.apache.spark.sql.Column;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.encoders.RowEncoder;
+import org.apache.spark.sql.functions;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
-import org.bson.Document;
 import org.junit.Test;
 
 import java.io.Serializable;
@@ -28,35 +28,61 @@ import java.util.*;
 
 public class MongoTests implements Serializable {
 
-    public static final String INPUT_PREFIX = "spark.mongodb.read.";
-    public static final String OUTPUT_PREFIX = "spark.mongodb.write.";
-    public static final String INPUT3_PREFIX = "spark.mongodb.input.";
+    /**
+     * 连接与库表配置。
+     *
+     * MongoDB Spark Connector 10.x 使用 DataSource V2 接口，
+     * 配置键形如 spark.mongodb.read.connection.uri / database / collection，
+     * 旧的 spark.mongodb.input.* 前缀与 MongoSpark/ReadConfig 已废弃。
+     */
+    public static final String URI = "mongodb://root:admin888@127.0.0.1:27017";
+    public static final String DATABASE = "fs_project";
+    public static final String PIPELINE_LIMIT = "{ $limit: 1000 }";
+    public static final String PIPELINE_MATCH = "{ $match: { i : { $gte : 1998999 } } }";
 
-    public String ddl(String database, String collection) {
-        SparkSession session = SparkSession.builder().appName("ddl-test").master("local").getOrCreate();
+    public SparkSession session(String appName) {
+        return SparkSession.builder().appName(appName).master("local").getOrCreate();
+    }
+
+    public Map<String, String> readConfig(String database, String collection) {
         Map<String, String> config = new LinkedHashMap<>();
-        String uri = "mongodb://root:admin888@127.0.0.1:27017";
-        config.put(INPUT_PREFIX + "connection.uri", uri);
-        config.put(INPUT_PREFIX + "database", database);
-        config.put(INPUT_PREFIX + "collection", collection);
-        config.put(INPUT_PREFIX + "aggregation.pipeline", "{ $limit: 1000 }");
-        Encoder<Row> encoder = session.read().format("mongodb").options(config).load().encoder();
-        return encoder.schema().toDDL();
+        config.put(MongoConfig.READ_PREFIX + MongoConfig.CONNECTION_STRING_CONFIG, URI);
+        config.put(MongoConfig.READ_PREFIX + MongoConfig.DATABASE_NAME_CONFIG, database);
+        config.put(MongoConfig.READ_PREFIX + MongoConfig.COLLECTION_NAME_CONFIG, collection);
+        return config;
+    }
+
+    public Map<String, String> writeConfig(String database, String collection) {
+        Map<String, String> config = new LinkedHashMap<>();
+        config.put(MongoConfig.WRITE_PREFIX + MongoConfig.CONNECTION_STRING_CONFIG, URI);
+        config.put(MongoConfig.WRITE_PREFIX + MongoConfig.DATABASE_NAME_CONFIG, database);
+        config.put(MongoConfig.WRITE_PREFIX + MongoConfig.COLLECTION_NAME_CONFIG, collection);
+        return config;
+    }
+
+    /**
+     * 读取集合的schema并输出为DDL：采样结果用于静态化集合结构
+     */
+    public String ddl(SparkSession session, String database, String collection) {
+        Map<String, String> config = readConfig(database, collection);
+        config.put(MongoConfig.READ_PREFIX + ReadConfig.AGGREGATION_PIPELINE_CONFIG, PIPELINE_LIMIT);
+        return session.read().format("mongodb").options(config).load().schema().toDDL();
     }
 
     @Test
     public void encodeTest() {
-        MongoClient client = MongoClients.create("mongodb://root:admin888@127.0.0.1:27017/");
-        String database = "fs_project";
-        MongoCursor<String> iterator = client.getDatabase(database).listCollectionNames().iterator();
+        MongoClient client = MongoClients.create(URI + "/");
+        MongoCursor<String> iterator = client.getDatabase(DATABASE).listCollectionNames().iterator();
+        SparkSession session = session("ddl-test");
         StringBuilder sb = new StringBuilder();
         while (iterator.hasNext()) {
             String collection = iterator.next();
-            System.out.println(String.format("ddl %s.%s", database, collection));
+            System.out.println(String.format("ddl %s.%s", DATABASE, collection));
             // 当集合内无数据时，依然无法获取到结构信息，可适当补充测试数据用于静态化
-            sb.append(String.format("\n%s.%s=%s", database, collection, ddl(database, collection)));
+            sb.append(String.format("\n%s.%s=%s", DATABASE, collection, ddl(session, DATABASE, collection)));
         }
         System.out.println(sb.toString());
+        session.close();
         FileUtil.close(client);
     }
 
@@ -69,25 +95,18 @@ public class MongoTests implements Serializable {
     @Test
     public void decodeTest() throws AnalysisException {
         Properties properties = PropertiesUtil.load(getClass().getClassLoader(), "ddl.properties");
-        SparkSession session = SparkSession.builder().appName("sql-test").master("local").getOrCreate();
-        Map<String, String> config = new LinkedHashMap<>();
-        String uri = "mongodb://root:admin888@127.0.0.1:27017";
-        String database = "fs_project";
+        SparkSession session = session("sql-test");
+        String database = DATABASE;
         String collection = "fs_test";
-        config.put(INPUT_PREFIX + "connection.uri", uri);
-        config.put(INPUT_PREFIX + "database", database);
-        config.put(INPUT_PREFIX + "collection", collection);
-
-        String pipeline = "{ $match: { i : { $lt : 0 } } }";
-        config.put(INPUT_PREFIX + "aggregation.pipeline", pipeline);
+        Map<String, String> config = readConfig(database, collection);
+        config.put(MongoConfig.READ_PREFIX + ReadConfig.AGGREGATION_PIPELINE_CONFIG, "{ $match: { i : { $lt : 0 } } }");
         Dataset<Row> dataset = session.read().format("mongodb").options(config).load();
 
         String ddl = properties.getProperty(database + "." + collection);
 
         if (!DPUtil.empty(ddl)) {
             dataset.printSchema();
-            ExpressionEncoder<Row> encoder = RowEncoder.apply(StructType.fromDDL(ddl));
-            dataset = session.createDataset(dataset.rdd(), encoder);
+            dataset = cast(dataset, StructType.fromDDL(ddl));
         }
 
         dataset.createTempView("test");
@@ -97,43 +116,26 @@ public class MongoTests implements Serializable {
     }
 
     /**
-     * 若查询记录中，各行数据结构不一致，根据sampleSize采样信息确定schema结构
-     * 若某行的字段不在采样的schema中，则缺失字段补充为空值，多余字段将被忽略
-     * Specifies a custom aggregation pipeline to apply to the collection before sending data to Spark.
-     * MongoDB Connector支持下推，但为保障生产环境稳定，个人依然建议在pipeline中加入必要的限定条件
+     * 采样结构与固定结构：
+     * 1. 连接器按 sampleSize 采样推断schema；行内字段不在采样结果中时补空值，多余字段被忽略；
+     * 2. aggregation.pipeline 会下推到MongoDB，生产环境建议带上必要的限定条件；
+     * 3. 担心采样缺列时，可用开发环境导出的DDL重投影为固定结构，保证后续SQL列结构稳定。
      */
     @Test
     public void combineTest() throws AnalysisException {
         Properties properties = PropertiesUtil.load(getClass().getClassLoader(), "ddl.properties");
-        SparkSession session = SparkSession.builder().appName("sql-test").master("local").getOrCreate();
-        Map<String, String> config = new LinkedHashMap<>();
-        String uri = "mongodb://root:admin888@127.0.0.1:27017";
-        String database = "fs_project";
+        SparkSession session = session("combine-test");
+        String database = DATABASE;
         String collection = "fs_test";
-        config.put(INPUT3_PREFIX + "uri", uri);
-        config.put(INPUT3_PREFIX + "database", database);
-        config.put(INPUT3_PREFIX + "collection", collection);
-
-        String pipeline = "{ $match: { i : { $lt : 0 } } }";
-        JavaMongoRDD<Document> rdd = MongoSpark.load(
-                JavaSparkContext.fromSparkContext(session.sparkContext()), ReadConfig.create(config));
-        rdd = rdd.withPipeline(Collections.singletonList(Document.parse(pipeline)));
+        Map<String, String> config = readConfig(database, collection);
+        config.put(MongoConfig.READ_PREFIX + ReadConfig.AGGREGATION_PIPELINE_CONFIG, "{ $match: { i : { $lt : 0 } } }");
+        config.put(MongoConfig.READ_PREFIX + ReadConfig.INFER_SCHEMA_SAMPLE_SIZE_CONFIG, "1");
+        Dataset<Row> dataset = session.read().format("mongodb").options(config).load();
+        dataset.printSchema(); // 采样得到的结构
 
         String ddl = properties.getProperty(database + "." + collection);
-
-        Dataset<Row> dataset;
         if (!DPUtil.empty(ddl)) {
-            StructType schema = StructType.fromDDL(ddl);
-            ExpressionEncoder<Row> encoder = RowEncoder.apply(schema);
-            dataset = session.createDataset(rdd.map((Function<Document, Row>) document -> {
-                List<Object> data = new ArrayList<>();
-                for (StructField field : schema.fields()) {
-                    data.add(document.get(field.name()));
-                }
-                return SparkUtil.row(data);
-            }).rdd(), encoder);
-        } else {
-            dataset = rdd.toDF();
+            dataset = cast(dataset, StructType.fromDDL(ddl));
         }
 
         dataset.createTempView("test");
@@ -142,20 +144,30 @@ public class MongoTests implements Serializable {
         session.close();
     }
 
+    /**
+     * 按固定DDL重投影：缺失字段补空值、多余字段忽略，避免采样缺列导致后续SQL找不到列
+     */
+    public Dataset<Row> cast(Dataset<Row> dataset, StructType schema) {
+        List<String> names = Arrays.asList(dataset.columns());
+        List<Column> columns = new ArrayList<>();
+        for (StructField field : schema.fields()) {
+            if (names.contains(field.name())) {
+                columns.add(functions.col(field.name()).cast(field.dataType()).as(field.name()));
+            } else {
+                columns.add(functions.lit(null).cast(field.dataType()).as(field.name()));
+            }
+        }
+        return dataset.select(columns.toArray(new Column[0]));
+    }
+
     @Test
     public void pipelineTest() throws AnalysisException {
-        SparkSession session = SparkSession.builder().appName("pipeline-test").master("local").getOrCreate();
-        Map<String, String> config = new LinkedHashMap<>();
-        String uri = "mongodb://root:admin888@127.0.0.1:27017";
-        String database = "fs_project";
+        SparkSession session = session("pipeline-test");
+        String database = DATABASE;
         String collection = "fs_test";
-        config.put(INPUT_PREFIX + "connection.uri", uri);
-        config.put(INPUT_PREFIX + "database", database);
-        config.put(INPUT_PREFIX + "collection", collection);
-        config.put(INPUT_PREFIX + "sampleSize", "1");
-
-        String pipeline = "{ $match: { i : { $gte : 1998999 } } }";
-        config.put(INPUT_PREFIX + "aggregation.pipeline", pipeline);
+        Map<String, String> config = readConfig(database, collection);
+        config.put(MongoConfig.READ_PREFIX + ReadConfig.INFER_SCHEMA_SAMPLE_SIZE_CONFIG, "1");
+        config.put(MongoConfig.READ_PREFIX + ReadConfig.AGGREGATION_PIPELINE_CONFIG, PIPELINE_MATCH);
         Dataset<Row> dataset = session.read().format("mongodb").options(config).load();
         dataset.foreachPartition((ForeachPartitionFunction<Row>) t -> {
             while (t.hasNext()) {
@@ -173,19 +185,14 @@ public class MongoTests implements Serializable {
 
     @Test
     public void providerTest() throws AnalysisException {
-        SparkSession session = SparkSession.builder().appName("pipeline-test").master("local").getOrCreate();
-        Map<String, String> config = new LinkedHashMap<>();
-        String uri = "mongodb://root:admin888@127.0.0.1:27017";
-        String database = "fs_project";
+        SparkSession session = session("provider-test");
+        String database = DATABASE;
         String collection = "fs_test";
-        config.put(INPUT_PREFIX + "connection.uri", uri);
-        config.put(INPUT_PREFIX + "database", database);
-        config.put(INPUT_PREFIX + "collection", collection);
-        String pipeline = "{ $match: { i : { $gte : 1998999 } } }";
-        config.put(INPUT_PREFIX + "aggregation.pipeline", pipeline);
+        Map<String, String> config = readConfig(database, collection);
+        config.put(MongoConfig.READ_PREFIX + ReadConfig.AGGREGATION_PIPELINE_CONFIG, PIPELINE_MATCH);
 
         Properties properties = PropertiesUtil.load(getClass().getClassLoader(), "ddl.properties");
-        FSMongoTableProvider.registerDDL(uri, properties);
+        FSMongoTableProvider.registerDDL(URI, properties);
 
         Dataset<Row> dataset = session.read().format(FSMongoTableProvider.class.getName()).options(config).load();
         dataset.printSchema();
@@ -197,21 +204,15 @@ public class MongoTests implements Serializable {
 
     @Test
     public void writeTest() {
-        SparkSession session = SparkSession.builder().appName("write-test").master("local").getOrCreate();
-        Map<String, String> config = new LinkedHashMap<>();
-        String uri = "mongodb://root:admin888@127.0.0.1:27017";
-        String database = "fs_project";
-        String collection = "fs_t";
-        config.put(OUTPUT_PREFIX + "connection.uri", uri);
-        config.put(OUTPUT_PREFIX + "database", database);
-        config.put(OUTPUT_PREFIX + "collection", collection);
+        SparkSession session = session("write-test");
+        Map<String, String> config = writeConfig(DATABASE, "fs_t");
 
         long time = System.currentTimeMillis();
         Dataset<Row> dataset = session.createDataset(Arrays.asList(
                 RowFactory.create(1, "a", time, time),
                 RowFactory.create(2, "b", time, time),
                 RowFactory.create(3, "c", time, time)
-        ), RowEncoder.apply(DataTypes.createStructType(Arrays.asList(
+        ), RowEncoder.encoderFor(DataTypes.createStructType(Arrays.asList(
                 DataTypes.createStructField("_id", DataTypes.IntegerType, false),
                 DataTypes.createStructField("name", DataTypes.StringType, false),
                 DataTypes.createStructField("createdTime", DataTypes.LongType, false),

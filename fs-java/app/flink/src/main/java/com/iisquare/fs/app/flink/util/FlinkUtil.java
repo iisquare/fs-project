@@ -4,10 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.app.flink.core.FlinkCore;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.dag.core.DAGException;
 import com.iisquare.fs.base.dag.core.DAGNode;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -29,20 +29,24 @@ public class FlinkUtil {
         return result;
     }
 
-    public static <T> T union(Class<T> classType, Set<DAGNode> nodes) {
-        if (null == nodes || 0 == nodes.size()) return null;
-        Iterator<DAGNode> iterator = nodes.iterator();
-        T result = iterator.next().result(classType);
-        while (iterator.hasNext()) {
-            if (result instanceof DataSet) {
-                result = (T) ((DataSet) result).union(iterator.next().result(DataSet.class));
-                continue;
+    /**
+     * 按顺序合并多个上游数据流（顺序由节点入边顺序决定，见 DAGNode#inputs）
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static <T> DataStream<T> union(List<DAGNode<?>> nodes) {
+        if (null == nodes || nodes.isEmpty()) return null;
+        List<DataStream> streams = new ArrayList<>();
+        for (DAGNode<?> node : nodes) {
+            Object value = node.result();
+            if (!(value instanceof DataStream)) {
+                throw new DAGException(node, "上游节点输出 " + (null == value ? "null" : value.getClass().getName())
+                        + "，期望 DataStream");
             }
-            if (result instanceof DataStream) {
-                result = (T) ((DataStream) result).union(iterator.next().result(DataStream.class));
-                continue;
-            }
-            return null;
+            streams.add((DataStream) value);
+        }
+        DataStream result = streams.get(0);
+        for (int index = 1; index < streams.size(); index++) {
+            result = result.union(streams.get(index));
         }
         return result;
     }

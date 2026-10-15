@@ -23,6 +23,7 @@ const columns = ref([
   { prop: 'uidUserInfo.serial', label: '用户账号' },
   { prop: 'uidUserInfo.name', label: '用户昵称' },
   { prop: 'modelIds', label: '模型限制', slot: 'modelIds' },
+  { prop: 'proxyable', label: '用户代理', slot: 'proxyable' },
   { prop: 'statusText', label: '状态' },
   { prop: 'expiredTime', label: '过期时间', formatter: DateUtil.render },
   { prop: 'createdTime', label: '创建时间', formatter: DateUtil.render, hide: true },
@@ -75,6 +76,7 @@ const rules = ref({
 
 const handleAdd = () => {
   form.value = {
+    proxyable: false,
     modelIds: [],
     status: 'valid',
   }
@@ -181,6 +183,9 @@ const handleDelete = () => {
           </el-space>
           <el-tag type="info" v-else>不限</el-tag>
         </template>
+        <template #proxyable="scope">
+          <el-tag :type="scope.row.proxyable ? 'success' : 'info'">{{ scope.row.proxyable ? '允许' : '禁止' }}</el-tag>
+        </template>
       </TableColumn>
       <el-table-column label="操作" width="120">
         <template #default="scope">
@@ -206,6 +211,7 @@ const handleDelete = () => {
         </el-space>
         <span v-else>不限</span>
       </el-descriptions-item>
+      <el-descriptions-item label="用户代理">{{ form.proxyable ? '允许' : '禁止' }}</el-descriptions-item>
       <el-descriptions-item label="过期时间" :span="2">{{ DateUtil.format(form.expiredTime) }}</el-descriptions-item>
       <el-descriptions-item label="创建者">{{ form.createdUserInfo?.name }}</el-descriptions-item>
       <el-descriptions-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-descriptions-item>
@@ -241,6 +247,9 @@ const handleDelete = () => {
       </el-form-item>
       <el-form-item prop="modelIds" label="模型限制">
         <form-select v-model="form.modelIds" :callback="ModelApi.list" :labelFormatter="modelName" multiple clearable />
+      </el-form-item>
+      <el-form-item prop="proxyable" label="用户代理">
+        <el-checkbox v-model="form.proxyable">允许携带用户会话令牌，按会话用户记账并扣除其积分</el-checkbox>
       </el-form-item>
       <el-form-item prop="expiredTime" label="过期时间">
          <form-date-picker v-model="form.expiredTime" placeholder="留空为永久有效" />

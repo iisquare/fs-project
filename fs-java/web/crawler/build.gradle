@@ -2,7 +2,7 @@
 dependencies {
     implementation project(':web:core')
     implementation project(':base:zookeeper')
-    implementation project(':base:minio')
+    implementation project(':base:s3')
     testImplementation project(':web:test')
     implementation project(':base:jsoup')
 

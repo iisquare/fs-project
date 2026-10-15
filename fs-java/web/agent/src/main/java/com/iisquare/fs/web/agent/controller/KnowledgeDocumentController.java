@@ -68,8 +68,7 @@ public class KnowledgeDocumentController extends PermitControllerBase {
     @Permission("knowledge:delete")
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = documentService.remove(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(documentService.remove(ids));
     }
 
     @RequestMapping("/config")

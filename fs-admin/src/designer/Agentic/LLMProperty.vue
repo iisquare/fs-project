@@ -328,8 +328,18 @@ const handleToolMethodChange = (item: any, value: any, row: any = null) => {
             </ParamRow>
             <!-- 只有 ReAct 才循环迭代：每轮返回工具调用就执行并回填上下文继续推理 -->
             <ParamRow label="迭代次数" wide v-if="'react' === model.data.agentStrategy">
-              <el-input-number v-model="model.data.maxIterations" :min="1" :max="50" :controls="false" placeholder="最大工具调用轮次，达到上限按节点异常处理" />
+              <el-input-number v-model="model.data.maxIterations" :min="1" :max="50" :controls="false" placeholder="每批工具调用轮次" />
             </ParamRow>
+            <ParamRow label="接续次数" wide v-if="'react' === model.data.agentStrategy">
+              <el-input-number v-model="model.data.continueCount" :min="0" :max="5" :controls="false" placeholder="跑满一批后自动接续的次数" />
+            </ParamRow>
+            <el-form-item label="" v-if="'react' === model.data.agentStrategy">
+              <tip-text>
+                迭代次数是「一批」的工具往返轮次：跑满仍在请求工具就自动接续下一批，接续点会提醒模型提防无效轮转；
+                接续次数不含首批（配 0 即跑满一批就收尾），用完后再禁用工具做一次收尾调用——收尾是额外一轮、不占批次，
+                节点按已有信息作答并在输出上标记 wrapped，不再按节点异常中断。
+              </tip-text>
+            </el-form-item>
           </template>
         </ModelParamsField>
         <VariableField

@@ -7,6 +7,7 @@ import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
 import com.iisquare.fs.web.agent.service.ToolService;
 import com.iisquare.fs.web.agent.service.ToolMethodService;
+import com.iisquare.fs.web.agent.mvc.Configuration;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
@@ -25,6 +26,8 @@ public class ToolController extends PermitControllerBase {
     ToolService toolService;
     @Autowired
     ToolMethodService toolMethodService;
+    @Autowired
+    Configuration configuration;
 
     @RequestMapping("/list")
     @Permission("")
@@ -45,8 +48,7 @@ public class ToolController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = toolService.remove(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(toolService.remove(ids));
     }
 
     @RequestMapping("/config")
@@ -56,6 +58,8 @@ public class ToolController extends PermitControllerBase {
         model.put("types", toolService.types());
         model.put("sorts", toolService.sorts());
         model.put("methodStatus", toolMethodService.status());
+        // 工具页「MCP样例」按钮用的地址：本服务自带的 MCP 服务
+        model.put("mcpSampleUrl", configuration.getMcpSampleUrl());
         return ApiUtil.echoResult(0, null, model);
     }
 

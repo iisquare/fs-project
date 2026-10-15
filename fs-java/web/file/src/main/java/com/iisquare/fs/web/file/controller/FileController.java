@@ -47,8 +47,8 @@ public class FileController extends RpcControllerBase {
 
     @RequestMapping("/delete")
     public String deleteAction(@RequestBody JsonNode json, HttpServletRequest request) {
-        boolean result = archiveService.deleteByQuery(json, request);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        Map<String, Object> result = archiveService.deleteByQuery(json, request);
+        return ApiUtil.echoResult(result);
     }
 
     @RequestMapping("/config")

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.web.sse.SsePlainEmitter;
+import com.iisquare.fs.web.core.mvc.FeignInterceptor;
 import com.iisquare.fs.web.lm.entity.Usage;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.http.Header;
@@ -42,7 +43,9 @@ public abstract class GatewayHandler {
 
     public static final List<String> forwardHeaderBlocks = Arrays.asList(
             "authorization",
-            "x-api-key"
+            "x-api-key",
+            // 会话令牌请求头（密钥开启「用户代理」时调用方带上）：仅网关内部使用，绝不转发给供应商
+            FeignInterceptor.HEADER_AUTH_TOKEN
     );
 
     public static final List<String> forwardedResponsePrefixes = Arrays.asList( // 回传给调用端的响应头

@@ -54,8 +54,7 @@ public class FavoriteController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        long result = favoriteService.remove(ids, request);
-        return ApiUtil.echoResult(0, null, result);
+        return ApiUtil.echoResult(favoriteService.remove(ids, request));
     }
 
     @RequestMapping("/config")

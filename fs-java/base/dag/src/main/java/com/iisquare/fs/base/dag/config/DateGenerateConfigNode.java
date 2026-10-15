@@ -1,5 +1,6 @@
 package com.iisquare.fs.base.dag.config;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.DAGCore;
@@ -13,7 +14,7 @@ import java.util.TimeZone;
 public class DateGenerateConfigNode extends DAGConfig {
 
     @Override
-    public Object process() throws Exception {
+    public JsonNode process() throws Exception {
         ObjectNode result = DPUtil.objectNode();
         String arg = options.at("/arg").asText("");
         String datetime = options.at("/datetime").asText();

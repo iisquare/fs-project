@@ -2,5 +2,5 @@ package com.iisquare.fs.base.dag.transform;
 
 import com.iisquare.fs.base.dag.core.DAGTransform;
 
-public abstract class AbstractSQLTransform extends DAGTransform {
+public abstract class AbstractSQLTransform<OUT> extends DAGTransform<OUT> {
 }

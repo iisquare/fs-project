@@ -10,7 +10,7 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @ComponentScan(basePackages = {
         "com.iisquare.fs.base.core.*",
-        "com.iisquare.fs.base.minio.*",
+        "com.iisquare.fs.base.s3.*",
         "com.iisquare.fs.web.core.*",
         "com.iisquare.fs.web.crawler",
 })

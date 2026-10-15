@@ -55,8 +55,7 @@ public class FeedbackController extends PermitControllerBase {
         } else {
             ids = Arrays.asList(DPUtil.parseInt(param.get("ids")));
         }
-        boolean result = feedbackService.delete(ids, rbacService.uid(request));
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(feedbackService.delete(ids, rbacService.uid(request)));
     }
 
     @RequestMapping("/config")

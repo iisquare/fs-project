@@ -255,8 +255,10 @@ public class ProviderService extends JPAServiceBase {
         return rows;
     }
 
-    public boolean remove(List<Integer> ids) {
-        removeByParentId(modelDao, "providerId", ids);
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        Map<String, Object> models = removeByParentId(modelDao, "providerId", ids);
+        if (ApiUtil.failed(models)) return models;
         return remove(providerDao, ids);
     }
 

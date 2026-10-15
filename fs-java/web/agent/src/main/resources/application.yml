@@ -17,6 +17,19 @@ fs:
     tool:
       connectTimeout: 10000
       readTimeout: 60000
+    # 工具页「MCP样例」按钮填入的地址：本服务自带的 MCP 服务（SSE 传输，见 spring.ai.mcp.server）
+    mcp:
+      sampleUrl: http://localhost:7827/sse
+    # 本地客户端（桌面端）上传的文件：上传到哪个桶（需先存在于 MinIO / S3）与单个文件的上限
+    bot:
+      upload:
+        bucket: fs-mcp
+        maxSize: 104857600
+    # 多模态工具（MCP 的 multimodalAnalyze）：默认模型名称与单文件字节上限；
+    # 调用时给出的 model 参数优先，两者都没有会直接报错提醒配置
+    multimodal:
+      model: ''
+      maxSize: 20971520
   jpa:
     show-sql: true
     hibernate:

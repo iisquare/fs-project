@@ -13,6 +13,7 @@ import com.iisquare.fs.base.web.sse.SsePlainRequest;
 import com.iisquare.fs.base.web.sse.SsePlainRequestPool;
 import com.iisquare.fs.base.web.util.HttpClientUtil;
 import com.iisquare.fs.base.web.util.ServletUtil;
+import com.iisquare.fs.web.core.mvc.FeignInterceptor;
 import com.iisquare.fs.web.lm.core.RedisKey;
 import com.iisquare.fs.web.lm.entity.*;
 import com.iisquare.fs.web.lm.gateway.GatewayHandler;
@@ -159,6 +160,15 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         return SsePlainEmitter.error("invalid_request_error", "Authentication Fails, Your api key is invalid", "authentication_error", null);
     }
 
+    /**
+     * 落库用请求头：剔除用户会话令牌，令牌只在网关内部使用，不进入使用记录
+     */
+    protected String recordHeaders(Map<String, String> headers) {
+        Map<String, String> data = new LinkedHashMap<>(headers);
+        data.entrySet().removeIf(entry -> FeignInterceptor.HEADER_AUTH_TOKEN.equalsIgnoreCase(entry.getKey()));
+        return DPUtil.stringify(data);
+    }
+
     public ObjectNode models(Map<String, Object> param, HttpServletRequest request, HttpServletResponse response) {
         ObjectNode auth = creditService.authByKey(token(request), cache);
         if (null == auth) return error401(response);
@@ -173,6 +183,8 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         for (Map.Entry<String, JsonNode> entry : auth.at("/models").properties()) {
             ObjectNode item = data.addObject();
             item.put("id", entry.getKey());
+            // 上下文长度随模型一起给出：调用端据此判断一轮请求还能带多少内容
+            item.put("context_length", contextLength(entry.getValue()));
             if (isAnthropic) {
                 item.put("type", "model");
                 item.put("display_name", entry.getKey());
@@ -183,6 +195,24 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
             }
         }
         return result;
+    }
+
+    /**
+     * 模型的上下文长度（最大输入词元数）：取自模型配置（计费方案的 content.max_position_embeddings），
+     * 也就是模型管理里填的「上下文长度」。
+     *
+     * 同名模型（别名相同）可以配多条做负载均衡，口径取其中最小的那条——按最大窗口报出去、
+     * 实际落到窗口更小的模型上，调用端会以为还有余量而把内容撑爆。
+     * 都没配置时给 0，表示未知（不是「没有窗口」），调用端自行取默认值。
+     */
+    protected int contextLength(JsonNode models) {
+        int length = 0;
+        for (JsonNode id : models) {
+            int value = cache.at("/models/" + id.asInt() + "/content/max_position_embeddings").asInt(0);
+            if (value <= 0) continue;
+            length = length <= 0 ? value : Math.min(length, value);
+        }
+        return length;
     }
 
     private boolean isAnthropicModelsRequest(HttpServletRequest request) {
@@ -197,7 +227,8 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
     public SseEmitter completion(ObjectNode json, HttpServletRequest request, HttpServletResponse response) throws IOException {
         long beginTime = System.currentTimeMillis();
         SsePlainEmitter emitter = new SsePlainEmitter(request, response, 0L);
-        ObjectNode auth = creditService.authByKey(token(request), cache);
+        // 认证信息（含归属用户）：密钥开启用户代理且调用端带了会话令牌时，已按会话用户切换
+        ObjectNode auth = creditService.authByKey(token(request), request, cache);
         if (null == auth) {
             return emitter.error("token_invalid", "无效的认证标识", "gateway", null, false).sync(401);
         }
@@ -444,7 +475,7 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         usage.requestBody(DPUtil.stringify(json)).requestStream(stream ? 1 : 0);
         usage.requestIp(ServletUtil.getRemoteAddr(request)).requestHeader("");
         usage.responseBody("").responseCompletion("").finishDetail("").auditDetail(""); // 记录默认值
-        if (recordDetails) usage.requestHeader(DPUtil.stringify(headers));
+        if (recordDetails) usage.requestHeader(recordHeaders(headers));
         String prompt = handler.extractPrompt(json, usage);
         if (securityDetectable) { // 执行提示词拦截
             List<String> check = sensitiveService.check(prompt);
@@ -484,7 +515,8 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
     private ObjectNode nonStreamingRequest(ObjectNode json, HttpServletRequest request, HttpServletResponse response, String modelType) {
         long beginTime = System.currentTimeMillis();
         // 1. 认证
-        ObjectNode auth = creditService.authByKey(token(request), cache);
+        // 认证信息（含归属用户）：密钥开启用户代理且调用端带了会话令牌时，已按会话用户切换
+        ObjectNode auth = creditService.authByKey(token(request), request, cache);
         if (null == auth) {
             return error401(response);
         }
@@ -548,7 +580,7 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         usage.requestBody(DPUtil.stringify(json)).requestStream(0);
         usage.requestIp(ServletUtil.getRemoteAddr(request)).requestHeader("");
         usage.responseHeader("").responseBody("").responseCompletion("").finishDetail("").auditDetail("");
-        if (recordDetails) usage.requestHeader(DPUtil.stringify(headers));
+        if (recordDetails) usage.requestHeader(recordHeaders(headers));
         // 7. 构建请求并调用后端
         String endpoint = provider.at("/endpoint").asText();
         String token = provider.at("/token").asText();

@@ -70,8 +70,7 @@ public class FormController extends PermitControllerBase {
         } else {
             ids = Arrays.asList(DPUtil.parseString(param.get("ids")));
         }
-        long result = formService.delete(frame, ids, rbacService.uid(request));
-        return ApiUtil.echoResult(result >= 0 ? 0 : 500, null, result);
+        return ApiUtil.echoResult(formService.delete(frame, ids, rbacService.uid(request)));
     }
 
 }

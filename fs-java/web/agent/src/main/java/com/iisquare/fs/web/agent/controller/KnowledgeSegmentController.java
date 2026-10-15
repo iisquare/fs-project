@@ -42,8 +42,7 @@ public class KnowledgeSegmentController extends PermitControllerBase {
     @Permission("knowledge:delete")
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = segmentService.remove(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(segmentService.remove(ids));
     }
 
     @RequestMapping("/config")

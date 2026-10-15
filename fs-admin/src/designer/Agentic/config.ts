@@ -114,16 +114,22 @@ const LLMOptions = () => {
     // 温度、思考模式、思考强度各自可开关，默认不启用，关闭时该参数不参与请求
     temperatureEnabled: false,
     temperature: 0.7,
-    // 思考模式与思考强度（思考强度仅在开启思考时可配）
+    // 思考模式与思考强度
     thinkModeEnabled: false,
     thinkMode: 'auto',
     thinkEffortEnabled: false,
     thinkEffort: 'medium',
     // AGENT 策略：无 / ReAct / FunctionCalling
     agentStrategy: 'none',
-    // ReAct 的最大迭代次数：模型返回工具调用就执行并回填上下文继续推理，
-    // 直到给出非工具调用的回复或达到该上限（达到上限按节点异常处理）；FunctionCalling 只执行一轮
+    // ReAct 的迭代次数（一批）：模型返回工具调用就执行并回填上下文继续推理，直到给出非工具调用的回复；
+    // 跑满一批仍在请求工具就自动接续下一批（接续点补一条「提防无效轮转」的提醒，只保留最新一条）；
+    // FunctionCalling 只执行一轮
     maxIterations: 5,
+    // 接续次数：跑满一批后自动接续的批次数（不含首批），配 0 表示跑满一批即收尾；
+    // 接续用完（工具往返 = 迭代次数 × (1 + 接续次数) 轮）后再禁用工具做一次收尾调用——
+    // 收尾是额外一轮、不占批次；节点按成功返回并在输出上标记 wrapped，不再按节点异常处理。
+    // 缺省 2 与历史数据同口径（旧节点没有该字段时按缺省值处理），上限 5
+    continueCount: 2,
     // 系统指令与用户输入
     systemPrompt: '',
     prompt: '',
@@ -237,12 +243,23 @@ const ClassifierRepair = (data: any) => {
   return MultimodalRepair(data)
 }
 
+/**
+ * 兼容历史数据：接续次数（continueCount）是后加字段，旧节点没有它时补缺省值 2，
+ * 与服务端缺省保持一致（跑满一批仍在调工具就自动接续两批）；
+ * 不补的话，旧节点打开属性面板会显示空值，保存后把空值写回节点数据。
+ */
+const ContinueRepair = (data: any) => {
+  if (!data) return data
+  if (undefined === data.continueCount || '' === data.continueCount) data.continueCount = 2
+  return MultimodalRepair(data)
+}
+
 const SwitchOptions = () => {
   return {
     defaultName: '否则（默认）',
     cases: [{
       id: DesignUtil.uuid(),
-      name: '条件一',
+      name: '条件1',
       logic: 'and',
       conditions: [{ variable: '', operator: 'eq', value: '' }],
     }],
@@ -530,6 +547,7 @@ const outputs: any = {
     { name: 'reasoning', label: '思考过程', type: 'String', description: '模型思考过程' },
     { name: 'usage', label: '令牌用量', type: 'Object', description: '令牌用量信息' },
     { name: 'calls', label: '工具调用', type: 'Array<Object>', description: '本轮工具调用明细（方法名、参数与返回结果），可交给「输出图表」节点归纳成图表数据' },
+    { name: 'wrapped', label: '是否被收尾', type: 'Boolean', description: '跑满迭代次数 × (1 + 接续次数) 轮工具往返、再用一次不带工具的收尾调用作答时为 true：可在条件分支里提示用户或改写后续提示词，模型自然收尾为 false' },
   ],
   // 输出图表：模型按内置提示词归纳出的图表定义，下游节点可引用其中任意字段
   Chart: () => [
@@ -817,7 +835,7 @@ const widgets = DesignUtil.widgets([{
   name: '模型能力',
   children: [{
     type: 'LLM', label: '大语言模型', title: '调用大语言模型回答问题或处理自然语言', icon: 'ai.model',
-    shape: 'agent-node', options: LLMOptions, repair: MultimodalRepair,
+    shape: 'agent-node', options: LLMOptions, repair: ContinueRepair,
     property: () => import('./LLMProperty.vue')
   }, {
     type: 'Chart', label: '输出图表', title: '把上游数据交给模型归纳成图表定义，随回复一起展示', icon: 'PieChart',

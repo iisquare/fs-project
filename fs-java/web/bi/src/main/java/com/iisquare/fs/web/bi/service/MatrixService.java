@@ -336,17 +336,21 @@ public class MatrixService extends ServiceBase {
         return ApiUtil.result(0, null, info);
     }
 
-    public boolean delete(List<Integer> ids, int uid) {
-        if(null == ids || ids.isEmpty()) return false;
-        List<Matrix> list = matrixDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        for (Matrix item : list) {
-            item.setStatus(-1);
-            item.setUpdatedTime(time);
-            item.setUpdatedUid(uid);
+    public Map<String, Object> delete(List<Integer> ids, int uid) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            List<Matrix> list = matrixDao.findAllById(ids);
+            long time = System.currentTimeMillis();
+            for (Matrix item : list) {
+                item.setStatus(-1);
+                item.setUpdatedTime(time);
+                item.setUpdatedUid(uid);
+            }
+            matrixDao.saveAll(list);
+            return ApiUtil.result(0, null, list.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除矩阵失败", e.getMessage());
         }
-        matrixDao.saveAll(list);
-        return true;
     }
 
 }

@@ -122,7 +122,7 @@ public class InterceptService extends JPAServiceBase {
         return rows;
     }
 
-    public boolean remove(List<Integer> ids) {
+    public Map<String, Object> remove(List<Integer> ids) {
         return remove(interceptDao, ids);
     }
 

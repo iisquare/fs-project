@@ -3,6 +3,7 @@ package com.iisquare.fs.web.bi.controller;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.web.bi.entity.Diagram;
 import com.iisquare.fs.web.bi.service.DiagramService;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
@@ -32,14 +33,19 @@ public class DiagramController extends PermitControllerBase {
     public String infoAction(@RequestBody Map<?, ?> param) {
         int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         Diagram info = diagramService.info(id);
-        return ApiUtil.echoResult(null == info ? 404 : 0, null, info);
+        if (null == info) return ApiUtil.echoResult(404, null, info);
+        ObjectNode node = (ObjectNode) DPUtil.toJSON(info);
+        node.replace("content", DPUtil.parseJSON(node.at("/content").asText(), k -> DPUtil.objectNode()));
+        node.replace("notify", DPUtil.parseJSON(node.at("/notify").asText(), k -> DPUtil.objectNode()));
+        return ApiUtil.echoResult(0, null, node);
     }
 
     @RequestMapping("/list")
     @Permission("")
     public String listAction(@RequestBody Map<?, ?> param) {
         Map<?, ?> result = diagramService.search(param, DPUtil.buildMap(
-            "withUserInfo", true, "withStatusText", true, "withEngineText", true, "withModelText", true
+            "withUserInfo", true, "withStatusText", true, "withEngineText", true, "withModelText", true,
+            "withClusterName", true
         ));
         return ApiUtil.echoResult(0, null, result);
     }
@@ -55,8 +61,7 @@ public class DiagramController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = diagramService.delete(ids, rbacService.uid(request));
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(diagramService.delete(ids, rbacService.uid(request)));
     }
 
     @RequestMapping("/config")

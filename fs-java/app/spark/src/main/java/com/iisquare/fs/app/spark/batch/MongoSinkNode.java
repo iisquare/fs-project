@@ -1,10 +1,13 @@
 package com.iisquare.fs.app.spark.batch;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.iisquare.fs.app.spark.core.SparkTypes;
 import com.iisquare.fs.app.spark.util.SparkUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.dag.core.DAGType;
 import com.iisquare.fs.base.dag.sink.AbstractMongoSink;
 import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -12,10 +15,15 @@ import java.util.Map;
 /**
  * @see(https://docs.mongodb.com/spark-connector/current/configuration/)
  */
-public class MongoSinkNode extends AbstractMongoSink {
+public class MongoSinkNode extends AbstractMongoSink<Void> {
 
     public static final String OUTPUT_PREFIX = "spark.mongodb.write.";
     Map<String, String> config;
+
+    @Override
+    public DAGType<Void> outputType() {
+        return SparkTypes.VOID;
+    }
 
     @Override
     public boolean configure(JsonNode... configs) {
@@ -40,8 +48,8 @@ public class MongoSinkNode extends AbstractMongoSink {
     }
 
     @Override
-    public Object process() {
-        Dataset dataset = SparkUtil.union(Dataset.class, sources);
+    public Void process() {
+        Dataset<Row> dataset = SparkUtil.union(inputs(SparkTypes.DATASET));
         dataset.write().format("mongodb").mode("append").options(config).save();
         return null;
     }

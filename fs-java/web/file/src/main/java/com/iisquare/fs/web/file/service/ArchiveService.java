@@ -1,6 +1,7 @@
 package com.iisquare.fs.web.file.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
@@ -28,7 +29,7 @@ public class ArchiveService extends JPAServiceBase {
     @Autowired
     Configuration configuration;
     @Autowired
-    MinIOService minIOService;
+    S3Service s3Service;
 
     @Override
     public Map<String, String> sorts() {
@@ -144,53 +145,97 @@ public class ArchiveService extends JPAServiceBase {
         return archiveDao.save(archive);
     }
 
-    public boolean delete(List<Archive> archives, HttpServletRequest request) {
-        if (archives.isEmpty()) return true;
+    public Map<String, Object> delete(List<Archive> archives, HttpServletRequest request) {
+        if (null == archives || archives.isEmpty()) return summary(0, 0, new ArrayList<>());
         long time = System.currentTimeMillis();
         int uid = rbacService.uid(request);
+        int deleted = 0;
+        List<ObjectNode> missing = new ArrayList<>();
         for (Archive archive : archives) {
             Map<String, Object> param = new LinkedHashMap<>();
             param.put("bucket", archive.getBucket());
             param.put("object", archive.getFilepath());
-            Map<String, Object> result = minIOService.removeObject(param);
-            if (ApiUtil.failed(result)) return false;
+            Map<String, Object> result = s3Service.removeObject(param);
+            if (ApiUtil.failed(result)) {
+                return ApiUtil.result(ApiUtil.code(result), ApiUtil.message(result), DPUtil.buildMap(
+                        String.class, Object.class,
+                        "id", archive.getId(), "bucket", archive.getBucket(),
+                        "filepath", archive.getFilepath(), "cause", ApiUtil.data(result, Object.class)));
+            }
+            ObjectNode state = ApiUtil.data(result, ObjectNode.class);
+            if (null == state || state.at("/deleted").asBoolean(true)) {
+                deleted++;
+            } else {
+                ObjectNode item = DPUtil.objectNode();
+                item.put("id", archive.getId());
+                item.put("bucket", archive.getBucket());
+                item.put("filepath", archive.getFilepath());
+                missing.add(item);
+            }
             archive.setDeletedTime(time);
             archive.setDeletedUid(uid);
         }
-        archiveDao.saveAll(archives);
-        return true;
+        try {
+            archiveDao.saveAll(archives);
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "更新文件记录失败", e.getMessage());
+        }
+        return summary(archives.size(), deleted, missing);
     }
 
-    public boolean deleteById(List<String> ids, HttpServletRequest request) {
-        if (ids.isEmpty()) return true;
-        List<Archive> archives = archiveDao.findAll((root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.gt(root.get("deletedTime"), 0));
-            predicates.add(root.get("id").in(ids));
-            return cb.or(predicates.toArray(new Predicate[0]));
-        });
+    private Map<String, Object> summary(int total, int deleted, List<ObjectNode> missing) {
+        ObjectNode data = DPUtil.objectNode();
+        data.put("total", total);
+        data.put("deleted", deleted);
+        ArrayNode rows = data.putArray("missing");
+        for (ObjectNode item : missing) {
+            rows.add(item);
+        }
+        String message = missing.isEmpty() ? null
+                : String.format("操作成功，其中 %d 个对象不存在，已同步清理文件记录", missing.size());
+        return ApiUtil.result(0, message, data);
+    }
+
+    public Map<String, Object> deleteById(List<String> ids, HttpServletRequest request) {
+        if (null == ids || ids.isEmpty()) return summary(0, 0, new ArrayList<>());
+        List<Archive> archives;
+        try {
+            archives = archiveDao.findAll((root, query, cb) -> {
+                List<Predicate> predicates = new ArrayList<>();
+                predicates.add(cb.gt(root.get("deletedTime"), 0));
+                predicates.add(root.get("id").in(ids));
+                return cb.or(predicates.toArray(new Predicate[0]));
+            });
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "查询文件记录失败", e.getMessage());
+        }
         return delete(archives, request);
     }
 
-    public boolean deleteByQuery(JsonNode json, HttpServletRequest request) {
-        List<Archive> archives = archiveDao.findAll((root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            for (JsonNode node : json) {
-                String id = node.at("/id").asText();
-                if (!DPUtil.empty(id)) {
-                    predicates.add(cb.equal(root.get("id"), id));
+    public Map<String, Object> deleteByQuery(JsonNode json, HttpServletRequest request) {
+        List<Archive> archives;
+        try {
+            archives = archiveDao.findAll((root, query, cb) -> {
+                List<Predicate> predicates = new ArrayList<>();
+                for (JsonNode node : json) {
+                    String id = node.at("/id").asText();
+                    if (!DPUtil.empty(id)) {
+                        predicates.add(cb.equal(root.get("id"), id));
+                    }
+                    String bucket = node.at("/bucket").asText();
+                    String filepath = node.at("/filepath").asText();
+                    if (!DPUtil.empty(bucket) && !DPUtil.empty(filepath)) {
+                        predicates.add(cb.and(
+                                cb.equal(root.get("bucket"), bucket),
+                                cb.equal(root.get("filepath"), filepath)
+                        ));
+                    }
                 }
-                String bucket = node.at("/bucket").asText();
-                String filepath = node.at("/filepath").asText();
-                if (!DPUtil.empty(bucket) && !DPUtil.empty(filepath)) {
-                    predicates.add(cb.and(
-                            cb.equal(root.get("bucket"), bucket),
-                            cb.equal(root.get("filepath"), filepath)
-                    ));
-                }
-            }
-            return cb.and(cb.equal(root.get("deletedTime"), 0), cb.or(predicates.toArray(new Predicate[0])));
-        });
+                return cb.and(cb.equal(root.get("deletedTime"), 0), cb.or(predicates.toArray(new Predicate[0])));
+            });
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "查询文件记录失败", e.getMessage());
+        }
         return delete(archives, request);
     }
 

@@ -50,6 +50,22 @@ export const layouts = [{
     meta: { title: '运行状态', permit: ['bi:maintain:'] },
     component: () => import('@/views/bi/setting/state.vue')
   }, {
+    path: '/bi/diagram/list',
+    meta: { title: '计算编排', permit: ['bi:diagram:'] },
+    component: () => import('@/views/bi/diagram/list.vue')
+  }, {
+    path: '/bi/diagram/cluster',
+    meta: { title: '集群配置', permit: ['bi:cluster:'] },
+    component: () => import('@/views/bi/diagram/cluster.vue')
+  }, {
+    path: '/bi/diagram/job',
+    meta: { title: '作业监控', permit: ['bi:job:'] },
+    component: () => import('@/views/bi/diagram/job.vue')
+  }, {
+    path: '/bi/diagram/model',
+    meta: { title: '编排设计', fit: true, permit: ['bi:diagram:'] },
+    component: () => import('@/views/bi/diagram/model.vue')
+  }, {
     path: '/bi/olap/sql',
     meta: { title: 'SQL查询', fit: true, permit: ['bi:olap:'] },
     component: () => import('@/views/bi/olap/sql.vue')

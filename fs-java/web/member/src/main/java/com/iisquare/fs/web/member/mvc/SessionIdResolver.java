@@ -1,6 +1,7 @@
 package com.iisquare.fs.web.member.mvc;
 
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.web.core.mvc.FeignInterceptor;
 import org.springframework.session.web.http.CookieHttpSessionIdResolver;
 import org.springframework.session.web.http.CookieSerializer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
@@ -14,7 +15,8 @@ import java.util.List;
 
 /**
  * 重写CookieHttpSessionIdResolver，支持通过Header传递SessionID
- * HeaderHttpSessionIdResolver.xAuthToken()默认Key为X-Auth-Token
+ * HeaderHttpSessionIdResolver.xAuthToken()默认Key为X-Auth-Token，
+ * 常量统一声明在web.core.FeignInterceptor.HEADER_AUTH_TOKEN
  * 服务之间传递，需通过web.core.FeignInterceptor放行
  */
 public class SessionIdResolver implements HttpSessionIdResolver {
@@ -39,7 +41,7 @@ public class SessionIdResolver implements HttpSessionIdResolver {
             }
         }
         if (!ids.isEmpty()) return ids;
-        String token = request.getHeader("x-auth-token");
+        String token = request.getHeader(FeignInterceptor.HEADER_AUTH_TOKEN);
         if (!DPUtil.empty(token)) {
             ids.add(token);
         }

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180">
+  <rect x="0.5" y="0.5" width="319" height="179" rx="8" fill="#f5f7fa" stroke="#e4e7ed" />
+  <g fill="none" stroke="#c0c4cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="126" y="56" width="58" height="44" rx="4" />
+    <path d="M132 92l16-18 11 12 9-8 14 14" />
+    <circle cx="172" cy="68" r="4" />
+    <path d="M122 100l66-46" stroke="#dcdfe6" stroke-width="3" />
+  </g>
+  <text x="160" y="132" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#909399">
+    图片不可用
+  </text>
+</svg>

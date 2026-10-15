@@ -4,10 +4,10 @@ import com.iisquare.fs.app.spark.util.SparkUtil;
 import org.apache.spark.api.java.function.ForeachPartitionFunction;
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Encoder;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder;
 import org.apache.spark.sql.catalyst.encoders.RowEncoder;
 import org.apache.spark.sql.types.DataTypes;
 import org.junit.Test;
@@ -20,7 +20,7 @@ public class SchemaTests implements Serializable {
     @Test
     public void mapTest() {
         SparkSession spark = SparkSession.builder().appName("schema-map").master("local").getOrCreate();
-        ExpressionEncoder<Row> encoder = RowEncoder.apply(DataTypes.createStructType(Arrays.asList(
+        Encoder<Row> encoder = RowEncoder.encoderFor(DataTypes.createStructType(Arrays.asList(
                 DataTypes.createStructField("aid", DataTypes.IntegerType, false),
                 DataTypes.createStructField("score", DataTypes.IntegerType, false)
         )));

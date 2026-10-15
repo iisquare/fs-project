@@ -81,6 +81,7 @@ public class AuthService extends JPAServiceBase {
         info.setName(name);
         info.setUid(DPUtil.parseInt(param.get("uid")));
         info.setSecret(secret);
+        info.setProxyable(DPUtil.parseBoolean(param.get("proxyable")) ? 1 : 0);
         info.setModelIds(DPUtil.implode(",", DPUtil.parseIntList(param.get("modelIds"))));
         info.setStatus(status);
         if(param.containsKey("expiredTime")) {
@@ -120,11 +121,12 @@ public class AuthService extends JPAServiceBase {
             ObjectNode node = (ObjectNode) row;
             List<Integer> modelIds = DPUtil.parseIntList(node.at("/modelIds").asText(""));
             node.replace("modelIds", DPUtil.toJSON(modelIds));
+            node.put("proxyable", 1 == node.at("/proxyable").asInt(0));
         }
         return rows;
     }
 
-    public boolean delete(List<Integer> ids, HttpServletRequest request) {
+    public Map<String, Object> delete(List<Integer> ids, HttpServletRequest request) {
         return delete(authDao, ids, rbacService.uid(request));
     }
 

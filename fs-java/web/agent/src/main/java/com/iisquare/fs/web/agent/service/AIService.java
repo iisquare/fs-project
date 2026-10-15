@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
+import com.iisquare.fs.web.core.mvc.FeignInterceptor;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -150,6 +151,17 @@ public class AIService implements DisposableBean {
         body.put("return_documents", true);
         if (topN > 0) body.put("top_n", topN);
         return post(url, body, authorization(gatewayToken));
+    }
+
+    /**
+     * 会话补全（一次性调用，非流式）：MCP 的多模态工具等按需分析场景用它调模型网关。
+     * 认证与对话调用同一口径：服务级密钥 fs.agent.token，调用端带了会话令牌时一并透传
+     * （x-auth-token），供网关按「用户代理」口径记账（密钥未开启代理时网关忽略该头）。
+     */
+    public Map<String, Object> chat(JsonNode body, String session) {
+        Map<String, String> headers = authorization(gatewayToken);
+        if (!DPUtil.empty(session)) headers.put(FeignInterceptor.HEADER_AUTH_TOKEN, session);
+        return post(gatewayEndpoint + "/v1/chat/completions", body, headers);
     }
 
 }

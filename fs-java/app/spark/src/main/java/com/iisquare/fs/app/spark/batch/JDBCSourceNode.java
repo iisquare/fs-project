@@ -2,9 +2,11 @@ package com.iisquare.fs.app.spark.batch;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.iisquare.fs.app.spark.core.SparkRunner;
+import com.iisquare.fs.app.spark.core.SparkTypes;
 import com.iisquare.fs.app.spark.util.SparkUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.DAGCore;
+import com.iisquare.fs.base.dag.core.DAGType;
 import com.iisquare.fs.base.dag.source.AbstractJDBCSource;
 import com.iisquare.fs.base.dag.util.DAGUtil;
 import org.apache.spark.sql.Dataset;
@@ -24,9 +26,14 @@ import java.util.*;
  *  - Postgres：@see(https://jdbc.postgresql.org/documentation/head/query.html#fetchsize-example)
  *      setAutoCommit(false);
  */
-public class JDBCSourceNode extends AbstractJDBCSource {
+public class JDBCSourceNode extends AbstractJDBCSource<Dataset<Row>> {
 
     List<Map<String, String>> configs = new ArrayList<>();
+
+    @Override
+    public DAGType<Dataset<Row>> outputType() {
+        return SparkTypes.DATASET;
+    }
 
     @Override
     public boolean configure(JsonNode... configs) {
@@ -59,13 +66,13 @@ public class JDBCSourceNode extends AbstractJDBCSource {
     }
 
     @Override
-    public Object process() {
+    public Dataset<Row> process() {
         SparkSession session = runner(SparkRunner.class).session();
         List<Dataset<Row>> list = new ArrayList<>();
         for (Map<String, String> config : configs) {
             Dataset<Row> dataset = session.read().format("jdbc").options(config).load();
             list.add(dataset);
         }
-        return SparkUtil.union(list.toArray(new Dataset[0]));
+        return SparkUtil.union(list);
     }
 }

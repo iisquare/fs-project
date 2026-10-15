@@ -36,6 +36,15 @@ public class SkillController extends PermitControllerBase {
         return ApiUtil.echoResult(0, null, result);
     }
 
+    /**
+     * 客户端可用技能：已启用且授权角色命中当前用户，不含配置内容（content）
+     */
+    @RequestMapping("/available")
+    @Permission("")
+    public String availableAction(HttpServletRequest request) {
+        return ApiUtil.echoResult(skillService.available(request));
+    }
+
     @RequestMapping("/save")
     @Permission({"add", "modify"})
     public String saveAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
@@ -47,8 +56,7 @@ public class SkillController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = skillService.remove(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(skillService.remove(ids));
     }
 
     @RequestMapping("/config")

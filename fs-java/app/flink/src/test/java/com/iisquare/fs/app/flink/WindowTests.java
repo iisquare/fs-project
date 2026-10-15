@@ -2,46 +2,56 @@ package com.iisquare.fs.app.flink;
 
 import com.iisquare.fs.app.flink.func.ExampleProcessAllWindowFunction;
 import com.iisquare.fs.app.flink.trigger.CountTimeoutTrigger;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.RestOptions;
+import org.apache.flink.connector.kafka.source.KafkaSource;
+import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+import org.apache.flink.streaming.api.functions.sink.legacy.SinkFunction;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
-import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Properties;
 
 public class WindowTests {
+
+    /**
+     * Flink 2.x：新版KafkaSource替代FlinkKafkaConsumer
+     */
+    private static DataStreamSource<String> kafkaSource(StreamExecutionEnvironment env) {
+        KafkaSource<String> source = KafkaSource.<String>builder()
+                .setBootstrapServers("kafka:9092")
+                .setTopics("fs_test")
+                .setGroupId("fs-test")
+                .setStartingOffsets(OffsetsInitializer.earliest())
+                .setValueOnlyDeserializer(new SimpleStringSchema())
+                .build();
+        return env.fromSource(source, WatermarkStrategy.noWatermarks(), "kafka-source");
+    }
+
+    private static StreamExecutionEnvironment localEnv() {
+        Configuration config = new Configuration();
+        config.set(RestOptions.BIND_PORT, "8088");
+        config.set(CoreOptions.DEFAULT_PARALLELISM, 1);
+        return StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(config);
+    }
 
     /**
      * 在上一次Sink完成之后，Source才会开始下一次读取
      */
     @Test
     public void kafkaTest() throws Exception {
-        Properties properties = new Properties();
-        properties.setProperty("bootstrap.servers", "kafka:9092");
-        properties.setProperty("zookeeper.connect", "zookeeper:2181/kafka");
-        properties.setProperty("auto.offset.reset", "earliest");
-        properties.setProperty("auto.commit.enable", "false");
-//        properties.setProperty("auto.commit.interval.ms", "1000");
-        properties.setProperty("group.id", "fs-test");
-        FlinkKafkaConsumer<String> consumer = new FlinkKafkaConsumer<>("fs_test", new SimpleStringSchema(), properties);
-        consumer.setCommitOffsetsOnCheckpoints(true);
-        Configuration config = new Configuration();
-        config.setString(RestOptions.BIND_PORT,"8088");
-        config.setInteger(CoreOptions.DEFAULT_PARALLELISM, 1);
-        final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(config);
-        DataStreamSource<String> source = env.addSource(consumer);
+        final StreamExecutionEnvironment env = localEnv();
+        DataStreamSource<String> source = kafkaSource(env);
         SingleOutputStreamOperator<String> map = source.map((MapFunction<String, String>) value -> {
             System.out.printf("Map[%s]:%s%n\n", new Date(), value);
             return value;
@@ -62,26 +72,14 @@ public class WindowTests {
      */
     @Test
     public void windowTest() throws Exception {
-        Properties properties = new Properties();
-        properties.setProperty("bootstrap.servers", "kafka:9092");
-        properties.setProperty("zookeeper.connect", "zookeeper:2181/kafka");
-        properties.setProperty("auto.offset.reset", "earliest");
-        properties.setProperty("auto.commit.enable", "false");
-//        properties.setProperty("auto.commit.interval.ms", "1000");
-        properties.setProperty("group.id", "fs-test");
-        FlinkKafkaConsumer<String> consumer = new FlinkKafkaConsumer<>("fs_test", new SimpleStringSchema(), properties);
-        consumer.setCommitOffsetsOnCheckpoints(true);
-        Configuration config = new Configuration();
-        config.setString(RestOptions.BIND_PORT,"8088");
-        config.setInteger(CoreOptions.DEFAULT_PARALLELISM, 1);
-        final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(config);
-        DataStreamSource<String> source = env.addSource(consumer);
+        final StreamExecutionEnvironment env = localEnv();
+        DataStreamSource<String> source = kafkaSource(env);
         SingleOutputStreamOperator<String> map1 = source.map((MapFunction<String, String>) value -> {
             System.out.printf("Map1[%s]:%s%n\n", new Date(), value);
             return value;
         });
         SingleOutputStreamOperator<List<String>> process = map1
-                .windowAll(TumblingProcessingTimeWindows.of(Time.seconds(3)))
+                .windowAll(TumblingProcessingTimeWindows.of(Duration.ofSeconds(3)))
                 .trigger(new CountTimeoutTrigger<>(5)).process(new ExampleProcessAllWindowFunction<>());
         System.out.println(process.getType());
         SingleOutputStreamOperator<List<String>> map2 = process.map((MapFunction<List<String>, List<String>>) value -> {
@@ -104,20 +102,8 @@ public class WindowTests {
      */
     @Test
     public void timeoutTest() throws Exception {
-        Properties properties = new Properties();
-        properties.setProperty("bootstrap.servers", "kafka:9092");
-        properties.setProperty("zookeeper.connect", "zookeeper:2181/kafka");
-        properties.setProperty("auto.offset.reset", "earliest");
-        properties.setProperty("auto.commit.enable", "false");
-//        properties.setProperty("auto.commit.interval.ms", "1000");
-        properties.setProperty("group.id", "fs-test");
-        FlinkKafkaConsumer<String> consumer = new FlinkKafkaConsumer<>("fs_test", new SimpleStringSchema(), properties);
-        consumer.setCommitOffsetsOnCheckpoints(true);
-        Configuration config = new Configuration();
-        config.setString(RestOptions.BIND_PORT,"8088");
-        config.setInteger(CoreOptions.DEFAULT_PARALLELISM, 1);
-        final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(config);
-        DataStreamSource<String> source = env.addSource(consumer);
+        final StreamExecutionEnvironment env = localEnv();
+        DataStreamSource<String> source = kafkaSource(env);
         SingleOutputStreamOperator<String> map = source.map((MapFunction<String, String>) value -> {
             System.out.printf("Map[%s]:%s%n\n", new Date(), value);
             Thread.sleep(5000);
@@ -125,7 +111,7 @@ public class WindowTests {
             return value;
         });
         SingleOutputStreamOperator<List<String>> process = map
-                .windowAll(TumblingProcessingTimeWindows.of(Time.seconds(3)))
+                .windowAll(TumblingProcessingTimeWindows.of(Duration.ofSeconds(3)))
                 .process(new ExampleProcessAllWindowFunction<>());
         process.addSink(new SinkFunction<List<String>>() {
             @Override
@@ -141,20 +127,8 @@ public class WindowTests {
      */
     @Test
     public void countTest() throws Exception {
-        Properties properties = new Properties();
-        properties.setProperty("bootstrap.servers", "kafka:9092");
-        properties.setProperty("zookeeper.connect", "zookeeper:2181/kafka");
-        properties.setProperty("auto.offset.reset", "earliest");
-        properties.setProperty("auto.commit.enable", "false");
-//        properties.setProperty("auto.commit.interval.ms", "1000");
-        properties.setProperty("group.id", "fs-test");
-        FlinkKafkaConsumer<String> consumer = new FlinkKafkaConsumer<>("fs_test", new SimpleStringSchema(), properties);
-        consumer.setCommitOffsetsOnCheckpoints(true);
-        Configuration config = new Configuration();
-        config.setString(RestOptions.BIND_PORT,"8088");
-        config.setInteger(CoreOptions.DEFAULT_PARALLELISM, 1);
-        final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(config);
-        DataStreamSource<String> source = env.addSource(consumer);
+        final StreamExecutionEnvironment env = localEnv();
+        DataStreamSource<String> source = kafkaSource(env);
         SingleOutputStreamOperator<String> map = source.map((MapFunction<String, String>) value -> {
             System.out.printf("Map[%s]:%s%n\n", new Date(), value);
             return value;
@@ -175,26 +149,14 @@ public class WindowTests {
 
     @Test
     public void fixedTest() throws Exception {
-        Properties properties = new Properties();
-        properties.setProperty("bootstrap.servers", "kafka:9092");
-        properties.setProperty("zookeeper.connect", "zookeeper:2181/kafka");
-        properties.setProperty("auto.offset.reset", "earliest");
-        properties.setProperty("auto.commit.enable", "false");
-//        properties.setProperty("auto.commit.interval.ms", "1000");
-        properties.setProperty("group.id", "fs-test");
-        FlinkKafkaConsumer<String> consumer = new FlinkKafkaConsumer<>("fs_test", new SimpleStringSchema(), properties);
-        consumer.setCommitOffsetsOnCheckpoints(true);
-        Configuration config = new Configuration();
-        config.setString(RestOptions.BIND_PORT,"8088");
-        config.setInteger(CoreOptions.DEFAULT_PARALLELISM, 1);
-        final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(config);
-        DataStreamSource<String> source = env.addSource(consumer);
+        final StreamExecutionEnvironment env = localEnv();
+        DataStreamSource<String> source = kafkaSource(env);
         SingleOutputStreamOperator<String> map1 = source.map((MapFunction<String, String>) value -> {
             System.out.printf("Map1[%s]:%s%n\n", new Date(), value);
             return value;
         });
         SingleOutputStreamOperator<List<String>> process = map1
-                .windowAll(TumblingProcessingTimeWindows.of(Time.seconds(3)))
+                .windowAll(TumblingProcessingTimeWindows.of(Duration.ofSeconds(3)))
                 .trigger(new CountTimeoutTrigger<>(5)).process(new ExampleProcessAllWindowFunction<>());
         System.out.println(process.getType());
         SingleOutputStreamOperator<List<String>> map2 = process.map((MapFunction<List<String>, List<String>>) value -> {
@@ -219,20 +181,8 @@ public class WindowTests {
      */
     @Test
     public void backpressureTest() throws Exception {
-        Properties properties = new Properties();
-        properties.setProperty("bootstrap.servers", "kafka:9092");
-        properties.setProperty("zookeeper.connect", "zookeeper:2181/kafka");
-        properties.setProperty("auto.offset.reset", "earliest");
-        properties.setProperty("auto.commit.enable", "false");
-//        properties.setProperty("auto.commit.interval.ms", "1000");
-        properties.setProperty("group.id", "fs-test");
-        FlinkKafkaConsumer<String> consumer = new FlinkKafkaConsumer<>("fs_test", new SimpleStringSchema(), properties);
-        consumer.setCommitOffsetsOnCheckpoints(true);
-        Configuration config = new Configuration();
-        config.setString(RestOptions.BIND_PORT,"8088");
-        config.setInteger(CoreOptions.DEFAULT_PARALLELISM, 1);
-        final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(config);
-        DataStreamSource<String> source = env.addSource(consumer);
+        final StreamExecutionEnvironment env = localEnv();
+        DataStreamSource<String> source = kafkaSource(env);
         SingleOutputStreamOperator<String> map1 = source.map((MapFunction<String, String>) value -> {
             System.out.printf("Map1[%s]:%s%n\n", new Date(), value);
             return value;

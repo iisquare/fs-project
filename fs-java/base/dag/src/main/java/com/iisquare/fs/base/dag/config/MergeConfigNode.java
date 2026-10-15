@@ -20,12 +20,12 @@ public class MergeConfigNode extends DAGConfig {
                 json = DPUtil.arrayNode().addAll(Arrays.asList(configs));
                 break;
         }
-        result = DPUtil.value(DAGUtil.withArg(json, options.at("/arg").asText()), options.at("/echoPrefix").asText(""));
+        setResult(DPUtil.value(DAGUtil.withArg(json, options.at("/arg").asText()), options.at("/echoPrefix").asText("")));
         return true;
     }
 
     @Override
-    public Object process() {
-        return result;
+    public JsonNode process() {
+        return result();
     }
 }

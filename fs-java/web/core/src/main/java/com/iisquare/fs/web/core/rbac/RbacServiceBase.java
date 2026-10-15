@@ -105,6 +105,16 @@ public abstract class RbacServiceBase extends ServiceBase {
 
     public abstract JsonNode identity(HttpServletRequest request);
 
-    public abstract JsonNode identity(Integer uid);
+    /**
+     * 根据用户标识获取用户的个人信息及所属的角色信息
+     */
+    public abstract JsonNode identityById(Integer uid);
+
+    /**
+     * 根据会话令牌获取用户身份，结构同 identityById(Integer uid)。
+     * 不依赖当前请求携带的会话，供按调用方令牌识别用户的服务使用（如模型网关的用户代理）；
+     * 令牌为空、会话不存在或已过期、用户不可用时返回 null
+     */
+    public abstract JsonNode identityByToken(String token);
 
 }

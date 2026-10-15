@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
+import com.iisquare.fs.base.elasticsearch.mvc.ElasticsearchBase;
 import com.iisquare.fs.base.elasticsearch.util.QueryUtil;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
@@ -64,7 +65,8 @@ public class KnowledgeDocumentService extends JPAServiceBase {
     @Autowired
     KnowledgeChunkES chunkES;
 
-    public static final String bucket = "fs-lm-knowledge";
+    /** 知识库文档的文件桶：与技能 / 编排 / MCP 上传分开，便于按用途管理与清理 */
+    public static final String bucket = "fs-knowledge";
 
     @Override
     public Map<String, String> sorts() {
@@ -177,7 +179,7 @@ public class KnowledgeDocumentService extends JPAServiceBase {
         }
         Map<String, Object> result = RpcUtil.result(fileRpc.form("/file/upload", DPUtil.buildMap(
                 "bucket", bucket, "filepath", document.getFilepath(),
-                "traceIdentity", String.format("fs-lm-knowledge-%d-document-%d", knowledgeId, document.getId())
+                "traceIdentity", String.format("fs-knowledge-%d-document-%d", knowledgeId, document.getId())
         ), file));
         if (ApiUtil.failed(result)) {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
@@ -269,30 +271,53 @@ public class KnowledgeDocumentService extends JPAServiceBase {
         return rows;
     }
 
-    public boolean remove(List<Integer> ids) {
+    /**
+     * 删除文档：对象存储文件、图片、分段、检索块与索引记录一并清理，失败时返回具体原因
+     */
+    public Map<String, Object> remove(List<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
         ArrayNode args = DPUtil.arrayNode();
-        for (KnowledgeDocument document : documentDao.findAllById(ids)) {
-            ObjectNode item = args.addObject();
-            item.put("id", document.getId());
-            item.put("bucket", bucket);
-            item.put("filepath", document.getFilepath());
+        List<KnowledgeImage> images;
+        try {
+            for (KnowledgeDocument document : documentDao.findAllById(ids)) {
+                ObjectNode item = args.addObject();
+                item.put("id", document.getId());
+                item.put("bucket", bucket);
+                item.put("filepath", document.getFilepath());
+            }
+            // 文档中的图片与文档本体一并删除
+            images = knowledgeImageService.listByDocument(ids);
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "查询文档信息失败", e.getMessage());
         }
-        // 文档中的图片与文档本体一并删除
-        List<KnowledgeImage> images = knowledgeImageService.listByDocument(ids);
         for (KnowledgeImage image : images) {
             ObjectNode item = args.addObject();
             item.put("id", image.getId());
             item.put("bucket", DPUtil.parseString(image.getBucket()));
             item.put("filepath", DPUtil.parseString(image.getFilepath()));
         }
-        Map<String, Object> result = RpcUtil.result(fileRpc.post("/file/delete", args));
-        if (ApiUtil.failed(result)) return false;
-        if (!ids.isEmpty()) {
-            chunkES.deleteByQuery(QueryUtil.terms("document_id", ids));
+        Map<String, Object> result;
+        try {
+            result = RpcUtil.result(fileRpc.post("/file/delete", args));
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "调用文件服务删除失败", e.getMessage());
         }
-        removeByParentId(segmentDao, "documentId", ids);
-        removeByParentId(chunkDao, "documentId", ids);
-        knowledgeImageService.remove(images);
+        if (ApiUtil.failed(result)) {
+            return ApiUtil.result(ApiUtil.code(result), ApiUtil.message(result), ApiUtil.data(result, Object.class));
+        }
+        long indexed = chunkES.deleteByQuery(QueryUtil.terms("document_id", ids));
+        if (ElasticsearchBase.STATE_FAILED == indexed) {
+            return ApiUtil.result(1500, "删除检索索引失败", ids);
+        }
+        Map<String, Object> segments = removeByParentId(segmentDao, "documentId", ids);
+        if (ApiUtil.failed(segments)) return segments;
+        Map<String, Object> chunks = removeByParentId(chunkDao, "documentId", ids);
+        if (ApiUtil.failed(chunks)) return chunks;
+        Map<String, Object> imagesResult = knowledgeImageService.remove(images);
+        if (ApiUtil.failed(imagesResult)) {
+            return ApiUtil.result(ApiUtil.code(imagesResult), ApiUtil.message(imagesResult),
+                    ApiUtil.data(imagesResult, Object.class));
+        }
         return remove(documentDao, ids);
     }
 

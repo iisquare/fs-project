@@ -80,8 +80,7 @@ public class AgenticController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = agenticService.remove(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(agenticService.remove(ids));
     }
 
     @RequestMapping("/config")
@@ -164,8 +163,7 @@ public class AgenticController extends PermitControllerBase {
     @Permission("delete")
     public String logDeleteAction(@RequestBody Map<String, Object> param) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = agenticService.logRemove(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(agenticService.logRemove(ids));
     }
 
     /**
@@ -196,8 +194,7 @@ public class AgenticController extends PermitControllerBase {
     @Permission("delete")
     public String chatDeleteAction(@RequestBody Map<String, Object> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = agenticService.chatRemove(ids, request);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(agenticService.chatRemove(ids, request));
     }
 
     /**

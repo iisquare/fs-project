@@ -129,9 +129,18 @@ public class FormDataService extends ServiceBase {
         return formDataMongo.save(document);
     }
 
-    public long delete(List<String> ids, int uid) {
-        if(null == ids || ids.size() < 1) return 0;
+    public long deleteRows(List<String> ids) {
+        if (null == ids || ids.isEmpty()) return 0;
         return formDataMongo.delete(ids.toArray(new String[0]));
+    }
+
+    public Map<String, Object> delete(List<String> ids, int uid) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            return ApiUtil.result(0, null, deleteRows(ids));
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除表单数据失败", e.getMessage());
+        }
     }
 
 }

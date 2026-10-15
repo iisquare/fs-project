@@ -5,14 +5,17 @@ import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.dag.DAGCore;
+import com.iisquare.fs.web.bi.entity.Job;
 import com.iisquare.fs.web.bi.service.DAGService;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 @RestController
@@ -39,9 +42,15 @@ public class DAGController extends PermitControllerBase {
     }
 
     @RequestMapping("/run")
-    public String runAction(@RequestParam Map<?, ?> param) {
+    public String runAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
-        return ApiUtil.echoResult(dagService.run(id));
+        return ApiUtil.echoResult(dagService.run(id, param, request, Job.TRIGGER_MANUAL));
+    }
+
+    @RequestMapping("/debug")
+    public String debugAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
+        return ApiUtil.echoResult(dagService.debug(id, param, request));
     }
 
 }

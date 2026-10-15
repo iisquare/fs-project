@@ -1,8 +1,10 @@
 package com.iisquare.fs.app.spark.batch;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.iisquare.fs.app.spark.core.SparkTypes;
 import com.iisquare.fs.app.spark.util.SparkUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.dag.core.DAGType;
 import com.iisquare.fs.base.dag.sink.AbstractElasticsearchSink;
 import org.apache.spark.sql.Dataset;
 import org.elasticsearch.spark.rdd.api.java.JavaEsSpark;
@@ -14,10 +16,15 @@ import java.util.Map;
 /**
  * @see(https://www.elastic.co/guide/en/elasticsearch/hadoop/current/configuration.html)
  */
-public class ElasticsearchSinkNode extends AbstractElasticsearchSink {
+public class ElasticsearchSinkNode extends AbstractElasticsearchSink<Void> {
 
     String resource;
     Map<String, String> config = new LinkedHashMap<>();
+
+    @Override
+    public DAGType<Void> outputType() {
+        return SparkTypes.VOID;
+    }
 
     @Override
     public boolean configure(JsonNode... configs) {
@@ -38,8 +45,11 @@ public class ElasticsearchSinkNode extends AbstractElasticsearchSink {
     }
 
     @Override
-    public Object process() {
-        Dataset dataset = SparkUtil.union(Dataset.class, sources);
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public Void process() {
+        // 上游既可能是 Dataset<Row>（index/upsert 等），也可能是 Dataset<String>（format=json），
+        // 类型令牌只校验到 Dataset，具体写入分支在此区分
+        Dataset dataset = SparkUtil.union(inputs(SparkTypes.DATASET));
         if ("json".equals(options.at("/format").asText())) {
             JavaEsSpark.saveJsonToEs(dataset.toJavaRDD(), resource, config);
         } else {

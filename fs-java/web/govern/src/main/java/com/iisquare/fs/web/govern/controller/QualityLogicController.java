@@ -53,8 +53,7 @@ public class QualityLogicController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = logicService.delete(ids, rbacService.uid(request));
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(logicService.delete(ids, rbacService.uid(request)));
     }
 
     @RequestMapping("/config")

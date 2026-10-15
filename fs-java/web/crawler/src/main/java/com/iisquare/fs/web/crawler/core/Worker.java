@@ -5,14 +5,16 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.crawler.service.NodeService;
-import io.minio.ObjectWriteResponse;
-import io.minio.PutObjectArgs;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
@@ -185,22 +187,22 @@ public class Worker implements Runnable {
             public String download(HttpFetcher fetcher, CloseableHttpResponse response) throws Exception {
                 String bucket = bucket(job, task, uri);
                 String object = String.format("/%s/%s", DPUtil.dateTime("yyyy-MM-dd"), UUID.randomUUID());
-                PutObjectArgs.Builder builder = PutObjectArgs.builder();
-                builder.bucket(bucket);
-                builder.object(object);
+                PutObjectRequest.Builder builder = PutObjectRequest.builder();
+                builder.bucket(bucket).key(object);
                 if (!DPUtil.empty(fetcher.getLastResponseContentType())) {
                     builder.contentType(fetcher.getLastResponseContentType());
                 }
-                builder.stream(response.getEntity().getContent(), response.getEntity().getContentLength(), -1);
-                ObjectWriteResponse result = nodeService.minio().putObject(builder.build());
+                InputStream stream = response.getEntity().getContent();
+                long contentLength = response.getEntity().getContentLength();
+                RequestBody body = contentLength >= 0
+                        ? RequestBody.fromInputStream(stream, contentLength)
+                        : RequestBody.fromBytes(stream.readAllBytes());
+                PutObjectResponse result = nodeService.s3Client().putObject(builder.build(), body);
                 ObjectNode data = DPUtil.objectNode();
                 data.put("bucket", bucket);
                 data.put("object", object);
                 if (null != result) {
-                    data.put("bucket", result.bucket());
-                    data.put("object", result.object());
-                    data.put("region", result.region());
-                    data.put("etag", result.etag());
+                    data.put("etag", result.eTag());
                 }
                 return DPUtil.stringify(data);
             }

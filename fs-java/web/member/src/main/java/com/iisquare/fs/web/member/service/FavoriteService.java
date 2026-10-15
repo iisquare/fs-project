@@ -124,14 +124,20 @@ public class FavoriteService extends JPAServiceBase {
         return rows;
     }
 
-    public long remove(List<Integer> ids, HttpServletRequest request) {
-        int uid = rbacService.uid(request);
-        return favoriteDao.delete((Specification<Favorite>) (root, query, cb) -> {
-            return cb.and(
-                    root.get("id").in(ids),
-                    cb.equal(root.get("createdUid"), uid)
-            );
-        });
+    public Map<String, Object> remove(List<Integer> ids, HttpServletRequest request) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            int uid = rbacService.uid(request);
+            long count = favoriteDao.delete((Specification<Favorite>) (root, query, cb) -> {
+                return cb.and(
+                        root.get("id").in(ids),
+                        cb.equal(root.get("createdUid"), uid)
+                );
+            });
+            return ApiUtil.result(0, null, count);
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除收藏失败", e.getMessage());
+        }
     }
 
 }

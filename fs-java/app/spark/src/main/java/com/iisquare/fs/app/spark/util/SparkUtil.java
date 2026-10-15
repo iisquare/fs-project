@@ -38,16 +38,15 @@ public class SparkUtil {
         return dataset;
     }
 
-    public static <T> T union(Class<T> classType, Set<DAGNode> nodes) {
-        if (null == nodes || nodes.isEmpty()) return null;
-        Iterator<DAGNode> iterator = nodes.iterator();
-        T result = iterator.next().result(classType);
-        while (iterator.hasNext()) {
-            if (result instanceof Dataset) {
-                result = (T) ((Dataset) result).union(iterator.next().result(Dataset.class));
-                continue;
-            }
-            return null;
+    /**
+     * 按顺序合并多个上游数据集（顺序由节点入边顺序决定，见 DAGNode#inputs）
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static <T> Dataset<T> union(List<? extends Dataset> datasets) {
+        if (null == datasets || datasets.isEmpty()) return null;
+        Dataset result = datasets.get(0);
+        for (int index = 1; index < datasets.size(); index++) {
+            result = result.union(datasets.get(index));
         }
         return result;
     }

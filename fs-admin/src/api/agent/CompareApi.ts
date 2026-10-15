@@ -7,7 +7,7 @@ import base from './Api'
  * 一次请求只跑一个模型，参数逐模型独立，所以由页面并发发起、逐卡展示。
  */
 export default {
-  /** 可调试的模型清单：返回 `{ rows: [{ name, ownedBy }] }` */
+  /** 可调试的模型清单：返回 `{ rows: [{ name, ownedBy, contextLength }] }` */
   models (tips = {}) {
     return base.post('/compare/models', {}, tips)
   },

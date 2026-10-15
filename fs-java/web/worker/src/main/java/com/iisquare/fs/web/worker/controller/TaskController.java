@@ -97,8 +97,7 @@ public class TaskController extends PermitControllerBase {
     public String removeAction(@RequestBody Map<?, ?> param) {
         String queueName = DPUtil.trim(DPUtil.parseString(param.get("queueName")));
         if (DPUtil.empty(queueName)) return ApiUtil.echoResult(1001, "队列名称不能为空", queueName);
-        boolean result = taskService.remove("task", queueName);
-        return ApiUtil.echoResult(result ? 0: 500, null, queueName);
+        return ApiUtil.echoResult(taskService.remove("task", queueName));
     }
 
     @RequestMapping("/start")

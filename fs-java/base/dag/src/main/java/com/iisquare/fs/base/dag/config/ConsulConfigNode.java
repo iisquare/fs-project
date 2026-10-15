@@ -11,7 +11,7 @@ import java.util.Base64;
 public class ConsulConfigNode extends DAGConfig {
 
     @Override
-    public Object process() throws Exception {
+    public JsonNode process() throws Exception {
         String url = options.at("/url").asText();
         if (DPUtil.empty(url)) throw new RuntimeException("配置路径不能为空：" + DPUtil.stringify(options));
         String content = HttpUtil.get(url);

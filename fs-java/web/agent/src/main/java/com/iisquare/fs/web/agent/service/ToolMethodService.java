@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
-import com.iisquare.fs.base.core.util.FileUtil;
 import com.iisquare.fs.base.core.util.HttpUtil;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
@@ -12,10 +11,7 @@ import com.iisquare.fs.web.agent.dao.ToolDao;
 import com.iisquare.fs.web.agent.dao.ToolMethodDao;
 import com.iisquare.fs.web.agent.entity.Tool;
 import com.iisquare.fs.web.agent.entity.ToolMethod;
-import io.modelcontextprotocol.client.McpClient;
-import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
-import io.modelcontextprotocol.spec.McpSchema;
+import com.iisquare.fs.web.agent.mcp.McpHttpClient;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
@@ -590,19 +586,15 @@ public class ToolMethodService extends JPAServiceBase {
         }
         Map<?, ?> request = DPUtil.buildMap("method", "tools/call", "url", url,
                 "header", headers, "body", DPUtil.buildMap("name", method.getOriginName(), "arguments", args));
-        McpSyncClient client = McpClient.sync(HttpClientSseClientTransport.builder(url).customizeRequest(rb -> {
-            if (null != headers) headers.forEach(rb::header);
-        }).build()).build();
-        try {
+        // 与同步同一套客户端：SSE 端点与流式 HTTP 端点都能调用
+        try (McpHttpClient client = new McpHttpClient(url, headers, toolConnectTimeout, toolReadTimeout)) {
             client.initialize();
-            McpSchema.CallToolResult result = client.callTool(new McpSchema.CallToolRequest(method.getOriginName(), args));
+            JsonNode result = client.callTool(method.getOriginName(), args);
             return ApiUtil.result(0, null, DPUtil.buildMap("success", true, "request", request,
                     "response", DPUtil.stringify(DPUtil.toJSON(result))));
         } catch (Exception e) {
             return ApiUtil.result(0, null, DPUtil.buildMap("success", false, "request", request,
                     "response", cut("调用 MCP 方法失败：" + e.getMessage(), 2000)));
-        } finally {
-            FileUtil.close(client);
         }
     }
 

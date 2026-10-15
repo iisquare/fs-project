@@ -193,7 +193,8 @@ public class AgenticRuntime {
     /**
      * 思考模式与思考强度：按模型网关的约定写入请求体
      * - 思考模式：`thinking: { type: enabled | disabled }`（选「自动」时不显式声明，交给模型/网关决定）
-     * - 思考强度：`reasoning_effort: low | medium | high | max`，仅在思考未显式关闭时下发
+     * - 思考强度：`reasoning_effort: low | medium | high | max`，与思考模式相互独立，
+     *   开启取值开关即下发（思考模式选「关闭」时同样生效，与设计器里可配置的判断保持一致）
      */
     public void thinking(ObjectNode json, ObjectNode data) {
         boolean modeEnabled = data.at("/thinkModeEnabled").asBoolean(false);
@@ -206,8 +207,6 @@ public class AgenticRuntime {
             }
         }
         if (!data.at("/thinkEffortEnabled").asBoolean(false)) return;
-        // 思考显式关闭时不再下发强度（与设计器里的可编辑判断保持一致）
-        if (modeEnabled && ("off".equals(mode) || "disabled".equals(mode))) return;
         String effort = data.at("/thinkEffort").asText("");
         if (DPUtil.empty(effort)) return;
         json.put("reasoning_effort", effort);

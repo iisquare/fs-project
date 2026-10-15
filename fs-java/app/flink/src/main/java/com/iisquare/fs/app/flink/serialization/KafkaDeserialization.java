@@ -4,24 +4,25 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.streaming.connectors.kafka.KafkaDeserializationSchema;
+import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
+import org.apache.flink.util.Collector;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
-public class KafkaDeserialization implements KafkaDeserializationSchema<JsonNode> {
+import java.nio.charset.StandardCharsets;
+
+/**
+ * Kafka 记录反序列化：将消息封装为 {topic, partition, offset, message} 结构
+ */
+public class KafkaDeserialization implements KafkaRecordDeserializationSchema<JsonNode> {
 
     @Override
-    public boolean isEndOfStream(JsonNode nextElement) {
-        return false;
-    }
-
-    @Override
-    public JsonNode deserialize(ConsumerRecord<byte[], byte[]> record) throws Exception {
+    public void deserialize(ConsumerRecord<byte[], byte[]> record, Collector<JsonNode> out) {
         ObjectNode row = DPUtil.objectNode();
         row.put("topic", record.topic());
         row.put("partition", record.partition());
         row.put("offset", record.offset());
-        row.put("message", new String(record.value()));
-        return row;
+        row.put("message", null == record.value() ? "" : new String(record.value(), StandardCharsets.UTF_8));
+        out.collect(row);
     }
 
     @Override

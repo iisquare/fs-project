@@ -25,8 +25,8 @@ public class DataThemeController extends PermitControllerBase {
 
     @RequestMapping("/info")
     @Permission("")
-    public String infoAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        Map<String, Object> result = dataThemeService.info(param, request);
+    public String infoAction(@RequestBody Map<?, ?> param) {
+        Map<String, Object> result = dataThemeService.info(param);
         return ApiUtil.echoResult(result);
     }
 
@@ -51,8 +51,7 @@ public class DataThemeController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param) {
         List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
-        boolean result = dataThemeService.remove(ids);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(dataThemeService.remove(ids));
     }
 
     @RequestMapping("/config")

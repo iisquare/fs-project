@@ -49,8 +49,7 @@ public class UsageController extends PermitControllerBase {
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         List<Long> ids = DPUtil.parseLongList(param.get("ids"));
-        boolean result = usageService.delete(ids, request);
-        return ApiUtil.echoResult(result ? 0 : 500, null, result);
+        return ApiUtil.echoResult(usageService.delete(ids, request));
     }
 
     @RequestMapping("/statistic")

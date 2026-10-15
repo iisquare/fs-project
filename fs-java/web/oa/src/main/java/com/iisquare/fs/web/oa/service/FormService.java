@@ -83,8 +83,13 @@ public class FormService extends ServiceBase {
         return storage(frame).save(frame, info, uid);
     }
 
-    public long delete(ObjectNode frame, List<String> ids, int uid) {
-        return storage(frame).delete(frame, ids, uid);
+    public Map<String, Object> delete(ObjectNode frame, List<String> ids, int uid) {
+        if (null == ids || ids.isEmpty()) return ApiUtil.result(0, null, 0);
+        try {
+            return ApiUtil.result(0, null, storage(frame).delete(frame, ids, uid));
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除表单数据失败", e.getMessage());
+        }
     }
 
     public ObjectNode info(ObjectNode frame, String id) {

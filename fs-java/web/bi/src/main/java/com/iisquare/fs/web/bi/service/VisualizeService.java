@@ -310,17 +310,21 @@ public class VisualizeService extends ServiceBase {
         return ApiUtil.result(0, null, info);
     }
 
-    public boolean delete(List<Integer> ids, int uid) {
-        if(null == ids || ids.size() < 1) return false;
-        List<Visualize> list = visualizeDao.findAllById(ids);
-        long time = System.currentTimeMillis();
-        for (Visualize item : list) {
-            item.setStatus(-1);
-            item.setUpdatedTime(time);
-            item.setUpdatedUid(uid);
+    public Map<String, Object> delete(List<Integer> ids, int uid) {
+        if (null == ids || ids.size() < 1) return ApiUtil.result(0, null, 0);
+        try {
+            List<Visualize> list = visualizeDao.findAllById(ids);
+            long time = System.currentTimeMillis();
+            for (Visualize item : list) {
+                item.setStatus(-1);
+                item.setUpdatedTime(time);
+                item.setUpdatedUid(uid);
+            }
+            visualizeDao.saveAll(list);
+            return ApiUtil.result(0, null, list.size());
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "删除可视化失败", e.getMessage());
         }
-        visualizeDao.saveAll(list);
-        return true;
     }
 
 }
