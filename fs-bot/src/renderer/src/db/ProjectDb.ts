@@ -3,7 +3,10 @@ import ApiUtil from '@renderer/utils/ApiUtil'
 
 const TABLE = 'projects'
 
-/** 环境变量：secret 仅表示界面上的掩码显示，值本身存在本机加密库里 */
+/**
+ * 环境变量：值存在本机加密库里，只在执行本机命令时进子进程的环境（见 `main/project-env.ts`）。
+ * secret 表示「只留本机」——界面上掩码显示、分享时不随配置上传、命令输出里出现的值换成 `***`。
+ */
 export interface ProjectEnv {
   key: string
   value: string
@@ -82,9 +85,10 @@ export interface Project {
   /** 系统提示词：每轮对话作为首条 system 消息下发，留空则不下发 */
   systemPrompt: string
   /**
-   * 长期记忆：用户手工维护的一段文字（「事实 / 偏好 / 已定的决策」这类长期有用的东西），
+   * 长期记忆：一段文字（「事实 / 偏好 / 已定的决策」这类长期有用的东西），
    * 与系统提示词分开存放；每轮作为提示词的一段追加在系统提示词之后一起下发，留空则不下发。
-   * 模型只能读（随请求下发），写入只发生在项目编辑器里，没有工具通道。
+   * 写入有两个来源：项目编辑器里手工改，以及对话里模型用 `memory` 工具的 write 动作写
+   * （append 追加 / replace 整段替换，见 `core/Toolbox.ts`）——两边改的都是这一列。
    */
   memory: string
   /** 思考强度：low | medium | high | max，留空则由模型与网关取默认值 */

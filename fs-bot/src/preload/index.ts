@@ -1,7 +1,20 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 const ipc = {
+  // 拖进输入框的文件 / 文件夹：File 对象只在渲染进程手里，路径只能由 preload 用 webUtils 取
+  // （Electron 32 起 File.path 已移除）。回传的是纯字符串，File 本身不过桥；
+  // 取不到路径的项（不是磁盘上的文件）直接丢掉，不让一条坏项毁掉整次拖入。
+  filePaths: (files: File[]) =>
+    (files ?? [])
+      .map((file) => {
+        try {
+          return webUtils.getPathForFile(file)
+        } catch {
+          return ''
+        }
+      })
+      .filter((path) => !!path),
   setLoginSize: () => ipcRenderer.invoke('window:set-login-size'),
   setNormalSize: () => ipcRenderer.invoke('window:set-normal-size'),
   minimize: () => ipcRenderer.invoke('window:minimize'),
@@ -25,7 +38,8 @@ const ipc = {
       ipcRenderer.invoke('db:upsert', { table, data }),
     delete: (table: string, where: Record<string, unknown>) =>
       ipcRenderer.invoke('db:delete', { table, where }),
-    // 关键词检索：历史对话（记忆）按标题与消息正文找行，比把整表拉回来自己过滤省事
+    // 关键词检索：历史对话（记忆）按标题与消息正文找行，比把整表拉回来自己过滤省事；
+    // mode 给 segments 时按空白切成多段匹配（多行片段的兜底口径，见 ConversationDb.search）
     search: (
       table: string,
       columns: string[],
@@ -35,6 +49,7 @@ const ipc = {
         in?: Record<string, unknown[]>
         orderBy?: string
         limit?: number
+        mode?: 'literal' | 'segments'
       }
     ) => ipcRenderer.invoke('db:search', { table, columns, keyword, ...(options ?? {}) })
   },
@@ -66,6 +81,14 @@ const ipc = {
       ipcRenderer.invoke('workspace:open', { projectId, path, force }),
     reveal: (projectId: string, path: string) =>
       ipcRenderer.invoke('workspace:reveal', { projectId, path }),
+    /**
+     * 把工作区里的文件 / 文件夹拖出窗口（拖到资源管理器、聊天窗口、编辑器……）：
+     * 浏览器那套拖放给不出本机路径，原生拖放得请主进程用 webContents.startDrag 发起
+     * （见主进程的 workspace:drag），所以这里是 send——界面在 dragstart 里先拦掉默认行为，
+     * 主进程在同一时机接手。
+     */
+    startDrag: (projectId: string, path: string) =>
+      ipcRenderer.send('workspace:drag', { projectId, path }),
     write: (projectId: string, path: string, content: string, conversationId = '') =>
       ipcRenderer.invoke('workspace:write', { projectId, path, content, conversationId }),
     mkdir: (projectId: string, path: string, conversationId = '') =>
@@ -92,6 +115,23 @@ const ipc = {
     files: (projectId: string) => ipcRenderer.invoke('workspace:files', { projectId }),
     search: (projectId: string, keyword: string) =>
       ipcRenderer.invoke('workspace:search', { projectId, keyword }),
+    // 文本替换：在指定行范围内把 find 换成新文（行尾与编码保真、唯一性判定都在主进程）
+    replace: (
+      projectId: string,
+      path: string,
+      find: string,
+      replace: string,
+      scope?: { startLine?: number; endLine?: number; all?: boolean },
+      conversationId = ''
+    ) =>
+      ipcRenderer.invoke('workspace:replace', {
+        projectId,
+        path,
+        find,
+        replace,
+        ...(scope ?? {}),
+        conversationId
+      }),
     // 给模型的本机说明：运行环境 + 工作区目录、主目录、权限与访问策略，追加在项目系统提示词之后
     prompt: (projectId: string) => ipcRenderer.invoke('workspace:prompt', { projectId }),
     // 本机执行命令：工作目录决定权限口径，越界时主进程会把申请推上来等答复

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useSidebarStore } from '@renderer/stores/sidebar'
+import { useFilesStore } from '@renderer/stores/files'
+import { useWindowStore } from '@renderer/stores/window'
 
 const props = withDefaults(defineProps<{
   showMaximize?: boolean
@@ -10,10 +12,13 @@ const props = withDefaults(defineProps<{
 
 const ipc = window.ipc
 const isMaximized = ref(false)
-const isPinned = ref(false)
 const platform = window.electron.process.platform
 const isMac = platform === 'darwin'
 const sidebar = useSidebarStore()
+const files = useFilesStore()
+const win = useWindowStore()
+/** 钉住前的文件区展开状态：钉住期间收起，取消钉住时恢复原样 */
+let filesExpandedBeforePin = true
 
 onMounted(async () => {
   isMaximized.value = await ipc.isMaximized()
@@ -23,9 +28,14 @@ onMounted(async () => {
 })
 
 function togglePin() {
-  isPinned.value = !isPinned.value
-  sidebar.setVisible(!isPinned.value)
-  ipc.togglePin(isPinned.value)
+  const pinned = !win.pinned
+  // 钉住后窗口只有 400×600：右侧文件区留下来会把对话列挤没，一并收起；
+  // 取消钉住时回到钉住前那一眼的状态（展开状态只在本次运行内有效，两个方向都不落库）
+  if (pinned) filesExpandedBeforePin = files.visible
+  files.setVisible(pinned ? false : filesExpandedBeforePin)
+  sidebar.setVisible(!pinned)
+  win.pinned = pinned
+  ipc.togglePin(pinned)
 }
 </script>
 
@@ -53,8 +63,8 @@ function togglePin() {
         </svg>
       </button>
       <span class="mac-controls-divider" />
-      <button class="mac-pin-btn" :class="{ 'mac-pin-btn--active': isPinned }" :title="isPinned ? '取消置顶' : '置顶'" @click="togglePin">
-        <svg width="12" height="12" viewBox="0 0 24 24" :fill="isPinned ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button class="mac-pin-btn" :class="{ 'mac-pin-btn--active': win.pinned }" :title="win.pinned ? '取消置顶' : '置顶'" @click="togglePin">
+        <svg width="12" height="12" viewBox="0 0 24 24" :fill="win.pinned ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 2L15 9H21L16 14V22H8V14L3 9H9L12 2Z" />
         </svg>
       </button>
@@ -65,8 +75,8 @@ function togglePin() {
 
     <!-- Windows/Linux: standard window controls on the right -->
     <div v-if="!isMac" class="title-bar__win-controls">
-      <button class="win-btn win-btn--pin" :class="{ 'win-btn--pin-active': isPinned }" :title="isPinned ? '取消置顶' : '置顶'" @click="togglePin">
-        <svg width="12" height="12" viewBox="0 0 24 24" :fill="isPinned ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+      <button class="win-btn win-btn--pin" :class="{ 'win-btn--pin-active': win.pinned }" :title="win.pinned ? '取消置顶' : '置顶'" @click="togglePin">
+        <svg width="12" height="12" viewBox="0 0 24 24" :fill="win.pinned ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
           <path d="M12 2L15 9H21L16 14V22H8V14L3 9H9L12 2Z" stroke-linejoin="round" />
         </svg>
       </button>
@@ -164,49 +174,43 @@ function togglePin() {
   width: 1px;
   height: 14px;
   background: rgba(0, 0, 0, 0.12);
-  margin: 0 4px;
+  /* 不额外加左右边距：与红绿灯、图钉各留一个 gap（8px）就够，再加 4px 会把图钉推远 */
+  margin: 0;
 }
 
+/**
+ * 置顶（钉住）：与 Windows 那一枚同一套样式 —— 平时只有一枚图钉（不再画灰色实心圆），
+ * 悬停给一层浅底，钉住后图标转主色。尺寸按 mac 的红绿灯排布收窄（24×24，与标题栏同高），
+ * 不铺满 Windows 那 46px 的宽按钮；12px 的图钉只占 6px 内边，贴着圆点也不显突兀。
+ */
 .mac-pin-btn {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
+  width: 24px;
+  height: var(--title-bar-height);
+  border-radius: 4px;
   border: none;
   padding: 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #c8c8c8;
-  color: rgba(0, 0, 0, 0.55);
-  transition: background 0.2s ease;
+  background: transparent;
+  color: var(--el-text-color-secondary);
+  transition:
+    background 0.15s,
+    color 0.15s;
 
   svg {
-    width: 6px;
-    height: 6px;
-    opacity: 0;
-    transition: opacity 0.15s;
-  }
-
-  &--active {
-    background: #a0a0a0;
-
-    svg {
-      opacity: 1;
-    }
+    width: 12px;
+    height: 12px;
   }
 
   &:hover {
-    background: #a0a0a0;
+    background: var(--el-fill-color-darker);
   }
 
-  &:active {
-    background: #888;
+  &--active {
+    color: var(--el-color-primary);
   }
-}
-
-.title-bar__mac-controls:hover .mac-pin-btn svg {
-  opacity: 1;
 }
 
 // ── Windows/Linux standard buttons (right side) ──────────

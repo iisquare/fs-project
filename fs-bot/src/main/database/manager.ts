@@ -173,7 +173,11 @@ export class DatabaseManager {
 
   /**
    * 关键词检索：columns 里的每一列按 LIKE 匹配（关键词参数化，
-   * `%` 与 `_` 按字面量处理），可另加等值条件（where）、集合条件（in）与排序、条数上限。
+   * `%` / `_` / `\` 按字面量处理），可另加等值条件（where）、集合条件（in）与排序、条数上限。
+   *
+   * `mode` 是关键词的匹配口径（见 likePattern）：默认 `literal` 整段按字面量匹配（换行也算字面量），
+   * `segments` 则按空白切成多段、各段按原顺序出现即算命中——从对话里整段粘来的多行片段
+   * 与库里的缩进 / 换行（\n 与 \r\n）未必一样，字面量一条都命中不了时用它兜底。
    *
    * 供「历史对话检索」这类「按内容找行」的查询使用：表的行数可能有几千条，
    * 让主进程用一条 SQL 查完，比把每个会话的消息整段拉回渲染进程再过滤干净得多。
@@ -187,6 +191,7 @@ export class DatabaseManager {
       in?: Record<string, unknown[]>
       orderBy?: string
       limit?: number
+      mode?: 'literal' | 'segments'
     } = {}
   ): { code: number; message: string; data: unknown[] } {
     const { db } = this.ctx()
@@ -307,7 +312,7 @@ export class DatabaseManager {
 
   /**
    * 组装关键词检索语句：列名与表名沿用既有口径直接拼接（渲染进程本来就传表名），
-   * 关键词与条件值一律走占位符。集合条件为空时直接判为不命中（WHERE 0），
+   * 关键词与条件值一律走占位符（关键词的口径见 likePattern）。集合条件为空时直接判为不命中（WHERE 0），
    * 免得拼出 `IN ()` 这种非法语句。
    */
   private buildSearch(
@@ -319,6 +324,7 @@ export class DatabaseManager {
       in?: Record<string, unknown[]>
       orderBy?: string
       limit?: number
+      mode?: 'literal' | 'segments'
     }
   ): { sql: string; params: unknown[] } {
     const text = String(keyword ?? '').trim()
@@ -326,7 +332,7 @@ export class DatabaseManager {
     const cols = (columns ?? []).map((column) => String(column ?? '').trim()).filter(Boolean)
     if (!cols.length) throw new Error('未指定检索列')
 
-    const like = `%${escapeLike(text)}%`
+    const like = likePattern(text, options.mode)
     const clauses = cols.map((column) => `${column} LIKE ? ESCAPE '\\'`)
     const params: unknown[] = cols.map(() => like)
 
@@ -347,6 +353,31 @@ export class DatabaseManager {
     if (limit > 0) sql += ` LIMIT ${limit}`
     return { sql, params }
   }
+}
+
+/**
+ * 关键词按空白切段：空格、制表、换行（\n 与 \r\n 都算）一律当分隔，
+ * 空段丢掉。粘过来的多行片段靠它还原成「按原顺序出现的几段」
+ * （库里那段的缩进与换行未必与粘来的那份一致，逐段匹配才兜得住）。
+ */
+export function keywordSegments(text: string): string[] {
+  return String(text ?? '')
+    .split(/\s+/)
+    .filter(Boolean)
+}
+
+/**
+ * 关键词 → LIKE 模式：
+ * - `literal`：整段按字面量（`%` / `_` / `\` 转义，换行也是字面量）；
+ * - `segments`：切成多段后按原顺序串起来（`%段1%段2%`），段与段之间允许任意字符——
+ *   多段之间隔着换行、缩进或别的文字都算命中；切不出两段时退回字面量口径。
+ */
+function likePattern(text: string, mode = 'literal'): string {
+  if ('segments' === mode) {
+    const parts = keywordSegments(text).map(escapeLike)
+    if (parts.length > 1) return `%${parts.join('%')}%`
+  }
+  return `%${escapeLike(String(text ?? '').trim())}%`
 }
 
 /** LIKE 的通配符转义：关键词按字面量匹配，`\` 自身也要先转义 */

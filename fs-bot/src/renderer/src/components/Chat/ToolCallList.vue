@@ -8,7 +8,8 @@
  *
  * 展开后除了参数与返回，还把这次调用牵涉到的本机文件列成一行一行的卡片（参数与返回里认出来的路径，
  * 见 core/FileRefs）：点一下用系统默认程序打开，右侧按钮在文件夹中定位，
- * 服务端交付的下载地址按外部地址打开。交付物不用再自己去那段 JSON 里翻路径。
+ * 整张卡片还能往外拖（拖给资源管理器 / 别的应用，原生拖放由主进程发起），
+ * 服务端交付的下载地址按外部地址打开、自己就是可拖的链接。交付物不用再自己去那段 JSON 里翻路径。
  */
 import { computed, ref } from 'vue'
 import type { ChatToolCall } from '@renderer/stores/chat'
@@ -34,6 +35,11 @@ function openRef(ref: ChatFileRef): void {
 
 function revealRef(ref: ChatFileRef): void {
   FileActionUtil.reveal(String(props.projectId ?? ''), ref.path)
+}
+
+/** 拖出窗口：把这张卡片上的本机路径交给系统（服务端地址那张是链接，浏览器自己会拖） */
+function dragRef(ref: ChatFileRef, event: DragEvent): void {
+  FileActionUtil.dragOut(event, String(props.projectId ?? ''), ref.path)
 }
 
 /** 参数摘要：把 JSON 拆成 key: value，长值截断，一眼看清这次调用要动什么 */
@@ -130,11 +136,17 @@ function state(call: ChatToolCall): string {
           }}</pre>
         </el-scrollbar>
       </div>
-      <!-- 这次调用牵涉到的文件：点一下用默认程序打开，右侧在文件夹中定位 -->
+      <!-- 这次调用牵涉到的文件：点一下用默认程序打开，右侧在文件夹中定位，整张卡片还能往外拖 -->
       <div v-if="refs[index]?.length" class="tool-block">
         <div class="tool-label">涉及的文件</div>
         <div class="tool-files">
-          <div v-for="(file, fileIndex) in refs[index]" :key="fileIndex" class="tool-file">
+          <div
+            v-for="(file, fileIndex) in refs[index]"
+            :key="fileIndex"
+            class="tool-file"
+            :draggable="!file.url"
+            @dragstart="dragRef(file, $event)"
+          >
             <!-- 服务端交付的文件：给的是下载地址，按外部地址打开（带时效签名，浏览器直接能取） -->
             <a
               v-if="file.url"

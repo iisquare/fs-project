@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS projects (
   -- 手工指定的上下文窗口（词元数）：0 表示按服务端在模型清单里声明的窗口
   context_length INTEGER DEFAULT 0,
   system_prompt TEXT DEFAULT '',
-  -- 长期记忆：用户手写、与系统提示词分开存放的一段文字，随每轮请求下发（见 chat store 的 memoryBlock）
+  -- 长期记忆：与系统提示词分开存放的一段文字，随每轮请求下发（编辑器里手写，
+  -- 模型也能用 memory 工具的 write 写；见 chat store 的 memoryBlock）
   memory TEXT DEFAULT '',
   think_effort TEXT DEFAULT '',
   name TEXT NOT NULL,

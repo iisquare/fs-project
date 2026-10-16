@@ -1,4 +1,13 @@
-import { app, shell, BrowserWindow, dialog, ipcMain, protocol } from 'electron'
+import {
+  app,
+  shell,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  nativeImage,
+  protocol,
+  type NativeImage
+} from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -7,6 +16,7 @@ import { ConfigStore } from './config'
 import { SkillManager } from './skills'
 import { exportProject, importProject } from './projects'
 import { ICON_SCHEME, initIcons, pickIcon, serveIcon } from './icons'
+import { parseProjectEnvVars } from './project-env'
 import {
   WorkspaceManager,
   type WorkspacePermission,
@@ -29,13 +39,15 @@ import type {
   WorkspaceRenameRequest,
   WorkspaceProjectRequest,
   WorkspaceSearchRequest,
+  WorkspaceReplaceRequest,
   WorkspaceCommandRequest,
   WorkspaceUploadRequest,
   WorkspacePolicyRequest,
   WorkspaceApprovalResponse,
   SkillInstallRequest,
   SkillFileRequest,
-  ProjectExportRequest
+  ProjectExportRequest,
+  WorkspaceDragRequest
 } from './database/types'
 
 /** projects.workspace 列存的是 JSON 文本：解析成目录清单，结构不对就当作没有（一律拒绝） */
@@ -112,6 +124,20 @@ function requestApproval(request: WorkspaceApproval): Promise<boolean> {
     })
     mainWindow!.webContents.send('workspace:approval-request', request)
   })
+}
+
+/**
+ * 拖出窗口时跟着光标走的那张小图：应用图标缩到 32px。
+ * 原图是几百像素的方图，按原样交给系统会大得压住指针；读不出来时退回原图路径，让 Electron 自己再试一次。
+ */
+let dragImage: NativeImage | string | null = null
+
+function dragIcon(): NativeImage | string {
+  if (!dragImage) {
+    const image = nativeImage.createFromPath(icon)
+    dragImage = image.isEmpty() ? icon : image.resize({ width: 32, height: 32 })
+  }
+  return dragImage
 }
 
 function createWindow(): void {
@@ -280,13 +306,17 @@ app.whenReady().then(async () => {
     return db.remove(request.table, request.where)
   })
 
-  /** 关键词检索：历史对话（记忆）按标题与消息正文找行，由主进程一条 SQL 查完 */
+  /**
+   * 关键词检索：历史对话（记忆）按标题与消息正文找行，由主进程一条 SQL 查完。
+   * mode 传 `segments` 时按空白切成多段匹配（多行片段、换行 / 缩进对不上的兜底口径）。
+   */
   ipcMain.handle('db:search', (_event, request: DbSearchRequest) => {
     return db.search(request.table, request.columns, request.keyword, {
       where: request.where,
       in: request.in,
       orderBy: request.orderBy,
-      limit: request.limit
+      limit: request.limit,
+      mode: request.mode
     })
   })
 
@@ -323,6 +353,17 @@ app.whenReady().then(async () => {
     const row = rows[0]
     if (!row) throw new Error(`项目不存在或已删除：${projectId}`)
     return parseWorkspaceRoots(row['workspace'])
+  })
+
+  /**
+   * 项目环境变量：同样按项目从用户库读，只进本机命令的进程环境（见 WorkspaceManager.exec）。
+   * 读不到（项目已删、列里是坏 JSON、变量名不合规）就给空——它们是附加项，
+   * 不该让一条命令因为一份读不出来的配置执行失败。
+   */
+  workspace.setProjectEnvResolver((projectId) => {
+    if (!projectId) return []
+    const rows = db.select('projects', { id: projectId }).data as Record<string, unknown>[]
+    return parseProjectEnvVars(rows[0]?.['env_vars'])
   })
 
   // 工作区外文件的访问策略与询问通道：策略随系统设置持久化，申请推给界面弹窗确认
@@ -422,6 +463,18 @@ app.whenReady().then(async () => {
     return workspace.reveal(request.projectId, request.path)
   })
 
+  /**
+   * 拖出窗口：把工作区里的文件 / 文件夹拖到别的应用（资源管理器、聊天窗口、编辑器……）。
+   * 浏览器那套拖放给不出本机路径，原生拖放只能由主进程用 webContents.startDrag 发起，
+   * 而且要在 dragstart 的当口就发起（界面那边先拦掉默认行为），所以这条用 on 而不是 handle。
+   */
+  ipcMain.on('workspace:drag', (event, request: WorkspaceDragRequest) => {
+    const target = workspace.drag(request?.projectId ?? '', request?.path ?? '')
+    // 路径不存在或解析不了：这一拖就是空的，界面上另有「打开 / 在文件夹中显示」两条路
+    if (!target.ok) return
+    event.sender.startDrag({ file: target.path, icon: dragIcon() })
+  })
+
   ipcMain.handle('workspace:write', (_event, request: WorkspaceWriteRequest) => {
     return workspace.write(request.projectId, request.path, request.content, request.conversationId)
   })
@@ -458,6 +511,18 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('workspace:search', (_event, request: WorkspaceSearchRequest) => {
     return workspace.search(request.projectId, request.keyword)
+  })
+
+  /** 文本替换：在指定行范围内把 find 换成新文（范围、唯一性与编码口径都在主进程判定） */
+  ipcMain.handle('workspace:replace', (_event, request: WorkspaceReplaceRequest) => {
+    return workspace.replace(
+      request.projectId,
+      request.path,
+      request.find,
+      request.replace,
+      { startLine: request.startLine, endLine: request.endLine, all: request.all },
+      request.conversationId
+    )
   })
 
   /** 给模型的本机说明：运行环境 + 工作区目录、主目录、权限与访问策略，追加在项目系统提示词之后 */

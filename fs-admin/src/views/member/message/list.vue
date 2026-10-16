@@ -22,11 +22,23 @@ const columns = ref([
   { prop: 'type', label: '消息类型' },
   { prop: 'recipient', label: '收件人' },
   { prop: 'subject', label: '主题' },
-  { prop: 'status', label: '状态' },
+  { prop: 'status', label: '状态', slot: 'status' },
   { prop: 'requestBody', label: '内容', hide: true },
   { prop: 'responseBody', label: '结果', hide: true },
   { prop: 'createdTime', label: '创建时间', formatter: DateUtil.render },
 ])
+const statusText = (status: string) => {
+  if ('success' === status) return '发送成功'
+  if ('error' === status) return '发送失败'
+  if ('skipped' === status) return '已跳过'
+  return status ?? ''
+}
+const statusTagType = (status: string) => {
+  if ('success' === status) return 'success'
+  if ('error' === status) return 'danger'
+  if ('skipped' === status) return 'warning'
+  return 'info'
+}
 const rows = ref([])
 const filterRef = ref<FormInstance>()
 const filters = ref(RouteUtil.query2filter(route, { advanced: false, deleted: '' }))
@@ -129,7 +141,11 @@ const handleDelete = () => {
       @selection-change="(s: any) => selection = s"
     >
       <el-table-column type="selection" />
-      <TableColumn :columns="columns" />
+      <TableColumn :columns="columns">
+        <template #status="scope">
+          <el-tag :type="statusTagType(scope.row.status)" size="small" effect="plain">{{ statusText(scope.row.status) }}</el-tag>
+        </template>
+      </TableColumn>
       <el-table-column label="操作">
         <template #default="scope">
           <el-button link @click="handleShow(scope)" v-permit="'member:message:'">查看</el-button>
@@ -141,7 +157,7 @@ const handleDelete = () => {
   <el-drawer v-model="infoVisible" :title="'消息详情 - ' + form.id" size="60%">
     <el-descriptions border :column="2">
       <el-descriptions-item label="消息类型">{{ form.type }}</el-descriptions-item>
-      <el-descriptions-item label="状态">{{ form.status }}</el-descriptions-item>
+      <el-descriptions-item label="状态">{{ statusText(form.status) }}</el-descriptions-item>
       <el-descriptions-item label="收件人">{{ form.recipient }}</el-descriptions-item>
       <el-descriptions-item label="创建时间">{{ DateUtil.format(form.createdTime) }}</el-descriptions-item>
       <el-descriptions-item label="主题" :span="2">{{ form.subject }}</el-descriptions-item>

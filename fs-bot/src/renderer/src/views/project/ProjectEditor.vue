@@ -159,7 +159,9 @@ function load(project: Project | null) {
         description: project.description,
         icon: project.icon,
         sort: project.sort,
-        envVars: [...project.envVars],
+        // 逐行复制：envVars 的行是扁平的 { key, value, secret }，改表单不该改到
+        // 列表页手里那份项目对象（否则「取消」丢掉不掉的改动会在下次打开时又冒出来）
+        envVars: project.envVars.map((item) => ({ ...item })),
         tools: [...project.tools],
         workspace: [...project.workspace],
         inputs: { ...project.inputs }
@@ -172,6 +174,15 @@ function load(project: Project | null) {
   paramsError.value = {}
   formRef.value?.clearValidate()
 }
+
+/**
+ * 参数面板的两项状态：展开的工具行（按行记，收起后配置仍在）与明细加载失败原因（按方法记）。
+ * 两者都由 `load()` 重置，而 `load()` 在 setup 期间就会被下面这个 immediate watch 同步调用；
+ * `const` 不提升，声明放在文件后面会报「Cannot access 'openedArgs' before initialization」，
+ * 所以这两项必须声明在 watch 之前。
+ */
+const openedArgs = ref<Record<string, boolean>>({})
+const paramsError = ref<Record<string, string>>({})
 
 watch(
   () => [props.creating, props.project] as const,
@@ -210,6 +221,16 @@ async function pickIcon(): Promise<void> {
 }
 
 // ── 环境变量 ───────────────────────────────────────────
+
+/** 变量名规则：与主进程解析时的口径一致（见 main/project-env.ts） */
+const ENV_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/
+
+/** 名字不合规的行：界面上当场点名，别等保存完发现命令里读不到 */
+const invalidEnvNames = computed(() =>
+  form.value.envVars
+    .map((item) => String(item.key ?? '').trim())
+    .filter((key) => key && !ENV_NAME.test(key))
+)
 
 function addEnv() {
   form.value.envVars.push({ key: '', value: '', secret: false })
@@ -336,9 +357,6 @@ function removeTool(index: number) {
  */
 const methodParams = ref<Record<string, any[]>>({})
 const paramsLoading = ref<Record<string, boolean>>({})
-const paramsError = ref<Record<string, string>>({})
-/** 展开参数配置的工具行：按行记，收起后配置仍在（只是不占地方） */
-const openedArgs = ref<Record<string, boolean>>({})
 
 /** 工具行的键：工具清单里的行按「类型 + 标识」定位 */
 function rowKey(item: ProjectTool): string {
@@ -576,7 +594,14 @@ async function exportConfig(): Promise<void> {
       filenameOf(config.name),
       JSON.stringify(file, null, 2)
     )
-    if (saved.path) ElMessage.success(`已导出到 ${saved.path}`)
+    if (saved.path) {
+      // 导出的是本机备份：密钥类环境变量的值也在文件里，顺手提醒一句（分享那份会自动摘掉它们）
+      const secrets = form.value.envVars.filter((item) => item.secret && item.key).length
+      ElMessage.success(
+        `已导出到 ${saved.path}` +
+          (secrets ? `（含 ${secrets} 个密钥类环境变量，这个文件别随手传出去）` : '')
+      )
+    }
   } catch (error) {
     ElMessage.error(`导出失败：${error instanceof Error ? error.message : String(error)}`)
   }
@@ -693,8 +718,9 @@ async function share(): Promise<void> {
         />
         <div class="field-tip">
           与系统提示词分开存放：这里写「长期有用」的东西（用户偏好、项目约定、已定的决策），
-          每轮作为提示词的一段（# 记忆）追加在系统提示词之后一起下发，模型只读、没有写入通道；
-          改完保存，下一次提问就生效。
+          每轮作为提示词的一段（# 记忆）追加在系统提示词之后一起下发。改完保存，下一次提问就生效；
+          对话里模型也能用 memory 工具改这里（追加、整段替换、局部替换，也能把记忆清空），
+          改完的内容同样每轮下发、本项目的所有会话共用。
         </div>
         <div class="field-tip">
           它和系统提示词一样占每轮上下文（计入输入框旁的用量圆环）：只写长期有用的少量事实，
@@ -728,6 +754,24 @@ async function share(): Promise<void> {
         <div class="section-actions">
           <el-button @click="addEnv">添加变量</el-button>
         </div>
+      </div>
+      <div class="section-note">
+        <div>变量只在本机生效：执行本机命令（run_command）时带进进程环境。</div>
+        <div>不标「密钥」的随分享上传、也不拦着命令打印（值不下发给模型，但命令可以自己读）。</div>
+        <div>
+          标了「密钥」的只留本机：不上传，命令输出里出现的值会换成
+          ***（值很短时会连普通文本一起命中）。
+        </div>
+        <div>
+          切换 JDK 这类工具链：把目标 bin 目录写进 PATH（会前置到系统 PATH 之前），或设 JAVA_HOME
+          让构建工具认它。
+        </div>
+        <div>
+          变量名用字母或下划线开头、只含字母 / 数字 / 下划线（不合规的行不生效）；值不做变量展开。
+        </div>
+      </div>
+      <div v-if="invalidEnvNames.length" class="section-warning">
+        变量名不合规（不会生效）：{{ invalidEnvNames.join('、') }}
       </div>
       <div v-if="form.envVars.length === 0" class="section-empty">暂无环境变量</div>
       <div v-for="(item, index) in form.envVars" :key="index" class="env-row">

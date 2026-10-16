@@ -10,6 +10,7 @@ import { useSkillStore } from '@renderer/stores/skill'
 import { useCatalogStore } from '@renderer/stores/catalog'
 import { useUserStore } from '@renderer/stores/user'
 import { useFilesStore, FILES_WIDTH_MIN, FILES_WIDTH_MAX } from '@renderer/stores/files'
+import { useWindowStore } from '@renderer/stores/window'
 import BotApi from '@renderer/api/agent/BotApi'
 import { chatProfile, useChatStore, type ChatMention } from '@renderer/stores/chat'
 import type { Project } from '@renderer/db/ProjectDb'
@@ -53,10 +54,12 @@ const listRef = ref<HTMLElement | null>(null)
 const atBottom = ref(true)
 
 /**
- * 右侧文件区（展开状态、宽度、当前页签）存在 store 里，所有会话共用：
- * 中右之间的分隔条拖出来的宽度与展开状态下次打开都还在（见 stores/files）。
+ * 右侧文件区存在 store 里，所有会话共用：默认收起，展开与否由这里的按钮说了算
+ * （进对话不替用户做主，展开状态也只在本次运行内有效）；拖出来的宽度与当前页签下次打开还在（见 stores/files）。
  */
 const files = useFilesStore()
+/** 窗口是否钉住（置顶窄条）：钉住后只留对话，右上角这个文件区开关也藏起来 */
+const win = useWindowStore()
 /** 中间对话栏的最小宽度：与 $chat-min 同一口径，分隔条拖不到比这更窄 */
 const CHAT_PANEL_MIN = 320
 
@@ -458,8 +461,12 @@ async function uploadFiles(): Promise<void> {
         <el-tag v-if="running" class="conv-tag" size="small" type="success" effect="plain"
           >运行中</el-tag
         >
-        <!-- 右上角：展开 / 收起右侧文件区 -->
-        <el-tooltip :content="files.visible ? '收起文件区' : '展开文件区'" placement="bottom">
+        <!-- 右上角：展开 / 收起右侧文件区（钉住窗口时只留对话，这个开关一并收起来） -->
+        <el-tooltip
+          v-if="!win.pinned"
+          :content="files.visible ? '收起文件区' : '展开文件区'"
+          placement="bottom"
+        >
           <el-button
             class="files-toggle"
             link

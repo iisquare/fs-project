@@ -30,8 +30,28 @@ export interface WorkspaceFile {
 
 export interface WorkspaceMatch {
   path: string
+  /** 命中的起始行（从 1 开始） */
   line: number
+  /** 命中的结束行：单行命中与 line 相同，多行命中给出一段范围（展示成 `12-15`） */
+  endLine: number
   text: string
+}
+
+/** 一次文本替换的回执：替换了几处、按哪种口径命中、行尾与 BOM 有没有被动过 */
+export interface WorkspaceReplaceResult {
+  path: string
+  count: number
+  /** literal = find 整段按字面量命中；segments = 按空白切段、各段按原顺序命中 */
+  match: 'literal' | 'segments'
+  startLine: number
+  endLine: number
+  /** 被替换掉的原文（折叠空白后截断，多处时是头一处） */
+  before: string
+  /** 换上去的新文（折叠空白后截断） */
+  after: string
+  eol: 'lf' | 'crlf'
+  bom: boolean
+  size: number
 }
 
 /** 引用一段本地路径的结果：文件给内容、目录给清单 */
@@ -115,6 +135,8 @@ declare global {
   interface Window {
     electron: ElectronAPI
     ipc: {
+      /** 拖入的文件 / 文件夹的绝对路径：取不到路径的项（不是磁盘上的文件）已过滤掉 */
+      filePaths: (files: File[]) => string[]
       setLoginSize: () => Promise<void>
       setNormalSize: () => Promise<void>
       minimize: () => Promise<void>
@@ -194,6 +216,8 @@ declare global {
         ) => Promise<WorkspaceReference>
         /** 用系统默认程序打开本机文件 / 目录（可执行文件先由主进程拒绝，确认后带 force 重试） */
         open: (projectId: string, path: string, force?: boolean) => Promise<WorkspaceOpenResult>
+        /** 把本机文件 / 目录拖出窗口：在 dragstart 里调，真正的原生拖放由主进程发起 */
+        startDrag: (projectId: string, path: string) => void
         /** 在系统文件管理器中定位这个文件 / 目录 */
         reveal: (projectId: string, path: string) => Promise<WorkspaceOpenResult>
         write: (
@@ -226,6 +250,15 @@ declare global {
         ) => Promise<{ path: string }>
         files: (projectId: string) => Promise<WorkspaceFile[]>
         search: (projectId: string, keyword: string) => Promise<WorkspaceMatch[]>
+        /** 文本替换：在指定行范围内把 find 换成新文（find 与替换内容都支持多行与特殊字符） */
+        replace: (
+          projectId: string,
+          path: string,
+          find: string,
+          replace: string,
+          scope?: { startLine?: number; endLine?: number; all?: boolean },
+          conversationId?: string
+        ) => Promise<WorkspaceReplaceResult>
         /** 给模型的本机说明：运行环境 + 工作区目录、主目录、权限与访问策略（追加在系统提示词之后） */
         prompt: (projectId: string) => Promise<string>
         exec: (

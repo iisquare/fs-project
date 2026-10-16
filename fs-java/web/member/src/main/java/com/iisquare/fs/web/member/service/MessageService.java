@@ -168,7 +168,11 @@ public class MessageService extends JPAServiceBase implements DisposableBean {
         Message.MessageBuilder message = Message.builder().responseBody("");
         message.type("email").recipient(email).subject(subject).requestBody(html);
         try {
-            emailService.send(email, subject, html, files);
+            if (!emailService.send(email, subject, html, files)) {
+                // 邮件服务未配置：不实际发送，仅记录日志，并在消息记录中标记跳过
+                message.status("skipped").responseBody("邮件服务未配置，已跳过实际发送，仅记录日志");
+                return ApiUtil.result(0, "邮件服务未配置，已跳过实际发送，仅记录日志", email);
+            }
             message.status("success");
             return ApiUtil.result(0, null, email);
         } catch (Exception e) {
@@ -185,6 +189,8 @@ public class MessageService extends JPAServiceBase implements DisposableBean {
         Map<String, Object> result = email(email, subject, html);
         if (ApiUtil.failed(result)) {
             result.put(ApiUtil.FIELD_MSG, "邮箱验证码发送失败");
+        } else if (!emailService.enabled()) {
+            result.put(ApiUtil.FIELD_MSG, "邮件服务未配置，验证码未实际发送，请查看服务端日志");
         } else {
             result.put(ApiUtil.FIELD_MSG, "邮箱验证码发送成功，请查收");
         }
@@ -197,6 +203,8 @@ public class MessageService extends JPAServiceBase implements DisposableBean {
         Map<String, Object> result = email(email, subject, html);
         if (ApiUtil.failed(result)) {
             result.put(ApiUtil.FIELD_MSG, "邮箱验证码发送失败");
+        } else if (!emailService.enabled()) {
+            result.put(ApiUtil.FIELD_MSG, "邮件服务未配置，验证码未实际发送，请查看服务端日志");
         } else {
             result.put(ApiUtil.FIELD_MSG, "邮箱验证码发送成功，请查收");
         }

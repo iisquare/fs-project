@@ -34,7 +34,12 @@ const fill = computed(() => route.path === page.home)
         <LayoutSidebar />
       </el-splitter-panel>
       <el-splitter-panel>
-        <div class="main-right">
+        <!--
+          mac 的标题栏整条浮在窗口最上面（红绿灯在左），它的拖拽区横跨整个窗口宽度：
+          内容区顶上这一条始终要让出来，否则顶到最上面的控件（对话头部右侧的文件区开关）
+          会落进拖拽区，看得见却点不动。Windows 那边标题栏本身占着这一条，不用额外留。
+        -->
+        <div class="main-right" :class="{ 'main-right--mac-titlebar': isMac }">
           <TitleBar v-if="!isMac" />
           <el-scrollbar class="main-content" :class="{ 'main-content--fill': fill }">
             <div class="content-wrapper" :class="{ 'content-wrapper--fill': fill }">
@@ -85,6 +90,13 @@ const fill = computed(() => route.path === page.home)
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+
+  /* macOS：标题栏浮在窗口顶上，红绿灯落在左侧，拖拽区横跨整个窗口。
+     这一条空档始终留给它——内容区顶上放着的控件否则会被拖拽区吃掉点击
+     （侧边栏那边由 LayoutSidebar 自己留） */
+  &--mac-titlebar {
+    padding-top: calc(var(--title-bar-height) + var(--title-bar-offset));
+  }
 }
 
 // ── shared ──────────────────────────────────────────────

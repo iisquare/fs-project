@@ -76,7 +76,11 @@ export interface ChatSession {
   projectId: string
   model: string
   systemPrompt: string
-  /** 长期记忆：项目配置里手写的那段，随每轮请求下发（见 memoryBlock） */
+  /**
+   * 长期记忆：项目配置里的那一格（编辑器里手写，模型也能用 memory 工具的 write 写进来），
+   * 随每轮请求下发（见 memoryBlock）。写入落在项目上、本项目所有会话共用，
+   * 所以这里每轮都从项目重取一次，写进来的内容当轮就生效。
+   */
   memory: string
   thinkEffort: string
   messages: ChatMessage[]
@@ -479,6 +483,10 @@ export const useChatStore = defineStore('chat', () => {
       // 接续提醒在链里的下标：只保留最新一条（换新的之前先把上一条撤掉），避免链里堆起多条催促
       let hintIndex = -1
       for (let index = 0; index < MAX_ROUNDS_TOTAL; index++) {
+        // 长期记忆每轮重取：memory 工具的 write 刚落进项目，从这一轮起就随请求下发
+        // （记忆按项目存、本项目所有会话共用；其余口径仍按会话打开时的那份项目配置走）
+        const fresh = useProjectStore().find(session.projectId)
+        if (fresh) session.memory = fresh.memory
         // 停止落在这一轮之前（工具执行中、等审批中按下的那一次）：不再发起模型调用
         if (session.stopping) {
           reply.status = 'stopped'

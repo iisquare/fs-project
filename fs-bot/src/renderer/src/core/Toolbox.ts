@@ -4,6 +4,8 @@ import ConversationDb, { type Conversation, type HistoryHit } from '@renderer/db
 import type { Project } from '@renderer/db/ProjectDb'
 import type { ScheduleTask } from '@renderer/db/TaskDb'
 import { isValidCron, nextRun } from '@renderer/utils/CronUtil'
+import { missing, textArg } from '@renderer/utils/ArgUtil'
+import { applyReplace, applyWrite, type MemoryEdit } from '@renderer/utils/MemoryUtil'
 import { useProjectStore } from '@renderer/stores/project'
 import { useScheduleStore } from '@renderer/stores/schedule'
 import { useUserStore } from '@renderer/stores/user'
@@ -12,7 +14,7 @@ import { useUserStore } from '@renderer/stores/user'
  * 工具层：把「模型能调用的能力」归一成一份 function 定义清单，并提供按函数名的执行入口。
  *
  * - 本地工具一共五个：`file_op`（文件与目录：读 / 写 / 列 / 建目录 / 移动 / 删除 / 检索 / 上传）、
- *   `run_command`（本机命令）、`schedule_task`（定时任务）、`memory`（历史对话 / 记忆）
+ *   `run_command`（本机命令）、`schedule_task`（定时任务）、`memory`（历史对话 + 长期记忆）
  *   与 `local_skill`（本地技能）。文件与命令由主进程按「项目声明的目录权限」与
  *   「工作区外访问策略」放行，渲染进程改不了结论，越界的读取、写入与命令都会作为失败结果回到模型；
  *   定时任务与历史对话走本地库，技能读本地技能目录。
@@ -92,11 +94,21 @@ function fileTools(): Array<{ tool: any; info: ToolInfo }> {
         '（相对路径按主目录优先的顺序解析）。用 action 选操作：' +
         'read = 读文本文件（需要 path，offset / limit 选行范围，默认读前 2000 行）；' +
         'write = 写文件，覆盖原内容、父目录不存在会自动创建（需要 path 与 content，content 给空串即清空文件）；' +
+        'replace = 改文件里的一小段（需要 path、find、replace）：把 find 换成新文，其余内容与行尾、' +
+        '编码都原样保留——find 与替换内容都可以带换行与特殊字符（按字面量匹配，正则元字符不当语法用）；' +
+        'start_line / end_line 限定替换范围（1 起、闭区间，省略即整个文件），' +
+        '给 all = true 才是把范围内全部命中都替换，默认要求范围内恰好一处命中，' +
+        '0 处或多处都失败并把位置回报（免得改错地方）；只处理 UTF-8 文本，二进制与非 UTF-8 文件会被拒绝；' +
+        'find 与原文的空白不一致时会按空白分段命中，这时把两段之间的空白（含缩进）也一起替换掉——' +
+        '替换内容要自带缩进，返回里会用 \\n / \\t 把替掉的原文显示出来，照它核对；' +
         'list = 列出目录下的文件与子目录（需要 path，用来了解工作区结构）；' +
         'mkdir = 创建目录（需要 path，已存在不报错）；' +
         'move = 移动或重命名文件 / 目录（需要 from 与 to）；' +
         'delete = 删除文件或目录（需要 path，目录递归删除、不可恢复）；' +
         'search = 在工作区内按关键词做全文检索（需要 keyword，返回命中的文件、行号与所在行）；' +
+        '关键词按空白切成几段、各段按原顺序出现即算命中：整段粘多行片段也可以（换行、缩进与' +
+        '\\r\\n / \\n 的差别都不影响，跨行的命中给出行号范围），单个词就是按行匹配；' +
+        '关键词按字面量匹配，正则元字符（. * ( ) [ ] 这些）都按原字符查；' +
         'upload = 把本机文件上传到文件服务（图床，需要 path），返回文件标识（id）与名称、类型、大小——' +
         '要让服务端的工具方法分析本机文件时（如图片 / 视频 / 音频交给 multimodalAnalyze），' +
         '先 upload 拿到 id，再把 id 交给那个工具方法（files 里给 { id }）；' +
@@ -105,13 +117,29 @@ function fileTools(): Array<{ tool: any; info: ToolInfo }> {
       {
         action: {
           type: 'string',
-          enum: ['read', 'write', 'list', 'mkdir', 'move', 'delete', 'search', 'upload'],
+          enum: ['read', 'write', 'replace', 'list', 'mkdir', 'move', 'delete', 'search', 'upload'],
           description: '要做的操作'
         },
-        path: text('文件或目录路径（read / write / list / mkdir / delete / upload 需要）'),
+        path: text(
+          '文件或目录路径（read / write / replace / list / mkdir / delete / upload 需要）'
+        ),
         from: text('原路径（move 需要）'),
         to: text('新路径（move 需要）'),
         content: text('要写入的完整内容（write 需要；空串 = 清空文件）'),
+        find: text('要被替换掉的原文（replace 需要；可含换行与特殊字符，按字面量匹配）'),
+        replace: text('替换成的内容（replace 需要；可含换行，给空串就是删掉 find 那一段）'),
+        start_line: {
+          type: 'integer',
+          description: '替换范围的起始行（replace 选填，从 1 开始；省略即从文件开头）'
+        },
+        end_line: {
+          type: 'integer',
+          description: '替换范围的结束行（replace 选填，含这一行；省略即到文件末尾）'
+        },
+        all: {
+          type: 'boolean',
+          description: '替换范围内全部命中（replace 选填；默认 false = 要求范围内恰好一处命中）'
+        },
         keyword: text('检索关键词（search 需要）'),
         offset: { type: 'integer', description: 'read 的起始行号（从 1 开始，选填）' },
         limit: { type: 'integer', description: 'read 最多返回多少行（选填，默认 2000）' }
@@ -174,23 +202,44 @@ function scheduleTools(): Array<{ tool: any; info: ToolInfo }> {
 }
 
 /**
- * 记忆（action 分派：list / search / read）：列会话、检索与回看都只覆盖本机落库的历史对话。
- * list 与 search 默认收在当前对话所属的项目里（scope 给 all 才跨项目），
- * 这样模型翻旧账时不会把别的项目的对话顺手拖进来。
+ * 记忆（action 分派：list / search / read / write / replace）：
+ *
+ * list / search / read 翻的是本机落库的历史对话，`list` 与 `search` 默认收在当前对话所属的项目里
+ * （scope 给 all 才跨项目），这样模型翻旧账时不会把别的项目的对话顺手拖进来。
+ *
+ * write 与 replace 改的是当前项目的「长期记忆」（`projects.memory`，每轮随请求下发的那一格）：
+ * write 整段写（append / replace，空串配 replace 即清空），replace 只改其中一段；
+ * 与历史对话不是同一份数据，但都是「记忆」，收在同一个工具里模型更容易挑对。
+ * 编辑口径（清空、唯一性、字面量匹配）都在 utils/MemoryUtil 里算，这里只管落库与回执。
  */
 function memoryTools(): Array<{ tool: any; info: ToolInfo }> {
   return [
     row(
       'memory',
-      '本机的记忆：过去那些对话都留在本机，用这个工具翻（只读，不会写进新内容）。用 action 选操作：' +
+      '本机的记忆：过去那些对话都留在本机，用这个工具翻；长期有用的结论也可以写进当前项目的记忆。用 action 选操作：' +
         'list = 按时间倒序列出最近的会话（标题、时间与 id，用来先看看有哪些对话）；' +
-        'search = 按关键词查会话标题与消息正文，返回命中的会话与消息片段（需要 keyword；中文按字面匹配，英文不区分大小写）；' +
+        'search = 按关键词查会话标题与消息正文，返回命中的会话与消息片段（需要 keyword；中文按字面匹配，英文不区分大小写；' +
+        '整段粘多行片段也可以——整段对不上时按空白切成几段、各段按原顺序出现即算命中，换行与缩进对不上不影响）；' +
         'read = 按会话 id 读某个会话的消息正文（需要 conversation_id；按时间正序、带角色与时间，一次读一段，' +
         '返回里会说明还剩多少条；命中里给的「第 n 条」可以直接当 offset 用——offset 给 n - 1 就从那条附近读起）。' +
         'list 与 search 默认只覆盖当前对话所属的项目，跨项目找旧事把 scope 给 all；' +
-        '命中后用 read 回看上下文；当前这一轮的对话已经在上下文里，不必再检索。',
+        '命中后用 read 回看上下文；当前这一轮的对话已经在上下文里，不必再检索。' +
+        'write = 把长期有用的事写进当前项目的长期记忆（需要 content，mode 选 append（默认，追加）或 replace（整段替换）；' +
+        'content 给空串且 mode=replace 就是清空记忆，content 没给（缺参数）才会报错），' +
+        '写进去的内容从下一轮起随每轮请求下发、本项目的所有会话共用：' +
+        '只写长期成立的事实、用户偏好与已定的约定（一行一条最好），别把一次性的任务或整段对话抄进去；' +
+        '写之前先用 read / search 看看上下文里有没有旧的判断，重复或过时的条目用 replace 顺手整理掉。' +
+        'replace = 只改当前项目记忆里的一段，不动其余内容：把 find 换成 content（需要 find 与 content；' +
+        'content 给空串就是删掉那一段）——两者都可以带换行与特殊字符，按字面量匹配；' +
+        '默认要求记忆里恰好一处命中，命中多处而确实要全换才给 all。' +
+        '记忆每轮都随请求下发、占上下文，所以它要保持精简：过时或重复的条目该删就删，' +
+        '要整体重写就用 write 的 mode=replace，要连同内容一起清掉就用 content 空串。',
       {
-        action: { type: 'string', enum: ['list', 'search', 'read'], description: '要做的操作' },
+        action: {
+          type: 'string',
+          enum: ['list', 'search', 'read', 'write', 'replace'],
+          description: '要做的操作'
+        },
         keyword: text('检索关键词（search 需要）'),
         conversation_id: text('会话标识（read 需要，list / search 给出）'),
         scope: {
@@ -202,6 +251,20 @@ function memoryTools(): Array<{ tool: any; info: ToolInfo }> {
         limit: {
           type: 'integer',
           description: '条数上限（选填：list / search 默认 10、最多 30；read 默认 20、最多 100）'
+        },
+        content: text(
+          '要写进长期记忆的内容（write / replace 需要，可以是一行一条的多行文本；' +
+            '配 mode=replace 时给空串即清空记忆，replace 动作里给空串即删掉 find 那一段）'
+        ),
+        mode: {
+          type: 'string',
+          enum: ['append', 'replace'],
+          description: 'write 的写法（选填：append = 追加到已有记忆后面，默认；replace = 整段替换）'
+        },
+        find: text('记忆里要被替换掉的原文（replace 需要；按字面量匹配，可含换行与特殊字符）'),
+        all: {
+          type: 'boolean',
+          description: 'replace 选填：true = 记忆里全部命中都替换（默认 false = 要求恰好一处命中）'
         }
       },
       ['action']
@@ -234,7 +297,7 @@ function skillTools(): Array<{ tool: any; info: ToolInfo }> {
   ]
 }
 
-/** 本地工具清单：文件与命令、定时任务、历史对话（记忆）、本地技能 */
+/** 本地工具清单：文件与命令、定时任务、记忆（历史对话 + 长期记忆）、本地技能 */
 function localTools(): Array<{ tool: any; info: ToolInfo }> {
   return [...fileTools(), ...scheduleTools(), ...memoryTools(), ...skillTools()]
 }
@@ -287,15 +350,58 @@ async function invokeFile(args: any, projectId: string, conversationId: string):
   }
   if ('write' === action) {
     const target = need('path', '文件路径')
-    // content 允许空串（= 清空文件），所以只认「没给」这一种缺参数
-    if (undefined === args?.content) throw new Error('write 需要 content（要写入的完整内容）')
+    // content 允许空串（= 清空文件），所以只认「没给」（含 null）这一种缺参数
+    if (missing(args?.content)) {
+      throw new Error('write 需要 content（要写入的完整内容；要清空文件就给空串）')
+    }
     const result = await window.ipc.workspace.write(
       projectId,
       target,
-      String(args?.content ?? ''),
+      textArg(args.content),
       conversationId
     )
     return `已写入 ${result.path}（${result.size} 字节）`
+  }
+  if ('replace' === action) {
+    const target = need('path', '文件路径')
+    // find 拿原文、原样匹配：首尾空白也可能是要找的内容（例如删掉一个空行就是 find = "\n\n"），
+    // 所以只把「没给」和空串当作缺参数
+    if (missing(args?.find) || '' === textArg(args.find)) {
+      throw new Error('replace 需要 find（要被替换掉的原文）')
+    }
+    // replace 允许空串（= 删掉 find 那一段），所以只认「没给」（含 null）这一种缺参数
+    if (missing(args?.replace)) {
+      throw new Error('replace 需要 replace（替换成的内容；要删掉 find 那一段就给空串）')
+    }
+    const result = await window.ipc.workspace.replace(
+      projectId,
+      target,
+      textArg(args.find),
+      textArg(args.replace),
+      {
+        ...(undefined === args?.start_line
+          ? {}
+          : { startLine: Math.max(1, Math.floor(Number(args.start_line) || 1)) }),
+        ...(undefined === args?.end_line
+          ? {}
+          : { endLine: Math.max(1, Math.floor(Number(args.end_line) || 1)) }),
+        all: true === args?.all || 'true' === String(args?.all)
+      },
+      conversationId
+    )
+    const at =
+      result.startLine === result.endLine
+        ? `第 ${result.startLine} 行`
+        : `第 ${result.startLine}-${result.endLine} 行`
+    return [
+      `已替换 ${result.path} ${at}的 ${result.count} 处（${
+        'segments' === result.match ? '按空白分段匹配（原文的空白与 find 不同）' : '按字面量匹配'
+      }）：`,
+      `- 原文：${result.before}`,
+      `+ 新文：${result.after || '（空，这一段被删掉了）'}`,
+      `行尾 ${'crlf' === result.eol ? 'CRLF' : 'LF'}${result.bom ? '、带 BOM' : ''} 原样保留，` +
+        `现在 ${result.size} 字节`
+    ].join('\n')
   }
   if ('list' === action) {
     const target = need('path', '目录路径')
@@ -335,8 +441,13 @@ async function invokeFile(args: any, projectId: string, conversationId: string):
   if ('search' === action) {
     const keyword = need('keyword', '检索关键词')
     const rows = await window.ipc.workspace.search(projectId, keyword)
-    if (!rows.length) return `没有命中「${keyword}」`
-    return rows.map((row) => `${row.path}:${row.line}: ${row.text}`).join('\n')
+    if (!rows.length) return `没有命中「${oneLine(keyword, 80)}」`
+    return rows
+      .map((row) => {
+        const at = row.endLine > row.line ? `${row.line}-${row.endLine}` : `${row.line}`
+        return `${row.path}:${at}: ${row.text}`
+      })
+      .join('\n')
   }
   if ('upload' === action) {
     const result = await window.ipc.workspace.upload(
@@ -387,10 +498,22 @@ async function invokeCommand(
  * （file_op 与下面三组）。执行前一律先核一遍（模型偶尔会漏给或写错 action），
  * 错误信息里带上可选项便于模型自纠。
  */
-const FILE_ACTIONS = ['read', 'write', 'list', 'mkdir', 'move', 'delete', 'search', 'upload']
+const FILE_ACTIONS = [
+  'read',
+  'write',
+  'replace',
+  'list',
+  'mkdir',
+  'move',
+  'delete',
+  'search',
+  'upload'
+]
 const SCHEDULE_ACTIONS = ['list', 'create', 'update', 'delete', 'run']
-const MEMORY_ACTIONS = ['list', 'search', 'read']
+const MEMORY_ACTIONS = ['list', 'search', 'read', 'write', 'replace']
 const SKILL_ACTIONS = ['list', 'files', 'read']
+/** 长期记忆的提醒线：写到这个长度就在调用结果里提醒精简（记忆每轮都占上下文，但不硬拦） */
+const MEMORY_HINT_SIZE = 8000
 
 function actionOf(args: any, allowed: string[]): string {
   const action = String(args?.action ?? '')
@@ -541,9 +664,10 @@ async function invokeSchedule(args: any, projectId: string): Promise<string> {
 }
 
 /**
- * 历史对话（记忆，action 分派）：list / search 默认只在当前对话所属的项目里翻，
+ * 记忆（action 分派）：list / search 默认只在当前对话所属的项目里翻，
  * 跨项目找旧事时 scope 给 all。检索走本地库的关键词查询（会话标题 + 消息正文），
- * 回看走会话的消息记录。
+ * 回看走会话的消息记录；write 写的是当前项目的长期记忆（`projects.memory`，走项目 store，
+ * 与项目编辑器是同一份数据——编辑器打开就是最新内容，本项目的会话从下一轮起随请求下发）。
  */
 async function invokeMemory(args: any, projectId: string, conversationId: string): Promise<string> {
   const action = actionOf(args, MEMORY_ACTIONS)
@@ -582,16 +706,18 @@ async function invokeMemory(args: any, projectId: string, conversationId: string
   if ('search' === action) {
     const keyword = String(args?.keyword ?? '').trim()
     if (!keyword) throw new Error('search 需要 keyword（检索关键词）')
+    // 关键词可能是整段粘来的多行文本：提示文案里折成一行，别把结果撑成好几行
+    const shown = oneLine(keyword, 80)
     const count = size(10, 30)
     const result: any = await ConversationDb.search(keyword, all ? '' : projectId, count)
     const hits = ApiUtil.succeed(result) ? (ApiUtil.data(result) as HistoryHit[]) : []
     if (!hits.length) {
       const where = all ? '本机' : '当前项目'
       const hint = all ? '' : '（要跨项目找可以再把 scope 设为 all）'
-      return `${where}的历史对话里没有命中「${keyword}」${hint}。`
+      return `${where}的历史对话里没有命中「${shown}」${hint}。`
     }
     const projects = useProjectStore()
-    const lines = [`命中 ${hits.length} 条（关键词「${keyword}」，范围：${scopeText}）：`]
+    const lines = [`命中 ${hits.length} 条（关键词「${shown}」，范围：${scopeText}）：`]
     hits.forEach((hit, index) => {
       const project = projects.find(hit.projectId)?.name ?? hit.projectId
       const at = hit.messageIndex ? ` · 第 ${hit.messageIndex}/${hit.messageTotal} 条` : ''
@@ -647,7 +773,67 @@ async function invokeMemory(args: any, projectId: string, conversationId: string
     }
     return lines.join('\n')
   }
-  throw new Error(`历史对话不支持的操作：${action}`)
+  if ('write' === action || 'replace' === action) {
+    // 记忆跟着项目走：没有所属项目的对话（项目已删除等）没有可写的地方
+    if (!projectId) {
+      throw new Error('当前对话没有所属项目，长期记忆没有可写的地方（记忆按项目存）')
+    }
+    const projects = useProjectStore()
+    const project = projects.find(projectId)
+    if (!project) throw new Error(`找不到当前对话所属的项目：${projectId}`)
+    const edit: MemoryEdit =
+      'write' === action ? applyWrite(project.memory, args) : applyReplace(project.memory, args)
+    // 内容没变就不写库：白改一次「最后更新」没有意义
+    if (edit.changed) await projects.update(project.id, { memory: edit.memory })
+    const state = edit.cleared
+      ? `记忆已清空（原来 ${edit.before} 行）`
+      : `现在共 ${edit.after} 行、${edit.memory.length} 字`
+    const tail = [
+      edit.cleared
+        ? '（从下一轮起不再下发任何记忆内容）'
+        : '（从下一轮起随每轮请求下发，本项目的所有会话共用）',
+      '要接着改：局部改就用 replace（find / content），整体重写用 write 的 mode=replace，' +
+        '清空用 write 的 mode=replace + content 空串，也可以在项目编辑器的「记忆」里手工改。'
+    ]
+    const lines: string[] = []
+    if ('write' === action) {
+      if (!edit.changed) return `项目「${project.name}」的长期记忆与要写入的内容一致，没有改动。`
+      lines.push(
+        edit.cleared
+          ? `已清空项目「${project.name}」的长期记忆（原来 ${edit.before} 行）`
+          : `已写入项目「${project.name}」的长期记忆` +
+              `（${'append' === edit.mode ? '追加' : '整段替换'}，${state}）：`
+      )
+      if (!edit.cleared) lines.push(oneLine(edit.content, 200))
+    } else {
+      if (!edit.changed) return `项目「${project.name}」的长期记忆没有需要改动的地方。`
+      const at =
+        edit.line === edit.endLine ? `第 ${edit.line} 行` : `第 ${edit.line}-${edit.endLine} 行`
+      const newText = edit.content
+        ? oneLine(edit.content, 200) || '（只有空白）'
+        : '（空，这一段被删掉了）'
+      lines.push(
+        `已替换项目「${project.name}」的长期记忆里${at}的 ${edit.count} 处（${state}）：`,
+        `- 原文：${oneLine(edit.find, 200)}`,
+        `+ 新文：${newText}`
+      )
+      if (edit.adjusted) {
+        lines.push(
+          '（find 末尾的换行在记忆里不存在——记忆首尾不留空白，这次按去掉结尾换行后的原文替换）'
+        )
+      }
+    }
+    lines.push(...tail)
+    // 记忆每轮都占上下文：写得太长时点一句，让模型自己精简（不硬拦，重写本来就由模型发起）
+    if (edit.memory.length > MEMORY_HINT_SIZE) {
+      lines.push(
+        `（提醒：记忆已到 ${edit.memory.length} 字，它每轮都占上下文——把过时或重复的条目合并掉，` +
+          '用 write 的 mode=replace 整段重写一遍会更省。）'
+      )
+    }
+    return lines.join('\n')
+  }
+  throw new Error(`记忆不支持的操作：${action}`)
 }
 
 /**
@@ -710,25 +896,44 @@ function momentText(value: string | number | Date): string {
   return date.toLocaleString('zh-CN', { hour12: false })
 }
 
-/** 单行摘要：折叠换行与连续空白，超长截断——工具返回的文本要经得起一行行读 */
-function oneLine(value: unknown, limit: number): string {
-  const body = String(value ?? '')
+/**
+ * 折叠空白：换行与连续空白折成一个空格并去首尾。
+ * 命中的片段、关键词与摘要都可能跨行（模型整段粘过来的多行文本），
+ * 先折成单行再处理，工具返回的文本才经得起一行行读。
+ */
+function collapse(value: unknown): string {
+  return String(value ?? '')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+/** 单行摘要：折叠空白后按长度截断 */
+function oneLine(value: unknown, limit: number): string {
+  const body = collapse(value)
   return body.length > limit ? `${body.slice(0, limit)}…` : body
 }
 
-/** 命中片段：以关键词为中心取一小段上下文（找不到关键词就给开头一段） */
+/**
+ * 命中片段：以关键词为中心取一小段上下文（找不到关键词就给开头一段）。
+ * 关键词与正文都按折叠空白后的形态找位置——关键词是整段粘来的多行文本时，
+ * 整段对不上（库里的换行与缩进未必一样）就退到它的第一段，片段仍能围着命中处取。
+ */
 function snippet(content: unknown, keyword: string, span = 80): string {
-  const body = String(content ?? '')
-    .replace(/\s+/g, ' ')
-    .trim()
+  const body = collapse(content)
   if (!body) return '（空）'
-  const word = String(keyword ?? '')
-  const index = body.toLowerCase().indexOf(word.toLowerCase())
+  const word = collapse(keyword)
+  let index = -1
+  let length = word.length
+  for (const head of word ? [word, ...word.split(' ')] : []) {
+    const at = body.toLowerCase().indexOf(head.toLowerCase())
+    if (at >= 0 && (index < 0 || at < index)) {
+      index = at
+      length = head.length
+    }
+  }
   if (index < 0) return oneLine(body, span * 2)
   const start = Math.max(0, index - span)
-  const end = Math.min(body.length, index + word.length + span)
+  const end = Math.min(body.length, index + length + span)
   return `${start > 0 ? '…' : ''}${body.slice(start, end)}${end < body.length ? '…' : ''}`
 }
 

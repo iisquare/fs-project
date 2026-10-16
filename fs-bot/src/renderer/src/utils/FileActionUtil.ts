@@ -42,6 +42,23 @@ const FileActionUtil = {
   },
 
   /**
+   * 把本机文件 / 文件夹拖出窗口（拖到资源管理器、聊天窗口、编辑器……）。
+   *
+   * 必须在 `dragstart` 里调：渲染进程自己发起不了原生拖放（浏览器那套给不出本机路径），
+   * 这里先拦掉浏览器的默认行为，再把路径交给主进程用 `webContents.startDrag` 发起
+   * （见 preload 的 startDrag）。与打开 / 定位同一套口径：用户自己拖出来的动作，不做权限判定，
+   * 也不必为可执行文件加确认——复制出去不等于运行。
+   *
+   * 拖的也是同一批路径：拖回本应用（输入框）就是一条 @ 引用，落到别的应用就是交给它处理。
+   */
+  dragOut(event: DragEvent, projectId: string, path: string): void {
+    const target = String(path ?? '').trim()
+    if (!target) return
+    event.preventDefault()
+    window.ipc.workspace.startDrag(String(projectId ?? ''), target)
+  },
+
+  /**
    * 链接地址 → 本机路径：本机路径返回原样的路径，外部地址返回空串（调用方按原来的口径处理）。
    *
    * 认三种写法：`file:///D:/a/b.md`、Windows 盘符与 UNC 共享（`D:\a\b.md`、`\\server\share\a.md`）、

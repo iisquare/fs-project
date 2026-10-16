@@ -25,7 +25,11 @@ export interface DbDeleteRequest {
   where: Record<string, unknown>
 }
 
-/** 关键词检索：columns 里的每一列按 LIKE 匹配，where 为等值条件，in 为集合条件 */
+/**
+ * 关键词检索：columns 里的每一列按 LIKE 匹配，where 为等值条件，in 为集合条件。
+ * mode 是关键词的匹配口径：`literal`（默认）整段按字面量匹配；`segments` 按空白切成多段、
+ * 各段按原顺序出现即算命中（换行 / 缩进对不上的多行片段靠它兜住）。
+ */
 export interface DbSearchRequest {
   table: string
   columns: string[]
@@ -34,6 +38,7 @@ export interface DbSearchRequest {
   in?: Record<string, unknown[]>
   orderBy?: string
   limit?: number
+  mode?: 'literal' | 'segments'
 }
 
 export interface DbInitUserRequest {
@@ -70,6 +75,12 @@ export interface WorkspaceOpenRequest {
   force?: boolean
 }
 
+/** 拖出窗口：把某个本机路径交给系统，做成一次原生拖放（拖到资源管理器、聊天窗口、编辑器……） */
+export interface WorkspaceDragRequest {
+  projectId: string
+  path: string
+}
+
 export interface WorkspaceWriteRequest {
   projectId: string
   path: string
@@ -86,6 +97,21 @@ export interface WorkspaceProjectRequest {
 export interface WorkspaceSearchRequest {
   projectId: string
   keyword: string
+}
+
+/**
+ * 工作区文本替换：find 换成 replace，范围由 startLine / endLine 给（1 起、闭区间，省略即整个文件），
+ * all 为 true 时替换范围内的全部命中；范围内默认要求恰好一处命中。
+ */
+export interface WorkspaceReplaceRequest {
+  projectId: string
+  path: string
+  find: string
+  replace: string
+  startLine?: number
+  endLine?: number
+  all?: boolean
+  conversationId?: string
 }
 
 /** 本机命令执行：command 必填，cwd 省略时用项目的主目录（没标主目录就是第一个目录），timeout 为秒（省略取默认值） */

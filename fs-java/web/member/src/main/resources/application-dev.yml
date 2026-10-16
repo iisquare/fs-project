@@ -4,5 +4,9 @@ server:
 fs:
   member:
     email:
+      # 邮件服务相关参数可留空或不配置，不影响项目启动；
+      # host、username、password 任一为空即视为未启用邮件服务，发送时仅记录日志并将消息状态标记为 skipped
       host: smtp.qq.com
       port: 587
+      # username: 邮箱账号，例如 xxx@qq.com
+      # password: 邮箱授权码

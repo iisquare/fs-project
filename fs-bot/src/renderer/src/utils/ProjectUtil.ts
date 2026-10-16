@@ -103,6 +103,17 @@ export function projectFile(config: ProjectConfig, share: ProjectFileShare | nul
   }
 }
 
+/**
+ * 发布到服务端的配置：环境变量里**标了「密钥」的行整行留下本机**。
+ *
+ * 分享内容在服务端是明文存储的（凡拿到这份分享的人都能读到），而环境变量正是放 token、
+ * 密码这类东西的地方——勾了「密钥」就是把「这个值只留本机」说清楚了，发布时照它办。
+ * 其余环境变量（JDK 路径、工具链目录这类）随配置一起走，取用的人按自己的机器改。
+ */
+export function publishConfig(config: ProjectConfig): ProjectConfig {
+  return { ...config, envVars: list(config.envVars).filter((item) => true !== item?.secret) }
+}
+
 /** 默认文件名：`<项目名>-v<版本>.json`，去掉文件系统不允许的字符 */
 export function filenameOf(name: string, version = ''): string {
   const base = text(name)

@@ -15,6 +15,20 @@ const pinia = createPinia()
 
 app.use(pinia)
 
+/**
+ * 把文件拖进窗口时，浏览器默认会让窗口直接跳到那个文件（file://），整个界面就此丢掉。
+ * 这里全窗口拦一道：输入框自己处理拖入（见 components/Chat/ChatComposer.vue），
+ * 别处拖进来的文件不响应也不跳转。只拦「带文件」的那种拖动——文字与链接的拖动照旧，
+ * 往文本区里拖一段文字仍然能落进去。
+ */
+function blockFileDrop(event: DragEvent): void {
+  const types = event.dataTransfer?.types
+  if (types && Array.from(types).includes('Files')) event.preventDefault()
+}
+
+window.addEventListener('dragover', blockFileDrop)
+window.addEventListener('drop', blockFileDrop)
+
 /** 还原登录态的等待上限：服务端不可达时也把界面放出来，别一直挡在门外 */
 const RESTORE_TIMEOUT = 10 * 1000
 

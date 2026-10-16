@@ -2,10 +2,13 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 /**
- * 右侧文件区：展开状态、宽度与当前页签都记在本机，下次打开保持一致。
+ * 右侧文件区：展开 / 收起是本次运行内的选择，宽度与当前页签记在本机。
+ *
+ * 展开状态**不落库**：进对话（包括从历史里直接打开某一段）时不替用户做主，默认收起，
+ * 点了右上角按钮才出现——与左侧会话栏同一口径（它的显隐也只在本次运行内有效）。
+ * 宽度与页签属于「用户调过一次就不用再调」的设置，记下来下次照旧。
  * 与左侧会话栏（stores/sidebar）分开两份：两者各自拖各自的宽度，互不影响。
  */
-const OPEN_STORAGE_KEY = 'fs_files_open'
 const WIDTH_STORAGE_KEY = 'fs_files_width'
 const TAB_STORAGE_KEY = 'fs_files_tab'
 
@@ -31,16 +34,16 @@ function restoreWidth(): number {
 }
 
 export const useFilesStore = defineStore('files', () => {
-  /** 展开状态：没存过时默认展开（第一次进对话就能看见工作区里有什么） */
-  const visible = ref(localStorage.getItem(OPEN_STORAGE_KEY) !== '0')
+  /** 展开状态：默认收起，只有用户点了按钮才展开 */
+  const visible = ref(false)
   const width = ref(restoreWidth())
   const tab = ref<FilesTab>(
     'delivered' === localStorage.getItem(TAB_STORAGE_KEY) ? 'delivered' : 'workspace'
   )
 
+  /** 设定展开状态（钉住窗口时的临时收起也走这里，取消钉住由调用方还原原状态） */
   function setVisible(value: boolean): void {
     visible.value = value
-    localStorage.setItem(OPEN_STORAGE_KEY, value ? '1' : '0')
   }
 
   function toggle(): void {

@@ -146,7 +146,7 @@ async function submit(): Promise<void> {
         />
       </el-select>
       <div class="field-tip">
-        分享的是这个项目的当前配置：模型、上下文大小、系统提示词、记忆、思考强度、工具、环境变量与工作区目录。
+        分享的是这个项目的当前配置：模型、上下文大小、系统提示词、记忆、思考强度、工具、环境变量（标了「密钥」的除外）与工作区目录。
       </div>
       <div class="field-tip" v-if="sharingProject && !sharingProject.model">
         这个项目还没配置模型：别人取用这份配置后要自己补一个模型才能跑起来。
@@ -196,7 +196,7 @@ async function submit(): Promise<void> {
       type="warning"
       :closable="false"
       show-icon
-      title="分享内容会包含环境变量（含密钥）、记忆与工作区目录路径，请确认后再发布"
+      title="分享内容会包含非密钥的环境变量、记忆与工作区目录路径，请确认后再发布；标了「密钥」的环境变量只留在本机"
     />
     <div class="editor-footer">
       <el-button @click="emit('cancel')">取消</el-button>

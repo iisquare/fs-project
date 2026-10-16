@@ -1,4 +1,4 @@
-import type { ChatToolCall } from '@renderer/stores/chat'
+import type { ChatMessage, ChatToolCall } from '@renderer/stores/chat'
 
 /**
  * 工具调用里「涉及的文件」：参数与返回中凡是能认出是本机路径（或服务端给出的下载地址）的都挑出来，
@@ -9,6 +9,9 @@ import type { ChatToolCall } from '@renderer/stores/chat'
  * 参数与返回在流式期间是没写完的 JSON，解析不出来就不给卡片，调用跑完自然会出现。
  */
 
+/** 产出方式：写入 / 移动到位 / 上传 / 服务端给出的下载地址 */
+export type FileSource = 'write' | 'move' | 'upload' | 'remote'
+
 /** 能点开的一项：本机文件 / 目录，或服务端给出的下载地址 */
 export interface ChatFileRef {
   /** 展示名：路径末段 */
@@ -18,6 +21,10 @@ export interface ChatFileRef {
   /** 服务端交付文件的下载地址，本机文件为空 */
   url: string
   dir: boolean
+  /** 产出方式：工具卡片与交付清单共用 */
+  source?: FileSource
+  /** 移动的来源路径：交付清单据此把「移动前的旧路径」摘掉，不让同一个文件出现两次 */
+  from?: string
 }
 
 /** 一次调用最多给几张卡片：命令输出里可能满屏路径，够用就行 */
@@ -42,17 +49,22 @@ const URL_KEYS = /^(download|downloadurl|download_url|downloadlink|fileurl|file_
 
 /**
  * 文件工具按 action 取这次真正动过的那一个路径：
- * 读 / 写 / 上传是 path，移动取目的地（原路径已经不在），建目录与列目录给目录卡片；
+ * 读 / 写 / 替换 / 上传是 path，移动取目的地（原路径已经不在），建目录与列目录给目录卡片；
  * 删除过的、只是检索命中的都不给——点开一个已经不在或没动过的文件只会添乱。
  *
- * `delivered` 标记这一项算不算「交付物」：写入的文件与移动到的位置算，读取 / 列目录 / 上传 / 删除
+ * `delivered` 标记这一项算不算「交付物」：写入的文件（含被替换过的）与移动到的位置算，
+ * 读取 / 列目录 / 上传 / 删除
  * 都只是过程（右侧的「交付的文件」按这个口径列，见 deliveredRefsOf）。
  */
-const FILE_OP_PATHS: Record<string, { keys: string[]; dir: boolean; delivered: boolean }> = {
+const FILE_OP_PATHS: Record<
+  string,
+  { keys: string[]; dir: boolean; delivered: boolean; source?: FileSource }
+> = {
   read: { keys: ['path'], dir: false, delivered: false },
-  write: { keys: ['path'], dir: false, delivered: true },
-  upload: { keys: ['path'], dir: false, delivered: false },
-  move: { keys: ['to'], dir: false, delivered: true },
+  write: { keys: ['path'], dir: false, delivered: true, source: 'write' },
+  replace: { keys: ['path'], dir: false, delivered: true, source: 'write' },
+  upload: { keys: ['path'], dir: false, delivered: false, source: 'upload' },
+  move: { keys: ['to'], dir: false, delivered: true, source: 'move' },
   mkdir: { keys: ['path'], dir: true, delivered: false },
   list: { keys: ['path'], dir: true, delivered: false }
 }
@@ -128,11 +140,19 @@ function collect(value: unknown, keys: RegExp, hit: (text: string) => void, dept
 function collectRefs(call: ChatToolCall, deliveredOnly: boolean): ChatFileRef[] {
   const refs: ChatFileRef[] = []
   const seen = new Set<string>()
-  const push = (path: unknown, dir = false): void => {
+  const push = (
+    path: unknown,
+    dir = false,
+    source?: ChatFileRef['source'],
+    from?: string
+  ): void => {
     const value = String(path ?? '').trim()
     if (!value || seen.has(value) || refs.length >= MAX_REFS) return
     seen.add(value)
-    refs.push({ name: nameOf(value), path: value, url: '', dir })
+    const ref: ChatFileRef = { name: nameOf(value), path: value, url: '', dir }
+    if (source) ref.source = source
+    if (from) ref.from = from
+    refs.push(ref)
   }
   const pushUrl = (url: unknown): void => {
     const value = String(url ?? '').trim()
@@ -149,7 +169,7 @@ function collectRefs(call: ChatToolCall, deliveredOnly: boolean): ChatFileRef[] 
         name = '交付文件'
       }
     }
-    refs.push({ name, path: '', url: value, dir: false })
+    refs.push({ name, path: '', url: value, dir: false, source: 'remote' })
   }
 
   const name = String(call?.name ?? '')
@@ -160,7 +180,14 @@ function collectRefs(call: ChatToolCall, deliveredOnly: boolean): ChatFileRef[] 
     const source: Record<string, unknown> = 'object' === typeof args && args ? { ...args } : {}
     const rule = FILE_OP_PATHS[String(source.action ?? '')]
     if (rule && (!deliveredOnly || rule.delivered)) {
-      rule.keys.forEach((key) => push(pathLike(source[key]), rule.dir))
+      rule.keys.forEach((key) =>
+        push(
+          pathLike(source[key]),
+          rule.dir,
+          rule.source,
+          'move' === rule.source ? pathLike(source.from) : undefined
+        )
+      )
     }
   } else if (!deliveredOnly) {
     collect(args, PATH_ARG_KEYS, (text) => push(pathLike(text)))
@@ -191,4 +218,65 @@ export function fileRefsOf(call: ChatToolCall): ChatFileRef[] {
  */
 export function deliveredRefsOf(call: ChatToolCall): ChatFileRef[] {
   return collectRefs(call, true)
+}
+
+/** 交付清单里的一项：在 ChatFileRef 之上补上来源与「最终交付」的判定 */
+export interface DeliveredEntry extends ChatFileRef {
+  /** 产出方式（其它工具在返回里给出的文件按写入算） */
+  source: FileSource
+  /** 被最后一条有正文的助手回复提到过：多半就是这一轮要交给用户的东西 */
+  final: boolean
+}
+
+/**
+ * 交付清单：把整段会话里交付出来的东西按**发生先后**汇总，最近碰过的排在最前。
+ *
+ * 三条规则，都是为了让「最终交付物」浮到上面：
+ * 1. 同一个路径 / 地址只留最近那一次（重写过的文件按最后一次算，位置也跟着挪到最新）；
+ * 2. 移动过的旧路径从清单里摘掉（同一个文件换了个位置，不该出现两次）；
+ * 3. 最后一条有正文的助手回复里提到过的（整条路径或文件名出现在正文里）标成最终交付。
+ */
+export function deliveredTimeline(messages: ChatMessage[]): DeliveredEntry[] {
+  const seen = new Map<string, DeliveredEntry>()
+  const keyOf = (ref: ChatFileRef): string =>
+    String((ref.url || ref.path) ?? '')
+      .trim()
+      .toLowerCase()
+
+  for (const message of messages ?? []) {
+    for (const round of message?.rounds ?? []) {
+      for (const call of round?.calls ?? []) {
+        for (const ref of deliveredRefsOf(call)) {
+          const key = keyOf(ref)
+          if (!key) continue
+          // 移动：旧路径不再是交付物（同一个文件已经在新的位置上了）
+          if ('move' === ref.source && ref.from) {
+            seen.delete(String(ref.from).trim().toLowerCase())
+          }
+          // 先删后写：Map 的保序特性让「重新碰过的文件」挪到最新位置
+          seen.delete(key)
+          seen.set(key, { ...ref, source: ref.source ?? 'write', final: false })
+        }
+      }
+    }
+  }
+
+  const entries = [...seen.values()]
+  // 最终交付的判据：最后一条有正文的助手回复里点到了它（整条路径优先，退而比文件名）
+  const reply = [...messages]
+    .reverse()
+    .find(
+      (message) =>
+        'assistant' === String(message?.role ?? '') && !!String(message?.content ?? '').trim()
+    )
+  const text = String(reply?.content ?? '').toLowerCase()
+  if (text) {
+    for (const entry of entries) {
+      const path = String(entry.path ?? '').toLowerCase()
+      const name = String(entry.name ?? '').toLowerCase()
+      entry.final = (!!path && text.includes(path)) || (2 < name.length && text.includes(name))
+    }
+  }
+  // 最近发生的排在最前：清单顺序 = 交付顺序倒过来
+  return entries.reverse()
 }

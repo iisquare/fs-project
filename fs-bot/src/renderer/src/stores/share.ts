@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import ApiUtil from '@renderer/utils/ApiUtil'
 import ProjectApi from '@renderer/api/agent/ProjectApi'
 import ProjectDb from '@renderer/db/ProjectDb'
-import { configOf } from '@renderer/utils/ProjectUtil'
+import { configOf, publishConfig } from '@renderer/utils/ProjectUtil'
 import type { Project } from '@renderer/db/ProjectDb'
 
 /**
@@ -158,8 +158,11 @@ export const useShareStore = defineStore('share', () => {
   }
 
   /**
-   * 发布一个版本：把项目配置（模型、提示词、工具、环境变量、工作区等）原样提交，
+   * 发布一个版本：把项目配置（模型、提示词、工具、工作区等）提交到服务端，
    * 成功后把分享去向记回本地项目（卡片回显 + 下次分享默认选中同一个分享项目）。
+   *
+   * 环境变量按 `publishConfig` 过一遍再发：标了「密钥」的行整行留在本机——
+   * 那些值是用来在本机跑命令的凭据（见 `main/project-env.ts`），不进服务端。
    */
   async function publish(payload: PublishPayload): Promise<any> {
     const project = payload.project
@@ -170,7 +173,7 @@ export const useShareStore = defineStore('share', () => {
       description: project.description,
       version: payload.version,
       versionDescription: payload.versionDescription,
-      content: configOf(project)
+      content: publishConfig(configOf(project))
     })
     const data = ApiUtil.data(result) ?? {}
     await ProjectDb.update(project.id, {

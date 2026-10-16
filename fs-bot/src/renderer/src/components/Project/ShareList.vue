@@ -128,7 +128,7 @@ async function createLocal(project: ShareProject, version: VersionOption | null)
   if (!version) return
   try {
     await ElMessageBox.confirm(
-      `把「${project.name}」的 v${version.name} 创建成本地项目？模型、工具、环境变量与工作区目录会一并带过来。`,
+      `把「${project.name}」的 v${version.name} 创建成本地项目？模型、工具、环境变量与工作区目录会一并带过来（标了「密钥」的环境变量不在分享里）。`,
       '创建本地项目',
       { type: 'info' }
     )

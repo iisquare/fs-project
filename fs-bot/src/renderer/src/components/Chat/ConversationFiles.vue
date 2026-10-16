@@ -7,14 +7,18 @@
  *
  * 工作区树按项目声明的目录取（workspace:files 一次给全量条目，这里按路径拼成树），
  * 目录点一下展开收起、文件点一下用默认程序打开，右侧按钮在文件夹中定位（同一条交互见 FileActionUtil）；
- * 交付清单从消息的工具调用里抽（core/FileRefs 的 deliveredRefsOf），最近交付的排在最前。
+ * 整行还能往外拖：拖到资源管理器 / 别的应用就是把这个文件交给它（原生拖放由主进程发起），
+ * 拖回本应用的输入框就是一条 @ 引用；
+ * 交付清单从消息的工具调用里抽（core/FileRefs 的 deliveredTimeline）：最近交付的排在最前，
+ * 最后一条回复里点到过的算「最终交付」单列一组，其余收进「过程文件」并按需折叠——
+ * 一次任务写过十几个脚本时，这样才找得到真正要交的东西。
  *
  * 一轮回复跑完（running 由真转假）自动重取一次工作区——这期间模型很可能写了新文件；
  * 也可以点页签条右上角的刷新按钮手动重取。
  */
 import { computed, ref, watch } from 'vue'
 import type { ChatMessage } from '@renderer/stores/chat'
-import { deliveredRefsOf, type ChatFileRef } from '@renderer/core/FileRefs'
+import { deliveredTimeline, type DeliveredEntry } from '@renderer/core/FileRefs'
 import { useFilesStore } from '@renderer/stores/files'
 import FileActionUtil from '@renderer/utils/FileActionUtil'
 
@@ -141,26 +145,29 @@ const flattened = computed<{ rows: FileRow[]; total: number }>(() => {
 const visibleRows = computed<FileRow[]>(() => flattened.value.rows)
 const truncated = computed(() => Math.max(0, flattened.value.total - flattened.value.rows.length))
 
-/** 交付的文件：从最后一条消息往回走，最近的排在最前（同一条路径只留最近那次） */
-const delivered = computed<ChatFileRef[]>(() => {
-  const seen = new Set<string>()
-  const list: ChatFileRef[] = []
-  for (let index = props.messages.length - 1; index >= 0; index -= 1) {
-    const rounds = props.messages[index]?.rounds ?? []
-    for (let round = rounds.length - 1; round >= 0; round -= 1) {
-      const calls = rounds[round]?.calls ?? []
-      for (let call = calls.length - 1; call >= 0; call -= 1) {
-        for (const ref of deliveredRefsOf(calls[call])) {
-          const key = ref.url || ref.path
-          if (!key || seen.has(key)) continue
-          seen.add(key)
-          list.push(ref)
-        }
-      }
-    }
-  }
-  return list
-})
+/** 过程文件默认只露前几项：一次任务写过十几个脚本时，列表铺太长反而找不到东西 */
+const PROCESS_PREVIEW = 6
+/** 过程文件是否展开全部（只在本次运行内记，不落库） */
+const processExpanded = ref(false)
+
+/** 交付清单：整段会话汇总，最近碰过的排在最前（见 core/FileRefs 的 deliveredTimeline） */
+const delivered = computed<DeliveredEntry[]>(() => deliveredTimeline(props.messages))
+const finalFiles = computed(() => delivered.value.filter((item) => item.final))
+const processFiles = computed(() => delivered.value.filter((item) => !item.final))
+
+/** 两组：最终交付在上（没有就不出现），过程文件在下 */
+const groups = computed(() =>
+  [
+    { key: 'final', title: '最终交付', files: finalFiles.value },
+    { key: 'process', title: '过程文件', files: processFiles.value }
+  ].filter((group) => group.files.length > 0)
+)
+
+/** 一组里实际铺出来的行：过程文件按折叠状态截断 */
+function rowsOf(group: { key: string; files: DeliveredEntry[] }): DeliveredEntry[] {
+  if ('process' !== group.key || processExpanded.value) return group.files
+  return group.files.slice(0, PROCESS_PREVIEW)
+}
 
 /** 取工作区的文件清单：一次给全量条目，树的拼装与排序都在 tree 里做 */
 async function load(): Promise<void> {
@@ -236,6 +243,11 @@ function openPath(path: string): void {
 function revealPath(path: string): void {
   FileActionUtil.reveal(String(props.projectId ?? ''), path)
 }
+
+/** 拖出窗口：整行可拖（目录也行，拖到资源管理器就是复制这个文件夹） */
+function dragPath(path: string, event: DragEvent): void {
+  FileActionUtil.dragOut(event, String(props.projectId ?? ''), path)
+}
 </script>
 
 <template>
@@ -252,7 +264,13 @@ function revealPath(path: string): void {
           <p v-else-if="error" class="files-hint">{{ error }}</p>
           <p v-else-if="loading && !visibleRows.length" class="files-hint">正在读取目录…</p>
           <ul v-else class="file-tree">
-            <li v-for="row in visibleRows" :key="row.path" class="file-row">
+            <li
+              v-for="row in visibleRows"
+              :key="row.path"
+              class="file-row"
+              draggable="true"
+              @dragstart="dragPath(row.path, $event)"
+            >
               <span class="row-indent" :style="{ width: `${row.depth * 12}px` }" />
               <!-- 目录：点一下展开收起 -->
               <button
@@ -332,70 +350,105 @@ function revealPath(path: string): void {
         </template>
         <el-scrollbar class="files-body">
           <p v-if="!delivered.length" class="files-hint">这段对话还没有产出文件</p>
-          <ul v-else class="file-list">
-            <li v-for="file in delivered" :key="file.url || file.path" class="file-row">
-              <a
-                v-if="file.url"
-                class="row-main"
-                :href="file.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                :title="file.url"
-              >
-                <svg class="row-icon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
-                  <path
-                    d="M6.4 1.8h3.2l2.6 2.6v7.8a1 1 0 0 1-1 1H4.8a1 1 0 0 1-1-1V2.8a1 1 0 0 1 1-1z"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.1"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-                <span class="row-name">{{ file.name }}</span>
-                <span class="row-tag">外部地址</span>
-              </a>
-              <button
-                v-else
-                type="button"
-                class="row-main"
-                :title="file.path"
-                @click="openPath(file.path)"
-              >
-                <svg class="row-icon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
-                  <path
-                    v-if="file.dir"
-                    d="M1.9 3.5h3.9l1.2 1.6h7.1v7.2a.8.8 0 0 1-.8.8H2.7a.8.8 0 0 1-.8-.8z"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.1"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    v-else
-                    d="M6.4 1.8h3.2l2.6 2.6v7.8a1 1 0 0 1-1 1H4.8a1 1 0 0 1-1-1V2.8a1 1 0 0 1 1-1z"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.1"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-                <span class="row-name">{{ file.name }}</span>
-              </button>
-              <el-tooltip v-if="!file.url" content="在文件夹中显示" placement="top">
-                <button type="button" class="row-action" @click="revealPath(file.path)">
-                  <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true">
-                    <path
-                      d="M1.9 3.5h3.9l1.2 1.6h7.1v7.2a.8.8 0 0 1-.8.8H2.7a.8.8 0 0 1-.8-.8z"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.1"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
+          <!-- 两组：最终交付在上，过程文件在下（长了先折叠，别把要交的东西挤到看不见） -->
+          <template v-else>
+            <section v-for="group in groups" :key="group.key" class="files-group">
+              <div class="group-head">
+                <span class="group-title">{{ group.title }}</span>
+                <span class="group-meta">{{ group.files.length }} 个</span>
+                <button
+                  v-if="'process' === group.key && group.files.length > PROCESS_PREVIEW"
+                  type="button"
+                  class="group-toggle"
+                  @click="processExpanded = !processExpanded"
+                >
+                  {{ processExpanded ? '收起' : `展开全部 ${group.files.length} 个` }}
                 </button>
-              </el-tooltip>
-            </li>
-          </ul>
+              </div>
+              <ul class="file-list">
+                <li
+                  v-for="file in rowsOf(group)"
+                  :key="file.url || file.path"
+                  class="file-row"
+                  :draggable="!file.url"
+                  @dragstart="dragPath(file.path, $event)"
+                >
+                  <a
+                    v-if="file.url"
+                    class="row-main"
+                    :href="file.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    :title="file.url"
+                  >
+                    <svg
+                      class="row-icon"
+                      viewBox="0 0 16 16"
+                      width="12"
+                      height="12"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M6.4 1.8h3.2l2.6 2.6v7.8a1 1 0 0 1-1 1H4.8a1 1 0 0 1-1-1V2.8a1 1 0 0 1 1-1z"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.1"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                    <span class="row-name">{{ file.name }}</span>
+                    <span class="row-tag">外部地址</span>
+                  </a>
+                  <button
+                    v-else
+                    type="button"
+                    class="row-main"
+                    :title="file.path"
+                    @click="openPath(file.path)"
+                  >
+                    <svg
+                      class="row-icon"
+                      viewBox="0 0 16 16"
+                      width="12"
+                      height="12"
+                      aria-hidden="true"
+                    >
+                      <path
+                        v-if="file.dir"
+                        d="M1.9 3.5h3.9l1.2 1.6h7.1v7.2a.8.8 0 0 1-.8.8H2.7a.8.8 0 0 1-.8-.8z"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.1"
+                        stroke-linejoin="round"
+                      />
+                      <path
+                        v-else
+                        d="M6.4 1.8h3.2l2.6 2.6v7.8a1 1 0 0 1-1 1H4.8a1 1 0 0 1-1-1V2.8a1 1 0 0 1 1-1z"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.1"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                    <span class="row-name">{{ file.name }}</span>
+                  </button>
+                  <el-tooltip v-if="!file.url" content="在文件夹中显示" placement="top">
+                    <button type="button" class="row-action" @click="revealPath(file.path)">
+                      <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true">
+                        <path
+                          d="M1.9 3.5h3.9l1.2 1.6h7.1v7.2a.8.8 0 0 1-.8.8H2.7a.8.8 0 0 1-.8-.8z"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.1"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  </el-tooltip>
+                </li>
+              </ul>
+            </section>
+          </template>
         </el-scrollbar>
       </el-tab-pane>
     </el-tabs>
@@ -451,7 +504,17 @@ function revealPath(path: string): void {
     /* 右侧留出刷新按钮的位置，页签与它不重叠 */
     padding: 0 36px 0 8px;
     margin: 0;
-    border-bottom: solid 1px var(--el-border-color-lighter);
+    border-bottom: none;
+  }
+
+  /**
+   * 页签条的下边线是 Element 画的（nav-wrap 的 ::after，默认 2px）：
+   * 这一栏窄，2px 压得住视线，收成 1px 并换成更浅的一档。
+   * 别在 header 上再加 border-bottom——那是第二条线，看着会重一倍。
+   */
+  :deep(> .el-tabs__header > .el-tabs__nav-wrap::after) {
+    height: 1px;
+    background-color: var(--el-border-color-lighter);
   }
 
   :deep(> .el-tabs__content) {
@@ -515,6 +578,47 @@ function revealPath(path: string): void {
   line-height: 1.7;
   color: var(--el-text-color-placeholder);
   word-break: break-word;
+}
+
+/* 交付清单的两组：最终交付在上，过程文件在下 */
+.files-group + .files-group {
+  margin-top: 10px;
+}
+
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px 4px;
+
+  .group-title {
+    flex: none;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+  }
+
+  .group-meta {
+    flex: 1;
+    min-width: 0;
+    font-size: 11px;
+    color: var(--el-text-color-placeholder);
+  }
+
+  /* 过程文件多了先折叠：这一枚按正文口径做，比按钮轻 */
+  .group-toggle {
+    flex: none;
+    padding: 0;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 11px;
+    color: var(--el-color-primary);
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
 
 .file-tree,
