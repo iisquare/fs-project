@@ -9,13 +9,16 @@
  * - 一个模型一条流式连接：参数逐模型独立，合并成一条流就分不开了；
  * - 结果按字段分开存：思考与正文各归各的，不然没法单独折叠、也没法比思考长度；
  * - 每次提交自动留档：中断与失败同样入档，否则调了半天什么都没留下。
+ *   留档由服务端写：发送前先建档拿标识，各模型的输出随各自的流写库，
+ *   所以切页面、刷新、断网都只中断「看」，不会让这一轮从历史里消失。
  *
  * 三条数据线，彼此不硬关联：
  * - 工作区：这份配置的存档，一个用户多份、各自命名，显式「保存 / 另存为 / 打开」；
  *   默认只有本人可见，共享后所有人可见，但可见不等于可改——他人的共享只能打开查看，
  *   要留成自己的走「另存为」。
  * - 对比记录：一次提交一条，自带 models / global / results 快照，独立于工作区；
- *   恢复时把当时的模型配置与结果一并载入编辑器。
+ *   恢复时把当时的模型配置与结果一并载入编辑器。记录与明细都在服务端，
+ *   页面做的是「先建档拿标识 → 带着标识发流 → 收尾时回读明细把 id 与反馈补到卡片上」。
  * - 编辑器草稿：内存里这份配置，工作区与记录只是往里读、往外写。
  *
  * 这些都只服务本页，state 就留在组件里，不进 store。
@@ -212,6 +215,7 @@ const handleRunPage = (page: number) => {
 /** 打开工作区：自己的载进来可直接「保存」；他人的只读，保存会另存为 */
 const openWorkspace = (row: any) => {
   guardDirty(() => {
+    clearActiveRun() // 打开工作区即离开那条记录
     CompareApi.workspaceInfo(row.id, { warning: false, error: false }).then((result: any) => {
       const detail: any = ApiUtil.data(result)
       if (!detail) {
@@ -289,6 +293,7 @@ const saveAsWorkspace = () => {
 /** 新建：清空编辑器草稿并解绑工作区（已有的工作区不会被删） */
 const newWorkspace = () => {
   guardDirty(() => {
+    clearActiveRun()
     reset()
     loadDraft([], defaultGlobal())
     workspaceId.value = null
@@ -330,30 +335,49 @@ const unbind = () => {
   sharedFlag.value = 0
 }
 
-/** 追加一次运行记录：摘要与耗时由服务端算好，回来直接插到列表头 */
-const saveRun = (run: Partial<CompareRun>) => {
-  CompareApi.runSave(run, { warning: false, error: false }).then((result: any) => {
-    const saved: any = ApiUtil.data(result)
-    if (!saved) return
-    bindCallIds(saved.results)
-    // 新记录排在最前，回到第一页重新拉：分页或检索下也不会漏看这一条
-    runQuery.value.page = 1
-    loadRuns()
-  }).catch(() => {})
-}
+/**
+ * 建立本轮记录：点「发送」时先建档拿到标识，再把标识交给各模型的流。
+ *
+ * 明细由服务端随流写库（中断与失败同样入档），页面只留这个标识：
+ * 建档失败就直说这一轮不留档——结果只在当前页面可见，免得之后去历史里白找。
+ * 建档用的就是真正要发的这批模型：模型个数决定「几个到齐才算结束」，
+ * 快照也与实际下发的参数一一对应（没填模型名的卡片本来就不会发起调用）。
+ */
+const createRun = (models: CompareModelConfig[]) => CompareApi.runCreate({
+  global: JSON.parse(JSON.stringify(workspace.value.global)),
+  models: JSON.parse(JSON.stringify(models)),
+}, { error: false }).then((result: any) => {
+  const saved: any = ApiUtil.data(result)
+  if (!saved?.id) return null
+  // 建档即入列表：这一轮还在跑，也能在历史里看到「进行中」，跑完再刷新一次看摘要
+  runQuery.value.page = 1
+  loadRuns()
+  return saved.id
+}).catch(() => null)
 
 /**
- * 落库后后端会给每条结果分配 id（反馈按它定位），这里按本地 key 回填到当前结果上。
- * 实时那一轮在库里没有 id 之前，卡片上的反馈按钮是禁用的。
+ * 回读本轮记录：服务端已经写好的明细按本地 key 回填到页面的卡片上。
+ *
+ * 反馈按 callId 定位，卡片拿到 id 才能点；顺带把服务端那份反馈状态带回来，
+ * 页面上看到的就是落库的那一份（历史恢复走的是同一条路）。
  */
-const bindCallIds = (saved: any[]) => {
-  if (!Array.isArray(saved) || !saved.length) return
-  const map: Record<string, any> = {}
-  saved.forEach((item: any) => { if (item?.key) map[String(item.key)] = item.id })
-  results.value.forEach((item: any) => {
-    const id = map[String(item.key)]
-    if (id) item.id = id
-  })
+const syncRun = (id: any) => {
+  if (!id) return
+  CompareApi.runInfo(id, { warning: false, error: false }).then((result: any) => {
+    const detail: any = ApiUtil.data(result)
+    const rows: any[] = Array.isArray(detail?.results) ? detail.results : []
+    if (!rows.length) return
+    const map: Record<string, any> = {}
+    rows.forEach((item: any) => { if (item?.key) map[String(item.key)] = item })
+    results.value.forEach((item: any) => {
+      const saved = map[String(item.key)]
+      if (!saved?.id) return
+      item.id = saved.id
+      item.feedbackEmotion = saved.feedbackEmotion ?? ''
+      item.feedbackTag = saved.feedbackTag ?? ''
+      item.feedbackContent = saved.feedbackContent ?? ''
+    })
+  }).catch(() => {})
 }
 
 /** 提交反馈：接口按「再次提交同一情绪即取消」处理，回来后同步本地回显 */
@@ -394,24 +418,119 @@ const clearRuns = () => {
   })
 }
 
+/* --------------------------- 记录的打开与刷新 --------------------------- */
+
 /**
- * 从历史记录恢复：把当时的模型配置与结果一并载入编辑器。
+ * 结果区此刻展示的那条记录：打开历史后才有，进行中的一轮靠它给出「等待 / 手动刷新 / 终止」的入口。
+ *
+ * 这里不做自动刷新：记录是服务端的存档，看进度是显式动作——
+ * 页面只提示还在进行中，要不要看最新的由用户点「刷新」决定，随时可以终止。
+ */
+const activeRun = ref<any>(null)
+
+/** 清掉「正在看某条记录」这层关系：发新一轮、打开工作区、清空结果区都要清 */
+const clearActiveRun = () => {
+  activeRun.value = null
+}
+
+/** 记录摘要：只留身份与状态，明细本身不进内存（结果区那份才是要展示的） */
+const brief = (detail: any) => ({
+  id: detail?.id,
+  title: String(detail?.title ?? ''),
+  status: Number(detail?.status ?? 0),
+  active: Number(detail?.active ?? 0),
+})
+
+/** 回读一条记录：拿到服务端这一刻的明细、状态与还在跑的流数（失败返回 null） */
+const pullRun = (id: any) => CompareApi.runInfo(id, { warning: false, error: false })
+  .then((result: any) => ApiUtil.data(result) ?? null)
+  .catch(() => null)
+
+/** 把记录里的明细铺到卡片上：服务端那一份是唯一事实来源，按 key 与页面对齐 */
+const applyRun = (detail: any) => {
+  results.value = JSON.parse(JSON.stringify(detail?.results ?? []))
+}
+
+/** 进行中的提示语：还有流在跑就让人等，一条都没有了就只有「终止」能收口 */
+const runningText = (detail: any) => (1 > Number(detail?.active ?? 0)
+  ? '这一轮还在进行中，但服务端已没有在跑的流，点「终止」即可收口'
+  : `这一轮还在进行中（服务端还有 ${Number(detail?.active ?? 0)} 条流在跑），稍后点「刷新」查看进度`)
+
+/**
+ * 打开一条历史记录：把当时的模型配置与结果一并载入编辑器。
  * 记录与工作区不硬关联，所以这里只落到草稿上、并解绑当前工作区——
  * 要留成一份工作区，得显式「保存」。这样也不会把正打开着的工作区覆盖掉。
  */
-const restoreRun = (run: CompareRun) => {
-  CompareApi.runInfo(run.id, { warning: false, error: false }).then((result: any) => {
-    const detail: CompareRun = ApiUtil.data(result)
+const openRun = (run: CompareRun) => {
+  pullRun(run.id).then((detail: any) => {
     if (!detail) {
-      ElMessage.warning('记录已不存在')
+      ElMessage.warning('读取不到这条记录，可能已被删除')
+      loadRuns()
       return
     }
     loadDraft(detail.models, detail.global)
-    results.value = JSON.parse(JSON.stringify(detail.results ?? []))
+    applyRun(detail)
     unbind()
+    activeRun.value = brief(detail)
     fromLabel.value = `${detail.title || '历史记录'} 的配置`
     fromKind.value = 'run'
-    ElMessage.success('已载入编辑器，保存后即为新的工作区')
+    if (0 !== Number(detail.status)) {
+      ElMessage.success('已载入编辑器，保存后即为新的工作区')
+      return
+    }
+    ElMessage.warning(`已载入编辑器：${runningText(detail)}`)
+  })
+}
+
+/** 手动刷新正在看的这条记录：进行中的一轮以服务端那一刻的明细为准 */
+const refreshRun = () => {
+  const id = activeRun.value?.id
+  if (!id) return
+  pullRun(id).then((detail: any) => {
+    if (!detail) {
+      clearActiveRun()
+      ElMessage.warning('读取不到这条记录，可能已被删除')
+      return
+    }
+    applyRun(detail)
+    activeRun.value = brief(detail)
+    loadRuns() // 列表里的摘要也跟着更新
+    if (0 !== Number(detail.status)) {
+      ElMessage.success('这一轮已结束，记录已更新')
+      return
+    }
+    ElMessage.info(runningText(detail))
+  })
+}
+
+/** 点击历史记录：本地这一轮还在跑时先说清楚——打开记录会先把它停掉 */
+const restoreRun = (run: CompareRun) => {
+  if (!running.value) {
+    openRun(run)
+    return
+  }
+  ElMessageBox.confirm('本地这一轮还在运行，打开历史记录会先终止它（已收到的内容同样入档）。是否继续？', '本轮正在运行', {
+    type: 'warning',
+  }).then(() => {
+    stop()
+    openRun(run)
+  }).catch(() => {})
+}
+
+/** 终止一条记录：服务端断掉这一轮还在跑的流，一直没回来的模型记为中断 */
+const stopRun = (id: any) => {
+  ElMessageBox.confirm('将终止这一轮还在进行的模型调用，未收到输出的模型记为中断。是否继续？', '终止本轮', {
+    type: 'warning',
+  }).then(() => {
+    CompareApi.runStop(id, { error: false }).then(() => {
+      // 正在看的正好是这一条：顺手回读一次，卡片与提示都切到已收口的状态（提示由它给）
+      if (activeRun.value?.id === id) {
+        refreshRun()
+        return
+      }
+      loadRuns()
+      ElMessage.success('已终止本轮')
+    }).catch(() => {})
   }).catch(() => {})
 }
 
@@ -465,8 +584,10 @@ const handleRemove = (index: number) => {
 
 /* ------------------------------- 提交 ------------------------------- */
 
-/** 本轮是否要留档：只有真的发起了才记，重置、恢复这类操作不产生记录 */
-let recordPending = false
+/** 本轮运行记录标识：建档后才有；明细由服务端写，页面只拿它回读 id 与反馈 */
+const runId = ref<any>(null)
+/** 建档进行中：连点两次「发送」不能建出两条记录 */
+const creating = ref(false)
 
 const handleSubmit = () => {
   if (running.value) {
@@ -482,28 +603,32 @@ const handleSubmit = () => {
     ElMessage.warning('请先填写用户输入')
     return
   }
-  if (!start(targets, workspace.value.global)) return
-  recordPending = true
-}
-
-/** 一次提交留一条记录：各模型的结果按值快照，摘要与耗时由服务端算好 */
-const handleRecord = () => {
-  if (!results.value.length) return
-  saveRun({
-    title: '',
-    global: JSON.parse(JSON.stringify(workspace.value.global)),
-    models: JSON.parse(JSON.stringify(workspace.value.models)),
-    results: JSON.parse(JSON.stringify(results.value)),
+  if (creating.value) return
+  // 新一轮接管结果区：不再对应哪条历史记录
+  clearActiveRun()
+  // 先建档再发流：记录由服务端写，中途切走页面这一轮也不会丢
+  creating.value = true
+  createRun(targets).then((id: any) => {
+    runId.value = id
+    if (!id) ElMessage.warning('这一轮没能建档，结果只在当前页面可见')
+    start(targets, workspace.value.global, id)
+  }).finally(() => {
+    creating.value = false
   })
 }
 
-// 本轮收尾（成功、失败、中断都算）时落一条记录
+// 本轮收尾（成功、失败、中断都算）：明细服务端已经写完，这里刷新列表并回读一次 id
 watch(running, (current, previous) => {
-  if (previous && !current && recordPending) {
-    recordPending = false
-    handleRecord()
-  }
+  if (!previous || current) return
+  loadRuns()
+  syncRun(runId.value)
 })
+
+/** 清空结果区：清空之后展示的就不再是那条记录了 */
+const handleReset = () => {
+  clearActiveRun()
+  reset()
+}
 
 /* ------------------------------- 历史 ------------------------------- */
 
@@ -647,6 +772,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcut))
           type="primary"
           :icon="running ? VideoPause : Promotion"
           :title="running ? '停止生成' : '发送（Ctrl / Cmd + Enter）'"
+          :disabled="creating"
           @click="handleSubmit">
           {{ running ? '停止' : '发送' }}
         </el-button>
@@ -669,13 +795,21 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcut))
       <div class="main-head">
         <span class="head-title">输出对比</span>
         <span class="head-meta" v-if="results.length">{{ results.length }} 个模型</span>
+        <!-- 结果区是一条进行中的记录：不自动刷新，看进度点「刷新」，不想等就直接终止 -->
+        <template v-if="activeRun && 0 === activeRun.status">
+          <el-tag class="head-watch" size="small" effect="plain" type="warning">
+            记录 #{{ activeRun.id }} 进行中（{{ activeRun.active }} 条流在跑）
+          </el-tag>
+          <el-button class="head-watch-btn" link :icon="Refresh" title="刷新这条记录" @click="refreshRun()" />
+          <el-button class="head-watch-btn" link :icon="VideoPause" title="终止这条记录" @click="stopRun(activeRun.id)" />
+        </template>
         <div class="head-tools">
           <!-- 原文：关掉 Markdown 渲染直接看原始文本，对照模型输出里的标记时用得上 -->
           <el-checkbox class="tool-raw" v-model="workspace.global.raw" size="small">原文</el-checkbox>
           <!-- 列数属于「怎么看」，放在结果栏比放在配置里顺手 -->
           <span class="tool-label">每行</span>
           <el-segmented v-model="workspace.global.column" :options="columnOptions" size="small" />
-          <el-button link :icon="Refresh" :disabled="!results.length" @click="reset()">清空</el-button>
+          <el-button link :icon="Refresh" :disabled="!results.length" @click="handleReset()">清空</el-button>
         </div>
       </div>
       <el-scrollbar class="main-body">
@@ -692,7 +826,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcut))
           </div>
           <el-empty
             class="main-empty"
-            description="添加模型、填好输入后发送，各模型的输出会并排出现在这里"
+            :description="activeRun && 0 === activeRun.status
+              ? '这一轮还在进行中，暂时没有可展示的输出，可稍后点「刷新」查看'
+              : '添加模型、填好输入后发送，各模型的输出会并排出现在这里'"
             :image-size="90"
             v-if="!results.length" />
         </div>
@@ -709,7 +845,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcut))
         @search="handleRunSearch"
         @page="handleRunPage"
         @restore="restoreRun"
+        @stop="(row: any) => stopRun(row.id)"
         @remove="removeRun"
+        @refresh="loadRuns()"
         @clear="handleClearRuns" />
     </el-splitter-panel>
   </el-splitter>
@@ -882,6 +1020,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcut))
     .head-meta {
       font-size: 12px;
       color: var(--el-text-color-placeholder);
+    }
+    .head-watch {
+      flex: none;
+    }
+    /* 刷新与终止挨着放，都是这条记录上的动作，不与右侧「怎么看」的工具混在一起 */
+    .head-watch-btn {
+      flex: none;
     }
     .head-tools {
       margin-left: auto;

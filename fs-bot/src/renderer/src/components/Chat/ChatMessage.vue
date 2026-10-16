@@ -7,15 +7,22 @@
  * 时间线之后是这一轮的最终回复正文。
  * 这条过程线在生成时铺开（看得见正做到哪一步），回复一结束就自动收起、只留一行摘要，
  * 打开历史会话时同样是收起状态；要回看过程点开即可。
+ *
+ * 消息里出现的本机文件都能直接打开：用户消息里的 @ 引用标签点一下就用系统默认程序打开
+ * （右侧小按钮在文件夹中定位，悬浮提示给出完整路径），回复正文与工具调用里的路径同理
+ * （见 ChatMarkdown 的链接拦截与 ToolCallList 的文件卡片）。
  */
 import { computed, ref, watch } from 'vue'
 import ChatMarkdown from './ChatMarkdown.vue'
 import ToolCallList from './ToolCallList.vue'
 import { formatDuration, formatMessageTime } from '@renderer/utils/TimeUtil'
+import FileActionUtil from '@renderer/utils/FileActionUtil'
 import type { ChatMessage, ChatRound, ChatToolCall } from '@renderer/stores/chat'
 
 const props = defineProps<{
   message: ChatMessage
+  /** 会话所属项目：引用里的相对路径按它的工作区目录解析（打开文件时用） */
+  projectId?: string
   /** 分支位置：同一条消息有多条分支时显示「◀ 2/3 ▶」 */
   branch?: { index: number; count: number } | null
   /** 用户消息能否「编辑后重新发送」（新起分支，原分支保留） */
@@ -131,15 +138,14 @@ const copied = ref(false)
 const editing = ref(false)
 const draft = ref('')
 
-/** @ 引用的展示口径：本地路径（文件或文件夹）与技能 */
-const MENTION_LABELS: Record<string, string> = { file: '文件', skill: '技能' }
-
-function mentionLabel(type: string): string {
-  return MENTION_LABELS[type] ?? '文件'
+/** 打开引用到的本机文件 / 目录（技能引用给的是技能目录，同样按目录打开） */
+function openMention(mention: { path: string }): void {
+  FileActionUtil.open(String(props.projectId ?? ''), mention.path)
 }
 
-function mentionTagType(type: string): 'info' | 'warning' {
-  return 'skill' === type ? 'warning' : 'info'
+/** 在文件夹中定位这个引用 */
+function revealMention(mention: { path: string }): void {
+  FileActionUtil.reveal(String(props.projectId ?? ''), mention.path)
 }
 
 function startEdit(): void {
@@ -203,15 +209,62 @@ async function copy(): Promise<void> {
             </div>
           </div>
           <div class="chat-mentions" v-if="message.mentions?.length && !editing">
-            <el-tag
-              class="chat-mention"
-              size="small"
-              effect="plain"
-              :type="mentionTagType(mention.type)"
+            <!--
+              引用到的本机文件 / 技能：一条引用一个小块（图标 + 名字），
+              点一下用默认程序打开，行尾的小按钮在文件夹中定位，完整路径走悬浮提示
+            -->
+            <el-tooltip
               v-for="mention in message.mentions"
               :key="mention.type + mention.path"
-              >{{ mentionLabel(mention.type) }}：{{ mention.name || mention.path }}</el-tag
+              :content="mention.path"
+              placement="top"
             >
+              <span
+                class="mention-chip"
+                :class="`is-${mention.type}`"
+                @click="openMention(mention)"
+              >
+                <svg
+                  class="mention-icon"
+                  viewBox="0 0 16 16"
+                  width="12"
+                  height="12"
+                  aria-hidden="true"
+                >
+                  <!-- 技能：四角星；其余是本机文件 -->
+                  <path
+                    v-if="'skill' === mention.type"
+                    d="M8 2 9.4 6.6 14 8 9.4 9.4 8 14 6.6 9.4 2 8 6.6 6.6z"
+                    fill="currentColor"
+                  />
+                  <path
+                    v-else
+                    d="M6.4 1.8h3.2l2.6 2.6v7.8a1 1 0 0 1-1 1H4.8a1 1 0 0 1-1-1V2.8a1 1 0 0 1 1-1z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.2"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <span class="mention-name">{{ mention.name || mention.path }}</span>
+                <button
+                  type="button"
+                  class="mention-reveal"
+                  title="在文件夹中显示"
+                  @click.stop="revealMention(mention)"
+                >
+                  <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true">
+                    <path
+                      d="M1.9 3.5h3.9l1.2 1.6h7.1v7.2a.8.8 0 0 1-.8.8H2.7a.8.8 0 0 1-.8-.8z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.1"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+              </span>
+            </el-tooltip>
           </div>
         </template>
         <!-- 助手回复：调用过程铺成一条时间线（生成时铺开、结束后收起），之后是回复正文 -->
@@ -267,10 +320,10 @@ async function copy(): Promise<void> {
                     </div>
                   </div>
                   <!-- 工具调用：这一轮里的每次调用都是线上的一个节点 -->
-                  <ToolCallList :calls="round.calls ?? []" />
+                  <ToolCallList :calls="round.calls ?? []" :project-id="projectId" />
                   <!-- 中间输出：不是节点，但主轴要接着往下走（末轮的正文就是气泡里的回复，不在这里重复） -->
                   <div class="timeline-content" v-if="round.content && index !== rounds.length - 1">
-                    <ChatMarkdown :content="round.content" />
+                    <ChatMarkdown :content="round.content" :project-id="projectId" />
                   </div>
                 </template>
               </div>
@@ -280,7 +333,7 @@ async function copy(): Promise<void> {
             {{ message.content || '本轮未完成' }}
           </div>
           <!-- 回复正文按 Markdown 渲染（用户消息保持原文） -->
-          <ChatMarkdown v-else-if="hasBody" :content="message.content" />
+          <ChatMarkdown v-else-if="hasBody" :content="message.content" :project-id="projectId" />
           <div class="chat-content placeholder" v-else-if="idle">（无回复内容）</div>
           <div class="chat-streaming" v-if="streaming">
             <span class="chat-streaming-dot" />
@@ -475,8 +528,79 @@ async function copy(): Promise<void> {
   gap: 6px;
   margin-top: 6px;
 
-  .chat-mention {
+  /**
+   * 一条引用：图标 + 名字 + 定位按钮。
+   * 引用只出现在用户提问里，那一层气泡是主色浅底，所以小块用白底才立得住；
+   * 名字过长时在这里收住（完整路径在悬浮提示里），不给气泡撑宽。
+   */
+  .mention-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     max-width: 100%;
+    height: 22px;
+    padding: 0 3px 0 6px;
+    border: solid 1px var(--el-border-color-lighter);
+    border-radius: 4px;
+    background: var(--el-bg-color);
+    font-size: 12px;
+    line-height: 1;
+    color: var(--el-text-color-regular);
+    cursor: pointer;
+    transition:
+      color 0.2s,
+      border-color 0.2s;
+
+    &:hover {
+      border-color: var(--el-color-primary-light-5);
+      color: var(--el-color-primary);
+
+      .mention-reveal {
+        opacity: 1;
+      }
+    }
+
+    /* 技能与文件用图标区分：技能那枚星标走警告色，一眼能和文件分开 */
+    &.is-skill .mention-icon {
+      color: var(--el-color-warning);
+    }
+
+    .mention-icon {
+      flex: none;
+      color: var(--el-text-color-placeholder);
+    }
+
+    .mention-name {
+      min-width: 0;
+      max-width: 220px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .mention-reveal {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      padding: 0;
+      border: none;
+      border-radius: 3px;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      opacity: 0.5;
+      transition:
+        opacity 0.2s,
+        background 0.2s;
+
+      &:hover {
+        opacity: 1;
+        background: var(--el-fill-color);
+      }
+    }
   }
 }
 

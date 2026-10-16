@@ -122,8 +122,17 @@ const handleFeedback = (payload: { emotion: string, tag: string, content: string
         </div>
       </div>
     </template>
-    <!-- 失败：直接在卡片里给原因，不用点开才知道 -->
-    <el-alert class="card-error" v-if="result.error" :title="result.error" type="error" :closable="false" show-icon />
+    <!--
+      失败：直接在卡片里给原因，不用点开才知道。
+      中断同样带原因（自动兜底、手动终止、连接断开各有说法），用警示色与「失败」区分开。
+    -->
+    <el-alert
+      class="card-error"
+      v-if="result.error"
+      :title="result.error"
+      :type="'abort' === result.state ? 'warning' : 'error'"
+      :closable="false"
+      show-icon />
     <!-- 内容区滚动也走 el-scrollbar：与本页其它滚动区一致 -->
     <el-scrollbar class="card-body">
       <div class="card-body-inner">

@@ -66,7 +66,7 @@ export type CompareResultState = 'idle' | 'connect' | 'streaming' | 'finish' | '
 
 /** 单个模型这一轮的输出（流式过程中只改字段，不换对象） */
 export interface CompareResult {
-  /** 调用明细标识：反馈按它定位；实时那一轮要等落库后才有 */
+  /** 调用明细标识：反馈按它定位；明细由服务端随流写库，本轮收尾回读后才有 */
   id?: any
   key: string
   model: string
@@ -89,16 +89,27 @@ export interface CompareResult {
   feedbackContent?: string
 }
 
-/** 一次调试运行：一次提交扇出到多个模型，结果整体留档 */
+/**
+ * 一次调试运行：一次提交扇出到多个模型，结果整体留档。
+ *
+ * 建档在前、明细在后，都是服务端写的：点发送时先建这一条（status=0 进行中），
+ * 各模型的输出随各自的流落成明细，每写完一条重算一次摘要，全部到齐才算收口。
+ */
 export interface CompareRun {
   id: any
   title: string
+  /** 0-进行中（还有模型的流没结束），1-全部完成，2-存在失败或中断 */
   status: number
   modelCount: number
   duration: number
   /** 结果摘要：几个完成、几个失败、几个中断（服务端写入时算好） */
   summary: string
   createdTime: number
+  /**
+   * 服务端此刻还有几条流在跑（详情接口才有，内存态）：
+   * 页面据此分辨「进行中」是真在跑，还是只剩一条待收口的记录
+   */
+  active?: number
   /** 列表接口不返回，详情接口才有 */
   global?: CompareGlobalConfig
   models?: CompareModelConfig[]

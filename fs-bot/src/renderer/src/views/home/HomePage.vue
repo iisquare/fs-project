@@ -9,12 +9,14 @@ import { useSettingsStore } from '@renderer/stores/settings'
 import { useSkillStore } from '@renderer/stores/skill'
 import { useCatalogStore } from '@renderer/stores/catalog'
 import { useUserStore } from '@renderer/stores/user'
+import { useFilesStore, FILES_WIDTH_MIN, FILES_WIDTH_MAX } from '@renderer/stores/files'
 import BotApi from '@renderer/api/agent/BotApi'
 import { chatProfile, useChatStore, type ChatMention } from '@renderer/stores/chat'
 import type { Project } from '@renderer/db/ProjectDb'
 import ChatMessage from '@renderer/components/Chat/ChatMessage.vue'
 import ChatElevator from '@renderer/components/Chat/ChatElevator.vue'
 import ApprovalBanner from '@renderer/components/Chat/ApprovalBanner.vue'
+import ConversationFiles from '@renderer/components/Chat/ConversationFiles.vue'
 import type { ContextInfo } from '@renderer/components/Chat/ContextRing.vue'
 import ChatComposer, {
   type ComposerCommand,
@@ -49,6 +51,14 @@ const scrollRef = ref<any>(null)
 const listRef = ref<HTMLElement | null>(null)
 /** 是否贴着底部：贴着才跟随新内容，向上翻阅历史时不被拉回 */
 const atBottom = ref(true)
+
+/**
+ * 右侧文件区（展开状态、宽度、当前页签）存在 store 里，所有会话共用：
+ * 中右之间的分隔条拖出来的宽度与展开状态下次打开都还在（见 stores/files）。
+ */
+const files = useFilesStore()
+/** 中间对话栏的最小宽度：与 $chat-min 同一口径，分隔条拖不到比这更窄 */
+const CHAT_PANEL_MIN = 320
 
 /**
  * el-scrollbar 挂载后才拿得到内部滚动元素，之后再通知电梯导航换基准。
@@ -140,17 +150,18 @@ function setContextLimit(value: number | null): void {
   void projectStore.update(current.id, { contextLength: length })
 }
 
-/** @ 引用候选：当前项目的workspace文件 + 已安装技能 */
-const fileCandidates = ref<MentionCandidate[]>([])
-const candidates = computed<MentionCandidate[]>(() => [
-  ...fileCandidates.value,
-  ...skillStore.installed.map((item) => ({
+/**
+ * @ 引用候选：已安装技能（本机文件与文件夹走输入框里那两条「选择本地…」动作，不开候选清单——
+ * 工作区里的文件让模型自己按路径找，不必在这里铺一份清单出来）
+ */
+const candidates = computed<MentionCandidate[]>(() =>
+  skillStore.installed.map((item) => ({
     type: 'skill' as const,
     name: item.name,
     path: item.path,
     token: `skill:${item.name}`
   }))
-])
+)
 
 onMounted(async () => {
   await projectStore.fetchProjects()
@@ -159,7 +170,6 @@ onMounted(async () => {
   // 模型清单要给出「服务端声明的上下文窗口」，圆环的比例按它算
   await catalogStore.fetchModels()
   if (conversationStore.currentId) await conversationStore.select(conversationStore.currentId)
-  await loadFiles()
 })
 
 watch(
@@ -169,40 +179,10 @@ watch(
     await conversationStore.select(id)
     draft.value = ''
     mentions.value = []
-    await loadFiles()
     await nextTick()
     scrollBottom(true)
   }
 )
-
-// 会话所属项目变了（换会话、改项目配置）就重新取一遍可引用的文件
-watch(
-  () => project.value?.id ?? '',
-  () => {
-    void loadFiles()
-  }
-)
-
-/** 工作区文件清单：@ 引用按相对路径展示，引用时按绝对路径读取 */
-async function loadFiles(): Promise<void> {
-  const id = project.value?.id
-  if (!id) {
-    fileCandidates.value = []
-    return
-  }
-  try {
-    const rows = await window.ipc.workspace.files(id)
-    fileCandidates.value = rows.map((row) => {
-      const relative = row.path
-        .slice(row.root.length)
-        .replace(/^[\\/]+/, '')
-        .replace(/\\/g, '/')
-      return { type: 'file' as const, name: relative, path: row.path, token: relative }
-    })
-  } catch {
-    fileCandidates.value = []
-  }
-}
 
 // 内容变化时跟随滚动：贴底才跟着走
 watch(
@@ -389,7 +369,7 @@ async function runCommand(name: string): Promise<void> {
         .map((item) => `<p><code>${item.name}</code> ${item.label} — ${item.description}</p>`)
         .join(
           ''
-        )}<p>输入 <code>@</code> 引用工作区文件或已安装技能，引用内容会随这一轮一起交给模型。</p></div>`,
+        )}<p>输入 <code>@</code> 引用本机文件或已安装技能，引用内容会随这一轮一起交给模型。</p></div>`,
       '可用指令',
       { dangerouslyUseHTMLString: true, confirmButtonText: '知道了' }
     ).catch(() => {})
@@ -478,81 +458,131 @@ async function uploadFiles(): Promise<void> {
         <el-tag v-if="running" class="conv-tag" size="small" type="success" effect="plain"
           >运行中</el-tag
         >
+        <!-- 右上角：展开 / 收起右侧文件区 -->
+        <el-tooltip :content="files.visible ? '收起文件区' : '展开文件区'" placement="bottom">
+          <el-button
+            class="files-toggle"
+            link
+            :class="{ 'is-open': files.visible }"
+            @click="files.toggle()"
+          >
+            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+              <rect
+                x="1.7"
+                y="3.1"
+                width="12.6"
+                height="9.8"
+                rx="1.6"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+              />
+              <path d="M10.3 3.1v9.8" fill="none" stroke="currentColor" stroke-width="1.2" />
+            </svg>
+          </el-button>
+        </el-tooltip>
       </header>
 
-      <!-- 消息区：滚动容器 + 电梯导航（导航在容器之外，不随消息一起滚） -->
-      <div class="conversation-body">
-        <el-scrollbar class="message-list" :ref="setScrollRef" @scroll="onScroll">
-          <div class="message-column">
-            <div v-if="messages.length === 0" class="message-empty">
-              <p>开始新对话</p>
-              <p class="message-empty-tip">
-                输入内容后回车发送；输入 <code>@</code> 引用工作区文件或技能，输入
-                <code>/</code> 执行内置指令。回复会实时流式输出，工具调用过程与结果同步展示。
-              </p>
+      <!--
+        对话主体：中间是消息区与输入区，右边是文件区。
+        中右之间的分隔条拖出来的宽度记在 store 里；左边的会话栏由外层布局的 splitter 管（见 views/index.vue）
+      -->
+      <el-splitter class="conversation-splitter" @resize-end="files.saveWidth()">
+        <el-splitter-panel :min="CHAT_PANEL_MIN">
+          <div class="conversation-column">
+            <!-- 消息区：滚动容器 + 电梯导航（导航在容器之外，不随消息一起滚） -->
+            <div class="conversation-body">
+              <el-scrollbar class="message-list" :ref="setScrollRef" @scroll="onScroll">
+                <div class="message-column">
+                  <div v-if="messages.length === 0" class="message-empty">
+                    <p>开始新对话</p>
+                    <p class="message-empty-tip">
+                      输入内容后回车发送；输入 <code>@</code> 引用本机文件或技能，输入
+                      <code>/</code> 执行内置指令。回复会实时流式输出，工具调用过程与结果同步展示。
+                    </p>
+                  </div>
+                  <ChatMessage
+                    class="message"
+                    v-for="message in messages"
+                    :key="message.id"
+                    :message="message"
+                    :project-id="session?.projectId ?? ''"
+                    :branch="session ? chatStore.branchOf(session, message) : null"
+                    :editable="
+                      !running && 'user' === message.role && !!String(message.content ?? '').trim()
+                    "
+                    :regenerable="!running && 'assistant' === message.role && !!message.parentId"
+                    @switch="(step: number) => switchBranch(message, step)"
+                    @edit="(content: string) => editMessage(message, content)"
+                    @regenerate="regenerateMessage(message)"
+                  />
+                  <el-alert
+                    v-if="session?.notice"
+                    class="message-error"
+                    type="warning"
+                    :title="session.notice"
+                    :closable="false"
+                    show-icon
+                  />
+                  <el-alert
+                    v-if="session?.error"
+                    class="message-error"
+                    type="error"
+                    :title="session.error"
+                    :closable="false"
+                    show-icon
+                  />
+                </div>
+              </el-scrollbar>
+              <ChatElevator
+                :target="listRef"
+                :revision="`${conversation.id}:${session?.leafId ?? ''}:${messages.length}`"
+                selector=".chat-message.is-user"
+                text-selector=".chat-content"
+              />
             </div>
-            <ChatMessage
-              class="message"
-              v-for="message in messages"
-              :key="message.id"
-              :message="message"
-              :branch="session ? chatStore.branchOf(session, message) : null"
-              :editable="
-                !running && 'user' === message.role && !!String(message.content ?? '').trim()
-              "
-              :regenerable="!running && 'assistant' === message.role && !!message.parentId"
-              @switch="(step: number) => switchBranch(message, step)"
-              @edit="(content: string) => editMessage(message, content)"
-              @regenerate="regenerateMessage(message)"
-            />
-            <el-alert
-              v-if="session?.notice"
-              class="message-error"
-              type="warning"
-              :title="session.notice"
-              :closable="false"
-              show-icon
-            />
-            <el-alert
-              v-if="session?.error"
-              class="message-error"
-              type="error"
-              :title="session.error"
-              :closable="false"
-              show-icon
-            />
-          </div>
-        </el-scrollbar>
-        <ChatElevator
-          :target="listRef"
-          :revision="`${conversation.id}:${session?.leafId ?? ''}:${messages.length}`"
-          selector=".chat-message.is-user"
-          text-selector=".chat-content"
-        />
-      </div>
 
-      <footer class="composer-area">
-        <div class="composer-column">
-          <!-- 访问申请：只画本段对话的（跟着对话走），别处触发的由侧边栏的「待确认」点提示 -->
-          <ApprovalBanner class="composer-approval" :conversation-id="conversation.id" />
-          <ChatComposer
-            ref="composerRef"
-            v-model="draft"
-            v-model:mentions="mentions"
-            :candidates="candidates"
-            :commands="commands"
-            :policy="settingsStore.workspacePolicy"
-            :context="context"
+            <footer class="composer-area">
+              <div class="composer-column">
+                <!-- 访问申请：只画本段对话的（跟着对话走），别处触发的由侧边栏的「待确认」点提示 -->
+                <ApprovalBanner class="composer-approval" :conversation-id="conversation.id" />
+                <ChatComposer
+                  ref="composerRef"
+                  v-model="draft"
+                  v-model:mentions="mentions"
+                  :candidates="candidates"
+                  :commands="commands"
+                  :policy="settingsStore.workspacePolicy"
+                  :context="context"
+                  :running="running"
+                  :disabled="running"
+                  @send="send"
+                  @stop="stop"
+                  @command="runCommand"
+                  @update:context-limit="setContextLimit"
+                  @update:policy="setPolicy"
+                />
+              </div>
+            </footer>
+          </div>
+        </el-splitter-panel>
+
+        <!-- 右侧文件区：项目工作区目录树 + 这段对话交付的文件（右上角按钮展开 / 收起） -->
+        <el-splitter-panel
+          v-if="files.visible"
+          :size="files.width"
+          :min="FILES_WIDTH_MIN"
+          :max="FILES_WIDTH_MAX"
+          @update:size="files.setWidth"
+        >
+          <ConversationFiles
+            :project-id="session?.projectId ?? ''"
+            :messages="messages"
+            :roots="project?.workspace ?? []"
             :running="running"
-            :disabled="running"
-            @send="send"
-            @stop="stop"
-            @command="runCommand"
-            @update:context-limit="setContextLimit"
-            @update:policy="setPolicy"
           />
-        </div>
-      </footer>
+        </el-splitter-panel>
+      </el-splitter>
     </div>
   </div>
 </template>
@@ -563,8 +593,9 @@ async function uploadFiles(): Promise<void> {
  * 气泡左右边缘因此与输入框对齐），尺寸用固定像素，窗口不够宽时由内容区横向滚动。
  * 左右内边距 16px，与输入框的下边距、会话头部的左右内边距一致：四边同宽，
  * 气泡贴到头尾；右侧那 16px 里再分给滚动条与电梯导航（见 ChatElevator）。
+ * 最小宽度取 320px：默认窗口（900px）下左侧栏与右侧文件区都展开时，内容列刚好放得下。
  */
-$chat-min: 380px; /* 内容列最小宽度：窗口太窄时由内容区横向滚动兜底 */
+$chat-min: 320px; /* 内容列最小宽度：窗口太窄时由内容区横向滚动兜底 */
 $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
 
 .home-page {
@@ -668,6 +699,25 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
   flex-direction: column;
 }
 
+/* 中右分隔：拖分隔条调文件区宽度（宽度记在 stores/files） */
+.conversation-splitter {
+  flex: 1;
+  min-height: 0;
+
+  /* 面板自带的 overflow: auto 会在对话区 / 文件区之外再套一层滚动条，
+     滚动统一交给面板内部的组件自己管（消息区的 el-scrollbar、文件区的页签） */
+  :deep(.el-splitter-panel) {
+    overflow: hidden;
+  }
+}
+
+.conversation-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+
 .conversation-header {
   flex: none;
   display: flex;
@@ -702,6 +752,22 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
 
   .conv-tag {
     flex: none;
+  }
+
+  /* 右上角的文件区开关：靠右端，展开时用主色标出来 */
+  .files-toggle {
+    flex: none;
+    margin-left: auto;
+    padding: 0;
+    color: var(--el-text-color-placeholder);
+
+    &:hover {
+      color: var(--el-color-primary);
+    }
+
+    &.is-open {
+      color: var(--el-color-primary);
+    }
   }
 }
 

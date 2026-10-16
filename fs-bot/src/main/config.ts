@@ -3,10 +3,10 @@ import { dirname, join } from 'path'
 import { parse, stringify } from 'smol-toml'
 
 /**
- * 系统级配置（原 system.db 中的 system_config 表，改为 userdata/config.toml 存储）
+ * 系统级配置（原 system.db 中的 system_config 表，改为 <运行目录>/userdata/config.toml 存储；
+ * 运行目录见 main/index.ts：开发模式是项目根目录，生产环境是用户主目录下的 .fs-bot）
  *
  * 文件结构（TOML，可手工修改，应用写入时按规范格式重写）：
- * version = 1
  * loginHistory = [ "admin" ]
  *
  * [settings]
@@ -18,15 +18,9 @@ import { parse, stringify } from 'smol-toml'
 /** 设置项取值：与 TOML 原生标量一致 */
 type SettingValue = string | number | boolean
 
-const CONFIG_VERSION = 1
-
 const CONFIG_FILE = 'config.toml'
 
 const FILE_HEADER = `# fs-bot 系统配置（应用自动维护，手工修改后重启应用生效）
-# settings     autoStart 开机启动、autoUpgrade 自动升级
-#              workspacePolicy 工作区外文件的访问策略：ask 请求批准、auto 帮我批准、
-#                              deny 自动拒绝、full 完全访问权限
-# loginHistory 最近登录的账号，最近使用排在最前
 `
 
 /**
@@ -41,7 +35,6 @@ const SETTINGS_SCHEMA: Record<string, SettingValue> = {
 }
 
 interface ConfigData {
-  version: number
   settings: Record<string, SettingValue>
   loginHistory: string[]
 }
@@ -67,8 +60,8 @@ export class ConfigStore {
    * 初始化配置文件。
    * 文件缺失或损坏时按默认值写入；正常文件只读取不重写，避免破坏手工排版与注释。
    */
-  init(installPath: string): void {
-    const dataDir = join(installPath, 'userdata')
+  init(runtimeDir: string): void {
+    const dataDir = join(runtimeDir, 'userdata')
     mkdirSync(dataDir, { recursive: true })
     this.filePath = join(dataDir, CONFIG_FILE)
 
@@ -105,7 +98,6 @@ export class ConfigStore {
     }
     const rawHistory = raw?.['loginHistory']
     return {
-      version: CONFIG_VERSION,
       settings,
       loginHistory: Array.isArray(rawHistory)
         ? rawHistory.filter((serial): serial is string => typeof serial === 'string')

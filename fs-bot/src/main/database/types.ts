@@ -42,7 +42,7 @@ export interface DbInitUserRequest {
   dbSecret: string
 }
 
-/** userdata/config.toml 的读写请求 */
+/** <运行目录>/userdata/config.toml 的读写请求 */
 export interface ConfigUpdateSettingRequest {
   key: string
   value: string | number | boolean
@@ -60,6 +60,14 @@ export interface WorkspaceReadRequest {
   projectId: string
   path: string
   conversationId?: string
+}
+
+/** 打开 / 定位本机文件：路径可以是绝对路径，也可以是工作区目录下的相对路径 */
+export interface WorkspaceOpenRequest {
+  projectId: string
+  path: string
+  /** 已确认要打开可执行 / 脚本文件（界面弹过确认），默认不直接打开这类文件 */
+  force?: boolean
 }
 
 export interface WorkspaceWriteRequest {

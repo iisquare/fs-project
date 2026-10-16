@@ -15,6 +15,7 @@ import {
 import { randomUUID } from 'crypto'
 import { release as osRelease } from 'os'
 import { basename, dirname, extname, isAbsolute, join, resolve, sep } from 'path'
+import { shell } from 'electron'
 
 /**
  * 项目工作区文件访问：每个项目声明自己的目录与权限（只读 / 只写 / 读写），
@@ -35,6 +36,10 @@ import { basename, dirname, extname, isAbsolute, join, resolve, sep } from 'path
  * 本地命令（`exec`）共用这套访问策略，但**不共用「落在授权目录内就放行」这一条**：
  * 命令的作用范围不限于工作目录，工作区内运行同样按策略确认（原因见 `exec` 的说明），
  * 推给界面的申请里带上命令原文——让人看着是哪条命令再决定。
+ *
+ * `open` / `reveal` 是**用户自己点出来**的动作（把对话里的文件交给系统默认程序或文件管理器），
+ * 不是模型要读写它，因此不走工作区外的访问策略：路径只做归一与存在性判断，
+ * 否则用户点开自己刚 @ 引用的文件还要先等一次审批。可执行 / 脚本类文件另有默认拒绝（见 `open`）。
  */
 
 export type WorkspacePermission = 'read' | 'write' | 'readwrite'
@@ -80,10 +85,23 @@ export interface WorkspaceCommandResult {
   code: number | null
   signal: string
   timedOut: boolean
+  /** 用户按了停止：进程树已被收掉，这不是命令自己的结束（与超时区分开） */
+  cancelled: boolean
   /** 耗时（毫秒） */
   duration: number
   stdout: string
   stderr: string
+}
+
+/**
+ * 正在跑的一条命令：停止生成时按会话把它收掉（见 WorkspaceManager.cancel）。
+ * 注册与摘除都在 runCommand 里成对完成，跑完（正常、超时、停止）都会自己摘掉。
+ */
+interface RunningCommand {
+  /** 发起这条命令的会话：停止按会话收，各对话互不干扰 */
+  conversationId: string
+  /** 收掉这条命令：杀掉进程树、按「已停止」立刻收尾 */
+  stop: () => void
 }
 
 /** 界面给出的答复：允许本次放行，或顺带把策略改成「帮我批准」 */
@@ -94,11 +112,11 @@ export interface WorkspaceApprovalResult {
   always?: boolean
 }
 
-/** 工作区文件清单项（@ 引用与文件工具共用） */
+/** 工作区文件清单项 */
 export interface WorkspaceFile {
   name: string
   path: string
-  /** 命中的工作区目录，界面据此展示相对路径 */
+  /** 命中的工作区目录：界面据此展示相对路径 */
   root: string
   ext: string
   dir: boolean
@@ -135,6 +153,16 @@ export interface WorkspaceFileUpload {
   type: string
   suffix: string
   size: number
+}
+
+/** 打开 / 定位本机文件的结果：ok 为 false 时 message 是不能照做的原因 */
+export interface WorkspaceOpenResult {
+  ok: boolean
+  /** 归一后的路径（定位失败时是调用方给的那一段） */
+  path: string
+  /** 拒绝的原因是「可执行 / 脚本文件」：界面确认后带 force 再来一次 */
+  unsafe?: boolean
+  message?: string
 }
 
 /** 项目目录清单的来源：主进程按项目标识给出该项目声明的目录（读不到就返回空，一律拒绝） */
@@ -200,8 +228,43 @@ const UPLOAD_MIME_TYPES: Record<string, string> = {
   ppt: 'application/vnd.ms-powerpoint',
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
 }
-const MAX_FILES = 3000 // @ 引用的文件清单上限，够用且不至于把界面拖慢
+const MAX_FILES = 3000 // 遍历条目上限（清单与文本检索共用），够用且不至于把一次遍历拖太久
 const MAX_FILE_DEPTH = 8 // 清单递归深度上限
+/**
+ * 可执行 / 脚本类后缀：这些文件「打开」就是「运行」，而对话里给出的路径可能来自模型输出，
+ * 不能一点就执行——默认拒绝，界面确认过（force）才交给系统默认程序。
+ */
+const EXECUTABLE_EXTS = new Set([
+  'exe',
+  'com',
+  'bat',
+  'cmd',
+  'msi',
+  'msix',
+  'appx',
+  'scr',
+  'pif',
+  'cpl',
+  'hta',
+  'vbs',
+  'vbe',
+  'js',
+  'jse',
+  'wsf',
+  'wsh',
+  'ps1',
+  'psm1',
+  'reg',
+  'lnk',
+  'url',
+  'jar',
+  'dll',
+  'so',
+  'dylib',
+  'sh',
+  'command',
+  'desktop'
+])
 const MAX_SEARCH_FILE = 1024 * 1024 // 文本检索单文件上限 1MB
 const MAX_SEARCH_MATCH = 200 // 文本检索命中条数上限
 const MAX_SEARCH_LINE = 240 // 单行命中的展示长度
@@ -357,6 +420,13 @@ export class WorkspaceManager {
   /** 询问界面的一次性回调：由主进程注册（把申请推给渲染进程并等答复） */
   private approval: ((request: WorkspaceApproval) => Promise<boolean>) | null = null
 
+  /**
+   * 正在执行的命令：停止生成时按会话成批收掉。
+   * 命令跑在自己的会话里，一轮对话按下停止后不该还有命令留在后台跑
+   * （尤其是它跑完还会把结果交回对话循环，让整轮对话接着往下走）。
+   */
+  private commands = new Set<RunningCommand>()
+
   static getInstance(): WorkspaceManager {
     if (!WorkspaceManager.instance) {
       WorkspaceManager.instance = new WorkspaceManager()
@@ -492,6 +562,67 @@ export class WorkspaceManager {
     if (stat.size > MAX_TEXT_SIZE)
       throw new Error('文件超过预览上限（2MB）：' + basename(target.path))
     return { path: target.path, content: readFileSync(target.path, 'utf8'), size: stat.size }
+  }
+
+  /**
+   * 用系统默认程序打开一个本机文件，目录交给文件管理器。
+   *
+   * 这是用户点出来的动作，所以只做「路径归一 + 存在性判断 + 可执行文件防护」：
+   * 不走工作区权限与访问策略，工作区外的文件也照开——用户是看着提示里的完整路径点的，
+   * 与模型自己越界读文件不是一回事。
+   *
+   * `force` 只对付最后一条：可执行 / 脚本类文件默认不打开（打开即运行），界面确认后再放行。
+   */
+  async open(projectId: string, path: string, force = false): Promise<WorkspaceOpenResult> {
+    const target = this.locate(projectId, path)
+    if (target.message) return { ok: false, path: target.path, message: target.message }
+    if (!force && this.executable(target.path)) {
+      return {
+        ok: false,
+        unsafe: true,
+        path: target.path,
+        message: '这是可执行 / 脚本文件，没有直接打开'
+      }
+    }
+    // openPath 交给系统默认程序：成功返回空串，否则是不能打开的原因（没有关联程序等）
+    const failure = await shell.openPath(target.path)
+    if (failure) return { ok: false, path: target.path, message: `打开失败：${failure}` }
+    return { ok: true, path: target.path }
+  }
+
+  /** 在系统文件管理器中定位这个文件 / 目录：可执行文件用它代替直接打开，任何文件都点得动 */
+  async reveal(projectId: string, path: string): Promise<WorkspaceOpenResult> {
+    const target = this.locate(projectId, path)
+    if (target.message) return { ok: false, path: target.path, message: target.message }
+    shell.showItemInFolder(target.path)
+    return { ok: true, path: target.path }
+  }
+
+  /**
+   * 路径定位：绝对路径原样用，相对路径按项目目录解析（与文件工具同一套口径，见 absolute）。
+   * 只判断存在性、不做权限判定——结论由调用方按用途决定（open / reveal 都不套策略）。
+   */
+  private locate(projectId: string, path: string): { path: string; message?: string } {
+    let target = ''
+    try {
+      target = this.absolute(projectId, path)
+    } catch (error) {
+      return { path: String(path ?? '').trim(), message: reason(error) }
+    }
+    if (!existsSync(target)) {
+      return { path: target, message: `文件不存在（可能已被移动或删除）：${target}` }
+    }
+    return { path: target }
+  }
+
+  /** 目录一律当作可打开（交给文件管理器），只有文件才看后缀是不是可执行 / 脚本类 */
+  private executable(path: string): boolean {
+    try {
+      if (statSync(path).isDirectory()) return false
+    } catch {
+      return false
+    }
+    return EXECUTABLE_EXTS.has(extname(path).replace(/^\./, '').toLowerCase())
   }
 
   async write(
@@ -646,9 +777,9 @@ export class WorkspaceManager {
   }
 
   /**
-   * 工作区文件清单：只列已声明目录内的文件，供「@ 引用」按名称检索。
-   * 目录与文件一视同仁（目录引用进去就是一份清单），同样只覆盖已声明的目录。
-   * 依赖目录与产物目录一律跳过，总量与深度都有上限，避免大工程把界面拖慢。
+   * 工作区文件清单：只列已声明目录内的文件与目录，供按名称检索（对话输入区不再铺这份清单，
+   * 由本地文件的「选择本地…」与文件工具各走各的路）。
+   * 依赖目录与产物目录一律跳过，总量与深度都有上限，避免大工程把一次遍历拖太久。
    */
   files(projectId: string): WorkspaceFile[] {
     const result: WorkspaceFile[] = []
@@ -763,7 +894,7 @@ export class WorkspaceManager {
     await this.access(projectId, workdir, 'command', { command: text, conversationId })
     if (!existsSync(workdir)) throw new Error('工作目录不存在：' + workdir)
     if (!statSync(workdir).isDirectory()) throw new Error('工作目录不是目录：' + workdir)
-    return this.runCommand(text, workdir, this.timeout(timeout))
+    return this.runCommand(text, workdir, this.timeout(timeout), conversationId)
   }
 
   /** 超时归一：非正数取默认值，超出上限按上限算 */
@@ -773,11 +904,35 @@ export class WorkspaceManager {
     return Math.min(seconds, MAX_COMMAND_TIMEOUT)
   }
 
-  /** 真正跑命令：输出按上限裁剪，超时把进程收掉，结果一次给全（调用方不用管流的事） */
+  /**
+   * 停止这段会话正在跑的命令：进程树收掉、等待中的调用立刻按「已停止」收尾。
+   *
+   * 一轮对话按停止时，界面只断得掉模型流；命令跑在主进程里，断流管不着它。
+   * 不收的话这条命令会一直跑到自己的超时，跑完还会把结果交回对话循环，
+   * 整轮对话就接着往下走了——那正是「停下来之后还在跑」的来处。
+   * 返回被收掉的命令条数（没有就返回 0，调用方不必区分）。
+   */
+  cancel(conversationId: string): number {
+    const id = String(conversationId ?? '')
+    if (!id) return 0
+    let stopped = 0
+    for (const command of [...this.commands]) {
+      if (command.conversationId !== id) continue
+      stopped++
+      command.stop()
+    }
+    return stopped
+  }
+
+  /**
+   * 真正跑命令：输出按上限裁剪，超时把进程收掉，结果一次给全（调用方不用管流的事）。
+   * 命令在跑期间登记在案的（按会话可收），收尾时不管走哪条路都会摘掉。
+   */
   private runCommand(
     command: string,
     cwd: string,
-    timeout: number
+    timeout: number,
+    conversationId = ''
   ): Promise<WorkspaceCommandResult> {
     const started = Date.now()
     return new Promise<WorkspaceCommandResult>((settle) => {
@@ -785,11 +940,15 @@ export class WorkspaceManager {
       const stdout = new OutputCollector(MAX_COMMAND_OUTPUT)
       const stderr = new OutputCollector(MAX_COMMAND_OUTPUT)
       let timedOut = false
+      let cancelled = false
       let settled = false
       let timer: NodeJS.Timeout | null = null
+      /** 这一条命令在册子上的样子：停止时按它收，收尾时摘掉（跑完不留痕） */
+      let running: RunningCommand | null = null
       const finish = (code: number | null, signal: NodeJS.Signals | null): void => {
         if (settled) return
         settled = true
+        if (running) this.commands.delete(running)
         if (timer) clearTimeout(timer)
         settle({
           command,
@@ -797,11 +956,24 @@ export class WorkspaceManager {
           code,
           signal: String(signal ?? ''),
           timedOut,
+          cancelled,
           duration: Date.now() - started,
           stdout: stdout.text(),
           stderr: stderr.text()
         })
       }
+      running = {
+        conversationId: String(conversationId ?? ''),
+        stop: () => {
+          if (settled) return
+          cancelled = true
+          this.kill(child)
+          // 与超时同一口径：先收进程树，再立刻收尾——树没能在这一刻清干净，
+          // 也不该让等着这一步的调用悬着（挂着的工具调用正是「卡住」的样子）
+          finish(null, null)
+        }
+      }
+      if (running.conversationId) this.commands.add(running)
       timer = setTimeout(() => {
         timedOut = true
         this.kill(child)

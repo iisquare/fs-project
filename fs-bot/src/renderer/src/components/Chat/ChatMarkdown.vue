@@ -8,16 +8,22 @@
  * 每条正文各自解析（本组件内部按标识去重），不做跨消息缓存，撤权后历史回复里的图片同样只剩默认图；
  * 地址没拿到（无权限 / 已删除 / 请求失败）一律回落默认图，解析期间先用浅色占位图，不出现破图。
  * 图片点一下看大图，同一段正文里的图片按出现顺序左右切换。
+ *
+ * 链接分两种处理：本机路径（`[报告](D:\x\报告.md)` 这类，模型交代产物时很常见）点一下用系统默认程序打开；
+ * 其余仍是外部地址，交给主进程的窗口打开策略走浏览器（见 core/Markdown 里补 target="_blank" 的说明）。
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { knowledgeImageIds, markdownParts } from '@renderer/core/Markdown'
 import KnowledgeImageUtil from '@renderer/utils/KnowledgeImageUtil'
+import FileActionUtil from '@renderer/utils/FileActionUtil'
 import loadingImage from '@renderer/assets/images/knowledge-image-loading.svg?url'
 import fallbackImage from '@renderer/assets/images/knowledge-image-fallback.svg?url'
 import ChatCode from './ChatCode.vue'
 
 const props = defineProps<{
   content: string
+  /** 会话所属项目：正文里的相对路径按它的工作区目录解析（打开文件时用） */
+  projectId?: string
 }>()
 
 /**
@@ -92,6 +98,21 @@ function openPreview(event: MouseEvent): void {
 }
 
 /**
+ * 点击：正文里的本机路径链接拦下来交给「打开本机文件」，其余仍按大图查看处理。
+ * 不拦的话这些链接会被主进程当成外部地址丢给浏览器（core/Markdown 给链接统一补了 target="_blank"）。
+ */
+function onClick(event: MouseEvent): void {
+  const anchor = (event.target as Element | null)?.closest?.('a')
+  const path = anchor ? FileActionUtil.localPath(anchor.getAttribute('href') ?? '') : ''
+  if (path) {
+    event.preventDefault()
+    FileActionUtil.open(String(props.projectId ?? ''), path)
+    return
+  }
+  openPreview(event)
+}
+
+/**
  * 图片加载失败（签发地址过期、网络异常等）：换成默认图
  * 正文是 v-html 插进来的，这里只改这一张图的 src；下次正文变化重新渲染时就回到解析结果
  */
@@ -103,12 +124,7 @@ function fallbackImageOnError(event: Event): void {
 </script>
 
 <template>
-  <div
-    ref="rootRef"
-    class="chat-markdown"
-    @click="openPreview"
-    @error.capture="fallbackImageOnError"
-  >
+  <div ref="rootRef" class="chat-markdown" @click="onClick" @error.capture="fallbackImageOnError">
     <template v-for="(part, index) in parts" :key="index">
       <ChatCode v-if="'code' === part.type" :code="part.code" :lang="part.lang" />
       <div v-else class="chat-markdown-text" v-html="part.html" />

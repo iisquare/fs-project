@@ -5,7 +5,7 @@ import { randomUUID } from 'crypto'
 import { dialog, net, protocol, type BrowserWindow } from 'electron'
 
 /**
- * 本地图标：项目图标选中的本地图片复制到 userdata/icons，界面用 app-icon://<文件名> 引用。
+ * 本地图标：项目图标选中的本地图片复制到 <运行目录>/userdata/icons，界面用 app-icon://<文件名> 引用。
  *
  * 存复制件而不是原路径：原图挪走、改名或换台机器后图标照样显示；
  * 网络地址不经过这里，手填的 http(s) 地址照旧由渲染进程直接加载。
@@ -15,7 +15,7 @@ export const ICON_SCHEME = 'app-icon'
 /** 允许作为图标的图片类型：文件选择框的过滤条件，也是扩展名兜底时的白名单 */
 const ICON_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'avif', 'svg']
 
-/** 图标目录：initIcons 之后才有值（安装目录要到 app ready 时才拿到） */
+/** 图标目录：initIcons 之后才有值（运行目录要到 app ready 时才拿到） */
 let root = ''
 
 /**
@@ -27,9 +27,9 @@ protocol.registerSchemesAsPrivileged([
   { scheme: ICON_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true } }
 ])
 
-/** 图标目录随安装目录走（与 userdata / skills 同级），没有就建一个 */
-export function initIcons(installPath: string): void {
-  root = join(installPath, 'userdata', 'icons')
+/** 图标目录随运行目录走（`<运行目录>/userdata/icons`，与 `skills/` 平级），没有就建一个 */
+export function initIcons(runtimeDir: string): void {
+  root = join(runtimeDir, 'userdata', 'icons')
   mkdirSync(root, { recursive: true })
 }
 

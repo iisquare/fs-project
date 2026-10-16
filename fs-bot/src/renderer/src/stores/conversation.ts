@@ -3,12 +3,15 @@ import { defineStore } from 'pinia'
 import ApiUtil from '@renderer/utils/ApiUtil'
 import ConversationDb from '@renderer/db/ConversationDb'
 import type { Conversation } from '@renderer/db/ConversationDb'
-import { chatProfile, chatTitle, useChatStore, type SendParams } from './chat'
+import { chatProfile, chatTitle, onMessageLanded, useChatStore, type SendParams } from './chat'
 import { useProjectStore } from './project'
 import type { Project } from '@renderer/db/ProjectDb'
 
 /**
  * 会话列表：会话与消息都只存在本地，按项目归属；换机器 / 重装后历史不跟随。
+ *
+ * 列表按会话最后一条消息的时间倒序展示与排序（今天 / 昨天 / 本周 / 更早也是按它分组），
+ * 时间随消息落库推进：chat store 每落一条消息就报一次，这里随即把这条会话挪到最前面。
  *
  * 新建的会话先只是一条草稿：发出第一条消息时才落库进历史，
  * 所以点开项目后没说话就退出，历史列表与检索里都不会多出一条空的「新对话」。
@@ -20,6 +23,9 @@ export const useConversationStore = defineStore('conversation', () => {
   const currentId = ref('')
   const loading = ref(false)
   const filterProjectId = ref('')
+
+  // 会话落新消息就把列表里这条的时间推到当下：列表的展示、分组与排序都以它为准
+  onMessageLanded(markActive)
 
   /** 当前会话：历史里的那条，或还没落库的新会话 */
   const current = computed<Conversation | null>(() => {
@@ -34,11 +40,30 @@ export const useConversationStore = defineStore('conversation', () => {
       : conversations.value
   )
 
+  /** 列表按最后一条消息的时间倒序：时间相同（同一毫秒）时保持原有先后 */
+  function sortConversations(): void {
+    conversations.value = [...conversations.value].sort(
+      (left, right) => (Date.parse(right.updatedAt) || 0) - (Date.parse(left.updatedAt) || 0)
+    )
+  }
+
+  /**
+   * 会话落了新消息：把这条的时间推到当下并重排——老会话发完消息当即挪到「今天」最上面，
+   * 不必等下次启动重新读库。时刻由 chat store 给出，与写进库里的那个值一致。
+   */
+  function markActive(id: string, at: string): void {
+    const conversation = conversations.value.find((item) => item.id === id)
+    if (!conversation || !at) return
+    if (at > conversation.updatedAt) conversation.updatedAt = at
+    sortConversations()
+  }
+
   async function fetchConversations(projectId = filterProjectId.value): Promise<Conversation[]> {
     loading.value = true
     try {
       const result: any = await ConversationDb.list(projectId)
       conversations.value = ApiUtil.succeed(result) ? (ApiUtil.data(result) as Conversation[]) : []
+      sortConversations()
     } finally {
       loading.value = false
     }
@@ -62,36 +87,40 @@ export const useConversationStore = defineStore('conversation', () => {
 
   /**
    * 草稿落库：把这条新会话写进历史列表，已落库的会话什么都不做。
+   * 时间用这一轮发送的时刻（at）：列表按最后一条消息的时间展示与排序，与库里记的是同一个值。
    * 落库失败就留着草稿，下一次发送再补——界面上这条会话照常能聊。
    */
-  async function persist(id: string, title = ''): Promise<void> {
-    const conversation = drafts.value[id]
+  async function persist(params: SendParams, at: string): Promise<void> {
+    const conversation = drafts.value[params.conversationId]
     if (!conversation) return
-    const name = title || conversation.title
+    const name = chatTitle(params) || conversation.title
     let stored = false
     try {
       const result: any = await ConversationDb.create({
         id: conversation.id,
         title: name,
         projectId: conversation.projectId,
-        createdAt: conversation.createdAt
+        createdAt: conversation.createdAt,
+        updatedAt: at
       })
       stored = ApiUtil.succeed(result)
     } catch {
       /* 落库失败：草稿保留，下一次发送再补 */
     }
     if (!stored) return
-    delete drafts.value[id]
+    delete drafts.value[params.conversationId]
     conversation.title = name
+    conversation.updatedAt = at
     conversations.value = [conversation, ...conversations.value]
+    sortConversations()
   }
 
   /**
    * 发送一轮：会话行先落库，再交给 chat store 把这一轮跑起来
-   * （新会话的第一条消息就是它进历史的时机）。
+   * （新会话的第一条消息就是它进历史的时机，落库时刻从 chat store 传回来）。
    */
   async function send(params: SendParams): Promise<void> {
-    await useChatStore().send(params, () => persist(params.conversationId, chatTitle(params)))
+    await useChatStore().send(params, (at) => persist(params, at))
   }
 
   async function select(id: string): Promise<void> {

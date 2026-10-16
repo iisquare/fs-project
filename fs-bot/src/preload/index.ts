@@ -60,6 +60,12 @@ const ipc = {
     // 引用一段本地路径：文件给内容、目录给清单，调用方不区分两者
     reference: (projectId: string, path: string, conversationId = '') =>
       ipcRenderer.invoke('workspace:reference', { projectId, path, conversationId }),
+    // 用系统默认程序打开 / 在文件管理器里定位：用户点出来的动作，工作区外的路径也照开，
+    // 只有可执行 / 脚本类文件默认拒绝（force 是界面确认过之后的重试）
+    open: (projectId: string, path: string, force = false) =>
+      ipcRenderer.invoke('workspace:open', { projectId, path, force }),
+    reveal: (projectId: string, path: string) =>
+      ipcRenderer.invoke('workspace:reveal', { projectId, path }),
     write: (projectId: string, path: string, content: string, conversationId = '') =>
       ipcRenderer.invoke('workspace:write', { projectId, path, content, conversationId }),
     mkdir: (projectId: string, path: string, conversationId = '') =>
@@ -82,7 +88,7 @@ const ipc = {
       }),
     remove: (projectId: string, path: string, conversationId = '') =>
       ipcRenderer.invoke('workspace:remove', { projectId, path, conversationId }),
-    // 清单与检索：@ 引用与文件工具共用，只覆盖项目已声明的目录
+    // 清单与检索：只覆盖项目已声明的目录（检索由文件工具的 search 动作使用）
     files: (projectId: string) => ipcRenderer.invoke('workspace:files', { projectId }),
     search: (projectId: string, keyword: string) =>
       ipcRenderer.invoke('workspace:search', { projectId, keyword }),
@@ -91,6 +97,8 @@ const ipc = {
     // 本机执行命令：工作目录决定权限口径，越界时主进程会把申请推上来等答复
     exec: (projectId: string, command: string, cwd = '', timeout = 0, conversationId = '') =>
       ipcRenderer.invoke('workspace:exec', { projectId, command, cwd, timeout, conversationId }),
+    // 停止生成：收掉这段会话还挂着的本地活儿（等答复的申请按拒绝处理、在跑的命令终止）
+    cancel: (conversationId: string) => ipcRenderer.invoke('workspace:cancel', { conversationId }),
     // 工作区外文件的访问策略：读取 / 切换（策略由主进程执行，渲染进程只发起）
     policy: () => ipcRenderer.invoke('workspace:policy:get'),
     setPolicy: (policy: string) => ipcRenderer.invoke('workspace:policy:set', { policy }),

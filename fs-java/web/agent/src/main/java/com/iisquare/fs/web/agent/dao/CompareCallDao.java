@@ -15,8 +15,13 @@ import java.util.List;
  */
 public interface CompareCallDao extends DaoBase<CompareCall, Integer> {
 
-    /** 某轮提交的调用明细，按 id 升序即提交顺序 */
-    List<CompareCall> findByRunIdOrderByIdAsc(Integer runId);
+    /**
+     * 某轮提交的调用明细，按「发起时间 + id」升序：与页面上卡片的顺序一致。
+     *
+     * 不能按 id 排：明细是各条流并行写进来的，谁先结束谁先落库，
+     * 插入顺序并不等于提交顺序（恢复历史时卡片会跟着错位）。
+     */
+    List<CompareCall> findByRunIdOrderByCreatedTimeAscIdAsc(Integer runId);
 
     /** 按模型统计 */
     interface ModelStat {

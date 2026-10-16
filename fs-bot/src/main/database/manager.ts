@@ -37,10 +37,11 @@ export class DatabaseManager {
 
   // ── Init user DB (per-user, called after login) ──
 
-  initUser(serial: string, userId: string, dbSecret: string, installPath: string): void {
+  /** runtimeDir 是运行目录（见 main/index.ts）：用户库放在它下面的 userdata/<userId>/ 里 */
+  initUser(serial: string, userId: string, dbSecret: string, runtimeDir: string): void {
     this.closeUser()
 
-    const userDir = join(installPath, 'userdata', String(userId))
+    const userDir = join(runtimeDir, 'userdata', String(userId))
     const dbPath = join(userDir, 'fs-bot.db')
 
     this.user = this.openDb(dbPath, serial, dbSecret)
@@ -115,9 +116,9 @@ export class DatabaseManager {
     const placeholders = columns.map(() => '?').join(', ')
     const values = columns.map((c) => row[c])
 
-    db.prepare(
-      `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`
-    ).run(...values)
+    db.prepare(`INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`).run(
+      ...values
+    )
     this.afterWrite()
     return { code: 0, message: 'Succeed!', data: { id: row['id'] ?? null } }
   }

@@ -2,7 +2,7 @@
 export type SettingValue = string | number | boolean
 
 /**
- * 系统级配置读写（userdata/config.toml，由主进程维护）
+ * 系统级配置读写（<运行目录>/userdata/config.toml，由主进程维护）
  */
 export default {
   async getSettings(): Promise<Record<string, SettingValue>> {

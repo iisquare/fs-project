@@ -13,7 +13,9 @@
 
 ## 用户库位置
 
-`userdata/<userId>/fs-bot.db`（SQLCipher 加密 + WAL）。`<userId>` 是登录接口返回的用户 ID，例如 `userdata/1/fs-bot.db`；加密口令由账号名（serial）+ `VITE_DB_SECRET` 派生。
+`<运行目录>/userdata/<userId>/fs-bot.db`（SQLCipher 加密 + WAL）。`<userId>` 是登录接口返回的用户 ID，例如 `userdata/1/fs-bot.db`；加密口令由账号名（serial）+ `VITE_DB_SECRET` 派生。
+
+运行目录（见 `src/main/index.ts`）：开发模式是项目根目录，生产环境是**用户主目录下的 `.fs-bot`**（如 `C:\Users\<用户>\.fs-bot\userdata\1\fs-bot.db`）。下面的命令在开发模式按项目根目录给相对路径即可，生产环境把路径换成绝对路径。
 
 ## 常用操作（只读）
 

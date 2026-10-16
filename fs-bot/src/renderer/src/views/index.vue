@@ -21,7 +21,8 @@ const fill = computed(() => route.path === page.home)
   <!-- Windows/Linux: 标题栏只盖住右侧内容区，侧边栏通到窗口上下沿 -->
   <div class="main-layout" :class="{ 'main-layout--mac': isMac }">
     <TitleBar v-if="isMac" class="main-layout__titlebar" />
-    <el-splitter class="main-splitter">
+    <!-- resize-end 在 splitter 根上（面板只抛 update:size）：拖完这一下才把宽度落库 -->
+    <el-splitter class="main-splitter" @resize-end="sidebar.saveWidth()">
       <!-- 侧边栏：拖分隔条调整宽度，宽度记在 store 里（拖到多宽，下次打开还是多宽） -->
       <el-splitter-panel
         v-if="sidebar.visible"
@@ -29,7 +30,6 @@ const fill = computed(() => route.path === page.home)
         :min="SIDEBAR_WIDTH_MIN"
         :max="SIDEBAR_WIDTH_MAX"
         @update:size="sidebar.setWidth"
-        @resize-end="sidebar.saveWidth()"
       >
         <LayoutSidebar />
       </el-splitter-panel>

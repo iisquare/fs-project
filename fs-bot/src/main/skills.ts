@@ -13,7 +13,7 @@ import { join, resolve, sep } from 'path'
 import { extract } from './archive'
 
 /**
- * 本地技能目录：技能包由服务端下发（/agent/skillVersion/package），下载后解压到 skills 目录，
+ * 本地技能目录：技能包由服务端下发（/agent/skillVersion/package），下载后解压到 <运行目录>/skills，
  * 每个技能一个文件夹，并存一份 meta.json 记录来源版本，供页面回显「已安装 / 有可用版本」。
  *
  * 目录结构：
@@ -92,8 +92,8 @@ export class SkillManager {
     return this.root
   }
 
-  init(installPath: string): void {
-    this.root = join(installPath, 'skills')
+  init(runtimeDir: string): void {
+    this.root = join(runtimeDir, 'skills')
     mkdirSync(this.root, { recursive: true })
     console.log('[Skill] Skills directory:', this.root)
   }

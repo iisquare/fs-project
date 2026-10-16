@@ -5,6 +5,9 @@
  * 这里需要 N 条并发且要能单独中断，所以自己维护连接表；协议解析仍然复用
  * @/api/agent/streams 的端点定义，报文知识不落到视图里。
  *
+ * 输出不留在这里：每条流把 runId 与本地 key 带下去，服务端按同一份增量自己攒记录，
+ * 所以页面被卸载（切页面 / 刷新）时中断连接，只是不再接收增量，历史里那一条照样在。
+ *
  * 结果对象一旦创建就不再替换，流式过程中只改字段（reasoning / content / state），
  * 这样页面绑定的引用始终有效。注意必须先赋值再取用：map 出来的原始对象改了不会触发视图更新。
  */
@@ -26,8 +29,10 @@ const effortApplied = (item: CompareModelConfig) => {
 }
 
 /** 组装单个模型的请求体：只用启用过的字段，没配的交给服务端取默认值 */
-const buildPayload = (item: CompareModelConfig, global: CompareGlobalConfig) => {
+const buildPayload = (item: CompareModelConfig, global: CompareGlobalConfig, runId: any) => {
   const payload: Record<string, any> = {
+    runId: runId ?? 0, // 本轮运行记录标识：服务端据此把这条输出写进对应记录，0 表示不留档
+    key: item.key, // 页面本地键：服务端按它把明细行与这张卡片对上
     model: item.model,
     systemPrompt: global.systemPrompt,
     input: global.input,
@@ -83,10 +88,11 @@ export default function useModelCompare() {
   }
 
   /**
-   * 发起一轮：每个模型一条连接，各自带着自己的参数。
+   * 发起一轮：每个模型一条连接，各自带着自己的参数与本轮记录标识。
+   * runId 由调用方先建档拿到（见 CompareApi.runCreate），这里只负责把它带下去。
    * 返回是否真的发出（上一轮还在跑时直接忽略）。
    */
-  const start = (targets: CompareModelConfig[], global: CompareGlobalConfig) => {
+  const start = (targets: CompareModelConfig[], global: CompareGlobalConfig, runId: any) => {
     if (running.value) return false
     results.value = targets.map((item) => ({
       key: item.key,
@@ -96,7 +102,7 @@ export default function useModelCompare() {
       reasoning: '',
       finishReason: '',
       error: '',
-      payload: buildPayload(item, global),
+      payload: buildPayload(item, global, runId),
       createdTime: 0,
       firstTokenTime: 0,
       finishedTime: 0,

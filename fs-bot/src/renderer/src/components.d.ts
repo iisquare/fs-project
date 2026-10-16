@@ -18,6 +18,7 @@ declare module 'vue' {
     ChatMarkdown: typeof import('./components/Chat/ChatMarkdown.vue')['default']
     ChatMessage: typeof import('./components/Chat/ChatMessage.vue')['default']
     ContextRing: typeof import('./components/Chat/ContextRing.vue')['default']
+    ConversationFiles: typeof import('./components/Chat/ConversationFiles.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAutocomplete: typeof import('element-plus/es')['ElAutocomplete']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']

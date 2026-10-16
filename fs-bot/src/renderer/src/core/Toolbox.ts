@@ -372,6 +372,8 @@ async function invokeCommand(
     conversationId
   )
   const text = commandResult(result)
+  // 用户按了停止：进程树已被主进程收掉，这一步就此打住（调用循环随后按「已停止」收尾）
+  if (result.cancelled) throw new Error(`${text}\n（命令已被停止）`)
   // 非 0 退出码与超时都按失败抛出：模型拿到完整输出继续修正，界面上这一格也是红的
   if (result.timedOut) {
     throw new Error(`${text}\n（命令超过 ${timeout > 0 ? timeout : 60} 秒仍未结束，已终止）`)

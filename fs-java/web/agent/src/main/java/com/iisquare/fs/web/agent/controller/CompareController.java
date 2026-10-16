@@ -34,6 +34,7 @@ public class CompareController extends PermitControllerBase {
 
     /**
      * 单模型流式推理：一次请求只跑一个模型（参数逐模型独立），由页面并发发起
+     * 请求带上 runId 与 key，输出由服务端随流落库：页面中途离开也不影响这一轮的留档
      * 事件格式：{ action: choices.message | error.message | error.throwable, data: ... }
      */
     @RequestMapping("/stream")
@@ -41,6 +42,15 @@ public class CompareController extends PermitControllerBase {
     public SseEmitter streamAction(@RequestBody String body, HttpServletRequest request, HttpServletResponse response) throws Exception {
         ObjectNode json = (ObjectNode) DPUtil.parseJSON(body);
         return compareService.stream(json, request, response);
+    }
+
+    /**
+     * 建立一条运行记录：点「发送」时先建档，页面拿到标识后带着它发起各模型的流
+     */
+    @RequestMapping("/runCreate")
+    @Permission("")
+    public String runCreateAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
+        return ApiUtil.echoResult(compareService.runCreate(param, request));
     }
 
     /**
@@ -124,12 +134,13 @@ public class CompareController extends PermitControllerBase {
     }
 
     /**
-     * 保存一次运行记录：中断与失败同样入档
+     * 终止某一轮：断掉还在跑的流，并把没回来的模型记为中断
+     * 模型卡死、输出失控时用它收口——页面上的「停止」不一定还够得着（比如从历史里打开的记录）
      */
-    @RequestMapping("/runSave")
+    @RequestMapping("/runStop")
     @Permission("")
-    public String runSaveAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
-        return ApiUtil.echoResult(compareService.runSave(param, request));
+    public String runStopAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
+        return ApiUtil.echoResult(compareService.runStop(param, request));
     }
 
     /**

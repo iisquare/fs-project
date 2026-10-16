@@ -39,10 +39,13 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 模型对比调试：agent 模块里直接面向模型网关的一条线。
@@ -76,6 +79,14 @@ public class CompareService extends JPAServiceBase implements DisposableBean {
     /** 模型网关认证密钥：整个 agent 服务共用一个（应用上配置的认证标识是对话那条线的事） */
     @Value("${fs.agent.token:}")
     private String gatewayToken;
+    /** 单个模型的输出上限（字符）：模型陷入死循环时不能无限攒下去，越过即主动中断 */
+    @Value("${fs.agent.compare.maxContentLength:500000}")
+    private int maxContentLength;
+    /** 单个模型的运行时长上限（毫秒）：到点主动中断，保证任何一轮都会收口 */
+    @Value("${fs.agent.compare.maxDuration:1800000}")
+    private long maxDuration;
+    /** 此刻还在跑的流，按运行记录分组（内存态，只认本实例），供「终止本轮」用 */
+    protected final Map<Integer, Set<CallRecord>> active = new ConcurrentHashMap<>();
 
     @Override
     public void destroy() throws Exception {
@@ -94,11 +105,25 @@ public class CompareService extends JPAServiceBase implements DisposableBean {
     /**
      * 单个模型的流式推理：一次请求一个模型，增量实时推送。
      * 事件：choices.message（增量，含 finish_reason）、error.message、error.throwable
+     *
+     * 记录由服务端写：请求带上 runId 与 key，增量在转发给页面的同时攒一份，
+     * 流结束时（不论正常结束、模型报错，还是调用方中途离开）落成一条调用明细。
+     * 页面只负责把标识传下来，切页面、刷新、断网都不会让这一轮消失在历史之外。
      */
     public SseEmitter stream(ObjectNode json, HttpServletRequest request, HttpServletResponse response) throws IOException {
         SsePlainEmitter emitter = new SsePlainEmitter(request, response, 0L);
         ObjectNode body = completion(json);
+        // 发起时间与参数快照在请求进来时就定下来：调用方的时钟与服务端不一致时以服务端为准
+        final CallRecord record = new CallRecord(
+                DPUtil.parseInt(json.at("/runId").asInt(0)),
+                json.at("/key").asText(""),
+                body.at("/model").asText(""),
+                rbacService.uid(request),
+                snapshot(json));
         if (DPUtil.empty(body.at("/model").asText(""))) {
+            // 连模型都没指定也要留一行：否则这一轮在历史上永远停在「进行中」
+            record.fail("模型名称不能为空");
+            saveCall(record);
             message(emitter, "error.message", error("模型名称不能为空"));
             return emitter.sync(null);
         }
@@ -110,16 +135,22 @@ public class CompareService extends JPAServiceBase implements DisposableBean {
 
             @Override
             public boolean onMessage(ObjectNode message, boolean isEvent, boolean isStream) {
+                // 兜底检查放在最前面：心跳包也算「还活着」，模型只发心跳不出内容时同样要能到点收口
+                String exceeded = exceeded(record);
+                if (null != exceeded) return abortByLimit(emitter, record, exceeded);
                 if (isComment(message, isEvent)) { // 心跳包与结束标识原样转发
                     return emitter.message(message, isEvent).isRunning();
                 }
                 ObjectNode data = data(message, isEvent);
                 if (data.has("error")) {
+                    record.fail(data.at("/error/message").asText("模型调用失败"));
                     message(emitter, "error.message", data);
                     return false;
                 }
                 if (data.has("choices")) {
-                    // 整个 choices 数组原样转发：思考、正文、finish_reason 都在里面，由前端各归各的
+                    // 整个 choices 数组原样转发：思考、正文、finish_reason 都在里面，由前端各归各的；
+                    // 服务端按同一份增量攒记录，页面看到什么，历史里就留下什么
+                    record.accumulate(data.at("/choices"));
                     message(emitter, "choices.message", data.at("/choices"));
                     return emitter.isRunning();
                 }
@@ -129,10 +160,286 @@ public class CompareService extends JPAServiceBase implements DisposableBean {
 
             @Override
             public void onError(CloseableHttpResponse response, Throwable throwable, boolean isStream) {
+                record.fail(throwable.getMessage());
                 message(emitter, "error.throwable", error(throwable.getMessage())).abort();
             }
+
+            @Override
+            public void onClose() {
+                // 客户端主动断开（切页面 / 点停止）、响应超时都会先把 emitter 停掉，这两种算中断；
+                // 已经在记录里的增量照样存下来，调了半天什么都没有才是最难受的
+                if (!emitter.isRunning()) record.markAborted("已中断（连接断开或超时）");
+                saveCall(record);
+                // 先落库再摘牌：跟随刷新以库里那份为准，顺序反了会有一瞬间两边都看不到这条
+                unregister(record);
+            }
         };
+        record.attach(emitter, req);
+        register(record);
         return pool.process(req, emitter);
+    }
+
+    /**
+     * 兜底判断：越过阈值时给出中断原因，正常返回 null（阈值见 fs.agent.compare.*）。
+     *
+     * 模型陷入死循环时输出会一直续下去，网关的读超时（相邻两次读取的间隔）对它不起作用，
+     * 必须由服务端自己设上限，否则这一轮会永远停在「进行中」。
+     */
+    protected String exceeded(CallRecord record) {
+        if (record.failed) return null;
+        if (maxContentLength > 0 && record.length() > maxContentLength) {
+            return "输出已超过 " + maxContentLength + " 字符，已自动中断（疑似异常输出）";
+        }
+        if (maxDuration > 0 && System.currentTimeMillis() - record.createdTime > maxDuration) {
+            return "运行已超过 " + (maxDuration / 60000L) + " 分钟，已自动中断";
+        }
+        return null;
+    }
+
+    /** 越过兜底阈值：先告诉页面为什么停，再收口（返回 false，由 pool 断开上游请求） */
+    protected boolean abortByLimit(SsePlainEmitter emitter, CallRecord record, String reason) {
+        record.markAborted(reason);
+        message(emitter, "error.message", error(reason));
+        emitter.abort();
+        return false;
+    }
+
+    /**
+     * 一次模型调用的服务端记录：增量在转发的同时攒在这里，流结束时整行落库。
+     *
+     * 放在服务端而不是等页面回传，是因为「调用方随时可能消失」：
+     * 切页面、刷新、关标签、断网都不会走页面的收尾逻辑，但一定会走 SsePlainRequest.onClose()。
+     * 它同时是「终止」的落点：记录上挂着这条流的两端，终止时先告诉页面为什么停，再断开上下游。
+     */
+    protected class CallRecord {
+
+        /** 所属运行记录，0 表示这一轮不留档（建档失败或没带标识的调用方） */
+        final int runId;
+        /** 页面上的本地键：明细行与卡片靠它对上，反馈也按它对应的 callId 定位 */
+        final String key;
+        final String model;
+        final int uid;
+        /** 实际下发的参数快照：回溯以它为准，而不是去关联可变的配置 */
+        final ObjectNode payload;
+        /** 发起时间（服务端接收时刻） */
+        final long createdTime;
+        /** 首个增量的时刻，0 表示一个增量都没收到 */
+        long firstTokenTime = 0;
+        /** finish-完成，abort-中断，error-失败 */
+        volatile String state = "finish";
+        volatile String error = "";
+        String finishReason = "";
+        /** 是否已经定性为失败：失败优先于中断，读取异常与业务报错都算（终止线程也会读，故 volatile） */
+        volatile boolean failed = false;
+        /** 是否已经落库：跟随刷新会并发读这份内容，落库前它是「还在跑」的那一条 */
+        volatile boolean settled = false;
+        /**
+         * 攒下来的正文与思考。
+         * 用 StringBuffer 而不是 StringBuilder：跟随刷新会在另一个线程上取这两份文本，
+         * 非线程安全的缓冲被并发读写会取到撕裂的内容。
+         */
+        final StringBuffer content = new StringBuffer();
+        final StringBuffer reasoning = new StringBuffer();
+        /** 这条流的两端：由 stream() 启动前挂上，终止时先给页面一个原因，再断开上下游 */
+        SsePlainEmitter emitter;
+        SsePlainRequest request;
+
+        CallRecord(int runId, String key, String model, int uid, ObjectNode payload) {
+            this.runId = runId;
+            this.key = key;
+            this.model = model;
+            this.uid = uid;
+            this.payload = payload;
+            this.createdTime = System.currentTimeMillis();
+        }
+
+        void attach(SsePlainEmitter emitter, SsePlainRequest request) {
+            this.emitter = emitter;
+            this.request = request;
+        }
+
+        /** 已经攒下的输出长度：正文 + 思考，供兜底阈值判断 */
+        int length() {
+            return content.length() + reasoning.length();
+        }
+
+        /** 记一次失败：网关给的 error 报文与读取异常都归到这里 */
+        void fail(String message) {
+            if (failed) return;
+            failed = true;
+            state = "error";
+            error = DPUtil.trim(DPUtil.parseString(message));
+        }
+
+        /**
+         * 定性为中断：失败优先，且只认第一个中断原因——
+         * 自动兜底与手动终止各有更具体的说法，别被收尾时的通用原因盖掉。
+         */
+        void markAborted(String reason) {
+            if (failed || "abort".equals(state)) return;
+            state = "abort";
+            error = reason;
+        }
+
+        /**
+         * 终止这条流：先给页面一个原因——否则页面只看到连接断开，会把这一轮当成正常结束；
+         * 再断开上下游：上游断开后读取循环结束，onClose 照常把已经收到的内容落库。
+         */
+        void stop(String reason) {
+            markAborted(reason);
+            SsePlainEmitter target = emitter;
+            if (null == target) return;
+            if (target.isRunning()) message(target, "error.message", error(error));
+            target.abort();
+            if (null != request) request.abort();
+        }
+
+        /** 攒增量：正文与思考各归各的，结束原因以最后一次非空为准 */
+        void accumulate(JsonNode choices) {
+            for (JsonNode choice : choices) {
+                JsonNode source = choice.at("/delta");
+                if (source.isMissingNode() || source.isNull()) source = choice.at("/message");
+                String contentPart = source.at("/content").asText("");
+                String reasoningPart = source.at("/reasoning_content").asText("");
+                if (!contentPart.isEmpty() || !reasoningPart.isEmpty()) {
+                    if (firstTokenTime < 1) firstTokenTime = System.currentTimeMillis();
+                    content.append(contentPart);
+                    reasoning.append(reasoningPart);
+                }
+                String reason = choice.at("/finish_reason").asText("");
+                if (!DPUtil.empty(reason)) finishReason = reason;
+            }
+        }
+
+    }
+
+    /** 登记一条正在跑的流：只有建档的那一轮才需要被「终止本轮」找到 */
+    protected void register(CallRecord record) {
+        if (record.runId < 1) return;
+        active.computeIfAbsent(record.runId, key -> ConcurrentHashMap.newKeySet()).add(record);
+    }
+
+    /** 注销：流收尾时调用；空集合顺手清掉，免得这张表随着历史一直长 */
+    protected void unregister(CallRecord record) {
+        if (record.runId < 1) return;
+        Set<CallRecord> streams = active.get(record.runId);
+        if (null == streams) return;
+        streams.remove(record);
+        if (streams.isEmpty()) active.remove(record.runId, streams);
+    }
+
+    /** 某一轮此刻还有几条流在跑：页面据此分辨「进行中」是真在跑，还是只剩一条待收口的记录 */
+    public int activeCount(Integer runId) {
+        Set<CallRecord> streams = null == runId ? null : active.get(runId);
+        return null == streams ? 0 : streams.size();
+    }
+
+    /** 断掉某一轮还在跑的流，返回断掉几条（内存态，只认本实例） */
+    protected int stop(Integer runId) {
+        Set<CallRecord> streams = active.get(runId);
+        if (null == streams || streams.isEmpty()) return 0;
+        List<CallRecord> targets = new ArrayList<>(streams);
+        for (CallRecord item : targets) item.stop("本轮已终止");
+        return targets.size();
+    }
+
+    /**
+     * 等这一轮的流收尾：终止是异步生效的（要等上游断开、明细落库），
+     * 补齐残局之前先让它们走完，免得同一条明细被写两次。
+     */
+    protected void await(Integer runId, long timeout) {
+        long begin = System.currentTimeMillis();
+        while (System.currentTimeMillis() - begin < timeout) {
+            if (activeCount(runId) < 1) return;
+            try {
+                Thread.sleep(50L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+    }
+
+    /**
+     * 参数快照：请求体去掉记录用的两个字段，剩下的才是「实际下发给模型的参数」，
+     * 免得 runId / key 混进快照里污染回溯。
+     */
+    protected ObjectNode snapshot(ObjectNode json) {
+        ObjectNode snapshot = json.deepCopy();
+        snapshot.remove("runId");
+        snapshot.remove("key");
+        return snapshot;
+    }
+
+    /**
+     * 明细落库 + 批次摘要重算。
+     *
+     * 跑在流式线程的收尾处（onClose），一定早于响应结束：页面拿到「流已结束」时，
+     * 这一行已经在库里了，回来后立刻就能在历史里看到。
+     */
+    protected void saveCall(CallRecord record) {
+        if (record.runId < 1) return; // 没建档：只推流，不留档
+        CompareRun run = info(runDao, record.runId);
+        // 记录已被删除、或不是本人的：这一轮的输出不再落库（删掉之后又被写回来最让人意外）
+        if (null == run || run.getDeletedTime() > 0 || !Objects.equals(run.getCreatedUid(), record.uid)) return;
+        long finishedTime = System.currentTimeMillis();
+        callDao.save(CompareCall.builder()
+                .runId(record.runId)
+                .callKey(record.key)
+                .model(record.model)
+                .state(record.state)
+                .duration(finishedTime - record.createdTime)
+                .firstToken(record.firstTokenTime > 0 ? record.firstTokenTime - record.createdTime : 0L)
+                .contentLength(record.content.length())
+                .reasoningLength(record.reasoning.length())
+                .finishReason(record.finishReason)
+                .error(record.error)
+                .payload(record.payload.toString())
+                .content(record.content.toString())
+                .reasoning(record.reasoning.toString())
+                .createdTime(record.createdTime)
+                .createdUid(record.uid)
+                .build());
+        // 落库之后才摘掉「还在跑」这个身份：在那之前，跟随刷新会拿内存里这一份给页面看
+        record.settled = true;
+        refreshRun(run);
+    }
+
+    /**
+     * 重算批次摘要、状态与耗时：调用方可能中途就走，摘要只能由服务端按已落库的明细自己收口。
+     * 状态：0-进行中（还有模型的流没结束），1-全部完成，2-存在失败或中断。
+     */
+    protected void refreshRun(CompareRun run) {
+        List<CompareCall> calls = callDao.findByRunIdOrderByCreatedTimeAscIdAsc(run.getId());
+        int finish = 0, error = 0, abort = 0;
+        long earliest = 0, latest = 0;
+        for (CompareCall item : calls) {
+            String state = item.getState();
+            if ("finish".equals(state)) finish++;
+            else if ("error".equals(state)) error++;
+            else if ("abort".equals(state)) abort++;
+            long created = null == item.getCreatedTime() ? 0L : item.getCreatedTime();
+            long finished = created + (null == item.getDuration() ? 0L : item.getDuration());
+            if (created > 0 && (earliest < 1 || created < earliest)) earliest = created;
+            if (finished > latest) latest = finished;
+        }
+        int total = null == run.getModelCount() ? 0 : run.getModelCount();
+        int pending = Math.max(0, total - finish - error - abort);
+        StringBuilder summary = new StringBuilder();
+        appendSummary(summary, finish, "完成");
+        appendSummary(summary, error, "失败");
+        appendSummary(summary, abort, "中断");
+        appendSummary(summary, pending, "进行中");
+        int status = pending > 0 ? 0 : (error > 0 || abort > 0 ? 2 : 1);
+        runDao.updateSummary(run.getId(), status, summary.toString(),
+                earliest > 0 && latest > earliest ? latest - earliest : 0L);
+    }
+
+    /** 摘要片段：`N 个完成 · M 个失败`，个数为 0 的不写 */
+    protected void appendSummary(StringBuilder summary, int count, String label) {
+        if (count < 1) return;
+        if (summary.length() > 0) summary.append(" · ");
+        summary.append(count).append(" 个").append(label);
     }
 
     /**
@@ -410,6 +717,8 @@ public class CompareService extends JPAServiceBase implements DisposableBean {
         result.put("id", info.getId());
         result.put("title", info.getTitle());
         result.put("status", info.getStatus());
+        // 还在跑的流有几条（内存态）：页面据此分辨「进行中」是真在跑，还是只剩一条待收口的记录
+        result.put("active", activeCount(info.getId()));
         result.put("modelCount", info.getModelCount());
         result.put("duration", info.getDuration());
         result.put("summary", info.getSummary());
@@ -420,10 +729,16 @@ public class CompareService extends JPAServiceBase implements DisposableBean {
         return result;
     }
 
-    /** 调用明细 → 页面上的结果数组（按 id 升序，与提交时的顺序一致） */
+    /**
+     * 调用明细 → 页面上的结果数组（按发起时间升序，与提交时各卡片的顺序一致）。
+     *
+     * 明细是在流收尾时才落库的，只读库里那份的话，一轮「进行中」的记录在收尾前全是空的——
+     * 跟随刷新什么都看不到。所以这里把此刻还在跑的流一并带上（内存态，只认本实例），
+     * 页面看到的就与「在这一轮里直接看」是同一份内容；收尾落库后自动改以库里那份为准。
+     */
     protected ArrayNode results(Integer runId, int uid) {
         ArrayNode rows = DPUtil.arrayNode();
-        for (CompareCall item : callDao.findByRunIdOrderByIdAsc(runId)) {
+        for (CompareCall item : callDao.findByRunIdOrderByCreatedTimeAscIdAsc(runId)) {
             ObjectNode row = rows.addObject();
             row.put("id", item.getId());
             row.put("key", item.getCallKey());
@@ -440,6 +755,25 @@ public class CompareService extends JPAServiceBase implements DisposableBean {
             row.put("finishedTime", item.getCreatedTime() + (null == item.getDuration() ? 0L : item.getDuration()));
         }
         fillFeedback(rows, runId, uid);
+        Set<CallRecord> streams = active.get(runId);
+        if (null != streams) {
+            for (CallRecord item : streams) {
+                if (item.settled) continue; // 已经落库的以库里那份为准
+                ObjectNode row = rows.addObject();
+                row.put("id", 0); // 还没落库：反馈按 id 定位，回读时才拿得到
+                row.put("key", item.key);
+                row.put("model", item.model);
+                row.put("state", "streaming"); // 库里只存收尾后的状态，在跑的这条按「生成中」展示
+                row.put("content", item.content.toString());
+                row.put("reasoning", item.reasoning.toString());
+                row.put("finishReason", item.finishReason);
+                row.put("error", "");
+                row.replace("payload", item.payload.deepCopy());
+                row.put("createdTime", item.createdTime);
+                row.put("firstTokenTime", item.firstTokenTime);
+                row.put("finishedTime", 0L);
+            }
+        }
         return rows;
     }
 
@@ -458,41 +792,28 @@ public class CompareService extends JPAServiceBase implements DisposableBean {
     }
 
     /**
-     * 保存一次运行记录：摘要（完成/失败/中断几个）与耗时在写入时算好，
-     * 列表接口就不必为了看一眼状态去读几个 longtext。
+     * 建立一条运行记录：页面点「发送」时先建档，拿到标识后再把标识交给各模型的流。
+     *
+     * 先建档、后写明细的顺序，是为了让记录的归属落在服务端：
+     * 明细随各自的流在服务端落库，页面切走、刷新、断网都影响不到它；
+     * 建档时状态是 0（进行中），每写完一条明细重算一次摘要，全部到齐才收口。
      */
-    public Map<String, Object> runSave(Map<?, ?> param, HttpServletRequest request) {
+    public Map<String, Object> runCreate(Map<?, ?> param, HttpServletRequest request) {
         int uid = rbacService.uid(request);
         if (uid < 1) return ApiUtil.result(9403, null, null);
-        ObjectNode settings = object(DPUtil.stringify(DPUtil.toJSON(param.get("global"))));
         ArrayNode models = array(DPUtil.stringify(DPUtil.toJSON(param.get("models"))));
-        ArrayNode results = array(DPUtil.stringify(DPUtil.toJSON(param.get("results"))));
-        if (results.isEmpty()) return ApiUtil.result(1001, "运行结果不能为空", null);
-        int finish = 0, error = 0, abort = 0;
-        long earliest = 0, latest = 0;
-        for (JsonNode item : results) {
-            String state = item.at("/state").asText("");
-            if ("finish".equals(state)) finish++;
-            else if ("error".equals(state)) error++;
-            else if ("abort".equals(state)) abort++;
-            long created = item.at("/createdTime").asLong(0);
-            long finished = item.at("/finishedTime").asLong(0);
-            if (created > 0 && (earliest < 1 || created < earliest)) earliest = created;
-            if (finished > earliest) latest = finished;
-        }
-        StringBuilder summary = new StringBuilder();
-        if (finish > 0) summary.append(finish).append(" 个完成");
-        if (error > 0) summary.append(DPUtil.empty(summary.toString()) ? "" : " · ").append(error).append(" 个失败");
-        if (abort > 0) summary.append(DPUtil.empty(summary.toString()) ? "" : " · ").append(abort).append(" 个中断");
+        if (models.isEmpty()) return ApiUtil.result(1001, "请先添加至少一个模型", null);
+        ObjectNode settings = object(DPUtil.stringify(DPUtil.toJSON(param.get("global"))));
+        // 标题即用户输入：列表里一眼能认出是哪一问，没填输入就留空由页面兜底展示
         String title = DPUtil.trim(DPUtil.parseString(param.get("title")));
         if (DPUtil.empty(title)) title = DPUtil.trim(settings.at("/input").asText(""));
         if (title.length() > 40) title = title.substring(0, 40);
         CompareRun info = CompareRun.builder()
                 .title(title)
-                .status(error > 0 || abort > 0 ? 2 : 1)
-                .modelCount(results.size())
-                .duration(earliest > 0 && latest > earliest ? latest - earliest : 0L)
-                .summary(summary.toString())
+                .status(0)
+                .modelCount(models.size())
+                .duration(0L)
+                .summary("")
                 .settings(settings.toString())
                 .models(models.toString())
                 .ip(ServletUtil.getRemoteAddr(request))
@@ -501,41 +822,75 @@ public class CompareService extends JPAServiceBase implements DisposableBean {
                 .deletedTime(0L)
                 .build();
         info = runDao.save(info);
-        saveCalls(info.getId(), results, uid);
-        return ApiUtil.result(0, null, runInfo(info.getId(), request));
+        ObjectNode result = DPUtil.objectNode();
+        result.put("id", info.getId());
+        result.put("modelCount", info.getModelCount());
+        result.put("createdTime", info.getCreatedTime());
+        return ApiUtil.result(0, null, result);
     }
 
     /**
-     * 输出落明细：一个模型一行，正文、思考与参数快照都存这里。
-     * 时间在列表里只存「耗时」与「首字耗时」两个增量，避免再存一遍绝对时间戳。
+     * 终止一轮：断掉这一轮还在跑的流，再把一直没有回来的模型补成「中断」。
+     *
+     * 模型卡死、输出失控时，页面上的「停止」不一定还够得着——从历史里打开的、调用方早就离开的、
+     * 或者服务端重启后残留的「进行中」，都只能按记录来收口，否则它会永远停在「进行中」。
      */
-    protected void saveCalls(Integer runId, ArrayNode results, int uid) {
-        List<CompareCall> rows = new ArrayList<>();
-        for (JsonNode item : results) {
-            long created = item.at("/createdTime").asLong(0);
-            long finished = item.at("/finishedTime").asLong(0);
-            long first = item.at("/firstTokenTime").asLong(0);
-            String content = item.at("/content").asText("");
-            String reasoning = item.at("/reasoning").asText("");
-            rows.add(CompareCall.builder()
-                    .runId(runId)
-                    .callKey(item.at("/key").asText(""))
-                    .model(item.at("/model").asText(""))
-                    .state(item.at("/state").asText(""))
-                    .duration(created > 0 && finished > created ? finished - created : 0L)
-                    .firstToken(first > created ? first - created : 0L)
-                    .contentLength(content.length())
-                    .reasoningLength(reasoning.length())
-                    .finishReason(item.at("/finishReason").asText(""))
-                    .error(item.at("/error").asText(""))
-                    .payload(DPUtil.stringify(item.at("/payload")))
-                    .content(content)
-                    .reasoning(reasoning)
-                    .createdTime(created > 0 ? created : System.currentTimeMillis())
-                    .createdUid(uid)
-                    .build());
+    public Map<String, Object> runStop(Map<?, ?> param, HttpServletRequest request) {
+        int uid = rbacService.uid(request);
+        if (uid < 1) return ApiUtil.result(9403, null, null);
+        int runId = DPUtil.parseInt(param.get("id"));
+        CompareRun run = info(runDao, runId);
+        if (null == run || run.getDeletedTime() > 0) return ApiUtil.result(404, "运行记录不存在", runId);
+        if (!Objects.equals(run.getCreatedUid(), uid)) return ApiUtil.result(9403, "只能终止自己发起的对比", null);
+        int stopped = stop(runId);
+        if (stopped > 0) await(runId, 3000L); // 等被断掉的流把各自那行写完
+        int finished = settle(run);
+        ObjectNode result = DPUtil.objectNode();
+        result.put("id", runId);
+        result.put("stopped", stopped);
+        result.put("finished", finished);
+        return ApiUtil.result(0, null, result);
+    }
+
+    /**
+     * 收口：把这一轮里始终没有回来过的模型补成「中断」明细。
+     *
+     * 补的是明细而不是状态，是因为每一张卡片都得有自己那一行：
+     * 只改状态的话，恢复历史时会少几张卡片，看不出当时缺的是哪一个模型。
+     * 补齐依据是建档时的模型快照（key 与模型名都在里面）。
+     */
+    protected int settle(CompareRun run) {
+        ArrayNode models = array(run.getModels());
+        Set<String> exists = new HashSet<>();
+        for (CompareCall item : callDao.findByRunIdOrderByCreatedTimeAscIdAsc(run.getId())) {
+            exists.add(String.valueOf(item.getCallKey()));
         }
-        callDao.saveAll(rows);
+        long time = System.currentTimeMillis();
+        int count = 0;
+        for (JsonNode model : models) {
+            String key = model.at("/key").asText("");
+            if (exists.contains(key)) continue;
+            callDao.save(CompareCall.builder()
+                    .runId(run.getId())
+                    .callKey(key)
+                    .model(model.at("/model").asText(""))
+                    .state("abort")
+                    .duration(0L)
+                    .firstToken(0L)
+                    .contentLength(0)
+                    .reasoningLength(0)
+                    .finishReason("")
+                    .error("本轮已终止，未收到输出")
+                    .payload("{}")
+                    .content("")
+                    .reasoning("")
+                    .createdTime(time)
+                    .createdUid(run.getCreatedUid())
+                    .build());
+            count++;
+        }
+        refreshRun(run); // 补齐之后重算一次：进行中 → 中断
+        return count;
     }
 
     /** 删除运行记录：标记删除，只作用于自己的记录 */

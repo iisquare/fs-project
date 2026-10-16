@@ -5,6 +5,10 @@ import base from './Api'
  *
  * 流式推理单列在 `@/api/agent/streams` 的 `chatCompare`（/compare/stream）：
  * 一次请求只跑一个模型，参数逐模型独立，所以由页面并发发起、逐卡展示。
+ *
+ * 运行记录由服务端写：页面只做两件事——发送前 `runCreate` 建档拿 id，
+ * 发送时把 id 交给每条流；流结束时服务端已经把这轮的明细写好了，
+ * 页面回读一次 `runInfo` 即可拿到各卡片的调用标识（反馈按它定位）。
  */
 export default {
   /** 可调试的模型清单：返回 `{ rows: [{ name, ownedBy, contextLength }] }` */
@@ -39,9 +43,21 @@ export default {
   runInfo (id: any, tips = {}) {
     return base.post('/compare/runInfo', { id }, tips)
   },
-  /** 保存一次运行记录：{ title, global, models, results } */
-  runSave (param: any, tips = {}) {
-    return base.post('/compare/runSave', param, tips)
+  /**
+   * 建立一条运行记录：{ title?, global, models } → { id, modelCount, createdTime }
+   *
+   * 点「发送」时先建档，页面拿到 id 后带着它发起各模型的流（`/compare/stream` 的 runId），
+   * 输出明细由服务端随流写入——页面中途离开也不会丢掉这一轮。
+   */
+  runCreate (param: any, tips = {}) {
+    return base.post('/compare/runCreate', param, tips)
+  },
+  /**
+   * 终止一轮：断掉这一轮还在跑的流，并把一直没回来的模型记为中断
+   * 模型卡死或输出失控时用它收口，出参 `{ id, stopped, finished }`
+   */
+  runStop (id: any, tips = {}) {
+    return base.post('/compare/runStop', { id }, tips)
   },
   /** 删除运行记录 */
   runDelete (ids: any, tips = {}) {

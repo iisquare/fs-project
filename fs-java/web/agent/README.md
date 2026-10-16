@@ -223,6 +223,16 @@
 - 模型调试：临时指定模型、系统提示词、温度、最大生成数量与自定义参数。
 - 模型对话：以智能体应用为入口，按应用参数拼装请求并流式返回。
 - 模型对比：同一问题并行请求多个模型，便于对比输出。
+  一个模型一条流，页面的顺序是「先建档、再发流」：点「发送」调 `/compare/runCreate` 建一条运行记录，
+  把记录标识随每条流带下去（`/compare/stream` 的 `runId` 与页面本地键 `key`），
+  输出由服务端在流收尾时写入调用明细（每写完一条重算批次摘要：0-进行中，1-全部完成，2-存在失败或中断）。
+  留档不依赖调用方：切页面、刷新、断网只会中断接收，已收到的增量照样按「中断」入档，
+  所以历史里不会留下一轮「调了半天什么都没记下」的空白。
+  模型陷入死循环时输出会一直续下去（网关的读超时是「相邻两次读取」的间隔，拦不住它），
+  所以服务端自己设了上限：`fs.agent.compare.maxContentLength`（单个模型输出上限，字符）与
+  `fs.agent.compare.maxDuration`（单个模型运行时长上限，毫秒），越过即主动中断并记为「中断」。
+  页面之外还有 `/compare/runStop`：断掉某一轮还在跑的流，并把始终没回来的模型补成「中断」——
+  服务端重启后残留的「进行中」也靠它收口（否则那条记录会永远停在「进行中」）。
 
 对话请求经模型网关 `/v1/chat/completions` 转发（`rpc.lm.rest`），
 鉴权、限流、敏感词检测、调用日志与积分由网关统一处理。
@@ -231,7 +241,12 @@
 | --- | --- | --- |
 | POST `/chat/demo` | 模型调试（SSE） | `agent:chat:demo` |
 | POST `/chat/dialog` | 模型对话（SSE） | `agent:chat:dialog` |
-| POST `/chat/compare` | 模型对比（SSE） | `agent:chat:compare` |
+| POST `/compare/models`、`/compare/statistic` | 模型对比：可调试的模型清单、对比统计 | `agent:compare:` |
+| POST `/compare/stream` | 模型对比（SSE）：一条流一个模型，入参带 `runId` / `key` | `agent:compare:` |
+| POST `/compare/runCreate`、`/compare/runList`、`/compare/runInfo`、`/compare/runDelete`、`/compare/runClear` | 运行记录：建档、列表、详情、删除、清空 | `agent:compare:` |
+| POST `/compare/runStop` | 终止某一轮：断掉还在跑的流，没回来的模型记为中断 | `agent:compare:` |
+| POST `/compare/workspaceList`、`/compare/workspaceInfo`、`/compare/workspaceSave`、`/compare/workspaceShare`、`/compare/workspaceDelete` | 工作区：列表、详情、保存、共享、删除 | `agent:compare:` |
+| POST `/compare/feedback` | 输出反馈：赞 / 踩 | `agent:compare:` |
 
 ### 本地客户端（bot）
 

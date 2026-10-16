@@ -475,11 +475,33 @@ async function addWorkspace(): Promise<void> {
   const path = await window.ipc.workspace.pick()
   if (!path) return
   if (form.value.workspace.some((item) => item.path === path)) return
-  form.value.workspace.push({ path, permission: 'read' })
+  // 默认给读写：目录是用户自己挑的，进来先按最常用的方式用，要收紧再点左边的只读 / 只写
+  form.value.workspace.push({ path, permission: 'readwrite' })
 }
 
 function removeWorkspace(index: number): void {
   form.value.workspace.splice(index, 1)
+}
+
+/**
+ * 改这一行的目录：与「添加目录」同一个原生选择框，选中后就地替换路径。
+ * 旧配置、分享来的配置里的目录在本机常常不存在，改一下比「移除再加一条」顺手。
+ * 路径是这一行的身份（清单按路径去重、主进程按路径合并权限），所以撞上别的行就挡下来，
+ * 只换到已经声明过的目录上不算改（选择框里又点回原目录时什么都不做）。
+ */
+async function changeWorkspace(index: number): Promise<void> {
+  const path = await window.ipc.workspace.pick()
+  if (!path) return
+  const item = form.value.workspace[index]
+  if (!item || path === item.path) return
+  const exists = form.value.workspace.some(
+    (other, current) => current !== index && other.path === path
+  )
+  if (exists) {
+    ElMessage.warning('该目录已在工作区列表里')
+    return
+  }
+  item.path = path
 }
 
 /** 主目录在清单里的位置：标了 primary 的那一行；没标就是第一行（与主进程的取值口径一致） */
@@ -890,8 +912,18 @@ async function share(): Promise<void> {
         主目录决定命令默认在哪个目录里执行、相对路径优先按哪个目录解析；没标主目录时用列表里的第一个。
       </div>
       <div v-if="form.workspace.length === 0" class="section-empty">暂无工作区目录</div>
-      <div v-for="(item, index) in form.workspace" :key="item.path" class="workspace-row">
-        <el-input v-model="item.path" placeholder="目录路径" />
+      <!--
+        key 用索引而不是路径：路径本身就是这一行里随手可改的输入框，
+        拿它当 key 会让每次按键都换掉整行的 DOM（输入框当场丢焦点）。
+      -->
+      <div v-for="(item, index) in form.workspace" :key="index" class="workspace-row">
+        <el-input v-model="item.path" placeholder="目录路径">
+          <template #suffix>
+            <span class="path-pick" title="重新选择这个目录" @click="changeWorkspace(index)">
+              <LayoutIcon name="plus.folder" />
+            </span>
+          </template>
+        </el-input>
         <el-radio-group v-model="item.permission">
           <el-radio-button label="只读" value="read" />
           <el-radio-button label="只写" value="write" />
@@ -1067,6 +1099,19 @@ async function share(): Promise<void> {
   align-items: center;
   justify-content: flex-end;
   width: 100%;
+}
+
+/* 路径输入框里的「改目录」按钮：与图标选择按钮同一套（suffix 内层默认不吃点击，这里放开） */
+.path-pick {
+  display: inline-flex;
+  align-items: center;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: color var(--el-transition-duration);
+
+  &:hover {
+    color: var(--el-color-primary);
+  }
 }
 
 .list-row,

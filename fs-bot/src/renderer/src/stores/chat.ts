@@ -29,7 +29,7 @@ export interface ChatToolCall {
   name: string
   /** 模型给出的参数（JSON 文本，流式期间是未完成的分片） */
   args: string
-  status: 'running' | 'success' | 'failed'
+  status: 'running' | 'success' | 'failed' | 'stopped'
   result: string
   duration: number
   scope: ToolScope
@@ -83,6 +83,12 @@ export interface ChatSession {
   /** 当前分支尾：页面只渲染它沿 parentId 回溯到根的那条路径 */
   leafId: string
   running: boolean
+  /**
+   * 用户已按停止：在模型流之外（工具执行中、等审批中）按下的那一次。
+   * 停止不能只断模型流——工具执行这一刻没有流可断，标记留在这里，
+   * 调用循环每一步都看它，一看就按「已停止」收尾，不再往下接续。
+   */
+  stopping: boolean
   loading: boolean
   error: string
   /** 提示（非错误）：这一轮被自动接续上限收尾等情况，界面上按警告色呈现 */
@@ -185,6 +191,21 @@ export function chatTitle(params: SendParams): string {
 }
 
 /**
+ * 消息落库通知：会话每落一条消息（用户提问、助手回复）就报一次落库时刻。
+ * 会话列表据此把这条会话的时间与顺序推到当下——列表按最后一条消息的时间展示与排序，
+ * 列表本身归 conversation store 管（它在这里注册），这里只管消息落地时报一声。
+ */
+let messageLanded: ((conversationId: string, at: string) => void) | null = null
+
+export function onMessageLanded(hook: (conversationId: string, at: string) => void): void {
+  messageLanded = hook
+}
+
+function notifyMessageLanded(conversationId: string, at: string): void {
+  messageLanded?.(conversationId, at)
+}
+
+/**
  * 一批里最多的模型往返次数：跑满这么多轮而模型仍在请求工具时自动接续往下跑。
  * 接续不清空上下文，只在接续点随请求补一条提醒（见 continuePrompt），
  * 不再像过去那样把「跑满 16 轮」直接当成这一轮对话的失败。
@@ -271,6 +292,7 @@ export const useChatStore = defineStore('chat', () => {
         messages: [],
         leafId: '',
         running: false,
+        stopping: false,
         loading: false,
         error: '',
         notice: '',
@@ -364,9 +386,10 @@ export const useChatStore = defineStore('chat', () => {
    * 发送一轮：先把用户消息与待填的回复上屏，再由调用循环逐段填充。
    *
    * onStart 在这一轮真的发得出去、消息落库之前调用：新会话借此先把自己的会话行写进库
-   * （还没落库的会话不在历史里，发送是它进历史的时机）。
+   * （还没落库的会话不在历史里，发送是它进历史的时机），参数是这一轮用的落库时刻——
+   * 会话行与列表都按它记「最后一条消息的时间」，两边不会差出第二个值。
    */
-  async function send(params: SendParams, onStart?: () => Promise<void>): Promise<void> {
+  async function send(params: SendParams, onStart?: (at: string) => Promise<void>): Promise<void> {
     const session = ensure(params.conversationId, params)
     if (session.running) return
     if (!session.model) {
@@ -407,10 +430,15 @@ export const useChatStore = defineStore('chat', () => {
     session.leafId = reply.id
     session.error = ''
     session.notice = ''
+    // 新一轮从「没被停止」起步：上一轮按过停止的标记不能带进来，否则这一轮发不出去就被收尾
+    session.stopping = false
     session.running = true
     // 会话行先于消息落库：新会话在这里进历史
-    if (onStart) await onStart()
+    if (onStart) await onStart(now)
     void ConversationDb.setLeaf(params.conversationId, reply.id)
+    // 这一轮的提问就是会话里最新的一条：库里与列表上的最后消息时间都推到当下
+    void ConversationDb.touch(params.conversationId, now)
+    notifyMessageLanded(params.conversationId, now)
     if (question) {
       void ConversationDb.appendMessage(params.conversationId, {
         id: question.id,
@@ -451,6 +479,11 @@ export const useChatStore = defineStore('chat', () => {
       // 接续提醒在链里的下标：只保留最新一条（换新的之前先把上一条撤掉），避免链里堆起多条催促
       let hintIndex = -1
       for (let index = 0; index < MAX_ROUNDS_TOTAL; index++) {
+        // 停止落在这一轮之前（工具执行中、等审批中按下的那一次）：不再发起模型调用
+        if (session.stopping) {
+          reply.status = 'stopped'
+          break
+        }
         // 收尾轮：工具往返跑满后再加的一轮，不再给工具，改为引导模型给结论
         const closing = index === MAX_ROUNDS_TOTAL - 1
         const round = reactive<ChatRound>({ content: '', reasoning: '', calls: [] })
@@ -469,6 +502,11 @@ export const useChatStore = defineStore('chat', () => {
         }
         const outcome = await chatOnce(session, reply, round, chain, tools, closing)
         if (outcome.aborted) {
+          reply.status = 'stopped'
+          break
+        }
+        // 模型流刚收尾那一刻按下的停止：这一轮不再往下推
+        if (session.stopping) {
           reply.status = 'stopped'
           break
         }
@@ -507,6 +545,14 @@ export const useChatStore = defineStore('chat', () => {
           }))
         })
         for (const call of outcome.toolCalls) {
+          // 停止落在同一轮的多次调用之间：这一轮剩下的调用不再执行
+          if (session.stopping) {
+            if ('running' === call.status) {
+              call.status = 'stopped'
+              call.result = '已停止，未执行'
+            }
+            continue
+          }
           await execute(call, tools, session)
           chain.push({
             role: 'tool',
@@ -514,6 +560,11 @@ export const useChatStore = defineStore('chat', () => {
             name: call.name,
             content: truncate(call.result, MAX_RESULT)
           })
+        }
+        // 工具跑完再看一眼：本地命令与等审批的那一步都可能刚被停止收掉
+        if (session.stopping) {
+          reply.status = 'stopped'
+          break
         }
       }
     } catch (error) {
@@ -606,8 +657,17 @@ export const useChatStore = defineStore('chat', () => {
   /**
    * 执行一次工具调用：本地工具走主进程，项目工具走服务端；失败同样进调用链，模型可据此修正。
    * 会话标识随调用一起走：本地工具需要审批时，申请据此交回本段对话（各对话互不串门）。
+   *
+   * 这段会话刚被停止时不执行（同一轮里排在后面的调用直接按「已停止」记账）；
+   * 执行期间被停止的，这一次也不按失败算——本地命令已被主进程收掉、申请按拒绝处理，
+   * 返回原文里带着「已停止」的原因，这里只把状态从红改成「已停止」。
    */
   async function execute(call: ChatToolCall, tools: ToolSet, session: ChatSession): Promise<void> {
+    if (session.stopping) {
+      call.status = 'stopped'
+      call.result = '已停止，未执行'
+      return
+    }
     call.status = 'running'
     const started = Date.now()
     try {
@@ -620,10 +680,14 @@ export const useChatStore = defineStore('chat', () => {
       call.status = 'success'
       if (!call.result) call.result = '（无返回内容）'
     } catch (error) {
-      call.result = `调用失败：${messageOf(error)}`
+      const message = messageOf(error)
+      // 停止期间收尾的调用不按失败记账：原因（「命令已被停止」等）就在返回原文里，
+      // 再加「调用失败」会读成命令自己跑砸了——这一格按「已停止」呈现
+      call.result = session.stopping ? message : `调用失败：${message}`
       call.status = 'failed'
     }
     call.duration = Date.now() - started
+    if (session.stopping) call.status = 'stopped'
   }
 
   /** 模型给出的参数：空串按空对象处理，解析失败直接作为调用失败回到模型 */
@@ -756,7 +820,10 @@ export const useChatStore = defineStore('chat', () => {
       createdAt: reply.createdAt
     })
     await ConversationDb.setLeaf(session.conversationId, session.leafId)
-    await ConversationDb.touch(session.conversationId)
+    // 这条回复是会话里最新的一条：最后消息的时间推到它落库的这一刻（列表与库同一个值）
+    const at = new Date().toISOString()
+    await ConversationDb.touch(session.conversationId, at)
+    notifyMessageLanded(session.conversationId, at)
   }
 
   /* ------------------------------- 对话分支 ------------------------------- */
@@ -871,15 +938,30 @@ export const useChatStore = defineStore('chat', () => {
     })
   }
 
-  /** 停止生成：保留已上屏内容，标记为已停止 */
+  /**
+   * 停止生成：保留已上屏内容，标记为已停止。
+   *
+   * 断模型流只是其中一半。工具执行这一刻没有流可断（本轮模型流收尾时 session.chat 已置空），
+   * 只断流的话这次调用会一直挂到它自己结束——本地命令尤其明显：它跑在主进程里，
+   * 断流管不着，会一直跑到超时，跑完还把结果交回调用循环，整轮对话接着往下走。
+   * 所以这里同时做两件事：标记 stopping 让调用循环按「已停止」收尾，
+   * 并让主进程收掉这段会话还挂着的本地活儿（等答复的申请、正在跑的命令）。
+   */
   function stop(conversationId: string): void {
-    find(conversationId)?.chat?.stop()
+    const session = find(conversationId)
+    if (!session) return
+    session.stopping = true
+    session.chat?.stop()
+    void window.ipc.workspace.cancel(conversationId)
   }
 
   /** 退出登录：断开所有连接，清空运行态 */
   function reset(): void {
     for (const session of Object.values(sessions.value)) {
+      session.stopping = true
       session.chat?.stop()
+      // 退出登录同样不该把命令留在后台跑：那一轮已经不会再有人看结果了
+      void window.ipc.workspace.cancel(session.conversationId)
     }
     sessions.value = {}
   }

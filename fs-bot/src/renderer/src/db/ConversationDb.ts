@@ -15,6 +15,7 @@ export interface Conversation {
   /** 当前分支尾：消息按 parentId 组成消息树，页面只渲染它回溯到根的那条路径 */
   leafId: string
   createdAt: string
+  /** 最后一条消息的时间：列表按它展示与排序（提问与回复落库时各写一次，见 touch） */
   updatedAt: string
 }
 
@@ -104,6 +105,7 @@ export default {
     title?: string
     projectId?: string
     createdAt?: string
+    updatedAt?: string
   }): Promise<{
     code: number
     message: string
@@ -116,7 +118,8 @@ export default {
       title: data.title || '新对话',
       project_id: data.projectId || '',
       created_at: data.createdAt || now,
-      updated_at: now
+      // 新会话的第一条消息随会话行一起落库，最后消息的时间就是这一轮发送的时刻
+      updated_at: data.updatedAt || now
     }
     const result: any = await Db.insert(TABLE, row)
     return ApiUtil.result(ApiUtil.code(result) ?? 0, ApiUtil.message(result), format(row)) as any
@@ -127,13 +130,18 @@ export default {
     return Db.update(TABLE, { id }, { title })
   },
 
-  async touch(id: string) {
-    return Db.update(TABLE, { id }, { updated_at: new Date().toISOString() })
+  /** 记录最后一条消息的时间：提问与回复落库时各写一次，列表按它展示与排序 */
+  async touch(id: string, at = new Date().toISOString()) {
+    return Db.update(TABLE, { id }, { updated_at: at })
   },
 
-  /** 记录当前分支尾：切换分支、新一轮回复落库后各写一次 */
+  /**
+   * 记录当前分支尾：切换分支、新一轮回复落库后各写一次。
+   * 不碰最后消息的时间——分支指针跟着消息走，切分支 / 补写旧历史的叶子
+   * 不该把一段很久没说话的会话挪到「今天」。
+   */
   async setLeaf(id: string, leafId: string) {
-    return Db.update(TABLE, { id }, { leaf_id: leafId, updated_at: new Date().toISOString() })
+    return Db.update(TABLE, { id }, { leaf_id: leafId })
   },
 
   async delete(id: string) {

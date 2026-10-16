@@ -214,7 +214,7 @@ DROP TABLE IF EXISTS `fs_agent_compare_run`;
 CREATE TABLE `fs_agent_compare_run` (
   `id` int NOT NULL AUTO_INCREMENT,
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '记录标题：未填写时按用户输入截取',
-  `status` int NOT NULL DEFAULT '0' COMMENT '状态：1-全部完成，2-存在失败或中断',
+  `status` int NOT NULL DEFAULT '0' COMMENT '状态：0-进行中，1-全部完成，2-存在失败或中断',
   `model_count` int NOT NULL DEFAULT '0' COMMENT '本轮参与的模型个数',
   `duration` bigint NOT NULL DEFAULT '0' COMMENT '全部模型结束的耗时（毫秒）',
   `summary` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '结果摘要：几个完成、几个失败、几个中断',

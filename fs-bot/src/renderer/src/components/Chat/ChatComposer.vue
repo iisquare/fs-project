@@ -3,7 +3,8 @@
  * 输入区 - 一个圆角输入框：上方是 @ 引用回显，中间是文本区，底部是访问策略与发送按钮。
  *
  * 两个入口：
- * - `@` 引用本地文件与已安装技能（输入 @ 弹出候选，回车插入，发送时把引用内容补进上下文）；
+ * - `@` 引用：本机文件 / 文件夹（选中即开系统对话框）与已安装技能（输入 @ 弹出候选，回车插入，
+ *   发送时把引用内容补进上下文）；
  * - `/` 执行内置指令（如基于当前项目新建对话），指令由页面处理。
  *
  * 回车发送、Shift + Enter 换行，中文输入法组词中的回车不发送。
@@ -14,11 +15,11 @@ import ContextRing, { type ContextInfo } from './ContextRing.vue'
 import type { ChatMention } from '@renderer/stores/chat'
 
 export interface MentionCandidate {
-  /** action 是本机选择这一类动作（不是候选），其余是可直接引用的候选 */
-  type: 'file' | 'skill' | 'action'
+  /** action 是本机选择这一类动作（不是候选），skill 是可直接引用的已安装技能 */
+  type: 'skill' | 'action'
   name: string
   path: string
-  /** 插入后 @ 后面那一段文本：工作区文件是相对路径，本地选择的文件是绝对路径，技能是 skill:名称 */
+  /** 插入后 @ 后面那一段文本：技能是 skill:名称 */
   token: string
   /** action 专用：这种动作打开哪种系统对话框 */
   action?: 'file' | 'directory'
@@ -96,7 +97,7 @@ function textarea(): HTMLTextAreaElement | null {
   return (inputRef.value?.textarea as HTMLTextAreaElement) ?? null
 }
 
-/** 引用在输入框里的那一小段文本：文件是相对路径，技能是 skill:名称 */
+/** 引用在输入框里的那一小段文本：技能是 skill:名称，本机选择的文件 / 文件夹是绝对路径 */
 function tokenOf(mention: ChatMention): string {
   return mention.token ?? ('skill' === mention.type ? `skill:${mention.name}` : mention.path)
 }
@@ -138,7 +139,7 @@ const mirrorHtml = computed<string>(() => {
   return html + escapeHtml(text.slice(from))
 })
 
-/** 候选按 token 匹配；最多给 20 条，避免大工程把菜单撑爆 */
+/** 候选按 token 匹配；最多给 20 条（技能一般不会这么多，兜个底） */
 const matched = computed<MentionCandidate[]>(() => {
   const text = query.value.toLowerCase()
   const rows = text
@@ -147,15 +148,10 @@ const matched = computed<MentionCandidate[]>(() => {
   return rows.slice(0, 20)
 })
 
-/** 键盘上下移动用一个合并序列：文件在前、技能在后，与菜单里的分组顺序一致 */
-const ordered = computed<MentionCandidate[]>(() => [
-  ...LOCAL_ACTIONS,
-  ...matched.value.filter((item) => 'skill' !== item.type),
-  ...matched.value.filter((item) => 'skill' === item.type)
-])
+/** 键盘上下移动用一个序列：本机选择那两条动作在前，随后是命中的技能，与菜单里的顺序一致 */
+const ordered = computed<MentionCandidate[]>(() => [...LOCAL_ACTIONS, ...matched.value])
 const orderedRows = computed(() => ordered.value.map((item, index) => ({ item, index })))
 const actionRows = computed(() => orderedRows.value.filter((row) => 'action' === row.item.type))
-const fileRows = computed(() => orderedRows.value.filter((row) => 'file' === row.item.type))
 const skillRows = computed(() => orderedRows.value.filter((row) => 'skill' === row.item.type))
 
 /** 第一条真正的候选（跳过本机选择那两条动作）：开始打字后高亮跟着输入落到它上面 */
@@ -172,21 +168,21 @@ const matchedCommands = computed<ComposerCommand[]>(() => {
   return rows.slice(0, 20)
 })
 
-/** 当前菜单的条目数：用于上下移动与回车选中 */
-const menuSize = computed(() =>
-  'mention' === menu.value.kind
-    ? ordered.value.length
-    : 'command' === menu.value.kind
-      ? matchedCommands.value.length
-      : 0
-)
+/** 当前菜单的条目数：用于上下移动与回车选中（菜单收起时没有条目，回车就照常发送） */
+const menuSize = computed(() => {
+  if ('mention' === menu.value.kind) return menuOpen.value ? ordered.value.length : 0
+  return 'command' === menu.value.kind ? matchedCommands.value.length : 0
+})
 
-/** 菜单是否展示：引用菜单始终展示（里面还有「选择本地文件」这类动作），指令菜单没有候选就收起 */
-const menuOpen = computed(() =>
-  'mention' === menu.value.kind
-    ? true
-    : 'command' === menu.value.kind && matchedCommands.value.length > 0
-)
+/**
+ * 菜单是否展示：引用菜单在没打关键词时始终展示（里面还有「选择本地文件」这类动作与技能清单），
+ * 打了关键词却没有命中的技能就收起——那多半是在手写一段路径或正文，回车照常发送。
+ * 指令菜单没有候选同样收起。
+ */
+const menuOpen = computed(() => {
+  if ('mention' === menu.value.kind) return !query.value || 0 < skillRows.value.length
+  return 'command' === menu.value.kind && 0 < matchedCommands.value.length
+})
 
 function setValue(value: string): void {
   emit('update:modelValue', value)
@@ -264,7 +260,7 @@ function pick(): void {
     void pickPaths(item.action ?? 'file', range)
     return
   }
-  const reference: MentionCandidate & { type: 'file' | 'skill' } = { ...item, type: item.type }
+  const reference = { type: 'skill' as const, name: item.name, path: item.path, token: item.token }
   const value = textarea()?.value ?? props.modelValue
   const next = `${value.slice(0, range.from)}@${item.token} ${value.slice(range.to)}`
   setValue(next)
@@ -279,7 +275,12 @@ function pick(): void {
 }
 
 /** 可以登记成引用的候选：本机选择那一条是动作，不进引用列表 */
-function addMention(item: MentionCandidate & { type: 'file' | 'skill' }): void {
+function addMention(item: {
+  type: 'file' | 'skill'
+  name: string
+  path: string
+  token: string
+}): void {
   const rows = props.mentions.filter((mention) => mention.path !== item.path)
   rows.push({ type: item.type, name: item.name, path: item.path, token: item.token })
   emit('update:mentions', rows)
@@ -478,7 +479,9 @@ defineExpose({ focus })
     <!-- 候选项浮层：@ 引用与 / 指令共用一处，浮在输入框上方 -->
     <el-scrollbar class="composer-menu" max-height="480px" v-if="menuOpen">
       <div class="menu-head">
-        <span class="menu-title">{{ 'command' === menu.kind ? '内置指令' : '引用文件与技能' }}</span>
+        <span class="menu-title">{{
+          'command' === menu.kind ? '内置指令' : '引用本机文件与技能'
+        }}</span>
         <span class="menu-hint">↑ ↓ 选择 · Enter 确认 · Esc 取消</span>
       </div>
 
@@ -497,7 +500,7 @@ defineExpose({ focus })
         </li>
       </ul>
 
-      <!-- @ 引用：本机选择在最前，随后是工作区文件与已安装技能 -->
+      <!-- @ 引用：本机选择在最前，随后是已安装技能 -->
       <template v-else>
         <ul class="menu-list menu-actions">
           <!-- 本机选择：文件与文件夹各一条（系统对话框无法混选），选中即打开对话框 -->
@@ -516,7 +519,8 @@ defineExpose({ focus })
                 fill="none"
                 stroke="currentColor"
                 stroke-width="1.2"
-                stroke-linejoin="round" />
+                stroke-linejoin="round"
+              />
               <path
                 v-else
                 d="M10.9 5.6 6.1 10.4a1.9 1.9 0 0 1-2.7-2.7l5-5a3.1 3.1 0 0 1 4.4 4.4l-5 5a1.5 1.5 0 0 1-2.1-2.1l4.4-4.4"
@@ -524,29 +528,12 @@ defineExpose({ focus })
                 stroke="currentColor"
                 stroke-width="1.2"
                 stroke-linecap="round"
-                stroke-linejoin="round" />
+                stroke-linejoin="round"
+              />
             </svg>
             <span class="menu-name">{{ row.item.name }}</span>
           </li>
         </ul>
-        <!-- 工作区里可以直接引用的文件与目录 -->
-        <div class="menu-group" v-if="fileRows.length">
-          <div class="menu-group-head">
-            <span class="menu-group-title">工作区文件与目录</span>
-          </div>
-          <ul class="menu-list">
-            <li
-              class="menu-item"
-              :class="{ active: row.index === menu.index }"
-              v-for="row in fileRows"
-              :key="row.item.path"
-              @mouseenter="menu.index = row.index"
-              @mousedown.prevent="selectAt(row.index)"
-            >
-              <span class="menu-name">@{{ row.item.token }}</span>
-            </li>
-          </ul>
-        </div>
         <!-- 已安装技能：同一套标题行 + 单行列表 -->
         <div class="menu-group" v-if="skillRows.length">
           <div class="menu-group-head">
@@ -566,7 +553,7 @@ defineExpose({ focus })
             </li>
           </ul>
         </div>
-        <div class="menu-empty" v-if="!ordered.length">没有匹配的文件或技能</div>
+        <div class="menu-empty" v-if="!skillRows.length">还没有安装技能</div>
       </template>
     </el-scrollbar>
 
@@ -585,19 +572,20 @@ defineExpose({ focus })
           :autosize="{ minRows: 1, maxRows: 8 }"
           resize="none"
           :disabled="disabled"
-          placeholder="输入内容，@ 引用文件或技能，/ 执行内置指令（Enter 发送，Shift / Ctrl + Enter 换行）"
+          placeholder="输入内容，@ 引用本机文件或技能，/ 执行内置指令（Enter 发送，Shift / Ctrl + Enter 换行）"
           @update:model-value="onInput"
           @keydown="onKeydown"
-          @click="refreshMenu" />
+          @click="refreshMenu"
+        />
       </div>
       <div class="composer-tools">
         <div class="composer-tools-main">
           <!-- 引用入口：与手打 @ 同一套候选，点一下就地弹出文件 / 技能清单 -->
-          <el-tooltip content="引用文件或技能" placement="top">
+          <el-tooltip content="引用本机文件或技能" placement="top">
             <button
               type="button"
               class="composer-plus"
-              title="引用文件或技能"
+              title="引用本机文件或技能"
               :disabled="disabled"
               @mousedown.prevent="insertMention"
             >
@@ -606,7 +594,8 @@ defineExpose({ focus })
                   d="M8 3.2v9.6M3.2 8h9.6"
                   stroke="currentColor"
                   stroke-width="1.4"
-                  stroke-linecap="round" />
+                  stroke-linecap="round"
+                />
               </svg>
             </button>
           </el-tooltip>
@@ -616,7 +605,10 @@ defineExpose({ focus })
             popper-class="composer-policy-dropdown"
             @command="(name: string) => emit('update:policy', name)"
           >
-            <span class="composer-policy" :title="`本地访问策略：${POLICY_LABELS[policy] ?? policy}`">
+            <span
+              class="composer-policy"
+              :title="`本地访问策略：${POLICY_LABELS[policy] ?? policy}`"
+            >
               <PolicyIcon :mode="policy" />
               <span class="composer-policy-name">{{ POLICY_LABELS[policy] ?? policy }}</span>
             </span>
@@ -659,8 +651,7 @@ defineExpose({ focus })
             <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
               <rect x="3.6" y="3.6" width="8.8" height="8.8" rx="2" fill="currentColor" />
             </svg>
-          </el-button
-          >
+          </el-button>
           <el-button
             v-else
             class="composer-send"
@@ -674,10 +665,10 @@ defineExpose({ focus })
             <svg viewBox="0 0 1024 1024" width="15" height="15" aria-hidden="true">
               <path
                 fill="currentColor"
-                d="m64 448 832-320-128 704-446.08-243.328L832 192 242.816 545.472zm256 512V657.024L512 768z" />
+                d="m64 448 832-320-128 704-446.08-243.328L832 192 242.816 545.472zm256 512V657.024L512 768z"
+              />
             </svg>
-          </el-button
-          >
+          </el-button>
         </div>
       </div>
     </div>
@@ -729,7 +720,7 @@ defineExpose({ focus })
     }
   }
 
-  /* 分组：工作区文件与已安装技能各一段 */
+  /* 分组：已安装技能一段 */
   .menu-group + .menu-group {
     margin-top: 2px;
   }
@@ -841,7 +832,9 @@ defineExpose({ focus })
   border-radius: 10px;
   border: solid 1px var(--el-border-color);
   background: var(--el-bg-color);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 
   &:hover {
     border-color: var(--el-border-color-darker);
@@ -989,7 +982,9 @@ defineExpose({ focus })
   font-size: 12px;
   color: var(--el-text-color-secondary);
   cursor: pointer;
-  transition: color 0.2s, background-color 0.2s;
+  transition:
+    color 0.2s,
+    background-color 0.2s;
 
   &:hover {
     color: var(--el-color-primary);

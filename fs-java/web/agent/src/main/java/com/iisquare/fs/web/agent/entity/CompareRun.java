@@ -35,7 +35,7 @@ public class CompareRun {
     @Column
     private String title; // 记录标题，未填写时按用户输入截取
     @Column
-    private Integer status; // 1-全部完成，2-存在失败或中断
+    private Integer status; // 0-进行中（还有模型的流没结束），1-全部完成，2-存在失败或中断
     @Column
     private Integer modelCount; // 本轮参与的模型个数
     @Column

@@ -1,5 +1,5 @@
 import { app, shell, BrowserWindow, dialog, ipcMain, protocol } from 'electron'
-import { join, dirname } from 'path'
+import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { DatabaseManager } from './database/manager'
@@ -24,6 +24,7 @@ import type {
   ConfigUpdateSettingRequest,
   ConfigLoginHistoryRequest,
   WorkspaceReadRequest,
+  WorkspaceOpenRequest,
   WorkspaceWriteRequest,
   WorkspaceRenameRequest,
   WorkspaceProjectRequest,
@@ -60,9 +61,36 @@ const db = DatabaseManager.getInstance()
 const workspace = WorkspaceManager.getInstance()
 const skills = SkillManager.getInstance()
 
-/** 等待界面答复的访问申请：id → 答复回调（成对清理，界面答复或超时都会收尾） */
-const approvals = new Map<string, (allow: boolean) => void>()
+/**
+ * 等待界面答复的访问申请：id → 答复回调与它所属的会话。
+ * 成对清理：界面答复、等到超时、这段会话被停止，三条路都会收尾。
+ */
+const approvals = new Map<string, { conversationId: string; settle: (allow: boolean) => void }>()
 const APPROVAL_TIMEOUT = 5 * 60 * 1000
+
+/** 撤下一条申请：从待答复里摘掉，并告诉界面这条作废了（横幅跟着撤掉） */
+function closeApproval(id: string): boolean {
+  if (!approvals.delete(id)) return false
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('workspace:approval-closed', { id })
+  }
+  return true
+}
+
+/**
+ * 停止生成：把这段会话还挂着的申请收掉（按拒绝处理）。
+ * 这些申请是命令 / 文件操作等在那一步的凭据，留着就等于「停止」之后还能点允许，
+ * 一轮对话被停止后不该再有一步能借它继续跑下去。
+ */
+function cancelApprovals(conversationId: string): void {
+  const id = String(conversationId ?? '')
+  if (!id) return
+  for (const [requestId, pending] of [...approvals]) {
+    if (pending.conversationId !== id) continue
+    if (!closeApproval(requestId)) continue
+    pending.settle(false)
+  }
+}
 
 /**
  * 工作区外的访问申请：推给界面问一次并等答复。
@@ -72,16 +100,15 @@ function requestApproval(request: WorkspaceApproval): Promise<boolean> {
   if (!mainWindow || mainWindow.isDestroyed()) return Promise.resolve(false)
   return new Promise<boolean>((settle) => {
     const timer = setTimeout(() => {
-      if (!approvals.delete(request.id)) return
       // 等到超时按拒绝处理：顺手告诉界面这条申请作废了，别让横幅与会话列表上的点一直挂着
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('workspace:approval-closed', { id: request.id })
-      }
-      settle(false)
+      if (closeApproval(request.id)) settle(false)
     }, APPROVAL_TIMEOUT)
-    approvals.set(request.id, (allow: boolean) => {
-      clearTimeout(timer)
-      settle(allow)
+    approvals.set(request.id, {
+      conversationId: String(request.conversationId ?? ''),
+      settle: (allow: boolean) => {
+        clearTimeout(timer)
+        settle(allow)
+      }
     })
     mainWindow!.webContents.send('workspace:approval-request', request)
   })
@@ -188,13 +215,15 @@ ipcMain.handle('window:toggle-pin', (_event, pin: boolean) => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
-  const exePath = app.getPath('exe')
-  const exeDir = dirname(exePath)
-  const installDir = is.dev
-    ? app.getAppPath() // 开发模式：项目根目录即安装目录
-    : process.platform === 'darwin'
-      ? dirname(dirname(exeDir)) // macOS 打包后：往上两级到 .app 包根
-      : exeDir // Windows/Linux 打包后：exe 所在目录即安装目录
+  /**
+   * 运行目录：系统配置（`userdata/config.toml`）、用户库（`userdata/<userId>/`）、
+   * 本地图标（`userdata/icons/`）与技能目录（`skills/`）都挂在它下面，各 init 自己再拼子目录。
+   *
+   * - 开发模式：项目根目录（`userdata/`、`skills/` 已在 .gitignore 里），改完即见；
+   * - 生产环境：用户主目录下的 `.fs-bot`。**不往安装目录里写**——Windows 的 Program Files 未必可写，
+   *   macOS 的「安装目录」更是 .app 包内部：往包里写会破坏代码签名，应用更新换整包时数据也跟着丢。
+   */
+  const runtimeDir = is.dev ? app.getAppPath() : join(app.getPath('home'), '.fs-bot')
 
   if (is.dev) {
     const c = (code: number, s: string): string => `\x1b[${code}m${s}\x1b[0m`
@@ -202,7 +231,7 @@ app.whenReady().then(async () => {
       `  ${c(36, label.padEnd(14))}: ${c(32, value)}`
 
     console.log(c(90, '-- runtime info ------------------------------------------'))
-    console.log(pad('runtimeDir', installDir))
+    console.log(pad('runtimeDir', runtimeDir))
     console.log(pad('__dirname', __dirname))
     console.log(pad('cwd', process.cwd()))
     console.log(c(90, '-----------------------------------------------------------'))
@@ -220,14 +249,14 @@ app.whenReady().then(async () => {
 
   // Database initialization
   const config = ConfigStore.getInstance()
-  config.init(installDir)
+  config.init(runtimeDir)
   // 技能目录初始化：技能包解压到这里，页面按目录名展示已安装技能
-  skills.init(installDir)
+  skills.init(runtimeDir)
   // 图标目录初始化：选中的本地图片复制到这里，界面按 app-icon://<文件名> 引用
-  initIcons(installDir)
+  initIcons(runtimeDir)
 
   ipcMain.handle('db:init-user', (_event, request: DbInitUserRequest) => {
-    db.initUser(request.serial, request.userId, request.dbSecret, installDir)
+    db.initUser(request.serial, request.userId, request.dbSecret, runtimeDir)
     return { success: true }
   })
 
@@ -311,17 +340,31 @@ app.whenReady().then(async () => {
   })
 
   ipcMain.handle('workspace:approval:response', (_event, request: WorkspaceApprovalResponse) => {
-    const settle = approvals.get(String(request?.id ?? ''))
+    const pending = approvals.get(String(request?.id ?? ''))
     // 勾选「始终允许」：把策略切成「帮我批准」，后续工作区外的访问不再逐个询问
     if (request?.allow && request?.always) {
       const policy = workspace.setPolicy('auto')
       config.updateSetting('workspacePolicy', policy)
     }
-    if (settle) {
+    if (pending) {
       approvals.delete(String(request?.id ?? ''))
-      settle(request?.allow === true)
+      pending.settle(request?.allow === true)
     }
     return { success: true }
+  })
+
+  /**
+   * 停止生成：收掉这段会话还挂着的本地活儿——等答复的申请按拒绝处理、在跑的命令立刻终止。
+   *
+   * 界面按停止时断的是模型流（见 chat store 的 stop），流一断就收不到后续增量；
+   * 但工具执行这一刻没有流可断（本地命令跑在主进程、等答复的申请悬在主进程），
+   * 只有把这两样也收掉，「停止」才算真的停住：命令不会跑到超时、申请也不会在停止后
+   * 被点一下就把整轮对话接着跑下去。返回被终止的命令条数（界面不关心，日志好查）。
+   */
+  ipcMain.handle('workspace:cancel', (_event, request: { conversationId?: string }) => {
+    const conversationId = String(request?.conversationId ?? '')
+    cancelApprovals(conversationId)
+    return { stopped: workspace.cancel(conversationId) }
   })
 
   ipcMain.handle('workspace:pick', async () => {
@@ -370,6 +413,15 @@ app.whenReady().then(async () => {
     return workspace.read(request.projectId, request.path, request.conversationId)
   })
 
+  // 打开 / 定位本机文件：用户点出来的动作，只做路径归一与安全判定（见 WorkspaceManager.open）
+  ipcMain.handle('workspace:open', (_event, request: WorkspaceOpenRequest) => {
+    return workspace.open(request.projectId, request.path, !!request.force)
+  })
+
+  ipcMain.handle('workspace:reveal', (_event, request: WorkspaceOpenRequest) => {
+    return workspace.reveal(request.projectId, request.path)
+  })
+
   ipcMain.handle('workspace:write', (_event, request: WorkspaceWriteRequest) => {
     return workspace.write(request.projectId, request.path, request.content, request.conversationId)
   })
@@ -399,7 +451,7 @@ app.whenReady().then(async () => {
     return workspace.remove(request.projectId, request.path, request.conversationId)
   })
 
-  /** 工作区文件清单与文本检索：@ 引用与文件工具共用，只覆盖项目已声明的目录 */
+  /** 工作区文件清单与文本检索：只覆盖项目已声明的目录（检索由文件工具的 search 动作使用） */
   ipcMain.handle('workspace:files', (_event, request: WorkspaceProjectRequest) => {
     return workspace.files(request.projectId)
   })

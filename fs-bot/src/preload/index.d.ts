@@ -19,7 +19,7 @@ export interface WorkspaceEntry {
   permission: WorkspacePermission | null
 }
 
-/** 工作区文件清单项：@ 引用与文件工具共用，root 供界面展示相对路径 */
+/** 工作区文件清单项：root 是命中的工作区目录，供界面展示相对路径 */
 export interface WorkspaceFile {
   name: string
   path: string
@@ -53,6 +53,16 @@ export interface WorkspaceFileUpload {
   size: number
 }
 
+/** 打开 / 定位本机文件的结果：ok 为 false 时 message 是不能照做的原因 */
+export interface WorkspaceOpenResult {
+  ok: boolean
+  /** 归一后的路径（定位失败时是调用方给的那一段） */
+  path: string
+  /** 拒绝的原因是「可执行 / 脚本文件」：界面确认后带 force 再来一次 */
+  unsafe?: boolean
+  message?: string
+}
+
 /** 工作区外的访问申请：界面弹窗后按 id 答复 */
 export interface WorkspaceApproval {
   id: string
@@ -72,6 +82,8 @@ export interface WorkspaceCommandResult {
   code: number | null
   signal: string
   timedOut: boolean
+  /** 用户按了停止：进程树已被收掉，这不是命令自己的结束 */
+  cancelled: boolean
   duration: number
   stdout: string
   stderr: string
@@ -180,6 +192,10 @@ declare global {
           path: string,
           conversationId?: string
         ) => Promise<WorkspaceReference>
+        /** 用系统默认程序打开本机文件 / 目录（可执行文件先由主进程拒绝，确认后带 force 重试） */
+        open: (projectId: string, path: string, force?: boolean) => Promise<WorkspaceOpenResult>
+        /** 在系统文件管理器中定位这个文件 / 目录 */
+        reveal: (projectId: string, path: string) => Promise<WorkspaceOpenResult>
         write: (
           projectId: string,
           path: string,
@@ -219,6 +235,8 @@ declare global {
           timeout?: number,
           conversationId?: string
         ) => Promise<WorkspaceCommandResult>
+        /** 停止生成：收掉这段会话还挂着的本地活儿（等答复的申请按拒绝处理、在跑的命令终止） */
+        cancel: (conversationId: string) => Promise<{ stopped: number }>
         policy: () => Promise<WorkspacePolicy>
         setPolicy: (policy: WorkspacePolicy) => Promise<WorkspacePolicy>
         approve: (request: {
