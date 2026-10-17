@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useProjectStore } from '@renderer/stores/project'
 import { nextRun, useScheduleStore } from '@renderer/stores/schedule'
+import { errorMessage } from '@renderer/utils/ErrorUtil'
 import type { ScheduleTask } from '@renderer/db/TaskDb'
 
 const projectStore = useProjectStore()
@@ -11,6 +12,8 @@ const scheduleStore = useScheduleStore()
 const mode = ref<'list' | 'create' | 'edit'>('list')
 const editingId = ref('')
 const form = ref(emptyForm())
+const pageLoading = ref(false)
+const pageError = ref('')
 
 function emptyForm() {
   return {
@@ -22,9 +25,27 @@ function emptyForm() {
   }
 }
 
-onMounted(async () => {
-  await projectStore.fetchProjects()
-  await scheduleStore.fetchTasks()
+async function loadPage(): Promise<void> {
+  pageLoading.value = true
+  pageError.value = ''
+  try {
+    const results = await Promise.allSettled([
+      projectStore.fetchProjects(),
+      scheduleStore.fetchTasks()
+    ])
+    const failure = results.find(
+      (item): item is PromiseRejectedResult => 'rejected' === item.status
+    )
+    if (failure) pageError.value = errorMessage(failure.reason, '定时任务加载失败')
+  } catch (error) {
+    pageError.value = errorMessage(error, '定时任务加载失败')
+  } finally {
+    pageLoading.value = false
+  }
+}
+
+onMounted(() => {
+  void loadPage()
 })
 
 const nextText = computed(() => {
@@ -74,17 +95,26 @@ async function submit() {
     ElMessage.warning('cron 表达式无效（5 段：分 时 日 月 周）')
     return
   }
-  if (editingId.value) {
-    await scheduleStore.update(editingId.value, form.value)
-  } else {
-    await scheduleStore.create(form.value)
+  try {
+    if (editingId.value) {
+      await scheduleStore.update(editingId.value, form.value)
+    } else {
+      await scheduleStore.create(form.value)
+    }
+    backToList()
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '保存定时任务失败'))
   }
-  backToList()
 }
 
 async function runNow(task: ScheduleTask) {
-  const ok = await scheduleStore.run(task)
-  if (ok) ElMessage.success('已发起对话，可在会话列表查看运行结果')
+  try {
+    const ok = await scheduleStore.run(task)
+    if (ok) ElMessage.success('已发起对话，可在会话列表查看运行结果')
+    else ElMessage.error('任务未执行：项目不存在或已删除')
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '运行定时任务失败'))
+  }
 }
 
 async function remove(task: ScheduleTask) {
@@ -93,7 +123,19 @@ async function remove(task: ScheduleTask) {
   } catch {
     return
   }
-  await scheduleStore.remove(task.id)
+  try {
+    await scheduleStore.remove(task.id)
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '删除定时任务失败'))
+  }
+}
+
+async function toggleTask(task: ScheduleTask): Promise<void> {
+  try {
+    await scheduleStore.toggle(task)
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '切换任务状态失败'))
+  }
 }
 
 function projectName(projectId: string): string {
@@ -120,20 +162,34 @@ function statusText(status: string): string {
 </script>
 
 <template>
-  <div class="scheduled-tasks">
+  <!-- 表单视图是卡片外壳（头部自带返回栏），顶部留白比列表页再紧一档 -->
+  <div class="scheduled-tasks ui-page" :class="{ 'ui-page--editor': mode !== 'list' }">
     <!-- 只有列表视图有页头；表单视图只留一条返回栏 -->
-    <div v-if="mode === 'list'" class="page-header">
-      <div>
-        <h2>定时任务</h2>
-        <p class="page-desc">
+    <div v-if="mode === 'list'" class="ui-page-header">
+      <div class="ui-page-header__copy">
+        <h1 class="ui-page-title">定时任务</h1>
+        <p class="ui-page-desc">
           按 cron 表达式自动以指定项目发起对话；调度在客户端运行，应用保持登录即会执行。
         </p>
       </div>
-      <el-button type="primary" @click="openCreate">创建任务</el-button>
+      <div class="ui-page-actions">
+        <el-button type="primary" @click="openCreate">创建任务</el-button>
+      </div>
     </div>
 
+    <el-alert
+      v-if="pageError"
+      class="page-alert"
+      type="warning"
+      :closable="false"
+      show-icon
+      :title="pageError"
+    >
+      <el-button text type="primary" size="small" @click="loadPage">重试</el-button>
+    </el-alert>
+
     <!-- 列表视图：行式排布，窗口变窄时自动换行，不出现横向滚动条 -->
-    <div v-if="mode === 'list'" v-loading="scheduleStore.loading" class="task-list">
+    <div v-if="mode === 'list'" v-loading="scheduleStore.loading || pageLoading" class="task-list">
       <el-empty v-if="scheduleStore.tasks.length === 0" description="暂无定时任务" />
       <div v-for="task in scheduleStore.tasks" :key="task.id" class="task-row">
         <div class="task-main">
@@ -155,7 +211,7 @@ function statusText(status: string): string {
           <el-switch
             :model-value="task.enabled"
             :active-text="task.enabled ? '启用' : '停用'"
-            @update:model-value="scheduleStore.toggle(task)"
+            @update:model-value="toggleTask(task)"
           />
           <div class="task-actions">
             <el-button text type="primary" @click="runNow(task)">运行一次</el-button>
@@ -167,9 +223,9 @@ function statusText(status: string): string {
     </div>
 
     <!-- 表单视图 -->
-    <section v-else class="editor-pane">
-      <div class="editor-bar">
-        <el-button text class="back-button" @click="backToList">← 返回任务列表</el-button>
+    <section v-else class="editor-pane ui-editor">
+      <div class="editor-bar ui-editor-bar">
+        <el-button text class="ui-back-button" @click="backToList">← 返回任务列表</el-button>
       </div>
       <el-form :model="form" label-width="96px" class="task-form">
         <el-form-item label="任务名称" required>
@@ -211,38 +267,8 @@ function statusText(status: string): string {
 </template>
 
 <style lang="scss" scoped>
-.scheduled-tasks {
-  padding: 24px 32px;
-}
-
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-
-  h2 {
-    font-size: 20px;
-    color: var(--ev-c-text-1);
-  }
-
-  .page-desc {
-    margin-top: 6px;
-    font-size: 13px;
-    color: var(--ev-c-text-3);
-  }
-}
-
-.back-button {
-  padding: 0;
-  font-size: 13px;
-  color: var(--ev-c-text-3);
-
-  &:hover {
-    color: var(--el-color-primary);
-    background: transparent;
-  }
+.page-alert {
+  margin-bottom: 16px;
 }
 
 .task-list {
@@ -256,14 +282,20 @@ function statusText(status: string): string {
   align-items: flex-start;
   gap: 16px;
   flex-wrap: wrap;
-  padding: 14px 16px;
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 8px;
-  background: var(--el-bg-color);
-  transition: border-color 0.2s;
+  padding: 18px 20px;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-card-border);
+  border-radius: var(--ui-card-radius);
+  box-shadow: var(--ui-card-shadow);
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s;
 
   &:hover {
-    border-color: var(--el-color-primary-light-5);
+    background: var(--ui-surface-hover);
+    border-color: color-mix(in srgb, var(--el-color-primary) 18%, var(--ui-card-border));
+    box-shadow: var(--ui-card-shadow-hover);
   }
 }
 
@@ -330,6 +362,8 @@ function statusText(status: string): string {
   align-items: flex-end;
   gap: 8px;
   flex-shrink: 0;
+  padding-left: 16px;
+  border-left: 1px solid var(--el-border-color-lighter);
 }
 
 .task-actions {
@@ -345,34 +379,34 @@ function statusText(status: string): string {
 }
 
 .editor-pane {
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 8px;
-  background: var(--el-bg-color);
-}
-
-.editor-bar {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 18px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-  background: var(--el-bg-color);
-  border-radius: 8px 8px 0 0;
+  min-height: 360px;
 }
 
 .task-form {
-  padding: 18px 18px 0;
+  padding: 24px 24px 0;
 }
 
 .editor-footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  padding: 12px 0;
-  margin-top: 4px;
-  border-top: 1px solid var(--el-border-color-lighter);
+  padding: 12px 18px;
+  margin: 4px -24px 0;
+  background: color-mix(in srgb, var(--ui-surface) 92%, transparent);
+  border: 0;
+  border-top: 1px solid var(--ui-divider);
+  border-radius: 0 0 var(--ui-card-radius) var(--ui-card-radius);
+  box-shadow: none;
+}
+
+@media (max-width: 620px) {
+  .task-side {
+    align-items: flex-start;
+    width: 100%;
+    padding-top: 12px;
+    padding-left: 0;
+    border-top: 1px solid var(--el-border-color-lighter);
+    border-left: 0;
+  }
 }
 </style>

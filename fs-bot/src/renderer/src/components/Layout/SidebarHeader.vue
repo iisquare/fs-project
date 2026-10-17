@@ -4,6 +4,7 @@ import { page, projectCreateRoute } from '@renderer/router/config'
 import { useProjectStore } from '@renderer/stores/project'
 import { useConversationStore } from '@renderer/stores/conversation'
 import LayoutIcon from './LayoutIcon.vue'
+import BrandLogo from '@renderer/components/Brand/BrandLogo.vue'
 
 const router = useRouter()
 const projectStore = useProjectStore()
@@ -36,7 +37,7 @@ function newChat(): void {
   <div class="sidebar-header">
     <div class="header-top">
       <div class="header-brand">
-        <span class="header-logo">🤖</span>
+        <BrandLogo :size="30" class="header-logo" />
         <span class="header-name">fs-bot</span>
       </div>
       <div class="header-actions">
@@ -85,11 +86,11 @@ function newChat(): void {
 }
 
 .header-logo {
-  font-size: 20px;
+  flex-shrink: 0;
 }
 
 .header-name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--ev-c-text-1);
 }

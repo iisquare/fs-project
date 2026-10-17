@@ -12,7 +12,7 @@
  * （右侧小按钮在文件夹中定位，悬浮提示给出完整路径），回复正文与工具调用里的路径同理
  * （见 ChatMarkdown 的链接拦截与 ToolCallList 的文件卡片）。
  */
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ChatMarkdown from './ChatMarkdown.vue'
 import ToolCallList from './ToolCallList.vue'
 import { formatDuration, formatMessageTime } from '@renderer/utils/TimeUtil'
@@ -23,6 +23,8 @@ const props = defineProps<{
   message: ChatMessage
   /** 会话所属项目：引用里的相对路径按它的工作区目录解析（打开文件时用） */
   projectId?: string
+  /** 会话标识：本机图片越界读取时，审批申请交回这段对话 */
+  conversationId?: string
   /** 分支位置：同一条消息有多条分支时显示「◀ 2/3 ▶」 */
   branch?: { index: number; count: number } | null
   /** 用户消息能否「编辑后重新发送」（新起分支，原分支保留） */
@@ -137,6 +139,53 @@ const copied = ref(false)
 /** 编辑态：改完重新发送会新起一条分支，原提问与原回复都保留 */
 const editing = ref(false)
 const draft = ref('')
+/**
+ * 用户长提问：气泡正文超过 8 行时默认收起。
+ * 这里按实际 DOM 高度判断（与 .chat-content.is-collapsed 的 max-height 对齐），
+ * 窗口或文件区改变气泡宽度后，行数变化也能同步更新按钮。
+ */
+const USER_CONTENT_COLLAPSED_HEIGHT = 177
+const userContentRef = ref<HTMLElement | null>(null)
+const userContentOverflowing = ref(false)
+const userContentExpanded = ref(false)
+let userContentObserver: ResizeObserver | null = null
+
+function measureUserContent(): void {
+  const content = userContentRef.value
+  userContentOverflowing.value = Boolean(
+    content && !editing.value && content.scrollHeight > USER_CONTENT_COLLAPSED_HEIGHT
+  )
+  if (!userContentOverflowing.value) userContentExpanded.value = false
+}
+
+function observeUserContent(): void {
+  userContentObserver?.disconnect()
+  userContentObserver = null
+  const content = userContentRef.value
+  if (!content) return
+  userContentObserver = new ResizeObserver(measureUserContent)
+  userContentObserver.observe(content)
+}
+
+watch(
+  () => [props.message.content, editing.value],
+  async () => {
+    await nextTick()
+    observeUserContent()
+    measureUserContent()
+  }
+)
+
+onMounted(() => {
+  observeUserContent()
+  measureUserContent()
+})
+
+onBeforeUnmount(() => userContentObserver?.disconnect())
+
+function toggleUserContent(): void {
+  userContentExpanded.value = !userContentExpanded.value
+}
 
 /** 打开引用到的本机文件 / 目录（技能引用给的是技能目录，同样按目录打开） */
 function openMention(mention: { path: string }): void {
@@ -191,7 +240,14 @@ async function copy(): Promise<void> {
       <div class="chat-bubble">
         <!-- 用户提问：原文 + @ 引用回显 -->
         <template v-if="isUser">
-          <div class="chat-content" v-if="!editing">{{ message.content || '（未输入内容）' }}</div>
+          <div
+            v-if="!editing"
+            ref="userContentRef"
+            class="chat-content"
+            :class="{ 'is-collapsed': userContentOverflowing && !userContentExpanded }"
+          >
+            {{ message.content || '（未输入内容）' }}
+          </div>
           <!-- 编辑提问：改完重新发送会在同一处新起一条分支（原分支保留） -->
           <div class="chat-edit" v-else>
             <el-input
@@ -266,6 +322,33 @@ async function copy(): Promise<void> {
               </span>
             </el-tooltip>
           </div>
+          <button
+            v-if="!editing && userContentOverflowing"
+            type="button"
+            class="chat-content-toggle"
+            :aria-expanded="userContentExpanded ? 'true' : 'false'"
+            :title="userContentExpanded ? '收起正文' : '展开全文'"
+            @click="toggleUserContent"
+          >
+            <span>{{ userContentExpanded ? '收起' : '显示更多' }}</span>
+            <svg
+              class="toggle-caret"
+              :class="{ 'is-open': userContentExpanded }"
+              viewBox="0 0 16 16"
+              width="10"
+              height="10"
+              aria-hidden="true"
+            >
+              <path
+                d="M6 3.6 10.4 8 6 12.4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
         </template>
         <!-- 助手回复：调用过程铺成一条时间线（生成时铺开、结束后收起），之后是回复正文 -->
         <template v-else>
@@ -323,7 +406,11 @@ async function copy(): Promise<void> {
                   <ToolCallList :calls="round.calls ?? []" :project-id="projectId" />
                   <!-- 中间输出：不是节点，但主轴要接着往下走（末轮的正文就是气泡里的回复，不在这里重复） -->
                   <div class="timeline-content" v-if="round.content && index !== rounds.length - 1">
-                    <ChatMarkdown :content="round.content" :project-id="projectId" />
+                    <ChatMarkdown
+                      :content="round.content"
+                      :project-id="projectId"
+                      :conversation-id="conversationId"
+                    />
                   </div>
                 </template>
               </div>
@@ -333,7 +420,12 @@ async function copy(): Promise<void> {
             {{ message.content || '本轮未完成' }}
           </div>
           <!-- 回复正文按 Markdown 渲染（用户消息保持原文） -->
-          <ChatMarkdown v-else-if="hasBody" :content="message.content" :project-id="projectId" />
+          <ChatMarkdown
+            v-else-if="hasBody"
+            :content="message.content"
+            :project-id="projectId"
+            :conversation-id="conversationId"
+          />
           <div class="chat-content placeholder" v-else-if="idle">（无回复内容）</div>
           <div class="chat-streaming" v-if="streaming">
             <span class="chat-streaming-dot" />
@@ -510,8 +602,43 @@ async function copy(): Promise<void> {
   word-break: break-word;
   color: var(--el-text-color-primary);
 
+  /* 长提问收起 8 行；高度与 USER_CONTENT_COLLAPSED_HEIGHT 保持一致 */
+  &.is-collapsed {
+    max-height: calc(1.7em * 8);
+    overflow: hidden;
+  }
+
   &.placeholder {
     color: var(--el-text-color-placeholder);
+  }
+}
+
+/* 用户长提问的显示更多 / 收起：贴着气泡左下角，不抢正文的视觉重量 */
+.chat-content-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 20px;
+  margin: 2px 0 0;
+  padding: 0 2px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--el-color-primary);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--el-color-primary-dark-2);
+  }
+
+  .toggle-caret {
+    transform: rotate(90deg);
+    transition: transform 0.2s;
+
+    &.is-open {
+      transform: rotate(-90deg);
+    }
   }
 }
 

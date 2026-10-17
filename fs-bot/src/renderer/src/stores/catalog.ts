@@ -50,6 +50,7 @@ export const useCatalogStore = defineStore('catalog', () => {
   const themeError = ref('')
   const ontologyError = ref('')
   const modelError = ref('')
+  const methodError = ref('')
 
   /** 可用应用：新建项目 / 新建会话时选择 */
   async function fetchApps(): Promise<any[]> {
@@ -191,14 +192,16 @@ export const useCatalogStore = defineStore('catalog', () => {
     try {
       const result: any = await ToolApi.methodList(
         { name: keyword, page, pageSize, status: 1, present: 1 },
-        { error: false }
+        { error: false, warning: false }
       )
       const rows = ApiUtil.data(result)?.rows ?? []
       const total = ApiUtil.data(result)?.total ?? rows.length
       methods.value = rows
+      methodError.value = ''
       return { rows, total }
-    } catch {
+    } catch (e) {
       methods.value = []
+      methodError.value = catalogError(e, '工具方法', 'agent:tool:')
       return { rows: [], total: 0 }
     } finally {
       loadingMethods.value = false
@@ -256,6 +259,7 @@ export const useCatalogStore = defineStore('catalog', () => {
     themeError,
     ontologyError,
     modelError,
+    methodError,
     fetchApps,
     fetchSkills,
     fetchVersions,

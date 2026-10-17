@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCatalogStore } from '@renderer/stores/catalog'
 import { useSkillStore } from '@renderer/stores/skill'
+import { errorMessage } from '@renderer/utils/ErrorUtil'
 import VersionSelect from '@renderer/components/Version/VersionSelect.vue'
 import type {
   VersionOption,
@@ -27,6 +28,7 @@ const keyword = ref('')
 const picked = ref<Record<number, VersionOption | null>>({})
 /** 技能版本清单的缓存：面板反复开合用同一份（技能版本没有检索参数，没必要每次展开都请求一遍） */
 const versionCache = ref<Record<number, VersionOption[]>>({})
+const installedError = ref('')
 
 const filtered = computed(() => {
   const text = keyword.value.trim()
@@ -49,8 +51,17 @@ const cards = computed(() =>
   })
 )
 
+async function loadInstalled(): Promise<void> {
+  installedError.value = ''
+  try {
+    await skillStore.fetchInstalled()
+  } catch (error) {
+    installedError.value = errorMessage(error, '本地技能清单加载失败')
+  }
+}
+
 onMounted(async () => {
-  await Promise.all([catalogStore.fetchSkills(), skillStore.fetchInstalled()])
+  await Promise.all([catalogStore.fetchSkills(), loadInstalled()])
 })
 
 /**
@@ -103,8 +114,12 @@ async function remove(item: any) {
   } catch {
     return
   }
-  await skillStore.remove(item.name)
-  ElMessage.success('已移除')
+  try {
+    await skillStore.remove(item.name)
+    ElMessage.success('已移除')
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '移除技能失败'))
+  }
 }
 
 function installedVersion(skillId: number): string {
@@ -134,27 +149,38 @@ function versionSwitchable(skill: any): boolean {
 </script>
 
 <template>
-  <div class="skill-management">
-    <div class="page-header">
-      <div>
-        <h2>技能管理</h2>
-        <p class="page-desc">
+  <div class="skill-management ui-page">
+    <div class="ui-page-header">
+      <div class="ui-page-header__copy">
+        <h1 class="ui-page-title">技能管理</h1>
+        <p class="ui-page-desc">
           技能包从服务端下载并解压到本地 skills 目录：{{ skillStore.root || '未初始化' }}
         </p>
       </div>
     </div>
 
-    <el-tabs v-model="activeTab">
+    <el-alert
+      v-if="installedError"
+      class="catalog-alert"
+      type="warning"
+      :closable="false"
+      show-icon
+      :title="installedError"
+    >
+      <el-button text type="primary" size="small" @click="loadInstalled">重试</el-button>
+    </el-alert>
+
+    <el-tabs v-model="activeTab" class="skill-tabs">
       <el-tab-pane label="技能市场" name="marketplace">
-        <div class="marketplace-search">
+        <div class="ui-toolbar">
           <el-input
             v-model="keyword"
-            class="search-input"
+            class="ui-toolbar__search"
             placeholder="搜索技能名称或描述"
             clearable
           />
           <el-button :loading="catalogStore.loadingSkills" @click="refreshSkills"> 刷新 </el-button>
-          <span class="search-count">共 {{ filtered.length }} 个技能</span>
+          <span class="ui-toolbar__count">共 {{ filtered.length }} 个技能</span>
         </div>
         <el-alert
           v-if="catalogStore.skillError"
@@ -174,7 +200,12 @@ function versionSwitchable(skill: any): boolean {
             description="暂无可用技能"
           />
           <div v-else class="skill-grid">
-            <el-card v-for="card in cards" :key="card.skill.id" shadow="hover" class="skill-card">
+            <el-card
+              v-for="card in cards"
+              :key="card.skill.id"
+              shadow="never"
+              class="skill-card ui-panel--hover"
+            >
               <template #header>
                 <div class="card-header">
                   <span class="card-title" :title="card.skill.name">{{ card.skill.name }}</span>
@@ -217,8 +248,8 @@ function versionSwitchable(skill: any): boolean {
             <el-card
               v-for="item in skillStore.installed"
               :key="item.path"
-              shadow="hover"
-              class="skill-card"
+              shadow="never"
+              class="skill-card ui-panel--hover"
             >
               <template #header>
                 <div class="card-header">
@@ -242,45 +273,6 @@ function versionSwitchable(skill: any): boolean {
 </template>
 
 <style lang="scss" scoped>
-.skill-management {
-  padding: 24px 32px;
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-
-  h2 {
-    font-size: 20px;
-    color: var(--ev-c-text-1);
-  }
-
-  .page-desc {
-    margin-top: 6px;
-    font-size: 13px;
-    color: var(--ev-c-text-3);
-  }
-}
-
-.marketplace-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-
-  .search-input {
-    width: 240px;
-  }
-
-  .search-count {
-    margin-left: auto;
-    font-size: 12px;
-    color: var(--ev-c-text-3);
-  }
-}
-
 .catalog-alert {
   margin-bottom: 12px;
 }
@@ -294,21 +286,20 @@ function versionSwitchable(skill: any): boolean {
 .skill-card {
   display: flex;
   flex-direction: column;
-  transition: border-color 0.2s;
-
-  &:hover {
-    border-color: var(--el-color-primary-light-5);
-  }
+  background: var(--ui-surface);
+  border-color: var(--ui-card-border);
+  border-radius: var(--ui-card-radius);
 
   :deep(.el-card__header) {
-    padding: 12px 16px;
+    padding: 14px 16px;
+    border-bottom-color: var(--el-border-color-lighter);
   }
 
   :deep(.el-card__body) {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 14px 16px 12px;
+    padding: 16px;
   }
 
   .card-header {
@@ -346,7 +337,7 @@ function versionSwitchable(skill: any): boolean {
     line-height: 1.5;
     color: var(--ev-c-text-3);
     background: var(--el-fill-color-lighter);
-    border-radius: 4px;
+    border-radius: 6px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

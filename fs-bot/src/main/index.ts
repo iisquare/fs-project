@@ -6,16 +6,19 @@ import {
   ipcMain,
   nativeImage,
   protocol,
+  screen,
   type NativeImage
 } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { DatabaseManager } from './database/manager'
+import { UserSchemaTooNewError } from './database/migrations'
 import { ConfigStore } from './config'
 import { SkillManager } from './skills'
 import { exportProject, importProject } from './projects'
 import { ICON_SCHEME, initIcons, pickIcon, serveIcon } from './icons'
+import { CHAT_IMAGE_SCHEME, serveChatImage } from './images'
 import { parseProjectEnvVars } from './project-env'
 import {
   WorkspaceManager,
@@ -79,6 +82,29 @@ const skills = SkillManager.getInstance()
  */
 const approvals = new Map<string, { conversationId: string; settle: (allow: boolean) => void }>()
 const APPROVAL_TIMEOUT = 5 * 60 * 1000
+
+/** 用户数据比客户端新：提示原因，确认后退出，避免旧结构继续读写新数据 */
+async function notifyClientTooNew(error: UserSchemaTooNewError): Promise<void> {
+  const options = {
+    type: 'warning' as const,
+    title: '客户端版本过低',
+    message: '无法打开当前用户数据',
+    detail:
+      `用户数据版本：v${error.dataVersion}\n` +
+      `当前客户端支持：v${error.supportedVersion}\n\n` +
+      '该用户数据已由更新版本的客户端升级，旧版客户端无法安全读取。\n' +
+      '请安装最新版客户端后再打开；请勿删除用户数据。',
+    buttons: ['退出应用'],
+    defaultId: 0,
+    noLink: true
+  }
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    await dialog.showMessageBox(mainWindow, options)
+  } else {
+    await dialog.showMessageBox(options)
+  }
+  app.quit()
+}
 
 /** 撤下一条申请：从待答复里摘掉，并告诉界面这条作废了（横幅跟着撤掉） */
 function closeApproval(id: string): boolean {
@@ -165,6 +191,8 @@ function createWindow(): void {
 
   mainWindow.on('unmaximize', () => {
     mainWindow?.webContents.send('window:maximize-change', false)
+    // 最大化时文件区没法把窗口再加宽；还原后按当前展开状态补上（期间可能被收起 / 展开过）
+    applyFilesPanelWidth()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -190,11 +218,7 @@ ipcMain.handle('window:set-login-size', () => {
 })
 
 ipcMain.handle('window:set-normal-size', () => {
-  if (mainWindow) {
-    mainWindow.setSize(900, 670)
-    mainWindow.center()
-    mainWindow.setResizable(true)
-  }
+  resetMainWindowSize()
 })
 
 ipcMain.handle('window:minimize', () => {
@@ -219,22 +243,105 @@ ipcMain.handle('window:is-maximized', () => {
 
 let savedBounds: { x: number; y: number; width: number; height: number } | null = null
 
+/**
+ * 右侧文件区占用的窗口宽度：文件区展开不是从对话列里分地方，而是把窗口整体加宽。
+ *
+ * `applied` 记「当前窗口里已经为文件区让出的宽度」，收起时按它缩回（屏幕放不下时
+ * 实际只加宽了一部分，不能拿用户设定的宽度直接减）。展开时若右边缘会越过屏幕工作区，
+ * 窗口向左让位并记下位移，收起时再把位置还原。
+ */
+let filesPanelVisible = false
+let filesPanelWidth = 0
+let filesPanelApplied = 0
+let filesPanelShiftX = 0
+let pinned = false
+let pinnedPanelApplied = 0
+let pinnedPanelShiftX = 0
+
+/** 按文件区的当前意愿对齐窗口宽度：展开加宽、收起缩回，置顶与最大化期间不动 */
+function applyFilesPanelWidth(): void {
+  if (!mainWindow || pinned || mainWindow.isMaximized()) return
+
+  const target = filesPanelVisible ? Math.max(0, Math.round(filesPanelWidth)) : 0
+  const delta = target - filesPanelApplied
+  if (!delta) return
+
+  const bounds = mainWindow.getBounds()
+  const area = screen.getDisplayMatching(bounds).workArea
+  // 窗口最多铺满当前屏幕的工作区：屏幕本身放不下时，文件区只能挤一点对话列
+  const width = Math.min(Math.max(bounds.width + delta, 360), area.width)
+  const applied = width - bounds.width
+  if (!applied) return
+
+  let x = bounds.x
+  if (applied > 0) {
+    // 优先向右长；右边不够就整窗左移，保证加宽后的右边缘仍在屏幕内
+    const right = area.x + area.width
+    if (x + width > right) {
+      const nextX = Math.max(area.x, right - width)
+      filesPanelShiftX += x - nextX
+      x = nextX
+    }
+  } else if (!target) {
+    // 完全收起时还回展开前的水平位置（用户中途拖过窗口也不至于跑出屏幕）
+    x += filesPanelShiftX
+    filesPanelShiftX = 0
+    x = Math.max(area.x, Math.min(x, area.x + area.width - width))
+  }
+
+  mainWindow.setBounds({ x, y: bounds.y, width, height: bounds.height }, false)
+  filesPanelApplied += applied
+}
+
+/**
+ * 主界面窗口的基准尺寸。登录回来后文件区若还开着，以这个尺寸重新加宽，
+ * 别把登录页那次固定尺寸算成文件区的占位。
+ */
+function resetMainWindowSize(): void {
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  mainWindow.setSize(900, 670)
+  mainWindow.center()
+  mainWindow.setResizable(true)
+  filesPanelApplied = 0
+  filesPanelShiftX = 0
+  applyFilesPanelWidth()
+}
+
 ipcMain.handle('window:toggle-pin', (_event, pin: boolean) => {
   if (!mainWindow) return
 
   if (pin) {
     const bounds = mainWindow.getBounds()
     savedBounds = { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
+    // 钉住期间窗口固定 400×600：先把文件区已经占用的宽度收进「钉住前」这份记录，
+    // 取消钉住时再按文件区当前状态对齐（期间只能改意愿，不能改窗口）
+    pinnedPanelApplied = filesPanelApplied
+    pinnedPanelShiftX = filesPanelShiftX
+    pinned = true
+    filesPanelApplied = 0
+    filesPanelShiftX = 0
     mainWindow.setAlwaysOnTop(true)
     mainWindow.setSize(400, 600)
     mainWindow.center()
   } else {
     mainWindow.setAlwaysOnTop(false)
+    pinned = false
     if (savedBounds) {
       mainWindow.setBounds(savedBounds)
       savedBounds = null
+      filesPanelApplied = pinnedPanelApplied
+      filesPanelShiftX = pinnedPanelShiftX
     }
+    applyFilesPanelWidth()
   }
+})
+
+/** 右侧文件区展开 / 收起 / 拖宽：界面只报意愿与宽度，窗口怎么让位由主进程算 */
+ipcMain.handle('window:files-panel', (_event, request: { visible?: boolean; width?: number }) => {
+  filesPanelVisible = true === request?.visible
+  const width = Number(request?.width)
+  if (Number.isFinite(width) && width > 0) filesPanelWidth = Math.round(width)
+  applyFilesPanelWidth()
 })
 
 // This method will be called when Electron has finished
@@ -281,13 +388,21 @@ app.whenReady().then(async () => {
   // 图标目录初始化：选中的本地图片复制到这里，界面按 app-icon://<文件名> 引用
   initIcons(runtimeDir)
 
-  ipcMain.handle('db:init-user', (_event, request: DbInitUserRequest) => {
-    db.initUser(request.serial, request.userId, request.dbSecret, runtimeDir)
-    return { success: true }
+  ipcMain.handle('db:init-user', async (_event, request: DbInitUserRequest) => {
+    try {
+      db.initUser(request.serial, request.userId, request.dbSecret, runtimeDir)
+      return { success: true }
+    } catch (error) {
+      if (error instanceof UserSchemaTooNewError) {
+        await notifyClientTooNew(error)
+        return { success: false }
+      }
+      throw error
+    }
   })
 
   ipcMain.handle('db:select', (_event, request: DbSelectRequest) => {
-    return db.select(request.table, request.where, request.orderBy)
+    return db.select(request.table, request.where, request.orderBy, request.limit)
   })
 
   ipcMain.handle('db:insert', (_event, request: DbInsertRequest) => {
@@ -322,6 +437,14 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('config:get-settings', () => {
     return config.getSettings()
+  })
+
+  /** 版本信息：客户端安装版本与当前用户库的 schema 版本，供系统设置页展示 */
+  ipcMain.handle('app:versions', () => {
+    return {
+      clientVersion: app.getVersion(),
+      dataVersion: db.userSchemaVersion
+    }
   })
 
   ipcMain.handle('config:update-setting', (_event, request: ConfigUpdateSettingRequest) => {
@@ -408,11 +531,16 @@ app.whenReady().then(async () => {
     return { stopped: workspace.cancel(conversationId) }
   })
 
-  ipcMain.handle('workspace:pick', async () => {
+  /**
+   * 选一个本机路径（取消返回空串）：kind 决定选文件还是目录、title 是对话框标题（不给就按 kind 出一句通用的）。
+   * 一次只选一个——这类入口都只有一个落点；要选一批走 `workspace:pick-paths`。
+   */
+  ipcMain.handle('workspace:pick', async (_event, request?: { kind?: string; title?: string }) => {
     if (!mainWindow) return ''
+    const file = 'file' === String(request?.kind ?? '')
     const result = await dialog.showOpenDialog(mainWindow, {
-      title: '选择工作区目录',
-      properties: ['openDirectory', 'createDirectory']
+      title: String(request?.title ?? '').trim() || (file ? '选择文件' : '选择目录'),
+      properties: file ? ['openFile', 'showHiddenFiles'] : ['openDirectory', 'createDirectory']
     })
     return result.canceled || result.filePaths.length < 1 ? '' : result.filePaths[0]
   })
@@ -452,6 +580,11 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('workspace:read', (_event, request: WorkspaceReadRequest) => {
     return workspace.read(request.projectId, request.path, request.conversationId)
+  })
+
+  /** 对话正文里的本机图片：鉴权后签发带随机标识的展示地址，协议按标识回源 */
+  ipcMain.handle('workspace:image', (_event, request: WorkspaceReadRequest) => {
+    return workspace.image(request.projectId, request.path, request.conversationId)
   })
 
   // 打开 / 定位本机文件：用户点出来的动作，只做路径归一与安全判定（见 WorkspaceManager.open）
@@ -585,6 +718,8 @@ app.whenReady().then(async () => {
 
   // 本地图标：按文件名从图标目录取文件（见 icons.ts），路径由主进程拼
   protocol.handle(ICON_SCHEME, (request) => serveIcon(request.url))
+  // 对话正文里的本机图片：地址只带随机标识，文件映射在 images.ts 里（不把路径交给渲染进程）
+  protocol.handle(CHAT_IMAGE_SCHEME, (request) => serveChatImage(request.url))
 
   /** 选择本地图标：主进程复制到图标目录后返回地址，渲染进程只负责回填 */
   ipcMain.handle('icon:pick', () => pickIcon(mainWindow))

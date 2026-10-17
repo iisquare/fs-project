@@ -41,13 +41,35 @@ export const useFilesStore = defineStore('files', () => {
     'delivered' === localStorage.getItem(TAB_STORAGE_KEY) ? 'delivered' : 'workspace'
   )
 
-  /** 设定展开状态（钉住窗口时的临时收起也走这里，取消钉住由调用方还原原状态） */
-  function setVisible(value: boolean): void {
-    visible.value = value
+  /**
+   * 把当前状态交给主进程：文件区不占对话列，改为把窗口整体加宽 / 收窄。
+   * 置顶切换时界面只暂时藏起文件区，这一趟由主进程按钉住前的窗口记录处理。
+   */
+  function syncWindow(): void {
+    void window.ipc.setFilesPanel?.(visible.value, width.value)
   }
 
-  function toggle(): void {
-    setVisible(!visible.value)
+  /**
+   * 设定展开状态（钉住窗口时的临时收起也走这里，取消钉住由调用方还原原状态）。
+   * `resize` 为 false 时只改界面，不动窗口——置顶切换本身就是一次窗口尺寸变化。
+   */
+  function setVisible(value: boolean, options: { resize?: boolean } = {}): void {
+    if (visible.value === value) return
+    visible.value = value
+    if (false !== options.resize) syncWindow()
+  }
+
+  /**
+   * 展开前先把窗口加宽到位，再把面板挂上来：面板若先出现，splitter 会按
+   * 「窗口还没变宽」的剩余空间把文件区压窄并回写宽度，之后窗口再长也补不回来。
+   */
+  async function toggle(): Promise<void> {
+    if (visible.value) {
+      setVisible(false)
+      return
+    }
+    await window.ipc.setFilesPanel?.(true, width.value)
+    visible.value = true
   }
 
   /**
@@ -57,7 +79,11 @@ export const useFilesStore = defineStore('files', () => {
   function setWidth(size: number | string): void {
     const value = Number.parseFloat(String(size))
     if (!Number.isFinite(value)) return
-    width.value = clampWidth(value)
+    const next = clampWidth(value)
+    if (next === width.value) return
+    width.value = next
+    // 拖分隔条就是改文件区占用的宽度：窗口跟着长 / 缩，对话列保持原宽
+    if (visible.value) syncWindow()
   }
 
   /** 拖拽结束后落库：过程中每一帧都写一次 localStorage 没必要 */

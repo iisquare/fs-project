@@ -17,6 +17,7 @@ import { release as osRelease } from 'os'
 import { basename, dirname, extname, isAbsolute, join, resolve, sep } from 'path'
 import { shell } from 'electron'
 import { mergeProjectEnv, redactSecretValues, type ProjectEnvVar } from './project-env'
+import { chatImageType, issueChatImage, MAX_CHAT_IMAGE_SIZE } from './images'
 
 /**
  * 项目工作区文件访问：每个项目声明自己的目录与权限（只读 / 只写 / 读写），
@@ -39,9 +40,9 @@ import { mergeProjectEnv, redactSecretValues, type ProjectEnvVar } from './proje
  * 推给界面的申请里带上命令原文——让人看着是哪条命令再决定。
  *
  * 命令的进程环境由**项目环境变量**补齐（项目编辑器里的那一格，见 `project-env.ts`）：
- * 同一个 `java -version` 在不同项目里落到不同 JDK 上靠的就是它。这些值只进本机命令的进程环境，
- * 不下发给模型（本机说明里只有变量名），也不随分享上传；标了「密钥」的值在命令输出里换成 `***`，
- * 免得一条命令把密钥原样带进对话。
+ * 同一个 `java -version` 在不同项目里落到不同 JDK 上靠的就是它。非密钥变量的值会按行进入
+ * 本机说明并随分享上传；标了「密钥」的项只进本机进程环境，本机说明只给变量名，分享时整行留下。
+ * 密钥值在命令输出里换成 `***`，免得一条命令把密钥原样带进对话。
  *
  * `open` / `reveal` 是**用户自己点出来**的动作（把对话里的文件交给系统默认程序或文件管理器），
  * 不是模型要读写它，因此不走工作区外的访问策略：路径只做归一与存在性判断，
@@ -196,6 +197,15 @@ export interface WorkspaceFileUpload {
   size: number
 }
 
+/** 对话正文里的本机图片：鉴权后拿到展示地址，地址里不带本机路径 */
+export interface WorkspaceImage {
+  /** 归一后的绝对路径（界面只用于提示与文件动作，不拿来拼展示地址） */
+  path: string
+  /** 展示地址：chat-image://<随机标识>，由主进程映射回文件 */
+  url: string
+  size: number
+}
+
 /** 打开 / 定位本机文件的结果：ok 为 false 时 message 是不能照做的原因 */
 export interface WorkspaceOpenResult {
   ok: boolean
@@ -322,6 +332,12 @@ const MAX_COMMAND_OUTPUT = 32 * 1024
 /** 命令超时：默认 60 秒，最长 10 分钟（装依赖、跑构建也够） */
 const COMMAND_TIMEOUT = 60
 const MAX_COMMAND_TIMEOUT = 600
+/**
+ * 命令退出后的收尾宽限：进程已退出、stdout / stderr 却还没关时，等这么久就按已经收到的输出收尾，
+ * 别让调用多挂一段。正常情况下 close 紧跟 exit 来，这一步用不到它。
+ */
+const FINISH_GRACE = 500
+
 /** 清单与检索一律跳过的目录：依赖与产物，进去只会把结果淹没 */
 const IGNORED_DIRS = new Set([
   '.git',
@@ -661,8 +677,8 @@ export class WorkspaceManager {
   /**
    * 给模型的本机说明：运行环境（系统 / 架构 / shell / 路径样式 / 当前时间）与工作区口径
    * （目录与权限、主目录、命令的默认工作目录、相对路径解析、工作区外的访问策略）。
-   * 项目配了环境变量时另列一节，**只给变量名、不给值**：模型据此知道命令里可以引用哪些名字，
-   * 而密钥这类值不出本机。
+   * 项目配了环境变量时另列一节：非密钥变量按 `KEY=VALUE` 一行一项下发，模型不必先执行命令
+   * 就能拿到项目路径与工具链配置；密钥变量仍只给变量名，值不出本机。
    *
    * 只列事实、不写解释——这段随每轮请求下发，占的是上下文。渲染进程把它追加在项目系统提示词
    * 之后；目录、主目录与策略都在这里现算，改了配置下一轮就是新的说法。
@@ -688,17 +704,19 @@ export class WorkspaceManager {
       })
     }
     if (env.length) {
-      // 有密钥时提前说一句「读不到值」：省下模型打印一遍、看到 *** 再猜的那一轮
-      const masked = env.some((item) => item.secret)
-        ? '；密钥类变量的值不出现在输出里（被换成 ***）'
-        : ''
       lines.push(`## 环境变量`)
-      lines.push(
-        `- 执行命令时带上（值不下发，需要时按 shell 写法引用）：${env
-          .map((item) => item.key)
-          .join('、')}${masked}`
-      )
+      env.forEach((item) => {
+        // 与工作区列表同一版式：一项一行。值里的换行转成字面量，避免把一行拆成多项。
+        const value = String(item.value).replace(/\r\n|\r|\n/g, '\\n')
+        lines.push(item.secret ? `- ${item.key}（密钥，值不下发）` : `- ${item.key}=${value}`)
+      })
     }
+    lines.push(`## 图片展示`)
+    // 示例跟着运行平台走：Linux / macOS 用 /tmp，Windows 用盘符，别把模型引到另一个系统的路径上
+    const imageExample = 'win32' === process.platform ? 'D:/tmp/shot.png' : '/tmp/shot.png'
+    lines.push(
+      `本机图片用 Markdown 图片语法 \`![说明](路径)\` 引用，例如 \`![截图](${imageExample})\`。`
+    )
     return lines.join('\n')
   }
 
@@ -750,6 +768,31 @@ export class WorkspaceManager {
     if (stat.size > MAX_TEXT_SIZE)
       throw new Error('文件超过预览上限（2MB）：' + basename(target.path))
     return { path: target.path, content: readFileSync(target.path, 'utf8'), size: stat.size }
+  }
+
+  /**
+   * 对话正文里的本机图片：与 read 同一套工作区权限与外区访问策略，
+   * 通过后只签发一个带随机标识的展示地址（见 images.ts），不把文件内容交给渲染进程。
+   *
+   * 只认栅格图与 20MB 以内的文件：模型输出不可信，不能让一条回复把任意文件按图片地址顶上来；
+   * 后缀不在白名单里直接失败，界面由图片加载失败兜底到默认图。
+   */
+  async image(projectId: string, path: string, conversationId = ''): Promise<WorkspaceImage> {
+    const target = await this.resolve(projectId, path, 'read', { conversationId })
+    const stat = statSync(target.path)
+    if (!stat.isFile()) throw new Error('目标不是文件：' + target.path)
+    if (stat.size > MAX_CHAT_IMAGE_SIZE) {
+      throw new Error(
+        `图片超过展示上限（${MAX_CHAT_IMAGE_SIZE / 1024 / 1024}MB）：${basename(target.path)}`
+      )
+    }
+    const type = chatImageType(target.path)
+    if (!type) throw new Error(`不是支持的图片格式：${basename(target.path)}`)
+    return {
+      path: target.path,
+      url: issueChatImage(target.path, type),
+      size: stat.size
+    }
   }
 
   /**
@@ -1281,6 +1324,11 @@ export class WorkspaceManager {
         cwd,
         shell: true,
         windowsHide: true,
+        // 标准输入接空设备（NUL / /dev/null），不是默认的管道：默认管道没人写、也没人关，
+        // 命令只要去读 stdin（findstr、sort、more、set /p、要凭据的 CLI……）就会一直等着，
+        // 等待期间一个字都不输出——看着就是「命令卡住了」，最后拖到超时才被收掉。
+        // 接空设备后这类命令立刻读到 EOF：要么正常结束、要么自己报错，与「无人值守跑一条命令」的口径一致。
+        stdio: ['ignore', 'pipe', 'pipe'],
         env: mergeProjectEnv(process.env, vars)
       })
       const stdout = new OutputCollector(MAX_COMMAND_OUTPUT)
@@ -1289,6 +1337,8 @@ export class WorkspaceManager {
       let cancelled = false
       let settled = false
       let timer: NodeJS.Timeout | null = null
+      /** 退出后的收尾宽限：进程已退出、管道迟迟不关时按它兜底收尾（见下面的 exiting） */
+      let grace: NodeJS.Timeout | null = null
       /** 这一条命令在册子上的样子：停止时按它收，收尾时摘掉（跑完不留痕） */
       let running: RunningCommand | null = null
       const finish = (code: number | null, signal: NodeJS.Signals | null): void => {
@@ -1296,6 +1346,7 @@ export class WorkspaceManager {
         settled = true
         if (running) this.commands.delete(running)
         if (timer) clearTimeout(timer)
+        if (grace) clearTimeout(grace)
         settle({
           command,
           cwd,
@@ -1333,6 +1384,19 @@ export class WorkspaceManager {
         stderr.push(Buffer.from(`启动失败：${error.message}`, 'utf8'))
         finish(null, null)
       })
+      // 进程退出不等于「收尾条件达成」：命令起过常驻子进程时（start、后台服务……），
+      // 那些进程继承着 stdout / stderr 的写端，close 要等它们也退出才来——命令本身早已跑完，
+      // 调用却还挂着。这里按 exit 补一道短宽限：管道随后就关的走 close（输出不受影响），
+      // 迟迟不关的就按已收到的输出收尾。
+      // （Windows 上常驻后裔握着写端时连 exit 都会一起被拖住，这一步兜不住，仍由超时 / 停止收尾。）
+      const exiting = (
+        code: number | null = null,
+        signal: NodeJS.Signals | null = null
+      ): void => {
+        if (settled || grace) return
+        grace = setTimeout(() => finish(code, signal), FINISH_GRACE)
+      }
+      child.on('exit', exiting)
       child.on('close', (code, signal) => finish(code, signal))
     })
   }

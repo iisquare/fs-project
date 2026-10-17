@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 const ipc = {
-  // 拖进输入框的文件 / 文件夹：File 对象只在渲染进程手里，路径只能由 preload 用 webUtils 取
+  // 拖进对话区的文件 / 文件夹：File 对象只在渲染进程手里，路径只能由 preload 用 webUtils 取
   // （Electron 32 起 File.path 已移除）。回传的是纯字符串，File 本身不过桥；
   // 取不到路径的项（不是磁盘上的文件）直接丢掉，不让一条坏项毁掉整次拖入。
   filePaths: (files: File[]) =>
@@ -21,15 +21,19 @@ const ipc = {
   maximize: () => ipcRenderer.invoke('window:maximize'),
   close: () => ipcRenderer.invoke('window:close'),
   isMaximized: () => ipcRenderer.invoke('window:is-maximized'),
+  appVersions: () => ipcRenderer.invoke('app:versions'),
   onMaximizeChange: (callback: (isMaximized: boolean) => void) => {
     ipcRenderer.on('window:maximize-change', (_, isMaximized) => callback(isMaximized))
   },
   togglePin: (pin: boolean) => ipcRenderer.invoke('window:toggle-pin', pin),
+  // 右侧文件区的展开状态与宽度：主进程据此把窗口等量加宽 / 收窄
+  setFilesPanel: (visible: boolean, width: number) =>
+    ipcRenderer.invoke('window:files-panel', { visible, width }),
   db: {
     initUser: (serial: string, userId: string, dbSecret: string) =>
       ipcRenderer.invoke('db:init-user', { serial, userId, dbSecret }),
-    select: (table: string, where?: Record<string, unknown>, orderBy?: string) =>
-      ipcRenderer.invoke('db:select', { table, where, orderBy }),
+    select: (table: string, where?: Record<string, unknown>, orderBy?: string, limit?: number) =>
+      ipcRenderer.invoke('db:select', { table, where, orderBy, limit }),
     insert: (table: string, data: Record<string, unknown>) =>
       ipcRenderer.invoke('db:insert', { table, data }),
     update: (table: string, where: Record<string, unknown>, data: Record<string, unknown>) =>
@@ -64,7 +68,9 @@ const ipc = {
       ipcRenderer.invoke('config:login-history:remove', { serial })
   },
   workspace: {
-    pick: () => ipcRenderer.invoke('workspace:pick'),
+    // 选一个本机路径：kind 决定选文件还是目录，title 是对话框标题
+    pick: (kind: 'file' | 'directory' = 'directory', title = '') =>
+      ipcRenderer.invoke('workspace:pick', { kind, title }),
     // 引用本地文件 / 文件夹：选择时不限制路径，权限在读写时才校验
     pickPaths: (kind: 'file' | 'directory') => ipcRenderer.invoke('workspace:pick-paths', { kind }),
     // 文件操作都带上项目标识与会话标识：项目决定权限口径，会话决定审批申请交回哪段对话
@@ -72,6 +78,9 @@ const ipc = {
       ipcRenderer.invoke('workspace:list', { projectId, path, conversationId }),
     read: (projectId: string, path: string, conversationId = '') =>
       ipcRenderer.invoke('workspace:read', { projectId, path, conversationId }),
+    // 对话正文里的本机图片：鉴权后拿展示地址（地址由主进程映射，渲染进程拿不到绝对路径）
+    image: (projectId: string, path: string, conversationId = '') =>
+      ipcRenderer.invoke('workspace:image', { projectId, path, conversationId }),
     // 引用一段本地路径：文件给内容、目录给清单，调用方不区分两者
     reference: (projectId: string, path: string, conversationId = '') =>
       ipcRenderer.invoke('workspace:reference', { projectId, path, conversationId }),

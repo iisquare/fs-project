@@ -11,11 +11,11 @@
 
 ## 文档清单
 
-| 文档                                         | 内容                                                                                                       |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| [backend-services.md](./backend-services.md) | 客户端依赖的服务端与上线开通步骤（用户权限 / 用户积分 / 密钥）                                             |
-| [windows-signing.md](./windows-signing.md)   | Windows 侧签名：证书怎么选、electron-builder 怎么配、打包后用 signtool 补签与验证                          |
-| [macos-signing.md](./macos-signing.md)       | macOS 侧签名 + 公证 + 装订：证书与凭据准备、electron-builder 配置、notarytool / stapler 的打包后流程与验收 |
+| 文档                                         | 内容                                                                                                     |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| [backend-services.md](./backend-services.md) | 客户端依赖的服务端与上线开通步骤（用户权限 / 用户积分 / 密钥）                                           |
+| [windows-signing.md](./windows-signing.md)   | Windows 侧签名：证书怎么选、electron-builder 怎么配、打包后用 signtool 补签与验证                        |
+| [macos-signing.md](./macos-signing.md)       | macOS 侧签名 + 公证 + 装订：证书与凭据准备、配置改动、打包步骤、验收清单，全部在 `pnpm build:mac` 里完成 |
 
 ## 通用约定
 

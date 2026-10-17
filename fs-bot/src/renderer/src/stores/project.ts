@@ -18,7 +18,10 @@ export const useProjectStore = defineStore('project', () => {
     loading.value = true
     try {
       const result: any = await ProjectDb.list()
-      projects.value = ApiUtil.succeed(result) ? (ApiUtil.data(result) as Project[]) : []
+      if (!ApiUtil.succeed(result)) {
+        throw new Error(String(ApiUtil.message(result) || '项目列表读取失败'))
+      }
+      projects.value = ApiUtil.data(result) as Project[]
     } finally {
       loading.value = false
     }

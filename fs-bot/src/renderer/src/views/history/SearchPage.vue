@@ -2,20 +2,27 @@
 import { ref, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useConversationStore } from '@renderer/stores/conversation'
 import { useProjectStore } from '@renderer/stores/project'
+import { useChatStore } from '@renderer/stores/chat'
 import ConversationDb, { type HistoryHit } from '@renderer/db/ConversationDb'
 import ApiUtil from '@renderer/utils/ApiUtil'
 import { highlightParts, roleText, snippet } from '@renderer/utils/TextUtil'
 import { groupByTime, GROUP_LABELS, formatTime } from '@renderer/utils/TimeUtil'
+import { errorMessage } from '@renderer/utils/ErrorUtil'
+import { confirmRemoveConversation } from '@renderer/utils/ConversationUtil'
 import { useRouter } from 'vue-router'
 import { page } from '@renderer/router/config'
 
 const router = useRouter()
 const conversationStore = useConversationStore()
 const projectStore = useProjectStore()
+const chatStore = useChatStore()
 
 const searchQuery = ref('')
 const pageNum = ref(1)
 const pageSize = 20
+const pageLoading = ref(false)
+const pageError = ref('')
+const searchError = ref('')
 
 /** 一次检索取回的命中条数上限：本地库（ConversationDb.search）一次最多给 30 条 */
 const SEARCH_LIMIT = 30
@@ -60,9 +67,20 @@ const titleInput = ref<HTMLInputElement | null>(null)
 /** 更多操作菜单开在哪一行：展开的那一行按钮点出主色，与其它行区分 */
 const menuOpenId = ref('')
 
-onMounted(async () => {
-  await projectStore.fetchProjects()
-  await conversationStore.fetchConversations()
+async function loadPage(): Promise<void> {
+  pageLoading.value = true
+  pageError.value = ''
+  const results = await Promise.allSettled([
+    projectStore.fetchProjects(),
+    conversationStore.fetchConversations()
+  ])
+  const failure = results.find((item): item is PromiseRejectedResult => 'rejected' === item.status)
+  if (failure) pageError.value = errorMessage(failure.reason, '对话记录加载失败')
+  pageLoading.value = false
+}
+
+onMounted(() => {
+  void loadPage()
 })
 
 /**
@@ -79,6 +97,7 @@ watch(keyword, (value) => {
     searching.value = false
     hitRows.value = []
     hitTruncated.value = false
+    searchError.value = ''
     return
   }
   searching.value = true
@@ -96,12 +115,23 @@ async function runSearch(value: string): Promise<void> {
     const hits: HistoryHit[] = ApiUtil.succeed(result) ? ApiUtil.data(result) : []
     hitRows.value = groupHits(hits, value)
     hitTruncated.value = hits.length >= SEARCH_LIMIT
-  } catch {
+    searchError.value = ''
+  } catch (error) {
     // 查库失败（库还没就绪之类）：留着上一次的结果，不把一份空清单盖上去
+    searchError.value = errorMessage(error, '对话内容检索失败')
   } finally {
     // 过期的那次回来时新的还在跑，别把它关掉
     if (token === searchToken) searching.value = false
   }
+}
+
+function retryLoad(): void {
+  if (pageError.value) {
+    searchError.value = ''
+    void loadPage()
+    return
+  }
+  if (searchError.value && keyword.value) void runSearch(keyword.value)
 }
 
 /** 命中按会话归拢：库里标题命中排在前，同一个会话只占一行 */
@@ -162,14 +192,24 @@ const groupKeys = ['today', 'yesterday', 'thisWeek', 'earlier'] as const
 async function handleSelect(id: string): Promise<void> {
   // 正在改名字的这一行先把话说完：点它不当作切换会话
   if (editingId.value === id) return
-  await conversationStore.select(id)
-  router.push(page.home)
+  try {
+    await conversationStore.select(id)
+    router.push(page.home)
+  } catch (error) {
+    searchError.value = errorMessage(error, '会话内容加载失败')
+  }
 }
 
 async function handleDelete(id: string): Promise<void> {
-  await conversationStore.remove(id)
-  // 检索结果是查库那一刻的快照：删完重新查一次，别留着已经删掉的会话
-  if (keyword.value) void runSearch(keyword.value)
+  const running = chatStore.find(id)?.running === true
+  if (!(await confirmRemoveConversation(running))) return
+  try {
+    await conversationStore.remove(id)
+    // 检索结果是查库那一刻的快照：删完重新查一次，别留着已经删掉的会话
+    if (keyword.value) void runSearch(keyword.value)
+  } catch (error) {
+    searchError.value = errorMessage(error, '删除会话失败')
+  }
 }
 
 function projectName(projectId: string): string {
@@ -242,16 +282,33 @@ function onMenuVisible(conv: { id: string }, open: boolean): void {
 </script>
 
 <template>
-  <div class="search-page">
-    <div class="search-header">
-      <h2>对话检索</h2>
+  <div class="search-page ui-page" v-loading="pageLoading">
+    <div class="ui-page-header">
+      <div class="ui-page-header__copy">
+        <h1 class="ui-page-title">对话检索</h1>
+        <p class="ui-page-desc">在本机保存的会话中检索标题与消息内容，命中片段会直接标出关键词。</p>
+      </div>
+    </div>
+
+    <div class="ui-toolbar search-toolbar">
       <el-input
         v-model="searchQuery"
         placeholder="输入关键词检索会话标题与对话内容..."
         clearable
-        class="search-input"
+        class="ui-toolbar__search"
       >
-        <template #prefix>🔍</template>
+        <template #prefix>
+          <svg class="search-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.3" />
+            <path
+              d="m10.5 10.5 3 3"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+            />
+          </svg>
+        </template>
       </el-input>
       <!-- 命中数顶到上限：说清楚这是截断过的，免得当成全部结果 -->
       <div v-if="keyword && hitTruncated" class="search-note">
@@ -259,10 +316,21 @@ function onMenuVisible(conv: { id: string }, open: boolean): void {
       </div>
     </div>
 
+    <el-alert
+      v-if="pageError || searchError"
+      class="page-alert"
+      type="warning"
+      :closable="false"
+      show-icon
+      :title="pageError || searchError"
+    >
+      <el-button text type="primary" size="small" @click="retryLoad">重试</el-button>
+    </el-alert>
+
     <div v-if="!searching && results.length === 0" class="search-empty">
       <el-empty :description="keyword ? `没有命中「${keyword}」的会话` : '暂无对话记录'" />
     </div>
-    <div v-else class="search-results">
+    <div v-else v-loading="searching" class="search-results">
       <template v-for="key in groupKeys" :key="key">
         <div v-if="grouped[key].length > 0" class="result-group">
           <div class="group-title">{{ GROUP_LABELS[key] }}</div>
@@ -415,27 +483,18 @@ function onMenuVisible(conv: { id: string }, open: boolean): void {
 </template>
 
 <style lang="scss" scoped>
-.search-page {
-  padding: 24px 32px;
+.page-alert {
+  margin-bottom: 16px;
 }
 
-.search-header {
-  margin-bottom: 24px;
-
-  h2 {
-    font-size: 20px;
-    color: var(--ev-c-text-1);
-    margin-bottom: 16px;
-  }
-}
-
-.search-input {
-  width: 100%;
+.search-icon {
+  display: block;
+  color: var(--ev-c-text-3);
 }
 
 /* 结果被截断的提示：跟着检索框，弱化成一行说明 */
 .search-note {
-  margin-top: 8px;
+  width: 100%;
   font-size: 12px;
   color: var(--ev-c-text-3);
 }
@@ -445,15 +504,14 @@ function onMenuVisible(conv: { id: string }, open: boolean): void {
 }
 
 .result-group {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .group-title {
-  padding: 8px 0;
+  padding: 2px 4px 10px;
   font-size: 12px;
+  font-weight: 600;
   color: var(--ev-c-text-3);
-  border-bottom: 1px solid var(--el-border-color-light);
-  margin-bottom: 8px;
 }
 
 /**
@@ -463,13 +521,29 @@ function onMenuVisible(conv: { id: string }, open: boolean): void {
 .result-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
-  border-radius: 6px;
+  gap: 6px;
+  padding: 14px 16px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
   cursor: pointer;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    background 0.2s;
+
+  & + & {
+    margin-top: 8px;
+  }
 
   &:hover {
-    background: var(--el-fill-color-light);
+    background: var(--ui-surface-hover);
+    border-color: color-mix(in srgb, var(--el-color-primary) 16%, var(--ui-card-border));
+    box-shadow: none;
+  }
+
+  &.editing {
+    border-color: color-mix(in srgb, var(--el-color-primary) 32%, var(--ui-card-border));
   }
 }
 
@@ -494,6 +568,7 @@ function onMenuVisible(conv: { id: string }, open: boolean): void {
   flex: 1;
   min-width: 0;
   font-size: 14px;
+  font-weight: 550;
   color: var(--ev-c-text-1);
   overflow: hidden;
   text-overflow: ellipsis;

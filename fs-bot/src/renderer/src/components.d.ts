@@ -11,7 +11,9 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AppLoading: typeof import('./components/Layout/AppLoading.vue')['default']
     ApprovalBanner: typeof import('./components/Chat/ApprovalBanner.vue')['default']
+    BrandLogo: typeof import('./components/Brand/BrandLogo.vue')['default']
     ChatCode: typeof import('./components/Chat/ChatCode.vue')['default']
     ChatComposer: typeof import('./components/Chat/ChatComposer.vue')['default']
     ChatElevator: typeof import('./components/Chat/ChatElevator.vue')['default']
@@ -28,8 +30,6 @@ declare module 'vue' {
     ElCollapse: typeof import('element-plus/es')['ElCollapse']
     ElCollapseItem: typeof import('element-plus/es')['ElCollapseItem']
     ElConfigProvider: typeof import('element-plus/es')['ElConfigProvider']
-    ElDescriptions: typeof import('element-plus/es')['ElDescriptions']
-    ElDescriptionsItem: typeof import('element-plus/es')['ElDescriptionsItem']
     ElDivider: typeof import('element-plus/es')['ElDivider']
     ElDropdown: typeof import('element-plus/es')['ElDropdown']
     ElDropdownItem: typeof import('element-plus/es')['ElDropdownItem']

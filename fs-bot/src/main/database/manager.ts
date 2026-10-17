@@ -35,6 +35,15 @@ export class DatabaseManager {
     return this.user !== null
   }
 
+  /** 当前已打开用户库的 schema 版本；用户库尚未打开时为 null */
+  get userSchemaVersion(): number | null {
+    if (!this.user) return null
+    const row = this.user.db
+      .prepare('SELECT version FROM schema_version ORDER BY version DESC LIMIT 1')
+      .get() as { version: number } | undefined
+    return row?.version ?? 0
+  }
+
   // ── Init user DB (per-user, called after login) ──
 
   /** runtimeDir 是运行目录（见 main/index.ts）：用户库放在它下面的 userdata/<userId>/ 里 */
@@ -98,10 +107,11 @@ export class DatabaseManager {
   select(
     table: string,
     where?: Record<string, unknown>,
-    orderBy?: string
+    orderBy?: string,
+    limit?: number
   ): { code: number; message: string; data: unknown[] } {
     const { db } = this.ctx()
-    const { sql, params } = this.buildSelect(table, where, orderBy)
+    const { sql, params } = this.buildSelect(table, where, orderBy, limit)
     const rows = db.prepare(sql).all(...params) as Record<string, unknown>[]
     return { code: 0, message: 'Succeed!', data: rows }
   }
@@ -256,7 +266,8 @@ export class DatabaseManager {
   private buildSelect(
     table: string,
     where?: Record<string, unknown>,
-    orderBy?: string
+    orderBy?: string,
+    limit?: number
   ): { sql: string; params: unknown[] } {
     let sql = `SELECT * FROM ${table}`
     const params: unknown[] = []
@@ -267,6 +278,11 @@ export class DatabaseManager {
     }
     if (orderBy) {
       sql += ` ORDER BY ${orderBy}`
+    }
+    const size = Math.floor(Number(limit))
+    if (Number.isFinite(size) && size > 0) {
+      sql += ' LIMIT ?'
+      params.push(size)
     }
     return { sql, params }
   }

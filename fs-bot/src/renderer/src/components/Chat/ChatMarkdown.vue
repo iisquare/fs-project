@@ -9,12 +9,17 @@
  * 地址没拿到（无权限 / 已删除 / 请求失败）一律回落默认图，解析期间先用浅色占位图，不出现破图。
  * 图片点一下看大图，同一段正文里的图片按出现顺序左右切换。
  *
+ * 本机图片（形如 ![说明](local:相对路径)）走 `workspace:image`：主进程按项目工作区权限读取后
+ * 签发 chat-image:// 地址，这里同样先扫描、异步解析，解析期间占位、失败回落默认图。
+ * 只处理 Markdown 图片节点；正文里的纯路径不会自动转成图片。
+ *
  * 链接分两种处理：本机路径（`[报告](D:\x\报告.md)` 这类，模型交代产物时很常见）点一下用系统默认程序打开；
  * 其余仍是外部地址，交给主进程的窗口打开策略走浏览器（见 core/Markdown 里补 target="_blank" 的说明）。
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { knowledgeImageIds, markdownParts } from '@renderer/core/Markdown'
+import { knowledgeImageIds, localImagePaths, markdownParts } from '@renderer/core/Markdown'
 import KnowledgeImageUtil from '@renderer/utils/KnowledgeImageUtil'
+import LocalImageUtil from '@renderer/utils/LocalImageUtil'
 import FileActionUtil from '@renderer/utils/FileActionUtil'
 import loadingImage from '@renderer/assets/images/knowledge-image-loading.svg?url'
 import fallbackImage from '@renderer/assets/images/knowledge-image-fallback.svg?url'
@@ -24,6 +29,8 @@ const props = defineProps<{
   content: string
   /** 会话所属项目：正文里的相对路径按它的工作区目录解析（打开文件时用） */
   projectId?: string
+  /** 会话标识：本机图片越界读取时，审批申请交回这段对话 */
+  conversationId?: string
 }>()
 
 /**
@@ -32,12 +39,22 @@ const props = defineProps<{
  */
 const urls = ref<Record<string, string>>({})
 
+/** 已解析的本机图片路径 → 展示地址（空串表示没拿到，统一回落默认图） */
+const localUrls = ref<Record<string, string>>({})
+
 /** 渲染接口：正文里的每个知识库图片标识都要换成一个地址，一次渲染里可能被问多次 */
 function imageUrl(id: string): string {
   return id in urls.value ? urls.value[id] || fallbackImage : loadingImage
 }
 
-const parts = computed(() => markdownParts(props.content, { knowledgeImage: imageUrl }))
+/** 本机图片：解析中先占位，拿不到地址回落默认图 */
+function localImageUrl(path: string): string {
+  return path in localUrls.value ? localUrls.value[path] || fallbackImage : loadingImage
+}
+
+const parts = computed(() =>
+  markdownParts(props.content, { knowledgeImage: imageUrl, localImage: localImageUrl })
+)
 
 /** 这段正文里还没解析过的图片标识（已经问过的按结论算，不再重复请求） */
 function pendingIds(text: string): string[] {
@@ -56,6 +73,29 @@ async function resolve(text: string): Promise<void> {
   urls.value = next
 }
 
+/** 这段正文里还没解析过的本机图片路径 */
+function pendingLocalPaths(text: string): string[] {
+  return localImagePaths(text).filter((path) => !(path in localUrls.value))
+}
+
+/** 逐张换取本机图片的展示地址：拿不到地址的记成空串，由默认图兜底 */
+async function resolveLocal(text: string): Promise<void> {
+  const list = pendingLocalPaths(text)
+  if (!list.length) return
+  const projectId = String(props.projectId ?? '')
+  const conversationId = String(props.conversationId ?? '')
+  const resolved = await Promise.all(
+    list.map((path) => LocalImageUtil.resolve(projectId, path, conversationId))
+  )
+  // 解析期间切了项目：这一批结果按旧项目的权限算，丢掉，等新的一轮重新解析
+  if (projectId !== String(props.projectId ?? '')) return
+  const next = { ...localUrls.value }
+  list.forEach((path, index) => {
+    next[path] = resolved[index] || ''
+  })
+  localUrls.value = next
+}
+
 /**
  * 解析的节流窗口：流式输出逐字变化，这里把同一阵子新出现的图片合成一次请求，
  * 到点了就拿当前正文再取一遍待解析的标识（中途新增的下一轮再说）
@@ -63,14 +103,30 @@ async function resolve(text: string): Promise<void> {
 const RESOLVE_WINDOW = 240
 let timer: ReturnType<typeof setTimeout> | null = null
 
+/** 这段正文里有没有还没解析的图片（知识库或本机） */
+function needsResolve(text: string): boolean {
+  return pendingIds(text).length > 0 || pendingLocalPaths(text).length > 0
+}
+
+/** 排队解析：同一阵子的变化只排一次，到点再按当时的正文取待解析项 */
+function queueResolve(text: string): void {
+  if (timer || !needsResolve(text)) return
+  timer = setTimeout(() => {
+    timer = null
+    void resolve(props.content)
+    void resolveLocal(props.content)
+  }, RESOLVE_WINDOW)
+}
+
 watch(
-  () => props.content,
-  (text) => {
-    if (timer || !pendingIds(text).length) return
-    timer = setTimeout(() => {
-      timer = null
-      resolve(props.content)
-    }, RESOLVE_WINDOW)
+  () => [props.content, props.projectId, props.conversationId] as const,
+  ([, projectId, conversationId], previous) => {
+    // 换了项目或会话：旧上下文签发的地址与解析结论都不再适用，清掉重新来
+    if (previous && (previous[1] !== projectId || previous[2] !== conversationId)) {
+      urls.value = {}
+      localUrls.value = {}
+    }
+    queueResolve(props.content)
   },
   { immediate: true }
 )

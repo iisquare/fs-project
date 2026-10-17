@@ -63,6 +63,13 @@ export interface WorkspaceReference {
   truncated: boolean
 }
 
+/** 对话正文里的本机图片：鉴权后拿到展示地址，地址里不带本机路径 */
+export interface WorkspaceImage {
+  path: string
+  url: string
+  size: number
+}
+
 /** 上传本机文件到文件服务（图床）的回执：文件标识与文件信息，随后按 id 引用该文件 */
 export interface WorkspaceFileUpload {
   path: string
@@ -143,8 +150,11 @@ declare global {
       maximize: () => Promise<void>
       close: () => Promise<void>
       isMaximized: () => Promise<boolean>
+      appVersions: () => Promise<{ clientVersion: string; dataVersion: number | null }>
       onMaximizeChange: (callback: (isMaximized: boolean) => void) => void
       togglePin: (pin: boolean) => Promise<void>
+      /** 右侧文件区展开 / 收起与宽度：主进程据此增减窗口宽度 */
+      setFilesPanel: (visible: boolean, width: number) => Promise<void>
       db: {
         initUser: (
           serial: string,
@@ -154,7 +164,8 @@ declare global {
         select: (
           table: string,
           where?: Record<string, unknown>,
-          orderBy?: string
+          orderBy?: string,
+          limit?: number
         ) => Promise<{ code: number; message: string; data: unknown[] }>
         insert: (
           table: string,
@@ -197,7 +208,8 @@ declare global {
         removeLoginHistory: (serial: string) => Promise<string[]>
       }
       workspace: {
-        pick: () => Promise<string>
+        /** 选一个本机路径：kind 决定选文件还是目录，取消返回空串 */
+        pick: (kind?: 'file' | 'directory', title?: string) => Promise<string>
         pickPaths: (kind: 'file' | 'directory') => Promise<string[]>
         list: (
           projectId: string,
@@ -209,6 +221,8 @@ declare global {
           path: string,
           conversationId?: string
         ) => Promise<{ path: string; content: string; size: number }>
+        /** 对话正文里的本机图片：鉴权后拿展示地址（chat-image://<随机标识>） */
+        image: (projectId: string, path: string, conversationId?: string) => Promise<WorkspaceImage>
         reference: (
           projectId: string,
           path: string,

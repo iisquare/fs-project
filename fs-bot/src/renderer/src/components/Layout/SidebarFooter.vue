@@ -15,7 +15,7 @@ function openProfile() {
 <template>
   <div class="sidebar-footer">
     <div class="footer-user" @click="openProfile">
-      <el-avatar :size="32" :src="user.info.avatar">
+      <el-avatar :size="32" :src="user.info.avatar" class="footer-avatar">
         {{ user.info.name?.charAt(0) || 'U' }}
       </el-avatar>
       <span class="footer-name">
@@ -54,6 +54,14 @@ function openProfile() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.footer-avatar {
+  flex-shrink: 0;
+  color: var(--el-color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--el-color-primary-light-9);
 }
 
 .footer-more {

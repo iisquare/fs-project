@@ -68,22 +68,32 @@ const router = createRouter({
 
 const title = document.title
 
-router.beforeEach((to, _from) => {
+router.beforeEach(async (to) => {
   document.title = to.meta?.title ? `${to.meta.title} - fs-bot` : title
+
+  const user = useUserStore()
+  try {
+    await user.initialize()
+  } catch (error) {
+    console.error('[Router] Failed to restore session:', error)
+  }
+
   if (to.path === page.login) {
-    const user = useUserStore()
     if (user.isLogined()) {
       return { path: page.home }
     }
     return true
   }
 
-  const user = useUserStore()
   if (!user.isLogined()) {
     return { path: page.login, query: { redirect: to.fullPath } }
   }
 
   return true
+})
+
+router.onError((error) => {
+  console.error('[Router] Navigation failed:', error)
 })
 
 export default router

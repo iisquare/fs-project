@@ -78,10 +78,12 @@ export interface ChatSession {
   systemPrompt: string
   /**
    * 长期记忆：项目配置里的那一格（编辑器里手写，模型也能用 memory 工具的 write 写进来），
-   * 随每轮请求下发（见 memoryBlock）。写入落在项目上、本项目所有会话共用，
-   * 所以这里每轮都从项目重取一次，写进来的内容当轮就生效。
+   * 仅在 memoryEnabled 为 true 时随每轮请求下发（见 memoryBlock）。写入落在项目上、
+   * 本项目所有会话共用，所以这里每轮都从项目重取一次，写进来的内容当轮就生效。
    */
   memory: string
+  /** 是否启用客户端记忆：关闭时记忆内容不下发，模型也没有 memory 工具 */
+  memoryEnabled: boolean
   thinkEffort: string
   messages: ChatMessage[]
   /** 当前分支尾：页面只渲染它沿 parentId 回溯到根的那条路径 */
@@ -93,6 +95,11 @@ export interface ChatSession {
    * 调用循环每一步都看它，一看就按「已停止」收尾，不再往下接续。
    */
   stopping: boolean
+  /**
+   * 这一轮回复的标识：删除会话 / 清空消息时据此作废这一轮，
+   * 生成结束不再把已完成的内容写回已经删掉的记录（见 discard 与 persist）。
+   */
+  activeReplyId: string
   loading: boolean
   error: string
   /** 提示（非错误）：这一轮被自动接续上限收尾等情况，界面上按警告色呈现 */
@@ -114,12 +121,20 @@ export interface ChatSession {
   loaded: boolean
 }
 
+/**
+ * 一轮生成的结果怎么作废：
+ * - delete：会话被删除，生成结束时再清一遍这个会话的残留记录；
+ * - clear：消息被清空，生成结束时再清一遍消息并把分支尾收回起点。
+ */
+type DropMode = 'delete' | 'clear'
+
 /** 项目口径：模型与生成参数都跟着会话所属项目走，打开会话与每轮发送都按它取 */
 export interface ChatProfile {
   projectId: string
   model: string
   systemPrompt: string
   memory: string
+  memoryEnabled: boolean
   thinkEffort: string
 }
 
@@ -130,15 +145,17 @@ export function chatProfile(project?: Project | null): ChatProfile {
     model: String(project?.model ?? ''),
     systemPrompt: String(project?.systemPrompt ?? ''),
     memory: String(project?.memory ?? ''),
+    memoryEnabled: true === project?.memoryEnabled,
     thinkEffort: String(project?.thinkEffort ?? '')
   }
 }
 
 /**
  * 记忆块：项目配置里的长期记忆单独起一段、带标题下发，与系统提示词在视觉上分得开
- * （这段由用户手写，只加标题、不改写内容）。为空时不占位置。
+ * （这段由用户手写，只加标题、不改写内容）。项目没启用记忆或内容为空时不占位置。
  */
-function memoryBlock(memory: string): string {
+function memoryBlock(memory: string, enabled: boolean): string {
+  if (!enabled) return ''
   const text = String(memory ?? '').trim()
   return text ? `# 记忆\n${text}` : ''
 }
@@ -148,9 +165,13 @@ function memoryBlock(memory: string): string {
  * 三段都为空时不下发。服务端把这一整段作为首条 system 消息补在最前。
  */
 function systemPromptOf(
-  session: Pick<ChatSession, 'systemPrompt' | 'memory' | 'workspacePrompt'>
+  session: Pick<ChatSession, 'systemPrompt' | 'memory' | 'memoryEnabled' | 'workspacePrompt'>
 ): string {
-  return [session.systemPrompt, memoryBlock(session.memory), session.workspacePrompt]
+  return [
+    session.systemPrompt,
+    memoryBlock(session.memory, session.memoryEnabled),
+    session.workspacePrompt
+  ]
     .map((text) => String(text ?? '').trim())
     .filter(Boolean)
     .join('\n\n')
@@ -210,16 +231,54 @@ function notifyMessageLanded(conversationId: string, at: string): void {
 }
 
 /**
+ * 一轮真正收尾（落库 / 清理都结束）的通知：会话 store 据此发送排队中的下一条。
+ * 不能只看「模型流结束」——那一轮还在落库时就把下一条塞进去，会把两条的叶子与时间写乱。
+ */
+let runSettled: ((conversationId: string) => void) | null = null
+
+export function onRunSettled(hook: (conversationId: string) => void): void {
+  runSettled = hook
+}
+
+function notifyRunSettled(conversationId: string): void {
+  runSettled?.(conversationId)
+}
+
+/**
+ * 这一轮是否出现了新排队消息：会话 store 管队列，chat store 在轮次边界问它。
+ * 有队列时当前回复提前收尾，收尾后由会话 store 把整队合并成下一条发送。
+ */
+let queuedPending: ((conversationId: string) => boolean) | null = null
+
+export function onQueuedPending(hook: (conversationId: string) => boolean): void {
+  queuedPending = hook
+}
+
+function hasQueued(conversationId: string): boolean {
+  return queuedPending?.(conversationId) === true
+}
+
+/**
  * 一批里最多的模型往返次数：跑满这么多轮而模型仍在请求工具时自动接续往下跑。
  * 接续不清空上下文，只在接续点随请求补一条提醒（见 continuePrompt），
- * 不再像过去那样把「跑满 16 轮」直接当成这一轮对话的失败。
+ * 不再像过去那样把「跑满一批」直接当成这一轮对话的失败。
+ *
+ * 取 32 是照顾编码这类「读文件 → 改文件 → 跑命令 → 看输出」连着一长串的多步任务：
+ * 一步一轮、每轮还常带多个工具调用，16 轮对稍大的改造（跨几个文件的改动 + 反复跑测试）
+ * 就会在中途被收尾，得靠用户回一句「继续」才接得上；翻到 32 轮让一批基本能覆盖
+ * 一次完整的「改到测试通过」。批越大，接续提醒越稀（提醒本身是防无效轮转的），
+ * 所以别再往上堆——要更长就加接续次数，单批的粒度留着报警用。
  */
-const MAX_ROUNDS = 16
+const MAX_ROUNDS = 32
 /**
  * 自动接续的次数：模型陷入死循环（反复调同一个工具）时靠它兜住额度，
  * 到顶后做一次不带工具的收尾调用，让模型按已完成的进度作答，任务本身不中断。
+ *
+ * 4 次接续 = 最多 5 批 ≈ 160 轮工具往返，够长任务跑完；同时这仍是「死循环能拖多久」
+ * 的硬上限，接续点每批提醒一次、共提醒 4 次，模型不改做法就会被收尾交卷
+ * （收尾记 done 并提示「回复继续可接着做」，损失的是这轮的长度、不是已完成的成果）。
  */
-const MAX_ROUNDS_CONTINUE = 3
+const MAX_ROUNDS_CONTINUE = 4
 /**
  * 一轮对话里模型调用的总轮数：工具往返 = 一批 MAX_ROUNDS 轮 × (1 + 接续次数)，
  * 另加最后 1 轮收尾调用（禁用工具、只出结论）。收尾不占用批次数，每一批都是完整的 MAX_ROUNDS 轮，
@@ -230,6 +289,8 @@ const MAX_ROUNDS_TOTAL = MAX_ROUNDS * (MAX_ROUNDS_CONTINUE + 1) + 1
 const WRAPUP_PROMPT = `（系统提示：本轮对话已连续调用工具 ${MAX_ROUNDS_TOTAL - 1} 轮，达到上限，工具已禁用。请基于以上已经完成的工作直接给出最终答复：说明已完成的部分、尚未完成的部分，以及下一步建议。）`
 /** 收尾后给用户的提示：说明这一轮是被上限收尾的，以及怎么接着做 */
 const WRAPUP_NOTICE = `本轮已自动接续 ${MAX_ROUNDS_CONTINUE} 次（工具往返 ${MAX_ROUNDS_TOTAL - 1} 轮），达到上限后收尾：模型按当前进度作答，回复「继续」可接着做。`
+/** 用户在本轮中途又发了消息：当前回复让位，队列合并成下一轮继续 */
+const QUEUED_NOTICE = '收到新消息，当前回复已提前结束，合并后的新消息将继续发送。'
 /**
  * 接续提示词：跑满一批 MAX_ROUNDS 轮而模型仍在请求工具时，随下一批的请求一起交给模型。
  * 讲清已经跑了多少轮、还剩多少轮，并点名无效轮转的风险（反复调同一个工具、同样的失败反复出现、
@@ -283,6 +344,12 @@ function parseReference(text: string): any {
 
 export const useChatStore = defineStore('chat', () => {
   const sessions = ref<Record<string, ChatSession>>({})
+  /**
+   * 已被删除 / 清空、但生成尚未收尾的回复：按回复标识记着怎么收口。
+   * 删除与落库是两条异步链，只在删除那一刻检查「还在不在跑」挡不住已经开始的落库，
+   * 所以 persist 的每个写入点都会再看一眼这里，作废后把刚写进去的记录再清掉。
+   */
+  const dropped = new Map<string, DropMode>()
 
   function ensure(conversationId: string, profile: Partial<ChatProfile> = {}): ChatSession {
     if (!sessions.value[conversationId]) {
@@ -292,11 +359,13 @@ export const useChatStore = defineStore('chat', () => {
         model: profile.model ?? '',
         systemPrompt: profile.systemPrompt ?? '',
         memory: profile.memory ?? '',
+        memoryEnabled: profile.memoryEnabled ?? false,
         thinkEffort: profile.thinkEffort ?? '',
         messages: [],
         leafId: '',
         running: false,
         stopping: false,
+        activeReplyId: '',
         loading: false,
         error: '',
         notice: '',
@@ -318,6 +387,11 @@ export const useChatStore = defineStore('chat', () => {
     if (profile.model) session.model = profile.model
     if (profile.systemPrompt !== undefined) session.systemPrompt = profile.systemPrompt
     if (profile.memory !== undefined) session.memory = profile.memory
+    if (profile.memoryEnabled !== undefined) {
+      // 记忆开关改变工具清单：清掉预取的定义，用量圆环与下一次发送都按新的一份算
+      if (profile.memoryEnabled !== session.memoryEnabled) session.tools = null
+      session.memoryEnabled = profile.memoryEnabled
+    }
     if (profile.thinkEffort !== undefined) session.thinkEffort = profile.thinkEffort
     return session
   }
@@ -393,12 +467,15 @@ export const useChatStore = defineStore('chat', () => {
    * （还没落库的会话不在历史里，发送是它进历史的时机），参数是这一轮用的落库时刻——
    * 会话行与列表都按它记「最后一条消息的时间」，两边不会差出第二个值。
    */
-  async function send(params: SendParams, onStart?: (at: string) => Promise<void>): Promise<void> {
+  async function send(
+    params: SendParams,
+    onStart?: (at: string) => Promise<void>
+  ): Promise<boolean> {
     const session = ensure(params.conversationId, params)
-    if (session.running) return
+    if (session.running) return false
     if (!session.model) {
       session.error = '该项目没有选择模型，请先在项目管理里配置'
-      return
+      return false
     }
     // 分支位置：不传就是接在当前分支尾；重新生成时 parentId 指向那条提问
     const parentId = params.parentId === undefined ? session.leafId : String(params.parentId ?? '')
@@ -432,6 +509,8 @@ export const useChatStore = defineStore('chat', () => {
     session.messages.push(reply)
     // 本轮回复即新的分支尾：重新生成时上一次的输出随之让位（消息本身仍保留，可切回）
     session.leafId = reply.id
+    // 删除 / 清空要能精确作废这一轮：记到会话上，直到这一轮真正落库结束
+    session.activeReplyId = reply.id
     session.error = ''
     session.notice = ''
     // 新一轮从「没被停止」起步：上一轮按过停止的标记不能带进来，否则这一轮发不出去就被收尾
@@ -444,17 +523,26 @@ export const useChatStore = defineStore('chat', () => {
     void ConversationDb.touch(params.conversationId, now)
     notifyMessageLanded(params.conversationId, now)
     if (question) {
-      void ConversationDb.appendMessage(params.conversationId, {
-        id: question.id,
-        parentId: question.parentId,
-        role: 'user',
-        content: params.query,
-        reference: question.mentions.length ? JSON.stringify({ mentions: question.mentions }) : '',
-        status: 'done',
-        createdAt: now
-      })
+      // 先等提问落库再起调用循环：删除 / 清空发生在这一轮开头时，
+      // 收尾的清理一定排在这条提问之后，不会留下一条迟到的用户消息。
+      try {
+        await ConversationDb.appendMessage(params.conversationId, {
+          id: question.id,
+          parentId: question.parentId,
+          role: 'user',
+          content: params.query,
+          reference: question.mentions.length
+            ? JSON.stringify({ mentions: question.mentions })
+            : '',
+          status: 'done',
+          createdAt: now
+        })
+      } catch {
+        // 本地库写入失败不挡这一轮：回复照常生成，收尾仍会写回它能写的那部分
+      }
     }
     void run(session, reply)
+    return true
   }
 
   /**
@@ -466,30 +554,40 @@ export const useChatStore = defineStore('chat', () => {
    * 每轮的思考过程、正文与工具调用都实时写在会话对象上，界面据此即时展示。
    */
   async function run(session: ChatSession, reply: ChatMessage): Promise<void> {
-    const project = useProjectStore().find(session.projectId)
-    const tools = await buildTools(project ?? null)
-    // 这一轮实际下发的定义就是估算用的那一份（圆环的用量与请求口径保持一致）
-    session.tools = markRaw(tools.definitions)
-    // 本机说明同样每轮重取：目录、主目录或策略刚改过，这一轮就用新的
-    session.workspacePrompt = await fetchWorkspacePrompt(session.projectId)
-    // 历史：当前分支路径上除本轮回复之外的全部消息（本轮提问已在路径尾）
-    const history = visible(session).filter((item) => item !== reply)
-    const chain: ModelChatMessage[] = []
-    for (const item of history) {
-      if ('user' === item.role) chain.push({ role: 'user', content: await userContent(session, item) })
-      else chain.push(...assistantChain(item))
-    }
     try {
+      const project = useProjectStore().find(session.projectId)
+      const tools = await buildTools(project ?? null)
+      // 这一轮实际下发的定义就是估算用的那一份（圆环的用量与请求口径保持一致）
+      session.tools = markRaw(tools.definitions)
+      // 本机说明同样每轮重取：目录、主目录或策略刚改过，这一轮就用新的
+      session.workspacePrompt = await fetchWorkspacePrompt(session.projectId)
+      // 历史：当前分支路径上除本轮回复之外的全部消息（本轮提问已在路径尾）
+      const history = visible(session).filter((item) => item !== reply)
+      const chain: ModelChatMessage[] = []
+      for (const item of history) {
+        if ('user' === item.role)
+          chain.push({ role: 'user', content: await userContent(session, item) })
+        else chain.push(...assistantChain(item))
+      }
       // 接续提醒在链里的下标：只保留最新一条（换新的之前先把上一条撤掉），避免链里堆起多条催促
       let hintIndex = -1
       for (let index = 0; index < MAX_ROUNDS_TOTAL; index++) {
         // 长期记忆每轮重取：memory 工具的 write 刚落进项目，从这一轮起就随请求下发
         // （记忆按项目存、本项目所有会话共用；其余口径仍按会话打开时的那份项目配置走）
         const fresh = useProjectStore().find(session.projectId)
-        if (fresh) session.memory = fresh.memory
+        if (fresh) {
+          session.memory = fresh.memory
+          session.memoryEnabled = fresh.memoryEnabled
+        }
         // 停止落在这一轮之前（工具执行中、等审批中按下的那一次）：不再发起模型调用
         if (session.stopping) {
           reply.status = 'stopped'
+          break
+        }
+        // 上一轮工具已跑完、用户又发了消息：不再发起下一次模型调用，让队列接管下一轮
+        if (index > 0 && hasQueued(session.conversationId)) {
+          reply.status = 'stopped'
+          session.notice = QUEUED_NOTICE
           break
         }
         // 收尾轮：工具往返跑满后再加的一轮，不再给工具，改为引导模型给结论
@@ -530,6 +628,18 @@ export const useChatStore = defineStore('chat', () => {
         if (!outcome.toolCalls.length) {
           reply.status = 'done'
           if (closing) session.notice = WRAPUP_NOTICE
+          break
+        }
+        // 模型这一轮还要调工具，但用户已经发了新消息：本轮工具不再执行，先把队列送进去
+        if (hasQueued(session.conversationId)) {
+          outcome.toolCalls.forEach((call) => {
+            if ('running' === call.status) {
+              call.status = 'stopped'
+              call.result = '收到新消息，本轮未执行'
+            }
+          })
+          reply.status = 'stopped'
+          session.notice = QUEUED_NOTICE
           break
         }
         // 收尾轮没下发工具定义，模型正常不会再要工具；万一要了也不再执行，按已有内容收尾
@@ -580,9 +690,9 @@ export const useChatStore = defineStore('chat', () => {
       session.error = messageOf(error)
       if (!reply.content) reply.content = session.error
     } finally {
-      session.running = false
       session.chat = null
-      void persist(session, reply)
+      // 落库也是这一轮的一部分：收尾期间被删除 / 清空，persist 会看到作废标记并清掉写进去的记录
+      void finish(session, reply)
     }
   }
 
@@ -815,8 +925,49 @@ export const useChatStore = defineStore('chat', () => {
     return total
   }
 
+  /**
+   * 按作废方式清掉这一轮写进去的记录：
+   * 删除会话连消息一起删；清空消息只删消息，并把分支尾收回起点。
+   * 两类操作都是幂等的，生成结束时再执行一次即可兜住删除瞬间仍在途的写入。
+   */
+  async function dropRecords(conversationId: string, mode: DropMode): Promise<void> {
+    if ('delete' === mode) {
+      await ConversationDb.delete(conversationId)
+      return
+    }
+    await ConversationDb.clearMessages(conversationId)
+    await ConversationDb.setLeaf(conversationId, '')
+  }
+
+  /** 这一轮是否已被删除 / 清空：是就再清一遍，返回 true 让调用方停止后续写入 */
+  async function dropIfNeeded(session: ChatSession, reply: ChatMessage): Promise<boolean> {
+    const mode = dropped.get(reply.id)
+    if (!mode) return false
+    await dropRecords(session.conversationId, mode)
+    return true
+  }
+
+  /**
+   * 一轮的收尾：落库前、以及每个写库步骤之后都再看一眼作废标记。
+   * 删除与落库是两条异步链，单看「开始时还在不在跑」挡不住已经开始的 appendMessage；
+   * 这里在写完之后补一次清理，保证删除 / 清空是最终状态。
+   * running 要等收尾真正结束才放下：收尾期间用户仍可按删除，标记才落得到这一轮上。
+   */
+  async function finish(session: ChatSession, reply: ChatMessage): Promise<void> {
+    try {
+      if (await dropIfNeeded(session, reply)) return
+      await persist(session, reply)
+    } finally {
+      dropped.delete(reply.id)
+      if (session.activeReplyId === reply.id) session.activeReplyId = ''
+      session.running = false
+      notifyRunSettled(session.conversationId)
+    }
+  }
+
   /** 落库：正文与最终思考过程各归各的列，工具调用链与 @ 引用进 reference */
   async function persist(session: ChatSession, reply: ChatMessage): Promise<void> {
+    if (await dropIfNeeded(session, reply)) return
     await ConversationDb.appendMessage(session.conversationId, {
       id: reply.id,
       parentId: reply.parentId,
@@ -827,10 +978,13 @@ export const useChatStore = defineStore('chat', () => {
       status: reply.status,
       createdAt: reply.createdAt
     })
+    if (await dropIfNeeded(session, reply)) return
     await ConversationDb.setLeaf(session.conversationId, session.leafId)
+    if (await dropIfNeeded(session, reply)) return
     // 这条回复是会话里最新的一条：最后消息的时间推到它落库的这一刻（列表与库同一个值）
     const at = new Date().toISOString()
     await ConversationDb.touch(session.conversationId, at)
+    if (await dropIfNeeded(session, reply)) return
     notifyMessageLanded(session.conversationId, at)
   }
 
@@ -918,6 +1072,7 @@ export const useChatStore = defineStore('chat', () => {
       model: session.model,
       systemPrompt: session.systemPrompt,
       memory: session.memory,
+      memoryEnabled: session.memoryEnabled,
       thinkEffort: session.thinkEffort,
       query: text,
       mentions: message.mentions ?? [],
@@ -938,6 +1093,7 @@ export const useChatStore = defineStore('chat', () => {
       model: session.model,
       systemPrompt: session.systemPrompt,
       memory: session.memory,
+      memoryEnabled: session.memoryEnabled,
       thinkEffort: session.thinkEffort,
       query: question.content,
       mentions: question.mentions ?? [],
@@ -955,21 +1111,46 @@ export const useChatStore = defineStore('chat', () => {
    * 所以这里同时做两件事：标记 stopping 让调用循环按「已停止」收尾，
    * 并让主进程收掉这段会话还挂着的本地活儿（等答复的申请、正在跑的命令）。
    */
+  function halt(session: ChatSession): void {
+    session.stopping = true
+    session.chat?.stop()
+    void window.ipc.workspace.cancel(session.conversationId)
+  }
+
   function stop(conversationId: string): void {
     const session = find(conversationId)
     if (!session) return
-    session.stopping = true
-    session.chat?.stop()
-    void window.ipc.workspace.cancel(conversationId)
+    halt(session)
+  }
+
+  /**
+   * 删除会话 / 清空消息时作废当前这一轮：
+   * 先收掉模型流与本地命令（等审批的申请也一并关掉），再给这一轮记上收口方式。
+   * 删除把运行态从 store 里摘掉；清空保留会话本身，只清消息与分支尾。
+   * 返回这一轮此前是否正在生成，调用方据此给出「已停止并清空」之类的提示。
+   */
+  function discard(conversationId: string, mode: DropMode): boolean {
+    const session = find(conversationId)
+    if (!session) return false
+    const running = session.running
+    if (session.activeReplyId) dropped.set(session.activeReplyId, mode)
+    if (running) halt(session)
+    if ('delete' === mode) {
+      delete sessions.value[conversationId]
+    } else {
+      session.messages = []
+      session.leafId = ''
+      session.error = ''
+      session.notice = ''
+    }
+    return running
   }
 
   /** 退出登录：断开所有连接，清空运行态 */
   function reset(): void {
     for (const session of Object.values(sessions.value)) {
-      session.stopping = true
-      session.chat?.stop()
       // 退出登录同样不该把命令留在后台跑：那一轮已经不会再有人看结果了
-      void window.ipc.workspace.cancel(session.conversationId)
+      halt(session)
     }
     sessions.value = {}
   }
@@ -981,6 +1162,7 @@ export const useChatStore = defineStore('chat', () => {
     open,
     send,
     stop,
+    discard,
     reset,
     visible,
     contextUsage,

@@ -25,8 +25,13 @@ export interface ProjectConfig {
   model: string
   contextLength: number
   systemPrompt: string
-  /** 长期记忆：与系统提示词分开存放的一段文字，导出 / 分享 / 导入都随项目配置一起走 */
+  /**
+   * 长期记忆：与系统提示词分开存放的一段文字，导出 / 分享 / 导入都随项目配置一起走。
+   * 只有 `memoryEnabled` 为 true 时才会随对话下发。
+   */
   memory: string
+  /** 是否启用客户端记忆：默认关闭；旧配置文件里没有这一项时按关闭处理 */
+  memoryEnabled: boolean
   thinkEffort: string
   name: string
   description: string
@@ -73,6 +78,11 @@ function record(value: unknown): Record<string, any> {
     : {}
 }
 
+/** 配置里的布尔开关：只认明确的真值，缺失 / 旧格式一律按关闭处理 */
+function flag(value: unknown): boolean {
+  return true === value || 1 === value || '1' === value || 'true' === value
+}
+
 /** 归一成配置对象：字段缺失按默认值补齐，类型不对的一律退回默认值 */
 export function configOf(source: Partial<Project> | Record<string, any>): ProjectConfig {
   return {
@@ -80,6 +90,7 @@ export function configOf(source: Partial<Project> | Record<string, any>): Projec
     contextLength: Math.max(0, Math.floor(Number(source?.contextLength ?? 0)) || 0),
     systemPrompt: text(source?.systemPrompt),
     memory: text(source?.memory),
+    memoryEnabled: flag(source?.memoryEnabled),
     thinkEffort: text(source?.thinkEffort),
     name: text(source?.name),
     description: text(source?.description),

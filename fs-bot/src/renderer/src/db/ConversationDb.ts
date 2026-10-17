@@ -4,6 +4,9 @@ import ApiUtil from '@renderer/utils/ApiUtil'
 const TABLE = 'conversations'
 const MSG_TABLE = 'messages'
 
+/** 左侧会话列表最多取最近多少条：条数再多也只加载这一截，避免整表读回内存 */
+export const CONVERSATION_LIST_LIMIT = 50
+
 /**
  * 本地会话表：会话与消息都只存在本地，按项目归属；断网或未登录时也能展示历史。
  */
@@ -86,9 +89,12 @@ function formatMessage(row: Record<string, any>): CachedMessage {
 }
 
 export default {
-  async list(projectId = ''): Promise<{ code: number; message: string; data: Conversation[] }> {
+  async list(
+    projectId = '',
+    limit = CONVERSATION_LIST_LIMIT
+  ): Promise<{ code: number; message: string; data: Conversation[] }> {
     const where = projectId ? { project_id: projectId } : undefined
-    const result: any = await Db.select(TABLE, where, 'updated_at DESC')
+    const result: any = await Db.select(TABLE, where, 'updated_at DESC', limit)
     return ApiUtil.result(
       ApiUtil.code(result) ?? 0,
       ApiUtil.message(result),

@@ -27,15 +27,22 @@ onMounted(async () => {
   })
 })
 
-function togglePin() {
+async function togglePin(): Promise<void> {
   const pinned = !win.pinned
-  // 钉住后窗口只有 400×600：右侧文件区留下来会把对话列挤没，一并收起；
-  // 取消钉住时回到钉住前那一眼的状态（展开状态只在本次运行内有效，两个方向都不落库）
-  if (pinned) filesExpandedBeforePin = files.visible
-  files.setVisible(pinned ? false : filesExpandedBeforePin)
-  sidebar.setVisible(!pinned)
   win.pinned = pinned
-  ipc.togglePin(pinned)
+  // 钉住后窗口只有 400×600：右侧文件区留下来会把对话列挤没，先藏起界面再收窗口；
+  // 主进程会保留「钉住前」的窗口宽度与文件区占位，取消钉住时一起还原。
+  // 两个方向都只改界面、不再单独增减宽度——置顶本身就是一次窗口尺寸变化。
+  if (pinned) {
+    filesExpandedBeforePin = files.visible
+    files.setVisible(false, { resize: false })
+    sidebar.setVisible(false)
+    await ipc.togglePin(true)
+  } else {
+    await ipc.togglePin(false)
+    files.setVisible(filesExpandedBeforePin, { resize: false })
+    sidebar.setVisible(true)
+  }
 }
 </script>
 

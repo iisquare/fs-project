@@ -1,4 +1,5 @@
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { localPath as toLocalPath } from '@renderer/core/LocalPath'
 
 /**
  * 对话里的文件动作：打开与「在文件夹中显示」都交给主进程执行（系统默认程序 / 文件管理器），
@@ -49,7 +50,7 @@ const FileActionUtil = {
    * （见 preload 的 startDrag）。与打开 / 定位同一套口径：用户自己拖出来的动作，不做权限判定，
    * 也不必为可执行文件加确认——复制出去不等于运行。
    *
-   * 拖的也是同一批路径：拖回本应用（输入框）就是一条 @ 引用，落到别的应用就是交给它处理。
+   * 拖的也是同一批路径：拖回本应用的对话列（消息区 / 输入区）就是一条 @ 引用，落到别的应用就是交给它处理。
    */
   dragOut(event: DragEvent, projectId: string, path: string): void {
     const target = String(path ?? '').trim()
@@ -66,20 +67,7 @@ const FileActionUtil = {
    * 与知识库图片的 kb: 都走各自那条路。
    */
   localPath(href: string): string {
-    const value = String(href ?? '').trim()
-    if (!value || value.startsWith('#')) return ''
-    // 盘符与 UNC 长得也像「协议 + 冒号」，先单独认下来，否则会被下面的协议判断筛掉
-    if (/^[a-z]:[\\/]/i.test(value) || value.startsWith('\\\\')) return value
-    if ('file:' === value.slice(0, 5).toLowerCase()) {
-      try {
-        // file:///D:/a/b.md → /D:/a/b.md：去掉开头那个斜杠才是 Windows 认得的形式
-        const path = decodeURIComponent(new URL(value).pathname)
-        return /^\/[a-z]:/i.test(path) ? path.slice(1) : path
-      } catch {
-        return ''
-      }
-    }
-    return /^[a-z][a-z0-9+.-]*:/i.test(value) ? '' : value
+    return toLocalPath(href)
   }
 }
 

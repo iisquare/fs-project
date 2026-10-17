@@ -2,12 +2,17 @@
 import { onMounted, ref } from 'vue'
 import { useSettingsStore } from '@renderer/stores/settings'
 import { useSkillStore } from '@renderer/stores/skill'
+import { errorMessage } from '@renderer/utils/ErrorUtil'
 
 const settings = useSettingsStore()
 const skillStore = useSkillStore()
 
 const apiUrl = ref(String(import.meta.env.VITE_APP_API_URL || ''))
 const websiteUrl = ref(String(import.meta.env.VITE_APP_WEBSITE_URL || ''))
+const clientVersion = ref('')
+const dataVersion = ref<number | null>(null)
+const pageLoading = ref(false)
+const pageError = ref('')
 
 /** 工作区外访问策略：请求批准 / 帮我批准 / 自动拒绝 / 完全访问权限 */
 const policies = [
@@ -37,15 +42,54 @@ const policies = [
   }
 ]
 
-onMounted(async () => {
-  await settings.fetchSettings()
-  await skillStore.fetchInstalled()
+async function load(): Promise<void> {
+  pageLoading.value = true
+  pageError.value = ''
+  try {
+    const results = await Promise.allSettled([
+      settings.fetchSettings(),
+      skillStore.fetchInstalled()
+    ])
+    const failure = results.find(
+      (item): item is PromiseRejectedResult => 'rejected' === item.status
+    )
+    if (failure) pageError.value = errorMessage(failure.reason, '系统设置加载失败')
+    const versions = await window.ipc.appVersions()
+    clientVersion.value = versions.clientVersion
+    dataVersion.value = versions.dataVersion
+  } catch (error) {
+    if (!pageError.value) pageError.value = errorMessage(error, '系统设置加载失败')
+  } finally {
+    pageLoading.value = false
+  }
+}
+
+onMounted(() => {
+  void load()
 })
 </script>
 
 <template>
-  <div class="system-settings">
-    <h2>系统设置</h2>
+  <div class="system-settings ui-page" v-loading="pageLoading">
+    <div class="ui-page-header">
+      <div class="ui-page-header__copy">
+        <h1 class="ui-page-title">系统设置</h1>
+        <p class="ui-page-desc">管理客户端启动、升级、服务端连接与本地访问权限。</p>
+      </div>
+    </div>
+
+    <el-alert
+      v-if="pageError"
+      class="page-alert"
+      type="warning"
+      :closable="false"
+      show-icon
+      :title="pageError"
+    >
+      <el-button text type="primary" size="small" @click="load">重试</el-button>
+    </el-alert>
+
+    <h2 class="section-title">启动与更新</h2>
     <div class="settings-card">
       <div class="setting-item">
         <div class="setting-label">
@@ -70,7 +114,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <h2 class="section-title">服务端</h2>
+    <h2 class="section-title">服务端连接</h2>
     <div class="settings-card">
       <div class="setting-item">
         <div class="setting-label">
@@ -89,7 +133,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <h2 class="section-title">本地目录</h2>
+    <h2 class="section-title">本地目录与权限</h2>
     <div class="settings-card">
       <div class="setting-item">
         <div class="setting-label">
@@ -124,45 +168,81 @@ onMounted(async () => {
         :model-value="settings.workspacePolicy"
         @update:model-value="(value: any) => settings.setWorkspacePolicy(String(value))"
       >
-        <el-radio class="policy-item" v-for="item in policies" :key="item.value" :value="item.value">
+        <el-radio
+          class="policy-item"
+          v-for="item in policies"
+          :key="item.value"
+          :value="item.value"
+        >
           <span class="policy-label">{{ item.label }}</span>
           <span class="policy-text">{{ item.description }}</span>
         </el-radio>
       </el-radio-group>
     </div>
+
+    <h2 class="section-title">版本信息</h2>
+    <div class="settings-card">
+      <div class="setting-item">
+        <div class="setting-label">
+          <span class="setting-title">客户端版本</span>
+          <span class="setting-desc">当前安装的 fs-bot 应用版本</span>
+        </div>
+        <span class="setting-value">{{ clientVersion ? `v${clientVersion}` : '读取中...' }}</span>
+      </div>
+      <el-divider />
+      <div class="setting-item">
+        <div class="setting-label">
+          <span class="setting-title">用户数据版本</span>
+          <span class="setting-desc">当前账号本地数据库的 schema 版本</span>
+        </div>
+        <span class="setting-value">{{ dataVersion === null ? '未连接' : `v${dataVersion}` }}</span>
+      </div>
+    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
-.system-settings {
-  padding: 40px;
-
-  h2 {
-    font-size: 20px;
-    color: var(--ev-c-text-1);
-    margin-bottom: 24px;
-  }
+.page-alert {
+  margin-bottom: 16px;
 }
 
 .settings-card {
-  background: var(--el-bg-color);
-  border-radius: 8px;
-  padding: 24px;
-  border: 1px solid var(--el-border-color-light);
+  padding: 14px 22px;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-card-border);
+  border-radius: var(--ui-card-radius);
+  box-shadow: var(--ui-card-shadow);
+
+  :deep(.el-divider--horizontal) {
+    margin: 0;
+    border-top-color: var(--ui-divider);
+  }
 }
 
 .section-title {
-  margin: 28px 0 16px;
-  font-size: 16px;
+  margin: 28px 0 12px 2px;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--ev-c-text-1);
+
+  &:first-of-type {
+    margin-top: 0;
+  }
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 0;
+  padding: 13px 10px;
+  margin: 0 -10px;
   gap: 16px;
+  border-radius: 9px;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background: color-mix(in srgb, var(--ui-surface-hover) 76%, transparent);
+  }
 }
 
 .setting-label {
@@ -170,12 +250,14 @@ onMounted(async () => {
   flex-direction: column;
 
   .setting-title {
-    font-size: 15px;
+    font-size: 14px;
+    font-weight: 500;
     color: var(--ev-c-text-1);
   }
 
   .setting-desc {
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 1.6;
     color: var(--ev-c-text-3);
     margin-top: 4px;
   }
@@ -191,7 +273,7 @@ onMounted(async () => {
 
 /* 访问策略：每个选项一段说明，纵向铺开而不是挤在一行 */
 .policy-desc {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   font-size: 13px;
   line-height: 1.7;
   color: var(--ev-c-text-3);
@@ -201,13 +283,29 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 4px;
+  gap: 2px;
 }
 
 .policy-item {
+  width: 100%;
   height: auto;
-  padding: 8px 0;
+  margin-right: 0;
+  padding: 10px 12px;
   align-items: flex-start;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+
+  &:hover {
+    background: var(--el-fill-color-lighter);
+  }
+
+  &.is-checked {
+    background: color-mix(in srgb, var(--el-color-primary) 4%, var(--el-bg-color));
+    border-color: color-mix(in srgb, var(--el-color-primary) 14%, var(--el-border-color-lighter));
+  }
 
   :deep(.el-radio__label) {
     display: flex;

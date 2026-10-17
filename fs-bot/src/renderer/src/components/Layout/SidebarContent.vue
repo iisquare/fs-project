@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { page } from '@renderer/router/config'
 import { useConversationStore } from '@renderer/stores/conversation'
@@ -7,6 +7,8 @@ import { useProjectStore } from '@renderer/stores/project'
 import { useChatStore } from '@renderer/stores/chat'
 import { useApprovalStore } from '@renderer/stores/approval'
 import { groupByTime, GROUP_LABELS } from '@renderer/utils/TimeUtil'
+import { errorMessage } from '@renderer/utils/ErrorUtil'
+import { confirmRemoveConversation } from '@renderer/utils/ConversationUtil'
 import SidebarConversationItem from './SidebarConversationItem.vue'
 
 const router = useRouter()
@@ -14,10 +16,30 @@ const conversationStore = useConversationStore()
 const projectStore = useProjectStore()
 const chatStore = useChatStore()
 const approvalStore = useApprovalStore()
+const loading = ref(false)
+const loadError = ref('')
 
-onMounted(async () => {
-  await projectStore.fetchProjects()
-  await conversationStore.fetchConversations()
+async function load(): Promise<void> {
+  loading.value = true
+  loadError.value = ''
+  try {
+    const results = await Promise.allSettled([
+      projectStore.fetchProjects(),
+      conversationStore.fetchConversations()
+    ])
+    const failure = results.find(
+      (item): item is PromiseRejectedResult => 'rejected' === item.status
+    )
+    if (failure) loadError.value = errorMessage(failure.reason, '会话列表加载失败')
+  } catch (error) {
+    loadError.value = errorMessage(error, '会话列表加载失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  void load()
 })
 
 const grouped = computed(() => {
@@ -40,12 +62,22 @@ function isWaiting(id: string): boolean {
 }
 
 async function handleSelect(id: string) {
-  await conversationStore.select(id)
-  router.push(page.home)
+  try {
+    await conversationStore.select(id)
+    router.push(page.home)
+  } catch (error) {
+    loadError.value = errorMessage(error, '会话内容加载失败')
+  }
 }
 
-async function handleDelete(id: string) {
-  await conversationStore.remove(id)
+async function handleDelete(id: string): Promise<void> {
+  const running = chatStore.find(id)?.running === true
+  if (!(await confirmRemoveConversation(running))) return
+  try {
+    await conversationStore.remove(id)
+  } catch (error) {
+    loadError.value = errorMessage(error, '删除会话失败')
+  }
 }
 
 /** 重命名：标题由用户定，写进 store 与会话表，之后的轮次不再自动改标题 */
@@ -55,7 +87,7 @@ async function handleRename(id: string, title: string): Promise<void> {
 </script>
 
 <template>
-  <el-scrollbar class="sidebar-content">
+  <el-scrollbar class="sidebar-content" v-loading="loading">
     <div class="project-filter">
       <el-select
         v-model="conversationStore.filterProjectId"
@@ -73,6 +105,10 @@ async function handleRename(id: string, title: string): Promise<void> {
     </div>
 
     <div class="mode-default">
+      <div v-if="loadError" class="group-empty load-error">
+        <div>{{ loadError }}</div>
+        <el-button text type="primary" size="small" @click="load">重试</el-button>
+      </div>
       <template v-for="key in groupKeys" :key="key">
         <div v-if="grouped[key].length > 0" class="history-group">
           <div class="group-title">{{ GROUP_LABELS[key] }}</div>
@@ -90,7 +126,12 @@ async function handleRename(id: string, title: string): Promise<void> {
           />
         </div>
       </template>
-      <div v-if="conversationStore.visible.length === 0" class="group-empty">暂无对话记录</div>
+      <div
+        v-if="!loadError && conversationStore.visible.length === 0"
+        class="group-empty"
+      >
+        暂无对话记录
+      </div>
     </div>
   </el-scrollbar>
 </template>
@@ -122,5 +163,9 @@ async function handleRename(id: string, title: string): Promise<void> {
   text-align: center;
   font-size: 13px;
   color: var(--ev-c-text-3);
+}
+
+.load-error {
+  color: var(--el-color-warning);
 }
 </style>

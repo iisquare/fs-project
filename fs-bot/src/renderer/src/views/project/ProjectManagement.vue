@@ -7,6 +7,7 @@ import { useShareStore } from '@renderer/stores/share'
 import { useConversationStore } from '@renderer/stores/conversation'
 import { page, projectCreateAction } from '@renderer/router/config'
 import ApiUtil from '@renderer/utils/ApiUtil'
+import { errorMessage } from '@renderer/utils/ErrorUtil'
 import { parseProjectFile, uniqueName } from '@renderer/utils/ProjectUtil'
 import ProjectEditor from './ProjectEditor.vue'
 import ShareList from '@renderer/components/Project/ShareList.vue'
@@ -34,13 +35,24 @@ const shareStore = useShareStore()
 const activeTab = ref<'project' | 'mine' | 'browse'>('project')
 const mode = ref<'list' | 'project' | 'share'>('list')
 const editing = ref<Project | null>(null)
+const pageError = ref('')
 /** 分享表单的预选：来自项目编辑器的「分享」或「我的分享」卡片上的「分享新版本」 */
 const sharePreset = ref<{ projectId: string; target: number }>({ projectId: '', target: 0 })
 
+async function loadLists(): Promise<void> {
+  pageError.value = ''
+  const results = await Promise.allSettled([
+    projectStore.fetchProjects(),
+    // 两个分享列表的可见范围都要问服务端，页签上的数量也得等它回来：进页面先各取一次
+    shareStore.fetchMine(),
+    shareStore.fetchBrowse()
+  ])
+  const failure = results.find((item): item is PromiseRejectedResult => 'rejected' === item.status)
+  if (failure) pageError.value = errorMessage(failure.reason, '项目与分享列表加载失败')
+}
+
 onMounted(async () => {
-  await projectStore.fetchProjects()
-  // 两个分享列表的可见范围都要问服务端，页签上的数量也得等它回来：进页面先各取一次
-  await Promise.all([shareStore.fetchMine(), shareStore.fetchBrowse()])
+  await loadLists()
   // 从「暂无项目」的空状态进来时（?action=create）直接展开新建表单，
   // 不用先落到空列表再点一次「新建项目」；随后清掉参数，刷新或返回不再重进表单
   if (projectCreateAction === route.query.action) {
@@ -85,17 +97,25 @@ async function remove(project: Project) {
   } catch {
     return
   }
-  await projectStore.remove(project.id)
-  if (editing.value?.id === project.id) {
-    backToList()
+  try {
+    await projectStore.remove(project.id)
+    if (editing.value?.id === project.id) {
+      backToList()
+    }
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '删除项目失败'))
   }
 }
 
 /** 以某个项目直接开新会话 */
 async function startChat(project: Project): Promise<void> {
-  const conversation = await useConversationStore().create(project)
-  await useConversationStore().select(conversation.id)
-  router.push(page.home)
+  try {
+    const conversation = await useConversationStore().create(project)
+    await useConversationStore().select(conversation.id)
+    router.push(page.home)
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '会话打开失败'))
+  }
 }
 
 /**
@@ -150,18 +170,19 @@ function shareNewVersion(share: ShareProject): void {
 </script>
 
 <template>
-  <div class="project-management">
+  <!-- 表单视图是卡片外壳（头部自带返回栏），顶部留白比列表页再紧一档 -->
+  <div class="project-management ui-page" :class="{ 'ui-page--editor': mode !== 'list' }">
     <!-- 只有列表视图有页头；表单视图不再重复一个标题，名称就在表单里 -->
-    <div v-if="mode === 'list'" class="page-header">
-      <div>
-        <h2>项目管理</h2>
-        <p class="page-desc">
+    <div v-if="mode === 'list'" class="ui-page-header">
+      <div class="ui-page-header__copy">
+        <h1 class="ui-page-title">项目管理</h1>
+        <p class="ui-page-desc">
           项目选用模型，并在此配置环境变量、工具与工作区；编排应用作为一种工具被调用，新会话按项目创建。
           项目配置可以导出 / 导入，也可以发布到服务端分享：「我的分享」管理自己发布的项目与版本，
           「浏览分享」里可以取用别人分享的项目。
         </p>
       </div>
-      <div class="header-actions">
+      <div class="ui-page-actions">
         <template v-if="activeTab === 'project'">
           <el-button @click="importProject">导入项目</el-button>
           <el-button type="primary" @click="openCreate">新建项目</el-button>
@@ -172,9 +193,20 @@ function shareNewVersion(share: ShareProject): void {
       </div>
     </div>
 
+    <el-alert
+      v-if="pageError"
+      class="page-alert"
+      type="warning"
+      :closable="false"
+      show-icon
+      :title="pageError"
+    >
+      <el-button text type="primary" size="small" @click="loadLists">重试</el-button>
+    </el-alert>
+
     <!-- 列表视图：三个页签共用这块内容区 -->
     <div v-if="mode === 'list'">
-      <el-tabs v-model="activeTab">
+      <el-tabs v-model="activeTab" class="project-tabs">
         <el-tab-pane :label="`我的项目（${projectStore.projects.length}）`" name="project">
           <div v-loading="projectStore.loading">
             <el-empty v-if="projectStore.projects.length === 0" description="暂无项目">
@@ -184,8 +216,8 @@ function shareNewVersion(share: ShareProject): void {
               <el-card
                 v-for="item in projectStore.projects"
                 :key="item.id"
-                shadow="hover"
-                class="project-card"
+                shadow="never"
+                class="project-card ui-panel--hover"
               >
                 <div class="card-top">
                   <el-avatar :size="44" :src="item.icon">{{ item.name.charAt(0) }}</el-avatar>
@@ -244,9 +276,9 @@ function shareNewVersion(share: ShareProject): void {
     </div>
 
     <!-- 项目表单视图：同样占满内容区 -->
-    <section v-else-if="mode === 'project'" class="editor-pane">
-      <div class="editor-bar">
-        <el-button text class="back-button" @click="backToList">← 返回项目列表</el-button>
+    <section v-else-if="mode === 'project'" class="editor-pane ui-editor">
+      <div class="editor-bar ui-editor-bar">
+        <el-button text class="ui-back-button" @click="backToList">← 返回项目列表</el-button>
         <div v-if="editing" class="bar-actions">
           <el-tag v-if="!editing.model" size="small" type="warning"> 未配置模型 </el-tag>
           <el-button text type="primary" :disabled="!editing.model" @click="startChat(editing)">
@@ -267,9 +299,9 @@ function shareNewVersion(share: ShareProject): void {
     </section>
 
     <!-- 分享表单视图：与项目表单同一套外壳，返回后停在「我的分享」 -->
-    <section v-else class="editor-pane">
-      <div class="editor-bar">
-        <el-button text class="back-button" @click="backToList">← 返回项目列表</el-button>
+    <section v-else class="editor-pane ui-editor">
+      <div class="editor-bar ui-editor-bar">
+        <el-button text class="ui-back-button" @click="backToList">← 返回项目列表</el-button>
       </div>
       <ProjectShareForm
         :key="`${sharePreset.projectId}-${sharePreset.target}`"
@@ -283,35 +315,8 @@ function shareNewVersion(share: ShareProject): void {
 </template>
 
 <style lang="scss" scoped>
-.project-management {
-  padding: 24px 32px;
-}
-
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-
-  h2 {
-    font-size: 20px;
-    color: var(--ev-c-text-1);
-  }
-
-  .page-desc {
-    margin-top: 6px;
-    font-size: 13px;
-    line-height: 1.7;
-    color: var(--ev-c-text-3);
-  }
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+.page-alert {
+  margin-bottom: 16px;
 }
 
 .project-grid {
@@ -323,11 +328,9 @@ function shareNewVersion(share: ShareProject): void {
 .project-card {
   display: flex;
   flex-direction: column;
-  transition: border-color 0.2s;
-
-  &:hover {
-    border-color: var(--el-color-primary-light-5);
-  }
+  background: var(--ui-surface);
+  border-color: var(--ui-card-border);
+  border-radius: var(--ui-card-radius);
 
   :deep(.el-card__body) {
     flex: 1;
@@ -340,6 +343,14 @@ function shareNewVersion(share: ShareProject): void {
     display: flex;
     align-items: center;
     gap: 12px;
+
+    :deep(.el-avatar) {
+      flex-shrink: 0;
+      color: var(--el-color-primary);
+      font-size: 15px;
+      font-weight: 600;
+      background: var(--el-color-primary-light-9);
+    }
   }
 
   .card-title {
@@ -423,35 +434,6 @@ function shareNewVersion(share: ShareProject): void {
 
 .editor-pane {
   min-height: 360px;
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 8px;
-  background: var(--el-bg-color);
-}
-
-.editor-bar {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 10px 18px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-  background: var(--el-bg-color);
-  border-radius: 8px 8px 0 0;
-}
-
-.back-button {
-  padding: 0;
-  font-size: 13px;
-  color: var(--ev-c-text-3);
-
-  &:hover {
-    color: var(--el-color-primary);
-    background: transparent;
-  }
 }
 
 .bar-actions {

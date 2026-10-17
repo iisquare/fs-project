@@ -8,11 +8,14 @@ import { useConversationStore } from '@renderer/stores/conversation'
 import { useChatStore } from '@renderer/stores/chat'
 import { useScheduleStore } from '@renderer/stores/schedule'
 import { useApprovalStore } from '@renderer/stores/approval'
+import { useLoadingStore } from '@renderer/stores/loading'
 import UserApi from '@renderer/api/UserApi'
 import { page } from '@renderer/router/config'
+import AppLoading from '@renderer/components/Layout/AppLoading.vue'
 
 const user = useUserStore()
 const router = useRouter()
+const appLoading = useLoadingStore()
 
 /** 已经准备过的身份（用户 + 令牌）：同一个身份只准备一次 */
 let bootstrappedFor = ''
@@ -55,7 +58,7 @@ async function bootstrap() {
 }
 
 onMounted(() => {
-  // 登录态与用户库已在 main.ts 里准备好，这里只做登录后的数据准备
+  // 登录态与用户库由路由守卫准备好，这里只做登录后的数据准备
   // 工作区外的访问申请：队列挂在 approval store 上，横幅由对话页或布局展示
   useApprovalStore().listen()
   void bootstrap()
@@ -74,6 +77,20 @@ provide('logout', logout)
 
 <template>
   <el-config-provider :locale="locale">
-    <router-view />
+    <div
+      class="app-content"
+      :inert="appLoading.visible"
+      :aria-hidden="appLoading.visible ? 'true' : undefined"
+    >
+      <router-view />
+    </div>
+    <AppLoading />
   </el-config-provider>
 </template>
+
+<style lang="scss" scoped>
+.app-content {
+  width: 100%;
+  height: 100%;
+}
+</style>

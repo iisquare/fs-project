@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useProjectStore } from '@renderer/stores/project'
 import { useShareStore } from '@renderer/stores/share'
+import { errorMessage } from '@renderer/utils/ErrorUtil'
 import { configOf, filenameOf, projectFile, uniqueName } from '@renderer/utils/ProjectUtil'
 import { formatDate } from '@renderer/utils/TimeUtil'
 import VersionSelect from '@renderer/components/Version/VersionSelect.vue'
@@ -50,6 +51,7 @@ const picked = ref<Record<number, VersionOption | null>>({})
 const loadingMore = ref(false)
 const exporting = ref(0)
 const creating = ref(0)
+const loadError = ref('')
 
 /** 卡片要用的「项目 + 当前版本」：模板里按它渲染，省得每处都算一遍选中版本 */
 const cards = computed(() =>
@@ -77,8 +79,13 @@ onMounted(() => {
 })
 
 async function refresh(): Promise<void> {
-  if (mine.value) await shareStore.fetchMine(keyword.value.trim())
-  else await shareStore.fetchBrowse(keyword.value.trim())
+  loadError.value = ''
+  try {
+    if (mine.value) await shareStore.fetchMine(keyword.value.trim())
+    else await shareStore.fetchBrowse(keyword.value.trim())
+  } catch (error) {
+    loadError.value = errorMessage(error, '分享列表加载失败')
+  }
 }
 
 /** 续取下一页项目：可见范围与总数都在服务端，页数按已取到的条数推 */
@@ -87,6 +94,8 @@ async function loadMore(): Promise<void> {
   try {
     if (mine.value) await shareStore.loadMoreMine(keyword.value.trim())
     else await shareStore.loadMoreBrowse(keyword.value.trim())
+  } catch (error) {
+    loadError.value = errorMessage(error, '更多分享项目加载失败')
   } finally {
     loadingMore.value = false
   }
@@ -158,27 +167,42 @@ async function createLocal(project: ShareProject, version: VersionOption | null)
 
 <template>
   <div class="share-list">
-    <div class="share-search">
+    <div class="ui-toolbar">
       <el-input
         v-model="keyword"
-        class="search-input"
+        class="ui-toolbar__search"
         placeholder="按项目名称搜索"
         clearable
         @keyup.enter="refresh"
       />
       <el-button :loading="loading" @click="refresh">搜索</el-button>
-      <span class="search-count"
+      <span class="ui-toolbar__count"
         >共 {{ mine ? shareStore.mineTotal : shareStore.browseTotal }} 个</span
       >
     </div>
+    <el-alert
+      v-if="loadError"
+      class="share-alert"
+      type="warning"
+      :closable="false"
+      show-icon
+      :title="loadError"
+    >
+      <el-button text type="primary" size="small" @click="refresh">重试</el-button>
+    </el-alert>
     <div v-loading="loading">
       <el-empty
-        v-if="cards.length === 0 && mine"
+        v-if="cards.length === 0 && mine && !loadError"
         description="还没有分享过项目，点右上角「分享项目」把本地项目发布上去"
       />
-      <el-empty v-else-if="cards.length === 0" description="暂无其他用户分享的项目" />
+      <el-empty v-else-if="cards.length === 0 && !loadError" description="暂无其他用户分享的项目" />
       <div v-else class="share-grid">
-        <el-card v-for="card in cards" :key="card.item.id" shadow="hover" class="share-card">
+        <el-card
+          v-for="card in cards"
+          :key="card.item.id"
+          shadow="never"
+          class="share-card ui-panel--hover"
+        >
           <div class="card-top">
             <el-avatar :size="40" :src="card.item.icon">{{ card.item.name.charAt(0) }}</el-avatar>
             <div class="card-title">
@@ -250,21 +274,8 @@ async function createLocal(project: ShareProject, version: VersionOption | null)
 </template>
 
 <style lang="scss" scoped>
-.share-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.share-alert {
   margin-bottom: 16px;
-
-  .search-input {
-    width: 240px;
-  }
-
-  .search-count {
-    margin-left: auto;
-    font-size: 12px;
-    color: var(--ev-c-text-3);
-  }
 }
 
 .share-grid {
@@ -282,11 +293,9 @@ async function createLocal(project: ShareProject, version: VersionOption | null)
 .share-card {
   display: flex;
   flex-direction: column;
-  transition: border-color 0.2s;
-
-  &:hover {
-    border-color: var(--el-color-primary-light-5);
-  }
+  background: var(--ui-surface);
+  border-color: var(--ui-card-border);
+  border-radius: var(--ui-card-radius);
 
   :deep(.el-card__body) {
     flex: 1;
@@ -300,6 +309,14 @@ async function createLocal(project: ShareProject, version: VersionOption | null)
     display: flex;
     align-items: flex-start;
     gap: 12px;
+
+    :deep(.el-avatar) {
+      flex-shrink: 0;
+      color: var(--el-color-primary);
+      font-size: 14px;
+      font-weight: 600;
+      background: var(--el-color-primary-light-9);
+    }
   }
 
   .card-title {

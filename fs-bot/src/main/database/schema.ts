@@ -9,6 +9,7 @@ import v8 from './sql/schema-v8.sql?raw'
 import v9 from './sql/schema-v9.sql?raw'
 import v10 from './sql/schema-v10.sql?raw'
 import v11 from './sql/schema-v11.sql?raw'
+import v12 from './sql/schema-v12.sql?raw'
 
 /**
  * 用户库 schema 版本管理。
@@ -47,7 +48,8 @@ export const USER_SCHEMAS: Record<number, string> = {
   8: v8,
   9: v9,
   10: v10,
-  11: v11
+  11: v11,
+  12: v12
 }
 
 /** 应用当前使用的用户库版本：取已登记的最大版本号 */

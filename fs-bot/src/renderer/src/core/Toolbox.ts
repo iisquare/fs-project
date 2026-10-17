@@ -1,7 +1,7 @@
 import ApiUtil from '@renderer/utils/ApiUtil'
 import BotApi from '@renderer/api/agent/BotApi'
 import ConversationDb, { type Conversation, type HistoryHit } from '@renderer/db/ConversationDb'
-import type { Project } from '@renderer/db/ProjectDb'
+import type { Project, ProjectTool } from '@renderer/db/ProjectDb'
 import type { ScheduleTask } from '@renderer/db/TaskDb'
 import { isValidCron, nextRun } from '@renderer/utils/CronUtil'
 import { missing, textArg } from '@renderer/utils/ArgUtil'
@@ -18,6 +18,10 @@ import { useUserStore } from '@renderer/stores/user'
  *   与 `local_skill`（本地技能）。文件与命令由主进程按「项目声明的目录权限」与
  *   「工作区外访问策略」放行，渲染进程改不了结论，越界的读取、写入与命令都会作为失败结果回到模型；
  *   定时任务与历史对话走本地库，技能读本地技能目录。
+ *   **项目没启用记忆时 `memory` 不下发**（`memoryEnabled` 默认关闭）——模型清单里根本没有这个函数，
+ *   记忆内容也不随提示词下发；启用后才把历史对话检索与长期记忆读写一起交给模型。
+ *   **项目一个技能都没启用时 `local_skill` 不下发**（模型的工具清单里根本没有这个函数），
+ *   启用了就只认清单里的那几个名字——技能是本机能力，但「哪些技能能影响这个项目」由项目说了算。
  * - 项目工具：工具方法 / 知识库 / 数据主题 / 知识图谱本体 / 编排应用，凭据与真实调用都在服务端。
  *
  * 「同一实体的一族操作」都收在一个工具里、用 action 参数区分（file_op / schedule_task /
@@ -109,10 +113,8 @@ function fileTools(): Array<{ tool: any; info: ToolInfo }> {
         '关键词按空白切成几段、各段按原顺序出现即算命中：整段粘多行片段也可以（换行、缩进与' +
         '\\r\\n / \\n 的差别都不影响，跨行的命中给出行号范围），单个词就是按行匹配；' +
         '关键词按字面量匹配，正则元字符（. * ( ) [ ] 这些）都按原字符查；' +
-        'upload = 把本机文件上传到文件服务（图床，需要 path），返回文件标识（id）与名称、类型、大小——' +
-        '要让服务端的工具方法分析本机文件时（如图片 / 视频 / 音频交给 multimodalAnalyze），' +
-        '先 upload 拿到 id，再把 id 交给那个工具方法（files 里给 { id }）；' +
-        '服务端读不到本机磁盘，直接把本机路径传给服务端工具方法会被拒绝。' +
+        'upload = 把本机文件上传到文件服务，返回文件标识（id）与名称、类型、大小（需要 path）——' +
+        '仅在服务端工具需要按 { id } 引用本机文件时，先 upload 拿到 id，再把 id 交给对应的工具方法；' +
         '所有操作都由主进程按项目声明的目录权限放行，工作区之外按本地访问策略申请或拒绝。',
       {
         action: {
@@ -216,7 +218,7 @@ function memoryTools(): Array<{ tool: any; info: ToolInfo }> {
   return [
     row(
       'memory',
-      '本机的记忆：过去那些对话都留在本机，用这个工具翻；长期有用的结论也可以写进当前项目的记忆。用 action 选操作：' +
+      '本机的记忆：过去那些对话都留在本机，用这个工具翻；用户明确要求记住时，也可以写进当前项目的记忆。用 action 选操作：' +
         'list = 按时间倒序列出最近的会话（标题、时间与 id，用来先看看有哪些对话）；' +
         'search = 按关键词查会话标题与消息正文，返回命中的会话与消息片段（需要 keyword；中文按字面匹配，英文不区分大小写；' +
         '整段粘多行片段也可以——整段对不上时按空白切成几段、各段按原顺序出现即算命中，换行与缩进对不上不影响）；' +
@@ -224,16 +226,19 @@ function memoryTools(): Array<{ tool: any; info: ToolInfo }> {
         '返回里会说明还剩多少条；命中里给的「第 n 条」可以直接当 offset 用——offset 给 n - 1 就从那条附近读起）。' +
         'list 与 search 默认只覆盖当前对话所属的项目，跨项目找旧事把 scope 给 all；' +
         '命中后用 read 回看上下文；当前这一轮的对话已经在上下文里，不必再检索。' +
-        'write = 把长期有用的事写进当前项目的长期记忆（需要 content，mode 选 append（默认，追加）或 replace（整段替换）；' +
+        'write = 仅在用户明确要求记住、保存或更新记忆时使用：把长期有用的事写进当前项目的长期记忆' +
+        '（需要 content，mode 选 append（默认，追加）或 replace（整段替换）；' +
         'content 给空串且 mode=replace 就是清空记忆，content 没给（缺参数）才会报错），' +
+        '用户没有主动要求记住时不要调用 write / replace，即使对话里出现了看起来值得长期保留的偏好或事实，' +
+        '也只当作本轮上下文使用，不要自行归纳、补充或整理记忆；' +
         '写进去的内容从下一轮起随每轮请求下发、本项目的所有会话共用：' +
         '只写长期成立的事实、用户偏好与已定的约定（一行一条最好），别把一次性的任务或整段对话抄进去；' +
-        '写之前先用 read / search 看看上下文里有没有旧的判断，重复或过时的条目用 replace 顺手整理掉。' +
+        '写之前先核对上下文里的记忆原文，重复或过时的条目用 replace 整理掉。' +
         'replace = 只改当前项目记忆里的一段，不动其余内容：把 find 换成 content（需要 find 与 content；' +
         'content 给空串就是删掉那一段）——两者都可以带换行与特殊字符，按字面量匹配；' +
         '默认要求记忆里恰好一处命中，命中多处而确实要全换才给 all。' +
-        '记忆每轮都随请求下发、占上下文，所以它要保持精简：过时或重复的条目该删就删，' +
-        '要整体重写就用 write 的 mode=replace，要连同内容一起清掉就用 content 空串。',
+        '记忆每轮都随请求下发、占上下文，所以它要保持精简：只有在用户明确要求整理记忆时，' +
+        '才删除过时或重复的条目；要整体重写就用 write 的 mode=replace，要连同内容一起清掉就用 content 空串。',
       {
         action: {
           type: 'string',
@@ -253,13 +258,14 @@ function memoryTools(): Array<{ tool: any; info: ToolInfo }> {
           description: '条数上限（选填：list / search 默认 10、最多 30；read 默认 20、最多 100）'
         },
         content: text(
-          '要写进长期记忆的内容（write / replace 需要，可以是一行一条的多行文本；' +
+          '要写进长期记忆的内容（仅当用户明确要求记住时使用；write / replace 需要，可以是一行一条的多行文本；' +
             '配 mode=replace 时给空串即清空记忆，replace 动作里给空串即删掉 find 那一段）'
         ),
         mode: {
           type: 'string',
           enum: ['append', 'replace'],
-          description: 'write 的写法（选填：append = 追加到已有记忆后面，默认；replace = 整段替换）'
+          description:
+            'write 的写法（仅当用户明确要求记住时使用；选填：append = 追加到已有记忆后面，默认；replace = 整段替换）'
         },
         find: text('记忆里要被替换掉的原文（replace 需要；按字面量匹配，可含换行与特殊字符）'),
         all: {
@@ -276,17 +282,22 @@ function memoryTools(): Array<{ tool: any; info: ToolInfo }> {
  * 本地技能（action 分派：list / files / read）：
  * 技能包是「按说明做事」的能力包（SKILL.md 是主入口，脚本与参考文档在同一个目录里）。
  * 清单与文件内容都由主进程读技能目录——相对路径必须在技能目录内，越界的读取直接拒绝。
+ *
+ * 项目里没启用任何技能时这一族整个不下发：技能函数每轮都要占定义，而「没启用」正是说
+ * 这个项目不需要它们；启用之后作用范围也只有启用的那些（见 invokeSkill）。
  */
-function skillTools(): Array<{ tool: any; info: ToolInfo }> {
+function skillTools(skills: ProjectTool[]): Array<{ tool: any; info: ToolInfo }> {
+  if (!skills.length) return []
   return [
     row(
       'local_skill',
-      '用本机已安装的技能（服务端技能包解压到本地 skills 目录的那份）。用 action 选操作：' +
-        'list = 列出已安装技能（名称、版本、文件数与大小、安装时间）；' +
+      '用本项目启用的技能（服务端技能包安装到本机 skills 目录的那一份）。用 action 选操作：' +
+        'list = 列出本项目启用的技能（名称、本机版本、文件数与大小、摘要；没装到本机的也一并标出）；' +
         'files = 列出某个技能包里的全部文件（需要 name；给相对路径与大小，说明、脚本、参考文档都在其中）；' +
         'read = 读技能包里的文件（需要 name；path 省略时读技能说明 SKILL.md——技能的主入口，先读它再按它的指示做事，' +
         '脚本与参考文档按 files 给的相对路径读）。技能是「按说明做事」的能力包，里面的脚本要跑就用 run_command' +
-        '（技能目录通常在工作区之外，会照本地访问策略申请）。',
+        '（技能目录通常在工作区之外，会照本地访问策略申请）。只能读本项目启用的技能，' +
+        '项目里没启用的技能不在这个工具的作用范围内。',
       {
         action: { type: 'string', enum: ['list', 'files', 'read'], description: '要做的操作' },
         name: text('技能名称（files / read 需要，list 给出）'),
@@ -297,9 +308,20 @@ function skillTools(): Array<{ tool: any; info: ToolInfo }> {
   ]
 }
 
-/** 本地工具清单：文件与命令、定时任务、记忆（历史对话 + 长期记忆）、本地技能 */
-function localTools(): Array<{ tool: any; info: ToolInfo }> {
-  return [...fileTools(), ...scheduleTools(), ...memoryTools(), ...skillTools()]
+/**
+ * 本地工具清单：文件与命令、定时任务、记忆（历史对话 + 长期记忆）、本地技能。
+ * 记忆与技能都按项目开关决定下不下发：关掉记忆时整个 `memory` 函数不出现。
+ */
+function localTools(
+  skills: ProjectTool[],
+  memoryEnabled: boolean
+): Array<{ tool: any; info: ToolInfo }> {
+  return [
+    ...fileTools(),
+    ...scheduleTools(),
+    ...(memoryEnabled ? memoryTools() : []),
+    ...skillTools(skills)
+  ]
 }
 
 /**
@@ -311,13 +333,20 @@ async function invokeLocal(
   name: string,
   args: any,
   projectId: string,
-  conversationId: string
+  conversationId: string,
+  skills: ProjectTool[],
+  memoryEnabled: boolean
 ): Promise<string> {
   if ('file_op' === name) return invokeFile(args, projectId, conversationId)
   if ('run_command' === name) return invokeCommand(args, projectId, conversationId)
   if ('schedule_task' === name) return invokeSchedule(args, projectId)
-  if ('memory' === name) return invokeMemory(args, projectId, conversationId)
-  if ('local_skill' === name) return invokeSkill(args)
+  if ('memory' === name) {
+    if (!memoryEnabled) {
+      throw new Error('本项目未启用记忆（在项目编辑器的「启用记忆」里打开后才能使用）')
+    }
+    return invokeMemory(args, projectId, conversationId)
+  }
+  if ('local_skill' === name) return invokeSkill(args, skills)
   throw new Error(`未知的本地工具：${name}`)
 }
 
@@ -671,6 +700,13 @@ async function invokeSchedule(args: any, projectId: string): Promise<string> {
  */
 async function invokeMemory(args: any, projectId: string, conversationId: string): Promise<string> {
   const action = actionOf(args, MEMORY_ACTIONS)
+  // 工具定义可能是在本轮开始时取的：执行前再看一眼项目开关，运行中关掉就立即停下
+  if (projectId) {
+    const current = useProjectStore().find(projectId)
+    if (current && !current.memoryEnabled) {
+      throw new Error('本项目未启用记忆（在项目编辑器的「启用记忆」里打开后才能使用）')
+    }
+  }
   const scope = String(args?.scope ?? '')
   const explicitAll = 'all' === scope.trim().toLowerCase()
   // 会话没有所属项目（项目已删除、或老数据）时「当前项目」无从谈起：退回全部项目，并在结果里写明
@@ -839,25 +875,34 @@ async function invokeMemory(args: any, projectId: string, conversationId: string
 /**
  * 本地技能（action 分派）：清单与文件都由主进程读技能目录
  * （相对路径由主进程限制在技能目录内，非文本文件与超长内容在那边处理）。
+ *
+ * 作用范围是**本项目启用的技能**：list 只列它们，files / read 只认它们的名字；
+ * 项目一个技能都没启用时这个工具本身不下发，走到这里（模型硬调、老的会话缓存）也给一句明确的话。
  */
-async function invokeSkill(args: any): Promise<string> {
+async function invokeSkill(args: any, skills: ProjectTool[]): Promise<string> {
   const action = actionOf(args, SKILL_ACTIONS)
   if ('list' === action) {
-    const skills = await window.ipc.skill.list()
     if (!skills.length) {
-      const root = await window.ipc.skill.path()
-      return `本机没有已安装的技能（技能目录：${root}），可在「技能管理」页安装服务端技能。`
+      return '本项目没有启用技能（技能在项目编辑器的「工具 → 技能」里启用，技能包在技能管理页安装到本机）。'
     }
-    const lines = [`共 ${skills.length} 个已安装技能：`]
+    const installed = await window.ipc.skill.list()
+    const lines = [`本项目启用 ${skills.length} 个技能：`]
     skills.forEach((skill, index) => {
-      const version = skill.meta
-        ? `（版本 ${skill.meta.versionName || skill.meta.versionId}）`
-        : '（手工放入，无版本信息）'
-      const installed = skill.meta ? `，安装于 ${momentText(skill.meta.installedAt)}` : ''
+      const local = installed.find((item) => sameSkill(skill, item)) ?? null
+      const version = local?.meta
+        ? `（本机版本 ${local.meta.versionName || local.meta.versionId}）`
+        : local
+          ? '（手工放入，无版本信息）'
+          : ''
+      // 项目里记的版本只是推荐：本机没装时顺手告诉模型想要的是哪一版
+      const recommended = !local && skill.versionName ? `（项目里推荐 ${skill.versionName}）` : ''
       lines.push(
-        `${index + 1}. ${skill.name}${version}`,
-        `   文件 ${skill.fileCount} 个，共 ${sizeText(skill.size)}${installed}`,
-        skill.summary ? `   摘要：${skill.summary}` : ''
+        `${index + 1}. ${skill.name}${version}${recommended}`,
+        local
+          ? `   文件 ${local.fileCount} 个，共 ${sizeText(local.size)}` +
+              (local.meta ? `，安装于 ${momentText(local.meta.installedAt)}` : '')
+          : '   本机未安装：先到技能管理页安装这一技能，再按它的说明做事',
+        local?.summary ? `   摘要：${local.summary}` : ''
       )
     })
     lines.push(
@@ -867,7 +912,18 @@ async function invokeSkill(args: any): Promise<string> {
   }
 
   const skillName = String(args?.name ?? '').trim()
-  if (!skillName) throw new Error(`${action} 需要 name（技能名称；先用 action=list 看有哪些技能）`)
+  if (!skillName) {
+    throw new Error(`${action} 需要 name（技能名称；先用 action=list 看本项目启用了哪些技能）`)
+  }
+  // 作用范围只认本项目启用的技能：别的技能本机装了也不给这个项目用
+  if (!skills.some((skill) => String(skill.name ?? '') === skillName)) {
+    const names = skills.map((skill) => String(skill.name ?? '')).filter(Boolean)
+    throw new Error(
+      `本项目没有启用技能「${skillName}」。` +
+        (names.length ? `本项目已启用：${names.join('、')}。` : '本项目一个技能都没启用。') +
+        '需要的话请到项目编辑器的「工具 → 技能」里启用。'
+    )
+  }
   if ('files' === action) {
     const result = await window.ipc.skill.files(skillName)
     if (!result.files.length) return `技能「${skillName}」里没有文件。`
@@ -887,6 +943,20 @@ async function invokeSkill(args: any): Promise<string> {
     ].join('\n')
   }
   throw new Error(`技能不支持的操作：${action}`)
+}
+
+/**
+ * 项目里的技能引用与本机装的是不是同一个：按服务端技能标识认，
+ * 那一侧没有标识（手工放进目录的技能）时退回名称。
+ */
+function sameSkill(
+  ref: ProjectTool,
+  installed: { name: string; meta: { skillId: number } | null }
+): boolean {
+  const id = Number(ref.id ?? 0)
+  const installedId = Number(installed.meta?.skillId ?? 0)
+  if (id && installedId) return id === installedId
+  return String(ref.name ?? '') === installed.name
 }
 
 /** 时间文案：给模型看的时间一律带日期（ISO 文本或时间戳都可以） */
@@ -1013,12 +1083,18 @@ function commandResult(result: {
  */
 export async function buildTools(project: Project | null): Promise<ToolSet> {
   const refs = (project?.tools ?? []).filter((item) => false !== item?.enabled)
-  const cacheKey = JSON.stringify(refs)
+  const memoryEnabled = true === project?.memoryEnabled
+  // 记忆开关也影响函数清单：只按工具引用缓存会把关闭前的 `memory` 定义带回来
+  const cacheKey = `${JSON.stringify(refs)}|memory:${memoryEnabled ? 1 : 0}`
   const cached = cache.get(cacheKey)
   if (cached) return cached
+  // 技能在客户端解析（读本机技能目录），不发给 /bot/tools——服务端只认它自己的五类工具；
+  // 启用清单同时决定 local_skill 这个函数下不下发、作用范围有多大
+  const skills = refs.filter((item) => 'skill' === item.kind)
+  const remoteRefs = refs.filter((item) => 'skill' !== item.kind)
   const definitions: any[] = []
   const catalog: Record<string, ToolInfo> = {}
-  const local = localTools()
+  const local = localTools(skills, memoryEnabled)
   for (const item of local) {
     definitions.push(item.tool)
     catalog[item.info.name] = item.info
@@ -1028,9 +1104,9 @@ export async function buildTools(project: Project | null): Promise<ToolSet> {
   const remote = new Map<string, { ref: any; info: ToolInfo }>()
   /** 服务端定义是否取全：没取全就不进缓存，下一轮再试一次 */
   let complete = true
-  if (refs.length) {
+  if (remoteRefs.length) {
     try {
-      const result: any = await BotApi.tools(refs, { error: false, warning: false })
+      const result: any = await BotApi.tools(remoteRefs, { error: false, warning: false })
       for (const row of ApiUtil.succeed(result) ? (ApiUtil.data(result)?.rows ?? []) : []) {
         const base = String(row?.function?.name ?? '').trim()
         if (!base) continue
@@ -1065,7 +1141,9 @@ export async function buildTools(project: Project | null): Promise<ToolSet> {
     conversationId: string
   ): Promise<string> {
     const target = remote.get(name)
-    if (!target) return invokeLocal(name, args, projectId, conversationId)
+    if (!target) {
+      return invokeLocal(name, args, projectId, conversationId, skills, memoryEnabled)
+    }
     const result: any = await BotApi.tool(target.ref, args ?? {}, { error: false, warning: false })
     if (!ApiUtil.succeed(result)) throw new Error(ApiUtil.message(result) || '工具调用失败')
     const data = ApiUtil.data(result)

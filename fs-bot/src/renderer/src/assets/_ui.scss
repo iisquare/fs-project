@@ -1,0 +1,258 @@
+/**
+ * 客户端通用页面骨架。
+ *
+ * 页面只负责内容，标题区、卡片、工具栏与编辑页外壳统一走这里：
+ * 这样个人页、项目、任务、技能、检索与设置之间保持一致的留白和表面层级。
+ */
+
+:root {
+  --ui-page-max: 960px;
+  --ui-page-padding-x: clamp(20px, 4vw, 36px);
+  --ui-page-padding-top: clamp(20px, 2.5vw, 28px);
+  --ui-page-padding-bottom: 36px;
+  --ui-card-radius: 14px;
+  --ui-surface: color-mix(in srgb, var(--el-bg-color) 56%, var(--el-bg-color-page));
+  --ui-surface-hover: color-mix(in srgb, var(--el-bg-color) 74%, var(--el-bg-color-page));
+  --ui-card-border: color-mix(in srgb, var(--el-border-color) 42%, transparent);
+  --ui-divider: color-mix(in srgb, var(--el-border-color) 34%, transparent);
+  --ui-card-shadow: 0 1px 0 rgb(255 255 255 / 32%);
+  --ui-card-shadow-hover: 0 4px 16px rgb(0 0 0 / 3%);
+}
+
+.ui-page {
+  width: 100%;
+  max-width: var(--ui-page-max);
+  margin: 0 auto;
+  padding: var(--ui-page-padding-top) var(--ui-page-padding-x) var(--ui-page-padding-bottom);
+}
+
+/**
+ * 表单视图（项目 / 分享 / 定时任务）落在卡片外壳（.ui-editor）上：头部那条 sticky 返回栏
+ * 自带内边距与分隔线，页面顶部就不必再空出一整格标题的量，收一档让卡片更早进入视线。
+ * 底部不动：卡片底角要留出页面底色，滚到底才收得干净。
+ */
+.ui-page--editor {
+  padding-top: 16px;
+}
+
+.ui-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.ui-page-header__copy {
+  min-width: 0;
+}
+
+.ui-page-title {
+  font-size: 26px;
+  line-height: 1.3;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--ev-c-text-1);
+}
+
+.ui-page-desc {
+  max-width: 660px;
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ev-c-text-3);
+}
+
+.ui-page-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  gap: 8px;
+  padding-top: 20px;
+}
+
+.ui-panel {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-card-border);
+  border-radius: var(--ui-card-radius);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.ui-panel--hover {
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s;
+
+  &:hover {
+    background: var(--ui-surface-hover);
+    border-color: color-mix(in srgb, var(--el-color-primary) 20%, var(--ui-card-border));
+    box-shadow: var(--ui-card-shadow-hover);
+  }
+}
+
+.ui-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--ui-surface) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ui-card-border) 74%, transparent);
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.ui-toolbar__search {
+  flex: 1;
+  min-width: 200px;
+}
+
+.ui-toolbar__count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ev-c-text-3);
+  white-space: nowrap;
+}
+
+.ui-page .el-alert {
+  border-radius: 10px;
+}
+
+.ui-page .el-tabs__header {
+  margin-bottom: 20px;
+}
+
+.ui-page .el-tabs__nav-wrap::after {
+  height: 1px;
+  background: var(--ui-divider);
+}
+
+.ui-page .el-tabs__item {
+  font-size: 14px;
+}
+
+.ui-page .el-empty {
+  padding: 42px 0;
+}
+
+/* 表单校验文案是绝对定位的：统一在每一项下方预留一行错误提示的空间 */
+.el-form .el-form-item {
+  margin-bottom: 26px;
+}
+
+.el-form .el-form-item__error {
+  padding-top: 3px;
+  line-height: 1.35;
+}
+
+.ui-editor {
+  min-height: 360px;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-card-border);
+  border-radius: var(--ui-card-radius);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.ui-editor-bar {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 0;
+  padding: 10px 18px;
+  background: color-mix(in srgb, var(--ui-surface) 92%, transparent);
+  border: 0;
+  border-bottom: 1px solid var(--ui-divider);
+  border-radius: var(--ui-card-radius) var(--ui-card-radius) 0 0;
+  box-shadow: none;
+  backdrop-filter: blur(14px);
+}
+
+.ui-back-button {
+  height: auto;
+  padding: 0;
+  font-size: 13px;
+  color: var(--ev-c-text-3);
+
+  &:hover {
+    color: var(--el-color-primary);
+    background: transparent;
+  }
+}
+
+/* ── 弹出菜单：统一圆角 ─────────────────────────────────── */
+
+:root {
+  --ui-popper-radius: 12px;
+  --ui-popper-item-radius: 7px;
+}
+
+.el-popper.el-dropdown__popper,
+.el-popper.el-select__popper,
+.el-popper.el-autocomplete__popper,
+.el-popper.el-cascader__dropdown,
+.el-popper.el-picker__popper,
+.el-popper.el-popover,
+.el-popper.el-mention__popper {
+  --el-popper-border-radius: var(--ui-popper-radius);
+  border-radius: var(--ui-popper-radius);
+}
+
+.el-dropdown__popper.el-popper .el-dropdown-menu,
+.el-autocomplete__popper.el-popper .el-autocomplete-suggestion,
+.el-select__popper.el-popper .el-select-dropdown,
+.el-cascader__dropdown.el-popper .el-cascader-panel,
+.el-mention__popper.el-popper .el-mention-dropdown {
+  border-radius: var(--ui-popper-radius);
+}
+
+.el-dropdown__popper.el-popper .el-dropdown-menu__item,
+.el-select__popper.el-popper .el-select-dropdown__item,
+.el-autocomplete__popper.el-popper .el-autocomplete-suggestion li,
+.el-cascader__dropdown.el-popper .el-cascader-node,
+.el-mention__popper.el-popper .el-mention-dropdown__item {
+  border-radius: var(--ui-popper-item-radius);
+}
+
+.el-select__popper.el-popper .el-select-dropdown {
+  overflow: hidden;
+}
+
+.el-autocomplete__popper.el-popper .el-autocomplete-suggestion {
+  overflow: hidden;
+}
+
+@media (max-width: 720px) {
+  .ui-page-header {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .ui-page-actions {
+    width: 100%;
+    padding-top: 0;
+  }
+
+  .ui-page-title {
+    font-size: 23px;
+  }
+}
+
+@media (max-width: 520px) {
+  .ui-page {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .ui-toolbar__count {
+    width: 100%;
+    margin-left: 0;
+  }
+}

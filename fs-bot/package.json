@@ -48,7 +48,7 @@
     "eslint": "^9.39.5",
     "eslint-plugin-vue": "^10.11.1",
     "prettier": "^3.9.10",
-    "sass": "^1.105.1",
+    "sass": "^1.105.2",
     "sql.js": "^1.15.0",
     "typescript": "^5.9.3",
     "unplugin-auto-import": "^21.1.0",

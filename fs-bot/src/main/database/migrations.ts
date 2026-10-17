@@ -9,7 +9,26 @@ import v8 from './sql/migrations-v8.sql?raw'
 import v9 from './sql/migrations-v9.sql?raw'
 import v10 from './sql/migrations-v10.sql?raw'
 import v11 from './sql/migrations-v11.sql?raw'
+import v12 from './sql/migrations-v12.sql?raw'
 import { USER_META_TABLES, USER_SCHEMA_VERSION, getUserSchema } from './schema'
+
+/**
+ * 用户库版本高于当前客户端支持的版本。
+ *
+ * 这种情况只能升级客户端；主进程捕获后提示用户并退出应用。
+ */
+export class UserSchemaTooNewError extends Error {
+  constructor(
+    readonly dataVersion: number,
+    readonly supportedVersion: number
+  ) {
+    super(
+      `[DB] User DB version (v${dataVersion}) is newer than app version (v${supportedVersion}). ` +
+        `Downgrade is not supported. Please upgrade the application.`
+    )
+    this.name = 'UserSchemaTooNewError'
+  }
+}
 
 /**
  * 升级脚本注册表：键为「升级后的版本号」，值为 `sql/migrations-vN.sql` 的内容。
@@ -28,7 +47,8 @@ export const USER_MIGRATIONS: Record<number, string> = {
   8: v8,
   9: v9,
   10: v10,
-  11: v11
+  11: v11,
+  12: v12
 }
 
 /**
@@ -51,10 +71,7 @@ export function ensureUserSchema(
   const current = getCurrentVersion(db)
 
   if (current > targetVersion) {
-    throw new Error(
-      `[DB] User DB version (v${current}) is newer than app version (v${targetVersion}). ` +
-        `Downgrade is not supported. Please upgrade the application.`
-    )
+    throw new UserSchemaTooNewError(current, targetVersion)
   }
   if (current === targetVersion) return
 

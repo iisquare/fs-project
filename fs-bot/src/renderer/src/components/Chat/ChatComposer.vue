@@ -5,7 +5,8 @@
  * 三个入口：
  * - `@` 引用：本机文件 / 文件夹（选中即开系统对话框）与已安装技能（输入 @ 弹出候选，回车插入，
  *   发送时把引用内容补进上下文）；
- * - 拖入：文件 / 文件夹直接拖进输入框，松手即引用（与系统对话框选进来同一条路）；
+ * - 拖入：文件 / 文件夹拖到中间对话列（消息区 + 输入区）的任意位置都算数（拖放区在页面上，
+ *   见 views/home/HomePage.vue；页面把取到的路径交给这里的 addPaths，与系统对话框选进来同一条路）；
  * - `/` 执行内置指令（如基于当前项目新建对话），指令由页面处理。
  *
  * 回车发送、Shift + Enter 换行，中文输入法组词中的回车不发送。
@@ -66,8 +67,15 @@ const menu = ref<{ kind: '' | 'mention' | 'command'; index: number; from: number
   to: 0
 })
 const query = ref('')
-/** 拖入计数：拖过里面的子元素会连着来一串 enter / leave，按进出次数决定蒙层的显隐 */
-const dragging = ref(0)
+/** 输入区有没有可发送的内容：生成中只有非空时才多给一个发送按钮（停止按钮始终在） */
+const hasDraft = computed(
+  () => !!String(props.modelValue ?? '').trim() || props.mentions.length > 0
+)
+const placeholder = computed(() =>
+  props.running
+    ? '当前回复生成中，输入后按 Enter 会自动加入队列…'
+    : '输入内容，@ 引用本机文件或技能，/ 执行内置指令（Enter 发送，Shift / Ctrl + Enter 换行）'
+)
 
 const POLICY_LABELS: Record<string, string> = {
   ask: '请求批准',
@@ -197,7 +205,8 @@ function setValue(value: string): void {
  */
 function refreshMenu(input?: string): void {
   const element = textarea()
-  const value = input ?? element?.value ?? props.modelValue
+  // 输入事件会显式传当前文本；点击等原生事件的回调不能把 Event 当成文本传进来
+  const value = typeof input === 'string' ? input : (element?.value ?? props.modelValue ?? '')
   const caret = element ? (element.selectionStart ?? value.length) : value.length
   const before = value.slice(0, caret)
   // / 指令：光标前最近的 / 之后还没有空白，且它本身在行首或空白之后（文件路径里的斜杠因此不会误触发）
@@ -360,57 +369,6 @@ async function pickPaths(
   addPaths(paths, range)
 }
 
-/** 拖进来的是文件（而不是选中的文字 / 链接）才接：其余拖动照旧交给文本区 */
-function carriesFiles(event: DragEvent): boolean {
-  const types = event.dataTransfer?.types
-  return !!types && Array.from(types).includes('Files')
-}
-
-function onDragEnter(event: DragEvent): void {
-  if (props.disabled || !carriesFiles(event)) return
-  event.preventDefault()
-  dragging.value += 1
-}
-
-/** 拖到输入框上方：必须拦掉默认行为，否则松手时窗口会直接跳到 file:// 打开这个文件 */
-function onDragOver(event: DragEvent): void {
-  if (props.disabled || !carriesFiles(event)) return
-  event.preventDefault()
-  if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy'
-}
-
-/**
- * 拖出输入框：按进出次数递减；指针已经落在输入框之外时一次收干净，
- * 免得 enter / leave 偶尔配不上对、蒙层挂在屏幕上不消失。
- */
-function onDragLeave(event: DragEvent): void {
-  if (!dragging.value) return
-  const box = (event.currentTarget as HTMLElement | null)?.getBoundingClientRect()
-  // 拿不到坐标（两轴都是 0）时按「还在里面」处理：宁可多减一次，也不误判成已经离开
-  const known = 0 !== event.clientX || 0 !== event.clientY
-  const inside =
-    !known ||
-    (!!box &&
-      event.clientX >= box.left &&
-      event.clientX <= box.right &&
-      event.clientY >= box.top &&
-      event.clientY <= box.bottom)
-  dragging.value = inside ? Math.max(0, dragging.value - 1) : 0
-}
-
-/** 松手：把拖进来的文件 / 文件夹按绝对路径登记成 @ 引用，与系统对话框选进来的一样 */
-function onDrop(event: DragEvent): void {
-  dragging.value = 0
-  if (!carriesFiles(event)) return
-  event.preventDefault()
-  if (props.disabled) return
-  const files = Array.from(event.dataTransfer?.files ?? [])
-  // File 对象只在渲染进程里，路径得由 preload 用 webUtils 取（见 preload 的 filePaths）
-  const paths = window.ipc.filePaths(files)
-  if (!paths.length) return
-  addPaths(paths)
-}
-
 /**
  * 左下角的 + 号：等同手打一个 @，就地弹出文件 / 技能候选。
  * 光标前一个字符不是空白时补一个空格，插入的 @ 才会被当成新的引用片段；
@@ -553,17 +511,12 @@ onBeforeUnmount(() => {
   textarea()?.removeEventListener('scroll', syncScroll)
 })
 
-defineExpose({ focus })
+/** 页面上的拖放区用得到 addPaths：把拖进来的路径写成 @ 引用，与系统对话框选进来同一条路 */
+defineExpose({ focus, addPaths })
 </script>
 
 <template>
-  <div
-    class="chat-composer"
-    @dragenter="onDragEnter"
-    @dragover="onDragOver"
-    @dragleave="onDragLeave"
-    @drop="onDrop"
-  >
+  <div class="chat-composer">
     <!-- 候选项浮层：@ 引用与 / 指令共用一处，浮在输入框上方 -->
     <el-scrollbar class="composer-menu" max-height="480px" v-if="menuOpen">
       <div class="menu-head">
@@ -660,10 +613,10 @@ defineExpose({ focus })
           :autosize="{ minRows: 1, maxRows: 8 }"
           resize="none"
           :disabled="disabled"
-          placeholder="输入内容，@ 引用本机文件或技能，/ 执行内置指令（Enter 发送，Shift / Ctrl + Enter 换行）"
+          :placeholder="placeholder"
           @update:model-value="onInput"
           @keydown="onKeydown"
-          @click="refreshMenu"
+          @click="refreshMenu()"
         />
       </div>
       <div class="composer-tools">
@@ -725,10 +678,10 @@ defineExpose({ focus })
             :context="context"
             @update:limit="(value: number | null) => emit('update:contextLimit', value)"
           />
-          <!-- 发送与停止共用同一个位置：跑起来就换成停止按钮，没有第二处停止入口 -->
+          <!-- 生成中按输入状态只显示一个主按钮：空输入是停止，有输入是灰色发送（进队列） -->
           <el-button
             class="composer-stop"
-            v-if="running"
+            v-if="running && !hasDraft"
             circle
             type="danger"
             plain
@@ -744,9 +697,13 @@ defineExpose({ focus })
             v-else
             class="composer-send"
             circle
-            type="primary"
-            title="发送（Enter 发送，Shift / Ctrl + Enter 换行）"
-            :disabled="disabled || (!String(modelValue ?? '').trim() && !mentions.length)"
+            :type="running ? 'info' : 'primary'"
+            :title="
+              running
+                ? '发送并加入队列'
+                : '发送（Enter 发送，Shift / Ctrl + Enter 换行）'
+            "
+            :disabled="disabled || !hasDraft"
             @click="submit"
           >
             <!-- 发送图标与编排对话页一致（Element Plus 的 Promotion） -->
@@ -758,28 +715,6 @@ defineExpose({ focus })
             </svg>
           </el-button>
         </div>
-      </div>
-      <!-- 拖入文件时的提示层：虚线描边 + 一句话，松手即把文件 / 文件夹引用进这一轮 -->
-      <div v-if="dragging" class="composer-drop" aria-hidden="true">
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-          <path
-            d="M8 10.2V2.6m0 0L5.1 5.5M8 2.6l2.9 2.9"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.3"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M2.6 10.4v1.8a1.2 1.2 0 0 0 1.2 1.2h8.4a1.2 1.2 0 0 0 1.2-1.2v-1.8"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.3"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-        <span>松开即可引用文件 / 文件夹</span>
       </div>
     </div>
   </div>
@@ -934,8 +869,6 @@ defineExpose({ focus })
 }
 
 .composer-box {
-  /* 蒙层压在这块输入框上：定位基准 */
-  position: relative;
   /* 整块输入框（文本区 + 工具行）至少 60px：内容少时也不至于挤成一条 */
   display: flex;
   flex-direction: column;
@@ -956,24 +889,6 @@ defineExpose({ focus })
     border-color: var(--el-color-primary);
     box-shadow: 0 0 0 3px var(--el-color-primary-light-9);
   }
-}
-
-/* 拖入文件时盖在输入框上的一层：虚线圈一遍 + 一句提示，松手即引用 */
-.composer-drop {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border-radius: 10px;
-  border: dashed 1px var(--el-color-primary);
-  background: var(--el-color-primary-light-9);
-  color: var(--el-color-primary);
-  font-size: 13px;
-  /* 蒙层只负责提示：不接管指针，投放在输入框的任何一处都算数 */
-  pointer-events: none;
 }
 
 /* 输入区：底衬与文本区叠在同一块位置上，字体与换行规则必须完全一致 */

@@ -97,6 +97,17 @@ function pathLike(value: unknown): string {
 }
 
 /**
+ * 文件工具自己的路径参数：相对路径可以只有文件名（`README.md`），
+ * 工具会按项目目录解析；通用的 pathLike 不认这种写法，是为了避免把
+ * 服务端返回里的普通名字误当成本机路径。两处口径因此分开。
+ */
+function filePathArg(value: unknown): string {
+  const text = String(value ?? '').trim()
+  if (!text || /^[a-z][a-z0-9+.-]*:\/\//i.test(text) || /[\r\n]/.test(text)) return ''
+  return text
+}
+
+/**
  * 文案里捡出来的路径可能连着说明文字（「D:\x\dist 用时 3s」）：按空白切词，
  * 从尾部丢掉既没有分隔符也没有后缀的那些词，留下真正的路径部分。
  */
@@ -110,6 +121,116 @@ function trimProse(value: string): string {
     parts.pop()
   }
   return parts.join(' ')
+}
+
+/**
+ * 路径的比较键：分隔符统一、去掉 `.` 与多余的斜杠、消掉 `..`，
+ * 盘符与 UNC 路径按 Windows 的口径忽略大小写。
+ *
+ * 清单里存的是给人看的路径，比较时才用它——模型有时写 `README.md`，
+ * 有时写 `D:\project\README.md`，工具回执里还有 `D:/project/./README.md`，
+ * 这几种写法落到同一个文件上时不该在右侧出现三行。
+ */
+function pathKey(value: unknown): string {
+  const text = String(value ?? '')
+    .trim()
+    .replace(/\\/g, '/')
+  if (!text) return ''
+  const unc = text.startsWith('//')
+  const absolute = text.startsWith('/')
+  const parts: string[] = []
+  for (const part of text.split('/')) {
+    if (!part || '.' === part) continue
+    if ('..' === part) {
+      if (parts.length && '..' !== parts[parts.length - 1]) parts.pop()
+      else if (!absolute && !unc) parts.push(part)
+      continue
+    }
+    parts.push(part)
+  }
+  let key = `${absolute ? '/' : ''}${parts.join('/')}`
+  if (unc) key = `/${key}`
+  if (!key) return ''
+  // 盘符根目录保留一个斜杠，避免 `c:` 与 `c:/` 被当成两个键
+  if (/^[a-z]:$/i.test(key)) key = `${key.toLowerCase()}:/`
+  if (/^[a-z]:\//i.test(key) || key.startsWith('//')) return key.toLowerCase()
+  return key
+}
+
+/** 比较键是否指向绝对位置（POSIX / 盘符 / UNC） */
+function absoluteKey(key: string): boolean {
+  return key.startsWith('/') || /^[a-z]:\//i.test(key)
+}
+
+/**
+ * 同一个本机文件的两种写法：完全相同的键，或一边是绝对路径、
+ * 另一边是落在它下面的相对路径（`src/a.ts` 与 `D:\p\src\a.ts`）。
+ */
+function sameLocalPath(left: unknown, right: unknown): boolean {
+  const a = pathKey(left)
+  const b = pathKey(right)
+  if (!a || !b) return false
+  if (a === b) return true
+  if (absoluteKey(a) === absoluteKey(b)) return false
+  const relative = absoluteKey(a) ? b : a
+  const absolute = absoluteKey(a) ? a : b
+  if (!relative || '..' === relative || relative.startsWith('../')) return false
+  const windows = /^[a-z]:\//i.test(absolute) || absolute.startsWith('//')
+  const tail = windows ? relative.toLowerCase() : relative
+  const full = windows ? absolute.toLowerCase() : absolute
+  return full === `/${tail}` || full.endsWith(`/${tail}`)
+}
+
+/**
+ * 下载地址里只用于鉴权、会过期的参数：同一个文件重新取一次地址时它们会变，
+ * 拿整串地址比较就会把一份文件列成多行。其余查询参数仍参与比较——
+ * `?id=1` 与 `?id=2` 可能是两份不同的文件，不能一概抹掉。
+ */
+const VOLATILE_URL_PARAM =
+  /^(?:access_token|auth|auth_key|authkey|expire|expires|nonce|sig|sign|signature|time|timestamp|token|x-amz-.+|x-goog-.+)$/i
+
+/** 地址的比较键：去掉片段、鉴权参数与查询参数顺序的影响 */
+function urlKey(value: string): string {
+  const text = value.trim()
+  try {
+    const url = new URL(text)
+    const params: Array<[string, string]> = []
+    url.searchParams.forEach((item, key) => {
+      if (!VOLATILE_URL_PARAM.test(key)) params.push([key, item])
+    })
+    params.sort((a, b) => (a[0] === b[0] ? a[1].localeCompare(b[1]) : a[0].localeCompare(b[0])))
+    url.hash = ''
+    url.search = ''
+    params.forEach(([key, item]) => url.searchParams.append(key, item))
+    return url.toString()
+  } catch {
+    return text.toLowerCase()
+  }
+}
+
+/** 清单去重用的键：地址与路径分开命名，避免两种内容恰好同文时互相吞掉 */
+function deliveryKey(ref: ChatFileRef): string {
+  const url = String(ref.url ?? '').trim()
+  if (url) return `url:${urlKey(url)}`
+  const path = pathKey(ref.path)
+  return path ? `path:${path}` : ''
+}
+
+/**
+ * 文件工具回执里的真实落点：写入 / 替换 / 移动都在结果首行给出，
+ * 且已经由主进程按项目根目录归一成绝对路径。模型参数可能是相对路径，
+ * 拿回执这一份做交付清单的路径与去重键，才能和同一文件的下一次操作对上。
+ */
+function fileOpResultPath(action: string, result: unknown): string {
+  const text = String(result ?? '').trim()
+  if (!text) return ''
+  const patterns: Record<string, RegExp> = {
+    write: /^已写入\s+(.+?)\s*（\d+\s*字节）/,
+    replace: /^已替换\s+(.+?)\s+第\s+\d+/,
+    move: /^已移动为\s+(.+?)\s*$/
+  }
+  const matched = patterns[action]?.exec(text)
+  return matched ? filePathArg(matched[1]) : ''
 }
 
 /** 按键名在 JSON 里递归找字符串值（数组也走一遍），最多下探四层 */
@@ -178,16 +299,13 @@ function collectRefs(call: ChatToolCall, deliveredOnly: boolean): ChatFileRef[] 
   const isFileOp = 'file_op' === name
   if (isFileOp) {
     const source: Record<string, unknown> = 'object' === typeof args && args ? { ...args } : {}
-    const rule = FILE_OP_PATHS[String(source.action ?? '')]
+    const action = String(source.action ?? '')
+    const rule = FILE_OP_PATHS[action]
     if (rule && (!deliveredOnly || rule.delivered)) {
-      rule.keys.forEach((key) =>
-        push(
-          pathLike(source[key]),
-          rule.dir,
-          rule.source,
-          'move' === rule.source ? pathLike(source.from) : undefined
-        )
-      )
+      const resolved = deliveredOnly ? fileOpResultPath(action, call?.result) : ''
+      const from = 'move' === rule.source ? filePathArg(source.from) : undefined
+      if (resolved) push(resolved, rule.dir, rule.source, from)
+      else rule.keys.forEach((key) => push(filePathArg(source[key]), rule.dir, rule.source, from))
     }
   } else if (!deliveredOnly) {
     collect(args, PATH_ARG_KEYS, (text) => push(pathLike(text)))
@@ -217,6 +335,13 @@ export function fileRefsOf(call: ChatToolCall): ChatFileRef[] {
  * 对话右侧的「交付的文件」按它汇总（见 components/Chat/ConversationFiles.vue）。
  */
 export function deliveredRefsOf(call: ChatToolCall): ChatFileRef[] {
+  // 文件操作失败 / 被停止时没有产物；参数里的目标路径不能算交付
+  if (
+    'file_op' === String(call?.name ?? '') &&
+    ('failed' === call?.status || 'stopped' === call?.status)
+  ) {
+    return []
+  }
   return collectRefs(call, true)
 }
 
@@ -232,26 +357,25 @@ export interface DeliveredEntry extends ChatFileRef {
  * 交付清单：把整段会话里交付出来的东西按**发生先后**汇总，最近碰过的排在最前。
  *
  * 三条规则，都是为了让「最终交付物」浮到上面：
- * 1. 同一个路径 / 地址只留最近那一次（重写过的文件按最后一次算，位置也跟着挪到最新）；
+ * 1. 同一个路径 / 地址只留最近那一次（相对与绝对写法、分隔符、下载地址的签名参数先归一再比，
+ *    重写过的文件按最后一次算，位置也跟着挪到最新）；
  * 2. 移动过的旧路径从清单里摘掉（同一个文件换了个位置，不该出现两次）；
  * 3. 最后一条有正文的助手回复里提到过的（整条路径或文件名出现在正文里）标成最终交付。
  */
 export function deliveredTimeline(messages: ChatMessage[]): DeliveredEntry[] {
   const seen = new Map<string, DeliveredEntry>()
-  const keyOf = (ref: ChatFileRef): string =>
-    String((ref.url || ref.path) ?? '')
-      .trim()
-      .toLowerCase()
 
   for (const message of messages ?? []) {
     for (const round of message?.rounds ?? []) {
       for (const call of round?.calls ?? []) {
         for (const ref of deliveredRefsOf(call)) {
-          const key = keyOf(ref)
+          const key = deliveryKey(ref)
           if (!key) continue
           // 移动：旧路径不再是交付物（同一个文件已经在新的位置上了）
           if ('move' === ref.source && ref.from) {
-            seen.delete(String(ref.from).trim().toLowerCase())
+            for (const [oldKey, entry] of seen) {
+              if (sameLocalPath(entry.path, ref.from)) seen.delete(oldKey)
+            }
           }
           // 先删后写：Map 的保序特性让「重新碰过的文件」挪到最新位置
           seen.delete(key)

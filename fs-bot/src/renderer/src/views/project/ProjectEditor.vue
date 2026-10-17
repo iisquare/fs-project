@@ -4,7 +4,9 @@ import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import { useProjectStore } from '@renderer/stores/project'
 import { useCatalogStore } from '@renderer/stores/catalog'
+import { useSkillStore } from '@renderer/stores/skill'
 import ApiUtil from '@renderer/utils/ApiUtil'
+import { errorMessage } from '@renderer/utils/ErrorUtil'
 import { formatTokens } from '@renderer/core/Tokens'
 import {
   fixedCount,
@@ -46,6 +48,7 @@ const emit = defineEmits<{
 
 const projectStore = useProjectStore()
 const catalogStore = useCatalogStore()
+const skillStore = useSkillStore()
 
 interface ProjectForm {
   id: string
@@ -53,6 +56,7 @@ interface ProjectForm {
   contextLength: number
   systemPrompt: string
   memory: string
+  memoryEnabled: boolean
   thinkEffort: string
   name: string
   description: string
@@ -64,8 +68,12 @@ interface ProjectForm {
   inputs: Record<string, any>
 }
 
-/** 工具类型：与服务端编排里大语言模型节点的工具种类一致 */
+/**
+ * 工具类型：前五类与服务端编排里大语言模型节点的工具种类一致，
+ * 第一项「本地技能」是本机能力（服务端技能包 + 本机安装的那一份），候选清单来自本地
+ */
 const toolKinds: { value: ProjectToolKind; label: string }[] = [
+  { value: 'skill', label: '本地技能' },
   { value: 'method', label: '工具方法' },
   { value: 'knowledge', label: '知识库' },
   { value: 'theme', label: '数据主题' },
@@ -86,10 +94,13 @@ const formRef = ref<FormInstance>()
 const saving = ref(false)
 const form = ref<ProjectForm>(emptyForm())
 
-const toolKind = ref<ProjectToolKind>('method')
+const toolKind = ref<ProjectToolKind>('skill')
 const toolKeyword = ref('')
 const searchResults = ref<any[]>([])
 const searching = ref(false)
+const toolSearchError = ref('')
+const editorLoading = ref(false)
+const editorError = ref('')
 
 const isEdit = computed(() => Boolean(form.value.id))
 
@@ -118,6 +129,7 @@ async function modelSuggestions(query: string): Promise<any[]> {
 
 /** 某类型清单的加载失败原因：权限类失败已翻译成「找谁开通什么权限」 */
 function toolLoadError(kind: ProjectToolKind): string {
+  if ('method' === kind) return catalogStore.methodError
   if ('knowledge' === kind) return catalogStore.knowledgeError
   if ('theme' === kind) return catalogStore.themeError
   if ('ontology' === kind) return catalogStore.ontologyError
@@ -125,7 +137,7 @@ function toolLoadError(kind: ProjectToolKind): string {
   return ''
 }
 
-const toolError = computed(() => toolLoadError(toolKind.value))
+const toolError = computed(() => toolSearchError.value || toolLoadError(toolKind.value))
 
 function emptyForm(): ProjectForm {
   return {
@@ -134,6 +146,7 @@ function emptyForm(): ProjectForm {
     contextLength: 0,
     systemPrompt: '',
     memory: '',
+    memoryEnabled: false,
     thinkEffort: '',
     name: '',
     description: '',
@@ -154,6 +167,7 @@ function load(project: Project | null) {
         contextLength: project.contextLength,
         systemPrompt: project.systemPrompt,
         memory: project.memory,
+        memoryEnabled: project.memoryEnabled,
         thinkEffort: project.thinkEffort,
         name: project.name,
         description: project.description,
@@ -167,7 +181,7 @@ function load(project: Project | null) {
         inputs: { ...project.inputs }
       }
     : emptyForm()
-  toolKind.value = 'method'
+  toolKind.value = 'skill'
   toolKeyword.value = ''
   searchResults.value = []
   openedArgs.value = {}
@@ -189,8 +203,18 @@ watch(
   async ([creating, project]) => {
     if (!creating && !project) return
     load(creating ? null : (project as Project))
-    // 目录按需加载：模型清单表单上立刻要用，工具清单等切到对应类型再取（见 loadToolOptions）
-    await catalogStore.fetchModels()
+    editorLoading.value = true
+    editorError.value = ''
+    try {
+      // 目录按需加载：模型清单表单上立刻要用，工具清单等切到对应类型再取（见 loadToolOptions）
+      await catalogStore.fetchModels()
+      // 技能是本机安装的：编辑时把已安装清单取一次，行上才能显示「本机未安装 / 本机 v1.2」
+      await skillStore.fetchInstalled()
+    } catch (error) {
+      editorError.value = errorMessage(error, '项目配置依赖加载失败')
+    } finally {
+      editorLoading.value = false
+    }
   },
   { immediate: true }
 )
@@ -199,6 +223,7 @@ watch(
 watch(toolKind, () => {
   toolKeyword.value = ''
   searchResults.value = []
+  toolSearchError.value = ''
 })
 
 function cancel() {
@@ -240,6 +265,14 @@ function removeEnv(index: number) {
   form.value.envVars.splice(index, 1)
 }
 
+/** 选一条本机路径填进这一行的值（环境变量的值常常就是路径），选中的路径整体替换这一格 */
+async function pickEnvPath(index: number, kind: 'file' | 'directory'): Promise<void> {
+  const item = form.value.envVars[index]
+  if (!item) return
+  const path = await window.ipc.workspace.pick(kind)
+  if (path) item.value = path
+}
+
 // ── 工具 ───────────────────────────────────────────────
 
 /** 类型文案：列表行与提示里都用它 */
@@ -259,6 +292,7 @@ function toolTagType(kind: ProjectToolKind): 'primary' | 'success' | 'warning' |
 /** 搜索框提示：各类型的检索口径一致，只是提示词不同 */
 function toolSearchHint(kind: ProjectToolKind): string {
   if ('method' === kind) return '按工具或方法名搜索'
+  if ('skill' === kind) return '按本地已安装技能名称搜索'
   return `按${toolKindText(kind)}名称搜索`
 }
 
@@ -272,6 +306,7 @@ async function searchTools(): Promise<void> {
   const kind = toolKind.value
   const keyword = toolKeyword.value.trim()
   searching.value = true
+  toolSearchError.value = ''
   try {
     if ('method' === kind) {
       const result = await catalogStore.searchMethods(keyword, 1, 50)
@@ -287,10 +322,46 @@ async function searchTools(): Promise<void> {
       searchResults.value = keyword
         ? rows.filter((item) => String(item.name ?? '').includes(keyword))
         : rows
+    } else if ('skill' === kind) {
+      searchResults.value = await searchSkills(keyword)
     }
+  } catch (error) {
+    searchResults.value = []
+    toolSearchError.value = errorMessage(error, '工具候选加载失败')
   } finally {
     searching.value = false
   }
+}
+
+/** 技能候选行：本机已安装的那一份 + 项目里要记下的推荐版本 */
+interface SkillOption {
+  id: number
+  name: string
+  versionId: number
+  versionName: string
+  description: string
+  note: string
+}
+
+/**
+ * 技能候选：本机已安装的技能（服务端技能包解压出来的那一份），按名称 / 摘要过滤。
+ * 手工放进技能目录的技能没有服务端标识，列出来但标一句「不能引用」——
+ * 没有标识的引用换台机器就认不出来，也做不了「推荐哪个版本」。
+ */
+async function searchSkills(keyword: string): Promise<SkillOption[]> {
+  const skills = await skillStore.fetchInstalled()
+  const text = keyword.toLowerCase()
+  const rows = text
+    ? skills.filter((item) => `${item.name} ${item.summary}`.toLowerCase().includes(text))
+    : skills
+  return rows.map((item) => ({
+    id: Number(item.meta?.skillId ?? 0),
+    name: item.name,
+    versionId: Number(item.meta?.versionId ?? 0),
+    versionName: String(item.meta?.versionName ?? ''),
+    description: item.summary,
+    note: item.meta ? '' : '手工放入的技能没有标识，无法在项目里引用'
+  }))
 }
 
 /** 候选行的展示名：工具方法带上所属工具，其余只展示名称 */
@@ -305,6 +376,11 @@ function toolRowAdded(row: any): boolean {
   const id = Number(row?.id ?? 0)
   if (!id) return true
   return form.value.tools.some((item) => item.kind === kind && item.id === id)
+}
+
+/** 候选行右边的提示：已加进清单的标「已添加」，另有话要说（手工放入的技能）由行自己给出 */
+function toolRowTip(row: { note?: string }): string {
+  return String(row?.note ?? '').trim() || (toolRowAdded(row) ? '已添加' : '')
 }
 
 /**
@@ -335,6 +411,23 @@ function addToolRow(row: any): void {
     }
     return
   }
+  if ('skill' === kind) {
+    const item: ProjectTool = {
+      kind,
+      id,
+      name: String(row?.name ?? `本地技能 #${id}`),
+      enabled: true,
+      description: String(row?.description ?? '')
+    }
+    // 版本只是推荐：记下添加时本机装的那一版，导出 / 分享时随配置走；
+    // 运行时永远以本机技能目录里装的那一版为准（安装不分版本）
+    if (row?.versionName) {
+      item.versionId = Number(row.versionId ?? 0)
+      item.versionName = String(row.versionName)
+    }
+    form.value.tools.push(item)
+    return
+  }
   form.value.tools.push({
     kind,
     id,
@@ -346,6 +439,22 @@ function addToolRow(row: any): void {
 
 function removeTool(index: number) {
   form.value.tools.splice(index, 1)
+}
+
+/**
+ * 已添加技能的安装状态：项目里记的是引用与推荐版本，本机装没装、装的是哪一版
+ * 由本机技能目录决定——没装的行在运行时不会生效，得先去技能管理页安装。
+ */
+function skillStateText(item: ProjectTool): string {
+  const installed = skillStore.installed.find(
+    (skill) => Number(skill.meta?.skillId ?? 0) === Number(item.id)
+  )
+  if (!installed) return '本机未安装（运行时不会生效）'
+  const local = String(installed.meta?.versionName ?? '').trim()
+  if (item.versionName && local && local !== item.versionName) {
+    return `本机 ${local}（推荐 ${item.versionName}）`
+  }
+  return local ? `本机 ${local}` : '本机已安装'
 }
 
 // ── 工具方法的固定参数 ──────────────────────────────────
@@ -484,13 +593,15 @@ function rowHelp(row: any): string {
   if (description) return description
   if ('method' === toolKind.value)
     return `工具：${row?.toolName ?? ''}\n方法：${row?.title || row?.name || ''}\n服务端未给出方法描述`
+  if ('skill' === toolKind.value)
+    return `本地技能：${row?.name ?? ''}\n版本：${row?.versionName || '（无版本信息）'}\n技能包里的 SKILL.md 没有写摘要（description）`
   return `服务端未给出${toolKindText(toolKind.value)}描述`
 }
 
 // ── 工作区 ─────────────────────────────────────────────
 
 async function addWorkspace(): Promise<void> {
-  const path = await window.ipc.workspace.pick()
+  const path = await window.ipc.workspace.pick('directory', '选择工作区目录')
   if (!path) return
   if (form.value.workspace.some((item) => item.path === path)) return
   // 默认给读写：目录是用户自己挑的，进来先按最常用的方式用，要收紧再点左边的只读 / 只写
@@ -508,7 +619,7 @@ function removeWorkspace(index: number): void {
  * 只换到已经声明过的目录上不算改（选择框里又点回原目录时什么都不做）。
  */
 async function changeWorkspace(index: number): Promise<void> {
-  const path = await window.ipc.workspace.pick()
+  const path = await window.ipc.workspace.pick('directory', '选择工作区目录')
   if (!path) return
   const item = form.value.workspace[index]
   if (!item || path === item.path) return
@@ -555,6 +666,7 @@ async function submit(): Promise<string> {
       contextLength: Math.max(0, Math.floor(Number(form.value.contextLength) || 0)),
       systemPrompt: form.value.systemPrompt,
       memory: form.value.memory,
+      memoryEnabled: form.value.memoryEnabled,
       thinkEffort: form.value.thinkEffort,
       name: form.value.name,
       description: form.value.description,
@@ -618,7 +730,21 @@ async function share(): Promise<void> {
 </script>
 
 <template>
-  <el-form ref="formRef" :model="form" label-width="96px" class="project-editor">
+  <el-form
+    ref="formRef"
+    :model="form"
+    label-width="96px"
+    class="project-editor"
+    v-loading="editorLoading"
+  >
+    <el-alert
+      v-if="editorError"
+      class="editor-alert"
+      type="warning"
+      :closable="false"
+      show-icon
+      :title="editorError"
+    />
     <section class="section">
       <div class="section-head">
         <div class="section-label">
@@ -708,19 +834,32 @@ async function share(): Promise<void> {
           作为首条 system 消息随每轮请求下发，项目里的所有会话都按它跑；留空则不下发。
         </div>
       </el-form-item>
+      <el-form-item label="启用记忆">
+        <div class="memory-switch">
+          <el-switch v-model="form.memoryEnabled" />
+          <span class="memory-switch-text">{{ form.memoryEnabled ? '已启用' : '未启用' }}</span>
+        </div>
+        <div class="field-tip">
+          默认关闭。关闭时不会把记忆内容作为提示词下发，模型也拿不到 memory 工具；
+          启用后记忆随每轮请求下发，模型可以在用户明确要求记住时更新它。
+        </div>
+      </el-form-item>
       <el-form-item label="记忆">
         <el-input
           v-model="form.memory"
           type="textarea"
           :rows="4"
           resize="vertical"
+          :disabled="!form.memoryEnabled"
           placeholder="长期记忆：希望模型一直记得的事实、偏好与约定（可为空）"
         />
         <div class="field-tip">
           与系统提示词分开存放：这里写「长期有用」的东西（用户偏好、项目约定、已定的决策），
-          每轮作为提示词的一段（# 记忆）追加在系统提示词之后一起下发。改完保存，下一次提问就生效；
-          对话里模型也能用 memory 工具改这里（追加、整段替换、局部替换，也能把记忆清空），
-          改完的内容同样每轮下发、本项目的所有会话共用。
+          启用后每轮作为提示词中带「记忆」标题的一段，追加在系统提示词之后一起下发。
+          改完保存，下一次提问就生效；对话里模型也能用 memory 工具改这里
+          （追加、整段替换、局部替换，也能把记忆清空），但只有在用户明确要求它记住或更新记忆时才会动手，
+          不会自行归纳对话内容；
+          改完的内容同样每轮下发、本项目的所有会话共用。注意：更改系统提示词和记忆都会导致模型端缓存失效，费用变高。
         </div>
         <div class="field-tip">
           它和系统提示词一样占每轮上下文（计入输入框旁的用量圆环）：只写长期有用的少量事实，
@@ -756,16 +895,10 @@ async function share(): Promise<void> {
         </div>
       </div>
       <div class="section-note">
-        <div>变量只在本机生效：执行本机命令（run_command）时带进进程环境。</div>
-        <div>不标「密钥」的随分享上传、也不拦着命令打印（值不下发给模型，但命令可以自己读）。</div>
         <div>
-          标了「密钥」的只留本机：不上传，命令输出里出现的值会换成
-          ***（值很短时会连普通文本一起命中）。
+          执行本机命令（run_command）时带进进程环境；非密钥的值会写入本机说明，随模型请求发送。
         </div>
-        <div>
-          切换 JDK 这类工具链：把目标 bin 目录写进 PATH（会前置到系统 PATH 之前），或设 JAVA_HOME
-          让构建工具认它。
-        </div>
+        <div>标为「密钥」的值不下发，仅在本机执行时使用，命令输出中显示为 ***。</div>
         <div>
           变量名用字母或下划线开头、只含字母 / 数字 / 下划线（不合规的行不生效）；值不做变量展开。
         </div>
@@ -776,12 +909,29 @@ async function share(): Promise<void> {
       <div v-if="form.envVars.length === 0" class="section-empty">暂无环境变量</div>
       <div v-for="(item, index) in form.envVars" :key="index" class="env-row">
         <el-input v-model="item.key" placeholder="变量名" />
+        <!-- 掩码只给「密钥」行：el-input 一开 show-password 就忽略 type，写死会让普通值也变圆点 -->
         <el-input
           v-model="item.value"
           placeholder="变量值"
           :type="item.secret ? 'password' : 'text'"
-          show-password
-        />
+          :show-password="item.secret"
+        >
+          <!-- 值常常就是一条路径：两个后缀按钮分别选文件 / 目录，选中的路径填进这一格 -->
+          <template #suffix>
+            <span class="env-picks">
+              <span class="path-pick" title="选择文件并填入" @click="pickEnvPath(index, 'file')">
+                <LayoutIcon name="plus.file" />
+              </span>
+              <span
+                class="path-pick"
+                title="选择目录并填入"
+                @click="pickEnvPath(index, 'directory')"
+              >
+                <LayoutIcon name="plus.folder" />
+              </span>
+            </span>
+          </template>
+        </el-input>
         <el-checkbox v-model="item.secret">密钥</el-checkbox>
         <el-button text type="danger" @click="removeEnv(index)">删除</el-button>
       </div>
@@ -812,11 +962,18 @@ async function share(): Promise<void> {
         </div>
       </div>
       <div class="section-note">
-        工具类型与服务端编排一致：工具方法、知识库、数据主题、知识图谱、编排应用；先搜索再从结果里添加，凭据与调用都在服务端。
+        工具方法、知识库、数据主题、知识图谱、编排应用与服务端编排一致，凭据与调用都在服务端；
+        本地技能取自本机已安装的那一份（服务端技能包，见技能管理页），只记引用与推荐版本，实际以本机装的为准；
+        本项目没启用任何技能时，模型的工具清单里不会有技能函数。
       </div>
       <div v-if="toolError" class="section-warning">{{ toolError }}</div>
       <el-scrollbar v-if="searchResults.length" class="method-options" max-height="180px">
-        <div v-for="row in searchResults" :key="`${toolKind}-${row.id}`" class="method-option">
+        <!-- 技能里手工放入的没有标识（id 为 0），键要带上名称才不会撞 -->
+        <div
+          v-for="row in searchResults"
+          :key="`${toolKind}-${row.id}-${row.name ?? ''}`"
+          class="method-option"
+        >
           <span class="list-name">{{ toolRowName(row) }}</span>
           <!-- 帮助：候选行能看到服务端给出的描述，选之前先确认是不是这一只 -->
           <el-popover placement="left" :width="300" trigger="click">
@@ -830,7 +987,7 @@ async function share(): Promise<void> {
               <div class="help-body">{{ rowHelp(row) }}</div>
             </el-scrollbar>
           </el-popover>
-          <span v-if="toolRowAdded(row)" class="list-tip">已添加</span>
+          <span v-if="toolRowTip(row)" class="list-tip">{{ toolRowTip(row) }}</span>
           <el-button text type="primary" :disabled="toolRowAdded(row)" @click="addToolRow(row)">
             添加
           </el-button>
@@ -851,7 +1008,12 @@ async function share(): Promise<void> {
             <div class="help-title">{{ item.name || `#${item.id}` }}</div>
             <el-scrollbar max-height="200px">
               <div class="help-body">
-                {{ item.description || `服务端未给出${toolKindText(item.kind)}描述` }}
+                {{
+                  item.description ||
+                  ('skill' === item.kind
+                    ? '技能包里的 SKILL.md 没有写摘要'
+                    : `服务端未给出${toolKindText(item.kind)}描述`)
+                }}
               </div>
             </el-scrollbar>
           </el-popover>
@@ -865,6 +1027,8 @@ async function share(): Promise<void> {
           >
             参数{{ fixedText(item) }}
           </el-button>
+          <!-- 技能：本机装没装、装的是哪一版（项目里记的版本只是推荐） -->
+          <span v-if="'skill' === item.kind" class="list-tip">{{ skillStateText(item) }}</span>
           <el-switch v-model="item.enabled" size="small" />
           <el-button text type="danger" @click="removeTool(index)">移除</el-button>
         </div>
@@ -1004,14 +1168,23 @@ async function share(): Promise<void> {
 
 <style lang="scss" scoped>
 .project-editor {
-  padding: 4px 20px 0;
+  padding: 0;
+}
+
+.editor-alert {
+  margin-bottom: 16px;
 }
 
 .section {
-  padding: 16px 0;
+  padding: 22px 24px;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 
   & + .section {
-    border-top: 1px solid var(--el-border-color-lighter);
+    border-top: 1px solid var(--ui-divider);
   }
 }
 
@@ -1021,7 +1194,7 @@ async function share(): Promise<void> {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .section-label {
@@ -1031,7 +1204,7 @@ async function share(): Promise<void> {
 }
 
 .section-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--ev-c-text-1);
 }
@@ -1055,8 +1228,9 @@ async function share(): Promise<void> {
 }
 
 .section-note {
-  margin: -6px 0 10px;
+  margin: -6px 0 14px;
   font-size: 12px;
+  line-height: 1.7;
   color: var(--ev-c-text-3);
 }
 
@@ -1095,6 +1269,18 @@ async function share(): Promise<void> {
   }
 }
 
+/* 记忆开关：开关与状态文字同一行，说明仍由下面的 field-tip 承担 */
+.memory-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.memory-switch-text {
+  font-size: 13px;
+  color: var(--ev-c-text-2);
+}
+
 .field-tip {
   margin-top: 4px;
   font-size: 12px;
@@ -1123,7 +1309,8 @@ async function share(): Promise<void> {
 
 .env-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) auto auto;
+  /* 变量名这一列给固定宽度：名字都不长，1fr 会把值那一格挤窄 */
+  grid-template-columns: 180px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
@@ -1156,6 +1343,13 @@ async function share(): Promise<void> {
   &:hover {
     color: var(--el-color-primary);
   }
+}
+
+/* 环境变量值那一格的两个选择按钮（选文件 / 选目录）：并排放在同一个后缀里 */
+.env-picks {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .list-row,
@@ -1311,9 +1505,37 @@ async function share(): Promise<void> {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  padding: 12px 0;
-  margin-top: 12px;
-  background: var(--el-bg-color);
-  border-top: 1px solid var(--el-border-color-lighter);
+  padding: 12px 18px;
+  margin: 0;
+  background: color-mix(in srgb, var(--ui-surface) 92%, transparent);
+  border: 0;
+  border-top: 1px solid var(--ui-divider);
+  border-radius: 0 0 var(--ui-card-radius) var(--ui-card-radius);
+  box-shadow: none;
+  backdrop-filter: blur(14px);
+}
+
+@media (max-width: 820px) {
+  .env-row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .env-row > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .workspace-row {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .workspace-row > :first-child {
+    width: 100%;
+  }
+
+  .primary-slot {
+    width: auto;
+    margin-left: auto;
+  }
 }
 </style>

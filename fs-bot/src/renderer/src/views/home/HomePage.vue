@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { page, projectCreateRoute } from '@renderer/router/config'
 import { useProjectStore } from '@renderer/stores/project'
-import { useConversationStore } from '@renderer/stores/conversation'
+import { useConversationStore, type QueuedSend } from '@renderer/stores/conversation'
 import { useSettingsStore } from '@renderer/stores/settings'
 import { useSkillStore } from '@renderer/stores/skill'
 import { useCatalogStore } from '@renderer/stores/catalog'
@@ -12,6 +12,7 @@ import { useUserStore } from '@renderer/stores/user'
 import { useFilesStore, FILES_WIDTH_MIN, FILES_WIDTH_MAX } from '@renderer/stores/files'
 import { useWindowStore } from '@renderer/stores/window'
 import BotApi from '@renderer/api/agent/BotApi'
+import { errorMessage } from '@renderer/utils/ErrorUtil'
 import { chatProfile, useChatStore, type ChatMention } from '@renderer/stores/chat'
 import type { Project } from '@renderer/db/ProjectDb'
 import ChatMessage from '@renderer/components/Chat/ChatMessage.vue'
@@ -46,12 +47,18 @@ const chatStore = useChatStore()
 
 const draft = ref('')
 const mentions = ref<ChatMention[]>([])
+/** 一次发送只走一条链路：确认框打开或提交中时，重复回车不再叠一条消息 */
+const sending = ref(false)
+const pageLoading = ref(false)
+const pageError = ref('')
 const composerRef = ref<any>(null)
 /** 消息区滚动条实例与它真正的滚动元素（el-scrollbar 内容包在内部 wrap 里） */
 const scrollRef = ref<any>(null)
 const listRef = ref<HTMLElement | null>(null)
 /** 是否贴着底部：贴着才跟随新内容，向上翻阅历史时不被拉回 */
 const atBottom = ref(true)
+/** 拖入计数：拖过里面的子元素会连着来一串 enter / leave，按进出次数决定提示层的显隐 */
+const dragging = ref(0)
 
 /**
  * 右侧文件区存在 store 里，所有会话共用：默认收起，展开与否由这里的按钮说了算
@@ -112,6 +119,10 @@ const session = computed(() =>
 /** 页面只渲染当前分支路径：编辑提问 / 重新生成新起的分支靠「◀ n/m ▶」切回 */
 const messages = computed(() => (session.value ? chatStore.visible(session.value) : []))
 const running = computed(() => session.value?.running === true)
+/** 这段会话待发送的消息：生成中提交后排队，当前一轮收尾后自动发出 */
+const queuedMessages = computed<QueuedSend[]>(() =>
+  conversation.value ? conversationStore.queuedOf(conversation.value.id) : []
+)
 
 /** 圆环口径里的模型：按项目当前配置取（与发送时一致），项目里换了模型立刻跟着换 */
 const contextModel = computed(() => {
@@ -166,25 +177,79 @@ const candidates = computed<MentionCandidate[]>(() =>
   }))
 )
 
-onMounted(async () => {
-  await projectStore.fetchProjects()
-  await settingsStore.fetchSettings()
-  await skillStore.fetchInstalled()
-  // 模型清单要给出「服务端声明的上下文窗口」，圆环的比例按它算
-  await catalogStore.fetchModels()
-  if (conversationStore.currentId) await conversationStore.select(conversationStore.currentId)
+async function loadPageData(): Promise<void> {
+  pageLoading.value = true
+  pageError.value = ''
+  const results = await Promise.allSettled([
+    projectStore.fetchProjects(),
+    settingsStore.fetchSettings(),
+    skillStore.fetchInstalled(),
+    // 模型清单要给出「服务端声明的上下文窗口」，圆环的比例按它算
+    catalogStore.fetchModels()
+  ])
+  const failures = results
+    .filter((item): item is PromiseRejectedResult => 'rejected' === item.status)
+    .map((item) => errorMessage(item.reason, '界面数据加载失败'))
+  if (catalogStore.modelError) failures.push(catalogStore.modelError)
+  if (failures.length) {
+    pageError.value = failures[0]
+    ElMessage.error(pageError.value)
+  }
+  try {
+    if (conversationStore.currentId) await conversationStore.select(conversationStore.currentId)
+  } catch (error) {
+    pageError.value = errorMessage(error, '会话内容加载失败')
+    ElMessage.error(pageError.value)
+  } finally {
+    pageLoading.value = false
+  }
+}
+
+onMounted(() => {
+  void loadPageData()
 })
+
+/** 记住原会话的输入：会话被删掉时 currentId 已清空，不再把草稿写回那个标识 */
+function rememberDraft(id?: string): void {
+  if (!id) return
+  const exists =
+    conversationStore.current?.id === id ||
+    conversationStore.conversations.some((item) => item.id === id)
+  if (exists) conversationStore.saveComposerDraft(id, draft.value, mentions.value)
+}
 
 watch(
   () => conversationStore.currentId,
-  async (id) => {
+  async (id, previousId) => {
+    // 切走前先把原会话没发出的文字与 @ 引用收好，切回来时原样放回输入框
+    rememberDraft(previousId)
+    const restored = id
+      ? conversationStore.composerDraftOf(id)
+      : { text: '', mentions: [] as ChatMention[] }
+    draft.value = restored.text
+    mentions.value = restored.mentions
     if (!id) return
-    await conversationStore.select(id)
-    draft.value = ''
-    mentions.value = []
-    await nextTick()
-    scrollBottom(true)
-  }
+    try {
+      await conversationStore.select(id)
+      await nextTick()
+      scrollBottom(true)
+    } catch (error) {
+      pageError.value = errorMessage(error, '会话内容加载失败')
+      ElMessage.error(pageError.value)
+    }
+  },
+  { immediate: true }
+)
+
+// 输入过程中就记到当前会话上：任何切换 / 离开页面的路径都能拿到最新一份，不只依赖切走那一刻
+watch(
+  [draft, mentions],
+  () => {
+    if (conversationStore.currentId) {
+      conversationStore.saveComposerDraft(conversationStore.currentId, draft.value, mentions.value)
+    }
+  },
+  { deep: true }
 )
 
 // 内容变化时跟随滚动：贴底才跟着走
@@ -239,6 +304,82 @@ function scrollBottom(force = false): void {
   element.scrollTop = element.scrollHeight
 }
 
+/*
+ * 文件 / 文件夹拖进对话列：拖放区是中间那一列（消息区 + 输入区），不是只有输入框那一小块；
+ * 右侧文件区不算——那里的整行自己还有「拖出去」的用法，别让两种拖放挤在一块。
+ * 松手时把取到的本机路径交给输入框（ChatComposer 暴露的 addPaths），按光标位置写成 `@路径 `——
+ * 与「@ → 选择本地文件 / 文件夹」完全同一条路，落在哪一格由输入框说了算。
+ */
+
+/** 拖进来的是文件（而不是选中的文字 / 链接）才接：其余拖动照旧交给文本区 */
+function carriesFiles(event: DragEvent): boolean {
+  const types = event.dataTransfer?.types
+  return !!types && Array.from(types).includes('Files')
+}
+
+/** 生成中也可以继续输入 / 拖入，发送时自动进入该会话的队列 */
+function acceptsDrop(): boolean {
+  return true
+}
+
+function onDragEnter(event: DragEvent): void {
+  if (!acceptsDrop() || !carriesFiles(event)) return
+  event.preventDefault()
+  dragging.value += 1
+}
+
+/** 拖到对话列上方：必须拦掉默认行为，否则松手时窗口会直接跳到 file:// 打开这个文件 */
+function onDragOver(event: DragEvent): void {
+  if (!acceptsDrop() || !carriesFiles(event)) return
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy'
+}
+
+/**
+ * 拖出对话列：按进出次数递减；指针已经落在对话列之外时一次收干净，
+ * 免得 enter / leave 偶尔配不上对、提示层挂在屏幕上不消失。
+ */
+function onDragLeave(event: DragEvent): void {
+  if (!dragging.value) return
+  const box = (event.currentTarget as HTMLElement | null)?.getBoundingClientRect()
+  // 拿不到坐标（两轴都是 0）时按「还在里面」处理：宁可多减一次，也不误判成已经离开
+  const known = 0 !== event.clientX || 0 !== event.clientY
+  const inside =
+    !known ||
+    (!!box &&
+      event.clientX >= box.left &&
+      event.clientX <= box.right &&
+      event.clientY >= box.top &&
+      event.clientY <= box.bottom)
+  dragging.value = inside ? Math.max(0, dragging.value - 1) : 0
+}
+
+/** 松手：把拖进来的文件 / 文件夹登记成 @ 引用 */
+function onDrop(event: DragEvent): void {
+  dragging.value = 0
+  if (!carriesFiles(event)) return
+  event.preventDefault()
+  if (!acceptsDrop()) return
+  const files = Array.from(event.dataTransfer?.files ?? [])
+  // File 对象只在渲染进程里，路径得由 preload 用 webUtils 取（见 preload 的 filePaths）
+  const paths = window.ipc.filePaths(files)
+  if (!paths.length) return
+  composerRef.value?.addPaths?.(paths)
+}
+
+/** 拖到窗口外松手时不会再有 leave：收个尾，别让提示层挂在屏幕上 */
+function resetDragging(): void {
+  dragging.value = 0
+}
+
+onMounted(() => window.addEventListener('dragend', resetDragging))
+
+onBeforeUnmount(() => {
+  window.removeEventListener('dragend', resetDragging)
+  // 离开对话页也要留住正在输入的内容，回到这段会话时继续写
+  rememberDraft(conversationStore.currentId)
+})
+
 /** 在某个项目里开新会话：会话从此按这个项目的模型与权限跑 */
 async function startConversation(item: Project): Promise<void> {
   const created = await conversationStore.create(item)
@@ -261,25 +402,74 @@ function openProjectPage(createNew: boolean): void {
   router.push(createNew ? projectCreateRoute() : page.project)
 }
 
-function send(): void {
-  if (!conversation.value) return
+/** 待发送消息的短标签：正文优先，只有 @ 引用时退回引用名 */
+function queuedLabel(item: QueuedSend): string {
+  const text = String(item.params.query ?? '').trim()
+  const label =
+    text ||
+    (item.params.mentions ?? [])
+      .map((mention) => mention.name)
+      .filter(Boolean)
+      .join(' ')
+  const value = label || '待发送消息'
+  return value.length > 36 ? `${value.slice(0, 36)}…` : value
+}
+
+function removeQueued(item: QueuedSend): void {
+  if (conversation.value) conversationStore.dequeue(conversation.value.id, item.id)
+}
+
+function sameMentions(left: ChatMention[], right: ChatMention[]): boolean {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
+/**
+ * 发送成功后只清掉「刚发出去的那一份」：
+ * 发送期间用户又补了字、或已经切到别的会话时，输入框里新的内容必须原样留着；
+ * 原会话在切走时保存的草稿也只在这份内容仍与发送内容一致时才清。
+ */
+function clearSentDraft(id: string, text: string, rows: ChatMention[]): void {
+  const saved = conversationStore.composerDraftOf(id)
+  if (saved.text === text && sameMentions(saved.mentions, rows)) {
+    conversationStore.clearComposerDraft(id)
+  }
+  if (conversationStore.currentId !== id) return
+  if (draft.value !== text || !sameMentions(mentions.value, rows)) return
+  draft.value = ''
+  mentions.value = []
+}
+
+async function send(): Promise<void> {
+  if (!conversation.value || sending.value) return
   const profile = chatProfile(project.value)
   if (!profile.model) {
     ElMessage.warning('该会话所属的项目没有可用模型，请先在项目管理里配置')
     return
   }
-  const text = draft.value.trim()
-  // 走会话 store：新会话的第一条消息会把会话带进历史，之后再交给 chat store 跑
-  void conversationStore.send({
-    conversationId: conversation.value.id,
-    ...profile,
-    query: text,
-    mentions: collectMentions(text)
-  })
-  draft.value = ''
-  mentions.value = []
-  atBottom.value = true
-  void nextTick(() => scrollBottom(true))
+  const sourceText = draft.value
+  const text = sourceText.trim()
+  if (!text && !mentions.value.length) return
+  const conversationId = conversation.value.id
+  const sourceMentions = mentions.value.slice()
+  sending.value = true
+  try {
+    // 走会话 store：新会话的第一条消息会把会话带进历史，之后再交给 chat store 跑；
+    // 生成中自动进队列，不打断当前轮次
+    const result = await conversationStore.send({
+      conversationId,
+      ...profile,
+      query: text,
+      mentions: collectMentions(text)
+    })
+    clearSentDraft(conversationId, sourceText, sourceMentions)
+    if (conversationStore.currentId === conversationId) {
+      atBottom.value = true
+      void nextTick(() => scrollBottom(true))
+    }
+    if ('queued' === result) ElMessage.success('已加入队列，将在当前轮次结束时一起发送')
+  } finally {
+    sending.value = false
+  }
 }
 
 /**
@@ -362,8 +552,8 @@ async function runCommand(name: string): Promise<void> {
   }
   if ('/clear' === name) {
     if (!conversation.value) return
-    await conversationStore.clearMessages(conversation.value.id)
-    ElMessage.success('已清空当前对话')
+    const stopped = await conversationStore.clearMessages(conversation.value.id)
+    ElMessage.success(stopped ? '已停止生成并清空当前对话' : '已清空当前对话')
     return
   }
   if ('/help' === name) {
@@ -420,15 +610,29 @@ async function uploadFiles(): Promise<void> {
 </script>
 
 <template>
-  <div class="home-page">
+  <div class="home-page" v-loading="pageLoading || conversationStore.opening">
+    <el-alert
+      v-if="pageError"
+      class="page-alert"
+      type="warning"
+      :closable="false"
+      show-icon
+      :title="pageError"
+    >
+      <el-button text type="primary" size="small" @click="loadPageData">重新加载</el-button>
+    </el-alert>
     <!-- 没有会话：按项目开启新对话 -->
     <div v-if="!conversation" class="start-panel">
       <div class="start-inner">
-        <h2>选择项目开始对话</h2>
-        <p class="start-desc">
-          会话按项目创建：模型、工具与工作区权限都取自所属项目，工作区外的访问按访问策略放行。
-        </p>
-        <div v-if="projectStore.projects.length === 0" class="start-empty">
+        <div class="ui-page-header start-header">
+          <div class="ui-page-header__copy">
+            <h1 class="ui-page-title">选择项目开始对话</h1>
+            <p class="ui-page-desc">
+              会话按项目创建：模型、工具与工作区权限都取自所属项目，工作区外的访问按访问策略放行。
+            </p>
+          </div>
+        </div>
+        <div v-if="projectStore.projects.length === 0" class="start-empty ui-panel">
           <el-empty description="暂无项目">
             <el-button type="primary" @click="openProjectPage(true)">创建项目</el-button>
           </el-empty>
@@ -496,13 +700,33 @@ async function uploadFiles(): Promise<void> {
       -->
       <el-splitter class="conversation-splitter" @resize-end="files.saveWidth()">
         <el-splitter-panel :min="CHAT_PANEL_MIN">
-          <div class="conversation-column">
+          <!--
+            中间的对话列就是拖放区（见 onDragEnter / onDrop）：消息区与输入区都算，
+            右侧文件区不算——那里的整行另有「拖出去」的用法
+          -->
+          <div
+            class="conversation-column"
+            @dragenter="onDragEnter"
+            @dragover="onDragOver"
+            @dragleave="onDragLeave"
+            @drop="onDrop"
+          >
             <!-- 消息区：滚动容器 + 电梯导航（导航在容器之外，不随消息一起滚） -->
             <div class="conversation-body">
               <el-scrollbar class="message-list" :ref="setScrollRef" @scroll="onScroll">
                 <div class="message-column">
                   <div v-if="messages.length === 0" class="message-empty">
-                    <p>开始新对话</p>
+                    <span class="message-empty-mark" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path
+                          d="M12 3.5 13.7 9l5.5 1.7-5.5 1.7L12 18l-1.7-5.6L4.8 10.7 10.3 9 12 3.5Z"
+                        />
+                        <path
+                          d="M18.8 16.4 19.5 18.5 21.6 19.2 19.5 19.9 18.8 22 18.1 19.9 16 19.2 18.1 18.5 18.8 16.4Z"
+                        />
+                      </svg>
+                    </span>
+                    <p class="message-empty-title">开始新对话</p>
                     <p class="message-empty-tip">
                       输入内容后回车发送；输入 <code>@</code> 引用本机文件或技能，输入
                       <code>/</code> 执行内置指令。回复会实时流式输出，工具调用过程与结果同步展示。
@@ -514,6 +738,7 @@ async function uploadFiles(): Promise<void> {
                     :key="message.id"
                     :message="message"
                     :project-id="session?.projectId ?? ''"
+                    :conversation-id="session?.conversationId ?? ''"
                     :branch="session ? chatStore.branchOf(session, message) : null"
                     :editable="
                       !running && 'user' === message.role && !!String(message.content ?? '').trim()
@@ -553,6 +778,22 @@ async function uploadFiles(): Promise<void> {
               <div class="composer-column">
                 <!-- 访问申请：只画本段对话的（跟着对话走），别处触发的由侧边栏的「待确认」点提示 -->
                 <ApprovalBanner class="composer-approval" :conversation-id="conversation.id" />
+                <!-- 生成中提交的消息：排队可见、可撤掉；当前一轮收尾后按顺序自动发出 -->
+                <div v-if="queuedMessages.length" class="composer-queue">
+                  <span class="composer-queue-label">待发送</span>
+                  <el-tag
+                    v-for="item in queuedMessages"
+                    :key="item.id"
+                    class="composer-queue-item"
+                    size="small"
+                    effect="plain"
+                    closable
+                    :title="item.params.query"
+                    @close="removeQueued(item)"
+                  >
+                    {{ queuedLabel(item) }}
+                  </el-tag>
+                </div>
                 <ChatComposer
                   ref="composerRef"
                   v-model="draft"
@@ -562,7 +803,6 @@ async function uploadFiles(): Promise<void> {
                   :policy="settingsStore.workspacePolicy"
                   :context="context"
                   :running="running"
-                  :disabled="running"
                   @send="send"
                   @stop="stop"
                   @command="runCommand"
@@ -571,6 +811,29 @@ async function uploadFiles(): Promise<void> {
                 />
               </div>
             </footer>
+
+            <!-- 拖入文件时的提示层：对话列描一圈虚线 + 一句话，松手即把文件 / 文件夹引用进输入框 -->
+            <div v-if="dragging" class="conversation-drop" aria-hidden="true">
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                <path
+                  d="M8 10.2V2.6m0 0L5.1 5.5M8 2.6l2.9 2.9"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M2.6 10.4v1.8a1.2 1.2 0 0 0 1.2 1.2h8.4a1.2 1.2 0 0 0 1.2-1.2v-1.8"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <span>松开即可引用到输入框</span>
+            </div>
           </div>
         </el-splitter-panel>
 
@@ -616,51 +879,49 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
    */
 }
 
+.page-alert {
+  margin: 12px 20px 0;
+  flex: none;
+}
+
 /* ── 未选会话：选择项目 ─────────────────────────────── */
 
 .start-panel {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 24px 40px 40px;
+  padding: var(--ui-page-padding-top) var(--ui-page-padding-x) var(--ui-page-padding-bottom);
 }
 
 .start-inner {
   width: 100%;
-  max-width: 860px;
+  max-width: 820px;
   margin: 0 auto;
-
-  h2 {
-    font-size: 20px;
-    color: var(--ev-c-text-1);
-  }
 }
 
-.start-desc {
-  margin: 8px 0 24px;
-  font-size: 13px;
-  line-height: 1.7;
-  color: var(--ev-c-text-3);
+.start-header {
+  margin-bottom: 20px;
 }
 
 .start-empty {
-  padding: 40px 0;
+  padding: 10px;
 }
 
 .project-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .project-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px;
-  border: solid 1px var(--el-border-color-lighter);
-  border-radius: 8px;
-  background: var(--el-bg-color);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--ui-card-border);
+  border-radius: 12px;
+  background: var(--ui-surface);
+  box-shadow: var(--ui-card-shadow);
   cursor: pointer;
   transition:
     border-color 0.2s,
@@ -668,9 +929,17 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
     box-shadow 0.2s;
 
   &:hover {
-    border-color: var(--el-color-primary-light-5);
+    border-color: color-mix(in srgb, var(--el-color-primary) 18%, var(--ui-card-border));
+    background: var(--ui-surface-hover);
+    box-shadow: var(--ui-card-shadow-hover);
+  }
+
+  :deep(.el-avatar) {
+    flex-shrink: 0;
+    color: var(--el-color-primary);
+    font-size: 13px;
+    font-weight: 600;
     background: var(--el-color-primary-light-9);
-    box-shadow: 0 2px 8px rgb(0 0 0 / 6%);
   }
 
   .project-text {
@@ -679,8 +948,8 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
   }
 
   .project-name {
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 550;
     color: var(--el-text-color-primary);
     overflow: hidden;
     white-space: nowrap;
@@ -706,6 +975,25 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
   flex-direction: column;
 }
 
+/* 拖入文件时盖住对话列（消息区 + 输入区）的一层：描一圈虚线 + 一句提示，松手即在输入框里引用 */
+.conversation-drop {
+  position: absolute;
+  /* 贴住对话列本身（不缩进）：虚线就是这一列的边界，右侧文件区不在其中 */
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  border: dashed 1px var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+  font-size: 13px;
+  /* 提示层只负责提示：不接管指针，投放在这一列的任何一处都算数 */
+  pointer-events: none;
+}
+
 /* 中右分隔：拖分隔条调文件区宽度（宽度记在 stores/files） */
 .conversation-splitter {
   flex: 1;
@@ -719,6 +1007,8 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
 }
 
 .conversation-column {
+  /* 拖入文件的提示层铺在这一列上：定位基准 */
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -731,8 +1021,8 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
   align-items: center;
   gap: 8px;
   /* 上边距压小：标题栏之下直接是会话信息，不额外留一段空白 */
-  padding: 4px 16px;
-  border-bottom: solid 1px var(--el-border-color-lighter);
+  padding: 6px 16px;
+  background: transparent;
 
   .header-avatar {
     flex: none;
@@ -808,7 +1098,10 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
 }
 
 .message-empty {
-  padding: 40px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 72px 0 0;
   text-align: center;
   color: var(--el-text-color-placeholder);
 
@@ -817,8 +1110,39 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
     line-height: 1.8;
   }
 
+  .message-empty-mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    margin-bottom: 14px;
+    color: var(--el-color-primary);
+    background: color-mix(in srgb, var(--el-color-primary) 8%, var(--el-bg-color));
+    border: 1px solid
+      color-mix(in srgb, var(--el-color-primary) 14%, var(--el-border-color-lighter));
+    border-radius: 14px;
+
+    svg {
+      width: 25px;
+      height: 25px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  }
+
+  .message-empty-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ev-c-text-1);
+  }
+
   .message-empty-tip {
-    margin-top: 8px;
+    max-width: 520px;
+    margin-top: 6px;
     font-size: 12px;
   }
 
@@ -850,5 +1174,33 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
 
 .composer-approval {
   margin-bottom: 8px;
+}
+
+/* 排队区：与输入框同宽，一行放不下时横向滚动；每条都能单独撤掉 */
+.composer-queue {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.composer-queue-label {
+  flex: none;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.composer-queue-item {
+  flex: none;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

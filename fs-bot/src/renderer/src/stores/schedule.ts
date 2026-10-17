@@ -31,7 +31,10 @@ export const useScheduleStore = defineStore('schedule', () => {
     loading.value = true
     try {
       const result: any = await TaskDb.list()
-      tasks.value = ApiUtil.succeed(result) ? (ApiUtil.data(result) as ScheduleTask[]) : []
+      if (!ApiUtil.succeed(result)) {
+        throw new Error(String(ApiUtil.message(result) || '定时任务读取失败'))
+      }
+      tasks.value = ApiUtil.data(result) as ScheduleTask[]
     } finally {
       loading.value = false
     }

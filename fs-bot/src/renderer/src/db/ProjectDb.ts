@@ -4,8 +4,9 @@ import ApiUtil from '@renderer/utils/ApiUtil'
 const TABLE = 'projects'
 
 /**
- * 环境变量：值存在本机加密库里，只在执行本机命令时进子进程的环境（见 `main/project-env.ts`）。
- * secret 表示「只留本机」——界面上掩码显示、分享时不随配置上传、命令输出里出现的值换成 `***`。
+ * 环境变量：值存在本机加密库里，执行本机命令时进子进程的环境（见 `main/project-env.ts`）；
+ * 非密钥值还会写进本机说明随对话下发。secret 表示「值只留本机」——界面上掩码显示、
+ * 分享时不随配置上传、提示词里只有变量名、命令输出里出现的值换成 `***`。
  */
 export interface ProjectEnv {
   key: string
@@ -28,8 +29,10 @@ export interface ProjectWorkspace {
  * 工具类型：与智能体编排里大语言模型节点的工具种类一致
  * - method 工具方法（服务端解析出的 OpenAPI / MCP 方法）
  * - knowledge 知识库、theme 数据主题、ontology 知识图谱本体、agentic 编排应用
+ * - skill 本地技能：服务端技能包 + 本机安装的那一份，这一类只在客户端解析（定义与执行都不经服务端，
+ *   见 `core/Toolbox.ts` 的 `local_skill`）；项目里启用哪些技能决定了模型的工具清单里有没有这个工具
  */
-export type ProjectToolKind = 'method' | 'knowledge' | 'theme' | 'ontology' | 'agentic'
+export type ProjectToolKind = 'method' | 'knowledge' | 'theme' | 'ontology' | 'agentic' | 'skill'
 
 /**
  * 工具方法的固定参数：只在「固定」时落库，未出现的参数由模型决定。
@@ -52,10 +55,13 @@ export interface ProjectToolArg {
 /** 固定参数配置：参数名 → 绑定（只存固定项，空对象表示不固定任何参数） */
 export type ProjectToolArgs = Record<string, ProjectToolArg>
 
-/** 项目引用的工具：记录类型与目标，凭据与调用都在服务端 */
+/**
+ * 项目引用的工具：记录类型与目标。服务端五类的凭据与调用都在服务端；
+ * 技能（kind: skill）只在客户端解析，引用本机技能目录里的那一份。
+ */
 export interface ProjectTool {
   kind: ProjectToolKind
-  /** 目标标识：工具方法取方法标识，内置能力取对应服务端对象的标识 */
+  /** 目标标识：工具方法取方法标识，内置能力取对应服务端对象的标识，技能取服务端技能标识 */
   id: number
   /** 展示名称 */
   name: string
@@ -71,6 +77,13 @@ export interface ProjectTool {
   description?: string
   /** 工具方法专用：固定参数配置（见 ProjectToolArg），未配置的参数由模型决定 */
   args?: ProjectToolArgs
+  /**
+   * 技能专用：添加时本机装的那一版（版本标识与版本号）。**只是推荐**——导出 / 分享出去的配置里
+   * 它就是一句话提示，换台机器（或别人拿到这份配置）安装与否、装哪一版都由本机说了算；
+   * 本地安装不分版本，一个技能一份，运行时永远以技能目录里装的那一版为准。
+   */
+  versionId?: number
+  versionName?: string
 }
 
 export interface Project {
@@ -86,11 +99,17 @@ export interface Project {
   systemPrompt: string
   /**
    * 长期记忆：一段文字（「事实 / 偏好 / 已定的决策」这类长期有用的东西），
-   * 与系统提示词分开存放；每轮作为提示词的一段追加在系统提示词之后一起下发，留空则不下发。
+   * 与系统提示词分开存放；仅在 `memoryEnabled` 为 true 时每轮作为提示词的一段
+   * 追加在系统提示词之后一起下发，留空则不下发。
    * 写入有两个来源：项目编辑器里手工改，以及对话里模型用 `memory` 工具的 write 动作写
    * （append 追加 / replace 整段替换，见 `core/Toolbox.ts`）——两边改的都是这一列。
    */
   memory: string
+  /**
+   * 是否启用客户端记忆：默认关闭。关闭时记忆内容不下发，模型也拿不到 `memory` 工具；
+   * 打开后长期记忆随每轮请求下发，模型才能按用户明确要求读写它。
+   */
+  memoryEnabled: boolean
   /** 思考强度：low | medium | high | max，留空则由模型与网关取默认值 */
   thinkEffort: string
   name: string
@@ -128,6 +147,7 @@ function format(row: Record<string, any>): Project {
     contextLength: Math.max(0, Math.floor(Number(row['context_length'] ?? 0)) || 0),
     systemPrompt: String(row['system_prompt'] ?? ''),
     memory: String(row['memory'] ?? ''),
+    memoryEnabled: 1 === Number(row['memory_enabled'] ?? 0),
     thinkEffort: String(row['think_effort'] ?? ''),
     name: String(row['name'] ?? ''),
     description: String(row['description'] ?? ''),
@@ -167,6 +187,7 @@ export default {
       context_length: Math.max(0, Math.floor(Number(data.contextLength ?? 0)) || 0),
       system_prompt: data.systemPrompt ?? '',
       memory: data.memory ?? '',
+      memory_enabled: true === data.memoryEnabled ? 1 : 0,
       think_effort: data.thinkEffort ?? '',
       name: data.name ?? '未命名项目',
       description: data.description ?? '',
@@ -192,6 +213,9 @@ export default {
     }
     if (data.systemPrompt !== undefined) row['system_prompt'] = data.systemPrompt
     if (data.memory !== undefined) row['memory'] = data.memory
+    if (data.memoryEnabled !== undefined) {
+      row['memory_enabled'] = true === data.memoryEnabled ? 1 : 0
+    }
     if (data.thinkEffort !== undefined) row['think_effort'] = data.thinkEffort
     if (data.name !== undefined) row['name'] = data.name
     if (data.description !== undefined) row['description'] = data.description

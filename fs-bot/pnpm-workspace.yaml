@@ -4,3 +4,13 @@ allowBuilds:
   electron: true
   electron-winstaller: true
   esbuild: true
+
+minimumReleaseAgeExclude:
+  - sass@1.105.2
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - better-sqlite3-multiple-ciphers
+  - electron
+  - electron-winstaller
+  - esbuild

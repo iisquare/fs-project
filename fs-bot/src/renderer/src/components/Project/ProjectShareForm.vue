@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useProjectStore } from '@renderer/stores/project'
 import { useShareStore } from '@renderer/stores/share'
+import { errorMessage } from '@renderer/utils/ErrorUtil'
 import type { Project } from '@renderer/db/ProjectDb'
 
 /**
@@ -30,13 +31,27 @@ const shareStore = useShareStore()
 
 const form = ref({ projectId: '', target: 0, name: '', version: '', versionDescription: '' })
 const saving = ref(false)
+const loading = ref(false)
+const loadError = ref('')
 /** 当前选中的本地项目：提示「还没配模型」这类会跟着别人一起带过去的问题 */
 const sharingProject = computed(() => projectStore.find(form.value.projectId))
 
-onMounted(async () => {
-  if (!projectStore.projects.length) await projectStore.fetchProjects()
-  if (!shareStore.mine.length) await shareStore.fetchMine()
-  preset()
+async function load(): Promise<void> {
+  loading.value = true
+  loadError.value = ''
+  try {
+    if (!projectStore.projects.length) await projectStore.fetchProjects()
+    if (!shareStore.mine.length) await shareStore.fetchMine()
+    preset()
+  } catch (error) {
+    loadError.value = errorMessage(error, '分享表单数据加载失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  void load()
 })
 
 /** 版本号建议：最近版本是纯数字（1 → 2）或两段数字（1.0 → 1.1）时顺延一位，其余情况留空由用户填 */
@@ -116,12 +131,20 @@ async function submit(): Promise<void> {
       version: form.value.version.trim(),
       versionDescription: form.value.versionDescription
     })
-    await projectStore.fetchProjects()
-    await shareStore.fetchMine()
+    const refreshes = await Promise.allSettled([
+      projectStore.fetchProjects(),
+      shareStore.fetchMine()
+    ])
+    const refreshFailure = refreshes.find(
+      (item): item is PromiseRejectedResult => 'rejected' === item.status
+    )
     ElMessage.success(`已发布到「${data?.project?.name ?? ''}」v${data?.version?.name ?? ''}`)
+    if (refreshFailure) {
+      ElMessage.warning(errorMessage(refreshFailure.reason, '发布成功，但列表刷新失败'))
+    }
     emit('published')
-  } catch {
-    // 失败原因由请求层提示（权限、配置过大、版本号为空等）
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '发布失败'))
   } finally {
     saving.value = false
   }
@@ -129,7 +152,17 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <el-form label-width="96px" class="share-form">
+  <el-form label-width="96px" class="share-form" v-loading="loading">
+    <el-alert
+      v-if="loadError"
+      class="share-alert"
+      type="warning"
+      :closable="false"
+      show-icon
+      :title="loadError"
+    >
+      <el-button text type="primary" size="small" @click="load">重试</el-button>
+    </el-alert>
     <el-form-item label="本地项目">
       <el-select
         v-model="form.projectId"
@@ -207,7 +240,7 @@ async function submit(): Promise<void> {
 
 <style lang="scss" scoped>
 .share-form {
-  padding: 16px 20px 0;
+  padding: 24px 24px 0;
 }
 
 .field-tip {
@@ -228,9 +261,13 @@ async function submit(): Promise<void> {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  padding: 12px 0;
-  margin-top: 12px;
-  background: var(--el-bg-color);
-  border-top: 1px solid var(--el-border-color-lighter);
+  padding: 12px 18px;
+  margin: 0 -24px;
+  background: color-mix(in srgb, var(--ui-surface) 92%, transparent);
+  border: 0;
+  border-top: 1px solid var(--ui-divider);
+  border-radius: 0 0 var(--ui-card-radius) var(--ui-card-radius);
+  box-shadow: none;
+  backdrop-filter: blur(14px);
 }
 </style>

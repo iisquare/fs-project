@@ -49,7 +49,8 @@ const PRESETS = [
   { value: 65536, label: '64K' },
   { value: 131072, label: '128K' },
   { value: 262144, label: '256K' },
-  { value: 1048576, label: '1M' }
+  { value: 1048576, label: '1M' },
+  { value: 2097152, label: '2M' }
 ]
 
 const known = computed(() => props.context.limit > 0)
@@ -326,12 +327,13 @@ function reset(): void {
   .panel-presets {
     display: flex;
     align-items: center;
-    gap: 2px;
+    justify-content: space-between;
     margin-top: 4px;
 
     .el-button {
       padding: 2px 6px;
       font-size: 12px;
+      margin-left: 0;
     }
   }
 

@@ -3,8 +3,8 @@ export default {
     return window.ipc.db.initUser(serial, userId, dbSecret)
   },
 
-  async select(table: string, where?: Record<string, unknown>, orderBy?: string) {
-    return window.ipc.db.select(table, where, orderBy)
+  async select(table: string, where?: Record<string, unknown>, orderBy?: string, limit?: number) {
+    return window.ipc.db.select(table, where, orderBy, limit)
   },
 
   async insert(table: string, data: Record<string, unknown>) {

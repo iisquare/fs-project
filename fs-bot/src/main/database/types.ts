@@ -2,6 +2,7 @@ export interface DbSelectRequest {
   table: string
   where?: Record<string, unknown>
   orderBy?: string
+  limit?: number
 }
 
 export interface DbInsertRequest {

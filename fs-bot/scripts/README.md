@@ -2,10 +2,10 @@
 
 开发期脚本（不参与应用运行）：
 
-| 脚本 | 作用 | 运行方式 |
-| --- | --- | --- |
+| 脚本              | 作用                                                                          | 运行方式                |
+| ----------------- | ----------------------------------------------------------------------------- | ----------------------- |
 | `postinstall.mjs` | 安装依赖后用 electron-builder 重编原生模块（better-sqlite3-multiple-ciphers） | `pnpm install` 自动触发 |
-| `schema.mjs` | 用户库 schema / 密钥工具：查看版本、导出 DDL、推导加密口令 | `pnpm schema <command>` |
+| `schema.mjs`      | 用户库 schema / 密钥工具：查看版本、导出 DDL、推导加密口令                    | `pnpm schema <command>` |
 
 `schema.mjs` 通过 `electron` 运行（见 `package.json` 的 `schema` 脚本），因为原生 SQLite 模块是 Electron ABI 编译的，用普通 node 会报 `NODE_MODULE_VERSION` 不匹配。
 
@@ -74,12 +74,12 @@ pnpm schema export userdata/1/fs-bot.db --ident admin
 
 ## 排错与恢复
 
-| 现象 | 处理 |
-| --- | --- |
-| 启动报 `[DB] Missing user migration script for vN` | 补 `migrations-vN.sql` 并在 `USER_MIGRATIONS` 登记 |
-| 启动报 `User DB version (vN) is newer than app version` | 库由更高版本应用创建，换新版应用打开，不要用旧版 |
-| 启动日志 `Integrity check FAILED — hash mismatch` | 上次强杀未落盘或库被外部改动；确认无误后重启一次会自动重算 |
-| 需要回滚某次升级 | 还原备份的 `*.db`（`-wal` / `-shm` 一起还原或一起删除），并回退到对应版本的应用 |
-| 想查看系统级配置 | 已从 `system.db` 迁到 `userdata/config.toml`（TOML，明文，本工具不处理） |
+| 现象                                                    | 处理                                                                            |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| 启动报 `[DB] Missing user migration script for vN`      | 补 `migrations-vN.sql` 并在 `USER_MIGRATIONS` 登记                              |
+| 启动提示「客户端版本过低」                              | 库由更高版本应用创建；弹窗显示数据版本与客户端支持版本，确认后退出应用，换新版应用打开 |
+| 启动日志 `Integrity check FAILED — hash mismatch`       | 上次强杀未落盘或库被外部改动；确认无误后重启一次会自动重算                      |
+| 需要回滚某次升级                                        | 还原备份的 `*.db`（`-wal` / `-shm` 一起还原或一起删除），并回退到对应版本的应用 |
+| 想查看系统级配置                                        | 已从 `system.db` 迁到 `userdata/config.toml`（TOML，明文，本工具不处理）        |
 
 文件命名与完整 schema 的编写约定见 [`../src/main/database/sql/README.md`](../src/main/database/sql/README.md)，数据层整体说明见仓库根目录 `CLAUDE.md`。

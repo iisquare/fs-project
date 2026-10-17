@@ -28,6 +28,7 @@ export interface VersionPage {
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import LayoutIcon from '@renderer/components/Layout/LayoutIcon.vue'
 import { formatDate } from '@renderer/utils/TimeUtil'
+import { errorMessage } from '@renderer/utils/ErrorUtil'
 
 /**
  * 版本选择器（公共组件）：卡片右上角的一枚版本标签，点开是可检索的版本清单。
@@ -78,6 +79,7 @@ const total = ref(0)
 const page = ref(1)
 const loading = ref(false)
 const loadingMore = ref(false)
+const error = ref('')
 let timer: ReturnType<typeof setTimeout> | undefined
 
 const remaining = computed(() => Math.max(0, total.value - rows.value.length))
@@ -89,6 +91,7 @@ async function load(reset: boolean): Promise<void> {
   const next = reset ? 1 : page.value + 1
   if (reset) loading.value = true
   else loadingMore.value = true
+  error.value = ''
   try {
     const result = await props.loader({
       page: next,
@@ -98,8 +101,9 @@ async function load(reset: boolean): Promise<void> {
     rows.value = reset ? result.rows : [...rows.value, ...result.rows]
     total.value = result.total
     page.value = next
-  } catch {
-    // 失败提示由数据源那层给出，面板保持上一次的结果
+  } catch (cause) {
+    // 数据源可能已经弹过提示；面板里再保留一句失败原因，收起再打开也能看见
+    error.value = errorMessage(cause, '版本记录加载失败')
   } finally {
     loading.value = false
     loadingMore.value = false
@@ -160,6 +164,10 @@ const tagTitle = computed(() => {
             </template>
           </el-input>
         </div>
+        <div v-if="error" class="panel-error">
+          <span>{{ error }}</span>
+          <el-button text type="primary" size="small" @click="load(true)">重试</el-button>
+        </div>
         <el-scrollbar max-height="260px">
           <div v-if="loading" class="panel-empty">正在读取版本记录…</div>
           <template v-else-if="rows.length">
@@ -206,7 +214,7 @@ const tagTitle = computed(() => {
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
-          <div v-else class="panel-empty">
+          <div v-else-if="!error" class="panel-empty">
             {{ keyword.trim() ? '没有匹配的版本' : emptyText }}
           </div>
         </el-scrollbar>
@@ -266,6 +274,20 @@ const tagTitle = computed(() => {
 
 .panel-search {
   padding: 8px 10px 6px;
+}
+
+.panel-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 12px 8px;
+  color: var(--el-color-warning);
+  font-size: 12px;
+  line-height: 1.45;
+
+  span {
+    flex: 1;
+  }
 }
 
 .search-icon {
