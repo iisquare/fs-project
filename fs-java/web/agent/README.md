@@ -298,6 +298,56 @@
 项目分享的五个接口是客户端侧的入口：项目配置（模型、提示词、工具、环境变量、工作区等）由客户端序列化成 JSON
 提交，服务端只当版本快照保存，不解释其结构；浏览与导出走同一套可见性口径（见「项目分享」一节）。
 
+#### 客户端安装包版本
+
+- 管理端在「智能体 / 客户端 / 版本管理」为 Windows（electron-builder NSIS `*-setup.exe`）、
+  macOS（dmg）、Linux（AppImage）分别维护可自动替换的安装包；
+  同一系统 / 架构可有多条版本，可指定最低支持版本、上传发布日志并启用或停用。
+- 系统 / 架构取值与 Node 保持一致：`win32` / `darwin` / `linux` 与
+  `x64` / `arm64` / `ia32` / `armv7l`；
+  另有 `universal` 可作为该系统的通用包。检查时精确架构与通用包一起参与比较，取版本号最高的一条。
+- 启动检查取该组合下版本号最高的启用记录：`hasUpdate` 表示当前版本低于它；
+  `forceUpgrade` 表示当前版本低于它的 `minimumVersion`。停用版本不参与检查。
+- 每个安装包归属 `stable` / `beta` 渠道，并带 0-100 的灰度比例。客户端携带本机
+  `clientId`，服务端按 `clientId + platform + architecture` 做稳定分桶；未命中当前版本灰度的
+  客户端会继续落到下一个对其可见的版本。`beta` 客户端在无测试包时可使用稳定包。
+- 管理端可把较早版本标记为回滚目标；客户端版本高于回滚目标且目标启用时，检查结果会返回
+  强制降级更新。停用问题版本可立即停止发布，后续版本必须重新提升最低支持版本。
+- 启动检查、安装包下载与产品介绍页发布记录是公开接口：`POST /clientUpdate/check`（入参
+  `{ currentVersion, platform, architecture, clientId, channel }`）、
+  `GET /clientUpdate/download?id=`、`GET /clientUpdate/delta?id=` 与
+  `POST /clientUpdate/report`；`POST /clientUpdate/releases` 分页返回指定渠道中已启用且
+  已全量放量的安装包（`offset` / `limit`，单页上限 200），供 `fs-admin` 的公开介绍页聚合
+  各系统最新版并按需加载历史发布日志，
+  登录态失效时也能先完成强制升级判断；管理接口仍受 RBAC 保护。
+- 桌面端在启动、恢复网络、业务接口返回 `90426` 以及每 4 小时定时触发检查；
+  HTTP 426 与流式接口错误都会统一拉起强制升级流程。
+- 安装阶段由客户端平台适配器完成真正的文件替换和重启：
+  Windows 以 NSIS 静默参数安装并强制重启，macOS 挂载 dmg 后原子替换 `.app`，
+  Linux 原子替换当前 AppImage。安装开始前写入待更新标记，新版本启动满 3 秒后才清除；
+  若旧版本重新启动，标记保留并在下次检查时报告安装失败、重新进入升级流程。
+  macOS / Linux 的替换脚本还会等待最多 30 秒健康确认；超时会重启旧版本并回滚文件。
+- 所有客户端业务请求会带 `x-client-version`、`x-client-platform`、`x-client-arch`、
+  `x-client-id`、`x-client-channel`。agent 服务的版本拦截器对低于最低支持版本、命中回滚目标
+  或版本头非法的请求返回 HTTP 426 / 业务码 `90426`，公开的 `/clientUpdate/*` 更新接口除外。
+- 更新埋点写入 `fs_agent_client_update_log`：`download_started`、`update_failed`、
+  `install_failed`、`install_success`；管理端「版本管理 → 更新统计」查看汇总与最近记录。
+- 下载缓存按目标 SHA-512 持久化。断点续传使用 HTTP `Range`，服务器忽略 Range 时自动回退为
+  从零下载；差分下载使用管理端上传时生成的 1MB 固定块 SHA-256 清单，客户端复用上一版本安装包
+  的块，通过 Range 获取变化块，重建后仍必须通过整包 SHA-512 校验。差分或 Range 不可用时回退整包。
+- 安装包上传时由服务端计算并保存 SHA-512（128 位十六进制）；客户端下载后必须同时核对文件大小，
+  并在调用系统安装器前重新计算 SHA-512，不一致时删除下载文件并中止安装。
+- 当前不强制校验 Windows / macOS 代码签名；完整性由 SHA-512 校验、生产环境仅允许 HTTPS
+  以及受信任的发布渠道共同保证。SHA-512 不能替代平台代码签名，发布链路仍须限制管理员权限。
+- 后台维护接口：`/clientVersion/list`、`upload`、`save`、`delete`、`download`、`config`，
+  权限键为 `agent:clientVersion:`（写操作分别追加 `add` / `modify` / `delete`）。
+- 安装包默认写入文件服务的 `fs-mcp` 桶，路径前缀 `client-versions/`；可用
+  `fs.agent.bot.version.bucket` 改为专用桶，单包上限由
+  `fs.agent.bot.version.maxSize` 控制（默认 1GB）。存量环境先执行
+  [`docs/fs_agent_client_version.sql`](../../docs/fs_agent_client_version.sql) 建表并登记菜单 / 资源。
+- 安装包上传还受前置网关 / Nginx 的请求体上限约束；部署时要把
+  `/agent/clientVersion/upload` 路由的上限同步调到不小于服务端配置。
+
 ### 知识库
 
 - 知识库：配置词嵌入模型、重排模型、召回数量与阈值、召回方式（向量、全文、混合）、
@@ -389,12 +439,40 @@ POST /knowledgeImage/url
   执行变量绑定（引用变量 / 固定值）有取值；校验通过后把方法定义（名称、描述、参数、调用信息）快照进发布内容，
   工具后续变动不影响已发布编排。
 - 技能与技能版本：维护技能基本信息与版本包，版本包上传至文件服务。
-  客户端的可用技能清单（`/skill/available`）只给名称、类型、标签、描述与版本概况
+  客户端的可用技能清单（`/skill/available`）只给名称、标签、描述与版本概况
   （`versionCount` + `latestVersion`：逐项 COUNT 与「只取最新一条」的轻量查询，不读文件字段），
   不下发配置内容；版本下拉展开时再按 `/skillVersion/available` 取该技能的整份启用版本清单。
-- MCP 服务：以 `spring-ai-mcp-server-webmvc` 暴露本地工具（`multimodalAnalyze` 多模态分析），
-  供模型通过模型上下文协议调用。文件按内容（base64 文本 / 字节数组）、可访问地址或文件服务标识给出，
-  不接受本机路径；文件上传走文件服务的 multipart 接口（前端上传后按 id 引用）。
+- MCP 服务：以 `spring-ai-mcp-server-webmvc` 暴露本地工具（`multimodalAnalyze` 多模态分析、
+  `webSearch` 网页搜索、`webFetch` 网页抓取），供模型通过模型上下文协议调用。
+  - **用户鉴权**：`webSearch`、`webFetch`、`multimodalAnalyze` 在工具方法入口通过
+    `ToolSessionSupport.requireSession()` 校验调用方登录会话（`x-auth-token` 或
+    `Authorization: Bearer`）；没有会话、会话过期或用户不可用时直接报错。
+    MCP 的初始化与 `tools/list` 不做端点拦截，鉴权只落在真正执行工具的 `tools/call` 上。
+  - **会话传递开关**：工具配置 `fs_agent_tool.pass_session`（页面「传递用户会话」）决定调用
+    工具服务（MCP / OpenAPI）时是否补 `x-auth-token`。开关开启才传；关闭时不主动传，并剔除误填进认证 header
+    的当前调用方会话值。不再按 URL 判断内部 / 外部服务。
+    MCP `tools/call` 与 schema 工具的 HTTP 请求都使用同一个开关。
+    存量工具默认关闭；使用本服务自带的 `webSearch` / `webFetch` / `multimodalAnalyze` 时需要打开，
+    否则工具方法里的登录校验会直接拒绝调用。
+    调用记录里展示的 header 仍是配置原值，不会把自动补的会话回显给前端。
+  - `multimodalAnalyze`：文件按内容（base64 文本 / 字节数组）、可访问地址或文件服务标识给出，
+    不接受本机路径；文件上传走文件服务的 multipart 接口（前端上传后按 id 引用）。
+  - `webSearch` / `webFetch`：转调模型网关的 `/v1/tools/search`、`/v1/tools/fetch`
+    （DeepSeek Search / Fetch API），鉴权、模型授权与按次计费与对话同一口径；
+    调用端必须带登录会话，网关据此按用户代理记账。
+    搜索默认返回 10 条结果（`count` 可取 1-50，`need_content` 决定是否带正文），
+    抓取返回单篇网页的 Markdown 正文。两个尺寸上限可配：
+    `fs.agent.web.maxContent`（抓取正文，默认 30000 字符）、
+    `fs.agent.web.maxResultContent`（搜索单条正文，默认 8000 字符）。
+    模型别名取 `fs.agent.web.searchModel`（默认 `deepseek-search`）与
+    `fs.agent.web.fetchModel`（默认 `deepseek-fetch`），也可在工具参数 `model` 里临时指定；
+    网关里需创建类型分别为「网页搜索」「网页抓取」的模型，并让服务级密钥
+    `fs.agent.token` 对它们有权限，否则调用会返回模型未开通或不可用。
+  - **错误返回约定**：登录失效、参数校验失败、工具无法继续执行时抛异常，由 Spring AI
+    转成 MCP `CallToolResult(isError=true)`；无搜索结果、部分成功等业务分支正常返回结构化内容，
+    不标记为工具失败。异常只回可读的业务原因，内部堆栈与依赖细节写日志。
+    `ToolMethodService.callMcp` 会把远端 MCP 的 `isError=true` 继续映射为外层
+    `success=false`，并在 `error` 字段给出 `content[].text` 的文本。
 
 | 接口 | 说明 | 权限 |
 | --- | --- | --- |
@@ -485,6 +563,8 @@ POST /knowledgeImage/url
 | `rpc.agent.name`、`rpc.agent.rest` | 服务注册信息，管理端 `/api/agent/**` 按 `rpc.agent.rest` 转发 |
 | `rpc.lm.rest` | 模型网关地址，对话转发、词嵌入、重排经此调用 |
 | `fs.agent.token` | 访问模型网关的认证密钥，整个 agent 服务共用（大语言模型等节点、模型对话、词嵌入均使用） |
+| `fs.agent.web.searchModel` / `fs.agent.web.fetchModel` | MCP 网页搜索 / 抓取使用的网关模型别名，默认 `deepseek-search` / `deepseek-fetch`；也可由工具参数 `model` 临时指定 |
+| `fs.agent.web.maxContent` / `fs.agent.web.maxResultContent` | 网页抓取正文、搜索单条结果正文的字符上限，默认 30000 / 8000 |
 | `fs.agent.image.expire` | 原图地址签发有效期（毫秒），默认 1800000 |
 | `rpc.file.rest` | 文件服务地址，图片上传与地址签发经此调用 |
 | `fs.format.date` | 日期格式 |
@@ -500,6 +580,8 @@ JPA 表前缀策略为 `com.iisquare.fs.web.agent.dsconfig.NamingStrategy`。
   `fs_agent_knowledge_segment`、`fs_agent_project_share`（分享的项目）、`fs_agent_project_version`（项目版本）、
   `fs_agent_skill`、`fs_agent_skill_version`、`fs_agent_tool`，
   建表语句见 `docs/fs_project_agent.sql`，存量库改造见 `docs/fs_project_agent_migrate.sql`。
+  工具表新增「传递用户会话」开关 `pass_session`，存量库执行
+  `docs/fs_project_agent_pass_session.sql`。
 - 流程统计的明细查询走 MyBatis（`mapper/AgenticStatisticMapper.xml`），与 JPA 共用同一数据源
   （`spring.datasource.agent`，即 `@Primary` 的 `agentDataSource`）。
 - Elasticsearch：检索块集合 `fs_lm_knowledge_chunk`。

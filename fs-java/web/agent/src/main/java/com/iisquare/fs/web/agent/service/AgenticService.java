@@ -23,6 +23,7 @@ import com.iisquare.fs.web.agent.mvc.Configuration;
 import com.iisquare.fs.web.agent.runner.ChartNodeHandler;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rpc.FileRpc;
+import com.iisquare.fs.web.core.file.StreamFileUploader;
 import com.iisquare.fs.base.web.sse.SsePlainEmitter;
 import com.iisquare.fs.base.web.util.RpcUtil;
 import org.springframework.web.multipart.MultipartFile;
@@ -85,6 +86,8 @@ public class AgenticService extends JPAServiceBase {
     @Autowired
     FileRpc fileRpc;
     @Autowired
+    StreamFileUploader streamFileUploader;
+    @Autowired
     KnowledgeService knowledgeService;
 
     /** 编排调试上传的文件桶：编排会话的附件单独成桶，路径按 agentic 前缀隔离 */
@@ -110,8 +113,8 @@ public class AgenticService extends JPAServiceBase {
         String date = new SimpleDateFormat("yyyyMMdd").format(new Date());
         String filepath = String.format("agentic/%s/%s%s", date,
                 UUID.randomUUID().toString().replace("-", ""), DPUtil.empty(suffix) ? "" : "." + suffix);
-        Map<String, Object> result = RpcUtil.result(fileRpc.form("/file/upload", DPUtil.buildMap(
-                "bucket", BUCKET, "filepath", filepath, "traceIdentity", "fs-agent-agentic-debug"), file));
+        Map<String, Object> result = streamFileUploader.upload("/file/upload", DPUtil.buildMap(
+                "bucket", BUCKET, "filepath", filepath, "traceIdentity", "fs-agent-agentic-debug"), file);
         if (ApiUtil.failed(result)) return result;
         JsonNode data = ApiUtil.data(result, ObjectNode.class);
         Map<String, Object> item = new LinkedHashMap<>();
@@ -433,6 +436,7 @@ public class AgenticService extends JPAServiceBase {
                 ((ObjectNode) row).put("toolHeader", DPUtil.parseString(tool.getHeader()));
                 ((ObjectNode) row).put("toolQuery", DPUtil.parseString(tool.getQuery()));
                 ((ObjectNode) row).put("toolContent", DPUtil.parseString(tool.getContent()));
+                ((ObjectNode) row).put("toolPassSession", null == tool.getPassSession() ? 0 : tool.getPassSession());
             }
         }
     }

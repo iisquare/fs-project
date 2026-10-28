@@ -23,6 +23,16 @@ export default {
     return window.ipc.db.delete(table, where)
   },
 
+  async removeBatch(
+    deletes: Array<{
+      table: string
+      where?: Record<string, unknown>
+      in?: Record<string, unknown[]>
+    }>
+  ) {
+    return window.ipc.db.deleteBatch(deletes)
+  },
+
   /**
    * 关键词检索：columns 逐列按 LIKE 匹配，另有等值（where）与集合（in）条件。
    * mode 给 `segments` 时按空白切成多段、各段按原顺序出现即算命中（多行片段的兜底口径）。

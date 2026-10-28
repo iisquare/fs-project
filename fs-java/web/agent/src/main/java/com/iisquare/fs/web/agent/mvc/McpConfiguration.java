@@ -2,6 +2,7 @@ package com.iisquare.fs.web.agent.mvc;
 
 import com.iisquare.fs.web.agent.ai.MethodToolCallbackProvider;
 import com.iisquare.fs.web.agent.mcp.MultimodalTool;
+import com.iisquare.fs.web.agent.mcp.WebTool;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,8 +17,8 @@ import org.springframework.context.annotation.Configuration;
 public class McpConfiguration {
 
     @Bean
-    public ToolCallbackProvider tool(MultimodalTool multimodalTool) {
-        return MethodToolCallbackProvider.builder().toolObjects(multimodalTool).build();
+    public ToolCallbackProvider tool(MultimodalTool multimodalTool, WebTool webTool) {
+        return MethodToolCallbackProvider.builder().toolObjects(multimodalTool, webTool).build();
     }
 
 }

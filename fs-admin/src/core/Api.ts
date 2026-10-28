@@ -3,11 +3,87 @@ import ApiUtil from '@/utils/ApiUtil'
 import { ElMessage, ElNotification } from 'element-plus'
 import { useCounterStore } from '@/stores/counter'
 import ElementUtil from '@/utils/ElementUtil'
+import ApiResponseNotice from '@/components/Feedback/ApiResponseNotice.vue'
+import { h, nextTick } from 'vue'
 
 const $axios = axios.create({
   baseURL: import.meta.env.VITE_APP_API_URL,
   withCredentials: true
 })
+
+const NOTICE_DURATION = 4500
+let noticeSerial = 0
+
+/**
+ * 业务提示默认保持原有 4.5 秒自动关闭和悬停暂停；
+ * 带 data 的通知在首次展开后取消后续自动关闭，避免详情看到一半消失。
+ */
+function showResponseNotice(options: {
+  title: string,
+  message: unknown,
+  data: unknown,
+  type: 'warning' | 'error',
+}) {
+  const hasData = options.data !== null && options.data !== undefined
+  if (!hasData) {
+    ElNotification({
+      title: options.title,
+      message: h(ApiResponseNotice, { message: options.message }),
+      type: options.type,
+      duration: NOTICE_DURATION,
+    })
+    return
+  }
+
+  const noticeClass = `api-response-notification-${++noticeSerial}`
+  let notification: { close: () => void } | undefined
+  let noticeElement: HTMLElement | undefined
+  let timer: number | undefined
+  let expanded = false
+  let closed = false
+
+  const clearTimer = () => {
+    if (undefined !== timer) window.clearTimeout(timer)
+    timer = undefined
+  }
+  const startTimer = () => {
+    if (closed || expanded) return
+    clearTimer()
+    timer = window.setTimeout(() => notification?.close(), NOTICE_DURATION)
+  }
+  const cleanup = () => {
+    closed = true
+    clearTimer()
+    noticeElement?.removeEventListener('mouseenter', clearTimer)
+    noticeElement?.removeEventListener('mouseleave', startTimer)
+    noticeElement = undefined
+  }
+
+  notification = ElNotification({
+    title: options.title,
+    message: h(ApiResponseNotice, {
+      message: options.message,
+      data: options.data,
+      onExpand: () => {
+        expanded = true
+        clearTimer()
+      },
+    }),
+    type: options.type,
+    customClass: `api-response-notification ${noticeClass}`,
+    // 禁用组件内置计时，由这里控制“展开后取消自动关闭”
+    duration: 0,
+    onClose: cleanup,
+  })
+
+  nextTick(() => {
+    if (closed) return
+    noticeElement = document.querySelector<HTMLElement>(`.${noticeClass}`) ?? undefined
+    noticeElement?.addEventListener('mouseenter', clearTimer)
+    noticeElement?.addEventListener('mouseleave', startTimer)
+    startTimer()
+  })
+}
 
 export default {
   $axios,
@@ -31,9 +107,11 @@ export default {
         } else if (ApiUtil.succeed(result)) {
           tips.success && ElMessage.success(ApiUtil.message(result))
         } else if (tips.warning) {
-          ElNotification({
+          const data = ApiUtil.data(result)
+          showResponseNotice({
             title: '状态：' + ApiUtil.code(result),
-            message: '消息：' + ApiUtil.message(result),
+            message: ApiUtil.message(result),
+            data,
             type: 'warning',
           })
         }
@@ -43,12 +121,26 @@ export default {
           reject(result)
         }
       }).catch((error: any) => {
-        tips.error && ElNotification({
-          title: '请求异常',
-          message: error.message,
+        const payload = error?.response?.data
+        const hasPayload = payload !== null && payload !== undefined
+        const apiPayload = hasPayload && 'object' === typeof payload ? payload : null
+        const data = null !== apiPayload && Object.prototype.hasOwnProperty.call(apiPayload, 'data')
+          ? ApiUtil.data(apiPayload)
+          : payload
+        const message = (apiPayload ? ApiUtil.message(apiPayload) : '')
+          || ('string' === typeof payload && payload.trim() ? payload : error?.message)
+          || '请求失败'
+        const code = error?.response?.status
+          ?? (apiPayload ? ApiUtil.code(apiPayload) : undefined)
+          ?? 500
+        const hasDetail = data !== null && data !== undefined
+        tips.error && showResponseNotice({
+          title: `请求异常：${code}`,
+          message,
+          data: hasDetail ? data : undefined,
           type: 'error',
         })
-        reject(ApiUtil.result(500, error.message, error))
+        reject(ApiUtil.result(code, message, hasPayload ? data : error))
       })
     })
   },

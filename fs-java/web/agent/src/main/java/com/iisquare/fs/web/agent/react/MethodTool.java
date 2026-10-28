@@ -69,6 +69,7 @@ public class MethodTool implements AgenticTool {
             tool.setHeader(item.at("/toolHeader").asText("{}"));
             tool.setQuery(item.at("/toolQuery").asText("{}"));
             tool.setContent(item.at("/toolContent").asText(""));
+            tool.setPassSession(item.at("/toolPassSession").asInt(0) == 1 ? 1 : 0);
         } else {
             int toolId = item.at("/toolId").asInt(0);
             Tool info = toolService.info(toolId);
@@ -105,7 +106,7 @@ public class MethodTool implements AgenticTool {
             }
         }
         Map<String, Object> result = toolMethodService.invoke(tool.getType(), tool.getUrl(), tool.getHeader(),
-                tool.getQuery(), tool.getContent(), method, finalArgs);
+                tool.getQuery(), tool.getContent(), tool.getPassSession(), method, finalArgs);
         if (0 != DPUtil.parseInt(result.get("code"))) {
             throw new IllegalStateException(DPUtil.parseString(result.get("message")));
         }

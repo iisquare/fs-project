@@ -4,6 +4,7 @@ import ApiUtil from '@renderer/utils/ApiUtil'
 import TaskDb from '@renderer/db/TaskDb'
 import type { ScheduleTask } from '@renderer/db/TaskDb'
 import { isValidCron, matchCron, nextRun } from '@renderer/utils/CronUtil'
+import { errorMessage } from '@renderer/utils/ErrorUtil'
 import { useProjectStore } from './project'
 import { useConversationStore } from './conversation'
 import { chatProfile } from './chat'
@@ -11,83 +12,120 @@ import { chatProfile } from './chat'
 /**
  * 定时任务：按 cron 表达式在本地触发项目对话。
  *
- * 调度跑在渲染进程（登录态就在这边，调用编排接口不需要额外的凭据通路），
+ * 主进程只保留一个指向最近到期时间的定时器，渲染进程只同步任务快照并负责执行；
  * 触发后走与手动提问完全一样的链路：新建会话 + 流式调用，页面不开着也照样执行。
  * 表达式为 5 段：分 时 日 月 周，支持通配符、逗号列表、区间与步长写法（如 0/15、1-5/2）。
  */
-
-const TICK_INTERVAL = 30 * 1000
 
 export const useScheduleStore = defineStore('schedule', () => {
   const tasks = ref<ScheduleTask[]>([])
   const loading = ref(false)
   const running = ref(false)
 
-  let timer: ReturnType<typeof setInterval> | null = null
-  /** 同一分钟只触发一次：30s 一跳会让每分钟命中两次 */
-  let lastTickKey = ''
+  /** 主进程到点通知的订阅；只保留一份，重复 start 不会叠加监听 */
+  let unsubscribe: (() => void) | null = null
+  let started = false
+
+  type MutationResult = { code: number; message: string; data: unknown }
 
   async function fetchTasks(): Promise<ScheduleTask[]> {
     loading.value = true
     try {
-      const result: any = await TaskDb.list()
+      const result = await TaskDb.list()
       if (!ApiUtil.succeed(result)) {
         throw new Error(String(ApiUtil.message(result) || '定时任务读取失败'))
       }
       tasks.value = ApiUtil.data(result) as ScheduleTask[]
+      await syncScheduler()
     } finally {
       loading.value = false
     }
     return tasks.value
   }
 
-  async function create(data: Partial<ScheduleTask>) {
-    const result: any = await TaskDb.create(data)
+  async function create(data: Partial<ScheduleTask>): Promise<MutationResult> {
+    const result = await TaskDb.create(data)
     await fetchTasks()
     return result
   }
 
-  async function update(id: string, data: Partial<ScheduleTask>) {
-    const result: any = await TaskDb.update(id, data)
+  async function update(id: string, data: Partial<ScheduleTask>): Promise<MutationResult> {
+    const result = await TaskDb.update(id, data)
     await fetchTasks()
     return result
   }
 
-  async function remove(id: string) {
-    const result: any = await TaskDb.delete(id)
+  async function remove(id: string): Promise<MutationResult> {
+    const result = await TaskDb.delete(id)
     await fetchTasks()
     return result
   }
 
-  async function toggle(task: ScheduleTask) {
+  async function toggle(task: ScheduleTask): Promise<MutationResult> {
     return update(task.id, { enabled: !task.enabled })
   }
 
-  /** 启动调度：应用登录后调用一次，重复调用不会叠加定时器 */
-  function start(): void {
-    if (timer) return
-    running.value = true
-    timer = setInterval(() => {
-      void tick()
-    }, TICK_INTERVAL)
+  /** 启动调度：应用登录后调用一次，主进程只保留一个按最近到期时间唤醒的定时器 */
+  async function start(): Promise<void> {
+    if (started) return
+    started = true
+    if (!unsubscribe) {
+      unsubscribe = window.ipc.schedule.onTrigger((ids) => {
+        void onTriggered(ids)
+      })
+    }
+    try {
+      if (!(await syncScheduler())) throw new Error('定时调度未能启动')
+      running.value = true
+    } catch (error) {
+      started = false
+      running.value = false
+      unsubscribe?.()
+      unsubscribe = null
+      throw error
+    }
   }
 
   function stop(): void {
-    if (timer) clearInterval(timer)
-    timer = null
+    started = false
     running.value = false
+    unsubscribe?.()
+    unsubscribe = null
+    void window.ipc.schedule.stop().catch((error) => {
+      console.error('[schedule] Failed to stop scheduler:', error)
+    })
   }
 
-  async function tick(): Promise<void> {
-    const now = new Date()
-    const key = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${now.getHours()}-${now.getMinutes()}`
-    if (key === lastTickKey) return
-    lastTickKey = key
-    if (tasks.value.length < 1) return
+  /** 任务快照同步到主进程：只传调度所需字段，正文留在渲染进程 */
+  async function syncScheduler(): Promise<boolean> {
+    if (!started) return false
+    try {
+      await window.ipc.schedule.sync(
+        tasks.value.map((task) => ({
+          id: task.id,
+          cron: task.cron,
+          enabled: task.enabled
+        }))
+      )
+      return true
+    } catch (error) {
+      // 任务已经落库，页面不该因为调度同步失败显示保存失败；留在控制台便于排查
+      console.error('[schedule] Failed to sync scheduler:', error)
+      return false
+    }
+  }
+
+  /** 主进程到点：按标识取当前任务，逐条执行；一条失败不影响其他任务 */
+  async function onTriggered(ids: string[]): Promise<void> {
+    if (!started || !Array.isArray(ids) || !ids.length) return
+    const wanted = new Set(ids.map((id) => String(id)))
     for (const task of tasks.value) {
-      if (!task.enabled || !isValidCron(task.cron)) continue
-      if (!matchCron(task.cron, now)) continue
-      await run(task)
+      if (!wanted.has(task.id) || !task.enabled || !isValidCron(task.cron)) continue
+      try {
+        await run(task)
+      } catch (error) {
+        console.error(`[schedule] Task ${task.id} failed:`, error)
+      }
     }
   }
 
@@ -100,18 +138,26 @@ export const useScheduleStore = defineStore('schedule', () => {
       await fetchTasks()
       return false
     }
-    const conversationStore = useConversationStore()
-    const conversation = await conversationStore.create(project, `${task.name}`)
-    // 会话 store 负责把这条新会话落进历史，chat store 只管把这一轮跑起来
-    await conversationStore.send({
-      conversationId: conversation.id,
-      ...chatProfile(project),
-      query: task.prompt,
-      background: true
-    })
-    await TaskDb.report(task.id, 'triggered', `已发起对话：${task.prompt.slice(0, 40)}`)
-    await fetchTasks()
-    return true
+    try {
+      const conversationStore = useConversationStore()
+      const conversation = await conversationStore.create(project, `${task.name}`)
+      // 会话 store 负责把这条新会话落进历史，chat store 只管把这一轮跑起来
+      await conversationStore.send({
+        conversationId: conversation.id,
+        ...chatProfile(project),
+        query: task.prompt,
+        background: true
+      })
+      await TaskDb.report(task.id, 'triggered', `已发起对话：${task.prompt.slice(0, 40)}`)
+      await fetchTasks()
+      return true
+    } catch (error) {
+      await TaskDb.report(task.id, 'failed', errorMessage(error, '定时任务执行失败')).catch(
+        () => {}
+      )
+      await fetchTasks().catch(() => {})
+      throw error
+    }
   }
 
   return {

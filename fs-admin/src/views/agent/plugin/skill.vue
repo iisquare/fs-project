@@ -17,7 +17,6 @@ const searchable = ref(true)
 const columns = ref([
   { prop: 'id', label: 'ID' },
   { prop: 'name', label: '技能名称', slot: 'name' },
-  { prop: 'typeText', label: '技能类型' },
   { prop: 'labels', label: '标签', slot: 'labels' },
   { prop: 'roles', label: '授权角色', slot: 'role' },
   { prop: 'sort', label: '排序' },
@@ -28,7 +27,6 @@ const config: any = ref({
   ready: false,
   sorts: {},
   status: {},
-  types: {},
 })
 const rows = ref([])
 const filterRef = ref<FormInstance>()
@@ -60,7 +58,6 @@ const form: any = ref({})
 const formRef: any = ref<FormInstance>()
 const rules = ref({
   name: [{ required: true, message: '请输入技能名称', trigger: 'blur' }],
-  type: [{ required: true, message: '请选择技能类型', trigger: 'change' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 })
 const handleAdd = () => {
@@ -113,11 +110,6 @@ const handleDelete = () => {
     <form-search ref="filterRef" :model="filters">
       <form-search-item label="名称" prop="name">
         <el-input v-model="filters.name" clearable />
-      </form-search-item>
-      <form-search-item label="类型" prop="type">
-        <el-select v-model="filters.type" placeholder="请选择" clearable>
-          <el-option v-for="(value, key) in config.types" :key="key" :value="key" :label="value" />
-        </el-select>
       </form-search-item>
       <form-search-item label="状态" prop="status">
         <el-select v-model="filters.status" placeholder="请选择" clearable>
@@ -176,15 +168,14 @@ const handleDelete = () => {
   <el-drawer v-model="infoVisible" :title="'信息查看 - ' + form.id" size="60%">
     <el-descriptions :column="2" label-width="100px" border>
       <el-descriptions-item label="技能名称">{{ form.name }}</el-descriptions-item>
-      <el-descriptions-item label="技能类型">{{ form.typeText }}</el-descriptions-item>
+      <el-descriptions-item label="状态">{{ form.statusText }}</el-descriptions-item>
       <el-descriptions-item label="标签">
         <el-space><el-tag v-for="item in form.labels" :key="item">{{ item }}</el-tag></el-space>
       </el-descriptions-item>
       <el-descriptions-item label="授权角色">
         <el-space><el-tag v-for="item in form.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
       </el-descriptions-item>
-      <el-descriptions-item label="排序">{{ form.sort }}</el-descriptions-item>
-      <el-descriptions-item label="状态">{{ form.statusText }}</el-descriptions-item>
+      <el-descriptions-item label="排序" :span="2">{{ form.sort }}</el-descriptions-item>
       <el-descriptions-item label="描述" :span="2">{{ form.description ? form.description : '暂无' }}</el-descriptions-item>
       <el-descriptions-item label="配置信息" :span="2">
         <CodeEditor v-model="form.content" :height="300" mode="javascript" resizable />
@@ -206,9 +197,9 @@ const handleDelete = () => {
     <el-form ref="formRef" :model="form" :rules="rules">
       <el-descriptions :column="2" label-width="100px" border>
         <el-descriptions-item label="技能名称"><el-input v-model="form.name" /></el-descriptions-item>
-        <el-descriptions-item label="技能类型">
-          <el-select v-model="form.type" placeholder="请选择">
-            <el-option v-for="(value, key) in config.types" :key="key" :value="key" :label="value" />
+        <el-descriptions-item label="状态">
+          <el-select v-model="form.status" placeholder="请选择">
+            <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
           </el-select>
         </el-descriptions-item>
         <el-descriptions-item label="标签">
@@ -217,12 +208,7 @@ const handleDelete = () => {
         <el-descriptions-item label="授权角色">
           <form-select v-model="form.roleIds" :callback="RoleApi.list" multiple clearable />
         </el-descriptions-item>
-        <el-descriptions-item label="排序"><el-input-number v-model="form.sort" /></el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <el-select v-model="form.status" placeholder="请选择">
-            <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
-          </el-select>
-        </el-descriptions-item>
+        <el-descriptions-item label="排序" :span="2"><el-input-number v-model="form.sort" /></el-descriptions-item>
         <el-descriptions-item label="描述" :span="2"><el-input type="textarea" v-model="form.description" /></el-descriptions-item>
         <el-descriptions-item label="配置信息" :span="2">
           <CodeEditor v-model="form.content" :height="300" mode="javascript" resizable />

@@ -27,9 +27,21 @@ public class FeignInterceptor implements RequestInterceptor {
     public static final String HEADER_APP_NAME = "fs-app-name";
     public static final String HEADER_APP_TIME = "fs-app-time";
     public static final String HEADER_APP_TOKEN = "fs-app-token";
+    /** 内部 RPC 签名有效时间：大文件上传解析和跨服务调用需要更宽的时间窗 */
+    public static final long TOKEN_TTL_MILLIS = 30_000;
     /** 会话令牌请求头：member 的 SessionIdResolver 按它识别会话，服务间调用经此拦截器放行传递 */
     public static final String HEADER_AUTH_TOKEN = "x-auth-token";
-    public static final List<String> headers = Arrays.asList(HEADER_AUTH_TOKEN, "cookie", "user-agent", "authorization");
+    /** 客户端版本上下文：网关和 SSE 代理必须与登录令牌一起透传 */
+    public static final String HEADER_CLIENT_VERSION = "x-client-version";
+    public static final String HEADER_CLIENT_PLATFORM = "x-client-platform";
+    public static final String HEADER_CLIENT_ARCH = "x-client-arch";
+    public static final String HEADER_CLIENT_ID = "x-client-id";
+    public static final String HEADER_CLIENT_CHANNEL = "x-client-channel";
+    public static final List<String> headers = Arrays.asList(
+            HEADER_AUTH_TOKEN, "cookie", "user-agent", "authorization",
+            HEADER_CLIENT_VERSION, HEADER_CLIENT_PLATFORM, HEADER_CLIENT_ARCH,
+            HEADER_CLIENT_ID, HEADER_CLIENT_CHANNEL
+    );
 
     @Value("${fs.rpc.secret}")
     public void setSecret(String secret) {
@@ -49,7 +61,7 @@ public class FeignInterceptor implements RequestInterceptor {
         String time = request.getHeader(FeignInterceptor.HEADER_APP_TIME);
         String token = request.getHeader(FeignInterceptor.HEADER_APP_TOKEN);
         if (DPUtil.empty(name) || DPUtil.empty(time)) return false;
-        if (Math.abs(System.currentTimeMillis() - DPUtil.parseLong(time)) > 3000) return false;
+        if (Math.abs(System.currentTimeMillis() - DPUtil.parseLong(time)) > TOKEN_TTL_MILLIS) return false;
         return token(name, time).equals(token);
     }
 

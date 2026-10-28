@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import { useSettingsStore } from '@renderer/stores/settings'
 import { useSkillStore } from '@renderer/stores/skill'
+import { useUpdateStore } from '@renderer/stores/update'
 import { errorMessage } from '@renderer/utils/ErrorUtil'
 
 const settings = useSettingsStore()
 const skillStore = useSkillStore()
+const updateStore = useUpdateStore()
 
 const apiUrl = ref(String(import.meta.env.VITE_APP_API_URL || ''))
 const websiteUrl = ref(String(import.meta.env.VITE_APP_WEBSITE_URL || ''))
@@ -67,10 +70,27 @@ async function load(): Promise<void> {
 onMounted(() => {
   void load()
 })
+
+async function changeAutoStart(value: unknown): Promise<void> {
+  try {
+    await settings.toggleAutoStart(value === true)
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '开机启动设置失败'))
+  }
+}
+
+async function checkUpdate(): Promise<void> {
+  const result = await updateStore.check(false)
+  if (result && !result.latest) {
+    ElMessage.info('服务端暂未发布当前系统的安装包')
+  } else if (result && !result.hasUpdate && !result.forceUpgrade) {
+    ElMessage.success(`当前已是最新版本 v${result.currentVersion}`)
+  }
+}
 </script>
 
 <template>
-  <div class="system-settings ui-page" v-loading="pageLoading">
+  <div v-loading="pageLoading" class="system-settings ui-page">
     <div class="ui-page-header">
       <div class="ui-page-header__copy">
         <h1 class="ui-page-title">系统设置</h1>
@@ -94,11 +114,15 @@ onMounted(() => {
       <div class="setting-item">
         <div class="setting-label">
           <span class="setting-title">开机启动</span>
-          <span class="setting-desc">系统启动时自动运行 fs-bot</span>
+          <span class="setting-desc">
+            {{ settings.autoStartReason || '系统启动时自动运行安装后的 fs-bot' }}
+          </span>
         </div>
         <el-switch
           :model-value="settings.autoStart"
-          @update:model-value="(val: any) => settings.toggleAutoStart(val)"
+          :disabled="!settings.autoStartSupported || settings.autoStartSaving"
+          :loading="settings.autoStartSaving"
+          @update:model-value="changeAutoStart"
         />
       </div>
       <el-divider />
@@ -111,6 +135,30 @@ onMounted(() => {
           :model-value="settings.autoUpgrade"
           @update:model-value="(val: any) => settings.toggleAutoUpgrade(val)"
         />
+      </div>
+      <el-divider />
+      <div class="setting-item">
+        <div class="setting-label">
+          <span class="setting-title">更新渠道</span>
+          <span class="setting-desc">服务端只返回所选渠道的已启用版本</span>
+        </div>
+        <el-radio-group
+          :model-value="settings.updateChannel"
+          @update:model-value="(value: any) => settings.setUpdateChannel(String(value))"
+        >
+          <el-radio-button value="stable">稳定版</el-radio-button>
+          <el-radio-button value="beta">测试版</el-radio-button>
+        </el-radio-group>
+      </div>
+      <el-divider />
+      <div class="setting-item">
+        <div class="setting-label">
+          <span class="setting-title">检查更新</span>
+          <span class="setting-desc">{{ updateStore.message }}</span>
+        </div>
+        <el-button type="primary" plain :loading="updateStore.checking" @click="checkUpdate">
+          检查更新
+        </el-button>
       </div>
     </div>
 
@@ -169,9 +217,9 @@ onMounted(() => {
         @update:model-value="(value: any) => settings.setWorkspacePolicy(String(value))"
       >
         <el-radio
-          class="policy-item"
           v-for="item in policies"
           :key="item.value"
+          class="policy-item"
           :value="item.value"
         >
           <span class="policy-label">{{ item.label }}</span>

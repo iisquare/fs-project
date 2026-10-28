@@ -32,7 +32,7 @@ public class SkillController extends PermitControllerBase {
     @Permission("")
     public String listAction(@RequestBody Map<String, Object> param) {
         ObjectNode result = skillService.search(param,
-                DPUtil.buildMap("withUserInfo", true, "withStatusText", true, "withTypeText", true, "withRoles", true));
+                DPUtil.buildMap("withUserInfo", true, "withStatusText", true, "withRoles", true));
         return ApiUtil.echoResult(0, null, result);
     }
 
@@ -62,7 +62,6 @@ public class SkillController extends PermitControllerBase {
     @RequestMapping("/config")
     @Permission("")
     public String configAction(ModelMap model) {
-        model.put("types", skillService.types());
         model.put("status", skillService.status());
         model.put("sorts", skillService.sorts());
         return ApiUtil.echoResult(0, null, model);

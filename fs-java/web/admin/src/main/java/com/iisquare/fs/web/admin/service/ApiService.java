@@ -25,11 +25,14 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.HandlerMapping;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 @Service
 public class ApiService implements DisposableBean {
@@ -41,7 +44,12 @@ public class ApiService implements DisposableBean {
 
     public static final List<String> FORWARD_HEADERS = Arrays.asList(
             FeignInterceptor.HEADER_AUTH_TOKEN, "cookie", "user-agent", "authorization",
-            "content-disposition", "range", "accept", "accept-encoding"
+            "content-disposition", "range", "accept", "accept-encoding",
+            FeignInterceptor.HEADER_CLIENT_VERSION,
+            FeignInterceptor.HEADER_CLIENT_PLATFORM,
+            FeignInterceptor.HEADER_CLIENT_ARCH,
+            FeignInterceptor.HEADER_CLIENT_ID,
+            FeignInterceptor.HEADER_CLIENT_CHANNEL
     );
 
     public ApiService() {
@@ -59,6 +67,8 @@ public class ApiService implements DisposableBean {
         this.client = HttpClientBuilder.create()
                 .setSSLSocketFactory(scsf)
                 .setConnectionManager(pooling)
+                // 上传请求可能是非幂等写操作，自动重试容易造成重复提交
+                .disableAutomaticRetries()
                 .build();
     }
 
@@ -110,10 +120,10 @@ public class ApiService implements DisposableBean {
                 };
                 // 原始流透传请求体（JSON/form/multipart/binary 统一处理）
                 InputStream is = request.getInputStream();
-                byte[] body = IOUtils.toByteArray(is);
-                if (body.length > 0) {
-                    entityRequest.setEntity(new InputStreamEntity(
-                            new ByteArrayInputStream(body), body.length));
+                long contentLength = request.getContentLengthLong();
+                // 自动重试已关闭，使用流式实体避免大安装包在网关堆内存中完整复制一份
+                if (contentLength != 0) {
+                    entityRequest.setEntity(new InputStreamEntity(is, contentLength));
                 }
                 return entityRequest;
             }
@@ -126,10 +136,23 @@ public class ApiService implements DisposableBean {
      * 转发HTTP头到后端
      */
     public void applyHeaders(HttpRequestBase httpRequest, HttpServletRequest request) {
+        Set<String> forwarded = new LinkedHashSet<>();
         for (String header : FORWARD_HEADERS) {
             String value = request.getHeader(header);
             if (!DPUtil.empty(value)) {
                 httpRequest.addHeader(header, value);
+                forwarded.add(header.toLowerCase(Locale.ROOT));
+            }
+        }
+        // 所有自定义 x-* 头都透传，避免新增客户端上下文时再次漏配白名单
+        Enumeration<String> names = request.getHeaderNames();
+        while (names.hasMoreElements()) {
+            String name = names.nextElement();
+            String lower = name.toLowerCase(Locale.ROOT);
+            if (!lower.startsWith("x-") || forwarded.contains(lower)) continue;
+            String value = request.getHeader(name);
+            if (!DPUtil.empty(value)) {
+                httpRequest.addHeader(name, value);
             }
         }
         // 透传 Content-Type（multipart 的 boundary 原样保留）

@@ -2,16 +2,19 @@
 /**
  * 输入区 - 一个圆角输入框：上方是 @ 引用回显，中间是文本区，底部是访问策略与发送按钮。
  *
- * 三个入口：
+ * 四个入口：
  * - `@` 引用：本机文件 / 文件夹（选中即开系统对话框）与已安装技能（输入 @ 弹出候选，回车插入，
  *   发送时把引用内容补进上下文）；
  * - 拖入：文件 / 文件夹拖到中间对话列（消息区 + 输入区）的任意位置都算数（拖放区在页面上，
  *   见 views/home/HomePage.vue；页面把取到的路径交给这里的 addPaths，与系统对话框选进来同一条路）；
+ * - 粘贴：从文件管理器复制来的文件 / 文件夹写成 @ 路径；剪贴板截图由主进程保存为临时文件后，
+ *   同样写成 @ 路径，不经过 base64 或文件服务；
  * - `/` 执行内置指令（如基于当前项目新建对话），指令由页面处理。
  *
  * 回车发送、Shift + Enter 换行，中文输入法组词中的回车不发送。
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import PolicyIcon from './PolicyIcon.vue'
 import ContextRing, { type ContextInfo } from './ContextRing.vue'
 import type { ChatMention } from '@renderer/stores/chat'
@@ -74,7 +77,7 @@ const hasDraft = computed(
 const placeholder = computed(() =>
   props.running
     ? '当前回复生成中，输入后按 Enter 会自动加入队列…'
-    : '输入内容，@ 引用本机文件或技能，/ 执行内置指令（Enter 发送，Shift / Ctrl + Enter 换行）'
+    : '输入内容；可粘贴文件、文件夹或截图，@ 引用本机文件，/ 执行内置指令'
 )
 
 const POLICY_LABELS: Record<string, string> = {
@@ -369,6 +372,44 @@ async function pickPaths(
   addPaths(paths, range)
 }
 
+/** 截图没有路径：由主进程从系统剪贴板保存到临时目录，再把临时路径接进输入框 */
+async function addClipboardImage(): Promise<void> {
+  try {
+    const path = await window.ipc.workspace.saveClipboardImage()
+    if (path) addPaths([path])
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : String(error))
+  }
+}
+
+/** 粘贴：文件 / 文件夹与截图最终都写成 @ 路径；文字粘贴不拦 */
+function onPaste(event: ClipboardEvent): void {
+  if (props.disabled) return
+  const clipboard = event.clipboardData
+  const files = Array.from(clipboard?.files ?? [])
+  if (!files.length && clipboard?.items) {
+    for (const item of Array.from(clipboard.items)) {
+      if ('file' !== item.kind) continue
+      const file = item.getAsFile()
+      if (file) files.push(file)
+    }
+  }
+  if (!files.length) return
+  const paths: string[] = []
+  let hasImage = false
+  for (const file of files) {
+    const path = window.ipc.filePaths([file])[0]
+    if (path) paths.push(path)
+    else if (file.type.startsWith('image/')) hasImage = true
+  }
+  if (!paths.length && !hasImage) return
+  event.preventDefault()
+  event.stopPropagation()
+  closeMenu()
+  if (paths.length) addPaths(paths)
+  if (hasImage) void addClipboardImage()
+}
+
 /**
  * 左下角的 + 号：等同手打一个 @，就地弹出文件 / 技能候选。
  * 光标前一个字符不是空白时补一个空格，插入的 @ 才会被当成新的引用片段；
@@ -598,7 +639,7 @@ defineExpose({ focus, addPaths })
       </template>
     </el-scrollbar>
 
-    <div class="composer-box">
+    <div class="composer-box" @paste="onPaste">
       <!--
         引用按标签就地显示：底衬层给已经登记的 @片段 铺一块底色，
         文本区照常负责文字、光标与选区，删掉 @ 那一段标签也就跟着消失
@@ -698,11 +739,7 @@ defineExpose({ focus, addPaths })
             class="composer-send"
             circle
             :type="running ? 'info' : 'primary'"
-            :title="
-              running
-                ? '发送并加入队列'
-                : '发送（Enter 发送，Shift / Ctrl + Enter 换行）'
-            "
+            :title="running ? '发送并加入队列' : '发送（Enter 发送，Shift / Ctrl + Enter 换行）'"
             :disabled="disabled || !hasDraft"
             @click="submit"
           >

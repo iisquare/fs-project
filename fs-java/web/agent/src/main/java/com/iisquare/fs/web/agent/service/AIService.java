@@ -134,6 +134,14 @@ public class AIService implements DisposableBean {
         return get(url, authorization(gatewayToken));
     }
 
+    /**
+     * 当前登录用户的积分概览：服务级密钥认证，用户会话作为 x-auth-token 透传，
+     * 返回总消耗、剩余与各积分限流周期的用量、剩余和下次重置时间。
+     */
+    public Map<String, Object> credit(String session) {
+        return get(gatewayEndpoint + "/v1/credit", sessionHeaders(session));
+    }
+
     public Map<String, Object> embeddings(String model, List<String> inputs) {
         String url = gatewayEndpoint + "/v1/embeddings";
         ObjectNode body = DPUtil.objectNode();
@@ -159,9 +167,30 @@ public class AIService implements DisposableBean {
      * （x-auth-token），供网关按「用户代理」口径记账（密钥未开启代理时网关忽略该头）。
      */
     public Map<String, Object> chat(JsonNode body, String session) {
+        return post(gatewayEndpoint + "/v1/chat/completions", body, sessionHeaders(session));
+    }
+
+    /**
+     * 网页搜索：转发模型网关的 /v1/tools/search（鉴权、模型授权、计费都在网关完成）。
+     * 调用端带了会话令牌时同样透传，记账口径与对话一致。
+     */
+    public Map<String, Object> webSearch(JsonNode body, String session) {
+        return post(gatewayEndpoint + "/v1/tools/search", body, sessionHeaders(session));
+    }
+
+    /**
+     * 网页抓取：转发模型网关的 /v1/tools/fetch。
+     * 目标站点访问策略、正文提取与计费由网关及其供应商处理。
+     */
+    public Map<String, Object> webFetch(JsonNode body, String session) {
+        return post(gatewayEndpoint + "/v1/tools/fetch", body, sessionHeaders(session));
+    }
+
+    /** 服务级密钥 + 可选的调用端会话令牌 */
+    private Map<String, String> sessionHeaders(String session) {
         Map<String, String> headers = authorization(gatewayToken);
         if (!DPUtil.empty(session)) headers.put(FeignInterceptor.HEADER_AUTH_TOKEN, session);
-        return post(gatewayEndpoint + "/v1/chat/completions", body, headers);
+        return headers;
     }
 
 }

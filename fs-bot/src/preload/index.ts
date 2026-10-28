@@ -20,8 +20,46 @@ const ipc = {
   minimize: () => ipcRenderer.invoke('window:minimize'),
   maximize: () => ipcRenderer.invoke('window:maximize'),
   close: () => ipcRenderer.invoke('window:close'),
+  quit: () => ipcRenderer.invoke('app:quit'),
   isMaximized: () => ipcRenderer.invoke('window:is-maximized'),
   appVersions: () => ipcRenderer.invoke('app:versions'),
+  clientMeta: () => ipcRenderer.invoke('app:client-meta'),
+  update: {
+    downloadAndInstall: (request: {
+      url: string
+      token: string
+      fileName: string
+      fileSize: number
+      sha512: string
+      version: string
+      currentVersion: string
+      platform: string
+      architecture: string
+      delta?: {
+        blockSize: number
+        blocks: Array<{ checksum: string; size: number }>
+      } | null
+    }) => ipcRenderer.invoke('app:update:download', request),
+    status: () => ipcRenderer.invoke('app:update:status'),
+    controlStatus: () => ipcRenderer.invoke('app:update:control'),
+    pause: () => ipcRenderer.invoke('app:update:pause'),
+    cancel: () => ipcRenderer.invoke('app:update:cancel'),
+    reportHealthy: () => ipcRenderer.invoke('app:update:healthy'),
+    onProgress: (
+      callback: (progress: { received: number; total: number; percent: number }) => void
+    ) => {
+      const listener = (
+        _: unknown,
+        progress: { received: number; total: number; percent: number }
+      ): void => callback(progress)
+      ipcRenderer.on('app:update:progress', listener)
+      return () => ipcRenderer.removeListener('app:update:progress', listener)
+    }
+  },
+  autoStart: {
+    get: () => ipcRenderer.invoke('app:auto-start:get'),
+    set: (enabled: boolean) => ipcRenderer.invoke('app:auto-start:set', { enabled })
+  },
   onMaximizeChange: (callback: (isMaximized: boolean) => void) => {
     ipcRenderer.on('window:maximize-change', (_, isMaximized) => callback(isMaximized))
   },
@@ -42,6 +80,13 @@ const ipc = {
       ipcRenderer.invoke('db:upsert', { table, data }),
     delete: (table: string, where: Record<string, unknown>) =>
       ipcRenderer.invoke('db:delete', { table, where }),
+    deleteBatch: (
+      deletes: Array<{
+        table: string
+        where?: Record<string, unknown>
+        in?: Record<string, unknown[]>
+      }>
+    ) => ipcRenderer.invoke('db:delete-batch', { deletes }),
     // 关键词检索：历史对话（记忆）按标题与消息正文找行，比把整表拉回来自己过滤省事；
     // mode 给 segments 时按空白切成多段匹配（多行片段的兜底口径，见 ConversationDb.search）
     search: (
@@ -66,6 +111,17 @@ const ipc = {
       ipcRenderer.invoke('config:login-history:save', { serial }),
     removeLoginHistory: (serial: string) =>
       ipcRenderer.invoke('config:login-history:remove', { serial })
+  },
+  // 定时调度：主进程只挂一个定时器，渲染进程只同步任务快照并接收到点通知
+  schedule: {
+    sync: (tasks: Array<{ id: string; cron: string; enabled: boolean }>) =>
+      ipcRenderer.invoke('schedule:sync', tasks),
+    stop: () => ipcRenderer.invoke('schedule:stop'),
+    onTrigger: (callback: (ids: string[]) => void) => {
+      const listener = (_: unknown, ids: string[]): void => callback(ids)
+      ipcRenderer.on('schedule:trigger', listener)
+      return () => ipcRenderer.removeListener('schedule:trigger', listener)
+    }
   },
   workspace: {
     // 选一个本机路径：kind 决定选文件还是目录，title 是对话框标题
@@ -104,6 +160,8 @@ const ipc = {
       ipcRenderer.invoke('workspace:mkdir', { projectId, path, conversationId }),
     rename: (projectId: string, path: string, next: string, conversationId = '') =>
       ipcRenderer.invoke('workspace:rename', { projectId, path, next, conversationId }),
+    // 粘贴截图：主进程读系统剪贴板并保存为临时 PNG，回传路径供输入框写成 @ 引用
+    saveClipboardImage: () => ipcRenderer.invoke('workspace:save-clipboard-image'),
     // 上传本机文件到文件服务（图床）：拿回文件标识后即可交给服务端的工具方法按 id 引用
     upload: (
       projectId: string,
@@ -154,8 +212,8 @@ const ipc = {
     // 访问申请的答复：允许本次放行，always 勾选后同步切到「帮我批准」
     approve: (request: { id: string; allow: boolean; always?: boolean }) =>
       ipcRenderer.invoke('workspace:approval:response', request),
-    onApprovalRequest: (callback: (request: any) => void) => {
-      const listener = (_: unknown, request: any): void => callback(request)
+    onApprovalRequest: (callback: (request: unknown) => void) => {
+      const listener = (_: unknown, request: unknown): void => callback(request)
       ipcRenderer.on('workspace:approval-request', listener)
       return () => ipcRenderer.removeListener('workspace:approval-request', listener)
     },

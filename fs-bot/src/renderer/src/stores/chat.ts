@@ -193,7 +193,7 @@ async function fetchWorkspacePrompt(projectId: string): Promise<string> {
 export interface SendParams extends ChatProfile {
   conversationId: string
   query: string
-  /** @ 引用：本地文件与技能 */
+  /** 输入框附件：本地文件 / 技能引用；粘贴截图会先保存为临时文件再按文件引用 */
   mentions?: ChatMention[]
   /** 接在哪条消息之后：不传表示接在当前分支尾，传 '' 表示从会话起点新起分支 */
   parentId?: string

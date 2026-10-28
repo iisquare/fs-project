@@ -3,6 +3,11 @@ spring:
     name: fs-file-service
   profiles:
     active: dev,idev
+  servlet:
+    multipart:
+      # 大文件上传时先校验 RPC 签名，再按 Controller 参数需求解析 multipart；
+      # 避免 239MB 文件解析完成后，3 秒签名时间窗已经失效
+      resolve-lazily: true
   jpa:
     show-sql: true
     hibernate:

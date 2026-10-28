@@ -8,9 +8,13 @@ import ApiUtil from '@renderer/utils/ApiUtil'
 import { highlightParts, roleText, snippet } from '@renderer/utils/TextUtil'
 import { groupByTime, GROUP_LABELS, formatTime } from '@renderer/utils/TimeUtil'
 import { errorMessage } from '@renderer/utils/ErrorUtil'
-import { confirmRemoveConversation } from '@renderer/utils/ConversationUtil'
+import {
+  confirmRemoveConversation,
+  confirmRemoveConversations
+} from '@renderer/utils/ConversationUtil'
 import { useRouter } from 'vue-router'
 import { page } from '@renderer/router/config'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const conversationStore = useConversationStore()
@@ -66,6 +70,11 @@ const titleDraft = ref('')
 const titleInput = ref<HTMLInputElement | null>(null)
 /** 更多操作菜单开在哪一行：展开的那一行按钮点出主色，与其它行区分 */
 const menuOpenId = ref('')
+/** 当前勾选项：选中项跟着当前检索结果走，换关键词时清空 */
+const deleting = ref(false)
+const selectedIds = ref<string[]>([])
+
+const selectedSet = computed(() => new Set(selectedIds.value))
 
 async function loadPage(): Promise<void> {
   pageLoading.value = true
@@ -91,6 +100,7 @@ watch(keyword, (value) => {
   window.clearTimeout(searchTimer)
   // 换关键词等于换一份结果：分页从头开始
   pageNum.value = 1
+  selectedIds.value = []
   if (!value) {
     // 关键词清空：回到全部会话的清单（内容检索只认已落库的会话，草稿还没有消息）
     searchToken++
@@ -167,6 +177,18 @@ const results = computed<SearchRow[]>(() =>
   keyword.value ? hitRows.value : conversationStore.conversations
 )
 
+/** 结果列表刷新后去掉已经不在结果里的选中项（例如删除或改名后不再命中） */
+watch(results, (rows) => {
+  if (!selectedIds.value.length) return
+  const available = new Set(rows.map((item) => item.id))
+  selectedIds.value = selectedIds.value.filter((id) => available.has(id))
+})
+
+const allSelected = computed(
+  () => results.value.length > 0 && results.value.every((item) => selectedSet.value.has(item.id))
+)
+const partiallySelected = computed(() => selectedIds.value.length > 0 && !allSelected.value)
+
 const shown = computed(() => results.value.slice(0, pageNum.value * pageSize))
 
 /** 行内要列的命中片段（多于 SNIPPET_LIMIT 条的收成一行计数） */
@@ -200,6 +222,26 @@ async function handleSelect(id: string): Promise<void> {
   }
 }
 
+function isSelected(id: string): boolean {
+  return selectedSet.value.has(id)
+}
+
+function setSelected(id: string, selected: boolean): void {
+  const next = new Set(selectedIds.value)
+  if (selected) next.add(id)
+  else next.delete(id)
+  selectedIds.value = [...next]
+}
+
+function clearSelection(): void {
+  if (!deleting.value) selectedIds.value = []
+}
+
+function toggleAll(checked: boolean | string | number): void {
+  if (deleting.value) return
+  selectedIds.value = checked === true ? results.value.map((item) => item.id) : []
+}
+
 async function handleDelete(id: string): Promise<void> {
   const running = chatStore.find(id)?.running === true
   if (!(await confirmRemoveConversation(running))) return
@@ -209,6 +251,25 @@ async function handleDelete(id: string): Promise<void> {
     if (keyword.value) void runSearch(keyword.value)
   } catch (error) {
     searchError.value = errorMessage(error, '删除会话失败')
+  }
+}
+
+async function handleDeleteMany(): Promise<void> {
+  if (deleting.value || !selectedIds.value.length) return
+  const ids = selectedIds.value.slice()
+  const runningCount = ids.filter((id) => chatStore.find(id)?.running === true).length
+  if (!(await confirmRemoveConversations(ids.length, runningCount))) return
+
+  deleting.value = true
+  try {
+    await conversationStore.removeMany(ids)
+    selectedIds.value = []
+    if (keyword.value) await runSearch(keyword.value)
+    ElMessage.success(`已删除 ${ids.length} 条对话记录`)
+  } catch (error) {
+    searchError.value = errorMessage(error, '批量删除对话失败')
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -282,7 +343,7 @@ function onMenuVisible(conv: { id: string }, open: boolean): void {
 </script>
 
 <template>
-  <div class="search-page ui-page" v-loading="pageLoading">
+  <div v-loading="pageLoading" class="search-page ui-page">
     <div class="ui-page-header">
       <div class="ui-page-header__copy">
         <h1 class="ui-page-title">对话检索</h1>
@@ -316,6 +377,33 @@ function onMenuVisible(conv: { id: string }, open: boolean): void {
       </div>
     </div>
 
+    <div v-if="selectedIds.length" class="ui-toolbar batch-toolbar" aria-label="批量操作">
+      <el-checkbox
+        :model-value="allSelected"
+        :indeterminate="partiallySelected"
+        :disabled="!results.length || deleting"
+        @change="toggleAll"
+      >
+        全选当前结果
+      </el-checkbox>
+      <span class="batch-summary" aria-live="polite">
+        已选择 {{ selectedIds.length }} / {{ results.length }} 项
+      </span>
+      <span class="batch-hint">勾选记录后可批量删除</span>
+      <div class="batch-actions">
+        <el-button text :disabled="deleting" @click="clearSelection">取消</el-button>
+        <el-button
+          text
+          type="danger"
+          :disabled="!selectedIds.length || deleting"
+          :loading="deleting"
+          @click="handleDeleteMany"
+        >
+          删除选中
+        </el-button>
+      </div>
+    </div>
+
     <el-alert
       v-if="pageError || searchError"
       class="page-alert"
@@ -338,11 +426,24 @@ function onMenuVisible(conv: { id: string }, open: boolean): void {
             v-for="conv in grouped[key]"
             :key="conv.id"
             class="result-item"
-            :class="{ editing: editingId === conv.id }"
+            :class="{
+              editing: editingId === conv.id,
+              selected: isSelected(conv.id)
+            }"
             @click="handleSelect(conv.id)"
           >
             <!-- 首行：标题 / 时间 / 项目标签 / 更多操作，同一行垂直居中 -->
             <div class="result-head">
+              <el-checkbox
+                class="result-check"
+                :model-value="isSelected(conv.id)"
+                :disabled="deleting"
+                :aria-label="`选择对话：${conv.title || '新对话'}`"
+                @click.stop
+                @change="
+                  (checked: boolean | string | number) => setSelected(conv.id, checked === true)
+                "
+              />
               <input
                 v-if="editingId === conv.id"
                 :ref="bindTitleInput"
@@ -499,16 +600,43 @@ function onMenuVisible(conv: { id: string }, open: boolean): void {
   color: var(--ev-c-text-3);
 }
 
+.batch-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  row-gap: 8px;
+  background: color-mix(in srgb, var(--ui-surface) 72%, var(--el-bg-color-page));
+}
+
+.batch-summary {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--ev-c-text-1);
+  white-space: nowrap;
+}
+
+.batch-hint {
+  font-size: 12px;
+  color: var(--ev-c-text-3);
+}
+
+.batch-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
 .search-empty {
   padding: 40px 0;
 }
 
 .result-group {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .group-title {
-  padding: 2px 4px 10px;
+  padding: 2px 8px 6px;
   font-size: 12px;
   font-weight: 600;
   color: var(--ev-c-text-3);
@@ -522,28 +650,27 @@ function onMenuVisible(conv: { id: string }, open: boolean): void {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 14px 16px;
+  padding: 10px 8px;
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: 12px;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s,
-    background 0.2s;
+  transition: background 0.2s;
 
   & + & {
-    margin-top: 8px;
+    margin-top: 2px;
   }
 
   &:hover {
     background: var(--ui-surface-hover);
-    border-color: color-mix(in srgb, var(--el-color-primary) 16%, var(--ui-card-border));
-    box-shadow: none;
+  }
+
+  &.selected {
+    background: var(--el-color-primary-light-9);
   }
 
   &.editing {
-    border-color: color-mix(in srgb, var(--el-color-primary) 32%, var(--ui-card-border));
+    background: var(--ui-surface-hover);
   }
 }
 
@@ -553,6 +680,11 @@ function onMenuVisible(conv: { id: string }, open: boolean): void {
   align-items: center;
   gap: 12px;
   min-width: 0;
+}
+
+.result-check {
+  flex: none;
+  margin-right: -4px;
 }
 
 /* 命中的结果：标题行下方独立一块，逐条往下排 */
@@ -675,6 +807,21 @@ function onMenuVisible(conv: { id: string }, open: boolean): void {
 .load-more {
   text-align: center;
   padding: 12px 0;
+}
+
+@media (max-width: 640px) {
+  .batch-hint {
+    display: none;
+  }
+
+  .batch-actions {
+    width: 100%;
+    margin-left: 0;
+
+    .el-button {
+      width: 100%;
+    }
+  }
 }
 </style>
 

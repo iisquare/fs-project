@@ -12,10 +12,11 @@ import com.iisquare.fs.base.web.sse.SsePlainRequestPool;
 import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.agent.core.AgenticRuntime;
 import com.iisquare.fs.web.agent.react.AgenticToolService;
-import com.iisquare.fs.web.agent.tool.ByteArrayMultipartFile;
 import com.iisquare.fs.web.agent.tool.FileUploader;
 import com.iisquare.fs.web.core.mvc.FeignInterceptor;
+import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rpc.FileRpc;
+import com.iisquare.fs.web.core.file.StreamFileUploader;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -60,6 +61,8 @@ public class BotService implements DisposableBean {
     private String gatewayToken;
     @Autowired
     AIService aiService;
+    @Autowired
+    DefaultRbacService rbacService;
     /** 工具方法与内置能力（知识库、数据主题、知识图谱本体、编排应用）的执行与定义组装 */
     @Autowired
     AgenticToolService agenticToolService;
@@ -71,6 +74,8 @@ public class BotService implements DisposableBean {
     /** 文件服务：客户端上传的本机文件转存到这里，拿回文件标识后即可按 id 引用 */
     @Autowired
     FileRpc fileRpc;
+    @Autowired
+    StreamFileUploader streamFileUploader;
     /** 客户端上传的文件桶：默认与 MCP 工具取用的文件同桶（桶需先存在于 MinIO / S3，可换成自建桶） */
     @Value("${fs.agent.bot.upload.bucket:fs-mcp}")
     private String uploadBucket;
@@ -118,6 +123,14 @@ public class BotService implements DisposableBean {
         return length > 0 ? length : item.at("/max_position_embeddings").asInt(0);
     }
 
+    /**
+     * 当前登录用户的积分概览：网关按 x-auth-token 识别用户，
+     * 返回总消耗、剩余与各积分限流周期的用量、剩余和下次重置时间。
+     */
+    public Map<String, Object> credit(HttpServletRequest request) {
+        return aiService.credit(rbacService.token(request));
+    }
+
     /* ------------------------------- 模型对话 ------------------------------- */
 
     /**
@@ -134,7 +147,7 @@ public class BotService implements DisposableBean {
         if (payload.at("/messages").size() < 1) {
             return emit(emitter, "error", error("对话内容不能为空")).sync(null);
         }
-        final String session = session(request);
+        final String session = rbacService.token(request);
         SsePlainRequest req = new SsePlainRequest() {
             @Override
             public HttpRequestBase request() throws Exception {
@@ -267,19 +280,6 @@ public class BotService implements DisposableBean {
         return http;
     }
 
-    /**
-     * 调用端（桌面客户端等）的会话令牌：客户端以登录会话作为 Bearer 令牌访问本服务，
-     * 这里取原始会话标识透传给网关，网关据此把这一轮调用的用量记到该用户名下
-     */
-    protected String session(HttpServletRequest request) {
-        String authorization = request.getHeader("authorization");
-        if (null != authorization && authorization.startsWith("Bearer ")) {
-            return authorization.substring("Bearer ".length());
-        }
-        String token = request.getHeader(FeignInterceptor.HEADER_AUTH_TOKEN);
-        return DPUtil.empty(token) ? "" : token;
-    }
-
     /* ------------------------------- 文件上传 ------------------------------- */
 
     /**
@@ -311,17 +311,9 @@ public class BotService implements DisposableBean {
         String date = new SimpleDateFormat("yyyyMMdd").format(new Date());
         String filepath = String.format("bot/%s/%s%s", date,
                 UUID.randomUUID().toString().replace("-", ""), DPUtil.empty(suffix) ? "" : "." + suffix);
-        MultipartFile content = file;
-        if (!type.equals(declared)) {
-            // 只有需要按后缀补类型时才把内容读进内存重包一次；类型对得上就原样转发，不复制字节
-            try {
-                content = new ByteArrayMultipartFile("file", filename, type, file.getBytes());
-            } catch (IOException e) {
-                return ApiUtil.result(1003, "读取上传内容失败", e.getMessage());
-            }
-        }
-        Map<String, Object> result = RpcUtil.result(fileRpc.form("/file/upload", DPUtil.buildMap(
-                "bucket", uploadBucket, "filepath", filepath, "traceIdentity", "fs-agent-bot-upload"), content));
+        Map<String, Object> result = streamFileUploader.upload("/file/upload", DPUtil.buildMap(
+                "bucket", uploadBucket, "filepath", filepath, "traceIdentity", "fs-agent-bot-upload"),
+                file, filename, type);
         if (ApiUtil.failed(result)) return result;
         JsonNode data = ApiUtil.data(result, ObjectNode.class);
         if (null == data || DPUtil.empty(data.at("/id").asText())) {

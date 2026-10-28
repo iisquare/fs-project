@@ -12,6 +12,7 @@ import com.iisquare.fs.web.agent.dao.ToolMethodDao;
 import com.iisquare.fs.web.agent.entity.Tool;
 import com.iisquare.fs.web.agent.entity.ToolMethod;
 import com.iisquare.fs.web.agent.mcp.McpHttpClient;
+import com.iisquare.fs.web.agent.mcp.ToolSessionSupport;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
@@ -24,6 +25,8 @@ import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import jakarta.persistence.criteria.Predicate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
@@ -48,6 +51,8 @@ import java.util.*;
 @Service
 public class ToolMethodService extends JPAServiceBase {
 
+    private static final Logger logger = LoggerFactory.getLogger(ToolMethodService.class);
+
     /**
      * 工具方法调用超时：工具是编排里的外部依赖（HTTP 接口、文件服务、BI 查询等），
      * 卡住时应当尽快失败并交给模型重试，不能拖着整轮运行；单位毫秒
@@ -61,6 +66,8 @@ public class ToolMethodService extends JPAServiceBase {
     ToolDao toolDao;
     @Autowired
     ToolMethodDao toolMethodDao;
+    @Autowired
+    ToolSessionSupport toolSessionSupport;
 
     @Override
     public Map<String, String> sorts() {
@@ -415,9 +422,10 @@ public class ToolMethodService extends JPAServiceBase {
     /**
      * 供编排运行时调用工具方法：`schema` 按 invoke 拼请求、`mcp` 走 tools/call。
      * 工具级 url / header / query 在此参与调用，方法级参数按 in 落到 query / path / header / body。
+     * passSession 来自工具配置开关：调用工具服务时决定是否把调用方会话作为 x-auth-token 透传。
      */
     public Map<String, Object> invoke(String type, String url, String header, String query, String content,
-                                      ToolMethod method, Map<String, Object> args) {
+                                      Integer passSession, ToolMethod method, Map<String, Object> args) {
         Tool tool = new Tool();
         tool.setId(0);
         tool.setType(type);
@@ -425,6 +433,7 @@ public class ToolMethodService extends JPAServiceBase {
         tool.setHeader(header);
         tool.setQuery(query);
         tool.setContent(content);
+        tool.setPassSession(null != passSession && passSession == 1 ? 1 : 0);
         return "mcp".equals(type) ? callMcp(tool, method, args) : callSchema(tool, method, args);
     }
 
@@ -564,7 +573,13 @@ public class ToolMethodService extends JPAServiceBase {
     protected Tool tool(Map<?, ?> param) {
         int id = DPUtil.parseInt(param.get("id"));
         String content = DPUtil.parseString(param.get("content"));
-        if (id > 0 && DPUtil.empty(content)) return info(toolDao, id);
+        if (id > 0 && DPUtil.empty(content)) {
+            Tool info = info(toolDao, id);
+            if (null != info && null != param.get("passSession")) {
+                info.setPassSession(DPUtil.parseInt(param.get("passSession")) == 1 ? 1 : 0);
+            }
+            return info;
+        }
         Tool tool = new Tool();
         tool.setId(id);
         tool.setName(DPUtil.parseString(param.get("name")));
@@ -573,6 +588,7 @@ public class ToolMethodService extends JPAServiceBase {
         tool.setHeader(DPUtil.stringify(param.get("header")));
         tool.setQuery(DPUtil.stringify(param.get("query")));
         tool.setContent(content);
+        tool.setPassSession(DPUtil.parseInt(param.get("passSession")) == 1 ? 1 : 0);
         return DPUtil.empty(tool.getType()) ? null : tool;
     }
 
@@ -584,18 +600,50 @@ public class ToolMethodService extends JPAServiceBase {
         } catch (UnsupportedEncodingException e) {
             return ApiUtil.result(1003, "解析查询参数异常", e.getMessage());
         }
+        // 是否传调用方登录会话只看工具配置开关；request 里保留配置的原始 header，实际发送使用 callHeaders
+        boolean passSession = null != tool.getPassSession() && tool.getPassSession() == 1;
+        Map<String, String> callHeaders = toolSessionSupport.headers(headers, passSession);
         Map<?, ?> request = DPUtil.buildMap("method", "tools/call", "url", url,
                 "header", headers, "body", DPUtil.buildMap("name", method.getOriginName(), "arguments", args));
         // 与同步同一套客户端：SSE 端点与流式 HTTP 端点都能调用
-        try (McpHttpClient client = new McpHttpClient(url, headers, toolConnectTimeout, toolReadTimeout)) {
+        try (McpHttpClient client = new McpHttpClient(url, callHeaders, toolConnectTimeout, toolReadTimeout)) {
             client.initialize();
             JsonNode result = client.callTool(method.getOriginName(), args);
-            return ApiUtil.result(0, null, DPUtil.buildMap("success", true, "request", request,
-                    "response", DPUtil.stringify(DPUtil.toJSON(result))));
+            boolean missing = null == result || result.isMissingNode() || result.isNull();
+            boolean failed = missing || result.at("/isError").asBoolean(false);
+            Map<String, Object> data = new LinkedHashMap<>();
+            data.put("success", !failed);
+            data.put("request", request);
+            data.put("response", DPUtil.stringify(DPUtil.toJSON(result)));
+            if (failed) {
+                String error = missing ? "MCP 服务未返回工具结果" : mcpErrorText(result);
+                data.put("error", error);
+                logger.warn("MCP tool returned error: method={} error={}", method.getOriginName(), error);
+            }
+            return ApiUtil.result(0, null, data);
         } catch (Exception e) {
+            // 连接、鉴权、地址等底层细节只写日志；回给模型的保持稳定、可读
+            String message = "调用 MCP 方法失败，请检查服务地址、鉴权配置或稍后重试";
+            logger.warn("MCP tool call failed: url={}, method={}", url, method.getOriginName(), e);
             return ApiUtil.result(0, null, DPUtil.buildMap("success", false, "request", request,
-                    "response", cut("调用 MCP 方法失败：" + e.getMessage(), 2000)));
+                    "error", message, "response", message));
         }
+    }
+
+    /** MCP isError 结果 → 给模型看的错误文本：优先取 content 里的 text，取不到再退回原始 JSON */
+    protected String mcpErrorText(JsonNode result) {
+        if (null == result) return "";
+        StringBuilder text = new StringBuilder();
+        JsonNode content = result.at("/content");
+        if (content.isArray()) {
+            for (JsonNode item : content) {
+                String value = item.at("/text").asText("");
+                if (DPUtil.empty(value)) continue;
+                if (text.length() > 0) text.append('\n');
+                text.append(value);
+            }
+        }
+        return cut(text.length() > 0 ? text.toString() : DPUtil.stringify(result), 2000);
     }
 
     protected Map<String, Object> callSchema(Tool tool, ToolMethod method, Map<String, Object> args) {
@@ -665,6 +713,9 @@ public class ToolMethodService extends JPAServiceBase {
             }
         }
         String url = server + path;
+        // 统一开关：schema 工具也按 passSession 决定是否把调用方会话作为 x-auth-token 发出
+        boolean passSession = null != tool.getPassSession() && tool.getPassSession() == 1;
+        Map<String, String> callHeaders = toolSessionSupport.headers(headers, passSession);
         Map<?, ?> request = DPUtil.buildMap("method", verb, "url", url, "query", query, "header", headers, "body", body);
         HttpURLConnection conn = null;
         try {
@@ -676,7 +727,7 @@ public class ToolMethodService extends JPAServiceBase {
             conn.setReadTimeout(toolReadTimeout);
             conn.setDoInput(true);
             conn.setDoOutput(withBody);
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
+            for (Map.Entry<String, String> entry : callHeaders.entrySet()) {
                 conn.setRequestProperty(entry.getKey(), entry.getValue());
             }
             if (withBody) {
@@ -700,8 +751,10 @@ public class ToolMethodService extends JPAServiceBase {
             return ApiUtil.result(0, null, DPUtil.buildMap("success", status < 400, "status", status,
                     "request", request, "header", responseHeaders, "response", response));
         } catch (Exception e) {
+            String message = "调用工具失败，请检查服务地址、鉴权配置或稍后重试";
+            logger.warn("Tool schema call failed: url={}, method={}", url, verb, e);
             return ApiUtil.result(0, null, DPUtil.buildMap("success", false, "request", request,
-                    "response", cut("调用失败：" + e.getMessage(), 2000)));
+                    "error", message, "response", message));
         } finally {
             if (null != conn) conn.disconnect();
         }

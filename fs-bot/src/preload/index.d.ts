@@ -132,6 +132,43 @@ export interface InstalledSkill {
   summary: string
 }
 
+/** 定时任务同步到主进程的最小字段 */
+export interface ScheduleEntry {
+  id: string
+  cron: string
+  enabled: boolean
+}
+
+/** 系统登录项的真实状态：supported 为 false 时不会被当前环境写入 */
+export interface AutoStartStatus {
+  supported: boolean
+  registered: boolean
+  enabled: boolean
+  reason: string
+}
+
+export interface UpdateProgress {
+  received: number
+  total: number
+  percent: number
+}
+
+export interface UpdateStateStatus {
+  state: 'none' | 'installed-unconfirmed' | 'install-failed'
+  currentVersion: string
+  targetVersion: string
+  fromVersion: string
+  startedAt: number
+}
+
+export interface UpdateControlStatus {
+  state: 'idle' | 'downloading' | 'paused' | 'cancelled' | 'installing' | 'error'
+  received: number
+  total: number
+  percent: number
+  message: string
+}
+
 /** 技能包内的一个文件：相对技能目录的路径（用 / 分隔）与大小 */
 export interface SkillFileEntry {
   path: string
@@ -149,8 +186,48 @@ declare global {
       minimize: () => Promise<void>
       maximize: () => Promise<void>
       close: () => Promise<void>
+      quit: () => Promise<void>
       isMaximized: () => Promise<boolean>
-      appVersions: () => Promise<{ clientVersion: string; dataVersion: number | null }>
+      appVersions: () => Promise<{
+        clientVersion: string
+        dataVersion: number | null
+        platform: string
+        architecture: string
+      }>
+      clientMeta: () => Promise<{
+        clientVersion: string
+        platform: string
+        architecture: string
+        clientId: string
+        channel: string
+      }>
+      update: {
+        downloadAndInstall: (request: {
+          url: string
+          token: string
+          fileName: string
+          fileSize: number
+          sha512: string
+          version: string
+          currentVersion: string
+          platform: string
+          architecture: string
+          delta?: {
+            blockSize: number
+            blocks: Array<{ checksum: string; size: number }>
+          } | null
+        }) => Promise<{ path: string; sha512: string }>
+        status: () => Promise<UpdateStateStatus>
+        controlStatus: () => Promise<UpdateControlStatus>
+        pause: () => Promise<UpdateControlStatus>
+        cancel: () => Promise<UpdateControlStatus>
+        reportHealthy: () => Promise<UpdateStateStatus>
+        onProgress: (callback: (progress: UpdateProgress) => void) => () => void
+      }
+      autoStart: {
+        get: () => Promise<AutoStartStatus>
+        set: (enabled: boolean) => Promise<AutoStartStatus>
+      }
       onMaximizeChange: (callback: (isMaximized: boolean) => void) => void
       togglePin: (pin: boolean) => Promise<void>
       /** 右侧文件区展开 / 收起与宽度：主进程据此增减窗口宽度 */
@@ -184,6 +261,18 @@ declare global {
           table: string,
           where: Record<string, unknown>
         ) => Promise<{ code: number; message: string; data: null }>
+        /** 在一个事务里执行多条删除 */
+        deleteBatch: (
+          deletes: Array<{
+            table: string
+            where?: Record<string, unknown>
+            in?: Record<string, unknown[]>
+          }>
+        ) => Promise<{
+          code: number
+          message: string
+          data: { changes: number }
+        }>
         /** 关键词检索：columns 逐列按 LIKE 匹配，另有等值（where）与集合（in）条件 */
         search: (
           table: string,
@@ -206,6 +295,12 @@ declare global {
         listLoginHistory: () => Promise<string[]>
         saveLoginHistory: (serial: string) => Promise<string[]>
         removeLoginHistory: (serial: string) => Promise<string[]>
+      }
+      schedule: {
+        sync: (tasks: ScheduleEntry[]) => Promise<void>
+        stop: () => Promise<void>
+        /** 主进程到点后给出任务标识；执行仍由渲染进程完成 */
+        onTrigger: (callback: (ids: string[]) => void) => () => void
       }
       workspace: {
         /** 选一个本机路径：kind 决定选文件还是目录，取消返回空串 */
@@ -251,6 +346,8 @@ declare global {
           next: string,
           conversationId?: string
         ) => Promise<{ path: string }>
+        /** 把系统剪贴板里的截图保存为临时 PNG，返回临时文件绝对路径 */
+        saveClipboardImage: () => Promise<string>
         upload: (
           projectId: string,
           path: string,

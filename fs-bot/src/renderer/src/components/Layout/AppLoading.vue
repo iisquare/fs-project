@@ -1,15 +1,19 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useLoadingStore } from '@renderer/stores/loading'
+import { useUpdateStore } from '@renderer/stores/update'
 import loadingAnimation from '@renderer/assets/images/app-loading.gif'
 import loadingStatic from '@renderer/assets/images/app-loading-static.png'
 
 const loading = useLoadingStore()
+const update = useUpdateStore()
 const root = ref<HTMLElement | null>(null)
+/** 更新界面需要用户立即操作时，资源加载遮罩让出焦点与层级 */
+const shown = computed(() => loading.visible && !update.visible)
 
 // 遮罩出现后把焦点收上来：除了挡住鼠标，输入框与页面快捷键也一并停掉
 watch(
-  () => loading.visible,
+  () => shown.value,
   async (visible) => {
     if (!visible) return
     await nextTick()
@@ -22,7 +26,7 @@ watch(
 <template>
   <Transition name="app-loading">
     <div
-      v-if="loading.visible"
+      v-if="shown"
       ref="root"
       class="app-loading"
       tabindex="-1"

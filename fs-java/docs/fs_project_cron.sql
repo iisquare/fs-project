@@ -271,7 +271,7 @@ CREATE TABLE `fs_cron_flow` (
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `sort` int NOT NULL DEFAULT '0',
   `status` tinyint NOT NULL DEFAULT '0',
-  `description` tinytext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `created_uid` int NOT NULL DEFAULT '0',
   `created_time` bigint NOT NULL DEFAULT '0',
   `updated_uid` int NOT NULL DEFAULT '0',

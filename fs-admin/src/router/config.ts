@@ -11,6 +11,7 @@ export const page = {
   root: '/',
   e403: '/403',
   e404: '/404',
+  fsBot: '/fs-bot',
   home: '/dashboard/workplace',
   login: '/login',
   signup: '/signup',

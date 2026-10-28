@@ -21,8 +21,6 @@ public class Skill {
     @Column
     private String name; // 技能名称
     @Column
-    private String type; // 技能类型
-    @Column
     private String labels; // 标签，英文逗号分割
     @Column
     private String roleIds; // 授权角色，留空为不限制

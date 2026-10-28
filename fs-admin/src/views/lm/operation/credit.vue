@@ -7,6 +7,7 @@ import CreditApi from '@/api/lm/CreditApi';
 import RateApi from '@/api/lm/RateApi';
 import ApiUtil from '@/utils/ApiUtil';
 import DateUtil from '@/utils/DateUtil';
+import ElementUtil from '@/utils/ElementUtil';
 import RouteUtil from '@/utils/RouteUtil';
 import TableUtil from '@/utils/TableUtil';
 
@@ -114,6 +115,147 @@ const handleDelete = () => {
     })
   }).catch(() => {})
 }
+
+interface UsageLimit {
+  rateId: number
+  rateName: string
+  type: string
+  typeText: string
+  limit: number
+  used: number
+  remained: number
+  unit: string
+  interval: number
+  beginTime: number
+  resetTime: number
+}
+
+interface UsageInfo {
+  uid: number
+  status: number
+  statusText: string
+  available: boolean
+  remained: number
+  consumed: number
+  updatedTime: number
+  limits: UsageLimit[]
+}
+
+const usageVisible = ref(false)
+const usageLoading = ref(false)
+const usageResetting = ref('')
+const usageUid = ref<number>()
+const usageUser = ref<any>()
+const usage = ref<UsageInfo>()
+let usageRequest = 0
+
+const numberValue = (value: any) => {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : 0
+}
+
+const normalizeUsage = (data: any): UsageInfo => {
+  const source = data ?? {}
+  return {
+    uid: numberValue(source.uid),
+    status: numberValue(source.status),
+    statusText: String(source.statusText ?? ''),
+    available: !!source.available,
+    remained: numberValue(source.remained),
+    consumed: numberValue(source.consumed),
+    updatedTime: numberValue(source.updatedTime),
+    limits: Array.isArray(source.limits) ? source.limits.map((item: any) => ({
+      rateId: numberValue(item.rateId),
+      rateName: String(item.rateName ?? ''),
+      type: String(item.type ?? ''),
+      typeText: String(item.typeText ?? ''),
+      limit: numberValue(item.limit),
+      used: numberValue(item.used),
+      remained: numberValue(item.remained),
+      unit: String(item.unit ?? ''),
+      interval: numberValue(item.interval),
+      beginTime: numberValue(item.beginTime),
+      resetTime: numberValue(item.resetTime),
+    })) : [],
+  }
+}
+
+const loadUsage = (uid = usageUid.value) => {
+  const id = numberValue(uid)
+  if (id < 1) return
+  const request = ++usageRequest
+  usageLoading.value = true
+  CreditApi.usage({ uid: id }).then((result: any) => {
+    if (request === usageRequest) usage.value = normalizeUsage(ApiUtil.data(result))
+  }).catch(() => {}).finally(() => {
+    if (request === usageRequest) usageLoading.value = false
+  })
+}
+
+const handleUsageUserChange = (uid: any) => {
+  usage.value = undefined
+  loadUsage(uid)
+}
+
+const openUsage = (scope?: any) => {
+  usageVisible.value = true
+  if (!scope) {
+    usageRequest++
+    usageLoading.value = false
+    usageUid.value = undefined
+    usageUser.value = undefined
+    usage.value = undefined
+    return
+  }
+  usageUid.value = numberValue(scope.row.uid)
+  usageUser.value = scope.row.uidUserInfo
+  usage.value = undefined
+  loadUsage(usageUid.value)
+}
+
+const formatUsageValue = (value: any) => {
+  return numberValue(value).toLocaleString('zh-CN', { maximumFractionDigits: 6 })
+}
+
+const formatInterval = (seconds: number) => {
+  if (seconds <= 0) return '—'
+  if (seconds % 86400 === 0) return `${seconds / 86400} 天`
+  if (seconds % 3600 === 0) return `${seconds / 3600} 小时`
+  if (seconds % 60 === 0) return `${seconds / 60} 分钟`
+  return `${seconds} 秒`
+}
+
+const usagePercent = (item: any) => {
+  if (item.limit <= 0) return 0
+  return Math.min(100, Math.max(0, item.used / item.limit * 100))
+}
+
+const usageTone = (item: any) => {
+  const percent = usagePercent(item)
+  if (percent >= 90) return 'is-danger'
+  if (percent >= 70) return 'is-warning'
+  return ''
+}
+
+const resetUsage = (item?: any) => {
+  if (!usage.value || usageResetting.value) return
+  const uid = usage.value.uid
+  const action = item
+    ? `「${item.rateName || '限流策略'}」的${item.typeText}`
+    : '该账户当前窗口的全部限流用量'
+  ElementUtil.confirm(`确定重置${action}吗？此操作只清零当前限流计数，不会修改积分余额、总消耗或限流配置。`).then(() => {
+    usageResetting.value = item ? `${item.rateId}-${item.type}` : 'all'
+    CreditApi.reset({
+      uid,
+      rateId: item?.rateId ?? 0,
+      type: item?.type ?? '',
+    }, { success: true }).then(() => {
+      if (numberValue(usageUid.value) === uid) loadUsage(uid)
+    }).catch(() => {}).finally(() => {
+      usageResetting.value = ''
+    })
+  }).catch(() => {})
+}
 </script>
 
 <template>
@@ -139,6 +281,7 @@ const handleDelete = () => {
       <el-space>
         <button-add v-permit="'lm:credit:add'" @click="handleAdd" />
         <button-delete v-permit="'lm:credit:delete'" :disabled="selection.length === 0" @click="handleDelete" />
+        <el-button v-permit="'lm:credit:'" @click="openUsage()">查看账户用量</el-button>
       </el-space>
       <el-space>
         <button-search @click="searchable = !searchable" />
@@ -164,8 +307,9 @@ const handleDelete = () => {
           </el-space>
         </template>
       </TableColumn>
-      <el-table-column label="操作" width="120">
+      <el-table-column label="操作" width="180">
         <template #default="scope">
+          <el-button link @click="openUsage(scope)" v-permit="'lm:credit:'">用量</el-button>
           <el-button link @click="handleShow(scope)" v-permit="'lm:credit:'">查看</el-button>
           <el-button link @click="handleEdit(scope)" v-permit="'lm:credit:modify'">编辑</el-button>
         </template>
@@ -238,7 +382,275 @@ const handleDelete = () => {
       </el-descriptions>
     </el-form>
   </el-drawer>
+
+  <el-drawer v-model="usageVisible" title="账户用量与限流" :destroy-on-close="true" size="78%">
+    <div class="usage-query">
+      <span class="usage-query__label">指定账户</span>
+      <form-select
+        v-model="usageUid"
+        v-model:selected="usageUser"
+        :callback="UserApi.list"
+        placeholder="搜索用户账号或昵称"
+        clearable
+        @change="handleUsageUserChange"
+      />
+      <el-button type="primary" :disabled="!usageUid || usageLoading" @click="loadUsage()">
+        {{ usage ? '刷新用量' : '查询用量' }}
+      </el-button>
+    </div>
+
+    <el-empty v-if="!usageUid" description="请选择一个账户查看当前限流用量" />
+    <div v-else-if="usageLoading && !usage" v-loading="true" class="usage-loading"></div>
+    <template v-else-if="usage">
+      <div class="usage-account">
+        <div>
+          <strong>{{ usageUser?.name || usageUser?.serial || `用户 ${usage.uid}` }}</strong>
+          <span v-if="usageUser?.serial">@{{ usageUser.serial }}</span>
+          <span>UID {{ usage.uid }}</span>
+        </div>
+        <el-tag :type="usage.status === 1 ? 'success' : usage.status === 2 ? 'warning' : 'info'">
+          {{ usage.statusText }}
+        </el-tag>
+      </div>
+
+      <el-descriptions border :column="3" class="usage-overview">
+        <el-descriptions-item label="剩余积分">{{ formatUsageValue(usage.remained) }}</el-descriptions-item>
+        <el-descriptions-item label="总消耗">{{ formatUsageValue(usage.consumed) }}</el-descriptions-item>
+        <el-descriptions-item label="数据时间">{{ DateUtil.format(usage.updatedTime) }}</el-descriptions-item>
+      </el-descriptions>
+
+      <el-alert
+        v-if="!usage.available"
+        class="usage-alert"
+        :title="usage.status ? '该账户积分状态已停用，当前可能无法继续调用模型。' : '该账户尚未开通积分，暂无生效的限流策略。'"
+        type="warning"
+        :closable="false"
+        show-icon
+      />
+
+      <div class="usage-section-head">
+        <div>
+          <h4>当前窗口用量</h4>
+          <p>数值来自网关实际限流计数；窗口结束后会自动清零。</p>
+        </div>
+        <el-button
+          v-permit="'lm:credit:modify'"
+          type="danger"
+          plain
+          :disabled="!usage.limits.length || !!usageResetting"
+          :loading="usageResetting === 'all'"
+          @click="resetUsage()"
+        >
+          重置全部用量
+        </el-button>
+      </div>
+
+      <el-table v-if="usage.limits.length" :data="usage.limits" border table-layout="auto" v-loading="usageLoading">
+        <el-table-column prop="rateName" label="限流策略" min-width="150" />
+        <el-table-column label="类型" width="110">
+          <template #default="scope">
+            <span class="usage-type" :class="'is-' + scope.row.type">
+              <i></i>{{ scope.row.typeText }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="当期用量" min-width="220">
+          <template #default="scope">
+            <div class="usage-progress" :class="usageTone(scope.row)">
+              <div class="usage-progress__numbers">
+                <strong>{{ formatUsageValue(scope.row.used) }}</strong>
+                <span>/ {{ formatUsageValue(scope.row.limit) }} {{ scope.row.unit }}</span>
+              </div>
+              <div class="usage-progress__track">
+                <span :style="{ width: `${usagePercent(scope.row)}%` }"></span>
+              </div>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="剩余" width="130">
+          <template #default="scope">
+            {{ formatUsageValue(scope.row.remained) }} {{ scope.row.unit }}
+          </template>
+        </el-table-column>
+        <el-table-column label="限流周期" width="110">
+          <template #default="scope">每 {{ formatInterval(scope.row.interval) }}</template>
+        </el-table-column>
+        <el-table-column label="下次重置" min-width="170">
+          <template #default="scope">{{ DateUtil.format(scope.row.resetTime) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="90" fixed="right">
+          <template #default="scope">
+            <el-button
+              v-permit="'lm:credit:modify'"
+              link
+              type="danger"
+              :disabled="!!usageResetting"
+              :loading="usageResetting === `${scope.row.rateId}-${scope.row.type}`"
+              @click="resetUsage(scope.row)"
+            >
+              重置
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-empty v-else description="该账户没有生效中的限流策略" />
+    </template>
+  </el-drawer>
 </template>
 
 <style lang="scss" scoped>
+.usage-query {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--el-fill-color-lighter);
+  border-radius: 8px;
+
+  .el-select {
+    width: min(420px, 50vw);
+  }
+}
+
+.usage-query__label {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+}
+
+.usage-loading {
+  min-height: 260px;
+}
+
+.usage-account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 20px;
+
+  > div {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  strong {
+    font-size: 18px;
+    color: var(--el-text-color-primary);
+  }
+
+  span {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+  }
+}
+
+.usage-overview {
+  margin-top: 14px;
+}
+
+.usage-alert {
+  margin-top: 14px;
+}
+
+.usage-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 22px 0 12px;
+
+  h4 {
+    font-size: 15px;
+    color: var(--el-text-color-primary);
+  }
+
+  p {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+  }
+}
+
+.usage-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--el-text-color-regular);
+
+  i {
+    width: 7px;
+    height: 7px;
+    background: var(--el-color-info);
+    border-radius: 50%;
+  }
+
+  &.is-request i {
+    background: var(--el-color-primary);
+  }
+
+  &.is-token i {
+    background: var(--el-color-success);
+  }
+
+  &.is-credit i {
+    background: var(--el-color-warning);
+  }
+}
+
+.usage-progress__numbers {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+
+  strong {
+    font-size: 14px;
+    color: var(--el-text-color-primary);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.usage-progress__track {
+  height: 6px;
+  margin-top: 7px;
+  overflow: hidden;
+  background: var(--el-fill-color-dark);
+  border-radius: 999px;
+
+  span {
+    display: block;
+    height: 100%;
+    background: var(--el-color-primary);
+    border-radius: inherit;
+  }
+}
+
+.usage-progress.is-warning .usage-progress__track span {
+  background: var(--el-color-warning);
+}
+
+.usage-progress.is-danger .usage-progress__track span {
+  background: var(--el-color-danger);
+}
+
+@media (max-width: 760px) {
+  .usage-query {
+    align-items: stretch;
+    flex-direction: column;
+
+    .el-select {
+      width: 100%;
+    }
+  }
+
+  .usage-account,
+  .usage-section-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
 </style>

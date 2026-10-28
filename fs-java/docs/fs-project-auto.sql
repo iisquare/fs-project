@@ -27,7 +27,7 @@ CREATE TABLE `fs_auto_layout`  (
   `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '配置',
   `sort` int(0) NOT NULL DEFAULT 0 COMMENT '排序',
   `status` tinyint(0) NOT NULL DEFAULT 0 COMMENT '状态',
-  `description` tinytext CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '描述',
+  `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '描述',
   `created_uid` int(0) NOT NULL DEFAULT 0 COMMENT '创建者',
   `created_time` bigint(0) NOT NULL DEFAULT 0 COMMENT '创建时间',
   `updated_uid` int(0) NOT NULL DEFAULT 0 COMMENT '修改者',

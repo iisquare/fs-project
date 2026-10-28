@@ -60,6 +60,11 @@ public class ModelService extends JPAServiceBase {
         parameters.replace("rpm", parameter("每分钟请求数", "number", "RPM"));
         parameters.replace("tpm", parameter("每分钟词元数", "number", "TPM"));
         parameters.replace("credits", parameter("消耗积分数", "number", "积分/百万词元"));
+        item = plans.putObject("rate-qps");
+        item.put("name", "请求频次");
+        parameters = item.putObject("parameters");
+        parameters.replace("qps", parameter("每秒请求数", "number", "QPS"));
+        parameters.replace("credits", parameter("单次请求消耗积分数", "number", "积分/次"));
     }
 
     @Override
@@ -95,6 +100,8 @@ public class ModelService extends JPAServiceBase {
         types.put("chat", "对话");
         types.put("embedding", "词嵌入");
         types.put("reranker", "重排序");
+        types.put("search", "网页搜索");
+        types.put("fetch", "网页抓取");
         return types;
     }
 

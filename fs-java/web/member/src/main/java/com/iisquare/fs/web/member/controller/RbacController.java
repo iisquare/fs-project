@@ -38,7 +38,8 @@ public class RbacController extends RpcControllerBase {
      * 返回的 data 对象中仅包含请求参数中声明的键。
      * {
      *     "user": {
-     *         "uid": 1
+     *         "uid": 1,
+     *         "token": "会话令牌"
      *     },
      *     "resource": {
      *         "member::": true,
@@ -65,9 +66,10 @@ public class RbacController extends RpcControllerBase {
     }
 
     /**
-     * 获取当前登录用户的会话信息，data 为会话属性集合。
+     * 获取当前登录用户的会话信息，data 为会话属性集合，token 为当前会话令牌。
      * {
-     *     "uid": 1
+     *     "uid": 1,
+     *     "token": "会话令牌"
      * }
      */
     @PostMapping("/currentInfo")

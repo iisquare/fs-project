@@ -9,17 +9,13 @@ import com.iisquare.fs.web.agent.ai.ToolParam;
 import com.iisquare.fs.web.agent.service.AIService;
 import com.iisquare.fs.web.agent.tool.FileFetcher;
 import com.iisquare.fs.web.agent.tool.FileUploader;
-import com.iisquare.fs.web.core.mvc.FeignInterceptor;
 import com.iisquare.fs.web.core.rpc.FileRpc;
-import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,8 +28,8 @@ import java.util.Map;
  *
  * 调用口径与对话调用一致（对照 {@link com.iisquare.fs.web.agent.service.BotService}）：
  * - 密钥：服务级密钥 {@code fs.agent.token}（Authorization: Bearer），与其它模型网关调用共用；
- * - 会话：调用端带上的会话令牌原样透传给网关（{@link FeignInterceptor#HEADER_AUTH_TOKEN}），
- *   网关据此把这一轮用量记到该用户名下；调用端没带会话时照常调用，只是按服务级密钥记账；
+ * - 会话：调用端必须带登录会话（{@code x-auth-token} 或 Authorization: Bearer），
+ *   网关据此把这一轮用量记到该用户名下；没有会话或会话无效时工具直接报错；
  * - 报文：OpenAI 兼容的 {@code /v1/chat/completions}，content 为内容块数组
  *   （{@code image_url} / {@code video_url} / {@code audio_url}）。
  *
@@ -57,9 +53,11 @@ public class MultimodalTool {
     @Autowired
     AIService aiService;
     @Autowired
+    ToolSessionSupport toolSessionSupport;
+    @Autowired
     FileRpc fileRpc;
     /** 默认多模态模型：调用方没在参数里给出 model 时用它 */
-    @Value("${fs.agent.multimodal.model:}")
+    @Value("${fs.agent.multimodal.model:deepseek-flash}")
     private String defaultModel;
     /**
      * 单个文件的字节上限：原文件以 base64 整块进请求体（base64 约为原文件的 4/3），
@@ -95,6 +93,7 @@ public class MultimodalTool {
             String model,
             @ToolParam(name = "system", description = "系统提示词，留空则不发送", required = false)
             String system) {
+        String session = toolSessionSupport.requireSession();
         if (null == files || files.isEmpty()) throw new IllegalStateException("待分析的文件不能为空");
         String current = DPUtil.empty(model) ? defaultModel : model;
         if (DPUtil.empty(current)) {
@@ -112,7 +111,7 @@ public class MultimodalTool {
         ObjectNode user = messages.addObject();
         user.put("role", "user");
         user.set("content", content);
-        Map<String, Object> result = aiService.chat(body, session());
+        Map<String, Object> result = aiService.chat(body, session);
         if (ApiUtil.failed(result)) {
             throw new IllegalStateException("多模态模型调用失败：" + DPUtil.parseString(result.get("message"))
                     + " " + DPUtil.stringify(result.get("data")));
@@ -289,24 +288,6 @@ public class MultimodalTool {
         } catch (Exception e) {
             throw new IllegalStateException("下载文件失败：" + name + "（" + e.getMessage() + "）");
         }
-    }
-
-    /**
-     * 调用端的会话令牌：与对话调用（{@code BotService.session}）同一口径——
-     * Authorization: Bearer &lt;会话&gt; 优先，其次 {@code x-auth-token} 头；
-     * 拿不到（外部 MCP 客户端没带会话、异步传输取不到请求属性）时按空处理，不影响调用。
-     */
-    protected String session() {
-        ServletRequestAttributes attributes =
-                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (null == attributes) return "";
-        HttpServletRequest request = attributes.getRequest();
-        String authorization = request.getHeader("authorization");
-        if (null != authorization && authorization.startsWith("Bearer ")) {
-            return authorization.substring("Bearer ".length());
-        }
-        String token = request.getHeader(FeignInterceptor.HEADER_AUTH_TOKEN);
-        return DPUtil.empty(token) ? "" : token;
     }
 
 }

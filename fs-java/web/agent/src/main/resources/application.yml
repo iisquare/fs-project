@@ -30,11 +30,20 @@ fs:
       upload:
         bucket: fs-mcp
         maxSize: 104857600
+      # 桌面端安装包：与普通聊天附件分开配置；Electron 安装包常超过默认 100MB
+      version:
+        bucket: fs-mcp
+        maxSize: 4294967296
     # 多模态工具（MCP 的 multimodalAnalyze）：默认模型名称与单文件字节上限；
     # 调用时给出的 model 参数优先，两者都没有会直接报错提醒配置
     multimodal:
-      model: ''
       maxSize: 20971520
+    # 网页搜索 / 网页抓取工具（MCP 的 webSearch / webFetch）：
+    # 模型别名取网关里类型为 search / fetch 的模型，服务级密钥需已开通这两个模型；
+    # maxContent 为单次抓取返回的正文上限，maxResultContent 为搜索单条正文的上限（字符）
+    web:
+      maxContent: 30000
+      maxResultContent: 8000
   jpa:
     show-sql: true
     hibernate:
@@ -42,5 +51,6 @@ fs:
         physical-strategy: com.iisquare.fs.web.agent.dsconfig.NamingStrategy
   servlet:
     multipart:
-      max-file-size: 100MB
-      max-request-size: 100MB
+      # 客户端安装包上传需要更大的容器上限；普通聊天附件仍由 fs.agent.bot.upload.maxSize 限制
+      max-file-size: 4096MB
+      max-request-size: 4096MB

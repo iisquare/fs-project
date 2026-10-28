@@ -31,6 +31,10 @@ public class RedisKey {
         return String.format("fs:lm:gateway:model-parallel-%d", modelId);
     }
 
+    public static String toolsQps(int providerId, String toolType, long second) {
+        return String.format("fs:lm:tools:qps-%d-%s-%d", providerId, toolType, second);
+    }
+
     public static String channel() {
         return "fs:lm:gateway:channel";
     }

@@ -44,6 +44,25 @@ public class CreditController extends PermitControllerBase {
         return ApiUtil.echoResult(0, null, result);
     }
 
+    @RequestMapping("/usage")
+    @Permission("")
+    public String usageAction(@RequestBody Map<?, ?> param) {
+        int uid = DPUtil.parseInt(param.get("uid"));
+        if (uid < 1) {
+            return ApiUtil.echoResult(1001, "用户ID异常", uid);
+        }
+        return ApiUtil.echoResult(0, null, creditService.usage(uid));
+    }
+
+    @RequestMapping("/reset")
+    @Permission("modify")
+    public String resetAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
+        int uid = DPUtil.parseInt(param.get("uid"));
+        int rateId = DPUtil.parseInt(param.get("rateId"));
+        String type = DPUtil.parseString(param.get("type"));
+        return ApiUtil.echoResult(creditService.reset(uid, rateId, type, request));
+    }
+
     @RequestMapping("/save")
     @Permission({"add", "modify"})
     public String saveAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {

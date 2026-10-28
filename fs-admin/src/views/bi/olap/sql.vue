@@ -143,20 +143,8 @@ watch(keyword, (value) => {
   treeRef.value?.filter(value)
 })
 
-const isArrayType = (type?: string) => {
-  return !!type && /^array\s*[<(]/i.test(type.trim())
-}
-
 const buildSelectFields = (columns: { name: string; type?: string }[]) => {
-  const parts: string[] = []
-  columns.forEach((column) => {
-    const { name, type } = column
-    if (isArrayType(type)) {
-      parts.push(`array_join(${quoteIdentifier(name)}, ',') AS ${quoteIdentifier(name)}`)
-    } else {
-      parts.push(quoteIdentifier(name))
-    }
-  })
+  const parts = columns.map((column) => quoteIdentifier(column.name))
   return parts.length ? parts.join(', ') : '*'
 }
 

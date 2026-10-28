@@ -314,17 +314,33 @@ export const useConversationStore = defineStore('conversation', () => {
   }
 
   async function remove(id: string): Promise<void> {
-    // 已经排队但还没发的消息跟着会话一起丢掉
-    clearQueued(id)
-    clearComposerDraft(id)
-    // 先作废运行中的这一轮并收掉模型流 / 本地命令，再删库：
-    // 删除后 generation 仍会走收尾，靠 chat store 的作废标记避免把回复重新写回来
-    useChatStore().discard(id, 'delete')
-    await ConversationDb.delete(id)
-    if (currentId.value === id) currentId.value = ''
+    await removeMany([id])
+  }
+
+  /** 批量删除会话：先统一停止运行态，再由数据库层在一个事务里删消息与会话行 */
+  async function removeMany(ids: string[]): Promise<void> {
+    const targets = [...new Set(ids.map((id) => String(id ?? '')).filter(Boolean))]
+    if (!targets.length) return
+
+    const chat = useChatStore()
+    for (const id of targets) {
+      // 已经排队但还没发的消息跟着会话一起丢掉
+      clearQueued(id)
+      clearComposerDraft(id)
+      delete drafts.value[id]
+      // 先作废运行中的这一轮并收掉模型流 / 本地命令，再删库：
+      // 删除后 generation 仍会走收尾，靠 chat store 的作废标记避免把回复重新写回来
+      chat.discard(id, 'delete')
+    }
+
+    const result = await ConversationDb.deleteMany(targets)
+    if (!ApiUtil.succeed(result)) {
+      throw new Error(String(ApiUtil.message(result) || '删除会话失败'))
+    }
+    if (targets.includes(currentId.value)) currentId.value = ''
     await fetchConversations()
     // 页面可能在 currentId 变化时把输入写回草稿表，列表刷新后再清一次
-    clearComposerDraft(id)
+    for (const id of targets) clearComposerDraft(id)
   }
 
   /**
@@ -396,6 +412,7 @@ export const useConversationStore = defineStore('conversation', () => {
     clearComposerDraft,
     select,
     remove,
+    removeMany,
     rename,
     clearMessages,
     deselect,

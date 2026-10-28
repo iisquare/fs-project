@@ -116,6 +116,10 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         return pool;
     }
 
+    public ObjectNode cache() {
+        return cache;
+    }
+
     public ObjectNode state(Map<String, Object> param) {
         if (param.containsKey("recordDetails")) {
             recordDetails = DPUtil.parseBoolean(param.get("recordDetails"));
@@ -195,6 +199,16 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
             }
         }
         return result;
+    }
+
+    /**
+     * 当前调用方的积分概览：服务级密钥负责认证，用户会话负责识别「当前用户」。
+     * 与模型调用共用一套用户代理口径，因此返回的余额、间隔用量与下一次请求的判定一致。
+     */
+    public ObjectNode credit(HttpServletRequest request, HttpServletResponse response) {
+        ObjectNode auth = creditService.authByKey(token(request), request, cache, false);
+        if (null == auth) return error401(response);
+        return creditService.summary(auth, cache);
     }
 
     /**

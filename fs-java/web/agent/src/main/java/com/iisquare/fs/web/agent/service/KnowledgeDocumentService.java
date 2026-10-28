@@ -13,6 +13,7 @@ import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rpc.FileRpc;
+import com.iisquare.fs.web.core.file.StreamFileUploader;
 import com.iisquare.fs.web.agent.dao.KnowledgeChunkDao;
 import com.iisquare.fs.web.agent.dao.KnowledgeDocumentDao;
 import com.iisquare.fs.web.agent.dao.KnowledgeSegmentDao;
@@ -58,6 +59,8 @@ public class KnowledgeDocumentService extends JPAServiceBase {
     KnowledgeService knowledgeService;
     @Autowired
     FileRpc fileRpc;
+    @Autowired
+    StreamFileUploader streamFileUploader;
     @Autowired
     AIService aiService;
     @Autowired
@@ -177,10 +180,10 @@ public class KnowledgeDocumentService extends JPAServiceBase {
                 sources.add(chunkES.format(chunk, segment, document));
             }
         }
-        Map<String, Object> result = RpcUtil.result(fileRpc.form("/file/upload", DPUtil.buildMap(
+        Map<String, Object> result = streamFileUploader.upload("/file/upload", DPUtil.buildMap(
                 "bucket", bucket, "filepath", document.getFilepath(),
                 "traceIdentity", String.format("fs-knowledge-%d-document-%d", knowledgeId, document.getId())
-        ), file));
+        ), file);
         if (ApiUtil.failed(result)) {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return result;

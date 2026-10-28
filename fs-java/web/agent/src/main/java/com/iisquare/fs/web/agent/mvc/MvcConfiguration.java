@@ -5,6 +5,8 @@ import com.iisquare.fs.base.web.config.WebMvcConfiguration;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rbac.PermitException;
 import com.iisquare.fs.web.core.rbac.PermitInterceptor;
+import com.iisquare.fs.web.agent.service.ClientVersionService;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.HandlerExceptionResolver;
@@ -20,11 +22,16 @@ public class MvcConfiguration extends WebMvcConfiguration implements HandlerExce
 
     @Autowired
     DefaultRbacService rbacService;
+    @Autowired
+    ObjectProvider<ClientVersionService> clientVersionServiceProvider;
 
     @Override
     protected void addInterceptors(InterceptorRegistry registry) {
         super.addInterceptors(registry);
-        registry.addInterceptor(new PermitInterceptor(rbacService)).addPathPatterns("/**");
+        registry.addInterceptor(new ClientVersionInterceptor(clientVersionServiceProvider))
+                .addPathPatterns("/**").order(0);
+        registry.addInterceptor(new PermitInterceptor(rbacService))
+                .addPathPatterns("/**").order(1);
     }
 
     @Override

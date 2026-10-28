@@ -9,6 +9,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import { useLoadingStore } from './stores/loading'
+import { useUpdateStore } from './stores/update'
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -41,6 +42,9 @@ const releaseBoot = appLoading.show('正在启动客户端...')
 
 app.use(router)
 app.mount('#app')
+
+// 更新检查属于客户端启动流程，与登录态 / 路由守卫无关；接口在服务端也是公开的
+void useUpdateStore(pinia).checkOnStartup()
 
 // 首屏路由完成后还要等两帧，确保主界面已经绘制，再撤掉启动遮罩
 void router

@@ -18,6 +18,7 @@ import com.iisquare.fs.web.agent.tool.ByteArrayMultipartFile;
 import com.iisquare.fs.web.agent.tool.ParsedImage;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rpc.FileRpc;
+import com.iisquare.fs.web.core.file.StreamFileUploader;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +75,8 @@ public class KnowledgeImageService extends JPAServiceBase {
     DefaultRbacService rbacService;
     @Autowired
     FileRpc fileRpc;
+    @Autowired
+    StreamFileUploader streamFileUploader;
     @Autowired
     Configuration configuration;
 
@@ -307,9 +310,9 @@ public class KnowledgeImageService extends JPAServiceBase {
         String filepath = String.format("knowledge-%d/image/%s/%s%s", knowledgeId, date,
                 UUID.randomUUID().toString().replace("-", ""), suffix);
         String traceIdentity = String.format("fs-knowledge-%d-document-%s-image", knowledgeId, documentId);
-        Map<String, Object> result = RpcUtil.result(fileRpc.form("/file/upload", DPUtil.buildMap(
+        Map<String, Object> result = streamFileUploader.upload("/file/upload", DPUtil.buildMap(
                 "bucket", bucket, "filepath", filepath, "traceIdentity", traceIdentity
-        ), new ByteArrayMultipartFile("file", name, type, data)));
+        ), new ByteArrayMultipartFile("file", name, type, data));
         if (ApiUtil.failed(result)) {
             logger.warn("upload knowledge image failed: {} - {}", filepath, ApiUtil.message(result));
             return null;

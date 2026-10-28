@@ -7,6 +7,7 @@ import device from "./device";
 import form from "./form";
 import ai from "./ai";
 import basic from "./basic";
+import menu from "./menu";
 
 export default {
   layout,
@@ -18,4 +19,5 @@ export default {
   form,
   ai,
   basic,
+  menu,
 }

@@ -61,7 +61,7 @@ public class ElasticsearchUtil {
 
     public static List<SortOptions> sort(String sort, Collection<String> fields) {
         List<SortOptions> options = new ArrayList<>();
-        if (DPUtil.empty(sort)) return options;
+        if (DPUtil.empty(sort) || fields == null) return options;
         String[] sorts = DPUtil.explode(",", sort);
         for (String item : sorts) {
             String[] explode = DPUtil.explode("\\.", item);
@@ -75,8 +75,9 @@ public class ElasticsearchUtil {
     }
 
     public static List<SortOptions> sort(String sort, Collection<String> fields, boolean keepScore) {
-        if (keepScore && !fields.contains(FIELD_SCORE)) fields.add(FIELD_SCORE);
-        List<SortOptions> options = sort(sort, fields);
+        List<String> sortableFields = fields == null ? new ArrayList<>() : new ArrayList<>(fields);
+        if (keepScore && !sortableFields.contains(FIELD_SCORE)) sortableFields.add(FIELD_SCORE);
+        List<SortOptions> options = sort(sort, sortableFields);
         if (keepScore) {
             options.add(SortOptions.of(s -> s.field(f -> f.field(FIELD_SCORE).order(SortOrder.Desc))));
         }

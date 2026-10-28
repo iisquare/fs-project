@@ -150,8 +150,8 @@ spring:
     allow-circular-references: true
   servlet:
     multipart:
-      maxFileSize: 128MB
-      maxRequestSize: 128MB
+      maxFileSize: 4096MB
+      maxRequestSize: 4096MB
   thymeleaf:
     mode: HTML
     suffix: .html

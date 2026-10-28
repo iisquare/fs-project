@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs'
 import { dirname, join } from 'path'
 import { parse, stringify } from 'smol-toml'
@@ -10,7 +11,6 @@ import { parse, stringify } from 'smol-toml'
  * loginHistory = [ "admin" ]
  *
  * [settings]
- * autoStart = false
  * autoUpgrade = true
  * workspacePolicy = "ask"
  */
@@ -28,8 +28,11 @@ const FILE_HEADER = `# fs-bot 系统配置（应用自动维护，手工修改�
  * 默认值类型就是写入文件时的类型（false 对应 TOML 布尔值）
  */
 const SETTINGS_SCHEMA: Record<string, SettingValue> = {
-  autoStart: false,
   autoUpgrade: true,
+  /** 本机安装标识：灰度发布分桶与更新统计，不随服务端账号变化 */
+  clientId: '',
+  /** 更新渠道：服务端只返回同渠道的已启用版本 */
+  updateChannel: 'stable',
   /** 工作区外文件的访问策略，见 WorkspaceManager */
   workspacePolicy: 'ask'
 }
@@ -85,6 +88,12 @@ export class ConfigStore {
         this.write()
       }
     }
+    // 开机启动由操作系统登录项管理，不再保存一份可能与系统状态漂移的配置。
+    this.removeSetting('autoStart')
+    if (!this.data.settings.clientId) {
+      this.data.settings.clientId = randomUUID()
+      this.write()
+    }
     console.log('[Config] Config file ready:', this.filePath)
   }
 
@@ -110,7 +119,8 @@ export class ConfigStore {
    * 已登记项按默认值类型转换（兼容 "false" 这类字符串写法）；未登记项原样保留标量值。
    */
   private parseSetting(key: string, value: unknown): SettingValue | undefined {
-    if (value === null || typeof value === 'object' || typeof value === 'undefined') return undefined
+    if (value === null || typeof value === 'object' || typeof value === 'undefined')
+      return undefined
     if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
       return undefined
     }
@@ -157,6 +167,13 @@ export class ConfigStore {
     if (normalized === undefined) return
     this.ctx().settings[key] = normalized
     this.write()
+  }
+
+  private removeSetting(key: string): boolean {
+    if (!(key in this.ctx().settings)) return false
+    delete this.ctx().settings[key]
+    this.write()
+    return true
   }
 
   /** 最近使用的账号排在最前 */

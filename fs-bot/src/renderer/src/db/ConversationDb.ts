@@ -151,8 +151,17 @@ export default {
   },
 
   async delete(id: string) {
-    await Db.remove(MSG_TABLE, { conversation_id: id })
-    return Db.remove(TABLE, { id })
+    return this.deleteMany([id])
+  },
+
+  /** 批量删除会话：消息与会话行放在同一个事务里，要么全删掉，要么原样保留 */
+  async deleteMany(ids: string[]) {
+    const unique = [...new Set(ids.map((id) => String(id ?? '')).filter(Boolean))]
+    if (!unique.length) return ApiUtil.result(0, 'Succeed!', { changes: 0 })
+    return Db.removeBatch([
+      { table: MSG_TABLE, in: { conversation_id: unique } },
+      { table: TABLE, in: { id: unique } }
+    ])
   },
 
   /** 清空消息：会话保留，历史只删本地那几条消息记录 */

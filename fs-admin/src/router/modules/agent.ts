@@ -82,6 +82,14 @@ export const layouts = [{
     meta: { title: '版本记录', permit: ['agent:projectShare:'] },
     component: () => import('@/views/agent/bot/projectVersion.vue')
   }, {
+    path: '/agent/bot/clientVersion',
+    meta: { title: '版本管理', permit: ['agent:clientVersion:'] },
+    component: () => import('@/views/agent/bot/clientVersion.vue')
+  }, {
+    path: '/agent/bot/clientUpdateStatistic',
+    meta: { title: '更新统计', permit: ['agent:clientVersion:'] },
+    component: () => import('@/views/agent/bot/clientUpdateStatistic.vue')
+  }, {
     path: '/agent/setting/state',
     meta: { title: '运行状态', permit: ['agent:maintain:reindexChunk'] },
     component: () => import('@/views/agent/setting/state.vue')

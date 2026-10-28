@@ -127,8 +127,8 @@ public class ToolController extends PermitControllerBase {
 
     @RequestMapping("/mcpSync")
     @Permission("")
-    public String mcpSyncAction(@RequestBody Map<String, Object> param) {
-        Map<String, Object> result = toolService.mcpSync(param);
+    public String mcpSyncAction(@RequestBody Map<String, Object> param, HttpServletRequest request) {
+        Map<String, Object> result = toolService.mcpSync(param, request);
         return ApiUtil.echoResult(result);
     }
 

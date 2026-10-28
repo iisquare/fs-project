@@ -7,10 +7,11 @@ import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
-import com.iisquare.fs.web.bi.util.SqlParserUtil;
 import com.iisquare.fs.web.bi.dao.DatasetDao;
 import com.iisquare.fs.web.bi.entity.Dataset;
 import com.iisquare.fs.web.bi.entity.DataQueryLog;
+import com.iisquare.fs.web.bi.util.JdbcValueUtil;
+import com.iisquare.fs.web.bi.util.SqlParserUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -416,7 +417,7 @@ public class OlapService extends ServiceBase {
         while (resultSet.next()) {
             Map<String, Object> row = new LinkedHashMap<>();
             for (int i = 1; i <= count; i++) {
-                row.put(meta.getColumnName(i), resultSet.getObject(i));
+                row.put(meta.getColumnName(i), JdbcValueUtil.value(resultSet, i));
             }
             rows.add(DPUtil.toJSON(row));
         }
@@ -455,7 +456,7 @@ public class OlapService extends ServiceBase {
                 for (int i = 0; i < names.size(); i++) {
                     JsonNode value = row.get(names.get(i));
                     if (null == value || value.isNull()) continue;
-                    dataRow.createCell(i).setCellValue(value.asText());
+                    dataRow.createCell(i).setCellValue(value.isValueNode() ? value.asText() : value.toString());
                 }
             }
             String filename = "olap-query-" + System.currentTimeMillis() + ".xlsx";

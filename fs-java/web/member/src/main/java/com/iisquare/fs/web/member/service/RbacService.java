@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import jakarta.persistence.criteria.Predicate;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
@@ -99,9 +100,18 @@ public class RbacService extends RbacServiceBase {
     public JsonNode currentInfo(HttpServletRequest request) {
         JsonNode info = (JsonNode) request.getAttribute(PermitInterceptor.ATTRIBUTE_USER);
         if (null != info) return info;
-        info = DPUtil.toJSON(currentInfo(request, null));
-        request.setAttribute(PermitInterceptor.ATTRIBUTE_USER, info);
-        return info;
+        ObjectNode result = DPUtil.toJSON(currentInfo(request, null), ObjectNode.class);
+        HttpSession session = request.getSession(false);
+        if (null != result && null != session) result.put("token", session.getId());
+        request.setAttribute(PermitInterceptor.ATTRIBUTE_USER, result);
+        return result;
+    }
+
+    @Override
+    public String token(HttpServletRequest request) {
+        if (null == request) return "";
+        HttpSession session = request.getSession(false);
+        return null == session ? "" : DPUtil.trim(session.getId());
     }
 
     @Override

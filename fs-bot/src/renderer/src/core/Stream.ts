@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- SSE 事件体由各类业务接口自行解释 */
 /**
  * SSE 流式调用（POST + fetch 流读取）。
  *
@@ -53,9 +54,15 @@ export class SseStream {
   private async consume(options: StreamOptions): Promise<void> {
     let error: string | undefined
     try {
+      const client = await window.ipc.clientMeta()
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
+        'x-client-version': client.clientVersion,
+        'x-client-platform': client.platform,
+        'x-client-arch': client.architecture,
+        'x-client-id': client.clientId,
+        'x-client-channel': client.channel,
         ...(options.headers ?? {})
       }
       if (options.token) headers['Authorization'] = 'Bearer ' + options.token
@@ -67,7 +74,11 @@ export class SseStream {
         signal: this.controller?.signal
       })
       if (!response.ok) {
-        throw new Error(`流式接口返回异常：HTTP ${response.status}`)
+        const result = await response.json().catch(() => null)
+        if (Number(result?.code) === 90426) {
+          window.dispatchEvent(new CustomEvent('fs-client-upgrade-required'))
+        }
+        throw new Error(result?.message || `流式接口返回异常：HTTP ${response.status}`)
       }
       if (!response.body) throw new Error('流式接口无响应体')
       const reader = response.body.getReader()

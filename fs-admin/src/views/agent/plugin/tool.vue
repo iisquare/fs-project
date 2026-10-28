@@ -24,6 +24,7 @@ const columns = ref([
   { prop: 'id', label: 'ID' },
   { prop: 'name', label: '工具名称' },
   { prop: 'typeText', label: '工具类型' },
+  { prop: 'passSession', label: '传递会话', width: 90, slot: 'session' },
   { prop: 'methodCount', label: '方法数' },
   { prop: 'url', label: '调用地址', hide: true },
   { prop: 'labels', label: '标签', slot: 'labels' },
@@ -84,6 +85,7 @@ const handleAdd = () => {
     status: '1',
     header: {},
     query: {},
+    passSession: 0,
     labels: [],
     roleIds: [],
   }
@@ -102,6 +104,7 @@ const handleEdit = (scope: any) => {
     labels: scope.row.labels || [],
     header: scope.row.header || {},
     query: scope.row.query || {},
+    passSession: scope.row.passSession ?? 0,
   })
   formVisible.value = true
   snapshotForm()
@@ -295,6 +298,7 @@ const handleMcpSync = () => {
     url: form.value.url,
     header: form.value.header,
     query: form.value.query,
+    passSession: form.value.passSession ?? 0,
   }
   formLoading.value = true
   formParseError.value = ''
@@ -313,6 +317,8 @@ const handleMcpSync = () => {
 const handleMcpDemo = () => {
   form.value.type = 'mcp'
   form.value.url = config.value.mcpSampleUrl || MCP_SAMPLE_URL
+  // 样例地址就是本服务自己的 MCP 服务：工具方法要求登录用户，默认把会话开关打开
+  form.value.passSession = 1
   handleMcpSync()
 }
 
@@ -543,6 +549,11 @@ const handleTestSubmit = () => {
     >
       <el-table-column type="selection" />
       <TableColumn :columns="columns">
+        <template #session="scope">
+          <el-tag :type="1 === scope.row.passSession ? 'success' : 'info'" size="small" effect="plain">
+            {{ 1 === scope.row.passSession ? '是' : '否' }}
+          </el-tag>
+        </template>
         <template #role="scope">
           <el-space><el-tag v-for="item in scope.row.roles" :key="item.id">{{ item.name }}</el-tag></el-space>
         </template>
@@ -560,7 +571,7 @@ const handleTestSubmit = () => {
     <TablePagination v-model="pagination" :loading="loading" @change="handleRefresh(true, true)" />
   </el-card>
   <el-drawer v-model="infoVisible" :title="'信息查看 - ' + form.id" size="60%">
-    <el-descriptions :column="2" label-width="100px" border>
+    <el-descriptions :column="2" label-width="120px" border>
       <el-descriptions-item label="工具名称">{{ form.name }}</el-descriptions-item>
       <el-descriptions-item label="工具类型">{{ form.typeText }}</el-descriptions-item>
       <el-descriptions-item label="标签">
@@ -571,6 +582,9 @@ const handleTestSubmit = () => {
       </el-descriptions-item>
       <el-descriptions-item label="排序">{{ form.sort }}</el-descriptions-item>
       <el-descriptions-item label="状态">{{ form.statusText }}</el-descriptions-item>
+      <el-descriptions-item label="传递用户会话">
+        {{ 1 === form.passSession ? '是（x-auth-token）' : '否' }}
+      </el-descriptions-item>
       <el-descriptions-item label="描述" :span="2">{{ form.description ? form.description : '暂无' }}</el-descriptions-item>
       <el-descriptions-item label="调用地址" :span="2">{{ form.url }}</el-descriptions-item>
       <el-descriptions-item label="配置信息" :span="2">
@@ -622,7 +636,7 @@ const handleTestSubmit = () => {
       </el-space>
     </template>
     <el-form ref="formRef" :model="form" :rules="rules">
-      <el-descriptions :column="2" label-width="100px" border>
+      <el-descriptions :column="2" label-width="120px" border>
         <el-descriptions-item label="工具名称"><el-input v-model="form.name" /></el-descriptions-item>
         <el-descriptions-item label="工具类型">
           <el-select v-model="form.type" placeholder="请选择">
@@ -643,6 +657,12 @@ const handleTestSubmit = () => {
         </el-descriptions-item>
         <el-descriptions-item label="描述" :span="2"><el-input type="textarea" v-model="form.description" /></el-descriptions-item>
         <el-descriptions-item label="调用地址" :span="2"><el-input v-model="form.url" /></el-descriptions-item>
+        <el-descriptions-item label="传递用户会话" :span="2">
+          <el-space>
+            <el-switch v-model="form.passSession" :active-value="1" :inactive-value="0" />
+            <el-text type="info" size="small">开启后把当前登录会话作为 x-auth-token 发给工具服务</el-text>
+          </el-space>
+        </el-descriptions-item>
         <el-descriptions-item label="配置操作" :span="2">
           <el-space>
             <el-button @click="handleJsonDemo" :loading="formLoading">JSON样例</el-button>

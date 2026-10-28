@@ -12,6 +12,13 @@ export default {
     return base.post('/bot/models', {}, tips)
   },
   /**
+   * 当前登录用户的积分概览：总消耗、剩余，以及各积分限流周期的已用量、剩余与下次重置时间。
+   * 未开通积分时返回 `available: false`，不会把账号状态当成接口异常。
+   */
+  credit(tips = {}) {
+    return base.post('/bot/credit', {}, tips)
+  },
+  /**
    * 文件上传地址：本地文件由客户端读出来按 multipart 直传服务端，拿回文件标识等信息。
    * 拿到 id 之后就能交给服务端的工具方法（如 multimodalAnalyze）按 id 引用该文件。
    */

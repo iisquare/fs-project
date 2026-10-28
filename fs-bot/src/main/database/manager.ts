@@ -6,6 +6,7 @@ import { ensureUserSchema } from './migrations'
 import { deriveHmacKey, computeTablesHash, verifyHash } from './integrity'
 import { deriveKey } from './encryption'
 import { is } from '@electron-toolkit/utils'
+import type { DbDeleteBatchItem } from './types'
 
 interface DbCtx {
   db: Database.Database
@@ -182,6 +183,29 @@ export class DatabaseManager {
   }
 
   /**
+   * 在一个事务里执行多条删除（例如批量删除会话时连同消息一起清掉）。
+   * 任意一条失败都会整体回滚，不会留下删了一半的会话。
+   */
+  removeBatch(deletes: DbDeleteBatchItem[]): {
+    code: number
+    message: string
+    data: { changes: number }
+  } {
+    const { db } = this.ctx()
+    const run = db.transaction((items: DbDeleteBatchItem[]) => {
+      let changes = 0
+      for (const item of items) {
+        const { sql, params } = this.buildDelete(item.table, item.where, item.in)
+        changes += db.prepare(sql).run(...params).changes
+      }
+      return changes
+    })
+    const changes = run(deletes)
+    this.afterWrite()
+    return { code: 0, message: 'Succeed!', data: { changes } }
+  }
+
+  /**
    * 关键词检索：columns 里的每一列按 LIKE 匹配（关键词参数化，
    * `%` / `_` / `\` 按字面量处理），可另加等值条件（where）、集合条件（in）与排序、条数上限。
    *
@@ -312,7 +336,8 @@ export class DatabaseManager {
 
   private buildDelete(
     table: string,
-    where: Record<string, unknown>
+    where: Record<string, unknown> = {},
+    inFilter: Record<string, unknown[]> = {}
   ): { sql: string; params: unknown[] } {
     const whereClauses: string[] = []
     const whereParams: unknown[] = []
@@ -320,6 +345,16 @@ export class DatabaseManager {
       whereClauses.push(`${col} = ?`)
       whereParams.push(val)
     }
+    for (const [col, values] of Object.entries(inFilter)) {
+      const list = Array.isArray(values) ? values : []
+      if (!list.length) {
+        whereClauses.push('0')
+        continue
+      }
+      whereClauses.push(`${col} IN (${list.map(() => '?').join(', ')})`)
+      whereParams.push(...list)
+    }
+    if (!whereClauses.length) whereClauses.push('0')
     return {
       sql: `DELETE FROM ${table} WHERE ${whereClauses.join(' AND ')}`,
       params: whereParams

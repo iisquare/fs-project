@@ -10,6 +10,7 @@ import com.iisquare.fs.web.agent.dao.ToolDao;
 import com.iisquare.fs.web.agent.entity.Tool;
 import com.iisquare.fs.web.agent.mvc.Configuration;
 import com.iisquare.fs.web.agent.mcp.McpHttpClient;
+import com.iisquare.fs.web.agent.mcp.ToolSessionSupport;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +33,8 @@ public class ToolService extends JPAServiceBase {
     Configuration configuration;
     @Autowired
     ToolMethodService toolMethodService;
+    @Autowired
+    ToolSessionSupport toolSessionSupport;
 
     /** MCP 同步超时（毫秒）：与工具方法调用同一套配置，连不上要尽快失败并把原因交给页面 */
     @Value("${fs.agent.tool.connectTimeout:10000}")
@@ -94,12 +97,16 @@ public class ToolService extends JPAServiceBase {
         } else {
             if(!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
             info = new Tool();
+            info.setPassSession(0);
         }
         info.setName(name);
         info.setType(type);
         info.setUrl(DPUtil.parseString(param.get("url")));
         info.setHeader(header);
         info.setQuery(query);
+        if (null != param.get("passSession")) {
+            info.setPassSession(DPUtil.parseInt(param.get("passSession")) == 1 ? 1 : 0);
+        }
         info.setLabels(DPUtil.implode(",", DPUtil.parseStringList(param.get("labels"))));
         info.setRoleIds(DPUtil.implode(",", DPUtil.parseIntList(param.get("roleIds"))));
         info.setContent(DPUtil.parseString(param.get("content")));
@@ -179,7 +186,7 @@ public class ToolService extends JPAServiceBase {
         return toolMethodService.save(param, rbacService.uid(request));
     }
 
-    public Map<String, Object> mcpSync(Map<String, Object> param) {
+    public Map<String, Object> mcpSync(Map<String, Object> param, HttpServletRequest request) {
         String url = DPUtil.parseString(param.get("url"));
         if (DPUtil.empty(url)) return ApiUtil.result(1001, "服务地址异常", url);
         ObjectNode result = DPUtil.objectNode();
@@ -194,6 +201,9 @@ public class ToolService extends JPAServiceBase {
         for (Map.Entry<String, JsonNode> entry : DPUtil.toJSON(param.get("header")).properties()) {
             headers.put(entry.getKey(), entry.getValue().asText());
         }
+        // 与工具方法调用同一口径：是否传调用方会话只看工具配置开关
+        boolean passSession = DPUtil.parseInt(param.get("passSession")) == 1;
+        headers = toolSessionSupport.headers(headers, passSession, request);
         // 客户端按地址自动判别传输：SSE 端点（/sse）与流式 HTTP 端点（/mcp）都能同步
         try (McpHttpClient client = new McpHttpClient(endpoint, headers, toolConnectTimeout, toolReadTimeout)) {
             client.initialize();

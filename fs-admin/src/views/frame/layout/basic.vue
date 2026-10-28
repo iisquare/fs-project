@@ -8,6 +8,7 @@ import RbacApi from '@/api/admin/RbacApi';
 import { useRoute } from 'vue-router';
 import { useCounterStore } from '@/stores/counter';
 import ElementUtil from '@/utils/ElementUtil';
+import { page } from '@/router/config';
 
 const user = useUserStore()
 const route = useRoute()
@@ -95,6 +96,17 @@ const handleLogout = () => {
           </el-breadcrumb>
         </el-space>
         <el-space>
+          <router-link
+            class="fs-bot-link"
+            :to="page.fsBot"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="在新窗口查看 fs-bot 产品介绍"
+          >
+            <el-icon><ElementPlusIcons.Monitor /></el-icon>
+            <span>fs-bot</span>
+          </router-link>
+          <span class="header-divider" aria-hidden="true"></span>
           <el-dropdown placement="bottom-end">
             <el-space class="fs-pointer">
               <el-icon :size="20"><ElementPlusIcons.Avatar /></el-icon>
@@ -209,6 +221,39 @@ const handleLogout = () => {
 .fs-header {
   padding: 0 15px;
   border-bottom: solid 1px var(--fs-layout-border-color);
+}
+.fs-bot-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 11px;
+  color: var(--el-text-color-regular);
+  font-size: 12px;
+  line-height: 1;
+  background: var(--el-bg-color);
+  border: 1px solid var(--fs-layout-border-color);
+  border-radius: 999px;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background-color 0.2s;
+
+  .el-icon {
+    font-size: 15px;
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
+    border-color: var(--el-color-primary-light-7);
+  }
+}
+.header-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--fs-layout-border-color);
 }
 .dropdown {
   a, a:visited {

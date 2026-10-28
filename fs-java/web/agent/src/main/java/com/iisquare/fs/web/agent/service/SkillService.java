@@ -52,12 +52,6 @@ public class SkillService extends JPAServiceBase {
         return status;
     }
 
-    public Map<String, String> types() {
-        Map<String, String> types = new LinkedHashMap<>();
-        types.put("default", "默认");
-        return types;
-    }
-
     public Skill info(Integer id) {
         return info(skillDao, id);
     }
@@ -73,8 +67,6 @@ public class SkillService extends JPAServiceBase {
         int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
         if (DPUtil.empty(name)) return ApiUtil.result(1001, "技能名称异常", name);
-        String type = DPUtil.parseString(param.get("type"));
-        if (!types().containsKey(type)) return ApiUtil.result(1002, "技能类型异常", type);
         int status = DPUtil.parseInt(param.get("status"));
         if (!status().containsKey(status)) return ApiUtil.result(1003, "状态异常", status);
         Skill info;
@@ -87,7 +79,6 @@ public class SkillService extends JPAServiceBase {
             info = new Skill();
         }
         info.setName(name);
-        info.setType(type);
         info.setLabels(DPUtil.implode(",", DPUtil.parseStringList(param.get("labels"))));
         info.setRoleIds(DPUtil.implode(",", DPUtil.parseIntList(param.get("roleIds"))));
         info.setContent(DPUtil.parseString(param.get("content")));
@@ -102,7 +93,7 @@ public class SkillService extends JPAServiceBase {
         ObjectNode result = search(skillDao, param, (root, query, cb) -> {
             SpecificationHelper<Skill> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id");
-            helper.equalWithIntNotEmpty("status").like("name").equal("type");
+            helper.equalWithIntNotEmpty("status").like("name");
             return cb.and(helper.predicates());
         }, Sort.by(Sort.Order.desc("sort"), Sort.Order.desc("id")), sorts().keySet());
         JsonNode rows = format(ApiUtil.rows(result));
@@ -111,7 +102,6 @@ public class SkillService extends JPAServiceBase {
         }
         if (!DPUtil.empty(args.get("withStatusText"))) {
             fillStatus(rows, status());
-            DPUtil.fillValues(rows, "type", "typeText", types());
         }
         if (!DPUtil.empty(args.get("withRoles"))) {
             rbacService.fillInfos(rows);
@@ -149,8 +139,6 @@ public class SkillService extends JPAServiceBase {
             ObjectNode item = items.addObject();
             item.put("id", info.getId());
             item.put("name", DPUtil.parseString(info.getName()));
-            item.put("type", DPUtil.parseString(info.getType()));
-            item.put("typeText", types().get(info.getType()));
             item.set("labels", DPUtil.toJSON(DPUtil.parseStringList(info.getLabels())));
             item.put("description", DPUtil.parseString(info.getDescription()));
             item.put("updatedTime", null == info.getUpdatedTime() ? 0L : info.getUpdatedTime());

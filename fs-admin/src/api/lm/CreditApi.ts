@@ -13,4 +13,10 @@ export default {
   save(param: any, tips = {}) {
     return base.post('/credit/save', param, tips)
   },
+  usage(param: any, tips = {}) {
+    return base.post('/credit/usage', param, tips)
+  },
+  reset(param: any, tips = {}) {
+    return base.post('/credit/reset', param, tips)
+  },
 }

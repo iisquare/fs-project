@@ -169,7 +169,7 @@ function statusText(status: string): string {
       <div class="ui-page-header__copy">
         <h1 class="ui-page-title">定时任务</h1>
         <p class="ui-page-desc">
-          按 cron 表达式自动以指定项目发起对话；调度在客户端运行，应用保持登录即会执行。
+          按 cron 表达式自动以指定项目发起对话；调度在客户端运行，应用保持运行且已登录即会执行。
         </p>
       </div>
       <div class="ui-page-actions">

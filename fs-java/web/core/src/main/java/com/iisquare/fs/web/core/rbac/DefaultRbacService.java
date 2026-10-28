@@ -153,6 +153,14 @@ public class DefaultRbacService extends RbacServiceBase {
         return pack(request, PermitInterceptor.ATTRIBUTE_USER);
     }
 
+    @Override
+    public String token(HttpServletRequest request) {
+        if (null == request) return "";
+        // 与 uid 共用同一份鉴权快照（ATTRIBUTE_USER），member 的 currentInfo 已返回 token
+        JsonNode info = currentInfo(request);
+        return null == info ? "" : DPUtil.parseString(info.at("/token").asText(""));
+    }
+
     /**
      * 获取当前登录用户拥有的资源
      */

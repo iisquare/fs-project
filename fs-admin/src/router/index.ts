@@ -46,6 +46,10 @@ routes.push({
   meta: { title: '404' },
   component: layout.e404
 }, {
+  path: page.fsBot,
+  meta: { title: 'fs-bot 智能体工作台', public: true, fit: true },
+  component: () => import('@/views/fs-bot/index.vue')
+}, {
   path: '/startup',
   meta: { title: '启动页面' },
   component: () => import('@/views/frame/page/startup.vue')
@@ -112,8 +116,9 @@ router.beforeEach((to: any, from, next) => {
   useCounterStore().routing = true
   document.title = (to.meta && to.meta.title) ? title.replace('FS Project', to.meta.title) : title
   const user = useUserStore()
+  const isPublic = to.meta?.public === true
   if (!user.ready) { // 用户状态未同步
-    if ([page.startup, page.e403, page.e404].includes(to.path)) {
+    if (isPublic || [page.startup, page.e403, page.e404].includes(to.path)) {
       next()
     } else {
       next({
@@ -122,7 +127,7 @@ router.beforeEach((to: any, from, next) => {
       })
     }
   } else if (user.info.id < 1) { // 用户未登陆
-    if ([page.login, page.signup, page.forgot, page.e403, page.e404].includes(to.path)) {
+    if (isPublic || [page.login, page.signup, page.forgot, page.e403, page.e404].includes(to.path)) {
       next()
     } else {
       next({

@@ -2,14 +2,18 @@ import {
   app,
   shell,
   BrowserWindow,
+  clipboard,
   dialog,
   ipcMain,
   nativeImage,
+  powerMonitor,
   protocol,
   screen,
   type NativeImage
 } from 'electron'
 import { join } from 'path'
+import { mkdirSync, writeFileSync } from 'fs'
+import { randomUUID } from 'crypto'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { DatabaseManager } from './database/manager'
@@ -20,6 +24,18 @@ import { exportProject, importProject } from './projects'
 import { ICON_SCHEME, initIcons, pickIcon, serveIcon } from './icons'
 import { CHAT_IMAGE_SCHEME, serveChatImage } from './images'
 import { parseProjectEnvVars } from './project-env'
+import { ScheduleManager } from './schedule'
+import { getAutoStartStatus, setAutoStart } from './autostart'
+import {
+  cancelUpdateDownload,
+  downloadAndInstallUpdate,
+  downloadControlStatus,
+  initUpdateState,
+  pauseUpdateDownload,
+  reportUpdateHealthy,
+  updateState,
+  type UpdateInstallRequest
+} from './update'
 import {
   WorkspaceManager,
   type WorkspacePermission,
@@ -33,6 +49,7 @@ import type {
   DbUpdateRequest,
   DbUpsertRequest,
   DbDeleteRequest,
+  DbDeleteBatchRequest,
   DbSearchRequest,
   ConfigUpdateSettingRequest,
   ConfigLoginHistoryRequest,
@@ -75,6 +92,7 @@ let mainWindow: BrowserWindow | null = null
 const db = DatabaseManager.getInstance()
 const workspace = WorkspaceManager.getInstance()
 const skills = SkillManager.getInstance()
+const schedule = new ScheduleManager()
 
 /**
  * 等待界面答复的访问申请：id → 答复回调与它所属的会话。
@@ -207,11 +225,23 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  schedule.attach(mainWindow)
+  // 页面重载或渲染进程退出时先停掉调度，等新的渲染进程重新同步任务后再挂上
+  mainWindow.webContents.on('did-start-navigation', (_event, _url, _isInPlace, isMainFrame) => {
+    if (isMainFrame) schedule.stop()
+  })
+  mainWindow.webContents.on('render-process-gone', () => schedule.stop())
+  mainWindow.on('closed', () => {
+    mainWindow = null
+    // 窗口关闭即视为客户端停止：不在后台继续跑定时任务
+    schedule.stop()
+  })
 }
 
 ipcMain.handle('window:set-login-size', () => {
   if (mainWindow) {
-    mainWindow.setSize(450, 600)
+    mainWindow.setSize(720, 640)
     mainWindow.center()
     mainWindow.setResizable(false)
   }
@@ -235,6 +265,11 @@ ipcMain.handle('window:maximize', () => {
 
 ipcMain.handle('window:close', () => {
   mainWindow?.close()
+})
+
+/** 强制升级弹窗的「退出应用」：跨平台退出整个进程，而不是只关闭窗口 */
+ipcMain.handle('app:quit', () => {
+  app.quit()
 })
 
 ipcMain.handle('window:is-maximized', () => {
@@ -383,6 +418,8 @@ app.whenReady().then(async () => {
   // Database initialization
   const config = ConfigStore.getInstance()
   config.init(runtimeDir)
+  // 更新状态跨版本保留：新版本启动并完成界面健康确认后才算安装成功
+  initUpdateState(runtimeDir)
   // 技能目录初始化：技能包解压到这里，页面按目录名展示已安装技能
   skills.init(runtimeDir)
   // 图标目录初始化：选中的本地图片复制到这里，界面按 app-icon://<文件名> 引用
@@ -421,6 +458,10 @@ app.whenReady().then(async () => {
     return db.remove(request.table, request.where)
   })
 
+  ipcMain.handle('db:delete-batch', (_event, request: DbDeleteBatchRequest) => {
+    return db.removeBatch(request.deletes)
+  })
+
   /**
    * 关键词检索：历史对话（记忆）按标题与消息正文找行，由主进程一条 SQL 查完。
    * mode 传 `segments` 时按空白切成多段匹配（多行片段、换行 / 缩进对不上的兜底口径）。
@@ -443,11 +484,50 @@ app.whenReady().then(async () => {
   ipcMain.handle('app:versions', () => {
     return {
       clientVersion: app.getVersion(),
-      dataVersion: db.userSchemaVersion
+      dataVersion: db.userSchemaVersion,
+      platform: process.platform,
+      architecture: process.arch
     }
   })
 
+  /** 客户端身份与更新渠道：业务请求头、灰度分桶和更新检查共用 */
+  ipcMain.handle('app:client-meta', () => {
+    const settings = config.getSettings()
+    return {
+      clientVersion: app.getVersion(),
+      platform: process.platform,
+      architecture: process.arch,
+      clientId: String(settings.clientId ?? ''),
+      channel: String(settings.updateChannel ?? 'stable')
+    }
+  })
+
+  /** 下载安装包：主进程负责写入临时文件、大小 / SHA-512 校验与启动安装器 */
+  ipcMain.handle('app:update:download', async (event, request: UpdateInstallRequest) => {
+    return downloadAndInstallUpdate(request, (progress) => {
+      if (!event.sender.isDestroyed()) event.sender.send('app:update:progress', progress)
+    })
+  })
+
+  ipcMain.handle('app:update:status', () => updateState())
+  ipcMain.handle('app:update:control', () => downloadControlStatus())
+  ipcMain.handle('app:update:pause', () => pauseUpdateDownload())
+  ipcMain.handle('app:update:cancel', () => cancelUpdateDownload())
+
+  ipcMain.handle('app:update:healthy', () => reportUpdateHealthy())
+
+  ipcMain.handle('app:auto-start:get', () => {
+    return getAutoStartStatus()
+  })
+
+  ipcMain.handle('app:auto-start:set', (_event, request: { enabled?: boolean }) => {
+    return setAutoStart(request?.enabled === true)
+  })
+
   ipcMain.handle('config:update-setting', (_event, request: ConfigUpdateSettingRequest) => {
+    if (request.key === 'autoStart') {
+      throw new Error('开机启动由系统登录项管理，请使用系统设置页的开关')
+    }
     config.updateSetting(request.key, request.value)
     return { success: true }
   })
@@ -462,6 +542,15 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('config:login-history:remove', (_event, request: ConfigLoginHistoryRequest) => {
     return config.removeLoginHistory(request.serial)
+  })
+
+  /** 定时调度：渲染进程只同步启用任务的标识 / cron / 开关，到点再由主进程通知执行 */
+  ipcMain.handle('schedule:sync', (_event, tasks: unknown) => {
+    schedule.sync(tasks)
+  })
+
+  ipcMain.handle('schedule:stop', () => {
+    schedule.stop()
   })
 
   /**
@@ -621,6 +710,23 @@ app.whenReady().then(async () => {
   })
 
   /**
+   * 粘贴截图：主进程直接读系统剪贴板并保存为临时 PNG。
+   * 渲染进程只拿到临时路径，不再把图片转成 base64，也不触发文件服务上传。
+   */
+  ipcMain.handle('workspace:save-clipboard-image', () => {
+    const image = clipboard.readImage()
+    if (image.isEmpty()) throw new Error('剪贴板里没有可保存的图片')
+    const png = image.toPNG()
+    if (!png.length) throw new Error('截图编码失败')
+    const dir = join(runtimeDir, 'userdata', 'temp', 'screenshots')
+    mkdirSync(dir, { recursive: true })
+    const stamp = new Date().toISOString().replace(/\D/g, '').slice(0, 14)
+    const path = join(dir, `screenshot-${stamp}-${randomUUID().slice(0, 8)}.png`)
+    writeFileSync(path, png)
+    return path
+  })
+
+  /**
    * 上传本机文件到文件服务（图床）：主进程读文件内容并按 multipart 直传服务端，
    * 拿回文件标识后即可交给服务端的工具方法（如 multimodalAnalyze）按 id 引用。
    */
@@ -726,6 +832,10 @@ app.whenReady().then(async () => {
 
   createWindow()
 
+  // 休眠期间撤掉定时器；恢复后按当前时间重算，不补跑休眠期间错过的任务
+  powerMonitor.on('suspend', () => schedule.suspend())
+  powerMonitor.on('resume', () => schedule.resume())
+
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
@@ -737,6 +847,7 @@ app.whenReady().then(async () => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('will-quit', () => {
+  schedule.stop()
   // 退出前把待更新的完整性哈希落盘，并关闭数据库（触发 WAL checkpoint）
   db.close()
 })

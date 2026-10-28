@@ -33,17 +33,18 @@ public class SessionIdResolver implements HttpSessionIdResolver {
     public List<String> resolveSessionIds(HttpServletRequest request) {
         List<String> ids = this.cookieSerializer.readCookieValues(request);
         if (!ids.isEmpty()) return ids;
+        // 显式会话头优先于 Authorization：模型网关等场景中 Authorization 可能是 API Key
+        String token = request.getHeader(FeignInterceptor.HEADER_AUTH_TOKEN);
+        if (!DPUtil.empty(token)) {
+            ids.add(token);
+            return ids;
+        }
         String authorization = request.getHeader("authorization");
         if (null != authorization && authorization.startsWith("Bearer ")) {
             authorization = authorization.substring("Bearer ".length());
             if (!authorization.isEmpty()) {
                 ids.add(authorization);
             }
-        }
-        if (!ids.isEmpty()) return ids;
-        String token = request.getHeader(FeignInterceptor.HEADER_AUTH_TOKEN);
-        if (!DPUtil.empty(token)) {
-            ids.add(token);
         }
         return ids;
     }

@@ -71,29 +71,29 @@ public class MetaService extends ServiceBase {
     }
 
     public ObjectNode search(Map<String, Object> param, Map<?, ?> config) {
-        Query query = Query.of(q -> {
-            String prefix = DPUtil.trim(DPUtil.parseString(param.get("prefix")));
-            if (!DPUtil.empty(prefix)) {
-                q.prefix(p -> p.field("id").value(prefix));
+        List<Query> filters = new ArrayList<>();
+        String prefix = DPUtil.trim(DPUtil.parseString(param.get("prefix")));
+        if (!DPUtil.empty(prefix)) {
+            filters.add(Query.of(q -> q.prefix(p -> p.field("id").value(prefix))));
+        }
+        String mold = DPUtil.trim(DPUtil.parseString(param.get("mold")));
+        if (!DPUtil.empty(mold)) {
+            filters.add(QueryUtil.term("mold", mold));
+        }
+        String keyword = DPUtil.trim(DPUtil.parseString(param.get("keyword")));
+        if (!DPUtil.empty(keyword)) {
+            String finalKeyword = "*" + keyword + "*";
+            List<Query> keywordQueries = new ArrayList<>();
+            for (String field : highlights) {
+                keywordQueries.add(Query.of(q -> q.wildcard(w -> w.field(field).value(finalKeyword))));
             }
-            String mold = DPUtil.trim(DPUtil.parseString(param.get("mold")));
-            if (!DPUtil.empty(mold)) {
-                q.term(t -> t.field("mold").value(mold));
-            }
-            String keyword = DPUtil.trim(DPUtil.parseString(param.get("keyword")));
-            if (!DPUtil.empty(keyword)) {
-                keyword = "*" + keyword + "*";
-                String finalKeyword = keyword;
-                q.bool(b -> b.should(s -> {
-                    for (String highlight : highlights) {
-                        s.wildcard(w -> w.field(highlight).value(finalKeyword));
-                    }
-                    return s;
-                }));
-            }
-            return q;
-        });
-        ObjectNode result = QueryUtil.search(metaES, param, query, null, null, highlights);
+            filters.add(QueryUtil.should(keywordQueries));
+        }
+        Query query = filters.isEmpty()
+                ? Query.of(q -> q.matchAll(m -> m))
+                : QueryUtil.must(filters);
+        ObjectNode result = QueryUtil.search(metaES, param, query, null,
+                Arrays.asList("id", "code", "name", "mold"), highlights);
         format(ApiUtil.rows(result));
         return result;
     }

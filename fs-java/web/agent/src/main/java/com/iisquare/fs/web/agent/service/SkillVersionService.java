@@ -11,6 +11,7 @@ import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rpc.FileRpc;
+import com.iisquare.fs.web.core.file.StreamFileUploader;
 import com.iisquare.fs.web.agent.dao.SkillDao;
 import com.iisquare.fs.web.agent.dao.SkillVersionDao;
 import com.iisquare.fs.web.agent.entity.Skill;
@@ -45,6 +46,8 @@ public class SkillVersionService extends JPAServiceBase {
     Configuration configuration;
     @Autowired
     FileRpc fileRpc;
+    @Autowired
+    StreamFileUploader streamFileUploader;
 
     /** 技能版本包的文件桶：单独存放，便于按技能清理旧版本 */
     public static final String bucket = "fs-skill";
@@ -98,10 +101,10 @@ public class SkillVersionService extends JPAServiceBase {
         version = save(versionDao, version, uid);
         // 上传到文件服务
         String filepath = String.format("skill-%d/versions/%d.zip", skillId, version.getId());
-        Map<String, Object> result = RpcUtil.result(fileRpc.form("/file/upload", DPUtil.buildMap(
+        Map<String, Object> result = streamFileUploader.upload("/file/upload", DPUtil.buildMap(
                 "bucket", bucket, "filepath", filepath,
                 "traceIdentity", String.format("fs-skill-%d-version-%d", skillId, version.getId())
-        ), file));
+        ), file);
         if (ApiUtil.failed(result)) {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return result;

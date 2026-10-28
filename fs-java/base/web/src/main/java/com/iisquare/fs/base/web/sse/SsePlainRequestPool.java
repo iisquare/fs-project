@@ -24,7 +24,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Enumeration;
+import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 public class SsePlainRequestPool implements Closeable {
 
@@ -175,8 +179,20 @@ public class SsePlainRequestPool implements Closeable {
     }
 
     public HttpRequestBase applyHeaders(HttpRequestBase http, HttpServletRequest request, List<String> headers) {
+        Set<String> forwarded = new LinkedHashSet<>();
         for (String header : headers) {
-            http.addHeader(header, request.getHeader(header));
+            String value = request.getHeader(header);
+            if (value == null) continue;
+            http.addHeader(header, value);
+            forwarded.add(header.toLowerCase(Locale.ROOT));
+        }
+        Enumeration<String> names = request.getHeaderNames();
+        while (names.hasMoreElements()) {
+            String name = names.nextElement();
+            String lower = name.toLowerCase(Locale.ROOT);
+            if (!lower.startsWith("x-") || forwarded.contains(lower)) continue;
+            String value = request.getHeader(name);
+            if (value != null) http.addHeader(name, value);
         }
         return http;
     }

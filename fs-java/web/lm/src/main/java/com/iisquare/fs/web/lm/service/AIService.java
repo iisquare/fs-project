@@ -61,6 +61,14 @@ public class AIService implements DisposableBean {
     }
 
     public Map<String, Object> post(String url, JsonNode json, Map<String, String> headers) {
+        return post(url, json, headers, 0);
+    }
+
+    /**
+     * 发起JSON请求，可单独指定读取超时（毫秒）。
+     * 网页抓取需要访问目标站点，耗时通常高于模型补全接口，因此允许调用方放宽超时。
+     */
+    public Map<String, Object> post(String url, JsonNode json, Map<String, String> headers, int socketTimeout) {
         HttpPost http = new HttpPost(url);
         if (headers != null) {
             for (Map.Entry<String, String> entry : headers.entrySet()) {
@@ -72,13 +80,20 @@ public class AIService implements DisposableBean {
         StringEntity entity = new StringEntity(body, StandardCharsets.UTF_8);
         entity.setContentType("application/json");
         http.setEntity(entity);
+        if (socketTimeout > 0) {
+            return this.execute(http, RequestConfig.copy(config).setSocketTimeout(socketTimeout).build());
+        }
         return this.execute(http);
     }
 
     public Map<String, Object> execute(HttpRequestBase http) {
+        return execute(http, config);
+    }
+
+    public Map<String, Object> execute(HttpRequestBase http, RequestConfig requestConfig) {
         CloseableHttpResponse response = null;
         try {
-            http.setConfig(this.config);
+            http.setConfig(requestConfig);
             response = client.execute(http);
             int code = response.getStatusLine().getStatusCode();
             HttpEntity entity = response.getEntity();

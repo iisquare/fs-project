@@ -36,7 +36,7 @@ INSERT INTO `fs_member_application` VALUES (63,'oa','在线办公','Checked','/o
 INSERT INTO `fs_member_application` VALUES (96,'cms','内容管理','solution','/cms/index/index','',0,1,'CMS内容管理系统',1627462111659,1,1627462111659,1);
 INSERT INTO `fs_member_application` VALUES (100,'file','文件存储','','','',0,1,'文件存储、图库图床、对象存储',1627547763814,1,1732160136155,1);
 INSERT INTO `fs_member_application` VALUES (148,'cron','定时任务','','','',0,1,'',1662455086472,1,1662455086472,1);
-INSERT INTO `fs_member_application` VALUES (157,'govern','数据治理','medicine-box','/govern/index/index','',0,1,'数据接入、元数据、集成同步',1648782552696,1,1648782565072,1);
+INSERT INTO `fs_member_application` VALUES (157,'govern','数据治理','menu.medicine-box','/govern/index/index','',0,1,'数据接入、元数据、集成同步',1648782552696,1,1648782565072,1);
 INSERT INTO `fs_member_application` VALUES (301,'server','服务管理','TakeawayBox','/server/index/index','',0,1,'管理项目基础服务',1662455086472,1,1782179032628,1);
 INSERT INTO `fs_member_application` VALUES (302,'demo','演示实例','Opportunity','/demo/index/index','',0,1,'基础组件、功能演示、示例代码',1662455086472,1,1736211445444,1);
 INSERT INTO `fs_member_application` VALUES (304,'lm','大模型','Cpu','/lm/index/index','',0,1,'服务代理、智能体、在线对话',1735010540766,1,1738219216648,1);
@@ -133,7 +133,7 @@ INSERT INTO `fs_member_menu` VALUES (97,'文件管理','服务管理:文件管�
 INSERT INTO `fs_member_menu` VALUES (98,'文件存档','服务管理:文件管理:文件存档',301,97,'','/server/file/archive','',0,1,'',1627548198271,1,1732160269651,1);
 INSERT INTO `fs_member_menu` VALUES (100,'页面设计','后台管理:项目管理:页面设计',188,0,'read','/auto/layout','',0,-1,'',1639719989845,1,1662455350983,1);
 INSERT INTO `fs_member_menu` VALUES (101,'应用管理','后台管理:项目管理:应用管理',188,0,'book','/auto/app','',0,-1,'',1639720019045,1,1662455223175,1);
-INSERT INTO `fs_member_menu` VALUES (103,'元数据','后台管理:数据治理:元数据',157,0,'container','/govern/meta','',0,1,'',1642381648881,1,1648436130377,1);
+INSERT INTO `fs_member_menu` VALUES (103,'元数据','后台管理:数据治理:元数据',157,0,'menu.container','/govern/meta','',0,1,'',1642381648881,1,1648436130377,1);
 INSERT INTO `fs_member_menu` VALUES (104,'定时任务','服务管理:定时任务',301,0,'basic.schedule','/server/cron','',0,1,'',1642571306245,1,1782179651924,1);
 INSERT INTO `fs_member_menu` VALUES (105,'工作节点','后台管理:服务管理:定时任务:工作节点',301,104,'','/server/cron/node','',0,1,'',1642571336578,1,1642571336578,1);
 INSERT INTO `fs_member_menu` VALUES (106,'作业管理','后台管理:服务管理:定时任务:作业管理',301,104,'','/server/cron/job','',0,1,'',1642571363823,1,1642571363823,1);
@@ -141,16 +141,17 @@ INSERT INTO `fs_member_menu` VALUES (107,'在线打印','在线办公:在线打�
 INSERT INTO `fs_member_menu` VALUES (108,'模板列表','在线办公:在线打印:模板列表',63,107,'','/oa/print/list','',0,1,'',1646376622053,1,1646376622053,1);
 INSERT INTO `fs_member_menu` VALUES (109,'作业调度','后台管理:服务管理:定时任务:作业调度',301,104,'','/server/cron/trigger','',0,1,'',1647236774840,1,1647236774840,1);
 INSERT INTO `fs_member_menu` VALUES (110,'任务编排','后台管理:服务管理:定时任务:任务编排',301,104,'','/server/cron/flow','',0,1,'',1647311512665,1,1647311512665,1);
-INSERT INTO `fs_member_menu` VALUES (111,'数据标准','后台管理:数据治理:数据标准',157,0,'exception','/govern/standard','',0,1,'',1648435605072,1,1648436213331,1);
-INSERT INTO `fs_member_menu` VALUES (112,'数据资产','后台管理:数据治理:数据资产',157,0,'database','/govern/asset','',0,1,'',1648435651055,1,1648436139625,1);
-INSERT INTO `fs_member_menu` VALUES (113,'数据质量','后台管理:数据治理:数据质量',157,0,'file-protect','/govern/quality','',0,1,'',1648435669817,1,1648436224359,1);
-INSERT INTO `fs_member_menu` VALUES (114,'数据安全','后台管理:数据治理:数据安全',157,0,'safety-certificate','/govern/security','',0,1,'',1648435775952,1,1648436303957,1);
-INSERT INTO `fs_member_menu` VALUES (115,'数据交换','后台管理:数据治理:数据交换',157,0,'cloud-sync','/govern/exchange','',0,1,'',1648436340888,1,1648867473179,1);
+INSERT INTO `fs_member_menu` VALUES (111,'数据标准','后台管理:数据治理:数据标准',157,0,'menu.exception','/govern/standard','',0,1,'',1648435605072,1,1648436213331,1);
+INSERT INTO `fs_member_menu` VALUES (112,'数据资产','后台管理:数据治理:数据资产',157,0,'menu.database','/govern/asset','',0,1,'',1648435651055,1,1648436139625,1);
+INSERT INTO `fs_member_menu` VALUES (113,'数据质量','后台管理:数据治理:数据质量',157,0,'menu.file-protect','/govern/quality','',0,1,'',1648435669817,1,1648436224359,1);
+INSERT INTO `fs_member_menu` VALUES (114,'数据安全','后台管理:数据治理:数据安全',157,0,'menu.safety-certificate','/govern/security','',0,1,'',1648435775952,1,1648436303957,1);
+INSERT INTO `fs_member_menu` VALUES (115,'数据交换','后台管理:数据治理:数据交换',157,0,'menu.cloud-sync','/govern/exchange','',0,1,'',1648436340888,1,1648867473179,1);
 INSERT INTO `fs_member_menu` VALUES (116,'模型管理','后台管理:数据治理:元数据:模型管理',157,103,'','/govern/meta/model','',0,1,'',1648782739796,1,1649821115608,1);
 INSERT INTO `fs_member_menu` VALUES (117,'模型关系','后台管理:数据治理:元数据:模型关系',157,103,'','/govern/meta/modelRelation','',0,1,'',1649856291456,1,1649856291456,1);
 INSERT INTO `fs_member_menu` VALUES (118,'数据地图','后台管理:数据治理:元数据:数据地图',157,103,'','/govern/meta/map','',99,1,'',1650760956687,1,1650760956687,1);
-INSERT INTO `fs_member_menu` VALUES (119,'系统设置','后台管理:数据治理:系统设置',157,0,'solution','/govern/system','',0,1,'',1651288300961,1,1651288300961,1);
+INSERT INTO `fs_member_menu` VALUES (119,'系统设置','后台管理:数据治理:系统设置',157,0,'menu.solution','/govern/system','',0,1,'',1651288300961,1,1651288300961,1);
 INSERT INTO `fs_member_menu` VALUES (120,'数据源','后台管理:数据治理:系统设置:数据源',157,119,'','/govern/system/source','',0,1,'',1651288324135,1,1651288324135,1);
+INSERT INTO `fs_member_menu` VALUES (426,'运行维护','后台管理:数据治理:系统设置:运行维护',157,119,'Tool','/govern/setting/state','',20,1,'',1761190000000,1,1761190000000,1);
 INSERT INTO `fs_member_menu` VALUES (121,'标准管理','后台管理:数据治理:数据标准:标准管理',157,111,'','/govern/standard/list','',0,1,'',1651369141111,1,1651369141111,1);
 INSERT INTO `fs_member_menu` VALUES (122,'落地评估','后台管理:数据治理:数据标准:落地评估',157,111,'','/govern/standard/assess','',0,1,'',1651369188363,1,1651369188363,1);
 INSERT INTO `fs_member_menu` VALUES (123,'质检分类','后台管理:数据治理:数据质量:质检分类',157,113,'','/govern/quality/logic','',0,1,'',1651369714750,1,1676537824487,1);
@@ -240,6 +241,8 @@ INSERT INTO `fs_member_menu` VALUES (420,'集群配置','商业智能:数据加�
 INSERT INTO `fs_member_menu` VALUES (421,'作业监控','商业智能:数据加工:作业监控',31,27,'','/bi/diagram/job','',0,1,'',1791445792408,1,1791445792408,1);
 INSERT INTO `fs_member_menu` VALUES (422,'客户端','智能体:客户端',308,0,'Promotion','/agent/bot','',0,1,'',1791982671108,1,1791982671108,1);
 INSERT INTO `fs_member_menu` VALUES (423,'项目共享','智能体:客户端:项目共享',308,422,'','/agent/bot/projectShare','',0,1,'',1791982780256,1,1791982780256,1);
+INSERT INTO `fs_member_menu` VALUES (424,'版本管理','智能体:客户端:版本管理',308,422,'','/agent/bot/clientVersion','',0,1,'',1792502400000,1,1792502400000,1);
+INSERT INTO `fs_member_menu` VALUES (425,'更新统计','智能体:客户端:更新统计',308,422,'','/agent/bot/clientUpdateStatistic','',0,1,'',1792502401000,1,1792502401000,1);
 /*!40000 ALTER TABLE `fs_member_menu` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -595,6 +598,10 @@ INSERT INTO `fs_member_resource` VALUES (435,'项目分享','智能体:项目分
 INSERT INTO `fs_member_resource` VALUES (436,'添加','智能体:项目分享:添加',308,435,'agent','projectShare','add',0,1,'',1791983346959,1,1791983346959,1);
 INSERT INTO `fs_member_resource` VALUES (437,'修改','智能体:项目分享:修改',308,435,'agent','projectShare','modify',0,1,'',1791983356275,1,1791983356275,1);
 INSERT INTO `fs_member_resource` VALUES (438,'删除','智能体:项目分享:删除',308,435,'agent','projectShare','delete',0,1,'',1791983365286,1,1791983365286,1);
+INSERT INTO `fs_member_resource` VALUES (439,'客户端版本','智能体:客户端版本',308,0,'agent','clientVersion','',0,1,'',1792502400000,1,1792502400000,1);
+INSERT INTO `fs_member_resource` VALUES (440,'添加','智能体:客户端版本:添加',308,439,'agent','clientVersion','add',0,1,'',1792502400000,1,1792502400000,1);
+INSERT INTO `fs_member_resource` VALUES (441,'修改','智能体:客户端版本:修改',308,439,'agent','clientVersion','modify',0,1,'',1792502400000,1,1792502400000,1);
+INSERT INTO `fs_member_resource` VALUES (442,'删除','智能体:客户端版本:删除',308,439,'agent','clientVersion','delete',0,1,'',1792502400000,1,1792502400000,1);
 /*!40000 ALTER TABLE `fs_member_resource` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

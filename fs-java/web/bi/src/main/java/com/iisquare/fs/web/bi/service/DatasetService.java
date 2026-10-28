@@ -14,6 +14,7 @@ import com.iisquare.fs.web.bi.core.RedisKey;
 import com.iisquare.fs.web.bi.dao.DatasetDao;
 import com.iisquare.fs.web.bi.entity.Dataset;
 import com.iisquare.fs.web.bi.mvc.Configuration;
+import com.iisquare.fs.web.bi.util.JdbcValueUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rpc.CronRpc;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,7 +84,8 @@ public class DatasetService extends JPAServiceBase {
                 "double",
                 "date",
                 "time",
-                "datetime"
+                "datetime",
+                "array"
         );
     }
 
@@ -132,7 +134,7 @@ public class DatasetService extends JPAServiceBase {
                 while (resultSet.next()) {
                     Map<String, Object> row = new LinkedHashMap<>();
                     for (int index = 1; index <= count; index++) {
-                        row.put(meta.getColumnLabel(index), resultSet.getObject(index));
+                        row.put(meta.getColumnLabel(index), JdbcValueUtil.value(resultSet, index));
                     }
                     rows.add(DPUtil.toJSON(row));
                 }

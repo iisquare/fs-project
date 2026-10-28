@@ -26,6 +26,17 @@ export interface DbDeleteRequest {
   where: Record<string, unknown>
 }
 
+/** 一次事务里执行的批量删除：where 为等值条件，in 为集合条件 */
+export interface DbDeleteBatchItem {
+  table: string
+  where?: Record<string, unknown>
+  in?: Record<string, unknown[]>
+}
+
+export interface DbDeleteBatchRequest {
+  deletes: DbDeleteBatchItem[]
+}
+
 /**
  * 关键词检索：columns 里的每一列按 LIKE 匹配，where 为等值条件，in 为集合条件。
  * mode 是关键词的匹配口径：`literal`（默认）整段按字面量匹配；`segments` 按空白切成多段、

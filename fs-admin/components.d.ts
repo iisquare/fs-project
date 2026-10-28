@@ -9,6 +9,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AgenticSteps: typeof import('./src/components/Agentic/AgenticSteps.vue')['default']
     AgenticTimeline: typeof import('./src/components/Agentic/AgenticTimeline.vue')['default']
+    ApiResponseNotice: typeof import('./src/components/Feedback/ApiResponseNotice.vue')['default']
     ButtonAdd: typeof import('./src/components/Button/ButtonAdd.vue')['default']
     ButtonAdvanced: typeof import('./src/components/Button/ButtonAdvanced.vue')['default']
     ButtonCopy: typeof import('./src/components/Button/ButtonCopy.vue')['default']
@@ -116,6 +117,7 @@ declare module 'vue' {
     ElTimelineItem: typeof import('element-plus/es')['ElTimelineItem']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     ElTree: typeof import('element-plus/es')['ElTree']
+    ElTreeSelect: typeof import('element-plus/es')['ElTreeSelect']
     ElUpload: typeof import('element-plus/es')['ElUpload']
     FormAutocomplete: typeof import('./src/components/Form/FormAutocomplete.vue')['default']
     FormCaptch: typeof import('./src/components/Form/FormCaptch.vue')['default']

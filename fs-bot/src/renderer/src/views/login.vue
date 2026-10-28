@@ -329,7 +329,7 @@ const openForgot = () => {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  width: min(100%, 360px);
+  width: min(100%, 520px);
   min-height: 100%;
   margin: 0 auto;
 }
@@ -396,7 +396,7 @@ const openForgot = () => {
   width: 100%;
 
   :deep(.el-form-item) {
-    margin-bottom: 26px;
+    margin-bottom: 22px;
   }
 
   :deep(.el-input__wrapper) {

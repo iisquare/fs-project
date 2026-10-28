@@ -106,6 +106,13 @@ public abstract class RbacServiceBase extends ServiceBase {
     public abstract JsonNode identity(HttpServletRequest request);
 
     /**
+     * 当前登录用户的会话令牌（member 的 Session ID）。
+     * 由鉴权服务统一解析，调用方无需关心会话是通过 Cookie、Authorization 还是 x-auth-token 传入的。
+     * 未登录或会话不存在时返回空串。
+     */
+    public abstract String token(HttpServletRequest request);
+
+    /**
      * 根据用户标识获取用户的个人信息及所属的角色信息
      */
     public abstract JsonNode identityById(Integer uid);

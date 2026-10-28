@@ -29,6 +29,8 @@ public class Tool {
     @Column
     private String query; // 查询参数，格式为{ key: value }对象
     @Column
+    private Integer passSession; // 是否把调用方用户会话作为 x-auth-token 传给工具服务：0-不传，1-传
+    @Column
     private String labels; // 标签，英文逗号分割
     @Column
     private String roleIds; // 授权角色，留空为不限制

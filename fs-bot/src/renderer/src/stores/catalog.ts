@@ -3,7 +3,6 @@ import { defineStore } from 'pinia'
 import ApiUtil from '@renderer/utils/ApiUtil'
 import AgenticApi from '@renderer/api/agent/AgenticApi'
 import BotApi from '@renderer/api/agent/BotApi'
-import CompareApi from '@renderer/api/agent/CompareApi'
 import SkillApi from '@renderer/api/agent/SkillApi'
 import ToolApi from '@renderer/api/agent/ToolApi'
 import KnowledgeApi from '@renderer/api/agent/KnowledgeApi'
@@ -167,19 +166,10 @@ export const useCatalogStore = defineStore('catalog', () => {
     return models.value
   }
 
-  /**
-   * 模型清单的两条通道：bot 接口是客户端自用的口径（agent:bot:），优先取它；
-   * 服务端还没带上 bot 模块时退回模型对比接口（agent:compare:），
-   * 两条通道取自同一个模型网关，只是权限面不同。
-   */
+  /** 模型清单只走客户端专用 bot 接口，不借用模型对比权限。 */
   async function modelRows(): Promise<any[]> {
-    try {
-      const result: any = await BotApi.models({ error: false, warning: false })
-      return ApiUtil.data(result)?.rows ?? []
-    } catch (e) {
-      const result: any = await CompareApi.models({ error: false, warning: false })
-      return ApiUtil.data(result)?.rows ?? []
-    }
+    const result: any = await BotApi.models({ error: false, warning: false })
+    return ApiUtil.data(result)?.rows ?? []
   }
 
   /** 工具方法检索：选择器里按关键词分页取，行内含工具与方法名 */

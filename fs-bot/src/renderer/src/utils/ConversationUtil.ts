@@ -23,3 +23,27 @@ export async function confirmRemoveConversation(running: boolean): Promise<boole
     return false
   }
 }
+
+/** 批量删除确认：把条数与正在生成的会话数说清楚 */
+export async function confirmRemoveConversations(
+  count: number,
+  runningCount: number
+): Promise<boolean> {
+  const running = runningCount > 0
+  try {
+    await ElMessageBox.confirm(
+      running
+        ? `已选择 ${count} 段对话，其中 ${runningCount} 段正在生成。删除会先停止这些生成与正在执行的本地任务，并丢弃本轮结果；删除后无法恢复。`
+        : `已选择 ${count} 段对话，删除后无法恢复。确定删除这些对话记录吗？`,
+      running ? '停止并批量删除对话' : '批量删除对话',
+      {
+        type: 'warning',
+        confirmButtonText: running ? '停止并删除' : `删除 ${count} 段对话`,
+        cancelButtonText: '取消'
+      }
+    )
+    return true
+  } catch {
+    return false
+  }
+}

@@ -30,6 +30,7 @@ declare module 'vue' {
     ElCollapse: typeof import('element-plus/es')['ElCollapse']
     ElCollapseItem: typeof import('element-plus/es')['ElCollapseItem']
     ElConfigProvider: typeof import('element-plus/es')['ElConfigProvider']
+    ElDialog: typeof import('element-plus/es')['ElDialog']
     ElDivider: typeof import('element-plus/es')['ElDivider']
     ElDropdown: typeof import('element-plus/es')['ElDropdown']
     ElDropdownItem: typeof import('element-plus/es')['ElDropdownItem']
@@ -49,6 +50,7 @@ declare module 'vue' {
     ElRadioGroup: typeof import('element-plus/es')['ElRadioGroup']
     ElScrollbar: typeof import('element-plus/es')['ElScrollbar']
     ElSelect: typeof import('element-plus/es')['ElSelect']
+    ElSkeleton: typeof import('element-plus/es')['ElSkeleton']
     ElSplitter: typeof import('element-plus/es')['ElSplitter']
     ElSplitterPanel: typeof import('element-plus/es')['ElSplitterPanel']
     ElSwitch: typeof import('element-plus/es')['ElSwitch']
@@ -70,6 +72,7 @@ declare module 'vue' {
     SidebarHeader: typeof import('./components/Layout/SidebarHeader.vue')['default']
     TitleBar: typeof import('./components/Layout/TitleBar.vue')['default']
     ToolCallList: typeof import('./components/Chat/ToolCallList.vue')['default']
+    UpdateDialog: typeof import('./components/Update/UpdateDialog.vue')['default']
     VersionSelect: typeof import('./components/Version/VersionSelect.vue')['default']
   }
   export interface GlobalDirectives {

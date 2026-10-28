@@ -48,6 +48,16 @@ public class BotController extends PermitControllerBase {
     }
 
     /**
+     * 当前登录用户的积分概览：`{ available, status, remained, consumed, intervals: [...] }`。
+     * 总消耗与剩余来自用户积分记录，每个 interval 内是该限流周期的已用量、剩余与下次重置时间。
+     */
+    @RequestMapping("/credit")
+    @Permission("")
+    public String creditAction(HttpServletRequest request) {
+        return ApiUtil.echoResult(botService.credit(request));
+    }
+
+    /**
      * 模型对话（SSE）：请求体 `{ model, systemPrompt, messages: [{ role, content }], ... }`，
      * 事件为 `{ type: delta | error, data }`
      */
