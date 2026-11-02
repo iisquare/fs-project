@@ -52,6 +52,13 @@ public class RedisKey {
     }
 
     /**
+     * 当前版本角色缓存的键匹配规则，供管理端统一清理
+     */
+    public static String permitRolePattern() {
+        return permitPrefix() + "role:*";
+    }
+
+    /**
      * 鉴权缓存命名空间，版本号位于角色、用户标识之前，便于按版本整体清理
      */
     private static String permitPrefix() {

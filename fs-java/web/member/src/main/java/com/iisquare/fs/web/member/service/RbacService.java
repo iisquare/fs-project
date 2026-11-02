@@ -25,8 +25,10 @@ import com.iisquare.fs.web.member.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.connection.RedisStringCommands;
 import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.session.Session;
@@ -418,6 +420,48 @@ public class RbacService extends RbacServiceBase {
             }
             deletePermit(keys);
         });
+    }
+
+    /**
+     * 清除全部或指定角色的菜单、资源与权限缓存。
+     * roleIds 为 null 时清除全部角色缓存；使用 SCAN 分批删除，避免阻塞 Redis。
+     * 用户缓存只保存基础信息与角色标识，因此按角色清理时不需要清除用户缓存。
+     */
+    public int clearRolePermitCache(Collection<Integer> roleIds) {
+        if (roleIds == null) return clearRolePermitPattern(RedisKey.permitRolePattern());
+        Set<Integer> ids = new TreeSet<>(roleIds);
+        ids.removeIf(id -> null == id || id < 1);
+        List<String> keys = new ArrayList<>(ids.size());
+        for (Integer roleId : ids) {
+            keys.add(RedisKey.permitRole(roleId));
+        }
+        if (keys.isEmpty()) return 0;
+        Long count = redis.delete(keys);
+        return null == count ? 0 : count.intValue();
+    }
+
+    /**
+     * 按模式分批扫描并删除角色缓存
+     */
+    private int clearRolePermitPattern(String pattern) {
+        int count = 0;
+        List<String> keys = new ArrayList<>();
+        ScanOptions options = ScanOptions.scanOptions().match(pattern).count(500).build();
+        try (Cursor<String> cursor = redis.scan(options)) {
+            while (cursor.hasNext()) {
+                keys.add(cursor.next());
+                if (keys.size() >= 500) {
+                    Long deleted = redis.delete(keys);
+                    count += null == deleted ? 0 : deleted.intValue();
+                    keys.clear();
+                }
+            }
+        }
+        if (!keys.isEmpty()) {
+            Long deleted = redis.delete(keys);
+            count += null == deleted ? 0 : deleted.intValue();
+        }
+        return count;
     }
 
     /**

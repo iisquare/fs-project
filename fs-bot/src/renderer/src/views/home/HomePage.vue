@@ -47,6 +47,8 @@ const chatStore = useChatStore()
 
 const draft = ref('')
 const mentions = ref<ChatMention[]>([])
+/** 「选择项目开始对话」面板的名称检索；项目已全部取回本地，直接过滤即可 */
+const projectKeyword = ref('')
 /** 一次发送只走一条链路：确认框打开或提交中时，重复回车不再叠一条消息 */
 const sending = ref(false)
 const pageLoading = ref(false)
@@ -113,6 +115,11 @@ const conversation = computed(() => conversationStore.current)
 const project = computed(() =>
   conversation.value ? projectStore.find(conversation.value.projectId) : null
 )
+const filteredProjects = computed(() => {
+  const keyword = projectKeyword.value.trim().toLocaleLowerCase()
+  if (!keyword) return projectStore.projects
+  return projectStore.projects.filter((item) => item.name.toLocaleLowerCase().includes(keyword))
+})
 const session = computed(() =>
   conversationStore.currentId ? chatStore.find(conversationStore.currentId) : null
 )
@@ -382,10 +389,14 @@ onBeforeUnmount(() => {
 
 /** 在某个项目里开新会话：会话从此按这个项目的模型与权限跑 */
 async function startConversation(item: Project): Promise<void> {
-  const created = await conversationStore.create(item)
-  await conversationStore.select(created.id)
-  await nextTick()
-  composerRef.value?.focus?.()
+  try {
+    const created = await conversationStore.create(item)
+    await conversationStore.select(created.id)
+    await nextTick()
+    composerRef.value?.focus?.()
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '新建会话失败'))
+  }
 }
 
 /** 换一个项目开会话：先回到「选择项目」面板（当前会话继续在后台跑） */
@@ -461,6 +472,10 @@ async function send(): Promise<void> {
       query: text,
       mentions: collectMentions(text)
     })
+    if ('rejected' === result) {
+      ElMessage.error(chatStore.find(conversationId)?.error || '消息未发送，请检查项目配置')
+      return
+    }
     clearSentDraft(conversationId, sourceText, sourceMentions)
     if (conversationStore.currentId === conversationId) {
       atBottom.value = true
@@ -637,20 +652,62 @@ async function uploadFiles(): Promise<void> {
             <el-button type="primary" @click="openProjectPage(true)">创建项目</el-button>
           </el-empty>
         </div>
-        <div v-else class="project-list">
-          <div
-            class="project-card"
-            v-for="item in projectStore.projects"
-            :key="item.id"
-            @click="startConversation(item)"
-          >
-            <el-avatar :size="32" :src="item.icon">{{ item.name.charAt(0) }}</el-avatar>
-            <div class="project-text">
-              <div class="project-name">{{ item.name }}</div>
-              <div class="project-desc">{{ item.description || '暂无描述' }}</div>
+        <template v-else>
+          <div class="ui-toolbar">
+            <el-input
+              v-model="projectKeyword"
+              class="ui-toolbar__search"
+              placeholder="按项目名称搜索"
+              clearable
+            >
+              <template #prefix>
+                <svg
+                  class="search-icon"
+                  viewBox="0 0 16 16"
+                  width="14"
+                  height="14"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="7"
+                    cy="7"
+                    r="4.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                  />
+                  <path
+                    d="m10.5 10.5 3 3"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </template>
+            </el-input>
+            <span class="ui-toolbar__count">共 {{ filteredProjects.length }} 个项目</span>
+          </div>
+          <div v-if="filteredProjects.length === 0" class="start-empty ui-panel">
+            <el-empty description="未找到匹配的项目">
+              <el-button text type="primary" @click="projectKeyword = ''">清除检索</el-button>
+            </el-empty>
+          </div>
+          <div v-else class="project-list">
+            <div
+              class="project-card"
+              v-for="item in filteredProjects"
+              :key="item.id"
+              @click="startConversation(item)"
+            >
+              <el-avatar :size="32" :src="item.icon">{{ item.name.charAt(0) }}</el-avatar>
+              <div class="project-text">
+                <div class="project-name">{{ item.name }}</div>
+                <div class="project-desc">{{ item.description || '暂无描述' }}</div>
+              </div>
             </div>
           </div>
-        </div>
+        </template>
       </div>
     </div>
 
@@ -905,6 +962,11 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
 
 .start-empty {
   padding: 10px;
+}
+
+.search-icon {
+  display: block;
+  color: var(--ev-c-text-3);
 }
 
 .project-list {

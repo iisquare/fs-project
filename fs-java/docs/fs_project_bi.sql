@@ -21,7 +21,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-97504';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-259685';
 
 --
 -- Table structure for table `fs_bi_cluster`
@@ -48,6 +48,29 @@ CREATE TABLE `fs_bi_cluster` (
   KEY `idx_engine` (`engine`) USING BTREE,
   KEY `idx_mode` (`mode`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='计算集群配置';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_bi_dashboard`
+--
+
+DROP TABLE IF EXISTS `fs_bi_dashboard`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_bi_dashboard` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `name` varchar(255) NOT NULL DEFAULT '' COMMENT '大屏名称',
+  `content` longtext NOT NULL COMMENT '画布、组件树及数据配置 JSON',
+  `sort` int NOT NULL DEFAULT '0' COMMENT '排序',
+  `status` tinyint NOT NULL DEFAULT '0' COMMENT '状态',
+  `description` text NOT NULL COMMENT '描述',
+  `created_uid` int NOT NULL DEFAULT '0' COMMENT '创建者',
+  `created_time` bigint NOT NULL DEFAULT '0' COMMENT '创建时间',
+  `updated_uid` int NOT NULL DEFAULT '0' COMMENT '修改者',
+  `updated_time` bigint NOT NULL DEFAULT '0' COMMENT '修改时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_status_sort` (`status`,`sort`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='数据大屏';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -142,7 +165,7 @@ CREATE TABLE `fs_bi_data_query_log` (
   KEY `idx_target_id` (`target_id`) USING BTREE,
   KEY `idx_created_uid` (`created_uid`) USING BTREE,
   KEY `idx_created_time` (`created_time`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=74 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=114 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -360,4 +383,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-10-08 14:42:43
+-- Dump completed on 2026-10-31 12:12:10

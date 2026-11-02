@@ -81,6 +81,15 @@ public class ZooKeeperClient implements Closeable {
         return data;
     }
 
+    public Map<String, BrowserNode> browsers() {
+        Map<String, BrowserNode> data = new LinkedHashMap<>();
+        List<ChildData> children = ZookeeperUtil.children(cache, "/runtime/browsers/", false);
+        for (ChildData child : children) {
+            data.put(child.getPath(), BrowserNode.decode(new String(child.getData(), charset)));
+        }
+        return data;
+    }
+
     public void open() {
         FileUtil.close(this);
         ZooNode node = ZooNode.record(nodeId);

@@ -10,12 +10,12 @@ const router = useRouter()
 const projectStore = useProjectStore()
 const conversationStore = useConversationStore()
 
-/** 新对话下方的入口：项目管理、定时任务、技能管理、系统设置 */
+/** 新对话下方的入口：图标下显示短文案，提示里保留完整页面名称 */
 const entries = [
-  { icon: 'menu.project', label: '项目管理', path: page.project },
-  { icon: 'menu.schedule', label: '定时任务', path: page.schedule },
-  { icon: 'menu.skills', label: '技能管理', path: page.skill },
-  { icon: 'plus.setting', label: '系统设置', path: page.settings }
+  { icon: 'menu.project', label: '项目', title: '项目管理', path: page.project },
+  { icon: 'menu.schedule', label: '定时', title: '定时任务', path: page.schedule },
+  { icon: 'menu.skills', label: '技能', title: '技能管理', path: page.skill },
+  { icon: 'plus.setting', label: '设置', title: '系统设置', path: page.settings }
 ]
 
 /**
@@ -50,16 +50,18 @@ function newChat(): void {
         <el-tooltip
           v-for="entry in entries"
           :key="entry.path"
-          :content="entry.label"
+          :content="entry.title"
           placement="bottom"
         >
           <button
             type="button"
             class="entry-button"
+            :aria-label="entry.title"
             :class="{ active: router.currentRoute.value.path === entry.path }"
             @click="router.push(entry.path)"
           >
-            <LayoutIcon :name="entry.icon" />
+            <LayoutIcon class="entry-icon" :name="entry.icon" />
+            <span class="entry-label">{{ entry.label }}</span>
           </button>
         </el-tooltip>
       </div>
@@ -118,11 +120,13 @@ function newChat(): void {
 .entry-button {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 30px;
-  padding: 0;
-  font-size: 16px;
+  gap: 3px;
+  height: 48px;
+  padding: 5px 2px 4px;
+  font-size: 17px;
   color: var(--ev-c-text-2);
   background: transparent;
   border: 1px solid transparent;
@@ -131,6 +135,16 @@ function newChat(): void {
   transition:
     color 0.2s,
     background 0.2s;
+
+  .entry-icon {
+    flex-shrink: 0;
+  }
+
+  .entry-label {
+    font-size: 11px;
+    line-height: 1;
+    white-space: nowrap;
+  }
 
   &:hover {
     color: var(--el-color-primary);

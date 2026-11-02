@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import type { FormInstance, TableInstance } from 'element-plus';
 import RouteUtil from '@/utils/RouteUtil'
 import { useRoute, useRouter } from 'vue-router';
 import SiteApi from '@/api/spider/SiteApi';
 import ApiUtil from '@/utils/ApiUtil';
 import TableUtil from '@/utils/TableUtil';
+import SpiderBrowserPolicy from '@/designer/Spider/SpiderBrowserPolicy.vue';
+import SpiderRequestModeSwitch from '@/designer/Spider/SpiderRequestModeSwitch.vue';
 
 const model: any = defineModel()
 
@@ -25,6 +27,9 @@ const columns = ref([
   { prop: 'retainAnchor', label: '保留锚点' },
   { prop: 'connectTimeout', label: '连接超时' },
   { prop: 'socketTimeout', label: '执行超时' },
+  { prop: 'browserWaitUntil', label: '页面就绪条件', hide: true },
+  { prop: 'browserWaitSelector', label: '等待元素', hide: true },
+  { prop: 'browserTimeout', label: '浏览器超时', hide: true },
   { prop: 'iterateCount', label: '翻页深度' },
   { prop: 'retryCount', label: '重试次数' },
   { prop: 'description', label: '描述', hide: true },
@@ -34,7 +39,10 @@ const columns = ref([
 const config = ref({
   ready: false,
   status: {},
+  fetchModes: {},
+  browserWaitModes: {},
 })
+const browserMode = computed(() => form.value.fetchMode === 'browser')
 const rows = ref([])
 const filterRef = ref<FormInstance>()
 const filters = ref(RouteUtil.query2filter(route, { advanced: false }))
@@ -73,6 +81,10 @@ const handleAdd = () => {
   form.value = {
     templateId: model.value.id,
     status: '1',
+    fetchMode: 'http',
+    browserWaitUntil: 'networkidle',
+    browserWaitSelector: '',
+    browserTimeout: 30000,
   }
   formVisible.value = true
 }
@@ -91,6 +103,10 @@ const handleReload = () => {
 const handleEdit = (scope: any) => {
   form.value = Object.assign({}, scope.row, {
     status: scope.row.status + '',
+    fetchMode: scope.row.fetchMode || 'http',
+    browserWaitUntil: scope.row.browserWaitUntil || 'networkidle',
+    browserWaitSelector: scope.row.browserWaitSelector || '',
+    browserTimeout: scope.row.browserTimeout || 30000,
   })
   formVisible.value = true
 }
@@ -170,7 +186,7 @@ const handleDelete = () => {
     </el-table>
     <TablePagination v-model="pagination" :loading="loading" @change="handleRefresh(true, true)" />
   </el-card>
-  <el-drawer v-model="formVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true">
+  <el-drawer v-model="formVisible" :close-on-click-modal="false" :show-close="false" :destroy-on-close="true" size="640px">
     <template #header="{ close, titleId, titleClass }">
       <h4 :id="titleId" :class="titleClass">站点配置</h4>
       <el-space>
@@ -178,60 +194,128 @@ const handleDelete = () => {
         <el-button @click="close">取消</el-button>
       </el-space>
     </template>
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="auto">
-      <el-form-item label="站点名称" prop="name">
-        <el-input v-model="form.name" />
-      </el-form-item>
-      <el-form-item label="站点域名" prop="domain">
-        <el-input v-model="form.domain" placeholder="*为默认兜底策略" />
-      </el-form-item>
-      <el-form-item label="页面编码" prop="charset">
-        <el-input v-model="form.charset" placeholder="默认utf-8" />
-      </el-form-item>
-      <el-form-item label="数据存储" prop="collection">
-        <el-input v-model="form.collection" placeholder="采集结果存储到Mongo中的集合名称" />
-      </el-form-item>
-      <el-form-item label="文件存储" prop="bucket">
-        <el-input v-model="form.bucket" placeholder="附件存储到MinIO中的桶名称" />
-      </el-form-item>
-      <el-form-item label="保留参数">
-        <el-checkbox v-model="form.retainQuery">保留链接中的请求参数</el-checkbox>
-      </el-form-item>
-      <el-form-item label="保留锚点">
-        <el-checkbox v-model="form.retainAnchor">保留链接中的锚点信息</el-checkbox>
-      </el-form-item>
-      <el-form-item label="连接超时">
-        <el-space>
-          <el-input-number v-model="form.connectTimeout" />
-          <span>毫秒</span>
-        </el-space>
-      </el-form-item>
-      <el-form-item label="执行超时">
-        <el-space>
-          <el-input-number v-model="form.socketTimeout" />
-          <span>毫秒</span>
-        </el-space>
-      </el-form-item>
-      <el-form-item label="翻页深度">
-        <el-input-number v-model="form.iterateCount" />
-      </el-form-item>
-      <el-form-item label="重试次数">
-        <el-input-number v-model="form.retryCount" />
-      </el-form-item>
-      <el-form-item label="排序">
-        <el-input-number v-model="form.sort" />
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="form.status" placeholder="请选择">
-          <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="描述">
-        <el-input type="textarea" v-model="form.description" />
-      </el-form-item>
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="96px" class="site-form">
+      <layout-heading title="基础信息">
+        <template #extra>
+          <SpiderRequestModeSwitch v-model="form" :modes="config.fetchModes" />
+        </template>
+      </layout-heading>
+      <div class="form-grid">
+        <el-form-item label="站点名称" prop="name">
+          <el-input v-model="form.name" placeholder="请输入站点名称" />
+        </el-form-item>
+        <el-form-item label="站点域名" prop="domain">
+          <el-input v-model="form.domain" placeholder="* 为默认兜底策略" />
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="form.status" placeholder="请选择">
+            <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="排序">
+          <el-input-number v-model="form.sort" />
+        </el-form-item>
+        <el-form-item label="描述" class="span-2">
+          <el-input v-model="form.description" type="textarea" :rows="2" placeholder="站点用途或采集说明" />
+        </el-form-item>
+      </div>
+
+      <div v-if="browserMode" class="browser-policy-section">
+        <layout-heading title="浏览器页面就绪策略" description="当前域名下的页面完成渲染后再进入解析" />
+        <SpiderBrowserPolicy v-model="form" :wait-modes="config.browserWaitModes" />
+      </div>
+
+      <layout-heading title="抓取与存储" />
+      <div class="form-grid">
+        <el-form-item label="页面编码">
+          <el-input v-model="form.charset" placeholder="默认 UTF-8" />
+        </el-form-item>
+        <el-form-item label="数据存储">
+          <el-input v-model="form.collection" placeholder="Mongo 集合名称" />
+        </el-form-item>
+        <el-form-item label="文件存储" class="span-2">
+          <el-input v-model="form.bucket" placeholder="S3/MinIO 对象存储桶名称" />
+        </el-form-item>
+        <el-form-item label="链接处理" class="span-2">
+          <el-checkbox v-model="form.retainQuery">保留请求参数</el-checkbox>
+          <el-checkbox v-model="form.retainAnchor">保留锚点信息</el-checkbox>
+        </el-form-item>
+      </div>
+
+      <layout-heading title="运行限制" />
+      <div class="form-grid form-grid-last">
+        <el-form-item label="连接超时">
+          <div class="number-with-unit">
+            <el-input-number v-model="form.connectTimeout" :min="0" />
+            <span class="unit">毫秒</span>
+          </div>
+        </el-form-item>
+        <el-form-item label="执行超时">
+          <div class="number-with-unit">
+            <el-input-number v-model="form.socketTimeout" :min="0" />
+            <span class="unit">毫秒</span>
+          </div>
+        </el-form-item>
+        <el-form-item label="翻页深度">
+          <el-input-number v-model="form.iterateCount" :min="0" />
+        </el-form-item>
+        <el-form-item label="重试次数">
+          <el-input-number v-model="form.retryCount" :min="0" />
+        </el-form-item>
+      </div>
     </el-form>
   </el-drawer>
 </template>
 
 <style lang="scss" scoped>
+.browser-policy-section {
+  margin-bottom: 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 18px;
+}
+
+.form-grid :deep(.el-form-item) {
+  min-width: 0;
+  margin-bottom: 18px;
+}
+
+.form-grid :deep(.el-input-number),
+.form-grid :deep(.el-select) {
+  width: 100%;
+}
+
+.span-2 {
+  grid-column: 1 / -1;
+}
+
+.unit {
+  flex: none;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.number-with-unit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.form-grid-last :deep(.el-form-item) {
+  margin-bottom: 4px;
+}
+
+@media (max-width: 720px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .span-2 {
+    grid-column: auto;
+  }
+}
 </style>

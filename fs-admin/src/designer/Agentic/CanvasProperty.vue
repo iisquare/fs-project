@@ -58,6 +58,7 @@ const roleIds = computed({
           </el-form-item>
           <el-form-item label="应用描述">
             <el-input v-model="model.description" type="textarea" :rows="3" />
+            <tip-text>该应用作为工具时，描述会附加到常驻工具说明中，用于帮助模型判断何时调用；建议简洁写清适用场景和业务范围。</tip-text>
           </el-form-item>
         </SectionSlice>
         <SectionSlice title="使用说明">

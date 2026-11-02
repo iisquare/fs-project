@@ -41,7 +41,7 @@ const {
 } = useCollapse(() => 1 === (model.value?.data?.tools ?? []).length)
 
 /**
- * 内置工具（知识库、数据主题、本体、编排）同样以 function calling 暴露给模型，参数只有 query。
+ * 内置工具（知识库、数据主题、知识图谱、编排）同样以 function calling 暴露给模型，参数只有 query。
  * 候选列表交给 form-select 的远程检索：面板挂载不再预拉全量列表，
  * 只在用户输入关键词检索、或回显已选值时按需请求
  */
@@ -54,7 +54,7 @@ const builtinName = (kind: string, id: any) => {
   return `agentic_invoke_${id}`
 }
 
-/** 选中内置工具目标后：按选中行自动补函数名与描述（描述会展示给模型，用于判断何时调用） */
+/** 选中内置工具目标后：自动补函数名和简短描述；模型说明由服务端统一生成 */
 const handleBuiltinSelect = (item: any, kind: string, id: any, row: any) => {
   // 清空选择：函数名与描述一并清掉，避免留下 xxx_search_undefined 这类脏值
   if (undefined === id || null === id || '' === id) {
@@ -70,11 +70,7 @@ const handleBuiltinSelect = (item: any, kind: string, id: any, row: any) => {
   item.description = row?.description || row?.name || ''
   if ('knowledge' === kind) item.knowledgeName = row?.name ?? ''
   else if ('theme' === kind) item.themeName = row?.name ?? ''
-  else if ('ontology' === kind) {
-    item.ontologyName = row?.name ?? ''
-    // 本体描述为空时给一个能说明两种动作的默认描述
-    if (!item.description) item.description = `检索「${item.ontologyName}」本体中的实体数据，或推理两个实体之间的关联路径`
-  }
+  else if ('ontology' === kind) item.ontologyName = row?.name ?? ''
   else item.agenticName = row?.name ?? ''
 }
 
@@ -143,7 +139,7 @@ const handleMethodSelect = (params: any) => {
 const toolTitle = (item: any) => {
   if ('knowledge' === item?.kind) return `知识库 · ${item.knowledgeName || item.knowledgeId || '未选择'}`
   if ('theme' === item?.kind) return `数据主题 · ${item.themeName || item.themeId || '未选择'}`
-  if ('ontology' === item?.kind) return `本体 · ${item.ontologyName || item.ontologyId || '未选择'}`
+  if ('ontology' === item?.kind) return `知识图谱 · ${item.ontologyName || item.ontologyId || '未选择'}`
   if ('agentic' === item?.kind) return `编排 · ${item.agenticName || item.agenticId || '未选择'}`
   const name = item.toolName || item.toolId || '未选择工具'
   return item.method ? `${name} · ${item.method}` : name
@@ -369,12 +365,6 @@ const handleToolMethodChange = (item: any, value: any, row: any = null) => {
                     placeholder="输入名称检索知识库"
                     @change="(value: any, row: any) => handleBuiltinSelect(item, 'knowledge', value, row)" />
                   <el-input v-model="item.name" placeholder="函数名称，如 knowledge_search_1" />
-                  <el-input
-                    v-model="item.description"
-                    type="textarea"
-                    :autosize="{ minRows: 1, maxRows: 4 }"
-                    resize="none"
-                    placeholder="函数描述（展示给模型，说明何时调用）" />
                 </template>
                 <!-- 编排工具：模型给出 query，作为开始节点入参调用另一个编排应用 -->
                 <template v-else-if="'agentic' === item.kind">
@@ -385,12 +375,6 @@ const handleToolMethodChange = (item: any, value: any, row: any = null) => {
                     placeholder="输入名称检索编排应用"
                     @change="(value: any, row: any) => handleBuiltinSelect(item, 'agentic', value, row)" />
                   <el-input v-model="item.name" placeholder="函数名称，如 agentic_invoke_1" />
-                  <el-input
-                    v-model="item.description"
-                    type="textarea"
-                    :autosize="{ minRows: 1, maxRows: 4 }"
-                    resize="none"
-                    placeholder="函数描述（展示给模型，说明何时调用）" />
                 </template>
                 <!-- 数据主题工具：不带 sql 返回主题数据字典（数据集/字段/关联），带 sql 执行查询 -->
                 <template v-else-if="'theme' === item.kind">
@@ -401,28 +385,16 @@ const handleToolMethodChange = (item: any, value: any, row: any = null) => {
                     placeholder="输入名称检索数据主题"
                     @change="(value: any, row: any) => handleBuiltinSelect(item, 'theme', value, row)" />
                   <el-input v-model="item.name" placeholder="函数名称，如 theme_query_1" />
-                  <el-input
-                    v-model="item.description"
-                    type="textarea"
-                    :autosize="{ minRows: 1, maxRows: 4 }"
-                    resize="none"
-                    placeholder="函数描述（展示给模型，说明主题里有哪些数据）" />
                 </template>
-                <!-- 本体工具：模型给出实体类型与关键词，走 KG 图检索 -->
+                <!-- 知识图谱工具：模型给出实体类型与关键词，走 KG 图检索 -->
                 <template v-else-if="'ontology' === item.kind">
                   <form-select
                     v-model="item.ontologyId"
                     clearable
                     :callback="OntologyApi.list"
-                    placeholder="输入名称检索本体"
+                    placeholder="输入名称检索知识图谱"
                     @change="(value: any, row: any) => handleBuiltinSelect(item, 'ontology', value, row)" />
                   <el-input v-model="item.name" placeholder="函数名称，如 ontology_search_1" />
-                  <el-input
-                    v-model="item.description"
-                    type="textarea"
-                    :autosize="{ minRows: 1, maxRows: 4 }"
-                    resize="none"
-                    placeholder="函数描述（展示给模型，说明本体里有哪些实体、支持检索与路径推理）" />
                 </template>
                 <!-- 工具与方法用一个分组下拉选择：按工具分组列出其方法，避免两级选择 -->
                 <template v-else>
@@ -510,6 +482,7 @@ const handleToolMethodChange = (item: any, value: any, row: any = null) => {
                   </div>
                 </div>
                 </template>
+                <tip-text>模型说明由服务端统一生成；建议对象描述聚焦能力、适用场景和关键约束，可按需写详细内容，系统不会截断。</tip-text>
                 <div class="field-inline">
                   <span>启用</span>
                   <el-switch v-model="item.enabled" />
@@ -523,7 +496,7 @@ const handleToolMethodChange = (item: any, value: any, row: any = null) => {
                     <el-dropdown-item command="method">工具方法</el-dropdown-item>
                     <el-dropdown-item command="knowledge">知识库</el-dropdown-item>
                     <el-dropdown-item command="theme">数据主题</el-dropdown-item>
-                    <el-dropdown-item command="ontology">知识图谱本体</el-dropdown-item>
+                    <el-dropdown-item command="ontology">知识图谱</el-dropdown-item>
                     <el-dropdown-item command="agentic">编排应用</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
@@ -550,7 +523,7 @@ const handleToolMethodChange = (item: any, value: any, row: any = null) => {
     .el-select {
       width: 100%;
     }
-    /* 内置工具：下拉 + 函数名 + 函数描述（文本域）依次排列，行之间留出间距 */
+    /* 内置工具：下拉 + 函数名依次排列，行之间留出间距 */
     .el-select + .el-input,
     .el-input + .el-select,
     .el-input + .el-input,

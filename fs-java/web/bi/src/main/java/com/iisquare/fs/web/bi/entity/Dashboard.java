@@ -1,0 +1,50 @@
+package com.iisquare.fs.web.bi.entity;
+
+import lombok.*;
+import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.DynamicUpdate;
+
+import jakarta.persistence.*;
+
+/**
+ * 数据大屏。画布、组件树及各图表的数据配置统一保存在 content JSON 中。
+ */
+@Entity
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@DynamicInsert
+@DynamicUpdate
+public class Dashboard {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+    @Column
+    private String name;
+    @Column
+    private String content;
+    @Column
+    private Integer sort;
+    @Column
+    private Integer status;
+    @Transient
+    private String statusText;
+    @Column
+    private String description;
+    @Column
+    private Long createdTime;
+    @Column
+    private Integer createdUid;
+    @Transient
+    private String createdUidName;
+    @Column
+    private Long updatedTime;
+    @Column
+    private Integer updatedUid;
+    @Transient
+    private String updatedUidName;
+
+}

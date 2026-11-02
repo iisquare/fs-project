@@ -23,7 +23,7 @@ import java.util.Map;
 /**
  * 本地客户端（桌面端等）接口，权限键为 agent:bot:。
  *
- * 只放客户端自用的能力（模型清单、模型对话、项目分享）：编排（agentic）、模型对比（compare）
+ * 只放客户端自用的能力（模型清单、模型对话、工具说明、项目分享）：编排（agentic）、模型对比（compare）
  * 等其它功能的接口与实现都不在这里改动，客户端也不必借道它们的权限。
  */
 @RestController
@@ -45,6 +45,16 @@ public class BotController extends PermitControllerBase {
     @Permission("")
     public String modelsAction() {
         return ApiUtil.echoResult(botService.models());
+    }
+
+    /**
+     * 工具说明模板：返回 `{ version, rows: [{ kind, label, description }] }`。
+     * 供工具目录、帮助展示或兼容使用；模型工具定义由 /bot/tools 直接返回最终说明。
+     */
+    @RequestMapping("/tool-descriptions")
+    @Permission("")
+    public String toolDescriptionsAction() {
+        return ApiUtil.echoResult(botService.toolDescriptions());
     }
 
     /**
@@ -70,13 +80,14 @@ public class BotController extends PermitControllerBase {
 
     /**
      * 工具定义清单：请求体 `{ tools: [{ kind, id, name, toolId, methodName, args }] }`，
-     * 返回 `{ rows: [{ ref, function }] }`，客户端把 function 组装成 OpenAI 的 tools 清单；
+     * 返回 `{ descriptionVersion, rows: [{ ref, function }] }`，function 已带统一说明，
+     * 客户端直接组装成 OpenAI 的 tools 清单；
      * args 是项目里配的固定参数（执行变量绑定），固定的参数不会出现在 function 定义里
      */
     @RequestMapping("/tools")
     @Permission("")
-    public String toolsAction(@RequestBody String body) {
-        return ApiUtil.echoResult(botService.tools(body));
+    public String toolsAction(@RequestBody String body, HttpServletRequest request) {
+        return ApiUtil.echoResult(botService.tools(body, request));
     }
 
     /**

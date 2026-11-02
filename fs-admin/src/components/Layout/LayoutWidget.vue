@@ -45,6 +45,7 @@ const groups: any = computed(() => items.value
 
 const emit = defineEmits<{
   dragStart: [event: any, widget: any]
+  clickWidget: [widget: any]
 }>()
 
 const handleDragStart = (event: any) => {
@@ -72,7 +73,8 @@ onMounted(() => {
           :title="item.title"
           :key="item.id"
           v-for="item in group.children"
-          @dragstart="(event: any) => handleNativeDragStart(event, item)">
+          @dragstart="(event: any) => handleNativeDragStart(event, item)"
+          @click="emit('clickWidget', item)">
           <LayoutIcon :name="item.icon" />
           <span>{{ item.label }}</span>
         </li>

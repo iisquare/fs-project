@@ -55,6 +55,7 @@ public class NodeService extends ServiceBase implements Runnable, DisposableBean
     private volatile boolean isRunning = false;
     private ObjectPool<Worker> workerPool;
     private ObjectPool<HttpFetcher> fetcherPool;
+    private BrowserFetcher browserFetcher;
     private final AtomicLong pollingCounter = new AtomicLong(0); // 用于服务端轮询计数
     private final AtomicInteger runningCounter = new AtomicInteger(0); // 当前正在运行的调度线程数量
     // 使用空容量同步队列复用线程，非阻塞写，半阻塞读
@@ -76,6 +77,7 @@ public class NodeService extends ServiceBase implements Runnable, DisposableBean
         fetcherPoolConfig.setMaxIdle(fetcherMaxIdle);
         fetcherPoolConfig.setMaxTotal(fetcherMaxTotal);
         this.fetcherPool= new GenericObjectPool<>(new HttpFetcherFactory(), fetcherPoolConfig);
+        this.browserFetcher = new BrowserFetcher(zookeeper);
         this.start();
     }
 
@@ -114,6 +116,10 @@ public class NodeService extends ServiceBase implements Runnable, DisposableBean
 
     public ObjectPool<HttpFetcher> fetcherPool() {
         return this.fetcherPool;
+    }
+
+    public BrowserFetcher browserFetcher() {
+        return browserFetcher;
     }
 
     public ObjectNode state() throws Exception {

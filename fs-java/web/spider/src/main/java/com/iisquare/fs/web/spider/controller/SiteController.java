@@ -61,6 +61,8 @@ public class SiteController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", siteService.status());
+        model.put("fetchModes", siteService.fetchModes());
+        model.put("browserWaitModes", siteService.browserWaitModes());
         model.put("sorts", siteService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }

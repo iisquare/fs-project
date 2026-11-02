@@ -36,6 +36,22 @@ public class Page implements Serializable {
     @Column
     private String url; // 链接地址，支持{变量}占位符
     @Column
+    private String requestType; // 请求类型，默认GET
+    @Column
+    private String requestBody; // 请求体，支持{变量}占位符
+    @Column
+    private String contentType; // 请求体类型
+    @Column
+    private String payloadForm; // form-data、x-www-form-urlencoded
+    @Column
+    private String fetchMode; // 页面请求模式：http、browser
+    @Column
+    private String browserWaitUntil; // browser 模式等待状态
+    @Column
+    private String browserWaitSelector; // browser 模式等待的选择器
+    @Column
+    private Integer browserTimeout; // browser 模式执行超时
+    @Column
     private String charset; // 页面编码，默认utf-8
     @Column
     private String collection; // 采集结果存储到Mongo中的集合名称

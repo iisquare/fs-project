@@ -44,6 +44,14 @@ public class Site implements Serializable {
     @Column
     private Integer socketTimeout; // 执行超时
     @Column
+    private String fetchMode; // 页面请求模式：http、browser
+    @Column
+    private String browserWaitUntil; // 浏览器页面就绪条件
+    @Column
+    private String browserWaitSelector; // 浏览器等待元素
+    @Column
+    private Integer browserTimeout; // 浏览器执行超时
+    @Column
     private Integer iterateCount; // 翻页深度
     @Column
     private Integer retryCount; // 重试次数

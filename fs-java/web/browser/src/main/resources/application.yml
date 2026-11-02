@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: fs-browser-service
+  profiles:
+    active: dev,idev
+server:
+  port: 7836
+
+fs:
+  browser:
+    zookeeper:
+      host: 127.0.0.1:2181/fs-spider
+      timeout: 2000
+      node-id: 127.0.0.1:7836:browser
+    playwright:
+      headless: true
+      max-concurrency: 2
+      navigation-timeout: 30000
+      settle-time: 300
+      max-html-bytes: 10485760
+      ignore-https-errors: false
+      locale: zh-CN
+      timezone: Asia/Shanghai
+      user-agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
+      block-resources: image,media,font
+      launch-args: ""

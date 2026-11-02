@@ -13,8 +13,11 @@ import org.apache.http.ProtocolException;
 import org.apache.http.client.RedirectStrategy;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -34,8 +37,10 @@ import javax.net.ssl.SSLContext;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Map;
 
 @Getter
@@ -49,6 +54,10 @@ public class HttpFetcher implements Closeable {
     private static final int DEFAULT_STATUS = 0;
     private final CloseableHttpClient client;
     private String url;
+    private String requestType = "GET";
+    private String requestBody;
+    private String contentType = "none";
+    private Map<String, String> payloadForm;
     private HttpDownloader downloader;
     private Map<String, String> headers;
     private int lastStatus = DEFAULT_STATUS;
@@ -90,6 +99,10 @@ public class HttpFetcher implements Closeable {
     public void reset() {
         this.clear();
         this.url = null;
+        this.requestType = "GET";
+        this.requestBody = null;
+        this.contentType = "none";
+        this.payloadForm = null;
         this.headers = null;
         this.charset = DEFAULT_CHARSET;
         this.config = null;
@@ -117,6 +130,28 @@ public class HttpFetcher implements Closeable {
         return this;
     }
 
+    public HttpFetcher requestType(String requestType) {
+        String value = DPUtil.trim(requestType).toUpperCase(Locale.ROOT);
+        this.requestType = value.isEmpty() ? "GET" : value;
+        return this;
+    }
+
+    public HttpFetcher body(String requestBody) {
+        this.requestBody = requestBody;
+        return this;
+    }
+
+    public HttpFetcher contentType(String contentType) {
+        String value = DPUtil.trim(contentType).toLowerCase(Locale.ROOT);
+        this.contentType = value.isEmpty() ? "none" : value;
+        return this;
+    }
+
+    public HttpFetcher payloadForm(Map<String, String> payloadForm) {
+        this.payloadForm = payloadForm;
+        return this;
+    }
+
     public HttpFetcher downloader(HttpDownloader downloader) {
         this.downloader = downloader;
         return this;
@@ -138,6 +173,7 @@ public class HttpFetcher implements Closeable {
         request.setConfig(null == config ? defaultConfig : config);
         if (null != this.headers) {
             for (Map.Entry<String, String> entry : headers.entrySet()) {
+                if ("form-data".equals(contentType) && "Content-Type".equalsIgnoreCase(entry.getKey())) continue;
                 request.setHeader(new BasicHeader(entry.getKey(), entry.getValue()));
             }
         }
@@ -151,40 +187,42 @@ public class HttpFetcher implements Closeable {
         this.lastStatus = response.getStatusLine().getStatusCode();
         this.lastRequestHeaders = request.getAllHeaders();
         this.lastResponseHeaders = response.getAllHeaders();
-        if (200 == this.lastStatus) {
+        if (lastStatus >= 200 && lastStatus < 300) {
             HttpEntity entity = response.getEntity();
-            entity = HttpClientUtil.decode(entity);
-            Header contentType = entity.getContentType();
-            if (null != contentType) {
-                this.lastResponseContentType = contentType.getValue();
-            }
-            if (null == this.downloader || isPlainContent(this.lastResponseContentType)) {
-                try {
-                    ContentType type = ContentType.get(entity);
-                    byte[] bytes = EntityUtils.toByteArray(entity);
-                    if (null != type.getCharset()) { // 以响应头中的类型为准
-                        this.lastResult = new String(bytes, type.getCharset());
-                    } else {
-                        this.lastResult = new String(bytes, this.charset); // 尝试采用指定编码进行解析
-                        Document document = Jsoup.parse(this.lastResult, this.url);
-                        String jcs = JsoupUtil.charset(document);
-                        if (!DPUtil.empty(jcs)) {
-                            try {
-                                Charset cs = Charset.forName(jcs);
-                                if (!this.charset.equals(cs)) { // 页面编码与指定编码不一致
-                                    this.lastResult = new String(bytes, cs); // 采用页面编码重新解析
-                                }
-                            } catch (Exception ignored) {} // 忽略此处编码异常
-                        }
-                    }
-                } catch (Exception e) {
-                    this.lastException = e;
+            if (null != entity) {
+                entity = HttpClientUtil.decode(entity);
+                Header contentType = entity.getContentType();
+                if (null != contentType) {
+                    this.lastResponseContentType = contentType.getValue();
                 }
-            } else {
-                try {
-                    this.lastResult = this.downloader.download(this, response);
-                } catch (Exception e) {
-                    this.lastException = e;
+                if (null == this.downloader || isPlainContent(this.lastResponseContentType)) {
+                    try {
+                        ContentType type = ContentType.get(entity);
+                        byte[] bytes = EntityUtils.toByteArray(entity);
+                        if (null != type && null != type.getCharset()) { // 以响应头中的类型为准
+                            this.lastResult = new String(bytes, type.getCharset());
+                        } else {
+                            this.lastResult = new String(bytes, this.charset); // 尝试采用指定编码进行解析
+                            Document document = Jsoup.parse(this.lastResult, this.url);
+                            String jcs = JsoupUtil.charset(document);
+                            if (!DPUtil.empty(jcs)) {
+                                try {
+                                    Charset cs = Charset.forName(jcs);
+                                    if (!this.charset.equals(cs)) { // 页面编码与指定编码不一致
+                                        this.lastResult = new String(bytes, cs); // 采用页面编码重新解析
+                                    }
+                                } catch (Exception ignored) {} // 忽略此处编码异常
+                            }
+                        }
+                    } catch (Exception e) {
+                        this.lastException = e;
+                    }
+                } else {
+                    try {
+                        this.lastResult = this.downloader.download(this, response);
+                    } catch (Exception e) {
+                        this.lastException = e;
+                    }
                 }
             }
         }
@@ -193,10 +231,12 @@ public class HttpFetcher implements Closeable {
     }
 
     public boolean isPlainContent(String responseContentType) {
-        if (responseContentType.contains("text")) return true;
-        if (responseContentType.contains("json")) return true;
-        if (responseContentType.contains("html")) return true;
-        if (responseContentType.contains("xml")) return true;
+        if (DPUtil.empty(responseContentType)) return true;
+        String value = responseContentType.toLowerCase();
+        if (value.contains("text")) return true;
+        if (value.contains("json")) return true;
+        if (value.contains("html")) return true;
+        if (value.contains("xml")) return true;
         return false;
     }
 
@@ -215,15 +255,129 @@ public class HttpFetcher implements Closeable {
         return this.execute(request);
     }
 
-    public HttpFetcher get() {
-        HttpGet request;
+    public HttpFetcher execute() {
+        HttpRequestBase request;
         try {
-            request = new HttpGet(url);
+            request = buildRequest();
         } catch (Exception e) {
             this.lastException = e;
             return this;
         }
         return this.execute(request);
+    }
+
+    public HttpFetcher get() {
+        return execute();
+    }
+
+    private HttpRequestBase buildRequest() throws Exception {
+        String targetUrl = "GET".equals(requestType) ? buildUrl(url, payloadForm) : url;
+        HttpRequestBase request;
+        switch (requestType) {
+            case "GET":
+                request = new HttpGet(targetUrl);
+                break;
+            case "POST":
+                request = new HttpPost(targetUrl);
+                break;
+            case "PUT":
+                request = new HttpPut(targetUrl);
+                break;
+            case "PATCH":
+                request = new HttpPatch(targetUrl);
+                break;
+            case "DELETE":
+                request = new HttpDeleteWithBody(targetUrl);
+                break;
+            default:
+                throw new IllegalArgumentException("unsupported request type: " + requestType);
+        }
+        HttpEntity entity = buildEntity();
+        if (null != entity && request instanceof HttpEntityEnclosingRequestBase) {
+            ((HttpEntityEnclosingRequestBase) request).setEntity(entity);
+        }
+        return request;
+    }
+
+    private HttpEntity buildEntity() throws Exception {
+        switch (contentType) {
+            case "form-data":
+                return multipartEntity();
+            case "x-www-form-urlencoded": {
+                StringEntity entity = new StringEntity(buildQueryString(payloadForm), charset);
+                entity.setContentType("application/x-www-form-urlencoded; charset=" + charset);
+                return entity;
+            }
+            case "json": {
+                StringEntity entity = new StringEntity(null == requestBody ? "" : requestBody, charset);
+                entity.setContentType("application/json; charset=" + charset);
+                return entity;
+            }
+            case "xml": {
+                StringEntity entity = new StringEntity(null == requestBody ? "" : requestBody, charset);
+                entity.setContentType("application/xml; charset=" + charset);
+                return entity;
+            }
+            case "raw": {
+                StringEntity entity = new StringEntity(null == requestBody ? "" : requestBody, charset);
+                entity.setContentType("text/plain; charset=" + charset);
+                return entity;
+            }
+            default:
+                return null;
+        }
+    }
+
+    private HttpEntity multipartEntity() throws Exception {
+        String boundary = "----fs-spider-" + System.currentTimeMillis();
+        StringBuilder body = new StringBuilder();
+        if (null != payloadForm) {
+            for (Map.Entry<String, String> entry : payloadForm.entrySet()) {
+                body.append("--").append(boundary).append("\r\n");
+                body.append("Content-Disposition: form-data; name=\"")
+                        .append(entry.getKey()).append("\"\r\n\r\n");
+                body.append(null == entry.getValue() ? "" : entry.getValue()).append("\r\n");
+            }
+        }
+        body.append("--").append(boundary).append("--\r\n");
+        StringEntity entity = new StringEntity(body.toString(), charset);
+        entity.setContentType("multipart/form-data; boundary=" + boundary);
+        return entity;
+    }
+
+    private String buildUrl(String baseUrl, Map<String, String> form) throws Exception {
+        String query = buildQueryString(form);
+        if (DPUtil.empty(query)) return baseUrl;
+        int anchor = baseUrl.indexOf('#');
+        String fragment = anchor < 0 ? "" : baseUrl.substring(anchor);
+        String target = anchor < 0 ? baseUrl : baseUrl.substring(0, anchor);
+        String separator = !target.contains("?") ? "?" : (target.endsWith("?") || target.endsWith("&") ? "" : "&");
+        return target + separator + query + fragment;
+    }
+
+    private String buildQueryString(Map<String, String> form) throws Exception {
+        StringBuilder result = new StringBuilder();
+        if (null != form) {
+            for (Map.Entry<String, String> entry : form.entrySet()) {
+                if (result.length() > 0) result.append('&');
+                result.append(URLEncoder.encode(entry.getKey(), charset)).append('=');
+                if (null != entry.getValue()) {
+                    result.append(URLEncoder.encode(entry.getValue(), charset));
+                }
+            }
+        }
+        return result.toString();
+    }
+
+    private static class HttpDeleteWithBody extends HttpEntityEnclosingRequestBase {
+        private HttpDeleteWithBody(String url) {
+            setURI(URI.create(url));
+        }
+
+        @Override
+        public String getMethod() {
+            return "DELETE";
+        }
     }
 
     @Override

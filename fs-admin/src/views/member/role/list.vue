@@ -7,6 +7,7 @@ import ApplicationApi from '@/api/member/ApplicationApi';
 import RoleApi from '@/api/member/RoleApi';
 import ApiUtil from '@/utils/ApiUtil';
 import DateUtil from '@/utils/DateUtil';
+import ElementUtil from '@/utils/ElementUtil';
 import TableUtil from '@/utils/TableUtil';
 
 const route = useRoute()
@@ -51,6 +52,7 @@ onMounted(() => {
 const infoVisible = ref(false)
 const formVisible = ref(false)
 const formLoading = ref(false)
+const cacheClearing = ref<'all' | 'selected' | ''>('')
 const form: any = ref({})
 const formRef: any = ref<FormInstance>()
 const rules = ref({
@@ -96,6 +98,21 @@ const handleDelete = () => {
     })
   }).catch(() => {})
 }
+const handleClearCache = async (all: boolean) => {
+  if (cacheClearing.value || (!all && selection.value.length === 0)) return
+  const target = all ? '全部角色' : '选中的角色'
+  try {
+    await ElementUtil.confirm(`将清除${target}的菜单、资源和权限缓存，并在下次访问时重新加载，是否继续？`)
+  } catch {
+    return
+  }
+  cacheClearing.value = all ? 'all' : 'selected'
+  RoleApi.clearCache(all ? { all: true } : { ids: selection.value.map((item: any) => item.id) }, { success: true }).then(() => {
+    window.location.reload()
+  }).catch(() => {
+    cacheClearing.value = ''
+  })
+}
 const handleApplication = (scope: any) => {
   const id = scope.row.id
   router.push({ path: '/member/role/application', query: { id } })
@@ -124,6 +141,22 @@ const handleApplication = (scope: any) => {
       <el-space>
         <button-add v-permit="'member:role:add'" @click="handleAdd" />
         <button-delete v-permit="'member:role:delete'" :disabled="selection.length === 0" @click="handleDelete" />
+        <el-button
+          v-permit="'member:role:modify'"
+          type="warning"
+          plain
+          :loading="cacheClearing === 'selected'"
+          :disabled="selection.length === 0 || cacheClearing !== ''"
+          @click="handleClearCache(false)"
+        >清除选中缓存</el-button>
+        <el-button
+          v-permit="'member:role:modify'"
+          type="warning"
+          plain
+          :loading="cacheClearing === 'all'"
+          :disabled="cacheClearing !== ''"
+          @click="handleClearCache(true)"
+        >清除全部缓存</el-button>
       </el-space>
       <el-space>
         <button-search @click="searchable = !searchable" />

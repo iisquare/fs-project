@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.agent.core.AgenticRuntime;
+import com.iisquare.fs.web.agent.entity.Knowledge;
 import com.iisquare.fs.web.agent.service.KnowledgeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,9 +35,17 @@ public class KnowledgeTool implements AgenticTool {
     public ObjectNode definition(JsonNode item) {
         String name = item.at("/name").asText("");
         if (DPUtil.empty(name)) return null;
+        int knowledgeId = item.at("/knowledgeId").asInt(0);
+        Knowledge info = knowledgeId < 1 ? null : knowledgeService.info(knowledgeId);
+        if (null == info || 1 != DPUtil.parseInt(info.getStatus())) return null;
+        if (item.isObject()) {
+            ObjectNode value = (ObjectNode) item;
+            value.put("knowledgeName", DPUtil.parseString(info.getName()));
+            value.put("description", DPUtil.parseString(info.getDescription()));
+        }
         ArrayNode params = DPUtil.arrayNode();
         params.add(AgenticTool.parameter("query", true, AgenticTool.schema("string", "检索或提问的内容")));
-        return AgenticTool.definition(name, item.at("/description").asText(""), params, item);
+        return AgenticTool.definition(name, params, item);
     }
 
     @Override
@@ -44,7 +53,14 @@ public class KnowledgeTool implements AgenticTool {
                          Map<String, ObjectNode> outputs, Map<String, Object> variables) {
         int knowledgeId = item.at("/knowledgeId").asInt(0);
         if (knowledgeId < 1) throw new IllegalStateException("知识库工具未选择知识库");
-        return search(knowledgeId, DPUtil.parseString(args.get("query")));
+        Knowledge info = knowledgeService.info(knowledgeId);
+        if (null == info || 1 != DPUtil.parseInt(info.getStatus())) {
+            throw new IllegalStateException("知识库不存在或已停用：" + knowledgeId);
+        }
+        ObjectNode result = search(knowledgeId, DPUtil.parseString(args.get("query")));
+        // 知识库描述只在实际调用时返回，避免在选择工具阶段占用上下文。
+        result.put("description", DPUtil.parseString(info.getDescription()));
+        return result;
     }
 
     /**

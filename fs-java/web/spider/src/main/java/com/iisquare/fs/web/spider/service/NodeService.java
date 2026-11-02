@@ -219,6 +219,14 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
             json.put("time", node.time);
             crawlers.replace(node.getId(), json);
         }
+        ObjectNode browsers = data.putObject("browsers");
+        for (Map.Entry<String, ZooNode> entry : zookeeper.browsers().entrySet()) {
+            ZooNode node = entry.getValue();
+            ObjectNode json = fetch(node, param);
+            if (null == json) return ApiUtil.result(5001, "载入浏览器节点信息失败", node);
+            json.put("time", node.time);
+            browsers.replace(node.getId(), json);
+        }
         ObjectNode token = data.putObject("token");
         token.put("size", channel.sizeToken());
         token.putObject("job");
@@ -317,18 +325,17 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         Map<String, Boolean> result = new LinkedHashMap<>();
         Map<String, Collection<String>> domains = new LinkedHashMap<>();
         for (String url : urls) {
+            url = normalizeUrl(job, url);
+            if (DPUtil.empty(url)) {
+                result.put(url, false);
+                continue;
+            }
             URI uri;
             try {
                 uri = URI.create(url);
             } catch (Exception e) {
                 result.put(url, false); // 链接不合法，忽略采集
                 continue;
-            }
-            if (!Worker.retainAnchor(job, uri.getHost())) { // 去除锚点信息
-                url = DPUtil.explode("#", url)[0];
-            }
-            if (!Worker.retainQuery(job, uri.getHost())) { // 去除请求参数
-                url = DPUtil.explode("\\?", url)[0];
             }
             result.put(url, true); // 默认全部进行采集
             if (!checkUrl(job, uri)) {
@@ -361,6 +368,25 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         return result;
     }
 
+    /**
+     * 按站点配置规范化页面链接。
+     */
+    public String normalizeUrl(ZooJob job, String url) {
+        if (DPUtil.empty(url)) return "";
+        try {
+            URI uri = URI.create(url);
+            if (!Worker.retainAnchor(job, uri.getHost())) {
+                url = DPUtil.explode("#", url)[0];
+            }
+            if (!Worker.retainQuery(job, uri.getHost())) {
+                url = DPUtil.explode("\\?", url)[0];
+            }
+            return url;
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     public Map<String, Object> execute(ObjectNode json) {
         ZooJob job = zookeeper.job(json.at("/id").asText());
         if (null == job) return ApiUtil.result(1404, "作业不存在", null);
@@ -373,7 +399,8 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         String referer = json.at("/params/referer").asText();
         switch (type) {
             case "broad":
-            case "single": {
+            case "single":
+            case Worker.TYPE_SMART: {
                 boolean force = json.at("/params/force").asBoolean();
                 String[] urls = DPUtil.explode("\n", json.at("/params/urls").asText());
                 Map<String, Boolean> checkedUrls = checkUrl(job, null, force, urls);
@@ -503,7 +530,7 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
      */
     public boolean checkUrl(ZooJob job, URI uri) {
         String jobType = job.template.at("/type").asText();
-        if (!Arrays.asList("broad", "single").contains(jobType)) return true;
+        if (!Arrays.asList("broad", "single", Worker.TYPE_SMART).contains(jobType)) return true;
         boolean allowed = false;
         for (JsonNode whitelist : job.template.at("/whitelists")) {
             if (DPUtil.isMatcher(whitelist.at("/regexDomain").asText(), uri.getHost())) {
@@ -540,8 +567,9 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         if (!checkUrl(job, uri)) return false;
         if (task.force) return true;
         long count = htmlMongo.count(Filters.and(
-                Filters.eq(MongoCore.FIELD_ID, task.url),
-                Filters.eq("response_status", 200)));
+                Filters.eq(MongoCore.FIELD_ID, task.taskId(job)),
+                Filters.gte("response_status", 200),
+                Filters.lt("response_status", 300)));
         return count == 0;
     }
 

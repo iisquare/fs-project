@@ -52,7 +52,13 @@ public class Worker implements Runnable {
         RequestConfig proxy = job.scheduler.getProxyFactory().config();
         if (null != proxy) fetcher.config(proxy);
         Map<String, String> headers = job.token.headers(job.template.getHeaders());
-        fetcher.url(job.task.getUrl()).headers(headers).get();
+        fetcher.url(job.task.getUrl())
+                .requestType(job.template.getRequestType())
+                .body(requestBody())
+                .contentType(job.template.getContentType())
+                .payloadForm(payloadForm())
+                .headers(headers)
+                .execute();
         Exception lastException = fetcher.getLastException();
         int status = fetcher.getLastStatus();
         String content = fetcher.getLastResult();
@@ -75,11 +81,35 @@ public class Worker implements Runnable {
         if (404 == status) { // 找不到页面，不执行后续处理
             return job.token;
         }
-        if (200 == status) { // 解析请求
+        if (status >= 200 && status < 300 && 204 != status) { // 解析请求
             return parse(content, proxy);
         }
+        if (204 == status) return job.token;
         retry(content, proxy, status, lastException); // 重新尝试执行
         return job.token;
+    }
+
+    private String requestBody() {
+        String body = job.template.getRequestBody();
+        if (null == body || null == job.task.getParam()) return body;
+        for (Map.Entry<String, String> entry : job.task.getParam().entrySet()) {
+            body = body.replace("{" + entry.getKey() + "}", entry.getValue());
+        }
+        return body;
+    }
+
+    private Map<String, String> payloadForm() {
+        Map<String, String> form = job.template.getPayloadForm();
+        if (null == form || null == job.task.getParam()) return form;
+        Map<String, String> result = new HashMap<>();
+        for (Map.Entry<String, String> entry : form.entrySet()) {
+            String value = null == entry.getValue() ? "" : entry.getValue();
+            for (Map.Entry<String, String> param : job.task.getParam().entrySet()) {
+                value = value.replace("{" + param.getKey() + "}", param.getValue());
+            }
+            result.put(entry.getKey(), value);
+        }
+        return result;
     }
 
     @Override

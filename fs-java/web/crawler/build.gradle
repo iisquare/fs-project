@@ -10,3 +10,12 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-pool2', version: pool2Version
 
 }
+
+tasks.register('browserBusyTest', Test) {
+    description = 'Run browser resource and policy tests without enabling network-dependent crawler tests'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    filter {
+        includeTestsMatching 'com.iisquare.fs.web.crawler.test.BrowserBusyTests'
+    }
+}

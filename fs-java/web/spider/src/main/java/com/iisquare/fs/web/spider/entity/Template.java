@@ -34,7 +34,6 @@ public class Template implements Serializable {
     private Integer minHalt; // 最小停顿间隔，毫秒
     @Column
     private Integer maxHalt; // 最大停顿间隔，毫秒
-    @Column
     private String params; // 启动参数
     @Column
     private String content; // 发布的配置快照内容，用于任务的JSON序列化缓存

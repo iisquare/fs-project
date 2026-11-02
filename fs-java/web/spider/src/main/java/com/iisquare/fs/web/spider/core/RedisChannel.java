@@ -154,7 +154,7 @@ public class RedisChannel {
         String keyTaskDetail = keyTaskDetail(task.getJobId());
         Long result = redis().execute(
                 luaTaskPut, Arrays.asList(keyTaskRank, keyTaskDetail),
-                task.url, RedisTask.encode(task), String.valueOf(task.score));
+                task.queueKey(), RedisTask.encode(task), String.valueOf(task.score));
         return null != result && 1 == result;
     }
 

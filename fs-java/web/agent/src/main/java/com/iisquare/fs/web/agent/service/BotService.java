@@ -11,7 +11,9 @@ import com.iisquare.fs.base.web.sse.SsePlainRequest;
 import com.iisquare.fs.base.web.sse.SsePlainRequestPool;
 import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.agent.core.AgenticRuntime;
+import com.iisquare.fs.web.agent.entity.Agentic;
 import com.iisquare.fs.web.agent.react.AgenticToolService;
+import com.iisquare.fs.web.agent.react.ToolFunctionName;
 import com.iisquare.fs.web.agent.tool.FileUploader;
 import com.iisquare.fs.web.core.mvc.FeignInterceptor;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
@@ -40,7 +42,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.regex.Pattern;
 
 /**
  * 本地客户端（桌面端等）接口服务：客户端自用的模型清单与模型对话。
@@ -63,9 +64,12 @@ public class BotService implements DisposableBean {
     AIService aiService;
     @Autowired
     DefaultRbacService rbacService;
-    /** 工具方法与内置能力（知识库、数据主题、知识图谱本体、编排应用）的执行与定义组装 */
+    /** 工具方法与内置能力（知识库、数据主题、知识图谱、编排应用）的执行与定义组装 */
     @Autowired
     AgenticToolService agenticToolService;
+    /** 工具说明模板：客户端新建会话时获取，更新说明只需发布服务端 */
+    @Autowired
+    ToolDescriptionService toolDescriptionService;
     @Autowired
     AgenticRuntime agenticRuntime;
     /** 编排作为工具调用时，运行前需要注入「编排调用器」 */
@@ -331,23 +335,40 @@ public class BotService implements DisposableBean {
     /* ------------------------------- 工具 ------------------------------- */
 
     /**
+     * 工具说明模板：返回 `{ version, rows: [{ kind, label, description }] }`。
+     * 供工具目录与帮助展示使用；模型工具定义由 /bot/tools 直接返回渲染后的最终说明。
+     */
+    public Map<String, Object> toolDescriptions() {
+        ObjectNode data = DPUtil.objectNode();
+        data.put("version", ToolDescriptionService.VERSION);
+        data.set("rows", toolDescriptionService.definitions());
+        return ApiUtil.result(0, null, data);
+    }
+
+    /**
      * 工具定义清单：客户端把项目里选中的工具（ref）带上来，这里补全成模型可见的 function 定义。
      *
      * 客户端驱动工具调用循环（本地文件工具由客户端自己执行），服务端只负责把「服务端工具」
-     * （工具方法 / 知识库 / 数据主题 / 知识图谱本体 / 编排应用）的 function 定义与调用入口给出去，
+     * （工具方法 / 知识库 / 数据主题 / 知识图谱 / 编排应用）的 function 定义与调用入口给出去，
      * 凭据与真实调用都留在服务端。
      *
      * 函数名按 OpenAI 规范归一（中文、空格等替换为下划线并去重），随定义一起回带 functionName，
      * 客户端调用时把该 ref 原样带回，服务端据此定位到同一只工具。
      */
-    public Map<String, Object> tools(String body) {
+    public Map<String, Object> tools(String body, HttpServletRequest request) {
         ObjectNode json = parse(body);
         ArrayNode rows = DPUtil.arrayNode();
         Set<String> used = new HashSet<>();
         for (JsonNode ref : json.at("/tools")) {
             ObjectNode item = item(ref);
             if (null == item) continue;
-            String functionName = functionName(item, used);
+            if ("agentic".equals(item.at("/kind").asText(""))) {
+                int agenticId = item.at("/agenticId").asInt(0);
+                Agentic target = agenticId < 1 ? null : agenticService.info(agenticId);
+                if (null == target || 1 != DPUtil.parseInt(target.getStatus())
+                        || !agenticService.authorized(target, request)) continue;
+            }
+            String functionName = ToolFunctionName.unique(item, used);
             item.put("name", functionName);
             ArrayNode definitions;
             try {
@@ -367,6 +388,7 @@ public class BotService implements DisposableBean {
             row.set("function", function);
         }
         ObjectNode data = DPUtil.objectNode();
+        data.put("descriptionVersion", ToolDescriptionService.VERSION);
         data.set("rows", rows);
         return ApiUtil.result(0, null, data);
     }
@@ -407,7 +429,6 @@ public class BotService implements DisposableBean {
         if (DPUtil.empty(kind)) kind = "method";
         ObjectNode item = DPUtil.objectNode();
         item.put("kind", kind);
-        item.put("description", ref.at("/description").asText(""));
         // 固定参数：客户端在项目里配的执行变量绑定原样带上——定义时摘掉这些参数（不再交给模型），
         // 调用时按取值覆盖，与编排里大语言模型节点的工具项是同一套实现
         if (ref.at("/args").isObject()) item.set("args", ref.at("/args"));
@@ -418,19 +439,22 @@ public class BotService implements DisposableBean {
             item.put("toolId", ref.at("/toolId").asInt(0));
             item.put("method", method);
             item.put("name", method);
+            item.put("toolName", ref.at("/toolName").asText(""));
+            item.put("methodTitle", ref.at("/title").asText(""));
+            item.put("methodDescription", ref.at("/description").asText(""));
             return item;
         }
         String name = ref.at("/functionName").asText("");
         if (DPUtil.empty(name)) name = ref.at("/name").asText("");
         if (DPUtil.empty(name)) return null;
         item.put("name", name);
+        item.put("description", ref.at("/description").asText(""));
         int id = ref.at("/id").asInt(0);
         if ("knowledge".equals(kind)) item.put("knowledgeId", id);
         else if ("theme".equals(kind)) item.put("themeId", id);
         else if ("ontology".equals(kind)) item.put("ontologyId", id);
         else if ("agentic".equals(kind)) item.put("agenticId", id);
         else return null;
-        if (DPUtil.empty(item.at("/description").asText(""))) item.put("description", name);
         return item;
     }
 
@@ -440,26 +464,6 @@ public class BotService implements DisposableBean {
         target.put("functionName", functionName);
         return target;
     }
-
-    /** 函数名归一：只保留 [0-9a-zA-Z_-]，其余（中文、空格等）替换为下划线，重复时按序加后缀 */
-    protected String functionName(ObjectNode item, Set<String> used) {
-        String kind = item.at("/kind").asText("method");
-        String base = PLACEHOLDER.matcher(item.at("/name").asText("")).replaceAll("_");
-        base = base.replaceAll("_{2,}", "_").replaceAll("^_+|_+$", "");
-        if (DPUtil.empty(base)) base = kind + "_" + item.at("/toolId").asInt(item.at("/knowledgeId").asInt(0));
-        if (base.length() > 60) base = base.substring(0, 60);
-        String name = base;
-        int index = 2;
-        while (used.contains(name)) {
-            name = base + "_" + index;
-            index++;
-        }
-        used.add(name);
-        return name;
-    }
-
-    /** 函数名里不允许的字符 */
-    protected static final Pattern PLACEHOLDER = Pattern.compile("[^0-9a-zA-Z_-]");
 
     /** 请求体解析：不是对象时按空对象处理，由必填校验给出明确提示 */
     protected ObjectNode parse(String json) {

@@ -38,11 +38,23 @@ public class ThemeTool implements AgenticTool {
     public ObjectNode definition(JsonNode item) {
         String name = item.at("/name").asText("");
         if (DPUtil.empty(name)) return null;
+        int themeId = item.at("/themeId").asInt(0);
+        if (themeId < 1) return null;
+        JsonNode info = info(themeId);
+        if (null == info) return null;
+        if (info.has("status") && 1 != info.at("/status").asInt(0)) return null;
+        // 取一次详情确认主题存在且当前用户可访问；类型说明由 ToolDescriptionService 统一生成，
+        // 描述附在说明末尾，用服务端当前值而不是项目里的旧快照
+        if (item.isObject()) {
+            ObjectNode value = (ObjectNode) item;
+            value.put("themeName", info.at("/name").asText(""));
+            value.put("description", info.at("/description").asText(""));
+        }
         ArrayNode params = DPUtil.arrayNode();
         params.add(AgenticTool.parameter("sql", false, AgenticTool.schema("string",
                 "针对主题内数据集编写的查询 SQL（表名用数据集名称）；不传则返回主题的数据字典")));
         params.add(AgenticTool.parameter("limit", false, AgenticTool.schema("integer", "返回的最大行数，默认 100")));
-        return AgenticTool.definition(name, item.at("/description").asText(""), params, item);
+        return AgenticTool.definition(name, params, item);
     }
 
     @Override
@@ -68,22 +80,23 @@ public class ThemeTool implements AgenticTool {
         return value;
     }
 
-    /** 主题数据字典：主题基础信息 + 数据集（名称、字段）+ 关联关系 */
+    /** 主题数据字典：主题基础信息 + 数据集（名称、描述、字段）+ 关联关系 */
     public ObjectNode dictionary(int themeId) {
-        Map<String, Object> param = new LinkedHashMap<>();
-        param.put("id", themeId);
-        JsonNode info = RpcUtil.data(biRpc.post("/dataTheme/info", param), false);
-        if (null == info || info.isNull() || info.isMissingNode()) {
+        JsonNode info = info(themeId);
+        if (null == info) {
             throw new IllegalStateException("数据主题不存在或无权访问：" + themeId);
+        }
+        if (info.has("status") && 1 != info.at("/status").asInt(0)) {
+            throw new IllegalStateException("数据主题已停用：" + themeId);
         }
         ObjectNode result = DPUtil.objectNode();
         result.put("themeId", themeId);
         result.put("themeName", info.at("/name").asText(""));
         result.put("description", info.at("/description").asText(""));
-        // 数据集名称：主题详情里带了数据集信息时直接取用
-        Map<String, String> datasetNames = new LinkedHashMap<>();
+        // 主题详情里带了数据集信息时直接取用，避免为名称和描述再发一次详情请求
+        Map<String, JsonNode> datasetInfos = new LinkedHashMap<>();
         for (JsonNode dataset : info.at("/datasets")) {
-            datasetNames.put(dataset.at("/id").asText(""), dataset.at("/name").asText(""));
+            datasetInfos.put(dataset.at("/id").asText(""), dataset);
         }
         Set<Integer> datasetIds = new LinkedHashSet<>();
         for (JsonNode item : info.at("/content/datasetIds")) {
@@ -101,13 +114,30 @@ public class ThemeTool implements AgenticTool {
             Map<String, Object> columnsParam = new LinkedHashMap<>();
             columnsParam.put("id", id);
             JsonNode columns = RpcUtil.data(biRpc.post("/dataset/columns", columnsParam), false);
-            String name = datasetNames.get(String.valueOf(id));
+            JsonNode known = datasetInfos.get(String.valueOf(id));
+            String name = null == known ? "" : known.at("/name").asText("");
             if (DPUtil.empty(name) && null != columns) name = columns.at("/name").asText("");
             dataset.put("name", DPUtil.empty(name) ? String.valueOf(id) : name);
+            String description = null == columns ? "" : columns.at("/description").asText("");
+            if (DPUtil.empty(description) && null != known) {
+                description = known.at("/description").asText("");
+            }
+            dataset.put("description", description);
             dataset.set("columns", null == columns ? DPUtil.arrayNode() : columns.at("/columns"));
         }
         result.set("relations", info.at("/content/relations"));
         return result;
+    }
+
+    /** 当前主题详情：定义与数据字典都从 BI 服务实时读取，不在 Agent 进程内缓存 */
+    protected JsonNode info(int themeId) {
+        Map<String, Object> param = new LinkedHashMap<>();
+        param.put("id", themeId);
+        JsonNode info = RpcUtil.data(biRpc.post("/dataTheme/info", param), false);
+        if (null == info || info.isNull() || info.isMissingNode()) {
+            return null;
+        }
+        return info;
     }
 
 }

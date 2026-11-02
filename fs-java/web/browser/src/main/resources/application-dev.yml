@@ -1,0 +1,9 @@
+server:
+  port: 7836
+
+fs:
+  browser:
+    zookeeper:
+      host: 127.0.0.1:2181/fs-spider
+      timeout: 2000
+      node-id: 127.0.0.1:7836:browser

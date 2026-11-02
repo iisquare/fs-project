@@ -1,0 +1,18 @@
+dependencies {
+    implementation project(':web:core')
+    implementation project(':base:zookeeper')
+
+    implementation group: 'com.microsoft.playwright', name: 'playwright', version: '1.54.0'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: lang3Version
+
+    testImplementation project(':web:test')
+}
+
+task installPlaywright(type: JavaExec) {
+    group = 'playwright'
+    description = 'Install Playwright browser runtimes used by the browser service'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.microsoft.playwright.CLI'
+    args 'install'
+}
+

@@ -19,6 +19,7 @@ public class HtmlService {
         Map<String, String> types = new LinkedHashMap<>();
         types.put("list", "列表页");
         types.put("detail", "详情页");
+        types.put("other", "其他页面");
         types.put("page_first", "第一页");
         types.put("page_next", "下一页");
         return types;

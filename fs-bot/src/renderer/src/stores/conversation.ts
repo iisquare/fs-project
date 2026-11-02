@@ -15,6 +15,8 @@ import {
 } from './chat'
 import { useProjectStore } from './project'
 import type { Project } from '@renderer/db/ProjectDb'
+import { refreshTools } from '@renderer/core/ToolCache'
+import { buildTools } from '@renderer/core/Toolbox'
 
 /** 生成中提交、等这一轮收尾后再发的一条消息 */
 export interface QueuedSend {
@@ -111,6 +113,10 @@ export const useConversationStore = defineStore('conversation', () => {
 
   /** 新建会话：先在内存里起一条草稿，发出第一条消息时才落库 */
   async function create(project: Project, title = '新对话'): Promise<Conversation> {
+    // 服务端工具定义与说明只在新建会话时主动刷新；同项目的所有会话随后共用一份工具集
+    refreshTools(project)
+    // 先完成项目工具装配：说明缺失时直接拒绝新建，不让用户进入一个跑不起来的会话
+    await buildTools(project)
     const now = new Date().toISOString()
     const conversation: Conversation = {
       id: crypto.randomUUID(),
@@ -279,14 +285,13 @@ export const useConversationStore = defineStore('conversation', () => {
    * 发送一轮：生成中提交一律进入该会话的队列，不打断、不弹窗；
    * 当前轮次边界或整轮收尾后，把队列合并成一条继续发送。
    */
-  async function send(params: SendParams): Promise<'sent' | 'queued'> {
+  async function send(params: SendParams): Promise<'sent' | 'queued' | 'rejected'> {
     const chat = useChatStore()
     if (chat.find(params.conversationId)?.running) {
       enqueue(params)
       return 'queued'
     }
-    await dispatch(params)
-    return 'sent'
+    return (await dispatch(params)) ? 'sent' : 'rejected'
   }
 
   async function select(id: string): Promise<void> {

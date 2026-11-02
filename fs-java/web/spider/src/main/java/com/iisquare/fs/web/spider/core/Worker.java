@@ -10,10 +10,13 @@ import com.iisquare.fs.base.mongodb.MongoCore;
 import com.iisquare.fs.base.mongodb.util.MongoUtil;
 import com.iisquare.fs.web.spider.parser.Parser;
 import com.iisquare.fs.web.spider.service.NodeService;
+import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Filters;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.springframework.core.io.ClassPathResource;
@@ -33,6 +36,7 @@ import java.util.*;
 @Slf4j
 public class Worker implements Runnable {
 
+    public static final String TYPE_SMART = "smart";
     private Thread thread;
     /**
      * 参数格式：{
@@ -75,13 +79,14 @@ public class Worker implements Runnable {
         JsonNode task = data.at("/task");
         JsonNode storage = data.at("/storage");
         ZooJob job = nodeService.zookeeper().job(task.at("/jobId").asText());
+        RedisTask redisTask = RedisTask.decode(task.toString());
         Document info = new Document();
-        info.put(MongoCore.FIELD_ID, task.at("/url").asText());
+        info.put(MongoCore.FIELD_ID, null == redisTask ? task.at("/url").asText() : redisTask.taskId(job));
         info.put("job_id", task.at("/jobId").asText());
-        info.put("job_type", task.at("/type").asText());
+        info.put("job_type", null == job ? "" : job.template.at("/type").asText());
         info.put("url", storage.at("/location").asText());
         if (DPUtil.empty(info.getString("url"))) {
-            info.put("url", info.getString(MongoCore.FIELD_ID));
+            info.put("url", task.at("/url").asText());
         }
         info.put("type", "");
         info.put("content_type", storage.at("/media").asText());
@@ -110,20 +115,48 @@ public class Worker implements Runnable {
         info.put("created_time", time);
         info.put("updated_time", time);
         info.put("deleted_time", 0L);
+        boolean smart = null != job && TYPE_SMART.equals(job.template.at("/type").asText());
+        if (smart) {
+            info.put("type", successful(storage.at("/status").asInt())
+                    ? PageTypeClassifier.classify(document) : PageTypeClassifier.OTHER);
+        }
         JsonNode intercept = intercept(job, task, storage, info); // 拦截器检查
         String collection;
+        Document increments = new Document();
+        SmartLinkPlan smartLinkPlan = null;
+        if (smart) {
+            increments.put("crawl_times", 1L);
+            increments.put("new_link_times", 0L);
+        }
         if (null == intercept) { // 无拦截，执行内容提取操作
-            info.put("collect", MongoUtil.fromJson(plan(job, task, storage, info)));
+            if (!smart) info.put("collect", MongoUtil.fromJson(plan(job, task, storage, info)));
             collection = collection(job, info.getString("page_code"), info.getString("domain"));
+            if (smart && successful(storage.at("/status").asInt())) {
+                smartLinkPlan = smartLinkPlan(job, task, info, document);
+                if (!smartLinkPlan.newLinks.isEmpty()) {
+                    increments.put("new_link_times", 1L);
+                }
+            }
         } else {
             info.put("intercept", MongoUtil.fromJson(intercept));
             collection = job.template.at("/intercepts/" + intercept.at("/id").asText() + "/collection").asText();
             if (DPUtil.empty(collection)) collection = "fs_spider_intercept";
         }
-        info = nodeService.htmlMongo.switchTable(collection).upsert(info, "created_time");
+        if (smart) {
+            info = nodeService.htmlMongo.switchTable(collection).upsert(info, increments, "created_time");
+        } else {
+            info = nodeService.htmlMongo.switchTable(collection).upsert(info, "created_time");
+        }
         if (null != intercept) return true;
-        if (!Arrays.asList(200, 404, 503).contains(info.getInteger("response_status"))) {
-            retry(job, task, storage, info); // 非正常响应，重试任务
+        if (!successful(info.getInteger("response_status"))
+                && !Arrays.asList(404, 503).contains(info.getInteger("response_status"))) {
+            boolean browserServiceError = storage.at("/browserServiceError").asBoolean(false);
+            boolean retryable = !browserServiceError || storage.at("/browserRetryable").asBoolean(false);
+            if (retryable) retry(job, task, storage, info); // 非正常响应，重试任务
+        }
+        if (smart) {
+            if (null != smartLinkPlan) enqueueSmartLinks(task, info, smartLinkPlan);
+            return true;
         }
         return broad(job, task, storage, info, document);
     }
@@ -176,7 +209,7 @@ public class Worker implements Runnable {
     }
 
     public JsonNode plan(ZooJob job, JsonNode task, JsonNode storage, Document info) {
-        if (200 != storage.at("/status").asInt()) return null;
+        if (!successful(storage.at("/status").asInt())) return null;
         if (null == job) return null;
         if (!"plan".equals(job.getTemplate().at("/type").asText())) return null;
         JsonNode page = job.template.at("/pages/" + task.at("/pageCode").asText());
@@ -238,22 +271,10 @@ public class Worker implements Runnable {
     }
 
     public boolean broad(ZooJob job, JsonNode task, JsonNode storage, Document info, org.jsoup.nodes.Document document) {
-        if (200 != storage.at("/status").asInt()) return true;
+        if (!successful(storage.at("/status").asInt())) return true;
         if (null == job) return true;
         if (!"broad".equals(job.getTemplate().at("/type").asText())) return true;
-        Set<String> links = new HashSet<>();
-        for (Element element : document.select("a[href]")) {
-            String href = element.attr("abs:href");
-            if (!DPUtil.empty(href)) {
-                links.add(href);
-            }
-        }
-        for (Element element : document.select("iframe[src]")) {
-            String href = element.attr("abs:src");
-            if (!DPUtil.empty(href)) {
-                links.add(href);
-            }
-        }
+        Set<String> links = pageLinks(document);
         if (!links.isEmpty()) {
             ObjectNode json = DPUtil.objectNode();
             json.put("id", task.at("/jobId").asText());
@@ -265,12 +286,97 @@ public class Worker implements Runnable {
         return true;
     }
 
+    /**
+     * 比对当前页面链接与各目标集合中的已采集链接。
+     */
+    public SmartLinkPlan smartLinkPlan(ZooJob job, JsonNode task, Document info, org.jsoup.nodes.Document document) {
+        Map<String, Set<String>> candidates = new LinkedHashMap<>();
+        Set<String> currentUrls = new HashSet<>();
+        currentUrls.add(info.getString(MongoCore.FIELD_ID));
+        currentUrls.add(info.getString("url"));
+
+        for (String href : pageLinks(document)) {
+            String url = nodeService.normalizeUrl(job, href);
+            if (DPUtil.empty(url) || currentUrls.contains(url)) continue;
+            if (!url.startsWith("http://") && !url.startsWith("https://")) continue;
+            URI uri;
+            try {
+                uri = URI.create(url);
+            } catch (Exception e) {
+                continue;
+            }
+            if (!nodeService.checkUrl(job, uri)) continue;
+            String collection = collection(job, null, uri.getHost());
+            candidates.computeIfAbsent(collection, key -> new LinkedHashSet<>()).add(url);
+        }
+
+        Map<String, String> knownTypes = new HashMap<>();
+        Document projection = new Document();
+        projection.put(MongoCore.FIELD_ID, 1);
+        projection.put("type", 1);
+        for (Map.Entry<String, Set<String>> entry : candidates.entrySet()) {
+            Bson filters = Filters.in(MongoCore.FIELD_ID, entry.getValue());
+            nodeService.htmlMongo.switchTable(entry.getKey());
+            try (MongoCursor<Document> iterator = nodeService.htmlMongo.collection()
+                    .find(filters).projection(projection).iterator()) {
+                while (iterator.hasNext()) {
+                    Document known = iterator.next();
+                    knownTypes.put(known.getString(MongoCore.FIELD_ID), known.getString("type"));
+                }
+            }
+        }
+
+        LinkedHashSet<String> newLinks = new LinkedHashSet<>();
+        LinkedHashSet<String> oldListLinks = new LinkedHashSet<>();
+        for (Set<String> urls : candidates.values()) {
+            for (String url : urls) {
+                if (!knownTypes.containsKey(url)) {
+                    newLinks.add(url);
+                } else if (PageTypeClassifier.LIST.equals(knownTypes.get(url))) {
+                    oldListLinks.add(url);
+                }
+            }
+        }
+        return new SmartLinkPlan(newLinks, oldListLinks);
+    }
+
+    private void enqueueSmartLinks(JsonNode task, Document info, SmartLinkPlan plan) {
+        Set<String> queue = plan.queueLinks();
+        if (queue.isEmpty()) return;
+
+        ObjectNode json = DPUtil.objectNode();
+        json.put("id", task.at("/jobId").asText());
+        ObjectNode params = json.putObject("params");
+        params.put("referer", info.getString("url"));
+        params.put("urls", DPUtil.implode("\n", queue));
+        params.put("force", true);
+        nodeService.execute(json);
+    }
+
+    public static Set<String> pageLinks(org.jsoup.nodes.Document document) {
+        Set<String> links = new LinkedHashSet<>();
+        for (Element element : document.select("a[href], area[href]")) {
+            String href = element.attr("abs:href");
+            if (!DPUtil.empty(href)) links.add(href);
+        }
+        for (Element element : document.select("iframe[src], frame[src]")) {
+            String href = element.attr("abs:src");
+            if (!DPUtil.empty(href)) links.add(href);
+        }
+        return links;
+    }
+
+    public static boolean successful(int status) {
+        return status >= 200 && status < 300;
+    }
+
     public static String collection(ZooJob job, String pageCode, String domain) {
         if (null == job) return "fs_spider_html";
         String collection = null;
         switch (job.template.at("/type").asText()) {
             case "broad":
-            case "single": {
+            case "single":
+            case TYPE_SMART: {
                 JsonNode sites = job.template.at("/sites");
                 collection = sites.at("/" + domain + "/collection").asText();
                 if (DPUtil.empty(collection)) {
@@ -306,7 +412,8 @@ public class Worker implements Runnable {
         int count = 0;
         switch (job.template.at("/type").asText()) {
             case "broad":
-            case "single": {
+            case "single":
+            case TYPE_SMART: {
                 JsonNode sites = job.template.at("/sites");
                 count = sites.at("/" + domain + "/iterateCount").asInt(0);
                 if (0 == count) {
@@ -329,7 +436,8 @@ public class Worker implements Runnable {
         int count = 0;
         switch (job.template.at("/type").asText()) {
             case "broad":
-            case "single": {
+            case "single":
+            case TYPE_SMART: {
                 JsonNode sites = job.template.at("/sites");
                 count = sites.at("/" + domain + "/retryCount").asInt(0);
                 if (0 == count) {
@@ -345,6 +453,34 @@ public class Worker implements Runnable {
             }
         }
         return count;
+    }
+
+    public static final class SmartLinkPlan {
+        private final Set<String> newLinks;
+        private final Set<String> oldListLinks;
+
+        public SmartLinkPlan(Set<String> newLinks, Set<String> oldListLinks) {
+            this.newLinks = Collections.unmodifiableSet(new LinkedHashSet<>(newLinks));
+            this.oldListLinks = Collections.unmodifiableSet(new LinkedHashSet<>(oldListLinks));
+        }
+
+        public Set<String> getNewLinks() {
+            return newLinks;
+        }
+
+        public Set<String> getOldListLinks() {
+            return oldListLinks;
+        }
+
+        /**
+         * 只有发现新链接时，才同时重采已判定为列表的旧链接。
+         */
+        public Set<String> queueLinks() {
+            if (newLinks.isEmpty()) return Collections.emptySet();
+            LinkedHashSet<String> links = new LinkedHashSet<>(newLinks);
+            links.addAll(oldListLinks);
+            return links;
+        }
     }
 
     @Override

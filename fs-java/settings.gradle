@@ -49,6 +49,7 @@ include 'web:lm'
 include 'web:agent'
 include 'web:kg'
 include 'web:crawler'
+include 'web:browser'
 
 include 'site:core'
 include 'site:api'

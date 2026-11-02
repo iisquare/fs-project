@@ -89,7 +89,24 @@ public abstract class MongoBase extends MongoCore {
         return upsert(document, insert);
     }
 
+    public Document upsert(Document document, Document increments, String... insertFields) {
+        Document insert = new Document();
+        for (String field : insertFields) {
+            if (document.containsKey(field)) {
+                insert.put(field, document.remove(field));
+            }
+        }
+        return upsert(document, insert, increments);
+    }
+
     public Document upsert(Document set, Document setOnInsert) {
+        return upsert(set, setOnInsert, (Document) null);
+    }
+
+    /**
+     * 更新插入，并原子累加计数类字段。
+     */
+    public Document upsert(Document set, Document setOnInsert, Document increments) {
         if(!set.containsKey(FIELD_ID)) return null;
         set = filtration(set);
         Bson filter = Filters.eq(FIELD_ID, set.remove(FIELD_ID));
@@ -97,6 +114,9 @@ public abstract class MongoBase extends MongoCore {
         Document update = new Document("$set", set);
         if (null != setOnInsert && !setOnInsert.isEmpty()) {
             update.put("$setOnInsert", setOnInsert);
+        }
+        if (null != increments && !increments.isEmpty()) {
+            update.put("$inc", increments);
         }
         collection().updateOne(filter, update, options);
         return MongoUtil.id2string(set);

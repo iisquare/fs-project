@@ -28,7 +28,7 @@ export interface ProjectWorkspace {
 /**
  * 工具类型：与智能体编排里大语言模型节点的工具种类一致
  * - method 工具方法（服务端解析出的 OpenAPI / MCP 方法）
- * - knowledge 知识库、theme 数据主题、ontology 知识图谱本体、agentic 编排应用
+ * - knowledge 知识库、theme 数据主题、ontology 知识图谱、agentic 编排应用
  * - skill 本地技能：服务端技能包 + 本机安装的那一份，这一类只在客户端解析（定义与执行都不经服务端，
  *   见 `core/Toolbox.ts` 的 `local_skill`）；项目里启用哪些技能决定了模型的工具清单里有没有这个工具
  */
@@ -73,7 +73,7 @@ export interface ProjectTool {
   methodId?: number
   methodName?: string
   title?: string
-  /** 服务端工具的描述：作为给模型的 function 描述下发（取不到时服务端按名称兜底） */
+  /** 服务端工具的描述：用于编辑器帮助，并作为统一工具说明末尾的简短用途附加 */
   description?: string
   /** 工具方法专用：固定参数配置（见 ProjectToolArg），未配置的参数由模型决定 */
   args?: ProjectToolArgs

@@ -11,7 +11,7 @@
  * 整张卡片还能往外拖（拖给资源管理器 / 别的应用，原生拖放由主进程发起），
  * 服务端交付的下载地址按外部地址打开、自己就是可拖的链接。交付物不用再自己去那段 JSON 里翻路径。
  */
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import type { ChatToolCall } from '@renderer/stores/chat'
 import { fileRefsOf, type ChatFileRef } from '@renderer/core/FileRefs'
 import { formatDuration } from '@renderer/utils/TimeUtil'
@@ -28,6 +28,10 @@ const opened = ref<string[]>([])
 
 /** 每次调用涉及的文件：随流式内容一起重算（参数与返回写到一半时还给不出卡片） */
 const refs = computed<ChatFileRef[][]>(() => props.calls.map((call) => fileRefsOf(call)))
+
+/** 刚复制过的内容块：同一时间只给一处「已复制」反馈 */
+const copied = ref('')
+let copiedTimer: ReturnType<typeof setTimeout> | null = null
 
 function openRef(ref: ChatFileRef): void {
   FileActionUtil.open(String(props.projectId ?? ''), ref.path)
@@ -85,6 +89,34 @@ function toggle(call: ChatToolCall, index: number): void {
     : [...opened.value, id]
 }
 
+type CopyKind = 'args' | 'result'
+
+function copyId(call: ChatToolCall, index: number, kind: CopyKind): string {
+  return `${key(call, index)}-${kind}`
+}
+
+function isCopied(call: ChatToolCall, index: number, kind: CopyKind): boolean {
+  return copied.value === copyId(call, index, kind)
+}
+
+/** 参数按展开后的 JSON 复制，返回内容保持原样，与眼前看到的内容一致 */
+async function copy(call: ChatToolCall, index: number, kind: CopyKind): Promise<void> {
+  const text = 'args' === kind ? pretty(call.args) : String(call.result ?? '')
+  if (!text.trim()) return
+  try {
+    await navigator.clipboard.writeText(text)
+    copied.value = copyId(call, index, kind)
+    if (copiedTimer) clearTimeout(copiedTimer)
+    copiedTimer = setTimeout(() => (copied.value = ''), 1500)
+  } catch {
+    copied.value = ''
+  }
+}
+
+onBeforeUnmount(() => {
+  if (copiedTimer) clearTimeout(copiedTimer)
+})
+
 function state(call: ChatToolCall): string {
   if ('success' === call.status) return '已完成'
   if ('failed' === call.status) return '失败'
@@ -125,11 +157,107 @@ function state(call: ChatToolCall): string {
     </button>
     <div class="step-body" v-show="isOpen(call, index)">
       <div class="tool-block">
-        <div class="tool-label">参数</div>
+        <div class="tool-block-head">
+          <div class="tool-label">参数</div>
+          <button
+            v-if="String(call.args ?? '').trim()"
+            type="button"
+            class="tool-copy"
+            :title="isCopied(call, index, 'args') ? '已复制' : '复制参数'"
+            :aria-label="isCopied(call, index, 'args') ? '已复制参数' : '复制参数'"
+            @click="copy(call, index, 'args')"
+          >
+            <svg
+              v-if="isCopied(call, index, 'args')"
+              viewBox="0 0 16 16"
+              width="12"
+              height="12"
+              aria-hidden="true"
+            >
+              <path
+                d="M3.6 8.4 6.4 11.2 12.4 5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <svg v-else viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+              <rect
+                x="5.9"
+                y="5.9"
+                width="7.6"
+                height="7.6"
+                rx="1.7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+              />
+              <path
+                d="M10.4 3.9H4.8a1.7 1.7 0 0 0-1.7 1.7v5.6"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+              />
+            </svg>
+            <span aria-live="polite">{{ isCopied(call, index, 'args') ? '已复制' : '复制' }}</span>
+          </button>
+        </div>
         <pre class="tool-text">{{ pretty(call.args) }}</pre>
       </div>
       <div class="tool-block">
-        <div class="tool-label">返回</div>
+        <div class="tool-block-head">
+          <div class="tool-label">返回</div>
+          <button
+            v-if="String(call.result ?? '').trim()"
+            type="button"
+            class="tool-copy"
+            :title="isCopied(call, index, 'result') ? '已复制' : '复制返回内容'"
+            :aria-label="isCopied(call, index, 'result') ? '已复制返回内容' : '复制返回内容'"
+            @click="copy(call, index, 'result')"
+          >
+            <svg
+              v-if="isCopied(call, index, 'result')"
+              viewBox="0 0 16 16"
+              width="12"
+              height="12"
+              aria-hidden="true"
+            >
+              <path
+                d="M3.6 8.4 6.4 11.2 12.4 5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <svg v-else viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+              <rect
+                x="5.9"
+                y="5.9"
+                width="7.6"
+                height="7.6"
+                rx="1.7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+              />
+              <path
+                d="M10.4 3.9H4.8a1.7 1.7 0 0 0-1.7 1.7v5.6"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+              />
+            </svg>
+            <span aria-live="polite">{{
+              isCopied(call, index, 'result') ? '已复制' : '复制'
+            }}</span>
+          </button>
+        </div>
         <el-scrollbar class="tool-text" max-height="260px">
           <pre class="tool-pre" :class="{ failed: 'failed' === call.status }">{{
             call.result || '等待执行…'
@@ -270,9 +398,47 @@ function state(call: ChatToolCall): string {
   margin-top: 6px;
 }
 
+.tool-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 20px;
+}
+
 .tool-label {
   font-size: 12px;
   color: var(--el-text-color-placeholder);
+}
+
+.tool-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  height: 20px;
+  margin-left: auto;
+  padding: 0 6px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  line-height: 20px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+
+  svg {
+    display: block;
+    flex: none;
+  }
+
+  &:hover {
+    color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
+  }
 }
 
 .tool-text {

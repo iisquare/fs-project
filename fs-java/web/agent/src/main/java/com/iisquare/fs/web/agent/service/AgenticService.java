@@ -369,6 +369,9 @@ public class AgenticService extends JPAServiceBase {
                         Agentic target = agenticId < 1 ? null : info(agenticId);
                         if (agenticId < 1) errors.add("存在未选择编排应用的工具");
                         else if (null == target) errors.add("编排应用不存在（ID：" + agenticId + "）");
+                        else if (1 != DPUtil.parseInt(target.getStatus())) {
+                            errors.add("编排工具引用的应用已停用：" + target.getName());
+                        }
                         else if (null == target.getPublishedVersion() || target.getPublishedVersion() < 1) {
                             errors.add("编排工具引用的应用尚未发布：" + target.getName());
                         }
@@ -488,6 +491,12 @@ public class AgenticService extends JPAServiceBase {
     public ObjectNode toolInvoke(Integer agenticId, String query, Integer uid, HttpServletRequest request) {
         Agentic info = null == agenticId || agenticId < 1 ? null : info(agenticId);
         if (null == info) throw new IllegalStateException("编排应用不存在：" + agenticId);
+        if (!authorized(info, request)) {
+            throw new IllegalStateException("无权限使用该编排应用：" + info.getName());
+        }
+        if (1 != DPUtil.parseInt(info.getStatus())) {
+            throw new IllegalStateException("编排应用已停用：" + info.getName());
+        }
         // 嵌套层级保护：A 的工具指向 B、B 又指回 A（或自引用）时会无限嵌套，这里直接拦住
         int depth = nestedDepthThread.get();
         if (depth >= MAX_NESTED_DEPTH) {
@@ -651,12 +660,15 @@ public class AgenticService extends JPAServiceBase {
         int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         Agentic info = id > 0 ? info(id) : null;
         if (null == info) return ApiUtil.result(404, null, id);
+        // 授权角色：配置了授权角色时按调用人的角色放行
+        if (!authorized(info, request)) return ApiUtil.result(9403, "无权限使用该编排应用：" + info.getName(), id);
         int version = null == info.getPublishedVersion() ? 0 : info.getPublishedVersion();
         if (version < 1 || DPUtil.empty(info.getPublishedContent())) {
             return ApiUtil.result(1002, "编排尚未发布，外部调用不可用", id);
         }
-        // 授权角色：配置了授权角色时按调用人的角色放行
-        if (!authorized(info, request)) return ApiUtil.result(9403, "无权限使用该编排应用：" + info.getName(), id);
+        if (1 != DPUtil.parseInt(info.getStatus())) {
+            return ApiUtil.result(1002, "编排应用已停用，外部调用不可用", id);
+        }
         JsonNode content = DPUtil.parseJSON(DPUtil.parseString(info.getPublishedContent()));
         if (null == content || !content.isObject()) return ApiUtil.result(1002, "发布内容无效，请重新发布", id);
         ObjectNode inputs = parseObject(param.get("inputs"));

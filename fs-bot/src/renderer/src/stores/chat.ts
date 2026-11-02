@@ -2,7 +2,13 @@ import { markRaw, reactive, ref } from 'vue'
 import { defineStore } from 'pinia'
 import ConversationDb from '@renderer/db/ConversationDb'
 import ModelChat, { type ModelChatMessage } from '@renderer/core/ModelChat'
-import { buildTools, type ToolScope, type ToolSet } from '@renderer/core/Toolbox'
+import {
+  buildTools,
+  ToolDescriptionError,
+  type ToolScope,
+  type ToolSet
+} from '@renderer/core/Toolbox'
+import { clearTools } from '@renderer/core/ToolCache'
 import { estimateJson, estimateTokens, MESSAGE_OVERHEAD } from '@renderer/core/Tokens'
 import { useProjectStore } from './project'
 import type { Project } from '@renderer/db/ProjectDb'
@@ -106,7 +112,7 @@ export interface ChatSession {
   notice: string
   /** 运行对象不参与响应式代理：连接这类宿主对象被代理后调用会报非法调用 */
   chat: ModelChat | null
-  /** 本会话生效的工具定义：用量估算要把它算进去，打开会话时预取、每轮发送时按当次结果刷新 */
+  /** 本会话生效的工具定义：用量估算要把它算进去；完整工具集在所有会话间共用 */
   tools: unknown[] | null
   /**
    * 本机说明（主进程算好的一段文字：运行环境 + 工作区口径）：追加在项目系统提示词之后
@@ -389,7 +395,9 @@ export const useChatStore = defineStore('chat', () => {
     if (profile.memory !== undefined) session.memory = profile.memory
     if (profile.memoryEnabled !== undefined) {
       // 记忆开关改变工具清单：清掉预取的定义，用量圆环与下一次发送都按新的一份算
-      if (profile.memoryEnabled !== session.memoryEnabled) session.tools = null
+      if (profile.memoryEnabled !== session.memoryEnabled) {
+        session.tools = null
+      }
       session.memoryEnabled = profile.memoryEnabled
     }
     if (profile.thinkEffort !== undefined) session.thinkEffort = profile.thinkEffort
@@ -402,16 +410,16 @@ export const useChatStore = defineStore('chat', () => {
 
   /**
    * 预取工具定义与本机说明：两者都参与用量估算，等发送时再取就晚了。
-   * 定义由 Toolbox 按项目工具清单缓存，重复调用只是取缓存；取不到就不算这一块。
+   * 工具集由所有会话共用；这里同步当前共享定义，缓存未刷新时不会重复请求服务端。
    */
   async function warmup(session: ChatSession): Promise<void> {
-    if (!session.tools) {
-      try {
-        const project = useProjectStore().find(session.projectId)
-        session.tools = markRaw((await buildTools(project ?? null)).definitions)
-      } catch {
-        // 工具定义取不到（接口不通、权限不足）时不影响对话，只是估算里少算这块
-      }
+    try {
+      const project = useProjectStore().find(session.projectId)
+      session.tools = markRaw((await buildTools(project ?? null)).definitions)
+    } catch (error) {
+      session.tools = null
+      if (error instanceof ToolDescriptionError) session.error = error.message
+      // 其它工具服务异常不挡会话展示，发送前会再校验一次
     }
     session.workspacePrompt = await fetchWorkspacePrompt(session.projectId)
   }
@@ -475,6 +483,16 @@ export const useChatStore = defineStore('chat', () => {
     if (session.running) return false
     if (!session.model) {
       session.error = '该项目没有选择模型，请先在项目管理里配置'
+      return false
+    }
+    // 工具装配先于用户消息和模型调用：说明缺失时保持草稿不动，直接拒绝本轮发送
+    const project = useProjectStore().find(session.projectId)
+    try {
+      session.tools = markRaw((await buildTools(project ?? null)).definitions)
+      session.error = ''
+    } catch (error) {
+      session.tools = null
+      session.error = messageOf(error)
       return false
     }
     // 分支位置：不传就是接在当前分支尾；重新生成时 parentId 指向那条提问
@@ -1153,6 +1171,7 @@ export const useChatStore = defineStore('chat', () => {
       halt(session)
     }
     sessions.value = {}
+    clearTools()
   }
 
   return {

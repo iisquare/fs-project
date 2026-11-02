@@ -7,6 +7,7 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.agent.core.AgenticRuntime;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +18,8 @@ import java.util.Map;
  * - theme：数据主题（内部调用，先取数据字典再执行查询，透传登录用户）
  * - agentic：编排应用（内部调用，把另一个编排当工具）
  *
- * 函数名与描述由编排侧配置，参数以 OpenAI function calling 的 schema 暴露给模型。
+ * 函数名由工具实现生成，参数以 OpenAI function calling 的 schema 暴露给模型；
+ * 模型可见的描述统一由 ToolDescriptionService 在注册中心写入。
  */
 public interface AgenticTool {
 
@@ -42,11 +44,13 @@ public interface AgenticTool {
     Object invoke(AgenticRuntime runtime, JsonNode item, Map<String, Object> args,
                   Map<String, ObjectNode> outputs, Map<String, Object> variables) throws Exception;
 
-    /** 通用 function 定义：参数按名展开，整只被手工绑定的参数不暴露给模型 */
-    static ObjectNode definition(String name, String description, ArrayNode params, JsonNode binding) {
+    /**
+     * 通用 function 定义：参数按名展开，整只被手工绑定的参数不暴露给模型。
+     * description 不在这里生成，由 AgenticToolService 统一写入。
+     */
+    static ObjectNode definition(String name, ArrayNode params, JsonNode binding) {
         ObjectNode function = DPUtil.objectNode();
         function.put("name", name);
-        function.put("description", DPUtil.parseString(description));
         ObjectNode properties = function.putObject("parameters").put("type", "object").putObject("properties");
         ArrayNode required = DPUtil.arrayNode();
         if (null != params) {
@@ -59,6 +63,8 @@ public interface AgenticTool {
                 ObjectNode schema = parameter.has("schema")
                         ? (ObjectNode) parameter.at("/schema").deepCopy()
                         : schema("string", "");
+                // OpenAPI/MCP 的说明可能夹带整段文档与示例；统一收敛后再交给模型。
+                sanitizeSchema(schema, 0);
                 // 对象参数（如 body）：手工字段从 schema 里摘掉（由编排覆盖），其余字段交给模型填写
                 if (item.has("fields")) {
                     ObjectNode fields = (ObjectNode) schema.at("/properties");
@@ -112,6 +118,56 @@ public interface AgenticTool {
         schema.put("type", type);
         if (!DPUtil.empty(description)) schema.put("description", description);
         return schema;
+    }
+
+    /**
+     * 参数 schema 的说明同样属于模型可见工具描述：
+     * 保留操作者填写的完整说明，去掉厂商扩展、注释和示例，保留调用所需的类型、约束与枚举。
+     */
+    static void sanitizeSchema(ObjectNode schema, int depth) {
+        if (null == schema || depth > 8) return;
+        schema.remove("examples");
+        schema.remove("$comment");
+        for (Iterator<String> iterator = schema.fieldNames(); iterator.hasNext(); ) {
+            String field = iterator.next();
+            if (field.startsWith("x-")) {
+                iterator.remove();
+                continue;
+            }
+            if ("description".equals(field) && schema.get(field).isTextual()) {
+                schema.put(field, cleanSchemaText(schema.get(field).asText("")));
+            } else if ("title".equals(field) && schema.get(field).isTextual()) {
+                schema.put(field, cleanSchemaText(schema.get(field).asText("")));
+            }
+        }
+        recurseSchema(schema.at("/properties"), depth);
+        recurseSchema(schema.at("/$defs"), depth);
+        recurseSchema(schema.at("/items"), depth);
+        recurseSchema(schema.at("/additionalProperties"), depth);
+        recurseSchema(schema.at("/oneOf"), depth);
+        recurseSchema(schema.at("/anyOf"), depth);
+        recurseSchema(schema.at("/allOf"), depth);
+    }
+
+    static void recurseSchema(JsonNode node, int depth) {
+        if (null == node || node.isMissingNode() || node.isNull()) return;
+        if (node.isObject()) {
+            ObjectNode value = (ObjectNode) node;
+            if (value.has("type") || value.has("properties") || value.has("items")
+                    || value.has("$ref") || value.has("oneOf") || value.has("anyOf") || value.has("allOf")) {
+                sanitizeSchema(value, depth + 1);
+                return;
+            }
+            value.fields().forEachRemaining(entry -> recurseSchema(entry.getValue(), depth + 1));
+            return;
+        }
+        if (node.isArray()) {
+            for (JsonNode item : node) recurseSchema(item, depth + 1);
+        }
+    }
+
+    static String cleanSchemaText(String value) {
+        return DPUtil.parseString(value).trim();
     }
 
     /** 参数项：名称 + 是否必填 + schema */

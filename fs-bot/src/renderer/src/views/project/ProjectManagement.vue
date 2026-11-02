@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useProjectStore } from '@renderer/stores/project'
@@ -36,8 +36,16 @@ const activeTab = ref<'project' | 'mine' | 'browse'>('project')
 const mode = ref<'list' | 'project' | 'share'>('list')
 const editing = ref<Project | null>(null)
 const pageError = ref('')
+/** 「我的项目」名称检索：本地项目已全部取回，按名称即时过滤 */
+const projectKeyword = ref('')
 /** 分享表单的预选：来自项目编辑器的「分享」或「我的分享」卡片上的「分享新版本」 */
 const sharePreset = ref<{ projectId: string; target: number }>({ projectId: '', target: 0 })
+
+const filteredProjects = computed(() => {
+  const keyword = projectKeyword.value.trim().toLocaleLowerCase()
+  if (!keyword) return projectStore.projects
+  return projectStore.projects.filter((item) => item.name.toLocaleLowerCase().includes(keyword))
+})
 
 async function loadLists(): Promise<void> {
   pageError.value = ''
@@ -208,13 +216,51 @@ function shareNewVersion(share: ShareProject): void {
     <div v-if="mode === 'list'">
       <el-tabs v-model="activeTab" class="project-tabs">
         <el-tab-pane :label="`我的项目（${projectStore.projects.length}）`" name="project">
+          <div v-if="projectStore.projects.length > 0" class="ui-toolbar">
+            <el-input
+              v-model="projectKeyword"
+              class="ui-toolbar__search"
+              placeholder="按项目名称搜索"
+              clearable
+            >
+              <template #prefix>
+                <svg
+                  class="search-icon"
+                  viewBox="0 0 16 16"
+                  width="14"
+                  height="14"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="7"
+                    cy="7"
+                    r="4.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                  />
+                  <path
+                    d="m10.5 10.5 3 3"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </template>
+            </el-input>
+            <span class="ui-toolbar__count">共 {{ filteredProjects.length }} 个项目</span>
+          </div>
           <div v-loading="projectStore.loading">
             <el-empty v-if="projectStore.projects.length === 0" description="暂无项目">
               <el-button type="primary" @click="openCreate">新建项目</el-button>
             </el-empty>
+            <el-empty v-else-if="filteredProjects.length === 0" description="未找到匹配的项目">
+              <el-button text type="primary" @click="projectKeyword = ''">清除检索</el-button>
+            </el-empty>
             <div v-else class="project-grid">
               <el-card
-                v-for="item in projectStore.projects"
+                v-for="item in filteredProjects"
                 :key="item.id"
                 shadow="never"
                 class="project-card ui-panel--hover"
@@ -317,6 +363,11 @@ function shareNewVersion(share: ShareProject): void {
 <style lang="scss" scoped>
 .page-alert {
   margin-bottom: 16px;
+}
+
+.search-icon {
+  display: block;
+  color: var(--ev-c-text-3);
 }
 
 .project-grid {

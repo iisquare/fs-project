@@ -140,7 +140,7 @@ const handleSubmit = () => {
     </el-table>
   </el-card>
   <el-dialog v-model="formVisible" :title="`执行作业 - ${form.name}`" :close-on-click-modal="false" draggable>
-    <SpiderPanParams v-model="form.params" v-if="['broad', 'single'].includes(form.type)" />
+    <SpiderPanParams v-model="form.params" v-if="['broad', 'single', 'smart'].includes(form.type)" />
     <SpiderPlanParams v-model="form.params" :form="form" v-if="['plan'].includes(form.type)" />
     <el-table
       :data="executed"

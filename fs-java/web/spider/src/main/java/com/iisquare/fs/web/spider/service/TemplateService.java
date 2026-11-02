@@ -63,6 +63,7 @@ public class TemplateService extends JPAServiceBase {
         Map<String, String> types = new LinkedHashMap<>();
         types.put("broad", "泛采集");
         types.put("single", "单页采集");
+        types.put("smart", "智能采集");
         types.put("plan", "定向采集");
         return types;
     }
@@ -176,7 +177,7 @@ public class TemplateService extends JPAServiceBase {
         node.put("maxHalt", template.getMaxHalt());
         node.replace("params", DPUtil.parseJSON(template.getParams(), j -> DPUtil.objectNode()));
         int templateId = template.getId();
-        if (Arrays.asList("broad", "single").contains(template.getType())) {
+        if (Arrays.asList("broad", "single", "smart").contains(template.getType())) {
             ObjectNode sites = node.putObject("sites");
             List<Site> siteList = siteDao.findAll((Specification<Site>) (root, query, cb) -> cb.and(
                     cb.equal(root.get("templateId"), templateId),
@@ -194,6 +195,12 @@ public class TemplateService extends JPAServiceBase {
                 item.put("retainAnchor", DPUtil.parseBoolean(site.getRetainAnchor()));
                 item.put("connectTimeout", site.getConnectTimeout());
                 item.put("socketTimeout", site.getSocketTimeout());
+                item.put("fetchMode", DPUtil.empty(site.getFetchMode()) ? "http" : site.getFetchMode());
+                item.put("browserWaitUntil", DPUtil.empty(site.getBrowserWaitUntil())
+                        ? "networkidle" : site.getBrowserWaitUntil());
+                item.put("browserWaitSelector", site.getBrowserWaitSelector());
+                item.put("browserTimeout", null == site.getBrowserTimeout() || site.getBrowserTimeout() <= 0
+                        ? 30000 : site.getBrowserTimeout());
                 item.put("iterateCount", site.getIterateCount());
                 item.put("retryCount", site.getRetryCount());
                 sites.replace(site.getDomain(), item);
@@ -241,6 +248,16 @@ public class TemplateService extends JPAServiceBase {
                 item.put("force", DPUtil.parseBoolean(page.getForceMode()));
                 item.put("priority", page.getPriority());
                 item.put("url", page.getUrl());
+                item.put("requestType", DPUtil.empty(page.getRequestType()) ? "GET" : page.getRequestType());
+                item.put("requestBody", page.getRequestBody());
+                item.put("contentType", DPUtil.empty(page.getContentType()) ? "none" : page.getContentType());
+                item.replace("payloadForm", DPUtil.parseJSON(page.getPayloadForm(), j -> DPUtil.objectNode()));
+                item.put("fetchMode", DPUtil.empty(page.getFetchMode()) ? "http" : page.getFetchMode());
+                item.put("browserWaitUntil", DPUtil.empty(page.getBrowserWaitUntil())
+                        ? "networkidle" : page.getBrowserWaitUntil());
+                item.put("browserWaitSelector", page.getBrowserWaitSelector());
+                item.put("browserTimeout", null == page.getBrowserTimeout() || page.getBrowserTimeout() <= 0
+                        ? 30000 : page.getBrowserTimeout());
                 item.put("charset", page.getCharset());
                 item.put("collection", page.getCollection());
                 item.put("bucket", page.getBucket());

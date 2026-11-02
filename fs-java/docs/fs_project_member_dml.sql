@@ -80,7 +80,7 @@ INSERT INTO `fs_member_menu` VALUES (31,'数据集','后台管理:商业智能:�
 INSERT INTO `fs_member_menu` VALUES (32,'数据矩阵','商业智能:智能报表:数据矩阵',31,37,'','/bi/olap/matrix','',0,1,'',1585661854477,1,1786955205341,1);
 INSERT INTO `fs_member_menu` VALUES (37,'即席查询','商业智能:即席查询',31,0,'algorithm.retrieval','/bi/olap','',0,1,'',1585662611501,1,1786955354154,1);
 INSERT INTO `fs_member_menu` VALUES (38,'数据报表','商业智能:智能报表:数据报表',31,37,'','/bi/olap/visualize','',0,1,'',1585663056291,1,1786955208897,1);
-INSERT INTO `fs_member_menu` VALUES (39,'数据大屏','后台管理:商业智能:智能报表:数据大屏',188,37,'','/auto/layout/list','',0,-1,'',1585663079511,1,1662456614598,1);
+INSERT INTO `fs_member_menu` VALUES (39,'数据大屏','商业智能:智能报表:数据大屏',31,37,'','/bi/olap/dashboard','',0,1,'',1585663079511,1,1662456614598,1);
 INSERT INTO `fs_member_menu` VALUES (41,'分组管理','后台管理:人脸识别:分组管理',44,0,'team','/face/group','',0,1,'',1597297984692,1,1598260929886,1);
 INSERT INTO `fs_member_menu` VALUES (42,'人员管理','后台管理:人脸识别:人员管理',44,0,'user','/face/user','',0,1,'',1597298848332,1,1598260938414,1);
 INSERT INTO `fs_member_menu` VALUES (43,'分组列表','后台管理:人脸识别:分组管理:分组列表',44,41,'','/face/group/list','',0,1,'',1597298889503,1,1597298889503,1);
@@ -151,7 +151,6 @@ INSERT INTO `fs_member_menu` VALUES (117,'模型关系','后台管理:数据治�
 INSERT INTO `fs_member_menu` VALUES (118,'数据地图','后台管理:数据治理:元数据:数据地图',157,103,'','/govern/meta/map','',99,1,'',1650760956687,1,1650760956687,1);
 INSERT INTO `fs_member_menu` VALUES (119,'系统设置','后台管理:数据治理:系统设置',157,0,'menu.solution','/govern/system','',0,1,'',1651288300961,1,1651288300961,1);
 INSERT INTO `fs_member_menu` VALUES (120,'数据源','后台管理:数据治理:系统设置:数据源',157,119,'','/govern/system/source','',0,1,'',1651288324135,1,1651288324135,1);
-INSERT INTO `fs_member_menu` VALUES (426,'运行维护','后台管理:数据治理:系统设置:运行维护',157,119,'Tool','/govern/setting/state','',20,1,'',1761190000000,1,1761190000000,1);
 INSERT INTO `fs_member_menu` VALUES (121,'标准管理','后台管理:数据治理:数据标准:标准管理',157,111,'','/govern/standard/list','',0,1,'',1651369141111,1,1651369141111,1);
 INSERT INTO `fs_member_menu` VALUES (122,'落地评估','后台管理:数据治理:数据标准:落地评估',157,111,'','/govern/standard/assess','',0,1,'',1651369188363,1,1651369188363,1);
 INSERT INTO `fs_member_menu` VALUES (123,'质检分类','后台管理:数据治理:数据质量:质检分类',157,113,'','/govern/quality/logic','',0,1,'',1651369714750,1,1676537824487,1);
@@ -219,7 +218,7 @@ INSERT INTO `fs_member_menu` VALUES (198,'执行评估','知识图谱:知识评�
 INSERT INTO `fs_member_menu` VALUES (199,'评估历史','知识图谱:知识评估:评估历史',305,161,'','/kg/assess/history','',0,1,'',1789185380810,1,1789185380810,1);
 INSERT INTO `fs_member_menu` VALUES (200,'图谱探索','知识图谱:知识检索:图谱探索',305,162,'','/kg/retrieval/traverse','',0,1,'',1789185502688,1,1789185502688,1);
 INSERT INTO `fs_member_menu` VALUES (202,'抽取工作台','知识图谱:知识抽取:抽取工作台',305,159,'','/kg/extraction/workbench','',1,1,'',1789200000001,1,1789200000001,1);
-INSERT INTO `fs_member_menu` VALUES (401,'模型对话','智能体:模型对话',308,0,'ChatLineRound','/agent/chat','',100,1,'',1740451465910,1,1778483125800,1);
+INSERT INTO `fs_member_menu` VALUES (401,'模型对话','智能体:模型对话',308,0,'ChatLineRound','/agent/chat','',100,1,'',1740451465910,1,1792732996704,1);
 INSERT INTO `fs_member_menu` VALUES (403,'运行日志','智能体:智能体:运行日志',308,406,'','/agent/agentic/log','',0,1,'',1741574566694,1,1789866269969,1);
 INSERT INTO `fs_member_menu` VALUES (404,'流程对话','智能体:智能体:流程对话',308,406,'','/agent/agentic/dialog','',100,1,'',1741574622733,1,1790042270250,1);
 INSERT INTO `fs_member_menu` VALUES (405,'模型对比','智能体:模型对话:模型对比',308,401,'','/agent/chat/compare','',90,1,'',1741574675468,1,1741574675468,1);
@@ -243,6 +242,7 @@ INSERT INTO `fs_member_menu` VALUES (422,'客户端','智能体:客户端',308,0
 INSERT INTO `fs_member_menu` VALUES (423,'项目共享','智能体:客户端:项目共享',308,422,'','/agent/bot/projectShare','',0,1,'',1791982780256,1,1791982780256,1);
 INSERT INTO `fs_member_menu` VALUES (424,'版本管理','智能体:客户端:版本管理',308,422,'','/agent/bot/clientVersion','',0,1,'',1792502400000,1,1792502400000,1);
 INSERT INTO `fs_member_menu` VALUES (425,'更新统计','智能体:客户端:更新统计',308,422,'','/agent/bot/clientUpdateStatistic','',0,1,'',1792502401000,1,1792502401000,1);
+INSERT INTO `fs_member_menu` VALUES (426,'运行维护','后台管理:数据治理:系统设置:运行维护',157,119,'Tool','/govern/setting/state','',20,1,'',1761190000000,1,1761190000000,1);
 /*!40000 ALTER TABLE `fs_member_menu` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -602,6 +602,11 @@ INSERT INTO `fs_member_resource` VALUES (439,'客户端版本','智能体:客户
 INSERT INTO `fs_member_resource` VALUES (440,'添加','智能体:客户端版本:添加',308,439,'agent','clientVersion','add',0,1,'',1792502400000,1,1792502400000,1);
 INSERT INTO `fs_member_resource` VALUES (441,'修改','智能体:客户端版本:修改',308,439,'agent','clientVersion','modify',0,1,'',1792502400000,1,1792502400000,1);
 INSERT INTO `fs_member_resource` VALUES (442,'删除','智能体:客户端版本:删除',308,439,'agent','clientVersion','delete',0,1,'',1792502400000,1,1792502400000,1);
+INSERT INTO `fs_member_resource` VALUES (450,'数据大屏','商业智能:数据大屏',31,0,'bi','dashboard','',0,1,'',1793419818000,1,1793419818000,1);
+INSERT INTO `fs_member_resource` VALUES (451,'添加','商业智能:数据大屏:添加',31,450,'bi','dashboard','add',0,1,'',1793419818000,1,1793419818000,1);
+INSERT INTO `fs_member_resource` VALUES (452,'修改','商业智能:数据大屏:修改',31,450,'bi','dashboard','modify',0,1,'',1793419818000,1,1793419818000,1);
+INSERT INTO `fs_member_resource` VALUES (453,'删除','商业智能:数据大屏:删除',31,450,'bi','dashboard','delete',0,1,'',1793419818000,1,1793419818000,1);
+INSERT INTO `fs_member_resource` VALUES (454,'检索','商业智能:数据大屏:检索',31,450,'bi','dashboard','search',0,1,'',1793419818000,1,1793419818000,1);
 /*!40000 ALTER TABLE `fs_member_resource` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -614,4 +619,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-10-14 21:09:56
+-- Dump completed on 2026-11-02 14:51:57

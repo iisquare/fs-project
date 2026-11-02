@@ -94,6 +94,8 @@ async function handleRename(id: string, title: string): Promise<void> {
         size="small"
         placeholder="全部项目"
         clearable
+        filterable
+        no-match-text="未找到匹配项目"
       >
         <el-option
           v-for="item in projectStore.projects"
@@ -126,10 +128,7 @@ async function handleRename(id: string, title: string): Promise<void> {
           />
         </div>
       </template>
-      <div
-        v-if="!loadError && conversationStore.visible.length === 0"
-        class="group-empty"
-      >
+      <div v-if="!loadError && conversationStore.visible.length === 0" class="group-empty">
         暂无对话记录
       </div>
     </div>

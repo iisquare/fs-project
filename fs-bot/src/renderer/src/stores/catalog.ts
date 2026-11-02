@@ -22,7 +22,7 @@ function catalogError(e: any, label: string, permit: string): string {
 }
 
 /**
- * 服务端目录数据：可用应用（编排）、技能与版本、知识库、数据主题、知识图谱本体、模型清单、工具方法。
+ * 服务端目录数据：可用应用（编排）、技能与版本、知识库、数据主题、知识图谱、模型清单、工具方法。
  *
  * 项目引用工具时按类型取对应清单（见 `ProjectEditor.vue` 的「工具」段），
  * 这些数据都由服务端维护，桌面端只读不写：客户端只保存「选中了哪些」。
@@ -132,7 +132,7 @@ export const useCatalogStore = defineStore('catalog', () => {
     return themes.value
   }
 
-  /** 可用知识图谱本体：项目把它作为一种工具引用，实体与关联检索都在服务端 */
+  /** 可用知识图谱：项目把它作为一种工具引用，实体与关联检索都在服务端 */
   async function fetchOntologies(keyword = ''): Promise<any[]> {
     loadingOntologies.value = true
     try {
@@ -144,7 +144,7 @@ export const useCatalogStore = defineStore('catalog', () => {
       ontologyError.value = ''
     } catch (e) {
       ontologies.value = []
-      ontologyError.value = catalogError(e, '知识图谱本体', 'kg:ontology:')
+      ontologyError.value = catalogError(e, '知识图谱', 'kg:ontology:')
     } finally {
       loadingOntologies.value = false
     }

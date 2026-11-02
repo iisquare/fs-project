@@ -64,7 +64,8 @@ public class Worker implements Runnable {
         String bucket = null;
         switch (job.template.at("/type").asText()) {
             case "broad":
-            case "single": {
+            case "single":
+            case "smart": {
                 JsonNode sites = job.template.at("/sites");
                 String domain = uri.getHost();
                 bucket = sites.at("/" + domain + "/bucket").asText();
@@ -88,7 +89,8 @@ public class Worker implements Runnable {
         String charset = null;
         switch (job.template.at("/type").asText()) {
             case "broad":
-            case "single": {
+            case "single":
+            case "smart": {
                 JsonNode sites = job.template.at("/sites");
                 String domain = uri.getHost();
                 charset = sites.at("/" + domain + "/charset").asText();
@@ -117,7 +119,8 @@ public class Worker implements Runnable {
         int timeout = 0;
         switch (job.template.at("/type").asText()) {
             case "broad":
-            case "single": {
+            case "single":
+            case "smart": {
                 JsonNode sites = job.template.at("/sites");
                 String domain = uri.getHost();
                 timeout = sites.at("/" + domain + "/connectTimeout").asInt(0);
@@ -141,7 +144,8 @@ public class Worker implements Runnable {
         int timeout = 0;
         switch (job.template.at("/type").asText()) {
             case "broad":
-            case "single": {
+            case "single":
+            case "smart": {
                 JsonNode sites = job.template.at("/sites");
                 String domain = uri.getHost();
                 timeout = sites.at("/" + domain + "/socketTimeout").asInt(0);
@@ -160,11 +164,112 @@ public class Worker implements Runnable {
         return timeout;
     }
 
+    public static String requestType(ZooJob job, JsonNode task) {
+        JsonNode page = page(job, task);
+        String requestType = page.at("/requestType").asText("GET").trim();
+        return DPUtil.empty(requestType) ? "GET" : requestType;
+    }
+
+    public static String fetchMode(ZooJob job, JsonNode task) {
+        String mode = page(job, task).at("/fetchMode").asText("").trim();
+        if (DPUtil.empty(mode) && null != job && !"plan".equals(job.template.at("/type").asText())) {
+            mode = siteSetting(job, task, "fetchMode", "http");
+        }
+        return "browser".equalsIgnoreCase(mode) ? "browser" : "http";
+    }
+
+    public static String browserWaitUntil(ZooJob job, JsonNode task) {
+        String value = browserSetting(job, task, "browserWaitUntil", "networkidle").trim();
+        return DPUtil.empty(value) ? "networkidle" : value;
+    }
+
+    public static String browserWaitSelector(ZooJob job, JsonNode task) {
+        return replaceArgs(browserSetting(job, task, "browserWaitSelector", ""), task.at("/args"));
+    }
+
+    public static int browserTimeout(ZooJob job, JsonNode task) {
+        String value = browserSetting(job, task, "browserTimeout", "30000");
+        int timeout = DPUtil.empty(value) ? 30000 : Integer.parseInt(value);
+        return timeout > 0 ? timeout : 30000;
+    }
+
+    private static String browserSetting(ZooJob job, JsonNode task, String name, String defaultValue) {
+        JsonNode page = page(job, task);
+        String value = page.at("/" + name).asText("");
+        if (!DPUtil.empty(value)) return value;
+        if (null != job && !"plan".equals(job.template.at("/type").asText())) {
+            try {
+                value = siteSetting(job, task, name, "");
+                if (!DPUtil.empty(value)) return value;
+            } catch (Exception ignored) {
+                // URL 异常时回退到通用默认值
+            }
+        }
+        return defaultValue;
+    }
+
+    private static String siteSetting(ZooJob job, JsonNode task, String name, String defaultValue) {
+        String domain = URI.create(task.at("/url").asText()).getHost();
+        JsonNode sites = job.template.at("/sites");
+        JsonNode site = sites.at("/" + domain);
+        if (!site.isObject()) site = sites.at("/*");
+        return site.at("/" + name).asText(defaultValue);
+    }
+
+    public static String contentType(ZooJob job, JsonNode task) {
+        JsonNode page = page(job, task);
+        String contentType = page.at("/contentType").asText("none").trim();
+        return DPUtil.empty(contentType) ? "none" : contentType;
+    }
+
+    public static String requestBody(ZooJob job, JsonNode task) {
+        return replaceArgs(page(job, task).at("/requestBody").asText(""), task.at("/args"));
+    }
+
+    public static Map<String, String> payloadForm(ZooJob job, JsonNode task) {
+        Map<String, String> result = new LinkedHashMap<>();
+        JsonNode form = page(job, task).at("/payloadForm");
+        if (!form.isObject()) return result;
+        for (Map.Entry<String, JsonNode> entry : form.properties()) {
+            result.put(entry.getKey(), replaceArgs(entry.getValue().asText(""), task.at("/args")));
+        }
+        return result;
+    }
+
+    public static Map<String, String> requestHeaders(ZooJob job, JsonNode task) {
+        Map<String, String> result = new LinkedHashMap<>();
+        JsonNode headers = page(job, task).at("/headers");
+        if (!headers.isObject()) return result;
+        for (Map.Entry<String, JsonNode> entry : headers.properties()) {
+            result.put(entry.getKey(), replaceArgs(entry.getValue().asText(""), task.at("/args")));
+        }
+        return result;
+    }
+
+    private static JsonNode page(ZooJob job, JsonNode task) {
+        if (null == job || !"plan".equals(job.template.at("/type").asText())) {
+            return DPUtil.objectNode();
+        }
+        String pageCode = task.at("/pageCode").asText();
+        return job.template.at("/pages/" + pageCode);
+    }
+
+    private static String replaceArgs(String value, JsonNode args) {
+        if (DPUtil.empty(value) || null == args || !args.isObject()) return value;
+        for (Map.Entry<String, JsonNode> entry : args.properties()) {
+            value = value.replace("{" + entry.getKey() + "}", entry.getValue().asText(""));
+        }
+        return value;
+    }
+
     private Map<String, Object> process(HttpFetcher fetcher) {
         JsonNode task = data.at("/task");
         ZooJob job = nodeService.zookeeper().job(task.at("/jobId").asText());
         if (null == job) {
             return ApiUtil.result(1401, "load job failed", data);
+        }
+        if ("browser".equals(fetchMode(job, task))) {
+            return processBrowser(job, task);
         }
         ObjectNode storage = data.putObject("storage");
         String url = task.at("/url").asText();
@@ -212,8 +317,15 @@ public class Worker implements Runnable {
         if (!DPUtil.empty(referer)) {
             headers.put("Referer", referer);
         }
+        headers.putAll(requestHeaders(job, task));
         long time = System.currentTimeMillis();
-        fetcher.url(url).headers(headers).get();
+        fetcher.url(url)
+                .headers(headers)
+                .requestType(requestType(job, task))
+                .contentType(contentType(job, task))
+                .body(requestBody(job, task))
+                .payloadForm(payloadForm(job, task))
+                .execute();
         storage.put("coast", System.currentTimeMillis() - time);
         int status = fetcher.getLastStatus();
         String html = fetcher.getLastResult();
@@ -225,6 +337,41 @@ public class Worker implements Runnable {
             storage.put("exception", ApiUtil.getStackTrace(exception));
         }
         storage.put("html", html);
+        return ApiUtil.result(0, null, data);
+    }
+
+    private Map<String, Object> processBrowser(ZooJob job, JsonNode task) {
+        ObjectNode storage = data.putObject("storage");
+        String url = task.at("/url").asText();
+        String referer = task.at("/referer").asText();
+        Map<String, String> headers = defaultHeaders();
+        if (!DPUtil.empty(referer)) headers.put("Referer", referer);
+        headers.putAll(requestHeaders(job, task));
+        BrowserFetchResult result = nodeService.browserFetcher().fetch(
+                url,
+                requestType(job, task),
+                requestBody(job, task),
+                contentType(job, task),
+                payloadForm(job, task),
+                headers,
+                charset(job, task, URI.create(url)).name(),
+                browserTimeout(job, task),
+                browserWaitUntil(job, task),
+                browserWaitSelector(job, task)
+        );
+        if (result.getStatus() == 0 && result.isRetryable()) {
+            return ApiUtil.result(7502, result.getException(), data);
+        }
+        storage.put("status", result.getStatus());
+        storage.put("html", result.getResult());
+        storage.put("location", result.getLocation());
+        storage.put("media", "text/html");
+        storage.put("coast", result.getCoast());
+        storage.put("browserNodeId", result.getNodeId());
+        storage.put("browserServiceError", result.getStatus() == 0 && !DPUtil.empty(result.getException()));
+        storage.put("browserRetryable", result.isRetryable());
+        if (!DPUtil.empty(result.getWarning())) storage.put("warning", result.getWarning());
+        if (!DPUtil.empty(result.getException())) storage.put("exception", result.getException());
         return ApiUtil.result(0, null, data);
     }
 

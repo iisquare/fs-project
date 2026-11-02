@@ -18,5 +18,8 @@ export default {
   },
   permit (param: any, tips = {}) {
     return base.post('/role/permit', param, tips)
+  },
+  clearCache (param: any, tips = {}) {
+    return base.post('/role/clearCache', param, tips)
   }
 }

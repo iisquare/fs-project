@@ -18,6 +18,7 @@ const data: any = ref({
   nodes: [],
   spiders: [],
   crawlers: [],
+  browsers: [],
 })
 
 const handleRefresh = () => {
@@ -27,6 +28,7 @@ const handleRefresh = () => {
       nodes: Object.values(result.data.nodes),
       spiders: Object.values(result.data.spiders),
       crawlers: Object.values(result.data.crawlers),
+      browsers: Object.values(result.data.browsers || {}),
     })
   }).catch(() => {}).finally(() => {
     loading.value = false
@@ -132,6 +134,26 @@ const storageVisible = ref(false)
           <el-button link @click="handleStop(scope.row.nodeId)" v-if="scope.row.isRunning">停止</el-button>
           <el-button link @click="handleStart(scope.row.nodeId)" v-else>启动</el-button>
         </template>
+      </el-table-column>
+    </el-table>
+  </el-card>
+  <el-card :bordered="false" shadow="never" header="浏览器端" class="mb-20">
+    <el-table
+      :data="data.browsers"
+      :border="true"
+      v-loading="loading"
+      table-layout="auto"
+    >
+      <el-table-column label="节点" prop="nodeId" />
+      <el-table-column label="角色" prop="role" />
+      <el-table-column label="节点状态" prop="state" />
+      <el-table-column label="执行中">
+        <template #default="scope">{{ scope.row.active }} / {{ scope.row.maxConcurrency }}</template>
+      </el-table-column>
+      <el-table-column label="等待队列" prop="queued" />
+      <el-table-column label="可调度资源" prop="available" />
+      <el-table-column label="启动时间">
+        <template #default="scope">{{ DateUtil.format(scope.row.time) }}</template>
       </el-table-column>
     </el-table>
   </el-card>

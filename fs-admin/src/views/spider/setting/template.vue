@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import type { FormInstance, TableInstance } from 'element-plus';
 import RouteUtil from '@/utils/RouteUtil'
 import { useRoute, useRouter } from 'vue-router';
@@ -41,7 +41,7 @@ const columns = ref([
   { prop: 'createdTime', label: '创建时间', formatter: DateUtil.render, hide: true },
   { prop: 'updatedTime', label: '修改时间', formatter: DateUtil.render, hide: true },
 ])
-const config = ref({
+const config: any = ref({
   ready: false,
   sorts: {},
   status: {},
@@ -76,6 +76,9 @@ const active = ref('params')
 const formVisible = ref(false)
 const formLoading = ref(false)
 const form: any = ref({})
+watch(() => form.value.type, (type, previous) => {
+  if (formVisible.value && type !== previous) active.value = 'params'
+})
 const formRef: any = ref<FormInstance>()
 const rules = ref({
   name: [{ required: true, message: '请输入服务名称', trigger: 'blur' }],
@@ -209,8 +212,9 @@ const handleClear = (scope: any) => {
         <el-button @click="close">关闭</el-button>
       </el-space>
     </template>
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="auto">
-      <el-descriptions border>
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="auto" class="template-form">
+      <layout-heading title="基础信息" />
+      <el-descriptions border class="basic-info-description">
         <el-descriptions-item label="模板名称"><el-input v-model="form.name" /></el-descriptions-item>
         <el-descriptions-item label="采集方式" v-if="form.id">{{ form.typeText }}</el-descriptions-item>
         <el-descriptions-item label="采集方式" v-else>
@@ -244,16 +248,16 @@ const handleClear = (scope: any) => {
     </el-form>  
     <el-tabs v-model="active">
       <el-tab-pane label="运行参数" name="params">
-        <SpiderPanParams v-model="form.params" v-if="['broad', 'single'].includes(form.type)" />
+        <SpiderPanParams v-model="form.params" v-if="['broad', 'single', 'smart'].includes(form.type)" />
         <SpiderPlanParams v-model="form.params" :form="form" v-if="['plan'].includes(form.type)" />
       </el-tab-pane>
-      <el-tab-pane label="渠道站点" name="site" v-if="['broad', 'single'].includes(form.type)">
+      <el-tab-pane label="渠道站点" name="site" v-if="['broad', 'single', 'smart'].includes(form.type)">
         <SpiderSite v-model="form" />
       </el-tab-pane>
-      <el-tab-pane label="白名单" name="whitelist" v-if="['broad', 'single'].includes(form.type)">
+      <el-tab-pane label="白名单" name="whitelist" v-if="['broad', 'single', 'smart'].includes(form.type)">
         <SpiderWhitelist v-model="form" />
       </el-tab-pane>
-      <el-tab-pane label="黑名单" name="blacklist" v-if="['broad', 'single'].includes(form.type)">
+      <el-tab-pane label="黑名单" name="blacklist" v-if="['broad', 'single', 'smart'].includes(form.type)">
         <SpiderBlacklist v-model="form" />
       </el-tab-pane>
       <el-tab-pane label="流程页面" name="page" v-if="['plan'].includes(form.type)">
@@ -267,4 +271,16 @@ const handleClear = (scope: any) => {
 </template>
 
 <style lang="scss" scoped>
+.field-help {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.basic-info-description {
+  margin-bottom: 16px;
+}
+
+.basic-info-description :deep(.el-descriptions__body) {
+  border-radius: 6px;
+}
 </style>

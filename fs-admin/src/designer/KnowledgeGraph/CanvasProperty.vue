@@ -49,11 +49,12 @@ defineProps<{
         <el-form-item>
           <template #label>
             <span>描述</span>
-            <el-tooltip content="本体的用途说明，便于团队理解建模意图" placement="top">
+            <el-tooltip content="知识图谱的用途说明，仅在模型实际调用该工具时随结果返回" placement="top">
               <el-icon class="field-help"><QuestionFilled /></el-icon>
             </el-tooltip>
           </template>
           <el-input type="textarea" v-model="model.description" />
+          <tip-text>该描述不会进入常驻工具说明；仅在模型实际调用知识图谱工具时随结果返回，避免在未使用该图谱时占用上下文。</tip-text>
         </el-form-item>
       </el-form>
     </el-tab-pane>

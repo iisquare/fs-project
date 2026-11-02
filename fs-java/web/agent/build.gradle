@@ -15,4 +15,9 @@ dependencies {
     implementation("org.apache.poi:poi-ooxml:5.5.1")
     implementation("org.apache.poi:poi-scratchpad:5.5.1") // 旧版 doc/xls/ppt (OLE2)
     implementation("org.apache.pdfbox:pdfbox:2.0.36") // PDF
+    testImplementation project(':base:test')
+}
+
+test {
+    enabled = true
 }

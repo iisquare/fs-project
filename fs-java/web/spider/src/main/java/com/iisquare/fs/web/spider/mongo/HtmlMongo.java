@@ -47,6 +47,12 @@ public class HtmlMongo extends MongoBase {
         if (document.containsKey("type")) { // 判定类型
             info.put("type", document.getString("type"));
         }
+        if (document.containsKey("crawl_times")) { // 累计采集次数
+            info.put("crawl_times", ((Number) document.get("crawl_times")).longValue());
+        }
+        if (document.containsKey("new_link_times")) { // 累计发现新链接的次数
+            info.put("new_link_times", ((Number) document.get("new_link_times")).longValue());
+        }
         if (document.containsKey("content_type")) { // 页面类型
             info.put("content_type", document.getString("content_type"));
         }

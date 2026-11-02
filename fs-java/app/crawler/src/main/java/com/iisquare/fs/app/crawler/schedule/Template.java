@@ -30,6 +30,9 @@ public class Template {
     private String description;
     private String url;
     private String requestType;
+    private String requestBody;
+    private String contentType;
+    private Map<String, String> payloadForm;
     private String charset;
     private long priority; // Task优先级，设置调度间隔后无效
     private Integer minInterval; // 最小访问间隔（毫秒）
@@ -46,7 +49,17 @@ public class Template {
         this.name = template.at("/name").asText(this.id);
         this.description = template.at("/description").asText("");
         this.url = template.at("/url").asText();
-        this.requestType = template.at("/requestType").asText("GET");
+        this.requestType = template.at("/requestType").asText("GET").trim().toUpperCase(Locale.ROOT);
+        if (requestType.isEmpty()) requestType = "GET";
+        this.requestBody = template.at("/requestBody").asText("");
+        this.contentType = template.at("/contentType").asText("none").trim().toLowerCase(Locale.ROOT);
+        if (contentType.isEmpty()) contentType = "none";
+        this.payloadForm = new LinkedHashMap<>();
+        Iterator<Map.Entry<String, JsonNode>> payloadIterator = template.at("/payloadForm").fields();
+        while (payloadIterator.hasNext()) {
+            Map.Entry<String, JsonNode> entry = payloadIterator.next();
+            this.payloadForm.put(entry.getKey(), entry.getValue().asText(""));
+        }
         this.charset = template.at("/charset").asText("");
         this.priority = template.at("/priority").asLong(0);
         this.minInterval = template.at("/minInterval").asInt(0);

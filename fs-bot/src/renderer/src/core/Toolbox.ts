@@ -9,6 +9,7 @@ import { applyReplace, applyWrite, type MemoryEdit } from '@renderer/utils/Memor
 import { useProjectStore } from '@renderer/stores/project'
 import { useScheduleStore } from '@renderer/stores/schedule'
 import { useUserStore } from '@renderer/stores/user'
+import { sharedToolset } from './ToolCache'
 
 /**
  * 工具层：把「模型能调用的能力」归一成一份 function 定义清单，并提供按函数名的执行入口。
@@ -22,7 +23,7 @@ import { useUserStore } from '@renderer/stores/user'
  *   记忆内容也不随提示词下发；启用后才把历史对话检索与长期记忆读写一起交给模型。
  *   **项目一个技能都没启用时 `local_skill` 不下发**（模型的工具清单里根本没有这个函数），
  *   启用了就只认清单里的那几个名字——技能是本机能力，但「哪些技能能影响这个项目」由项目说了算。
- * - 项目工具：工具方法 / 知识库 / 数据主题 / 知识图谱本体 / 编排应用，凭据与真实调用都在服务端。
+ * - 项目工具：工具方法 / 知识库 / 数据主题 / 知识图谱 / 编排应用，凭据与真实调用都在服务端。
  *
  * 「同一实体的一族操作」都收在一个工具里、用 action 参数区分（file_op / schedule_task /
  * memory / local_skill）：定义每轮请求都要带上，一个实体拆成五个 function
@@ -56,13 +57,62 @@ export interface ToolSet {
   invoke(name: string, args: any, projectId: string, conversationId: string): Promise<string>
 }
 
-/** 项目工具的展示名：与服务端编排里大语言模型节点的工具种类一致 */
-const SERVER_KINDS: Record<string, string> = {
+/** 项目工具的展示用类型：只用于调用记录标签，不参与生成模型说明 */
+const SERVER_TOOL_LABELS: Record<string, string> = {
   method: '工具方法',
   knowledge: '知识库',
   theme: '数据主题',
-  ontology: '知识图谱本体',
+  ontology: '知识图谱',
   agentic: '编排应用'
+}
+
+interface ServerToolRef {
+  kind?: unknown
+  id?: unknown
+  name?: unknown
+  title?: unknown
+  toolId?: unknown
+  methodName?: unknown
+  functionName?: unknown
+}
+
+/** 服务端工具定义缺少说明：属于服务契约或项目配置错误，不能静默降级 */
+export class ToolDescriptionError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ToolDescriptionError'
+  }
+}
+
+/** 项目工具引用与 /bot/tools 返回行之间的稳定匹配键 */
+function serverToolKey(ref: ServerToolRef | null | undefined): string {
+  const kind = String(ref?.kind ?? 'method')
+  if ('method' === kind) {
+    return `${kind}:${String(ref?.toolId ?? '')}:${String(ref?.methodName ?? ref?.functionName ?? '')}`
+  }
+  return `${kind}:${String(ref?.id ?? '')}`
+}
+
+/** 服务端说明保留操作者填写的完整内容；这里只去掉首尾空白。 */
+function cleanToolDescription(value: unknown): string {
+  return String(value ?? '').trim()
+}
+
+/**
+ * 项目工具在调用记录里的展示信息。模型说明直接采用服务端 /bot/tools 返回的文本。
+ */
+function serverToolMeta(
+  kind: string,
+  ref: ServerToolRef | null | undefined,
+  functionName: string,
+  serverDescription: string
+): Pick<ToolInfo, 'description' | 'label'> {
+  const name =
+    String(ref?.name ?? '').trim() || String(ref?.title ?? ref?.methodName ?? functionName).trim()
+  return {
+    description: serverDescription,
+    label: `${SERVER_TOOL_LABELS[kind] ?? '项目工具'}：${name}`
+  }
 }
 
 /** 本地工具的一行：function 定义 + 展示信息（本地工具的展示名就是函数名） */
@@ -1079,15 +1129,19 @@ function commandResult(result: {
 /**
  * 组装本次对话可用的工具：本地工具（文件与命令）+ 项目里启用的项目工具。
  * 函数名可能撞车（项目工具的展示名归一后也许等于本地工具名），这里统一改名并记下对应关系。
- * 同一份工具清单按引用内容缓存：每轮都取一次定义没有意义，改了工具清单才会重新取。
+ * 同一份项目工具配置在客户端只保留一份组装结果，所有会话共用；
+ * 服务端目录或工具说明更新后由新建会话触发刷新，普通打开会话与多轮对话不会重复请求。
  */
 export async function buildTools(project: Project | null): Promise<ToolSet> {
+  return sharedToolset(project, () => buildProjectTools(project))
+}
+
+/** 实际组装工具；共享缓存与并发合并由 ToolCache 负责 */
+async function buildProjectTools(
+  project: Project | null
+): Promise<{ toolset: ToolSet; complete: boolean }> {
   const refs = (project?.tools ?? []).filter((item) => false !== item?.enabled)
   const memoryEnabled = true === project?.memoryEnabled
-  // 记忆开关也影响函数清单：只按工具引用缓存会把关闭前的 `memory` 定义带回来
-  const cacheKey = `${JSON.stringify(refs)}|memory:${memoryEnabled ? 1 : 0}`
-  const cached = cache.get(cacheKey)
-  if (cached) return cached
   // 技能在客户端解析（读本机技能目录），不发给 /bot/tools——服务端只认它自己的五类工具；
   // 启用清单同时决定 local_skill 这个函数下不下发、作用范围有多大
   const skills = refs.filter((item) => 'skill' === item.kind)
@@ -1102,12 +1156,29 @@ export async function buildTools(project: Project | null): Promise<ToolSet> {
   const taken = new Set(Object.keys(catalog))
   /** 服务端工具：归一后的函数名 → 调用时原样带回的 ref */
   const remote = new Map<string, { ref: any; info: ToolInfo }>()
-  /** 服务端定义是否取全：没取全就不进缓存，下一轮再试一次 */
+  /** 服务端请求失败时仍返回本地工具给当前轮次使用，但不把残缺结果放进共享缓存 */
   let complete = true
   if (remoteRefs.length) {
     try {
       const result: any = await BotApi.tools(remoteRefs, { error: false, warning: false })
-      for (const row of ApiUtil.succeed(result) ? (ApiUtil.data(result)?.rows ?? []) : []) {
+      const rows = ApiUtil.succeed(result) ? ApiUtil.data(result)?.rows : null
+      if (!Array.isArray(rows)) {
+        complete = false
+        throw new ToolDescriptionError(
+          '服务端没有返回有效的工具定义与说明。服务接口可能已发生变化，请修改并完善项目配置后重试。'
+        )
+      }
+      const returned = new Set(rows.map((row: any) => serverToolKey(row?.ref)))
+      const missing = remoteRefs.find((ref) => !returned.has(serverToolKey(ref)))
+      if (missing) {
+        const projectName = String(project?.name ?? '').trim() || '当前项目'
+        const toolName = String(missing.name ?? missing.methodName ?? missing.id ?? '').trim()
+        throw new ToolDescriptionError(
+          `项目「${projectName}」中的服务端工具「${toolName || '未知工具'}」没有返回定义和说明。` +
+            '服务接口可能已发生变化，请修改并完善项目配置后重试。'
+        )
+      }
+      for (const row of rows) {
         const base = String(row?.function?.name ?? '').trim()
         if (!base) continue
         let name = base
@@ -1118,17 +1189,35 @@ export async function buildTools(project: Project | null): Promise<ToolSet> {
         }
         taken.add(name)
         const kind = String(row?.ref?.kind ?? 'method')
+        const description = cleanToolDescription(row?.function?.description)
+        if (!description) {
+          const projectName = String(project?.name ?? '').trim() || '当前项目'
+          const toolName = String(row?.ref?.name ?? row?.function?.name ?? base).trim() || base
+          throw new ToolDescriptionError(
+            `项目「${projectName}」中的服务端工具「${toolName}」缺少工具说明。` +
+              '服务接口可能已发生变化，请修改并完善项目配置后重试。'
+          )
+        }
+        const meta = serverToolMeta(kind, row?.ref, base, description)
         const info: ToolInfo = {
           name,
-          description: String(row?.function?.description ?? ''),
+          description: meta.description,
           scope: 'server',
-          label: `${SERVER_KINDS[kind] ?? kind}：${row?.function?.description || base}`
+          label: meta.label
         }
-        definitions.push({ type: 'function', function: { ...row.function, name } })
+        definitions.push({
+          type: 'function',
+          function: {
+            ...row.function,
+            name,
+            description: meta.description
+          }
+        })
         catalog[name] = info
         remote.set(name, { ref: row.ref, info })
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof ToolDescriptionError) throw error
       // 项目工具取不到（接口不通、权限不足）时不影响本地工具继续可用
       complete = false
     }
@@ -1150,10 +1239,5 @@ export async function buildTools(project: Project | null): Promise<ToolSet> {
     return 'string' === typeof data ? data : JSON.stringify(data)
   }
 
-  const toolset: ToolSet = { definitions, catalog, invoke }
-  if (complete) cache.set(cacheKey, toolset)
-  return toolset
+  return { toolset: { definitions, catalog, invoke }, complete }
 }
-
-/** 工具清单缓存：键是项目里选中的工具引用，值是按该清单归一好的定义与执行入口 */
-const cache = new Map<string, ToolSet>()

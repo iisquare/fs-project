@@ -78,10 +78,12 @@
   `theme` 数据主题（对应 /bi/data/theme 的主题：不带 sql 返回主题数据字典——数据集与字段、关联关系，
   带 sql 则按主题范围内已发布数据集执行查询并返回结果，查询会带上主题标识，供 BI 侧记录数据主题查询日志；
   只取数据字典（不带 sql）属于元数据读取，不写查询日志）；
-  `ontology` 知识图谱本体（KG 模块，每个本体定义一个工具：本体内声明的实体类型作为参数枚举暴露给模型，
-  模型给出实体类型与关键词后走 `/graph/search` 返回命中的实体数据）；
+  `ontology` 知识图谱（KG 模块，每个本体定义一个工具：支持实体检索与两点路径推理，
+  本体内声明的实体类型作为参数枚举暴露给模型）；
   知识库与编排工具的参数固定为 `query`，数据主题工具的参数为 `sql` / `limit`（均选填）；
-  函数名与描述由编排侧配置，发布时会校验目标是否存在（编排需已发布）；
+  函数名统一归一为 `[0-9a-zA-Z_-]`，同一份清单内重名按序加后缀；
+  工具方法与编排应用在常驻工具说明中附加当前业务描述，知识库、数据主题、知识图谱只下发固定功能模板，
+  它们的描述在真正调用后随工具结果返回；发布时校验目标存在、启用，编排工具还必须已发布；
 - 大语言模型节点的调度策略（`agentStrategy`）：
   `none` 不带工具、单次模型调用；`functionCalling` 携带工具、**只执行一轮**（模型给出的工具调用执行后即返回该轮输出）；
   `react` 循环迭代（工具结果回填上下文继续推理，直到模型给出非工具调用的回复），
@@ -261,8 +263,13 @@
   `{ type: delta | error, data }`：`delta.data` 为 `{ content, reasoning, finishReason }`，
   与编排的流式接口同一套报文格式，客户端用同一套解析即可。
 - 工具调用：客户端驱动调用循环（`tools` 定义由客户端拼好，含本地文件工具），服务端只做两件事：
-  `/bot/tools` 把项目里选中的工具（工具方法 / 知识库 / 数据主题 / 知识图谱本体 / 编排应用）
+  `/bot/tools` 把项目里选中的工具（工具方法 / 知识库 / 数据主题 / 知识图谱 / 编排应用）
   补全成模型可见的 function 定义，`/bot/tool` 执行其中一次调用。
+  定义阶段会按当前服务端对象重新取得展示名、描述与启用状态，不使用项目里保存的旧说明；
+  编排应用还按当前用户的授权角色过滤，调用时再次校验，不能靠直接构造 ref 绕过。
+  工具描述按类型区分：工具方法与编排应用附加业务描述；知识库、数据主题、知识图谱只带固定能力模板，
+  描述在调用结果中返回。描述不限制字数，操作者填写较长内容时保留全文和换行；参数 schema 只去掉示例、
+  注释和厂商扩展，不截断描述。顶层 function name 只用于路由，不作为模型阅读的对象名称。
   `messages` 支持完整的调用链（`assistant` 的 `toolCalls` 与 `tool` 角色的 `toolCallId` / `name`），
   原样透传给网关；流式增量里的 `delta.data.toolCalls` 是网关按 OpenAI 规范分片推送的工具调用，
   客户端按 `index` 累积。
@@ -283,7 +290,7 @@
 | --- | --- | --- |
 | POST `/bot/models` | 可用模型清单：出参 `{ rows: [{ name, ownedBy, contextLength }] }` | `agent:bot:` |
 | POST `/bot/chat` | 模型对话（SSE，客户端自带 messages 历史） | `agent:bot:` |
-| POST `/bot/tools` | 工具定义清单：入参 `{ tools: [{ kind, id, name, toolId, methodName }] }`，出参 `{ rows: [{ ref, function }] }` | `agent:bot:` |
+| POST `/bot/tools` | 工具定义清单：入参 `{ tools: [{ kind, id, name, toolId, methodName }] }`，出参 `{ descriptionVersion, rows: [{ ref, function }] }` | `agent:bot:` |
 | POST `/bot/tool` | 执行一次工具调用：入参 `{ tool: ref, args }`，出参 `{ data: <工具返回> }` | `agent:bot:` |
 | POST `/bot/upload` | 上传本机文件（multipart：`file`、可选 `name`）：出参 `{ id, name, type, suffix, size }`，供后续按标识引用 | `agent:bot:` |
 | POST `/bot/project/mine` | 我分享过的项目：入参 `{ name?, page?, pageSize? }`，出参 `{ page, pageSize, total, rows }`（行带 `versionCount` 与 `latestVersion`） | `agent:bot:` |

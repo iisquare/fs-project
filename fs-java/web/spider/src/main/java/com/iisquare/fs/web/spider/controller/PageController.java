@@ -61,6 +61,10 @@ public class PageController extends PermitControllerBase {
     @Permission("")
     public String configAction(ModelMap model) {
         model.put("status", pageService.status());
+        model.put("requestTypes", pageService.requestTypes());
+        model.put("contentTypes", pageService.contentTypes());
+        model.put("fetchModes", pageService.fetchModes());
+        model.put("browserWaitModes", pageService.browserWaitModes());
         model.put("sorts", pageService.sorts());
         return ApiUtil.echoResult(0, null, model);
     }

@@ -32,9 +32,17 @@ export default {
     return endpoint + '/agent/bot/chat'
   },
   /**
-   * 服务端工具定义：把项目里选中的工具（工具方法 / 知识库 / 数据主题 / 知识图谱本体 / 编排应用）
-   * 补全成模型可见的 function 定义；本地工具（文件与命令）由客户端自己定义，不走这里。
-   * 返回 `{ rows: [{ ref, function }] }`
+   * 工具说明模板：返回 `{ version, rows: [{ kind, label, description }] }`。
+   * 供工具目录、帮助展示或兼容使用；模型工具定义直接采用 /bot/tools 返回的最终说明。
+   */
+  toolDescriptions(tips = {}) {
+    return base.post('/bot/tool-descriptions', {}, tips)
+  },
+  /**
+   * 服务端工具定义：把项目里选中的工具（工具方法 / 知识库 / 数据主题 / 知识图谱 / 编排应用）
+   * 补全成模型可见的 function 定义，并附带服务端统一生成的说明；
+   * 本地工具（文件与命令）由客户端自己定义，不走这里。
+   * 返回 `{ descriptionVersion, rows: [{ ref, function }] }`
    */
   tools(tools: any[], tips = {}) {
     return base.post('/bot/tools', { tools }, tips)

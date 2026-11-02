@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 知识图谱本体（kind = ontology） - 内部调用：每个本体定义作为一个工具，支持两种动作（对应 /kg/retrieval/traverse 页面）：
+ * 知识图谱（kind = ontology） - 内部调用：每个本体定义作为一个工具，支持两种动作（对应 /kg/retrieval/traverse 页面）：
  * - search：按实体类型 + 关键词检索实体数据；
  * - path：给出起点与终点（实体类型 + 名称关键词），推理两者之间的路径（起止点内部按关键词定位）。
  *
@@ -40,6 +40,12 @@ public class OntologyTool implements AgenticTool {
         int ontologyId = item.at("/ontologyId").asInt(0);
         if (ontologyId < 1) return null;
         JsonNode model = model(ontologyId);
+        if (model.has("status") && 1 != model.at("/status").asInt(0)) return null;
+        if (item.isObject()) {
+            ObjectNode value = (ObjectNode) item;
+            value.put("ontologyName", model.at("/name").asText(""));
+            value.put("description", model.at("/description").asText(""));
+        }
         ArrayNode params = DPUtil.arrayNode();
         ObjectNode action = AgenticTool.schema("string", "动作：search-按实体类型与关键词检索；path-推理起点与终点之间的路径");
         ArrayNode actions = DPUtil.arrayNode();
@@ -55,7 +61,7 @@ public class OntologyTool implements AgenticTool {
         params.add(AgenticTool.parameter("toKeyword", false, AgenticTool.schema("string", "终点名称关键词（path 用）")));
         params.add(AgenticTool.parameter("maxDepth", false, AgenticTool.schema("integer", "路径最大深度，默认 3，最大 5（path 用）")));
         params.add(AgenticTool.parameter("limit", false, AgenticTool.schema("integer", "返回条数：search 默认 15、path 默认 5，最大 100")));
-        return AgenticTool.definition(name, item.at("/description").asText(""), params, item);
+        return AgenticTool.definition(name, params, item);
     }
 
     @Override
@@ -64,18 +70,22 @@ public class OntologyTool implements AgenticTool {
         int ontologyId = item.at("/ontologyId").asInt(0);
         if (ontologyId < 1) throw new IllegalStateException("本体工具未选择本体");
         JsonNode model = model(ontologyId);
+        if (model.has("status") && 1 != model.at("/status").asInt(0)) {
+            throw new IllegalStateException("知识图谱已停用：" + ontologyId);
+        }
         String action = DPUtil.parseString(args.get("action"));
         if (!"path".equalsIgnoreCase(action) && !DPUtil.empty(args.get("fromKeyword"))) action = "path";
-        return "path".equalsIgnoreCase(action) ? path(ontologyId, model, args) : search(ontologyId, args);
+        return "path".equalsIgnoreCase(action) ? path(ontologyId, model, args) : search(ontologyId, model, args);
     }
 
     /** 实体检索：实体类型 + 关键词 */
-    protected ObjectNode search(int ontologyId, Map<String, Object> args) {
+    protected ObjectNode search(int ontologyId, JsonNode model, Map<String, Object> args) {
         String entity = DPUtil.parseString(args.get("entity"));
         if (DPUtil.empty(entity)) throw new IllegalStateException("本体工具缺少实体类型参数");
         JsonNode data = searchRows(ontologyId, entity, DPUtil.parseString(args.get("keyword")), limit(args, 15));
         ObjectNode value = DPUtil.objectNode();
         value.put("ontologyId", ontologyId);
+        value.put("description", model.at("/description").asText(""));
         value.put("entity", entity);
         value.put("keyword", DPUtil.parseString(args.get("keyword")));
         value.put("total", data.at("/total").asLong(0));
@@ -112,6 +122,7 @@ public class OntologyTool implements AgenticTool {
         }
         ObjectNode value = DPUtil.objectNode();
         value.put("ontologyId", ontologyId);
+        value.put("description", model.at("/description").asText(""));
         value.put("action", "path");
         value.set("from", from);
         value.set("to", to);

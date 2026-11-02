@@ -39,14 +39,21 @@ public class MethodTool implements AgenticTool {
         if (DPUtil.empty(methodName)) return null;
         // 发布内容里带了方法快照时直接用，草稿运行按工具标识实时解析
         JsonNode params = item.at("/methodParams");
-        String description = item.at("/methodDescription").asText("");
         if (!params.isArray()) {
-            ToolMethod method = method(item.at("/toolId").asInt(0), methodName);
+            int toolId = item.at("/toolId").asInt(0);
+            Tool tool = toolId < 1 ? null : toolService.info(toolId);
+            if (null == tool || 1 != DPUtil.parseInt(tool.getStatus())) return null;
+            ToolMethod method = method(toolId, methodName);
             if (null == method) return null;
             params = DPUtil.toJSON(toolMethodService.methodParams(method));
-            description = method.getDescription();
+            if (item.isObject()) {
+                ObjectNode value = (ObjectNode) item;
+                value.put("toolName", DPUtil.parseString(tool.getName()));
+                value.put("methodTitle", DPUtil.parseString(method.getTitle()));
+                value.put("methodDescription", DPUtil.parseString(method.getDescription()));
+            }
         }
-        return AgenticTool.definition(methodName, description, (ArrayNode) params, item);
+        return AgenticTool.definition(methodName, (ArrayNode) params, item);
     }
 
     @Override
@@ -74,6 +81,9 @@ public class MethodTool implements AgenticTool {
             int toolId = item.at("/toolId").asInt(0);
             Tool info = toolService.info(toolId);
             if (null == info) throw new IllegalStateException("工具不存在：" + toolId);
+            if (1 != DPUtil.parseInt(info.getStatus())) {
+                throw new IllegalStateException("工具已停用：" + info.getName());
+            }
             method = method(toolId, methodName);
             if (null == method) throw new IllegalStateException("方法不存在：" + methodName);
             tool = info;
@@ -113,10 +123,14 @@ public class MethodTool implements AgenticTool {
         return result.get("data");
     }
 
-    /** 按工具与方法名查方法：草稿运行时用 */
+    /** 按工具与方法名查仍可调用的方法：草稿运行与客户端定义使用 */
     protected ToolMethod method(int toolId, String name) {
         for (ToolMethod item : toolMethodService.all(toolId)) {
-            if (name.equals(item.getName())) return item;
+            if (name.equals(item.getName())
+                    && 1 == DPUtil.parseInt(null == item.getPresent() ? 1 : item.getPresent())
+                    && 1 == DPUtil.parseInt(null == item.getStatus() ? 1 : item.getStatus())) {
+                return item;
+            }
         }
         return null;
     }

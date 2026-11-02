@@ -21,7 +21,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-62931';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-259657';
 
 --
 -- Table structure for table `fs_spider_blacklist`
@@ -92,6 +92,10 @@ CREATE TABLE `fs_spider_page` (
   `force_mode` tinyint NOT NULL DEFAULT '0',
   `priority` bigint NOT NULL DEFAULT '0',
   `url` varchar(8192) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `request_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'GET',
+  `request_body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `content_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'none',
+  `payload_form` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `charset` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `collection` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `bucket` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
@@ -104,6 +108,10 @@ CREATE TABLE `fs_spider_page` (
   `mapper` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `sort` tinyint NOT NULL DEFAULT '0',
   `status` tinyint NOT NULL DEFAULT '0',
+  `fetch_mode` varchar(16) NOT NULL DEFAULT 'http' COMMENT '页面请求模式：http、browser',
+  `browser_wait_until` varchar(32) NOT NULL DEFAULT 'networkidle' COMMENT 'browser 模式等待状态',
+  `browser_wait_selector` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT 'browser 模式等待选择器',
+  `browser_timeout` int NOT NULL DEFAULT '30000' COMMENT 'browser 模式执行超时（毫秒）',
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `created_time` bigint NOT NULL DEFAULT '0',
   `created_uid` int NOT NULL DEFAULT '0',
@@ -169,6 +177,10 @@ CREATE TABLE `fs_spider_site` (
   `retry_count` int NOT NULL DEFAULT '0',
   `sort` tinyint NOT NULL DEFAULT '0',
   `status` tinyint NOT NULL DEFAULT '0',
+  `fetch_mode` varchar(16) NOT NULL DEFAULT 'http' COMMENT '页面请求模式：http、browser',
+  `browser_wait_until` varchar(32) NOT NULL DEFAULT 'networkidle' COMMENT '浏览器页面就绪条件',
+  `browser_wait_selector` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '浏览器等待元素',
+  `browser_timeout` int NOT NULL DEFAULT '30000' COMMENT '浏览器执行超时（毫秒）',
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `created_time` bigint NOT NULL DEFAULT '0',
   `created_uid` int NOT NULL DEFAULT '0',
@@ -246,4 +258,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-08-28  9:23:43
+-- Dump completed on 2026-10-30 16:47:49

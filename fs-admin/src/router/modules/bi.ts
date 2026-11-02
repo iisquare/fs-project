@@ -1,6 +1,10 @@
 import { layout } from '../config'
 
-export const blanks = []
+export const blanks = [{
+  path: '/bi/dashboard/view',
+  meta: { title: '大屏预览', fit: true, permit: ['bi:dashboard:'] },
+  component: () => import('@/views/bi/report/dashboard/view.vue')
+}]
 
 export const layouts = [{
   path: '/bi',
@@ -33,6 +37,14 @@ export const layouts = [{
     path: '/bi/olap/visualize',
     meta: { title: '数据报表', permit: ['bi:visualize:'] },
     component: () => import('@/views/bi/report/visualize/list.vue')
+  }, {
+    path: '/bi/olap/dashboard',
+    meta: { title: '数据大屏', permit: ['bi:dashboard:'] },
+    component: () => import('@/views/bi/report/dashboard/list.vue')
+  }, {
+    path: '/bi/design/dashboard',
+    meta: { title: '大屏设计', fit: true, permit: ['bi:dashboard:'] },
+    component: () => import('@/views/bi/report/dashboard/model.vue')
   }, {
     path: '/bi/design/visualize',
     meta: { title: '报表设计', fit: true, permit: ['bi:visualize:'] },

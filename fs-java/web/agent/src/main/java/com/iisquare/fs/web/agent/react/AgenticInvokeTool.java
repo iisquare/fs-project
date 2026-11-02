@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.agent.core.AgenticRuntime;
+import com.iisquare.fs.web.agent.dao.AgenticDao;
+import com.iisquare.fs.web.agent.entity.Agentic;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -18,6 +21,9 @@ import java.util.function.BiFunction;
  */
 @Service
 public class AgenticInvokeTool implements AgenticTool {
+
+    @Autowired
+    AgenticDao agenticDao;
 
     /** 编排调用器：agenticId + query → 运行结果（由 AgenticService 注入） */
     private final ThreadLocal<BiFunction<Integer, String, ObjectNode>> invokerThread = new ThreadLocal<>();
@@ -47,9 +53,21 @@ public class AgenticInvokeTool implements AgenticTool {
     public ObjectNode definition(JsonNode item) {
         String name = item.at("/name").asText("");
         if (DPUtil.empty(name)) return null;
+        int agenticId = item.at("/agenticId").asInt(0);
+        Agentic target = agenticId < 1 ? null : agenticDao.findById(agenticId).orElse(null);
+        if (null == target || 1 != DPUtil.parseInt(target.getStatus())
+                || DPUtil.parseInt(target.getPublishedVersion()) < 1
+                || DPUtil.empty(target.getPublishedContent())) {
+            return null;
+        }
+        if (item.isObject()) {
+            ObjectNode value = (ObjectNode) item;
+            value.put("agenticName", DPUtil.parseString(target.getName()));
+            value.put("description", DPUtil.parseString(target.getDescription()));
+        }
         ArrayNode params = DPUtil.arrayNode();
         params.add(AgenticTool.parameter("query", true, AgenticTool.schema("string", "交给该编排处理的问题或指令")));
-        return AgenticTool.definition(name, item.at("/description").asText(""), params, item);
+        return AgenticTool.definition(name, params, item);
     }
 
     @Override

@@ -440,6 +440,7 @@ const handleDelete = () => {
         </el-descriptions-item>
         <el-descriptions-item label="描述信息" :span="2">
           <el-input type="textarea" v-model="form.description" />
+          <tip-text>该描述不会进入常驻工具说明；仅在模型实际调用数据主题工具时随结果返回，避免在未使用该主题时占用上下文。</tip-text>
         </el-descriptions-item>
       </el-descriptions>
 

@@ -124,6 +124,8 @@ public class OntologyService extends JPAServiceBase {
         Ontology info = info(id);
         data.put("id", id);
         data.put("name", null == info ? "" : info.getName());
+        data.put("description", null == info ? "" : DPUtil.parseString(info.getDescription()));
+        data.put("status", null == info ? 0 : DPUtil.parseInt(info.getStatus()));
         data.put("version", null == info ? 0 : DPUtil.parseInt(info.getVersion()));
         data.put("updatedTime", null == info ? 0L : DPUtil.parseLong(info.getUpdatedTime()));
         return ApiUtil.result(0, null, data);

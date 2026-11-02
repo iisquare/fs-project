@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -31,6 +32,8 @@ public class SiteService extends JPAServiceBase {
     TemplateService templateService;
     @Autowired
     DefaultRbacService rbacService;
+    @Autowired
+    PageService pageService;
 
     @Override
     public Map<String, String> sorts() {
@@ -46,6 +49,14 @@ public class SiteService extends JPAServiceBase {
         status.put(1, "正常");
         status.put(2, "禁用");
         return status;
+    }
+
+    public Map<String, String> browserWaitModes() {
+        return pageService.browserWaitModes();
+    }
+
+    public Map<String, String> fetchModes() {
+        return pageService.fetchModes();
     }
 
     public Site info(Integer id) {
@@ -85,6 +96,23 @@ public class SiteService extends JPAServiceBase {
         info.setRetainAnchor(DPUtil.parseBoolean(param.get("retainAnchor")) ? 1 : 0);
         info.setConnectTimeout(DPUtil.parseInt(param.get("connectTimeout")));
         info.setSocketTimeout(DPUtil.parseInt(param.get("socketTimeout")));
+        String fetchMode = DPUtil.trim(DPUtil.parseString(param.get("fetchMode"))).toLowerCase(Locale.ROOT);
+        if (DPUtil.empty(fetchMode)) fetchMode = "http";
+        if (!pageService.fetchModes().containsKey(fetchMode)) {
+            return ApiUtil.result(1004, "页面请求模式异常", fetchMode);
+        }
+        String browserWaitUntil = DPUtil.trim(
+                DPUtil.parseString(param.get("browserWaitUntil"))).toLowerCase(Locale.ROOT);
+        if (DPUtil.empty(browserWaitUntil)) browserWaitUntil = "networkidle";
+        if (!browserWaitModes().containsKey(browserWaitUntil)) {
+            return ApiUtil.result(1004, "浏览器页面就绪条件异常", browserWaitUntil);
+        }
+        int browserTimeout = DPUtil.parseInt(param.get("browserTimeout"));
+        if (browserTimeout <= 0) browserTimeout = 30000;
+        info.setFetchMode(fetchMode);
+        info.setBrowserWaitUntil(browserWaitUntil);
+        info.setBrowserWaitSelector(DPUtil.parseString(param.get("browserWaitSelector")));
+        info.setBrowserTimeout(browserTimeout);
         info.setIterateCount(DPUtil.parseInt(param.get("iterateCount")));
         info.setRetryCount(DPUtil.parseInt(param.get("retryCount")));
         info.setSort(DPUtil.parseInt(param.get("sort")));
@@ -129,6 +157,9 @@ public class SiteService extends JPAServiceBase {
             ObjectNode node = (ObjectNode) row;
             node.put("retainQuery", DPUtil.parseBoolean(node.at("/retainQuery").asInt()));
             node.put("retainAnchor", DPUtil.parseBoolean(node.at("/retainAnchor").asInt()));
+            if (DPUtil.empty(node.at("/fetchMode").asText())) node.put("fetchMode", "http");
+            if (DPUtil.empty(node.at("/browserWaitUntil").asText())) node.put("browserWaitUntil", "networkidle");
+            if (node.at("/browserTimeout").asInt(0) <= 0) node.put("browserTimeout", 30000);
         }
         return rows;
     }

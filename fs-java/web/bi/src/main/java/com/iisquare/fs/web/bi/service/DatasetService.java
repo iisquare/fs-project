@@ -166,6 +166,9 @@ public class DatasetService extends JPAServiceBase {
         Dataset info = info(id);
         if (null == info || 1 != info.getStatus()) return ApiUtil.result(61001, "数据集状态异常", id);
         ObjectNode result = DPUtil.objectNode();
+        result.put("id", info.getId());
+        result.put("name", info.getName());
+        result.put("description", DPUtil.parseString(info.getDescription()));
         ArrayNode columns = result.putArray("columns");
         JsonNode fields = DPUtil.parseJSON(info.getFields(), k -> DPUtil.arrayNode());
         for (JsonNode field : fields) {

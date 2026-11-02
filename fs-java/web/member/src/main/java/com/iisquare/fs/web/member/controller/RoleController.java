@@ -76,6 +76,20 @@ public class RoleController extends PermitControllerBase {
         }
     }
 
+    /**
+     * 清除全部或指定角色的菜单、资源与权限缓存，供直接维护数据库后刷新 RBAC 数据。
+     * all=true 时清除全部角色；否则按 ids 清除指定角色。
+     * data 为本次删除的缓存键数量。
+     */
+    @RequestMapping("/clearCache")
+    @Permission("modify")
+    public String clearCacheAction(@RequestBody Map<?, ?> param) {
+        boolean all = DPUtil.parseBoolean(param.get("all"));
+        List<Integer> ids = DPUtil.parseIntList(param.get("ids"));
+        if (!all && ids.isEmpty()) return ApiUtil.echoResult(1001, "请选择需要清除缓存的角色", ids);
+        return ApiUtil.echoResult(0, "缓存已清除", rbacService.clearRolePermitCache(all ? null : ids));
+    }
+
     @RequestMapping("/list")
     @Permission("")
     public String listAction(@RequestBody Map<String, Object> param) {
