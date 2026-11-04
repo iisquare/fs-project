@@ -44,14 +44,19 @@ export default {
    * 本地工具（文件与命令）由客户端自己定义，不走这里。
    * 返回 `{ descriptionVersion, rows: [{ ref, function }] }`
    */
-  tools(tools: any[], tips = {}) {
+  tools(tools: unknown[], tips = {}) {
     return base.post('/bot/tools', { tools }, tips)
   },
   /**
    * 执行一次服务端工具调用：`{ tool: ref, args }`，返回 `{ data: <工具返回> }`。
    * 客户端驱动调用循环，凭据与真实调用都留在服务端。
    */
-  tool(tool: any, args: any, tips = {}) {
-    return base.post('/bot/tool', { tool, args }, tips)
+  tool(
+    tool: unknown,
+    args: Record<string, unknown>,
+    tips = {},
+    options: Record<string, unknown> = {}
+  ) {
+    return base.post('/bot/tool', { tool, args }, tips, options)
   }
 }

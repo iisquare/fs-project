@@ -10,6 +10,10 @@ import v9 from './sql/schema-v9.sql?raw'
 import v10 from './sql/schema-v10.sql?raw'
 import v11 from './sql/schema-v11.sql?raw'
 import v12 from './sql/schema-v12.sql?raw'
+import v13 from './sql/schema-v13.sql?raw'
+import v14 from './sql/schema-v14.sql?raw'
+import v15 from './sql/schema-v15.sql?raw'
+import v16 from './sql/schema-v16.sql?raw'
 
 /**
  * 用户库 schema 版本管理。
@@ -49,7 +53,11 @@ export const USER_SCHEMAS: Record<number, string> = {
   9: v9,
   10: v10,
   11: v11,
-  12: v12
+  12: v12,
+  13: v13,
+  14: v14,
+  15: v15,
+  16: v16
 }
 
 /** 应用当前使用的用户库版本：取已登记的最大版本号 */

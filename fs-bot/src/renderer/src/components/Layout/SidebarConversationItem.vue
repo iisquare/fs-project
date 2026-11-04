@@ -13,6 +13,9 @@ const props = defineProps<{
   running?: boolean
   /** 这段对话有访问申请在等答复：有横幅在输入框上方，这里给个点提示（切到别的页面也不会漏） */
   waiting?: boolean
+  /** 有专业子 Agent 正在运行 / 等待用户，切到别的对话时仍能看到 */
+  agentActive?: boolean
+  agentWaiting?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -105,8 +108,16 @@ function onMenuCommand(command: string): void {
     </div>
     <!-- 行右侧：待确认 / 运行状态 + 更多操作（重命名与删除收进菜单，常显不占额外宽度） -->
     <div class="conv-side">
-      <span v-if="waiting" class="conv-waiting" title="有访问申请待确认">●</span>
-      <span v-if="running" class="conv-running" title="后台运行中">●</span>
+      <span class="conv-status" aria-label="会话执行状态">
+        <span v-if="waiting" class="conv-waiting" title="有访问申请待确认">●</span>
+        <span v-if="running" class="conv-running" title="对话进行中">●</span>
+        <span v-if="agentActive" class="conv-agent" title="子 Agent 执行中"></span>
+        <span
+          v-if="agentWaiting"
+          class="conv-agent is-waiting"
+          title="子 Agent 正在等待用户"
+        ></span>
+      </span>
       <el-dropdown
         class="conv-menu"
         trigger="click"
@@ -233,7 +244,18 @@ function onMenuCommand(command: string): void {
   flex: none;
   display: flex;
   align-items: center;
+  align-self: stretch;
+  gap: 2px;
+}
+
+.conv-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
   gap: 4px;
+  min-width: 8px;
 }
 
 .conv-title {
@@ -258,16 +280,42 @@ function onMenuCommand(command: string): void {
 }
 
 .conv-running {
-  font-size: 10px;
-  line-height: 1;
-  color: var(--el-color-success);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--el-color-success);
 }
 
 /* 待确认用警示色：和「运行中」的绿点并排时不至于看混 */
 .conv-waiting {
-  font-size: 10px;
-  line-height: 1;
-  color: var(--el-color-warning);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--el-color-warning);
+}
+
+.conv-agent {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--el-color-primary);
+  animation: agent-pulse 1s ease-in-out infinite;
+
+  &.is-waiting {
+    background: var(--el-color-warning);
+    animation: none;
+  }
+}
+
+@keyframes agent-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 .conv-meta {
@@ -318,7 +366,8 @@ function onMenuCommand(command: string): void {
   &.is-open {
     opacity: 1;
     color: var(--el-color-primary);
-    background: var(--el-fill-color-dark);
+    /* 状态点旁边只做颜色反馈，不再铺深色底，避免执行中出现突兀的黑圈 */
+    background: transparent;
   }
 }
 </style>

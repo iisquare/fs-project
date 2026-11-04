@@ -12,16 +12,19 @@
  * 服务端交付的下载地址按外部地址打开、自己就是可拖的链接。交付物不用再自己去那段 JSON 里翻路径。
  */
 import { computed, onBeforeUnmount, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import type { ChatToolCall } from '@renderer/stores/chat'
 import { fileRefsOf, type ChatFileRef } from '@renderer/core/FileRefs'
 import { formatDuration } from '@renderer/utils/TimeUtil'
 import FileActionUtil from '@renderer/utils/FileActionUtil'
+import { useAgentStore } from '@renderer/stores/agents'
 
 const props = defineProps<{
   calls: ChatToolCall[]
   /** 会话所属项目：相对路径按它的工作区目录解析（打开文件时用） */
   projectId?: string
 }>()
+const agentStore = useAgentStore()
 
 /** 展开的节点：默认都收起，点行头才铺开参数与返回 */
 const opened = ref<string[]>([])
@@ -123,25 +126,62 @@ function state(call: ChatToolCall): string {
   if ('stopped' === call.status) return '已停止'
   return call.result ? '调用中' : '模型正在生成参数…'
 }
+
+function agentSessionId(call: ChatToolCall): string {
+  if ('agent' !== call.scope) return ''
+  return /(?:^|\n)session_id:\s*([^\s]+)/i.exec(call.result)?.[1] ?? ''
+}
+
+async function openAgentDetail(call: ChatToolCall): Promise<void> {
+  const sessionId = agentSessionId(call)
+  if (!sessionId) return
+  try {
+    await agentStore.openInspector(sessionId)
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '打开子 Agent 详情失败')
+  }
+}
 </script>
 
 <template>
   <div
-    class="timeline-step is-call"
-    :class="[call.status, { open: isOpen(call, index) }]"
     v-for="(call, index) in props.calls"
     :key="key(call, index)"
+    class="timeline-step is-call"
+    :class="[call.status, { open: isOpen(call, index) }]"
   >
-    <button
-      type="button"
+    <div
       class="step-head"
+      role="button"
+      tabindex="0"
       :aria-expanded="isOpen(call, index) ? 'true' : 'false'"
       @click="toggle(call, index)"
+      @keydown.enter.prevent="toggle(call, index)"
+      @keydown.space.prevent="toggle(call, index)"
     >
-      <span class="step-title">{{ call.name || '（未命名调用）' }}</span>
+      <span class="step-title">{{
+        'agent' === call.scope ? call.label || call.name : call.name || '（未命名调用）'
+      }}</span>
       <span class="step-summary">{{ summary(call) }}</span>
-      <el-tag class="tool-scope" size="small" effect="plain" v-if="'server' === call.scope"
+      <el-tag v-if="'server' === call.scope" class="tool-scope" size="small" effect="plain"
         >项目工具</el-tag
+      >
+      <button
+        v-else-if="'agent' === call.scope && agentSessionId(call)"
+        type="button"
+        class="agent-detail-tag"
+        title="打开子 Agent 执行详情"
+        @click.stop="openAgentDetail(call)"
+      >
+        子 Agent · 详情
+      </button>
+      <el-tag
+        v-else-if="'agent' === call.scope"
+        class="tool-scope"
+        size="small"
+        type="warning"
+        effect="plain"
+        >子 Agent</el-tag
       >
       <span class="step-meta">{{ state(call) }} {{ formatDuration(call.duration) }}</span>
       <svg class="step-caret" viewBox="0 0 16 16" width="10" height="10" aria-hidden="true">
@@ -154,8 +194,8 @@ function state(call: ChatToolCall): string {
           stroke-linejoin="round"
         />
       </svg>
-    </button>
-    <div class="step-body" v-show="isOpen(call, index)">
+    </div>
+    <div v-show="isOpen(call, index)" class="step-body">
       <div class="tool-block">
         <div class="tool-block-head">
           <div class="tool-label">参数</div>
@@ -392,6 +432,42 @@ function state(call: ChatToolCall): string {
 
 .tool-scope {
   flex: none;
+}
+
+.timeline-step .step-head {
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary-light-5);
+    outline-offset: 2px;
+  }
+}
+
+.agent-detail-tag {
+  flex: none;
+  padding: 1px 7px;
+  border: 1px solid var(--el-color-warning-light-5);
+  border-radius: 999px;
+  background: var(--el-color-warning-light-9);
+  color: var(--el-color-warning-dark-2);
+  font: inherit;
+  font-size: 11px;
+  line-height: 18px;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+
+  &:hover {
+    border-color: var(--el-color-warning);
+    background: var(--el-color-warning-light-8);
+  }
 }
 
 .tool-block + .tool-block {

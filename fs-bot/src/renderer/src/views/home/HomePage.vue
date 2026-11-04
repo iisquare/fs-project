@@ -9,6 +9,7 @@ import { useSettingsStore } from '@renderer/stores/settings'
 import { useSkillStore } from '@renderer/stores/skill'
 import { useCatalogStore } from '@renderer/stores/catalog'
 import { useUserStore } from '@renderer/stores/user'
+import { useAgentStore } from '@renderer/stores/agents'
 import { useFilesStore, FILES_WIDTH_MIN, FILES_WIDTH_MAX } from '@renderer/stores/files'
 import { useWindowStore } from '@renderer/stores/window'
 import BotApi from '@renderer/api/agent/BotApi'
@@ -44,6 +45,7 @@ const skillStore = useSkillStore()
 const catalogStore = useCatalogStore()
 const userStore = useUserStore()
 const chatStore = useChatStore()
+const agentStore = useAgentStore()
 
 const draft = ref('')
 const mentions = ref<ChatMention[]>([])
@@ -63,7 +65,7 @@ const atBottom = ref(true)
 const dragging = ref(0)
 
 /**
- * 右侧文件区存在 store 里，所有会话共用：默认收起，展开与否由这里的按钮说了算
+ * 右侧文件 / 子 Agent 面板存在 store 里，所有会话共用：默认收起，展开与否由这里的按钮说了算
  * （进对话不替用户做主，展开状态也只在本次运行内有效）；拖出来的宽度与当前页签下次打开还在（见 stores/files）。
  */
 const files = useFilesStore()
@@ -71,6 +73,17 @@ const files = useFilesStore()
 const win = useWindowStore()
 /** 中间对话栏的最小宽度：与 $chat-min 同一口径，分隔条拖不到比这更窄 */
 const CHAT_PANEL_MIN = 320
+
+/** 文件区宽度只在用户拖动时更新，窗口缩放不会覆盖固定的像素宽度。 */
+function resizeFilesPanel(_index: number, sizes: number[]): void {
+  const width = sizes[sizes.length - 1]
+  if (width !== undefined) files.setWidth(width)
+}
+
+function finishFilesResize(index: number, sizes: number[]): void {
+  resizeFilesPanel(index, sizes)
+  files.saveWidth()
+}
 
 /**
  * el-scrollbar 挂载后才拿得到内部滚动元素，之后再通知电梯导航换基准。
@@ -126,6 +139,22 @@ const session = computed(() =>
 /** 页面只渲染当前分支路径：编辑提问 / 重新生成新起的分支靠「◀ n/m ▶」切回 */
 const messages = computed(() => (session.value ? chatStore.visible(session.value) : []))
 const running = computed(() => session.value?.running === true)
+/** 已发出停止请求，正在等模型流 / 工具取消与最终检查点落库 */
+const stopping = computed(() => running.value && session.value?.stopping === true)
+const agentStatus = computed(() =>
+  conversation.value
+    ? agentStore.statusForConversation(conversation.value.id)
+    : { active: 0, waiting: 0 }
+)
+const agentRailTitle = computed(() => {
+  const status = agentStatus.value
+  if (status.active && status.waiting) {
+    return `子 Agent：${status.active} 个运行中，${status.waiting} 个等待用户`
+  }
+  if (status.active) return `子 Agent：${status.active} 个运行中`
+  if (status.waiting) return `子 Agent：${status.waiting} 个等待用户`
+  return '子 Agent'
+})
 /** 这段会话待发送的消息：生成中提交后排队，当前一轮收尾后自动发出 */
 const queuedMessages = computed<QueuedSend[]>(() =>
   conversation.value ? conversationStore.queuedOf(conversation.value.id) : []
@@ -379,7 +408,9 @@ function resetDragging(): void {
   dragging.value = 0
 }
 
-onMounted(() => window.addEventListener('dragend', resetDragging))
+onMounted(() => {
+  window.addEventListener('dragend', resetDragging)
+})
 
 onBeforeUnmount(() => {
   window.removeEventListener('dragend', resetDragging)
@@ -508,7 +539,12 @@ function collectMentions(text: string): ChatMention[] {
 }
 
 function stop(): void {
-  if (conversation.value) chatStore.stop(conversation.value.id)
+  if (!conversation.value || stopping.value) return
+  chatStore.stop(conversation.value.id)
+}
+
+function switchSidePanel(tab: 'workspace' | 'delivered' | 'agents'): void {
+  void files.toggleTab(tab)
 }
 
 /** 分支切换：按当前消息的兄弟节点前后移动（只改展示与续写位置，不动消息本身） */
@@ -637,272 +673,269 @@ async function uploadFiles(): Promise<void> {
       <el-button text type="primary" size="small" @click="loadPageData">重新加载</el-button>
     </el-alert>
     <!-- 没有会话：按项目开启新对话 -->
-    <div v-if="!conversation" class="start-panel">
-      <div class="start-inner">
-        <div class="ui-page-header start-header">
-          <div class="ui-page-header__copy">
-            <h1 class="ui-page-title">选择项目开始对话</h1>
-            <p class="ui-page-desc">
-              会话按项目创建：模型、工具与工作区权限都取自所属项目，工作区外的访问按访问策略放行。
-            </p>
-          </div>
-        </div>
-        <div v-if="projectStore.projects.length === 0" class="start-empty ui-panel">
-          <el-empty description="暂无项目">
-            <el-button type="primary" @click="openProjectPage(true)">创建项目</el-button>
-          </el-empty>
-        </div>
-        <template v-else>
-          <div class="ui-toolbar">
-            <el-input
-              v-model="projectKeyword"
-              class="ui-toolbar__search"
-              placeholder="按项目名称搜索"
-              clearable
-            >
-              <template #prefix>
-                <svg
-                  class="search-icon"
-                  viewBox="0 0 16 16"
-                  width="14"
-                  height="14"
-                  aria-hidden="true"
-                >
-                  <circle
-                    cx="7"
-                    cy="7"
-                    r="4.5"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.3"
-                  />
-                  <path
-                    d="m10.5 10.5 3 3"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.3"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </template>
-            </el-input>
-            <span class="ui-toolbar__count">共 {{ filteredProjects.length }} 个项目</span>
-          </div>
-          <div v-if="filteredProjects.length === 0" class="start-empty ui-panel">
-            <el-empty description="未找到匹配的项目">
-              <el-button text type="primary" @click="projectKeyword = ''">清除检索</el-button>
-            </el-empty>
-          </div>
-          <div v-else class="project-list">
-            <div
-              class="project-card"
-              v-for="item in filteredProjects"
-              :key="item.id"
-              @click="startConversation(item)"
-            >
-              <el-avatar :size="32" :src="item.icon">{{ item.name.charAt(0) }}</el-avatar>
-              <div class="project-text">
-                <div class="project-name">{{ item.name }}</div>
-                <div class="project-desc">{{ item.description || '暂无描述' }}</div>
-              </div>
+    <el-scrollbar v-if="!conversation" class="start-scrollbar">
+      <div class="start-panel">
+        <div class="start-inner">
+          <div class="ui-page-header start-header">
+            <div class="ui-page-header__copy">
+              <h1 class="ui-page-title">选择项目开始对话</h1>
+              <p class="ui-page-desc">
+                会话按项目创建：模型、工具与工作区权限都取自所属项目，工作区外的访问按访问策略放行。
+              </p>
             </div>
           </div>
-        </template>
+          <div v-if="projectStore.projects.length === 0" class="start-empty ui-panel">
+            <el-empty description="暂无项目">
+              <el-button type="primary" @click="openProjectPage(true)">创建项目</el-button>
+            </el-empty>
+          </div>
+          <template v-else>
+            <div class="ui-toolbar">
+              <el-input
+                v-model="projectKeyword"
+                class="ui-toolbar__search"
+                placeholder="按项目名称搜索"
+                clearable
+              >
+                <template #prefix>
+                  <svg
+                    class="search-icon"
+                    viewBox="0 0 16 16"
+                    width="14"
+                    height="14"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      cx="7"
+                      cy="7"
+                      r="4.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.3"
+                    />
+                    <path
+                      d="m10.5 10.5 3 3"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.3"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </template>
+              </el-input>
+              <span class="ui-toolbar__count">共 {{ filteredProjects.length }} 个项目</span>
+            </div>
+            <div v-if="filteredProjects.length === 0" class="start-empty ui-panel">
+              <el-empty description="未找到匹配的项目">
+                <el-button text type="primary" @click="projectKeyword = ''">清除检索</el-button>
+              </el-empty>
+            </div>
+            <div v-else class="project-list">
+              <div
+                class="project-card"
+                v-for="item in filteredProjects"
+                :key="item.id"
+                @click="startConversation(item)"
+              >
+                <el-avatar :size="32" :src="item.icon">{{ item.name.charAt(0) }}</el-avatar>
+                <div class="project-text">
+                  <div class="project-name">{{ item.name }}</div>
+                  <div class="project-desc">{{ item.description || '暂无描述' }}</div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
       </div>
-    </div>
+    </el-scrollbar>
 
     <!-- 会话视图 -->
     <div v-else class="conversation-view">
-      <header class="conversation-header">
-        <el-avatar class="header-avatar" :size="26" :src="project?.icon">{{
-          (project?.name || '未选择项目').charAt(0)
-        }}</el-avatar>
-        <span class="conv-project">{{ project?.name || '未选择项目' }}</span>
-        <span class="conv-title">{{ conversation.title || '新对话' }}</span>
-        <el-tag v-if="running" class="conv-tag" size="small" type="success" effect="plain"
-          >运行中</el-tag
-        >
-        <!-- 右上角：展开 / 收起右侧文件区（钉住窗口时只留对话，这个开关一并收起来） -->
-        <el-tooltip
-          v-if="!win.pinned"
-          :content="files.visible ? '收起文件区' : '展开文件区'"
-          placement="bottom"
-        >
-          <el-button
-            class="files-toggle"
-            link
-            :class="{ 'is-open': files.visible }"
-            @click="files.toggle()"
-          >
-            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
-              <rect
-                x="1.7"
-                y="3.1"
-                width="12.6"
-                height="9.8"
-                rx="1.6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.2"
-              />
-              <path d="M10.3 3.1v9.8" fill="none" stroke="currentColor" stroke-width="1.2" />
-            </svg>
-          </el-button>
-        </el-tooltip>
-      </header>
-
       <!--
         对话主体：中间是消息区与输入区，右边是文件区。
         中右之间的分隔条拖出来的宽度记在 store 里；左边的会话栏由外层布局的 splitter 管（见 views/index.vue）
       -->
-      <el-splitter class="conversation-splitter" @resize-end="files.saveWidth()">
+      <el-splitter
+        class="conversation-splitter"
+        @resize="resizeFilesPanel"
+        @resize-end="finishFilesResize"
+      >
         <el-splitter-panel :min="CHAT_PANEL_MIN">
-          <!--
+          <div class="conversation-primary">
+            <header class="conversation-header">
+              <el-avatar class="header-avatar" :size="26" :src="project?.icon">{{
+                (project?.name || '未选择项目').charAt(0)
+              }}</el-avatar>
+              <span class="conv-project">{{ project?.name || '未选择项目' }}</span>
+              <span class="conv-title">{{ conversation.title || '新对话' }}</span>
+              <el-tag
+                v-if="running"
+                class="conv-tag"
+                size="small"
+                :type="stopping ? 'info' : 'success'"
+                effect="plain"
+                >{{ stopping ? '正在停止' : '运行中' }}</el-tag
+              >
+            </header>
+
+            <!--
             中间的对话列就是拖放区（见 onDragEnter / onDrop）：消息区与输入区都算，
             右侧文件区不算——那里的整行另有「拖出去」的用法
           -->
-          <div
-            class="conversation-column"
-            @dragenter="onDragEnter"
-            @dragover="onDragOver"
-            @dragleave="onDragLeave"
-            @drop="onDrop"
-          >
-            <!-- 消息区：滚动容器 + 电梯导航（导航在容器之外，不随消息一起滚） -->
-            <div class="conversation-body">
-              <el-scrollbar class="message-list" :ref="setScrollRef" @scroll="onScroll">
-                <div class="message-column">
-                  <div v-if="messages.length === 0" class="message-empty">
-                    <span class="message-empty-mark" aria-hidden="true">
-                      <svg viewBox="0 0 24 24">
-                        <path
-                          d="M12 3.5 13.7 9l5.5 1.7-5.5 1.7L12 18l-1.7-5.6L4.8 10.7 10.3 9 12 3.5Z"
-                        />
-                        <path
-                          d="M18.8 16.4 19.5 18.5 21.6 19.2 19.5 19.9 18.8 22 18.1 19.9 16 19.2 18.1 18.5 18.8 16.4Z"
-                        />
-                      </svg>
-                    </span>
-                    <p class="message-empty-title">开始新对话</p>
-                    <p class="message-empty-tip">
-                      输入内容后回车发送；输入 <code>@</code> 引用本机文件或技能，输入
-                      <code>/</code> 执行内置指令。回复会实时流式输出，工具调用过程与结果同步展示。
-                    </p>
+            <div
+              class="conversation-column"
+              @dragenter="onDragEnter"
+              @dragover="onDragOver"
+              @dragleave="onDragLeave"
+              @drop="onDrop"
+            >
+              <!-- 消息区：滚动容器 + 电梯导航（导航在容器之外，不随消息一起滚） -->
+              <div class="conversation-body">
+                <el-scrollbar class="message-list" :ref="setScrollRef" @scroll="onScroll">
+                  <div class="message-column">
+                    <div v-if="messages.length === 0" class="message-empty">
+                      <span class="message-empty-mark" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path
+                            d="M12 3.5 13.7 9l5.5 1.7-5.5 1.7L12 18l-1.7-5.6L4.8 10.7 10.3 9 12 3.5Z"
+                          />
+                          <path
+                            d="M18.8 16.4 19.5 18.5 21.6 19.2 19.5 19.9 18.8 22 18.1 19.9 16 19.2 18.1 18.5 18.8 16.4Z"
+                          />
+                        </svg>
+                      </span>
+                      <p class="message-empty-title">开始新对话</p>
+                      <p class="message-empty-tip">
+                        输入内容后回车发送；输入 <code>@</code> 引用本机文件或技能，输入
+                        <code>/</code>
+                        执行内置指令。回复会实时流式输出，工具调用过程与结果同步展示。
+                      </p>
+                    </div>
+                    <ChatMessage
+                      class="message"
+                      v-for="message in messages"
+                      :key="message.id"
+                      :message="message"
+                      :project-id="session?.projectId ?? ''"
+                      :conversation-id="session?.conversationId ?? ''"
+                      :branch="session ? chatStore.branchOf(session, message) : null"
+                      :editable="
+                        !running &&
+                        'user' === message.role &&
+                        !!String(message.content ?? '').trim()
+                      "
+                      :regenerable="!running && 'assistant' === message.role && !!message.parentId"
+                      @switch="(step: number) => switchBranch(message, step)"
+                      @edit="(content: string) => editMessage(message, content)"
+                      @regenerate="regenerateMessage(message)"
+                    />
+                    <el-alert
+                      v-if="session?.notice"
+                      class="message-error"
+                      type="warning"
+                      :title="session.notice"
+                      :closable="false"
+                      show-icon
+                    />
+                    <el-alert
+                      v-if="session?.error"
+                      class="message-error"
+                      type="error"
+                      :title="session.error"
+                      :closable="false"
+                      show-icon
+                    />
                   </div>
-                  <ChatMessage
-                    class="message"
-                    v-for="message in messages"
-                    :key="message.id"
-                    :message="message"
-                    :project-id="session?.projectId ?? ''"
-                    :conversation-id="session?.conversationId ?? ''"
-                    :branch="session ? chatStore.branchOf(session, message) : null"
-                    :editable="
-                      !running && 'user' === message.role && !!String(message.content ?? '').trim()
-                    "
-                    :regenerable="!running && 'assistant' === message.role && !!message.parentId"
-                    @switch="(step: number) => switchBranch(message, step)"
-                    @edit="(content: string) => editMessage(message, content)"
-                    @regenerate="regenerateMessage(message)"
-                  />
-                  <el-alert
-                    v-if="session?.notice"
-                    class="message-error"
-                    type="warning"
-                    :title="session.notice"
-                    :closable="false"
-                    show-icon
-                  />
-                  <el-alert
-                    v-if="session?.error"
-                    class="message-error"
-                    type="error"
-                    :title="session.error"
-                    :closable="false"
-                    show-icon
-                  />
-                </div>
-              </el-scrollbar>
-              <ChatElevator
-                :target="listRef"
-                :revision="`${conversation.id}:${session?.leafId ?? ''}:${messages.length}`"
-                selector=".chat-message.is-user"
-                text-selector=".chat-content"
-              />
-            </div>
-
-            <footer class="composer-area">
-              <div class="composer-column">
-                <!-- 访问申请：只画本段对话的（跟着对话走），别处触发的由侧边栏的「待确认」点提示 -->
-                <ApprovalBanner class="composer-approval" :conversation-id="conversation.id" />
-                <!-- 生成中提交的消息：排队可见、可撤掉；当前一轮收尾后按顺序自动发出 -->
-                <div v-if="queuedMessages.length" class="composer-queue">
-                  <span class="composer-queue-label">待发送</span>
-                  <el-tag
-                    v-for="item in queuedMessages"
-                    :key="item.id"
-                    class="composer-queue-item"
-                    size="small"
-                    effect="plain"
-                    closable
-                    :title="item.params.query"
-                    @close="removeQueued(item)"
-                  >
-                    {{ queuedLabel(item) }}
-                  </el-tag>
-                </div>
-                <ChatComposer
-                  ref="composerRef"
-                  v-model="draft"
-                  v-model:mentions="mentions"
-                  :candidates="candidates"
-                  :commands="commands"
-                  :policy="settingsStore.workspacePolicy"
-                  :context="context"
-                  :running="running"
-                  @send="send"
-                  @stop="stop"
-                  @command="runCommand"
-                  @update:context-limit="setContextLimit"
-                  @update:policy="setPolicy"
+                </el-scrollbar>
+                <ChatElevator
+                  :target="listRef"
+                  :revision="`${conversation.id}:${session?.leafId ?? ''}:${messages.length}`"
+                  selector=".chat-message.is-user"
+                  text-selector=".chat-content"
                 />
               </div>
-            </footer>
 
-            <!-- 拖入文件时的提示层：对话列描一圈虚线 + 一句话，松手即把文件 / 文件夹引用进输入框 -->
-            <div v-if="dragging" class="conversation-drop" aria-hidden="true">
-              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-                <path
-                  d="M8 10.2V2.6m0 0L5.1 5.5M8 2.6l2.9 2.9"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M2.6 10.4v1.8a1.2 1.2 0 0 0 1.2 1.2h8.4a1.2 1.2 0 0 0 1.2-1.2v-1.8"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-              <span>松开即可引用到输入框</span>
+              <footer class="composer-area">
+                <div class="composer-column">
+                  <!-- 访问申请：只画本段对话的（跟着对话走），别处触发的由侧边栏的「待确认」点提示 -->
+                  <ApprovalBanner class="composer-approval" :conversation-id="conversation.id" />
+                  <!-- 生成中提交的消息：排队可见、可撤掉；当前一轮收尾后按顺序自动发出 -->
+                  <el-scrollbar v-if="queuedMessages.length" class="composer-queue-scroll">
+                    <div class="composer-queue">
+                      <span class="composer-queue-label">待发送</span>
+                      <el-tag
+                        v-for="item in queuedMessages"
+                        :key="item.id"
+                        class="composer-queue-item"
+                        size="small"
+                        effect="plain"
+                        closable
+                        :title="item.params.query"
+                        @close="removeQueued(item)"
+                      >
+                        {{ queuedLabel(item) }}
+                      </el-tag>
+                    </div>
+                  </el-scrollbar>
+                  <ChatComposer
+                    ref="composerRef"
+                    v-model="draft"
+                    v-model:mentions="mentions"
+                    :candidates="candidates"
+                    :commands="commands"
+                    :policy="settingsStore.workspacePolicy"
+                    :context="context"
+                    :running="running"
+                    :stopping="stopping"
+                    @send="send"
+                    @stop="stop"
+                    @command="runCommand"
+                    @update:context-limit="setContextLimit"
+                    @update:policy="setPolicy"
+                  />
+                </div>
+              </footer>
+
+              <!-- 拖入文件时的提示层：对话列描一圈虚线 + 一句话，松手即把文件 / 文件夹引用进输入框 -->
+              <div v-if="dragging" class="conversation-drop" aria-hidden="true">
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                  <path
+                    d="M8 10.2V2.6m0 0L5.1 5.5M8 2.6l2.9 2.9"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M2.6 10.4v1.8a1.2 1.2 0 0 0 1.2 1.2h8.4a1.2 1.2 0 0 0 1.2-1.2v-1.8"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <span>松开即可引用到输入框</span>
+              </div>
             </div>
           </div>
         </el-splitter-panel>
 
-        <!-- 右侧文件区：项目工作区目录树 + 这段对话交付的文件（右上角按钮展开 / 收起） -->
+        <!-- 右侧面板：文件与子 Agent 共用一个宽度，由右侧活动栏切换 -->
         <el-splitter-panel
           v-if="files.visible"
-          :size="files.width"
-          :min="FILES_WIDTH_MIN"
-          :max="FILES_WIDTH_MAX"
-          @update:size="files.setWidth"
+          class="side-panel"
+          :size="win.pinned ? '0px' : `${files.width}px`"
+          :min="win.pinned ? '0px' : `${FILES_WIDTH_MIN}px`"
+          :max="win.pinned ? '0px' : `${FILES_WIDTH_MAX}px`"
+          :style="{
+            display: 'flex',
+            '--side-panel-width': `${files.width}px`
+          }"
         >
           <ConversationFiles
+            :conversation-id="conversation.id"
             :project-id="session?.projectId ?? ''"
             :messages="messages"
             :roots="project?.workspace ?? []"
@@ -910,6 +943,98 @@ async function uploadFiles(): Promise<void> {
           />
         </el-splitter-panel>
       </el-splitter>
+
+      <!-- 右侧活动栏：第一项是子 Agent，点击任一项打开或切换面板 -->
+      <nav v-if="!win.pinned" class="side-rail" aria-label="右侧面板">
+        <el-tooltip :content="agentRailTitle" placement="left">
+          <button
+            type="button"
+            class="side-rail-item"
+            :class="{
+              active: files.visible && 'agents' === files.tab,
+              running: agentStatus.active > 0,
+              waiting: agentStatus.waiting > 0
+            }"
+            :aria-label="agentRailTitle"
+            :aria-current="files.visible && 'agents' === files.tab ? 'page' : undefined"
+            @click="switchSidePanel('agents')"
+          >
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+              <rect
+                x="2.7"
+                y="4.1"
+                width="10.6"
+                height="8.2"
+                rx="2.6"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+              />
+              <path
+                d="M8 2.1v2M5.8 7.2h.1M10.1 7.2h.1M6.3 9.7h3.4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.3"
+                stroke-linecap="round"
+              />
+            </svg>
+            <span
+              v-if="agentStatus.active || agentStatus.waiting"
+              class="side-rail-state"
+              :class="{ waiting: agentStatus.waiting > 0 }"
+              aria-hidden="true"
+            />
+          </button>
+        </el-tooltip>
+        <el-tooltip content="工作区" placement="left">
+          <button
+            type="button"
+            class="side-rail-item"
+            :class="{ active: files.visible && 'workspace' === files.tab }"
+            aria-label="工作区"
+            :aria-current="files.visible && 'workspace' === files.tab ? 'page' : undefined"
+            @click="switchSidePanel('workspace')"
+          >
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+              <path
+                d="M1.9 3.7h4l1.2 1.6h7v7a.8.8 0 0 1-.8.8H2.7a.8.8 0 0 1-.8-.8z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </el-tooltip>
+        <el-tooltip content="交付文件" placement="left">
+          <button
+            type="button"
+            class="side-rail-item"
+            :class="{ active: files.visible && 'delivered' === files.tab }"
+            aria-label="交付文件"
+            :aria-current="files.visible && 'delivered' === files.tab ? 'page' : undefined"
+            @click="switchSidePanel('delivered')"
+          >
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+              <path
+                d="M5.4 2h3l2.4 2.4v7.8a.8.8 0 0 1-.8.8H3.8a.8.8 0 0 1-.8-.8V2.8a.8.8 0 0 1 .8-.8z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M8.2 2.1v2.5h2.5M9.2 12.3v1.4a.8.8 0 0 0 .8.8h4.2a.8.8 0 0 0 .8-.8V6.9"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.1"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </el-tooltip>
+      </nav>
     </div>
   </div>
 </template>
@@ -943,10 +1068,13 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
 
 /* ── 未选会话：选择项目 ─────────────────────────────── */
 
-.start-panel {
+.start-scrollbar {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+}
+
+.start-panel {
+  min-height: 100%;
   padding: var(--ui-page-padding-top) var(--ui-page-padding-x) var(--ui-page-padding-bottom);
 }
 
@@ -1034,7 +1162,71 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
   flex: 1;
   min-height: 0;
   display: flex;
+  flex-direction: row;
+}
+
+.side-rail {
+  display: flex;
+  flex: none;
   flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 42px;
+  padding: 7px 0;
+  border-left: 1px solid var(--el-border-color-lighter);
+}
+
+.side-rail-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--el-text-color-placeholder);
+  cursor: pointer;
+  transition:
+    color 0.16s,
+    background-color 0.16s;
+
+  &:hover {
+    color: var(--el-color-primary);
+    background: var(--el-fill-color-light);
+  }
+
+  &.active {
+    color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
+  }
+
+  &.running:not(.active) {
+    color: var(--el-color-primary);
+  }
+
+  &.waiting {
+    color: var(--el-color-warning);
+  }
+}
+
+.side-rail-state {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--el-bg-color);
+  border-radius: 50%;
+  background: var(--el-color-primary);
+  animation: agent-icon-pulse 1s ease-in-out infinite;
+
+  &.waiting {
+    background: var(--el-color-warning);
+    animation: none;
+  }
 }
 
 /* 拖入文件时盖住对话列（消息区 + 输入区）的一层：描一圈虚线 + 一句提示，松手即在输入框里引用 */
@@ -1059,6 +1251,8 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
 /* 中右分隔：拖分隔条调文件区宽度（宽度记在 stores/files） */
 .conversation-splitter {
   flex: 1;
+  height: 100%;
+  min-width: 0;
   min-height: 0;
 
   /* 面板自带的 overflow: auto 会在对话区 / 文件区之外再套一层滚动条，
@@ -1068,13 +1262,28 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
   }
 }
 
+.side-panel {
+  /* Element Plus 会把像素尺寸转换成比例；这里锁定用户设置的右侧面板宽度。 */
+  flex: 0 0 var(--side-panel-width) !important;
+  max-width: var(--side-panel-width) !important;
+}
+
+.conversation-primary {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
 .conversation-column {
   /* 拖入文件的提示层铺在这一列上：定位基准 */
   position: relative;
   display: flex;
+  flex: 1;
   flex-direction: column;
-  height: 100%;
+  height: auto;
   min-width: 0;
+  min-height: 0;
 }
 
 .conversation-header {
@@ -1112,21 +1321,16 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
   .conv-tag {
     flex: none;
   }
+}
 
-  /* 右上角的文件区开关：靠右端，展开时用主色标出来 */
-  .files-toggle {
-    flex: none;
-    margin-left: auto;
-    padding: 0;
-    color: var(--el-text-color-placeholder);
+@keyframes agent-icon-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
 
-    &:hover {
-      color: var(--el-color-primary);
-    }
-
-    &.is-open {
-      color: var(--el-color-primary);
-    }
+  50% {
+    opacity: 1;
   }
 }
 
@@ -1239,18 +1443,17 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
 }
 
 /* 排队区：与输入框同宽，一行放不下时横向滚动；每条都能单独撤掉 */
+.composer-queue-scroll {
+  margin-bottom: 8px;
+}
+
 .composer-queue {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 8px;
-  overflow-x: auto;
+  width: max-content;
+  min-width: 100%;
   white-space: nowrap;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
 }
 
 .composer-queue-label {

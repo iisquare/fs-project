@@ -158,7 +158,7 @@ const openForgot = () => {
 <template>
   <div class="login-page" :class="{ 'login-page--leaving': leaving }">
     <TitleBar class="login-page__titlebar" :show-maximize="false" />
-    <div class="login-container">
+    <el-scrollbar class="login-container">
       <div class="login-stage">
         <div class="login-brand">
           <BrandLogo :size="38" class="brand-mark" />
@@ -269,7 +269,7 @@ const openForgot = () => {
           </el-form>
         </main>
       </div>
-    </div>
+    </el-scrollbar>
   </div>
 </template>
 
@@ -320,8 +320,6 @@ const openForgot = () => {
 
 .login-container {
   height: 100%;
-  padding: calc(var(--title-bar-height) + 18px) 24px 18px;
-  overflow-y: auto;
 }
 
 .login-stage {
@@ -332,6 +330,7 @@ const openForgot = () => {
   width: min(100%, 520px);
   min-height: 100%;
   margin: 0 auto;
+  padding: calc(var(--title-bar-height) + 18px) 24px 18px;
 }
 
 .login-main {

@@ -70,6 +70,8 @@ export interface WorkspaceContext {
   command?: string
   /** 发起这次访问的会话标识：审批申请只交给这段对话处理，各对话互不干扰 */
   conversationId?: string
+  /** 发起申请的专业子 Agent 会话：只用于精确取消，不改变界面的主对话归属 */
+  sourceSessionId?: string
 }
 
 /** 工作区外的访问申请：主进程判定不了时交给界面问一次 */
@@ -83,6 +85,8 @@ export interface WorkspaceApproval {
   command?: string
   /** 发起这次访问的会话：界面据此把申请交回那段对话（缺省表示来处不明） */
   conversationId?: string
+  /** 发起申请的专业子 Agent 会话：只用于精确取消 */
+  sourceSessionId?: string
 }
 
 /** 本地命令的执行结果：退出码为 null 表示被信号终止或没能启动 */
@@ -1107,6 +1111,19 @@ export class WorkspaceManager {
     }
   }
 
+  /**
+   * 浏览器文件控件上传前的读取授权：不读取文件内容，只走与 workspace.read 相同的路径策略。
+   * Browser Agent 由模型自动驱动，不能让 upload 成为绕过工作区权限的入口。
+   */
+  async authorizeRead(
+    projectId: string,
+    path: string,
+    conversationId = '',
+    sourceSessionId = ''
+  ): Promise<void> {
+    await this.resolve(projectId, path, 'read', { conversationId, sourceSessionId })
+  }
+
   async mkdir(projectId: string, path: string, conversationId = ''): Promise<{ path: string }> {
     const target = await this.resolve(projectId, path, 'write', { conversationId })
     mkdirSync(target.path, { recursive: true })
@@ -1389,10 +1406,7 @@ export class WorkspaceManager {
       // 调用却还挂着。这里按 exit 补一道短宽限：管道随后就关的走 close（输出不受影响），
       // 迟迟不关的就按已收到的输出收尾。
       // （Windows 上常驻后裔握着写端时连 exit 都会一起被拖住，这一步兜不住，仍由超时 / 停止收尾。）
-      const exiting = (
-        code: number | null = null,
-        signal: NodeJS.Signals | null = null
-      ): void => {
+      const exiting = (code: number | null = null, signal: NodeJS.Signals | null = null): void => {
         if (settled || grace) return
         grace = setTimeout(() => finish(code, signal), FINISH_GRACE)
       }
@@ -1509,6 +1523,7 @@ export class WorkspaceManager {
     if (command) request.command = command
     // 会话标识一路带到申请上：界面据此把申请交回发起它的那段对话，互不串门
     if (context.conversationId) request.conversationId = String(context.conversationId)
+    if (context.sourceSessionId) request.sourceSessionId = String(context.sourceSessionId)
     const allow = await this.approval(request)
     if (!allow) throw new Error(`${action}未获批准，已跳过：${detail}`)
   }

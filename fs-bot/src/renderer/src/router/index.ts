@@ -9,6 +9,11 @@ const routes = [
     component: () => import('@renderer/views/login.vue')
   },
   {
+    path: page.agentDetail,
+    meta: { title: '子 Agent 执行详情' },
+    component: () => import('@renderer/views/agent/AgentDetailWindow.vue')
+  },
+  {
     path: page.root,
     component: () => import('@renderer/views/index.vue'),
     redirect: page.home,
@@ -73,7 +78,7 @@ router.beforeEach(async (to) => {
 
   const user = useUserStore()
   try {
-    await user.initialize()
+    await user.initialize(to.path !== page.agentDetail)
   } catch (error) {
     console.error('[Router] Failed to restore session:', error)
   }

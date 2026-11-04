@@ -7,6 +7,7 @@ import { useProjectStore } from '@renderer/stores/project'
 import { useConversationStore } from '@renderer/stores/conversation'
 import { useChatStore } from '@renderer/stores/chat'
 import { useScheduleStore } from '@renderer/stores/schedule'
+import { useAgentStore } from '@renderer/stores/agents'
 import { useApprovalStore } from '@renderer/stores/approval'
 import { useLoadingStore } from '@renderer/stores/loading'
 import { useUpdateStore } from '@renderer/stores/update'
@@ -20,17 +21,21 @@ const router = useRouter()
 const appLoading = useLoadingStore()
 const update = useUpdateStore()
 let updateTimer: number | null = null
+let stopPrepareQuit: (() => void) | null = null
 const contentBlocked = computed(() => appLoading.visible || (update.forceUpgrade && update.visible))
+const standaloneDetail = window.location.hash.startsWith('#/agent-detail')
 
 /** 已经准备过的身份（用户 + 令牌）：同一个身份只准备一次 */
 let bootstrappedFor = ''
 
 async function logout(): Promise<void> {
-  await UserApi.logout().finally(() => {
+  await UserApi.logout().finally(async () => {
     // 退出前断开所有流并停掉调度，避免携带上一个账号的会话继续跑
-    useChatStore().reset()
+    await window.ipc.agent.closeAll()
+    await useChatStore().reset()
     useScheduleStore().stop()
     useConversationStore().reset()
+    useAgentStore().reset()
     user.reset()
     bootstrappedFor = ''
     router.push(page.login)
@@ -51,6 +56,7 @@ async function bootstrap(): Promise<void> {
   try {
     const projectStore = useProjectStore()
     const scheduleStore = useScheduleStore()
+    await useAgentStore().initialize()
     await projectStore.fetchProjects()
     await useConversationStore().fetchConversations()
     await scheduleStore.fetchTasks()
@@ -63,6 +69,20 @@ async function bootstrap(): Promise<void> {
 }
 
 onMounted(() => {
+  if (standaloneDetail) return
+  stopPrepareQuit = window.ipc.onPrepareQuit(() => {
+    void (async () => {
+      try {
+        await useChatStore().flushBeforeExit()
+      } catch (error) {
+        console.error('[App] Failed to flush chat checkpoints before quit:', error)
+      } finally {
+        await window.ipc.quitReady().catch((error) => {
+          console.error('[App] Failed to acknowledge quit:', error)
+        })
+      }
+    })()
+  })
   // 登录态与用户库由路由守卫准备好，这里只做登录后的数据准备
   // 工作区外的访问申请：队列挂在 approval store 上，横幅由对话页或布局展示
   useApprovalStore().listen()
@@ -86,6 +106,8 @@ function upgradeRequired(): void {
 }
 
 onUnmounted(() => {
+  stopPrepareQuit?.()
+  stopPrepareQuit = null
   window.removeEventListener('fs-client-upgrade-required', upgradeRequired)
   window.removeEventListener('online', upgradeRequired)
   if (updateTimer !== null) window.clearInterval(updateTimer)
@@ -95,7 +117,7 @@ onUnmounted(() => {
 watch(
   () => user.ready,
   () => {
-    void bootstrap()
+    if (!standaloneDetail) void bootstrap()
   }
 )
 

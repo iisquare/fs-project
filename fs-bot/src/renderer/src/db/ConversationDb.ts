@@ -88,6 +88,23 @@ function formatMessage(row: Record<string, any>): CachedMessage {
   }
 }
 
+function messageRow(
+  conversationId: string,
+  message: Partial<CachedMessage>
+): Record<string, unknown> {
+  return {
+    id: message.id || crypto.randomUUID(),
+    conversation_id: conversationId,
+    parent_id: message.parentId ?? '',
+    role: message.role || 'assistant',
+    content: message.content ?? '',
+    reasoning: message.reasoning ?? '',
+    reference: message.reference ?? '',
+    status: message.status ?? '',
+    created_at: message.createdAt || new Date().toISOString()
+  }
+}
+
 export default {
   async list(
     projectId = '',
@@ -160,13 +177,19 @@ export default {
     if (!unique.length) return ApiUtil.result(0, 'Succeed!', { changes: 0 })
     return Db.removeBatch([
       { table: MSG_TABLE, in: { conversation_id: unique } },
+      { table: 'agent_interactions', in: { parent_conversation_id: unique } },
+      { table: 'agent_sessions', in: { parent_conversation_id: unique } },
       { table: TABLE, in: { id: unique } }
     ])
   },
 
-  /** 清空消息：会话保留，历史只删本地那几条消息记录 */
+  /** 清空消息：会话保留，同时删除这段主对话关联的子 Agent 会话，避免旧上下文被再次续接 */
   async clearMessages(id: string) {
-    return Db.remove(MSG_TABLE, { conversation_id: id })
+    return Db.removeBatch([
+      { table: MSG_TABLE, where: { conversation_id: id } },
+      { table: 'agent_interactions', where: { parent_conversation_id: id } },
+      { table: 'agent_sessions', where: { parent_conversation_id: id } }
+    ])
   },
 
   /** 按标识取一条会话：读历史会话时用来回显标题与归属项目 */
@@ -310,17 +333,24 @@ export default {
     return (ApiUtil.data(result) as any[]).map(formatMessage)
   },
 
-  async appendMessage(conversationId: string, message: Partial<CachedMessage>) {
-    return Db.insert(MSG_TABLE, {
-      id: message.id || crypto.randomUUID(),
-      conversation_id: conversationId,
-      parent_id: message.parentId ?? '',
-      role: message.role || 'assistant',
-      content: message.content ?? '',
-      reasoning: message.reasoning ?? '',
-      reference: message.reference ?? '',
-      status: message.status ?? '',
-      created_at: message.createdAt || new Date().toISOString()
-    })
+  /**
+   * 原子保存一组消息、当前分支尾与可选的最后活动时间。
+   * 同 id 的消息按 upsert 更新，生成过程中的检查点可以反复覆盖同一行。
+   */
+  async saveMessages(
+    conversationId: string,
+    messages: Partial<CachedMessage>[],
+    leafId: string,
+    updatedAt?: string
+  ): Promise<void> {
+    const result = await Db.saveMessages(
+      conversationId,
+      messages.map((message) => messageRow(conversationId, message)),
+      leafId,
+      updatedAt
+    )
+    if (!ApiUtil.succeed(result)) {
+      throw new Error(String(ApiUtil.message(result) || '对话检查点保存失败'))
+    }
   }
 }

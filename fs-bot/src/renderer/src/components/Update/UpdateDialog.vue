@@ -51,66 +51,76 @@ function quitApplication(): void {
       </div>
     </template>
 
-    <div v-if="latest" class="update-body">
-      <div class="version-line">
-        <span>当前版本 v{{ update.result?.currentVersion }}</span>
-        <span>→</span>
-        <strong>最新版本 v{{ latest.version }}</strong>
+    <el-scrollbar class="update-scroll" max-height="calc(100vh - 190px)">
+      <div v-if="latest" class="update-body">
+        <div class="version-line">
+          <span>当前版本 v{{ update.result?.currentVersion }}</span>
+          <span>→</span>
+          <strong>最新版本 v{{ latest.version }}</strong>
+        </div>
+        <el-alert
+          v-if="update.rollback"
+          type="error"
+          :closable="false"
+          show-icon
+          :title="`将回滚到 v${latest.version}，完成回滚后才能继续使用。`"
+        />
+        <el-alert
+          v-else-if="update.forceUpgrade"
+          type="error"
+          :closable="false"
+          show-icon
+          :title="`最低支持版本为 v${latest.minimumVersion}，完成升级后才能继续使用。`"
+        />
+        <el-alert
+          v-else
+          type="info"
+          :closable="false"
+          show-icon
+          :title="`最低支持版本为 v${latest.minimumVersion}，当前版本仍在支持范围内。`"
+        />
+        <div class="release">
+          <div class="release-title">发布日志</div>
+          <el-scrollbar class="release-notes-scroll" max-height="220px">
+            <pre class="release-notes">{{ latest.releaseNotes || '本次更新暂无发布日志' }}</pre>
+          </el-scrollbar>
+        </div>
+        <el-progress
+          v-if="update.installing || update.paused"
+          :percentage="update.progress"
+          :indeterminate="update.installing && !update.total"
+          :status="update.installing && update.progress === 100 ? 'success' : undefined"
+        />
+        <div v-if="update.installing || update.paused" class="progress-text">
+          {{
+            update.paused
+              ? `下载已暂停，已下载 ${formatSize(update.received)} / ${formatSize(update.total)}`
+              : update.total > 0
+                ? `${formatSize(update.received)} / ${formatSize(update.total)}`
+                : '正在准备下载...'
+          }}
+          <span v-if="update.installing && update.progress === 100">
+            ，安装包下载完成，正在校验版本并准备安装程序
+          </span>
+        </div>
+        <el-alert
+          v-if="update.error"
+          type="error"
+          :closable="false"
+          show-icon
+          :title="update.error"
+        />
       </div>
-      <el-alert
-        v-if="update.rollback"
-        type="error"
-        :closable="false"
-        show-icon
-        :title="`将回滚到 v${latest.version}，完成回滚后才能继续使用。`"
-      />
-      <el-alert
-        v-else-if="update.forceUpgrade"
-        type="error"
-        :closable="false"
-        show-icon
-        :title="`最低支持版本为 v${latest.minimumVersion}，完成升级后才能继续使用。`"
-      />
-      <el-alert
-        v-else
-        type="info"
-        :closable="false"
-        show-icon
-        :title="`最低支持版本为 v${latest.minimumVersion}，当前版本仍在支持范围内。`"
-      />
-      <div class="release">
-        <div class="release-title">发布日志</div>
-        <pre class="release-notes">{{ latest.releaseNotes || '本次更新暂无发布日志' }}</pre>
-      </div>
-      <el-progress
-        v-if="update.installing || update.paused"
-        :percentage="update.progress"
-        :indeterminate="update.installing && !update.total"
-        :status="update.installing && update.progress === 100 ? 'success' : undefined"
-      />
-      <div v-if="update.installing || update.paused" class="progress-text">
-        {{
-          update.paused
-            ? `下载已暂停，已下载 ${formatSize(update.received)} / ${formatSize(update.total)}`
-            : update.total > 0
-              ? `${formatSize(update.received)} / ${formatSize(update.total)}`
-              : '正在准备下载...'
-        }}
-        <span v-if="update.installing && update.progress === 100">
-          ，SHA-512 校验通过，正在启动安装程序
-        </span>
-      </div>
-      <el-alert
-        v-if="update.error"
-        type="error"
-        :closable="false"
-        show-icon
-        :title="update.error"
-      />
-    </div>
+    </el-scrollbar>
 
     <template #footer>
-      <template v-if="update.installing && !update.paused">
+      <template v-if="update.preparingUpdate">
+        <el-button type="primary" loading disabled>正在准备下载</el-button>
+      </template>
+      <template v-else-if="update.installingProgram">
+        <el-button type="primary" loading disabled>正在安装</el-button>
+      </template>
+      <template v-else-if="update.installing && !update.paused">
         <el-button @click="update.pause()">暂停下载</el-button>
         <el-button type="danger" plain @click="update.cancel()">终止下载</el-button>
       </template>
@@ -119,10 +129,27 @@ function quitApplication(): void {
         <el-button type="primary" @click="update.install()">继续下载</el-button>
       </template>
       <template v-else>
-        <el-button v-if="!update.forceUpgrade" @click="update.dismiss()">稍后提醒</el-button>
+        <template v-if="!update.forceUpgrade">
+          <el-button @click="update.dismiss()">稍后提醒</el-button>
+          <el-button
+            v-if="update.canIgnore"
+            :loading="update.ignoring"
+            @click="update.ignoreCurrentVersion()"
+          >
+            忽略此版本
+          </el-button>
+        </template>
         <el-button v-else @click="quitApplication">退出应用</el-button>
         <el-button type="primary" @click="update.install()">
-          {{ update.cancelled ? '重新下载' : update.error ? '重试下载' : '下载并安装' }}
+          {{
+            update.installFailed
+              ? '重新安装'
+              : update.cancelled
+                ? '重新下载'
+                : update.error
+                  ? '重试下载'
+                  : '下载并安装'
+          }}
         </el-button>
       </template>
     </template>
@@ -142,11 +169,6 @@ function quitApplication(): void {
 :global(.update-dialog) {
   max-height: calc(100vh - 48px);
   margin: 24px auto;
-}
-
-:global(.update-dialog .el-dialog__body) {
-  max-height: calc(100vh - 190px);
-  overflow-y: auto;
 }
 
 .update-body {
@@ -181,9 +203,7 @@ function quitApplication(): void {
 }
 
 .release-notes {
-  max-height: 220px;
   margin: 0;
-  overflow: auto;
   font: inherit;
   line-height: 1.7;
   white-space: pre-wrap;

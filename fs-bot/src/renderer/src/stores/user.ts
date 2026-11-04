@@ -4,6 +4,21 @@ import ApiUtil from '@renderer/utils/ApiUtil'
 import UserApi from '@renderer/api/UserApi'
 import Db from '@renderer/core/Db'
 
+interface UserInfo {
+  id: number
+  serial: string
+  name: string
+  email: string
+  token: string
+  avatar?: string
+  description?: string
+  phone?: string
+  createdTime?: string
+  loginTime?: string
+}
+
+type UserPayload = Partial<UserInfo> & { info?: Partial<UserInfo> }
+
 export const useUserStore = defineStore('user', () => {
   const STORAGE_KEY = 'fs_auth_token'
   /** 还原登录态的等待上限：服务端不可达时也把界面放出来，别一直挡在门外 */
@@ -18,12 +33,12 @@ export const useUserStore = defineStore('user', () => {
   }
 
   const ready = ref(false)
-  const info: any = ref(Object.assign({}, USER_DEFAULT_STATE))
+  const info = ref<UserInfo>(Object.assign({}, USER_DEFAULT_STATE))
 
   const reload = async (resize = false): Promise<void> => {
     Object.assign(info.value, { token: localStorage.getItem(STORAGE_KEY) || '' })
     if (info.value.token) {
-      let result: any
+      let result: unknown
       try {
         result = await UserApi.info()
       } catch {
@@ -40,11 +55,11 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  const reset = async (data: any = {}, isReady = true): Promise<void> => {
+  const reset = async (data: UserPayload | null = {}, isReady = true): Promise<void> => {
     // ready 的口径是「登录态与用户库都可用」：还原 / 初始化期间先降下来，
     // 依赖本地库的逻辑（App 的登录准备、login 页的跳转）只在它为 true 时动手
     ready.value = false
-    Object.assign(info.value, USER_DEFAULT_STATE, data?.info ?? data)
+    Object.assign(info.value, USER_DEFAULT_STATE, data?.info ?? data ?? {})
     if (info.value.token) {
       localStorage.setItem(STORAGE_KEY, info.value.token)
       if (info.value.id > 0 && info.value.serial) {
@@ -65,7 +80,7 @@ export const useUserStore = defineStore('user', () => {
     ready.value = isReady
   }
 
-  const restoreSession = async (): Promise<void> => {
+  const restoreSession = async (resize = true): Promise<void> => {
     Object.assign(info.value, { token: localStorage.getItem(STORAGE_KEY) || '' })
     if (!info.value.token) {
       await reset()
@@ -73,7 +88,7 @@ export const useUserStore = defineStore('user', () => {
     }
     let timedOut = false
     await Promise.race([
-      reload(true),
+      reload(resize),
       new Promise<void>((resolve) => {
         setTimeout(() => {
           timedOut = true
@@ -86,8 +101,8 @@ export const useUserStore = defineStore('user', () => {
 
   /** 路由多次导航会重复调用：同一份登录态只还原一次 */
   let initializing: Promise<void> | null = null
-  const initialize = (): Promise<void> => {
-    if (!initializing) initializing = restoreSession()
+  const initialize = (resize = true): Promise<void> => {
+    if (!initializing) initializing = restoreSession(resize)
     return initializing
   }
 

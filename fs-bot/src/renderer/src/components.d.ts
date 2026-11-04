@@ -11,6 +11,8 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AgentActivity: typeof import('./components/Chat/AgentActivity.vue')['default']
+    AgentSessionDetail: typeof import('./components/Chat/AgentSessionDetail.vue')['default']
     AppLoading: typeof import('./components/Layout/AppLoading.vue')['default']
     ApprovalBanner: typeof import('./components/Chat/ApprovalBanner.vue')['default']
     BrandLogo: typeof import('./components/Brand/BrandLogo.vue')['default']

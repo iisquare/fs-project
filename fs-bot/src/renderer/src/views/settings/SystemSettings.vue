@@ -128,8 +128,8 @@ async function checkUpdate(): Promise<void> {
       <el-divider />
       <div class="setting-item">
         <div class="setting-label">
-          <span class="setting-title">自动升级</span>
-          <span class="setting-desc">有新版本时自动下载并安装</span>
+          <span class="setting-title">检测更新</span>
+          <span class="setting-desc">启动及定时检查新版本并主动提示，下载前仍需确认</span>
         </div>
         <el-switch
           :model-value="settings.autoUpgrade"

@@ -183,6 +183,9 @@ function fallbackImageOnError(event: Event): void {
   <div ref="rootRef" class="chat-markdown" @click="onClick" @error.capture="fallbackImageOnError">
     <template v-for="(part, index) in parts" :key="index">
       <ChatCode v-if="'code' === part.type" :code="part.code" :lang="part.lang" />
+      <el-scrollbar v-else-if="'table' === part.type" class="chat-markdown-scroll">
+        <div class="chat-markdown-text" v-html="part.html" />
+      </el-scrollbar>
       <div v-else class="chat-markdown-text" v-html="part.html" />
     </template>
     <el-image-viewer
@@ -278,29 +281,15 @@ function fallbackImageOnError(event: Event): void {
       font-size: 12px;
     }
 
+    /* 列表 / 引用内部偶尔会有代码块（顶层代码块已经走 ChatCode）：
+       这里让内容自然换行并交给消息区统一纵向滚动，不再产生第二个原生滚动容器 */
     :deep(pre) {
       margin: 0 0 8px;
       padding: 8px 10px;
       border-radius: 8px;
       background: var(--el-fill-color-light);
-      overflow-x: auto;
-      overflow-y: auto;
-      max-height: 420px;
-
-      /* 代码块是原生滚动容器（内容由 v-html 插入，放不了组件），滚动条按全局口径收细 */
-      &::-webkit-scrollbar {
-        width: 5px;
-        height: 5px;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        border-radius: 2px;
-        background: var(--el-border-color);
-      }
-
-      &::-webkit-scrollbar-thumb:hover {
-        background: var(--el-border-color-darker);
-      }
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
     }
 
     :deep(pre code) {
@@ -308,7 +297,7 @@ function fallbackImageOnError(event: Event): void {
       background: transparent;
       font-size: 12px;
       line-height: 1.6;
-      white-space: pre;
+      white-space: pre-wrap;
     }
   }
 
@@ -319,13 +308,12 @@ function fallbackImageOnError(event: Event): void {
     color: var(--el-text-color-secondary);
   }
 
-  /* 表格：窄窗口里整体横向滚动，不把气泡撑破 */
+  /* 表格：顶层表格由 el-scrollbar 横向承载；这里收住表格自身与窄列内容 */
   :deep(table) {
-    display: block;
-    max-width: 100%;
+    width: 100%;
     margin: 0 0 8px;
     border-collapse: collapse;
-    overflow-x: auto;
+    table-layout: fixed;
   }
 
   :deep(th),
@@ -334,6 +322,7 @@ function fallbackImageOnError(event: Event): void {
     border: solid 1px var(--el-border-color-lighter);
     font-size: 12px;
     text-align: left;
+    word-break: break-word;
   }
 
   :deep(th) {
@@ -362,6 +351,23 @@ function fallbackImageOnError(event: Event): void {
     height: auto;
     border-radius: 6px;
     cursor: zoom-in;
+  }
+}
+
+/* 表格单独滚动：组件高度跟随内容，宽度不足时交给 Element Plus 横向滚动条 */
+.chat-markdown-scroll {
+  height: auto;
+  margin: 0 0 8px;
+
+  :deep(.el-scrollbar__view) {
+    min-width: 100%;
+  }
+
+  :deep(table) {
+    width: max-content;
+    min-width: 100%;
+    margin: 0;
+    table-layout: auto;
   }
 }
 </style>

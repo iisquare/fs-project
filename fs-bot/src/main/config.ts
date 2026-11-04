@@ -12,6 +12,7 @@ import { parse, stringify } from 'smol-toml'
  *
  * [settings]
  * autoUpgrade = true
+ * ignoredUpdateVersion = ""
  * workspacePolicy = "ask"
  */
 
@@ -28,11 +29,14 @@ const FILE_HEADER = `# fs-bot 系统配置（应用自动维护，手工修改�
  * 默认值类型就是写入文件时的类型（false 对应 TOML 布尔值）
  */
 const SETTINGS_SCHEMA: Record<string, SettingValue> = {
+  /** 检测更新：后台检查到普通新版本时是否主动提示；沿用历史键名 autoUpgrade */
   autoUpgrade: true,
   /** 本机安装标识：灰度发布分桶与更新统计，不随服务端账号变化 */
   clientId: '',
   /** 更新渠道：服务端只返回同渠道的已启用版本 */
   updateChannel: 'stable',
+  /** 用户选择忽略的更新版本；仅抑制后台提示，强制升级与版本回滚不受影响 */
+  ignoredUpdateVersion: '',
   /** 工作区外文件的访问策略，见 WorkspaceManager */
   workspacePolicy: 'ask'
 }

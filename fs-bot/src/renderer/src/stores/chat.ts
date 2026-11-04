@@ -10,6 +10,11 @@ import {
 } from '@renderer/core/Toolbox'
 import { clearTools } from '@renderer/core/ToolCache'
 import { estimateJson, estimateTokens, MESSAGE_OVERHEAD } from '@renderer/core/Tokens'
+import {
+  beginAgentParentRun,
+  cancelAgentRuns,
+  resetAgentRuntime
+} from '@renderer/core/AgentRuntime'
 import { useProjectStore } from './project'
 import type { Project } from '@renderer/db/ProjectDb'
 
@@ -110,6 +115,8 @@ export interface ChatSession {
   error: string
   /** 提示（非错误）：这一轮被自动接续上限收尾等情况，界面上按警告色呈现 */
   notice: string
+  /** 当前主轮次的取消令牌：子 Agent 委派只认这一轮，旧轮次的迟到调用无法复活 */
+  agentRunToken: string
   /** 运行对象不参与响应式代理：连接这类宿主对象被代理后调用会报非法调用 */
   chat: ModelChat | null
   /** 本会话生效的工具定义：用量估算要把它算进去；完整工具集在所有会话间共用 */
@@ -320,11 +327,43 @@ function continuePrompt(round: number): string {
 const MAX_RESULT = 64 * 1024
 /** @ 引用文件进入上下文的长度上限 */
 const MAX_MENTION = 64 * 1024
+/** 流式正文的检查点间隔：工具结果在边界强制落盘，正文最多损失一个很短的时间片 */
+const STREAM_CHECKPOINT_MS = 750
+/** 最终收尾写库失败后的自动重试间隔；期间会话保持 running，避免新任务覆盖未保存的结果 */
+const FINAL_CHECKPOINT_RETRY_MS = 2_000
+/** 正常退出时等待在途收尾的上限；主进程给渲染进程的总退出窗口是 3 秒 */
+const EXIT_RUN_GRACE_MS = 1_500
 
 interface ChatOutcome {
   aborted: boolean
   error: string
   toolCalls: ChatToolCall[]
+}
+
+interface ChatReference {
+  rounds?: ChatRound[]
+  mentions?: ChatMention[]
+}
+
+interface StreamToolFragment {
+  index?: number
+  id?: string
+  function?: {
+    name?: string
+    arguments?: string
+  }
+}
+
+interface ReplyCheckpoint {
+  session: ChatSession
+  reply: ChatMessage
+  question: ChatMessage | null
+  pending: boolean
+  saving: Promise<void> | null
+  timer: number | null
+  retryTimer: number | null
+  lastSavedAt: number
+  finalizing: boolean
 }
 
 function truncate(text: string, limit: number): string {
@@ -333,19 +372,87 @@ function truncate(text: string, limit: number): string {
 }
 
 function messageOf(error: unknown): string {
-  const text = (error as any)?.message
+  const text = (error as { message?: unknown })?.message
   return String(text || error || '操作失败')
 }
 
+function settlePendingCalls(
+  reply: ChatMessage,
+  status: 'failed' | 'stopped',
+  reason: string
+): void {
+  for (const round of reply.rounds) {
+    for (const call of round.calls) {
+      if ('running' !== call.status) continue
+      call.status = status
+      if (!call.result) call.result = reason
+    }
+  }
+}
+
 /** 参考的落地形状：助手消息存调用链，用户消息存 @ 引用 */
-function parseReference(text: string): any {
+function parseReference(text: string): ChatReference {
   if (!text) return {}
   try {
-    const value = JSON.parse(text)
-    return value && 'object' === typeof value ? value : {}
+    const value: unknown = JSON.parse(text)
+    return value && 'object' === typeof value ? (value as ChatReference) : {}
   } catch {
     return {}
   }
+}
+
+/** 把内存消息转成库行；同一 id 的后续检查点会覆盖这一行 */
+export function persistedMessage(message: ChatMessage): {
+  id: string
+  parentId: string
+  role: string
+  content: string
+  reasoning: string
+  reference: string
+  status: string
+  createdAt: string
+} {
+  const reference = message.rounds.length
+    ? { rounds: message.rounds }
+    : message.mentions.length
+      ? { mentions: message.mentions }
+      : null
+  return {
+    id: message.id,
+    parentId: message.parentId,
+    role: message.role,
+    content: message.content,
+    reasoning: message.reasoning,
+    reference: reference ? JSON.stringify(reference) : '',
+    status: message.status,
+    createdAt: message.createdAt
+  }
+}
+
+/**
+ * 上次进程在生成中途退出时，库里会留下 running 检查点。
+ * 恢复成「已中断」而不是继续显示成永远正在输出，同时保留已经落下的正文和工具结果。
+ */
+export function recoverInterrupted(messages: ChatMessage[]): boolean {
+  let changed = false
+  for (const message of messages) {
+    if ('assistant' !== message.role) continue
+    let messageChanged = false
+    if ('running' === message.status) {
+      message.status = 'stopped'
+      messageChanged = true
+    }
+    for (const round of message.rounds ?? []) {
+      for (const call of round.calls ?? []) {
+        if ('running' !== call.status) continue
+        call.status = 'stopped'
+        if (!call.result) call.result = '客户端上次退出时该调用尚未完成'
+        messageChanged = true
+      }
+    }
+    changed ||= messageChanged
+  }
+  return changed
 }
 
 export const useChatStore = defineStore('chat', () => {
@@ -356,6 +463,12 @@ export const useChatStore = defineStore('chat', () => {
    * 所以 persist 的每个写入点都会再看一眼这里，作废后把刚写进去的记录再清掉。
    */
   const dropped = new Map<string, DropMode>()
+  /** 仍在生成或尚未完成最终落库的回复；退出、清空与删除都要先处理这里的检查点 */
+  const checkpoints = new Map<string, ReplyCheckpoint>()
+  /** 发送入口到首批检查点写完之间的任务；退出登录也要等它们，避免初始化完成后又在旧库里启动模型 */
+  const initialTasks = new Map<string, Promise<void>>()
+  /** 所有已启动的生成任务：退出登录时等它们停止，避免旧账号的收尾写进下一个账号的库 */
+  const runTasks = new Map<string, Promise<void>>()
 
   function ensure(conversationId: string, profile: Partial<ChatProfile> = {}): ChatSession {
     if (!sessions.value[conversationId]) {
@@ -375,6 +488,7 @@ export const useChatStore = defineStore('chat', () => {
         loading: false,
         error: '',
         notice: '',
+        agentRunToken: '',
         chat: null,
         tools: null,
         workspacePrompt: '',
@@ -433,7 +547,8 @@ export const useChatStore = defineStore('chat', () => {
     const session = ensure(conversationId, profile)
     if (!session.loaded) {
       const cached = await ConversationDb.messages(conversationId)
-      if (!session.messages.length) {
+      const restored = !session.messages.length
+      if (restored) {
         session.messages = cached.map((item) => {
           const reference = parseReference(item.reference)
           return reactive<ChatMessage>({
@@ -449,9 +564,12 @@ export const useChatStore = defineStore('chat', () => {
           })
         })
       }
+      // 只在从库里装载时推断“上次进程中断”；后台任务可能已有内存消息，不能把正在跑的轮次误标成中断。
+      const recovered = restored ? recoverInterrupted(session.messages) : false
       // 分支尾：库里记着就用它；v8 之前的历史会话没有记录，
       // 按入库顺序把消息串成一条链（线性历史就是一条链），并把叶子补写进库
       const stored = leafId && session.messages.some((item) => item.id === leafId) ? leafId : ''
+      let rebuiltLinear = false
       if (stored) {
         session.leafId = stored
       } else if (session.messages.length) {
@@ -459,13 +577,202 @@ export const useChatStore = defineStore('chat', () => {
           item.parentId = index > 0 ? session.messages[index - 1].id : ''
         })
         session.leafId = session.messages[session.messages.length - 1].id
-        void ConversationDb.setLeaf(conversationId, session.leafId)
+        rebuiltLinear = true
+      }
+      if ((recovered || rebuiltLinear) && session.messages.length) {
+        await ConversationDb.saveMessages(
+          conversationId,
+          session.messages.map(persistedMessage),
+          session.leafId
+        ).catch((error) => {
+          session.error = `历史恢复状态暂未保存：${messageOf(error)}`
+        })
       }
       session.loaded = true
     }
     // 工具定义要参与用量估算（不少项目挂了几只工具），打开会话时先取一次
     void warmup(session)
     return session
+  }
+
+  /**
+   * 写一次检查点。消息与分支尾在一个主进程事务里提交：
+   * 工具刚执行完、模型还在下一轮思考时退出，已经拿到的输出和结果仍能在重启后恢复。
+   */
+  async function writeCheckpoint(entry: ReplyCheckpoint, updatedAt?: string): Promise<void> {
+    if (await dropIfNeeded(entry.session, entry.reply)) return
+    const rows = entry.question
+      ? [persistedMessage(entry.question), persistedMessage(entry.reply)]
+      : [persistedMessage(entry.reply)]
+    await ConversationDb.saveMessages(
+      entry.session.conversationId,
+      rows,
+      entry.session.leafId,
+      updatedAt
+    )
+    entry.lastSavedAt = Date.now()
+  }
+
+  /** 串行刷新；保存期间又有增量时，保存完继续追到最新状态 */
+  async function flushCheckpoint(entry: ReplyCheckpoint, updatedAt?: string): Promise<void> {
+    if (entry.saving) {
+      entry.pending = true
+      await entry.saving
+      if (entry.pending) await flushCheckpoint(entry, updatedAt)
+      return
+    }
+    if (!entry.pending) return
+
+    entry.pending = false
+    entry.saving = writeCheckpoint(entry, updatedAt)
+    try {
+      await entry.saving
+    } catch (error) {
+      entry.pending = true
+      throw error
+    } finally {
+      entry.saving = null
+    }
+    // 保存期间继续流式输出时，再排一个短定时器追到最新内容。
+    if (entry.pending && !entry.finalizing) scheduleCheckpoint(entry)
+  }
+
+  /** 流式内容按短时间片保存；定时器失败时保留 dirty 标记，下一个边界会重试 */
+  function scheduleCheckpoint(entry: ReplyCheckpoint): void {
+    entry.pending = true
+    if (entry.timer !== null || entry.saving) return
+    const delay = Math.max(0, STREAM_CHECKPOINT_MS - (Date.now() - entry.lastSavedAt))
+    entry.timer = window.setTimeout(() => {
+      entry.timer = null
+      void flushCheckpoint(entry).catch((error) => {
+        console.warn('Chat checkpoint delayed:', error)
+      })
+    }, delay)
+  }
+
+  function checkpointNow(replyId: string): Promise<void> {
+    const entry = checkpoints.get(replyId)
+    if (!entry) return Promise.resolve()
+    entry.pending = true
+    if (entry.timer !== null) {
+      window.clearTimeout(entry.timer)
+      entry.timer = null
+    }
+    return flushCheckpoint(entry)
+  }
+
+  function dropCheckpoint(entry: ReplyCheckpoint): void {
+    if (entry.timer !== null) window.clearTimeout(entry.timer)
+    if (entry.retryTimer !== null) window.clearTimeout(entry.retryTimer)
+    checkpoints.delete(entry.reply.id)
+    dropped.delete(entry.reply.id)
+    if (entry.session.activeReplyId === entry.reply.id) entry.session.activeReplyId = ''
+  }
+
+  /** 最终检查点：消息、分支尾和会话最后活动时间一次提交，成功后这一轮才算真正收尾 */
+  async function completeCheckpoint(entry: ReplyCheckpoint): Promise<void> {
+    if (entry.finalizing || !checkpoints.has(entry.reply.id)) return
+    entry.finalizing = true
+    entry.pending = true
+    if (entry.timer !== null) window.clearTimeout(entry.timer)
+    if (entry.retryTimer !== null) window.clearTimeout(entry.retryTimer)
+    entry.timer = null
+    entry.retryTimer = null
+    try {
+      if (await dropIfNeeded(entry.session, entry.reply)) {
+        entry.session.running = false
+        notifyRunSettled(entry.session.conversationId)
+        dropCheckpoint(entry)
+        return
+      }
+      await flushCheckpoint(entry)
+      if (await dropIfNeeded(entry.session, entry.reply)) {
+        entry.session.running = false
+        notifyRunSettled(entry.session.conversationId)
+        dropCheckpoint(entry)
+        return
+      }
+      const at = new Date().toISOString()
+      const rows = entry.question
+        ? [persistedMessage(entry.question), persistedMessage(entry.reply)]
+        : [persistedMessage(entry.reply)]
+      await ConversationDb.saveMessages(
+        entry.session.conversationId,
+        rows,
+        entry.session.leafId,
+        at
+      )
+      if (await dropIfNeeded(entry.session, entry.reply)) {
+        entry.session.running = false
+        notifyRunSettled(entry.session.conversationId)
+        dropCheckpoint(entry)
+        return
+      }
+      entry.lastSavedAt = Date.now()
+      if (entry.session.error.startsWith('执行结果尚未保存')) entry.session.error = ''
+      entry.session.running = false
+      notifyMessageLanded(entry.session.conversationId, at)
+      notifyRunSettled(entry.session.conversationId)
+      dropCheckpoint(entry)
+    } catch (error) {
+      const reason = messageOf(error)
+      entry.session.error = `执行结果尚未保存，正在自动重试：${reason}`
+      console.error('Failed to save chat checkpoint:', error)
+      entry.finalizing = false
+      entry.retryTimer = window.setTimeout(() => {
+        entry.retryTimer = null
+        void completeCheckpoint(entry)
+      }, FINAL_CHECKPOINT_RETRY_MS)
+      return
+    } finally {
+      entry.finalizing = false
+    }
+  }
+
+  /**
+   * 退出/切换账号前的最后一道屏障：先停流和本地工具，再把所有未收尾结果强制写成「已中断」。
+   * 正常收尾仍由 completeCheckpoint 负责；这里只处理进程即将消失时的快照。
+   */
+  async function flushBeforeExit(): Promise<void> {
+    for (const session of Object.values(sessions.value)) halt(session)
+
+    const waitFor = async (tasks: Promise<void>[]): Promise<void> => {
+      if (!tasks.length) return
+      let timer: number | null = null
+      await Promise.race([
+        Promise.allSettled(tasks),
+        new Promise<void>((resolve) => {
+          timer = window.setTimeout(resolve, EXIT_RUN_GRACE_MS / 2)
+        })
+      ])
+      if (timer !== null) window.clearTimeout(timer)
+    }
+    await waitFor([...initialTasks.values()])
+    await waitFor([...runTasks.values()])
+
+    await Promise.all(
+      [...checkpoints.values()].map(async (entry) => {
+        if (entry.timer !== null) window.clearTimeout(entry.timer)
+        if (entry.retryTimer !== null) window.clearTimeout(entry.retryTimer)
+        entry.timer = null
+        entry.retryTimer = null
+        if ('running' === entry.reply.status) entry.reply.status = 'stopped'
+        for (const round of entry.reply.rounds) {
+          for (const call of round.calls) {
+            if ('running' !== call.status) continue
+            call.status = 'stopped'
+            if (!call.result) call.result = '客户端退出时该调用尚未完成'
+          }
+        }
+        entry.pending = true
+        try {
+          await flushCheckpoint(entry)
+        } catch (error) {
+          entry.session.error = `退出前保存执行结果失败：${messageOf(error)}`
+          console.error('Failed to flush chat checkpoint before exit:', error)
+        }
+      })
+    )
   }
 
   /**
@@ -523,6 +830,7 @@ export const useChatStore = defineStore('chat', () => {
       rounds: [],
       mentions: []
     })
+    const previousLeaf = session.leafId
     if (question) session.messages.push(question)
     session.messages.push(reply)
     // 本轮回复即新的分支尾：重新生成时上一次的输出随之让位（消息本身仍保留，可切回）
@@ -531,35 +839,59 @@ export const useChatStore = defineStore('chat', () => {
     session.activeReplyId = reply.id
     session.error = ''
     session.notice = ''
+    session.agentRunToken = beginAgentParentRun(session.conversationId)
     // 新一轮从「没被停止」起步：上一轮按过停止的标记不能带进来，否则这一轮发不出去就被收尾
     session.stopping = false
     session.running = true
-    // 会话行先于消息落库：新会话在这里进历史
-    if (onStart) await onStart(now)
-    void ConversationDb.setLeaf(params.conversationId, reply.id)
-    // 这一轮的提问就是会话里最新的一条：库里与列表上的最后消息时间都推到当下
-    void ConversationDb.touch(params.conversationId, now)
-    notifyMessageLanded(params.conversationId, now)
-    if (question) {
-      // 先等提问落库再起调用循环：删除 / 清空发生在这一轮开头时，
-      // 收尾的清理一定排在这条提问之后，不会留下一条迟到的用户消息。
-      try {
-        await ConversationDb.appendMessage(params.conversationId, {
-          id: question.id,
-          parentId: question.parentId,
-          role: 'user',
-          content: params.query,
-          reference: question.mentions.length
-            ? JSON.stringify({ mentions: question.mentions })
-            : '',
-          status: 'done',
-          createdAt: now
-        })
-      } catch {
-        // 本地库写入失败不挡这一轮：回复照常生成，收尾仍会写回它能写的那部分
-      }
+    const entry: ReplyCheckpoint = {
+      session,
+      reply,
+      question,
+      pending: true,
+      saving: null,
+      timer: null,
+      retryTimer: null,
+      lastSavedAt: 0,
+      finalizing: false
     }
-    void run(session, reply)
+    checkpoints.set(reply.id, entry)
+    let releaseInitial!: () => void
+    const initialTask = new Promise<void>((resolve) => {
+      releaseInitial = resolve
+    })
+    initialTasks.set(reply.id, initialTask)
+    try {
+      // 会话行先于消息落库：新会话在这里进历史
+      if (onStart) await onStart(now)
+      // 问题和空的运行中回复一起原子落盘；此后模型和工具产生的每个结果都可覆盖这条检查点。
+      await flushCheckpoint(entry, now)
+      notifyMessageLanded(params.conversationId, now)
+    } catch (error) {
+      halt(session)
+      dropCheckpoint(entry)
+      session.messages = session.messages.filter(
+        (message) => message.id !== reply.id && message.id !== question?.id
+      )
+      session.leafId = previousLeaf
+      session.activeReplyId = ''
+      session.running = false
+      session.error = `消息未发送：执行结果无法写入本地库（${messageOf(error)}）`
+      releaseInitial()
+      initialTasks.delete(reply.id)
+      return false
+    }
+    const task = run(session, reply, entry)
+    runTasks.set(reply.id, task)
+    releaseInitial()
+    initialTasks.delete(reply.id)
+    void task
+      .catch((error) => {
+        reply.status = 'failed'
+        session.error = messageOf(error)
+      })
+      .finally(() => {
+        if (runTasks.get(reply.id) === task) runTasks.delete(reply.id)
+      })
     return true
   }
 
@@ -571,7 +903,11 @@ export const useChatStore = defineStore('chat', () => {
    * 按已完成的进度作答，而不是判失败。
    * 每轮的思考过程、正文与工具调用都实时写在会话对象上，界面据此即时展示。
    */
-  async function run(session: ChatSession, reply: ChatMessage): Promise<void> {
+  async function run(
+    session: ChatSession,
+    reply: ChatMessage,
+    checkpoint: ReplyCheckpoint
+  ): Promise<void> {
     try {
       const project = useProjectStore().find(session.projectId)
       const tools = await buildTools(project ?? null)
@@ -625,16 +961,21 @@ export const useChatStore = defineStore('chat', () => {
           hintIndex = chain.length - 1
         }
         const outcome = await chatOnce(session, reply, round, chain, tools, closing)
+        // 模型这一轮已经收尾（包括正文与 tool_calls）：先把检查点推平，再执行工具。
+        await checkpointNow(reply.id)
         if (outcome.aborted) {
+          settlePendingCalls(reply, 'stopped', '已停止，调用未执行')
           reply.status = 'stopped'
           break
         }
         // 模型流刚收尾那一刻按下的停止：这一轮不再往下推
         if (session.stopping) {
+          settlePendingCalls(reply, 'stopped', '已停止，调用未执行')
           reply.status = 'stopped'
           break
         }
         if (outcome.error) {
+          settlePendingCalls(reply, 'failed', `模型调用中断，未执行：${outcome.error}`)
           session.error = outcome.error
           reply.status = 'failed'
           if (!reply.content) reply.content = outcome.error
@@ -680,21 +1021,39 @@ export const useChatStore = defineStore('chat', () => {
             function: { name: call.name, arguments: call.args }
           }))
         })
-        for (const call of outcome.toolCalls) {
-          // 停止落在同一轮的多次调用之间：这一轮剩下的调用不再执行
-          if (session.stopping) {
-            if ('running' === call.status) {
-              call.status = 'stopped'
-              call.result = '已停止，未执行'
+        // 多个专业子 Agent 是彼此独立的委派，可以并行；只要混入本地工具就保持串行，
+        // 避免文件、命令或浏览器资源在缺少资源锁时并发。
+        const parallelAgents =
+          outcome.toolCalls.length > 1 && outcome.toolCalls.every((call) => 'agent' === call.scope)
+        if (parallelAgents) {
+          await Promise.all(
+            outcome.toolCalls.map(async (call) => {
+              await execute(call, tools, session)
+              // 并行委派各自完成就立即落盘，不能等最慢的一只返回后才保存其他结果。
+              await checkpointNow(reply.id)
+            })
+          )
+        } else {
+          for (const call of outcome.toolCalls) {
+            // 停止落在同一轮的多次调用之间：这一轮剩下的调用不再执行
+            if (session.stopping) {
+              if ('running' === call.status) {
+                call.status = 'stopped'
+                call.result = '已停止，未执行'
+              }
+              continue
             }
-            continue
+            await execute(call, tools, session)
+            // 同一轮的多次串行调用逐次检查点，后续调用失败或进程退出不会带走前面的结果。
+            await checkpointNow(reply.id)
           }
-          await execute(call, tools, session)
+        }
+        for (const call of outcome.toolCalls) {
           chain.push({
             role: 'tool',
             toolCallId: call.id,
             name: call.name,
-            content: truncate(call.result, MAX_RESULT)
+            content: truncate(call.result || '调用未完成', MAX_RESULT)
           })
         }
         // 工具跑完再看一眼：本地命令与等审批的那一步都可能刚被停止收掉
@@ -704,13 +1063,14 @@ export const useChatStore = defineStore('chat', () => {
         }
       }
     } catch (error) {
+      settlePendingCalls(reply, 'failed', `本轮异常中断，未执行：${messageOf(error)}`)
       reply.status = 'failed'
       session.error = messageOf(error)
       if (!reply.content) reply.content = session.error
     } finally {
       session.chat = null
-      // 落库也是这一轮的一部分：收尾期间被删除 / 清空，persist 会看到作废标记并清掉写进去的记录
-      void finish(session, reply)
+      // 收尾与最终检查点都属于这一轮；完成前 running 保持为真，队列不会抢跑。
+      await completeCheckpoint(checkpoint)
     }
   }
 
@@ -746,6 +1106,8 @@ export const useChatStore = defineStore('chat', () => {
           }
           if (delta.reasoning) round.reasoning += delta.reasoning
           if (delta.toolCalls?.length) mergeCalls(round, delta.toolCalls, tools)
+          const checkpoint = checkpoints.get(reply.id)
+          if (checkpoint) scheduleCheckpoint(checkpoint)
         },
         onError: (message) => {
           failure = message
@@ -764,7 +1126,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /** 工具调用分片合并：按 index 拼接 id、函数名与参数增量（流式期间就能看到调的是什么） */
-  function mergeCalls(round: ChatRound, fragments: any[], tools: ToolSet): void {
+  function mergeCalls(round: ChatRound, fragments: StreamToolFragment[], tools: ToolSet): void {
     for (const fragment of fragments) {
       const index = Math.max(0, Number(fragment?.index ?? 0) || 0)
       if (!round.calls[index]) {
@@ -811,7 +1173,8 @@ export const useChatStore = defineStore('chat', () => {
         call.name,
         parseArgs(call.args),
         session.projectId,
-        session.conversationId
+        session.conversationId,
+        session.agentRunToken
       )
       call.status = 'success'
       if (!call.result) call.result = '（无返回内容）'
@@ -827,13 +1190,17 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /** 模型给出的参数：空串按空对象处理，解析失败直接作为调用失败回到模型 */
-  function parseArgs(text: string): any {
+  function parseArgs(text: string): Record<string, unknown> {
     const value = String(text ?? '').trim()
     if (!value) return {}
     try {
-      return JSON.parse(value)
+      const parsed: unknown = JSON.parse(value)
+      if (!parsed || 'object' !== typeof parsed || Array.isArray(parsed)) {
+        throw new Error('参数必须是 JSON 对象')
+      }
+      return parsed as Record<string, unknown>
     } catch {
-      throw new Error(`参数不是合法的 JSON：${truncate(value, 200)}`)
+      throw new Error(`参数不是合法的 JSON 对象：${truncate(value, 200)}`)
     }
   }
 
@@ -965,47 +1332,6 @@ export const useChatStore = defineStore('chat', () => {
     return true
   }
 
-  /**
-   * 一轮的收尾：落库前、以及每个写库步骤之后都再看一眼作废标记。
-   * 删除与落库是两条异步链，单看「开始时还在不在跑」挡不住已经开始的 appendMessage；
-   * 这里在写完之后补一次清理，保证删除 / 清空是最终状态。
-   * running 要等收尾真正结束才放下：收尾期间用户仍可按删除，标记才落得到这一轮上。
-   */
-  async function finish(session: ChatSession, reply: ChatMessage): Promise<void> {
-    try {
-      if (await dropIfNeeded(session, reply)) return
-      await persist(session, reply)
-    } finally {
-      dropped.delete(reply.id)
-      if (session.activeReplyId === reply.id) session.activeReplyId = ''
-      session.running = false
-      notifyRunSettled(session.conversationId)
-    }
-  }
-
-  /** 落库：正文与最终思考过程各归各的列，工具调用链与 @ 引用进 reference */
-  async function persist(session: ChatSession, reply: ChatMessage): Promise<void> {
-    if (await dropIfNeeded(session, reply)) return
-    await ConversationDb.appendMessage(session.conversationId, {
-      id: reply.id,
-      parentId: reply.parentId,
-      role: reply.role,
-      content: reply.content,
-      reasoning: reply.reasoning,
-      reference: reply.rounds.length ? JSON.stringify({ rounds: reply.rounds }) : '',
-      status: reply.status,
-      createdAt: reply.createdAt
-    })
-    if (await dropIfNeeded(session, reply)) return
-    await ConversationDb.setLeaf(session.conversationId, session.leafId)
-    if (await dropIfNeeded(session, reply)) return
-    // 这条回复是会话里最新的一条：最后消息的时间推到它落库的这一刻（列表与库同一个值）
-    const at = new Date().toISOString()
-    await ConversationDb.touch(session.conversationId, at)
-    if (await dropIfNeeded(session, reply)) return
-    notifyMessageLanded(session.conversationId, at)
-  }
-
   /* ------------------------------- 对话分支 ------------------------------- */
 
   /** 子消息：同一条父消息下的消息互为分支（按时间正序，同一时刻按入库顺序） */
@@ -1129,16 +1455,22 @@ export const useChatStore = defineStore('chat', () => {
    * 所以这里同时做两件事：标记 stopping 让调用循环按「已停止」收尾，
    * 并让主进程收掉这段会话还挂着的本地活儿（等答复的申请、正在跑的命令）。
    */
-  function halt(session: ChatSession): void {
+  function halt(session: ChatSession): boolean {
+    // 停止链会同时碰模型流、子 Agent 与主进程任务；重复触发只会造成重复取消请求。
+    if (session.stopping) return false
     session.stopping = true
+    // 子 Agent 与主轮次共用这枚 token：先同步作废 token 并中止已启动的子 Agent，
+    // 再断开主模型流，避免主流的 close 回调先推进到下一轮委派。
+    cancelAgentRuns(session.conversationId, session.agentRunToken, true)
     session.chat?.stop()
     void window.ipc.workspace.cancel(session.conversationId)
+    return true
   }
 
-  function stop(conversationId: string): void {
+  function stop(conversationId: string): boolean {
     const session = find(conversationId)
-    if (!session) return
-    halt(session)
+    if (!session?.running || session.stopping) return false
+    return halt(session)
   }
 
   /**
@@ -1164,14 +1496,21 @@ export const useChatStore = defineStore('chat', () => {
     return running
   }
 
-  /** 退出登录：断开所有连接，清空运行态 */
-  function reset(): void {
+  /**
+   * 退出登录：先停止并等当前收尾完成，再强制保存剩余检查点。
+   * 主进程随后才会切库；不能让旧会话的异步收尾跨到下一条账号的数据库。
+   */
+  async function reset(): Promise<void> {
     for (const session of Object.values(sessions.value)) {
       // 退出登录同样不该把命令留在后台跑：那一轮已经不会再有人看结果了
       halt(session)
     }
+    await Promise.allSettled([...initialTasks.values()])
+    await Promise.allSettled([...runTasks.values()])
+    await flushBeforeExit()
     sessions.value = {}
     clearTools()
+    resetAgentRuntime()
   }
 
   return {
@@ -1183,6 +1522,7 @@ export const useChatStore = defineStore('chat', () => {
     stop,
     discard,
     reset,
+    flushBeforeExit,
     visible,
     contextUsage,
     branchOf,

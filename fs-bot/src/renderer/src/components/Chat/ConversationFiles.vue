@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
- * 会话文件区 - 对话右侧的一栏：上半是项目工作区的目录树，下半是这段对话交付出来的文件。
+ * 会话右侧栏：工作区展示项目声明的目录树，交付文件展示这段对话产出的文件，
+ * 子 Agent 展示当前对话的执行状态和操作；三块内容由右侧活动栏切换。
  *
- * 两个页签分开两件事：工作区是项目声明的目录树（主进程给的清单拼出来），
- * 交付文件是这段对话里模型产出 / 拿到地址的东西。当前页签记在本机（见 stores/files）。
+ * 工作区是项目声明的目录树（主进程给的清单拼出来），交付文件是这段对话里模型
+ * 产出 / 拿到地址的东西。当前视图记在本机（见 stores/files）。
  *
  * 工作区树按项目声明的目录取（workspace:files 一次给全量条目，这里按路径拼成树），
  * 目录点一下展开收起、文件点一下用默认程序打开，右侧按钮在文件夹中定位（同一条交互见 FileActionUtil）；
@@ -14,15 +15,18 @@
  * 一次任务写过十几个脚本时，这样才找得到真正要交的东西。
  *
  * 一轮回复跑完（running 由真转假）自动重取一次工作区——这期间模型很可能写了新文件；
- * 也可以点页签条右上角的刷新按钮手动重取。
+ * 也可以点面板标题栏的刷新按钮手动重取。
  */
 import { computed, ref, watch } from 'vue'
 import type { ChatMessage } from '@renderer/stores/chat'
 import { deliveredTimeline, type DeliveredEntry } from '@renderer/core/FileRefs'
 import { useFilesStore } from '@renderer/stores/files'
+import { useAgentStore } from '@renderer/stores/agents'
 import FileActionUtil from '@renderer/utils/FileActionUtil'
+import AgentActivity from './AgentActivity.vue'
 
 const props = defineProps<{
+  conversationId: string
   projectId: string
   /** 会话里当前分支的消息：交付清单按它汇总 */
   messages: ChatMessage[]
@@ -33,6 +37,17 @@ const props = defineProps<{
 }>()
 
 const files = useFilesStore()
+const agents = useAgentStore()
+const agentRuns = computed(() => agents.forConversation(props.conversationId))
+const agentHistoryCount = computed(
+  () =>
+    agentRuns.value.filter((run) => !['queued', 'running', 'waiting_user'].includes(run.status))
+      .length
+)
+
+function closePanel(): void {
+  files.setVisible(false)
+}
 
 /** 工作区条目（workspace:files 的返回里只用到这几项） */
 interface WorkspaceRow {
@@ -154,6 +169,16 @@ const processExpanded = ref(false)
 const delivered = computed<DeliveredEntry[]>(() => deliveredTimeline(props.messages))
 const finalFiles = computed(() => delivered.value.filter((item) => item.final))
 const processFiles = computed(() => delivered.value.filter((item) => !item.final))
+const panelTitle = computed(() => {
+  if ('delivered' === files.tab) return '交付文件'
+  if ('agents' === files.tab) return '子 Agent'
+  return '工作区'
+})
+const panelMeta = computed(() => {
+  if ('delivered' === files.tab) return `${delivered.value.length} 个`
+  if ('agents' === files.tab) return `最近 ${agentHistoryCount.value} 个历史任务`
+  return `${flattened.value.total} 项`
+})
 
 /** 两组：最终交付在上（没有就不出现），过程文件在下 */
 const groups = computed(() =>
@@ -252,13 +277,53 @@ function dragPath(path: string, event: DragEvent): void {
 
 <template>
   <div class="conversation-files">
-    <!-- 两个页签：工作区目录树 / 这段对话交付的文件。刷新按钮只对工作区有意义，浮在页签条右侧 -->
-    <el-tabs class="files-tabs" :model-value="files.tab" @update:model-value="files.setTab">
-      <el-tab-pane name="workspace">
-        <template #label>
-          工作区<span v-if="roots?.length" class="tab-count">{{ roots.length }}</span>
-        </template>
-        <el-scrollbar class="files-body">
+    <header class="side-panel-header">
+      <div class="side-panel-title">
+        <strong>{{ panelTitle }}</strong>
+        <span v-if="panelMeta">{{ panelMeta }}</span>
+      </div>
+      <div class="side-panel-actions">
+        <el-tooltip v-if="'workspace' === files.tab" content="刷新工作区" placement="bottom">
+          <button type="button" class="files-action" :disabled="loading" @click="load">
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+              <path
+                d="M13 8a5 5 0 1 1-1.5-3.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.3"
+                stroke-linecap="round"
+              />
+              <path
+                d="M13.2 2.4v3.2h-3.2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </el-tooltip>
+        <el-tooltip content="收起右侧栏" placement="bottom">
+          <button type="button" class="panel-collapse" aria-label="收起右侧栏" @click="closePanel">
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+              <path
+                d="M3.5 8h9"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+        </el-tooltip>
+      </div>
+    </header>
+
+    <!-- 内容由右侧活动栏切换：工作区目录树 / 这段对话交付的文件 / 子 Agent -->
+    <div class="panel-content">
+      <div v-if="'workspace' === files.tab" class="panel-pane workspace-pane">
+        <el-scrollbar class="files-body workspace-body">
           <!-- 工作区：项目声明的目录树 -->
           <p v-if="!roots?.length" class="files-hint">项目未声明工作区目录</p>
           <p v-else-if="error" class="files-hint">{{ error }}</p>
@@ -341,13 +406,10 @@ function dragPath(path: string, event: DragEvent): void {
             还有 {{ truncated }} 项未显示（收起一些目录再看）
           </p>
         </el-scrollbar>
-      </el-tab-pane>
+      </div>
 
       <!-- 交付的文件：这段对话里模型写出来 / 移动到位 / 服务端给回地址的东西 -->
-      <el-tab-pane name="delivered">
-        <template #label>
-          交付文件<span v-if="delivered.length" class="tab-count">{{ delivered.length }}</span>
-        </template>
+      <div v-if="'delivered' === files.tab" class="panel-pane">
         <el-scrollbar class="files-body">
           <p v-if="!delivered.length" class="files-hint">这段对话还没有产出文件</p>
           <!-- 两组：最终交付在上，过程文件在下（长了先折叠，别把要交的东西挤到看不见） -->
@@ -450,96 +512,101 @@ function dragPath(path: string, event: DragEvent): void {
             </section>
           </template>
         </el-scrollbar>
-      </el-tab-pane>
-    </el-tabs>
+      </div>
 
-    <el-tooltip v-if="'workspace' === files.tab" content="刷新工作区" placement="top">
-      <button type="button" class="files-action" :disabled="loading" @click="load">
-        <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-          <path
-            d="M13 8a5 5 0 1 1-1.5-3.5"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.3"
-            stroke-linecap="round"
-          />
-          <path
-            d="M13.2 2.4v3.2h-3.2"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.3"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </button>
-    </el-tooltip>
+      <!-- 子 Agent：运行状态、停止与详情操作和文件一样收在右侧栏 -->
+      <div v-if="'agents' === files.tab" class="panel-pane">
+        <AgentActivity :conversation-id="conversationId" :project-id="projectId" />
+      </div>
+    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 /**
- * 右侧一栏：宽度由 splitter 拖着调（见 stores/files），这里只管纵向排版 ——
- * 页签条在上，页签内容撑满其余高度、各页签自己滚动；刷新按钮浮在页签条右上角。
+ * 右侧一栏：宽度由 splitter 拖着调（见 stores/files），这里只管纵向排版。
+ * 标题栏固定在上方，当前内容区撑满剩余高度并各自滚动。
  */
 .conversation-files {
-  position: relative;
+  /* splitter 面板是 flex 容器：内容必须跟着面板宽度伸缩，不能按文件名撑出的固有宽度停住 */
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  border-left: 1px solid var(--el-border-color-lighter);
+}
+
+.side-panel-header {
+  display: flex;
   flex: none;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
-.files-tabs {
+.side-panel-title {
   display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  /* 页签条压到 34px：这一栏本来就窄，纵向空间留给目录本身 */
-  --el-tabs-header-height: 34px;
+  flex: 1;
+  align-items: baseline;
+  min-width: 0;
+  gap: 6px;
 
-  :deep(> .el-tabs__header) {
+  strong {
+    overflow: hidden;
+    color: var(--el-text-color-primary);
+    font-size: 12px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  span {
     flex: none;
-    /* 右侧留出刷新按钮的位置，页签与它不重叠 */
-    padding: 0 36px 0 8px;
-    margin: 0;
-    border-bottom: none;
-  }
-
-  /**
-   * 页签条的下边线是 Element 画的（nav-wrap 的 ::after，默认 2px）：
-   * 这一栏窄，2px 压得住视线，收成 1px 并换成更浅的一档。
-   * 别在 header 上再加 border-bottom——那是第二条线，看着会重一倍。
-   */
-  :deep(> .el-tabs__header > .el-tabs__nav-wrap::after) {
-    height: 1px;
-    background-color: var(--el-border-color-lighter);
-  }
-
-  :deep(> .el-tabs__content) {
-    flex: 1;
-    min-height: 0;
-  }
-
-  :deep(.el-tab-pane) {
-    height: 100%;
-  }
-
-  /* 页签上的计数：跟在标题后面的一枚小数字，没有内容时整个不出现 */
-  .tab-count {
-    margin-left: 4px;
-    font-size: 11px;
     color: var(--el-text-color-placeholder);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
   }
 }
 
-/* 刷新按钮：浮在页签条右上角（只有工作区那一页用得上） */
-.files-action {
-  position: absolute;
-  top: 6px;
-  right: 8px;
+.side-panel-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.panel-content {
+  display: flex;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+}
+
+.panel-pane {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+}
+
+.workspace-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* 标题栏操作按钮 */
+.files-action,
+.panel-collapse {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
   width: 22px;
@@ -562,6 +629,13 @@ function dragPath(path: string, event: DragEvent): void {
   }
 }
 
+.panel-collapse {
+  &:hover {
+    color: var(--el-color-primary);
+    background: var(--el-fill-color-dark);
+  }
+}
+
 .files-body {
   height: 100%;
   min-height: 0;
@@ -569,6 +643,11 @@ function dragPath(path: string, event: DragEvent): void {
   :deep(> .el-scrollbar__wrap > .el-scrollbar__view) {
     padding: 8px 6px 12px;
   }
+}
+
+.workspace-body {
+  flex: 1;
+  height: auto;
 }
 
 .files-hint {

@@ -15,6 +15,16 @@ export default {
     return window.ipc.db.upsert(table, data)
   },
 
+  /** 一次事务保存消息与分支尾：对话检查点不会出现“消息写了、分支没切过去”的半状态 */
+  async saveMessages(
+    conversationId: string,
+    messages: Array<Record<string, unknown>>,
+    leafId: string,
+    updatedAt?: string
+  ) {
+    return window.ipc.db.saveMessages(conversationId, messages, leafId, updatedAt)
+  },
+
   async update(table: string, where: Record<string, unknown>, data: Record<string, unknown>) {
     return window.ipc.db.update(table, where, data)
   },

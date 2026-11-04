@@ -1,6 +1,6 @@
 {
   "name": "fs-bot",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "An Electron application with Vue and TypeScript",
   "main": "./out/main/index.js",
   "author": "example.com",
@@ -8,6 +8,7 @@
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
+    "test": "vitest run",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "vue-tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
@@ -31,6 +32,7 @@
     "highlight.js": "^11.12.0",
     "marked": "^18.1.1",
     "pinia": "^3.0.4",
+    "playwright-core": "^1.64.1",
     "smol-toml": "^1.9.1",
     "vue-router": "^5.4.0"
   },
@@ -54,6 +56,7 @@
     "unplugin-icons": "^23.0.1",
     "unplugin-vue-components": "^32.1.0",
     "vite": "^7.3.7",
+    "vitest": "^5.0.5",
     "vue": "^3.5.44",
     "vue-eslint-parser": "^10.4.1",
     "vue-tsc": "^3.3.13"

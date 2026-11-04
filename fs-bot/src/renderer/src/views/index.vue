@@ -4,11 +4,24 @@ import { useRoute } from 'vue-router'
 import TitleBar from '@renderer/components/Layout/TitleBar.vue'
 import LayoutSidebar from '@renderer/components/Layout/LayoutSidebar.vue'
 import { useSidebarStore, SIDEBAR_WIDTH_MIN, SIDEBAR_WIDTH_MAX } from '@renderer/stores/sidebar'
+import { useWindowStore } from '@renderer/stores/window'
 import { page } from '@renderer/router/config'
 
 const sidebar = useSidebarStore()
+const win = useWindowStore()
 const route = useRoute()
 const isMac = window.electron.process.platform === 'darwin'
+
+/** 拖分隔条时实时写宽度；窗口自身缩放不参与，避免固定栏宽被重新按比例赋值。 */
+function resizeSidebar(_index: number, sizes: number[]): void {
+  if (sizes[0] !== undefined) sidebar.setWidth(sizes[0])
+}
+
+function finishSidebarResize(index: number, sizes: number[]): void {
+  resizeSidebar(index, sizes)
+  sidebar.saveWidth()
+}
+
 /**
  * 对话页自己管滚动（消息区滚、输入框固定在底部），需要撑满内容区高度与宽度；
  * 其余页面仍按「限宽居中 + 外层滚动」的常规排版。
@@ -21,15 +34,23 @@ const fill = computed(() => route.path === page.home)
   <!-- Windows/Linux: 标题栏只盖住右侧内容区，侧边栏通到窗口上下沿 -->
   <div class="main-layout" :class="{ 'main-layout--mac': isMac }">
     <TitleBar v-if="isMac" class="main-layout__titlebar" />
-    <!-- resize-end 在 splitter 根上（面板只抛 update:size）：拖完这一下才把宽度落库 -->
-    <el-splitter class="main-splitter" @resize-end="sidebar.saveWidth()">
+    <!-- 只响应拖动事件；窗口缩放引起的内部比例变化不写回用户的像素宽度。 -->
+    <el-splitter
+      class="main-splitter"
+      @resize="resizeSidebar"
+      @resize-end="finishSidebarResize"
+    >
       <!-- 侧边栏：拖分隔条调整宽度，宽度记在 store 里（拖到多宽，下次打开还是多宽） -->
       <el-splitter-panel
         v-if="sidebar.visible"
-        :size="sidebar.width"
-        :min="SIDEBAR_WIDTH_MIN"
-        :max="SIDEBAR_WIDTH_MAX"
-        @update:size="sidebar.setWidth"
+        class="sidebar-panel"
+        :size="win.pinned ? '0px' : `${sidebar.width}px`"
+        :min="win.pinned ? '0px' : `${SIDEBAR_WIDTH_MIN}px`"
+        :max="win.pinned ? '0px' : `${SIDEBAR_WIDTH_MAX}px`"
+        :style="{
+          display: 'flex',
+          '--sidebar-panel-width': `${sidebar.width}px`
+        }"
       >
         <LayoutSidebar />
       </el-splitter-panel>
@@ -83,6 +104,12 @@ const fill = computed(() => route.path === page.home)
   :deep(.el-splitter-panel) {
     overflow: hidden;
   }
+}
+
+.sidebar-panel {
+  /* Element Plus 分隔面板内部会按比例重算；这里锁定为用户设置的像素宽度。 */
+  flex: 0 0 var(--sidebar-panel-width) !important;
+  max-width: var(--sidebar-panel-width) !important;
 }
 
 .main-right {

@@ -21,6 +21,12 @@ const ipc = {
   maximize: () => ipcRenderer.invoke('window:maximize'),
   close: () => ipcRenderer.invoke('window:close'),
   quit: () => ipcRenderer.invoke('app:quit'),
+  quitReady: () => ipcRenderer.invoke('app:quit-ready'),
+  onPrepareQuit: (callback: () => void) => {
+    const listener = (): void => callback()
+    ipcRenderer.on('app:prepare-quit', listener)
+    return () => ipcRenderer.removeListener('app:prepare-quit', listener)
+  },
   isMaximized: () => ipcRenderer.invoke('window:is-maximized'),
   appVersions: () => ipcRenderer.invoke('app:versions'),
   clientMeta: () => ipcRenderer.invoke('app:client-meta'),
@@ -78,6 +84,18 @@ const ipc = {
       ipcRenderer.invoke('db:update', { table, where, data }),
     upsert: (table: string, data: Record<string, unknown>) =>
       ipcRenderer.invoke('db:upsert', { table, data }),
+    saveMessages: (
+      conversationId: string,
+      messages: Array<Record<string, unknown>>,
+      leafId: string,
+      updatedAt?: string
+    ) =>
+      ipcRenderer.invoke('db:save-messages', {
+        conversationId,
+        messages,
+        leafId,
+        updatedAt
+      }),
     delete: (table: string, where: Record<string, unknown>) =>
       ipcRenderer.invoke('db:delete', { table, where }),
     deleteBatch: (
@@ -223,6 +241,32 @@ const ipc = {
       ipcRenderer.on('workspace:approval-closed', listener)
       return () => ipcRenderer.removeListener('workspace:approval-closed', listener)
     }
+  },
+  /**
+   * 浏览器自动化：主进程持有 Playwright 上下文，渲染进程只传动作与参数。
+   * 页面快照里的 ref 由主进程生成，模型按 ref 操作。
+   */
+  automation: {
+    browser: (request: {
+      userId?: string | number
+      projectId?: string
+      conversationId?: string
+      action: string
+      args?: Record<string, unknown>
+    }) => ipcRenderer.invoke('automation:browser', request)
+  },
+  agent: {
+    open: (sessionId: string) => ipcRenderer.invoke('agent-window:open', { sessionId }),
+    publish: (sessionId: string, interaction: unknown) =>
+      ipcRenderer.send('agent-window:publish', { sessionId, interaction }),
+    onUpdate: (callback: (update: { sessionId: string; interaction: unknown }) => void) => {
+      const listener = (_: unknown, update: { sessionId: string; interaction: unknown }): void =>
+        callback(update)
+      ipcRenderer.on('agent-window:update', listener)
+      return () => ipcRenderer.removeListener('agent-window:update', listener)
+    },
+    closeSelf: () => ipcRenderer.invoke('agent-window:close-self'),
+    closeAll: () => ipcRenderer.invoke('agent-window:close-all')
   },
   // 本地图标：由主进程选图并复制到图标目录，渲染进程只回填拿到的地址
   icon: {

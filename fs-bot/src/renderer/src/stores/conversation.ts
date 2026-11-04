@@ -17,6 +17,7 @@ import { useProjectStore } from './project'
 import type { Project } from '@renderer/db/ProjectDb'
 import { refreshTools } from '@renderer/core/ToolCache'
 import { buildTools } from '@renderer/core/Toolbox'
+import { useAgentStore } from './agents'
 
 /** 生成中提交、等这一轮收尾后再发的一条消息 */
 export interface QueuedSend {
@@ -99,7 +100,7 @@ export const useConversationStore = defineStore('conversation', () => {
   async function fetchConversations(projectId = filterProjectId.value): Promise<Conversation[]> {
     loading.value = true
     try {
-      const result: any = await ConversationDb.list(projectId)
+      const result = await ConversationDb.list(projectId)
       if (!ApiUtil.succeed(result)) {
         throw new Error(String(ApiUtil.message(result) || '会话列表读取失败'))
       }
@@ -139,20 +140,22 @@ export const useConversationStore = defineStore('conversation', () => {
     const conversation = drafts.value[params.conversationId]
     if (!conversation) return
     const name = chatTitle(params) || conversation.title
-    let stored = false
+    let result: { code: number; message: string; data: Conversation }
     try {
-      const result: any = await ConversationDb.create({
+      result = await ConversationDb.create({
         id: conversation.id,
         title: name,
         projectId: conversation.projectId,
         createdAt: conversation.createdAt,
         updatedAt: at
       })
-      stored = ApiUtil.succeed(result)
-    } catch {
-      /* 落库失败：草稿保留，下一次发送再补 */
+    } catch (error) {
+      // 草稿留在内存，输入框也不会被清空；这里必须把失败交回发送流程，不能继续生成一份无主消息。
+      throw new Error(`会话创建失败：${(error as Error)?.message || error}`)
     }
-    if (!stored) return
+    if (!ApiUtil.succeed(result)) {
+      throw new Error(String(ApiUtil.message(result) || '会话创建失败'))
+    }
     delete drafts.value[params.conversationId]
     conversation.title = name
     conversation.updatedAt = at
@@ -291,7 +294,13 @@ export const useConversationStore = defineStore('conversation', () => {
       enqueue(params)
       return 'queued'
     }
-    return (await dispatch(params)) ? 'sent' : 'rejected'
+    try {
+      return (await dispatch(params)) ? 'sent' : 'rejected'
+    } catch (error) {
+      const session = chat.find(params.conversationId)
+      if (session) session.error = `消息未发送：${(error as Error)?.message || error}`
+      return 'rejected'
+    }
   }
 
   async function select(id: string): Promise<void> {
@@ -343,6 +352,7 @@ export const useConversationStore = defineStore('conversation', () => {
       throw new Error(String(ApiUtil.message(result) || '删除会话失败'))
     }
     if (targets.includes(currentId.value)) currentId.value = ''
+    useAgentStore().forgetConversation(targets)
     await fetchConversations()
     // 页面可能在 currentId 变化时把输入写回草稿表，列表刷新后再清一次
     for (const id of targets) clearComposerDraft(id)
@@ -363,7 +373,7 @@ export const useConversationStore = defineStore('conversation', () => {
     }
     const conversation = conversations.value.find((item) => item.id === id)
     if (!conversation) return
-    const result: any = await ConversationDb.rename(id, name)
+    const result = await ConversationDb.rename(id, name)
     // 写库失败就保持原样：界面上不出现改了又弹回去的半吊子状态
     if (!ApiUtil.succeed(result)) return
     conversation.title = name
@@ -379,6 +389,7 @@ export const useConversationStore = defineStore('conversation', () => {
     const running = useChatStore().discard(id, 'clear')
     await ConversationDb.clearMessages(id)
     await ConversationDb.setLeaf(id, '')
+    useAgentStore().forgetConversation([id])
     return running
   }
 

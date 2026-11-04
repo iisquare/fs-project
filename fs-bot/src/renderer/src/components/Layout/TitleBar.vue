@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useSidebarStore } from '@renderer/stores/sidebar'
-import { useFilesStore } from '@renderer/stores/files'
+import { ref, nextTick, onMounted } from 'vue'
 import { useWindowStore } from '@renderer/stores/window'
 
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
   showMaximize?: boolean
 }>(), {
   showMaximize: true
@@ -14,11 +12,9 @@ const ipc = window.ipc
 const isMaximized = ref(false)
 const platform = window.electron.process.platform
 const isMac = platform === 'darwin'
-const sidebar = useSidebarStore()
-const files = useFilesStore()
 const win = useWindowStore()
-/** 钉住前的文件区展开状态：钉住期间收起，取消钉住时恢复原样 */
-let filesExpandedBeforePin = true
+/** 置顶切换期间锁住按钮，避免窗口尺寸与面板状态被连续点击打乱 */
+let pinSwitching = false
 
 onMounted(async () => {
   isMaximized.value = await ipc.isMaximized()
@@ -28,20 +24,23 @@ onMounted(async () => {
 })
 
 async function togglePin(): Promise<void> {
+  if (pinSwitching) return
   const pinned = !win.pinned
-  win.pinned = pinned
-  // 钉住后窗口只有 400×600：右侧文件区留下来会把对话列挤没，先藏起界面再收窗口；
-  // 主进程会保留「钉住前」的窗口宽度与文件区占位，取消钉住时一起还原。
-  // 两个方向都只改界面、不再单独增减宽度——置顶本身就是一次窗口尺寸变化。
-  if (pinned) {
-    filesExpandedBeforePin = files.visible
-    files.setVisible(false, { resize: false })
-    sidebar.setVisible(false)
-    await ipc.togglePin(true)
-  } else {
-    await ipc.togglePin(false)
-    files.setVisible(filesExpandedBeforePin, { resize: false })
-    sidebar.setVisible(true)
+  pinSwitching = true
+  try {
+    // 左右面板只切换显隐、保持组件挂载。这样取消置顶时不用重新构建侧边栏与文件区，
+    // 既不会先放大窗口再等面板出现，也不会在恢复时产生明显的停顿。
+    if (pinned) {
+      win.pinned = true
+      await nextTick()
+      await ipc.togglePin(true)
+    } else {
+      win.pinned = false
+      await nextTick()
+      await ipc.togglePin(false)
+    }
+  } finally {
+    pinSwitching = false
   }
 }
 </script>

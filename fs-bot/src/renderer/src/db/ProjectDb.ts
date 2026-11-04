@@ -118,7 +118,7 @@ export interface Project {
   envVars: ProjectEnv[]
   tools: ProjectTool[]
   workspace: ProjectWorkspace[]
-  inputs: Record<string, any>
+  inputs: Record<string, unknown>
   sort: number
   /** 分享去向：服务端分享项目标识，0 表示未分享 */
   shareId: number
@@ -140,7 +140,7 @@ function parse<T>(text: unknown, fallback: T): T {
 }
 
 /** 库内是 snake_case 列，统一在这里转成领域对象 */
-function format(row: Record<string, any>): Project {
+function format(row: Record<string, unknown>): Project {
   return {
     id: String(row['id'] ?? ''),
     model: String(row['model'] ?? ''),
@@ -159,7 +159,7 @@ function format(row: Record<string, any>): Project {
       enabled: false !== tool?.enabled
     })),
     workspace: parse<ProjectWorkspace[]>(row['workspace'], []),
-    inputs: parse<Record<string, any>>(row['inputs'], {}),
+    inputs: parse<Record<string, unknown>>(row['inputs'], {}),
     sort: Number(row['sort'] ?? 0),
     shareId: Math.max(0, Math.floor(Number(row['share_id'] ?? 0)) || 0),
     shareName: String(row['share_name'] ?? ''),
@@ -171,15 +171,15 @@ function format(row: Record<string, any>): Project {
 
 export default {
   async list(): Promise<{ code: number; message: string; data: Project[] }> {
-    const result: any = await Db.select(TABLE, undefined, 'sort DESC, updated_at DESC')
+    const result: unknown = await Db.select(TABLE, undefined, 'sort DESC, updated_at DESC')
     return ApiUtil.result(
-      ApiUtil.code(result) ?? 0,
+      Number(ApiUtil.code(result)) || 0,
       ApiUtil.message(result),
-      (ApiUtil.data(result) as any[]).map(format)
+      (ApiUtil.data(result) as Record<string, unknown>[]).map(format)
     )
   },
 
-  async create(data: Partial<Project>) {
+  async create(data: Partial<Project>): Promise<unknown> {
     const now = new Date().toISOString()
     return Db.insert(TABLE, {
       id: crypto.randomUUID(),
@@ -205,7 +205,7 @@ export default {
     })
   },
 
-  async update(id: string, data: Partial<Project>) {
+  async update(id: string, data: Partial<Project>): Promise<unknown> {
     const row: Record<string, unknown> = { updated_at: new Date().toISOString() }
     if (data.model !== undefined) row['model'] = data.model
     if (data.contextLength !== undefined) {
@@ -233,7 +233,12 @@ export default {
     return Db.update(TABLE, { id }, row)
   },
 
-  async delete(id: string) {
-    return Db.remove(TABLE, { id })
+  async delete(id: string): Promise<unknown> {
+    return Db.removeBatch([
+      { table: 'agent_interactions', where: { project_id: id } },
+      { table: 'agent_experiences', where: { project_id: id } },
+      { table: 'agent_sessions', where: { project_id: id } },
+      { table: TABLE, where: { id } }
+    ])
   }
 }

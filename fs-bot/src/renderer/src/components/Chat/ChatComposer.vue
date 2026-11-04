@@ -47,6 +47,8 @@ const props = defineProps<{
   context?: ContextInfo | null
   disabled?: boolean
   running?: boolean
+  /** 已请求停止，等待当前流与工具调用完成清理 */
+  stopping?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -513,6 +515,12 @@ function onKeydown(payload: Event | KeyboardEvent): void {
   }
 }
 
+/** 停止只发一次：重复点击不重复取消同一轮任务 */
+function requestStop(): void {
+  if (!props.running || props.stopping) return
+  emit('stop')
+}
+
 /** 在光标处插入换行：Shift + Enter 走浏览器默认行为，Ctrl / Cmd + Enter 由这里补上 */
 function insertNewline(): void {
   const element = textarea()
@@ -726,14 +734,18 @@ defineExpose({ focus, addPaths })
             circle
             type="danger"
             plain
-            title="停止生成"
-            @click="emit('stop')"
+            :disabled="stopping"
+            :title="stopping ? '正在停止当前生成…' : '停止生成'"
+            :aria-label="stopping ? '正在停止当前生成' : '停止生成'"
+            @click="requestStop"
           >
-            <!-- 方形停字块：与发送的纸飞机保持相近的视觉重量 -->
-            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <!-- 等待清理时用转圈反馈；正常态仍是方形停止块 -->
+            <span v-if="stopping" class="composer-stop-spinner" aria-hidden="true" />
+            <svg v-else viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
               <rect x="3.6" y="3.6" width="8.8" height="8.8" rx="2" fill="currentColor" />
             </svg>
           </el-button>
+          <!-- 生成中有输入时切换到排队发送，不改变原有输入交互 -->
           <el-button
             v-else
             class="composer-send"
@@ -1099,6 +1111,22 @@ defineExpose({ focus, addPaths })
   /* 发送 / 停止按钮里的图标按块级居中，不受按钮默认行高影响 */
   svg {
     display: block;
+  }
+}
+
+.composer-stop-spinner {
+  display: block;
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: composer-stop-spin 0.75s linear infinite;
+}
+
+@keyframes composer-stop-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

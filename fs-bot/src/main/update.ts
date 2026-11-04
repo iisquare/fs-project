@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import { spawn } from 'child_process'
+import { execFile, spawn } from 'child_process'
 import { createHash } from 'crypto'
 import {
   chmodSync,
@@ -155,7 +155,7 @@ export function updateState(): UpdateStateStatus {
 
 /**
  * 新版本完成渲染进程启动后调用。只有当前版本达到或超过目标版本才清除待更新状态；
- * 旧版本重新启动时保留标记，由下次版本检查识别并重新升级。
+ * 旧版本重新启动时保留标记，由下次版本检查显示失败，等待用户再次确认。
  */
 export function reportUpdateHealthy(): UpdateStateStatus {
   const status = updateState()
@@ -246,6 +246,9 @@ export async function downloadAndInstallUpdate(
     onProgress(value)
   }
   if (!updateCacheDir) throw new Error('更新缓存目录未初始化')
+  // 先下发总大小，让界面从“准备中”切到可暂停 / 终止的下载状态，
+  // 包括命中缓存后正在计算摘要的阶段。
+  progress({ received: 0, total: expectedSize, percent: 0 })
   const directory = join(updateCacheDir, expectedSha512.substring(0, 32))
   mkdirSync(directory, { recursive: true })
   const target = join(directory, fileName)
@@ -261,6 +264,7 @@ export async function downloadAndInstallUpdate(
     }
     if (!actualSha512) {
       let differential = false
+      let verifiedPart = false
       if (request.delta && (!existsSync(partFile) || statSync(partFile).size === 0)) {
         const previous = findCachedPackage(
           request.currentVersion,
@@ -289,6 +293,20 @@ export async function downloadAndInstallUpdate(
           }
         }
       }
+      if (differential) {
+        const partSize = existsSync(partFile) ? statSync(partFile).size : 0
+        actualSha512 = partSize === expectedSize ? await hashFileSha512(partFile) : ''
+        throwIfInterrupted()
+        if (actualSha512 !== expectedSha512) {
+          console.warn(
+            '[Update] Reconstructed package failed verification, fallback to full package'
+          )
+          differential = false
+          rmSync(partFile, { force: true })
+        } else {
+          verifiedPart = true
+        }
+      }
       if (!differential) {
         await downloadResume(url, token, partFile, expectedSize, progress)
       }
@@ -296,7 +314,7 @@ export async function downloadAndInstallUpdate(
       if (partSize !== expectedSize) {
         throw new Error(`安装包下载不完整：期望 ${expectedSize} 字节，实际 ${partSize} 字节`)
       }
-      actualSha512 = await hashFileSha512(partFile)
+      if (!verifiedPart) actualSha512 = await hashFileSha512(partFile)
       throwIfInterrupted()
       if (actualSha512 !== expectedSha512) {
         rmSync(partFile, { force: true })
@@ -327,13 +345,12 @@ export async function downloadAndInstallUpdate(
     })
     controlState = 'installing'
     controlPercent = 100
+    controlMessage = '正在检查安装包并启动安装程序'
+    // 待更新标记必须先落盘。安装器启动失败、版本不符或安装后仍回到旧版时，
+    // 下一次启动据此显示失败并要求用户手动重试，不能清掉标记后再次自动安装。
+    await verifyInstallerVersion(target, String(request.version))
     controlMessage = '正在启动安装程序'
-    try {
-      await launchInstaller(target, directory)
-    } catch (error) {
-      clearPending()
-      throw error
-    }
+    await launchInstaller(target, directory)
     setTimeout(() => app.quit(), 500)
     return { path: target, sha512: actualSha512 }
   } catch (error) {
@@ -634,8 +651,9 @@ async function launchInstaller(installerPath: string, workDir: string): Promise<
       if (!installerPath.toLowerCase().endsWith('-setup.exe')) {
         throw new Error('Windows 仅支持 electron-builder NSIS Setup 安装包自动更新')
       }
-      // electron-builder NSIS：静默安装、应用退出后替换文件，并由安装器重新启动应用
-      await spawnDetached(installerPath, ['--updated', '/S', '--force-run'], workDir)
+      // 不使用 /S：保留 NSIS 安装进度窗口，让用户能看到正在替换文件。
+      // --updated 跳过首次安装页，--force-run 在安装完成后重新启动新版本。
+      await spawnDetached(installerPath, ['--updated', '--force-run'], workDir, false)
       return
     case 'darwin':
       await installMacDmg(installerPath, workDir)
@@ -646,6 +664,58 @@ async function launchInstaller(installerPath: string, workDir: string): Promise<
     default:
       throw new Error('当前系统不支持自动替换安装')
   }
+}
+
+/**
+ * Windows 安装包内的文件版本必须与更新目标一致。
+ *
+ * 服务端曾出现把 v1.0.0 安装包发布成 v1.0.4 的情况：摘要校验能通过，
+ * 但安装后仍是旧版本，客户端就会再次提示同一更新。读取失败时不阻断安装，
+ * 以兼容没有版本资源的第三方安装包；能读到版本时必须匹配核心版本号。
+ */
+async function verifyInstallerVersion(installerPath: string, targetVersion: string): Promise<void> {
+  if (process.platform !== 'win32') return
+  const actual = await readWindowsInstallerVersion(installerPath)
+  if (!actual) {
+    console.warn('[Update] Unable to read installer version metadata:', installerPath)
+    return
+  }
+  const actualCore = versionCore(actual)
+  const targetCore = versionCore(targetVersion)
+  if (actualCore && targetCore && compareVersion(actualCore, targetCore) !== 0) {
+    throw new Error(
+      `安装包版本校验失败：目标是 v${targetVersion}，安装程序实际为 v${actual}。` +
+        '已停止本次安装，请联系管理员更新安装包。'
+    )
+  }
+}
+
+function readWindowsInstallerVersion(file: string): Promise<string> {
+  return new Promise((resolve) => {
+    const escaped = file.replace(/'/g, "''")
+    const script =
+      `$info=(Get-Item -LiteralPath '${escaped}' -ErrorAction Stop).VersionInfo; ` +
+      `if ($info.ProductVersion) { [Console]::Out.Write($info.ProductVersion) } ` +
+      `else { [Console]::Out.Write($info.FileVersion) }`
+    execFile(
+      'powershell.exe',
+      ['-NoProfile', '-NonInteractive', '-Command', script],
+      { windowsHide: true, timeout: 10_000 },
+      (error, stdout) => {
+        if (error) {
+          console.warn('[Update] Failed to read Windows installer version:', error)
+          resolve('')
+          return
+        }
+        resolve(String(stdout ?? '').trim())
+      }
+    )
+  })
+}
+
+function versionCore(value: string): string {
+  const match = /^v?(\d+(?:\.\d+){0,3})/i.exec(String(value).trim())
+  return match?.[1] ?? ''
 }
 
 async function installMacDmg(installerPath: string, workDir: string): Promise<void> {
@@ -663,12 +733,15 @@ MOUNT="$4"
 STATE="$5"
 STAGING="\${TARGET}.updating.$$"
 BACKUP="\${TARGET}.backup.$$"
+SHOULD_LAUNCH=1
 cleanup() {
   hdiutil detach "$MOUNT" -quiet >/dev/null 2>&1 || true
   if [ ! -d "$TARGET" ] && [ -d "$BACKUP" ]; then
     mv "$BACKUP" "$TARGET"
   fi
-  open "$TARGET" >/dev/null 2>&1 || true
+  if [ "$SHOULD_LAUNCH" -eq 1 ] && [ -d "$TARGET" ]; then
+    open "$TARGET" >/dev/null 2>&1 || true
+  fi
 }
 trap cleanup EXIT
 while kill -0 "$APP_PID" >/dev/null 2>&1; do sleep 1; done
@@ -686,6 +759,7 @@ else
   exit 1
 fi
 open "$TARGET" >/dev/null
+SHOULD_LAUNCH=0
 attempt=0
 while [ -e "$STATE" ] && [ "$attempt" -lt 30 ]; do
   sleep 1
@@ -695,6 +769,7 @@ if [ -e "$STATE" ]; then
   pkill -f "$TARGET/Contents/MacOS/" >/dev/null 2>&1 || true
   rm -rf "$TARGET"
   mv "$BACKUP" "$TARGET"
+  SHOULD_LAUNCH=1
   exit 1
 fi
 rm -rf "$BACKUP"
@@ -776,13 +851,18 @@ function currentMacBundle(): string {
   return appPath.substring(0, marker + 4)
 }
 
-function spawnDetached(command: string, args: string[], cwd: string): Promise<void> {
+function spawnDetached(
+  command: string,
+  args: string[],
+  cwd: string,
+  windowsHide = true
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd,
       detached: true,
       stdio: 'ignore',
-      windowsHide: true
+      windowsHide
     })
     child.once('error', reject)
     child.once('spawn', () => {

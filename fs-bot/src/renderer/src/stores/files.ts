@@ -2,11 +2,11 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 /**
- * 右侧文件区：展开 / 收起是本次运行内的选择，宽度与当前页签记在本机。
+ * 右侧面板（文件 / 子 Agent）：展开 / 收起是本次运行内的选择，宽度与当前视图记在本机。
  *
  * 展开状态**不落库**：进对话（包括从历史里直接打开某一段）时不替用户做主，默认收起，
  * 点了右上角按钮才出现——与左侧会话栏同一口径（它的显隐也只在本次运行内有效）。
- * 宽度与页签属于「用户调过一次就不用再调」的设置，记下来下次照旧。
+ * 宽度与当前视图属于「用户调过一次就不用再调」的设置，记下来下次照旧。
  * 与左侧会话栏（stores/sidebar）分开两份：两者各自拖各自的宽度，互不影响。
  */
 const WIDTH_STORAGE_KEY = 'fs_files_width'
@@ -18,8 +18,14 @@ export const FILES_WIDTH_MAX = 520
 /** 默认宽度：够放一列文件名的同时不挤占对话区 */
 const FILES_WIDTH_DEFAULT = 268
 
-/** 页签：工作区目录树 / 这段对话交付的文件 */
-export type FilesTab = 'workspace' | 'delivered'
+/** 活动栏视图：工作区目录树 / 这段对话交付的文件 / 子 Agent */
+export type FilesTab = 'workspace' | 'delivered' | 'agents'
+
+function restoreTab(): FilesTab {
+  const stored = localStorage.getItem(TAB_STORAGE_KEY)
+  if ('delivered' === stored || 'agents' === stored) return stored
+  return 'workspace'
+}
 
 /** 夹到上下限内的整数值：拖拽给的是小数，存坏的数据也可能是任意数 */
 function clampWidth(size: number): number {
@@ -37,9 +43,7 @@ export const useFilesStore = defineStore('files', () => {
   /** 展开状态：默认收起，只有用户点了按钮才展开 */
   const visible = ref(false)
   const width = ref(restoreWidth())
-  const tab = ref<FilesTab>(
-    'delivered' === localStorage.getItem(TAB_STORAGE_KEY) ? 'delivered' : 'workspace'
-  )
+  const tab = ref<FilesTab>(restoreTab())
 
   /**
    * 把当前状态交给主进程：文件区不占对话列，改为把窗口整体加宽 / 收窄。
@@ -59,15 +63,14 @@ export const useFilesStore = defineStore('files', () => {
     if (false !== options.resize) syncWindow()
   }
 
-  /**
-   * 展开前先把窗口加宽到位，再把面板挂上来：面板若先出现，splitter 会按
-   * 「窗口还没变宽」的剩余空间把文件区压窄并回写宽度，之后窗口再长也补不回来。
-   */
-  async function toggle(): Promise<void> {
-    if (visible.value) {
+  /** 右侧活动栏：首击打开或切换，再次点击当前视图则收起 */
+  async function toggleTab(value: FilesTab): Promise<void> {
+    if (visible.value && tab.value === value) {
       setVisible(false)
       return
     }
+    setTab(value)
+    if (visible.value) return
     await window.ipc.setFilesPanel?.(true, width.value)
     visible.value = true
   }
@@ -82,8 +85,6 @@ export const useFilesStore = defineStore('files', () => {
     const next = clampWidth(value)
     if (next === width.value) return
     width.value = next
-    // 拖分隔条就是改文件区占用的宽度：窗口跟着长 / 缩，对话列保持原宽
-    if (visible.value) syncWindow()
   }
 
   /** 拖拽结束后落库：过程中每一帧都写一次 localStorage 没必要 */
@@ -92,9 +93,10 @@ export const useFilesStore = defineStore('files', () => {
   }
 
   function setTab(value: string | number): void {
-    tab.value = 'delivered' === String(value) ? 'delivered' : 'workspace'
+    const next = String(value)
+    tab.value = 'delivered' === next || 'agents' === next ? next : 'workspace'
     localStorage.setItem(TAB_STORAGE_KEY, tab.value)
   }
 
-  return { visible, width, tab, setVisible, toggle, setWidth, saveWidth, setTab }
+  return { visible, width, tab, setVisible, toggleTab, setWidth, saveWidth, setTab }
 })

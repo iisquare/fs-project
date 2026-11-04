@@ -142,12 +142,17 @@ export const useScheduleStore = defineStore('schedule', () => {
       const conversationStore = useConversationStore()
       const conversation = await conversationStore.create(project, `${task.name}`)
       // 会话 store 负责把这条新会话落进历史，chat store 只管把这一轮跑起来
-      await conversationStore.send({
+      const result = await conversationStore.send({
         conversationId: conversation.id,
         ...chatProfile(project),
         query: task.prompt,
         background: true
       })
+      if ('rejected' === result) {
+        await TaskDb.report(task.id, 'failed', '对话未创建，执行结果无法写入本地库')
+        await fetchTasks()
+        return false
+      }
       await TaskDb.report(task.id, 'triggered', `已发起对话：${task.prompt.slice(0, 40)}`)
       await fetchTasks()
       return true

@@ -22,6 +22,7 @@ export class DatabaseManager {
   private static readonly HASH_FLUSH_DELAY = 1500
 
   private user: DbCtx | null = null
+  private userIdentity = ''
   private hashTimer: NodeJS.Timeout | null = null
   private hashDirty = false
 
@@ -49,12 +50,17 @@ export class DatabaseManager {
 
   /** runtimeDir 是运行目录（见 main/index.ts）：用户库放在它下面的 userdata/<userId>/ 里 */
   initUser(serial: string, userId: string, dbSecret: string, runtimeDir: string): void {
+    const identity = `${runtimeDir}:${String(userId)}:${serial}`
+    // 多个应用窗口共享主进程里的同一份数据库连接；同一用户再次初始化时不能关闭重开，
+    // 否则主对话里正在进行的查询、写入和完整性哈希都会被另一个窗口打断。
+    if (this.user && this.userIdentity === identity) return
     this.closeUser()
 
     const userDir = join(runtimeDir, 'userdata', String(userId))
     const dbPath = join(userDir, 'fs-bot.db')
 
     this.user = this.openDb(dbPath, serial, dbSecret)
+    this.userIdentity = identity
     console.log('[DB] User database ready for', serial)
   }
 
@@ -69,10 +75,14 @@ export class DatabaseManager {
     db.pragma('legacy=4')
     db.pragma(`key='${encKey.toString('hex')}'`)
     db.pragma('journal_mode = WAL')
+    // WAL 默认的 NORMAL 在系统掉电时可能丢掉最后一个已提交事务；对话检查点要的是落库即持久。
+    db.pragma('synchronous = FULL')
 
     if (is.dev) {
       console.log(`[DB] Database: ${dbPath}`)
-      console.log(`[DB] Cipher: sqlcipher | Legacy: 4 | Passphrase (hex): ${encKey.toString('hex')}`)
+      console.log(
+        `[DB] Cipher: sqlcipher | Legacy: 4 | Passphrase (hex): ${encKey.toString('hex')}`
+      )
     }
 
     ensureUserSchema(db)
@@ -81,8 +91,7 @@ export class DatabaseManager {
 
     const hash = computeTablesHash(hmacKey, db, getLatestUserSchema())
     const integRow = db.prepare('SELECT hash FROM _integrity WHERE id = 1').get() as
-      | { hash: string }
-      | undefined
+      { hash: string } | undefined
     if (integRow) {
       const ok = verifyHash(integRow.hash, hash)
       if (ok) {
@@ -132,6 +141,58 @@ export class DatabaseManager {
     )
     this.afterWrite()
     return { code: 0, message: 'Succeed!', data: { id: row['id'] ?? null } }
+  }
+
+  /**
+   * 原子保存一组消息及会话分支尾。同一消息 id 以最后一次检查点为准，
+   * 因此流式生成、工具执行和失败收尾都可以反复调用，不会制造重复行。
+   */
+  saveMessages(
+    conversationId: string,
+    messages: Array<Record<string, unknown>>,
+    leafId: string,
+    updatedAt?: string
+  ): { code: number; message: string; data: { changes: number } } {
+    const { db } = this.ctx()
+    if (!conversationId) throw new Error('conversationId is required')
+
+    const write = db.transaction((rows: Array<Record<string, unknown>>) => {
+      let changes = 0
+      for (const source of rows) {
+        const row = { ...source, conversation_id: conversationId }
+        const columns = Object.keys(row)
+        if (!columns.length) continue
+        const placeholders = columns.map(() => '?').join(', ')
+        const values = columns.map((column) => row[column])
+        const updateColumns = columns.filter((column) => column !== 'id')
+        const conflictClause = updateColumns.length
+          ? ` DO UPDATE SET ${updateColumns
+              .map((column) => `${column} = excluded.${column}`)
+              .join(', ')}`
+          : ''
+        changes += db
+          .prepare(
+            `INSERT INTO messages (${columns.join(', ')}) VALUES (${placeholders})
+             ON CONFLICT(id)${conflictClause}`
+          )
+          .run(...values).changes
+      }
+
+      const conversation = updatedAt
+        ? db
+            .prepare('UPDATE conversations SET leaf_id = ?, updated_at = ? WHERE id = ?')
+            .run(leafId, updatedAt, conversationId)
+        : db
+            .prepare('UPDATE conversations SET leaf_id = ? WHERE id = ?')
+            .run(leafId, conversationId)
+      if (!conversation.changes) throw new Error('Conversation not found')
+      changes += conversation.changes
+      return changes
+    })
+
+    const changes = write(messages)
+    this.afterWrite()
+    return { code: 0, message: 'Succeed!', data: { changes } }
   }
 
   update(
@@ -279,6 +340,7 @@ export class DatabaseManager {
     this.flushHash()
     this.user.db.close()
     this.user = null
+    this.userIdentity = ''
   }
 
   close(): void {

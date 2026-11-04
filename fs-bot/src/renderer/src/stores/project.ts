@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import ApiUtil from '@renderer/utils/ApiUtil'
 import ProjectDb from '@renderer/db/ProjectDb'
 import type { Project } from '@renderer/db/ProjectDb'
+import { cancelAgentProject, resumeAgentProject } from '@renderer/core/AgentRuntime'
 
 /**
  * 项目：一个项目 = 图标 / 名称 / 描述 / 环境变量 / 技能 / 工具 / 工作区 + 绑定的服务端应用。
@@ -17,7 +18,7 @@ export const useProjectStore = defineStore('project', () => {
   async function fetchProjects(): Promise<Project[]> {
     loading.value = true
     try {
-      const result: any = await ProjectDb.list()
+      const result = await ProjectDb.list()
       if (!ApiUtil.succeed(result)) {
         throw new Error(String(ApiUtil.message(result) || '项目列表读取失败'))
       }
@@ -28,20 +29,28 @@ export const useProjectStore = defineStore('project', () => {
     return projects.value
   }
 
-  async function create(data: Partial<Project>) {
-    const result: any = await ProjectDb.create(data)
+  async function create(data: Partial<Project>): Promise<unknown> {
+    const result = await ProjectDb.create(data)
     await fetchProjects()
     return result
   }
 
-  async function update(id: string, data: Partial<Project>) {
-    const result: any = await ProjectDb.update(id, data)
+  async function update(id: string, data: Partial<Project>): Promise<unknown> {
+    const result = await ProjectDb.update(id, data)
     await fetchProjects()
     return result
   }
 
-  async function remove(id: string) {
-    const result: any = await ProjectDb.delete(id)
+  async function remove(id: string): Promise<unknown> {
+    cancelAgentProject(id)
+    let result: unknown
+    try {
+      result = await ProjectDb.delete(id)
+    } catch (error) {
+      resumeAgentProject(id)
+      throw error
+    }
+    if (!ApiUtil.succeed(result)) resumeAgentProject(id)
     await fetchProjects()
     return result
   }

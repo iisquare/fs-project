@@ -10,6 +10,10 @@ import v9 from './sql/migrations-v9.sql?raw'
 import v10 from './sql/migrations-v10.sql?raw'
 import v11 from './sql/migrations-v11.sql?raw'
 import v12 from './sql/migrations-v12.sql?raw'
+import v13 from './sql/migrations-v13.sql?raw'
+import v14 from './sql/migrations-v14.sql?raw'
+import v15 from './sql/migrations-v15.sql?raw'
+import v16 from './sql/migrations-v16.sql?raw'
 import { USER_META_TABLES, USER_SCHEMA_VERSION, getUserSchema } from './schema'
 
 /**
@@ -48,7 +52,11 @@ export const USER_MIGRATIONS: Record<number, string> = {
   9: v9,
   10: v10,
   11: v11,
-  12: v12
+  12: v12,
+  13: v13,
+  14: v14,
+  15: v15,
+  16: v16
 }
 
 /**

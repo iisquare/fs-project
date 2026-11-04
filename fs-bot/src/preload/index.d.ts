@@ -100,6 +100,8 @@ export interface WorkspaceApproval {
   command?: string
   /** 发起这次访问的会话：界面据此把申请交回那段对话 */
   conversationId?: string
+  /** 发起申请的专业子 Agent 会话：只用于精确取消 */
+  sourceSessionId?: string
 }
 
 /** 本地命令的执行结果：退出码为 null 表示被信号终止或没能启动 */
@@ -114,6 +116,14 @@ export interface WorkspaceCommandResult {
   duration: number
   stdout: string
   stderr: string
+}
+
+/** 浏览器自动化的统一结果：text 交给模型，截图路径可直接用 Markdown 展示 */
+export interface BrowserOperationResult {
+  text: string
+  url: string
+  title: string
+  screenshot?: string
 }
 
 export interface InstalledSkill {
@@ -187,6 +197,10 @@ declare global {
       maximize: () => Promise<void>
       close: () => Promise<void>
       quit: () => Promise<void>
+      /** 写完退出检查点后通知主进程放行 app.quit */
+      quitReady: () => Promise<void>
+      /** 主进程准备退出时触发；回调结束后必须调用 quitReady */
+      onPrepareQuit: (callback: () => void) => () => void
       isMaximized: () => Promise<boolean>
       appVersions: () => Promise<{
         clientVersion: string
@@ -257,6 +271,12 @@ declare global {
           table: string,
           data: Record<string, unknown>
         ) => Promise<{ code: number; message: string; data: unknown }>
+        saveMessages: (
+          conversationId: string,
+          messages: Array<Record<string, unknown>>,
+          leafId: string,
+          updatedAt?: string
+        ) => Promise<{ code: number; message: string; data: { changes: number } }>
         delete: (
           table: string,
           where: Record<string, unknown>
@@ -391,6 +411,28 @@ declare global {
         onApprovalRequest: (callback: (request: WorkspaceApproval) => void) => () => void
         /** 申请作废（主进程等到超时、按拒绝处理）：界面据此撤掉横幅 */
         onApprovalClosed: (callback: (request: { id: string }) => void) => () => void
+      }
+      automation: {
+        browser: (request: {
+          userId?: string | number
+          projectId?: string
+          conversationId?: string
+          action: string
+          args?: Record<string, unknown>
+        }) => Promise<BrowserOperationResult>
+      }
+      agent: {
+        open: (sessionId: string) => Promise<{
+          opened: boolean
+          sessionId: string
+          focused: boolean
+        }>
+        publish: (sessionId: string, interaction: unknown) => void
+        onUpdate: (
+          callback: (update: { sessionId: string; interaction: unknown }) => void
+        ) => () => void
+        closeSelf: () => Promise<void>
+        closeAll: () => Promise<void>
       }
       icon: {
         /** 选图后返回可直接放进 img 的地址（取消返回空串） */

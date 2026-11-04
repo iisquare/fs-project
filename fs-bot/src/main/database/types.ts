@@ -21,6 +21,17 @@ export interface DbUpsertRequest {
   data: Record<string, unknown>
 }
 
+/**
+ * 对话检查点：消息、分支尾与最后活动时间必须在同一个事务里落盘。
+ * 否则进程恰好在一轮回复写完之后、分支指针更新之前退出，回复虽在库里却不会出现在当前分支上。
+ */
+export interface DbSaveMessagesRequest {
+  conversationId: string
+  messages: Array<Record<string, unknown>>
+  leafId: string
+  updatedAt?: string
+}
+
 export interface DbDeleteRequest {
   table: string
   where: Record<string, unknown>

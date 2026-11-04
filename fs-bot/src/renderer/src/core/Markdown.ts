@@ -184,6 +184,7 @@ export function localImagePaths(text: string): string[] {
 export type MarkdownPart =
   | { type: 'text'; html: string }
   | { type: 'code'; lang: string; code: string }
+  | { type: 'table'; html: string }
 
 /**
  * 按顶层词法单元把正文切成「普通片段 + 代码块」。
@@ -195,6 +196,10 @@ export function markdownParts(text: string, options: MarkdownOptions = {}): Mark
   if (!value) return []
   const parts: MarkdownPart[] = []
   let buffer: Token[] = []
+  const render = (tokens: Token[]): string => {
+    const html = marked.parser(tokens, { ...marked.defaults, ...options, async: false })
+    return DOMPurify.sanitize(html, { ADD_ATTR: ['target'], ALLOWED_URI_REGEXP: ALLOWED_URI })
+  }
   const flush = (): void => {
     if (!buffer.length) return
     /**
@@ -202,11 +207,7 @@ export function markdownParts(text: string, options: MarkdownOptions = {}): Mark
      * 而 use() 注册的渲染器就在默认项里——漏掉它就退回内置渲染器，
      * 正文里的知识库图片换不到地址（还是 kb: 标识，被清洗掉后一片空白），代码块也不再着色
      */
-    const html = marked.parser(buffer, { ...marked.defaults, ...options, async: false })
-    parts.push({
-      type: 'text',
-      html: DOMPurify.sanitize(html, { ADD_ATTR: ['target'], ALLOWED_URI_REGEXP: ALLOWED_URI })
-    })
+    parts.push({ type: 'text', html: render(buffer) })
     buffer = []
   }
   for (const token of marked.lexer(value)) {
@@ -217,6 +218,15 @@ export function markdownParts(text: string, options: MarkdownOptions = {}): Mark
         lang: String(token.lang ?? '').trim(),
         code: String(token.text ?? '')
       })
+      continue
+    }
+    /**
+     * 顶层表格单独交给 el-scrollbar：窄窗口里只横向滚动表格，
+     * 不会把整条消息撑宽，也不会留下常驻的原生滚动条
+     */
+    if ('table' === token.type) {
+      flush()
+      parts.push({ type: 'table', html: render([token]) })
       continue
     }
     buffer.push(token)

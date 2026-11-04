@@ -26,6 +26,7 @@ import { CHAT_IMAGE_SCHEME, serveChatImage } from './images'
 import { parseProjectEnvVars } from './project-env'
 import { ScheduleManager } from './schedule'
 import { getAutoStartStatus, setAutoStart } from './autostart'
+import { browserAutomation, type BrowserOperationRequest } from './automation'
 import {
   cancelUpdateDownload,
   downloadAndInstallUpdate,
@@ -48,6 +49,7 @@ import type {
   DbInsertRequest,
   DbUpdateRequest,
   DbUpsertRequest,
+  DbSaveMessagesRequest,
   DbDeleteRequest,
   DbDeleteBatchRequest,
   DbSearchRequest,
@@ -88,6 +90,52 @@ function parseWorkspaceRoots(raw: unknown): WorkspaceRoot[] {
 }
 
 let mainWindow: BrowserWindow | null = null
+const agentWindows = new Map<string, BrowserWindow>()
+const agentSnapshots = new Map<string, unknown>()
+let quitHandshakeStarted = false
+let quitHandshakeDone = false
+let quitHandshakeTimer: NodeJS.Timeout | null = null
+
+/**
+ * 正常关闭窗口 / 退出应用前，先让渲染进程把正在生成的回复写成最终检查点。
+ * 渲染进程未响应时超时放行；崩溃无法握手，但每个模型轮次与工具结果本身已有增量检查点。
+ */
+function finishQuitHandshake(): void {
+  if (quitHandshakeDone) return
+  quitHandshakeDone = true
+  if (quitHandshakeTimer) {
+    clearTimeout(quitHandshakeTimer)
+    quitHandshakeTimer = null
+  }
+  app.quit()
+}
+
+function requestQuitHandshake(): void {
+  if (quitHandshakeDone || quitHandshakeStarted) return
+  quitHandshakeStarted = true
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.webContents.isDestroyed()) {
+    finishQuitHandshake()
+    return
+  }
+  mainWindow.webContents.send('app:prepare-quit')
+  quitHandshakeTimer = setTimeout(finishQuitHandshake, 3_000)
+}
+
+/**
+ * 用户库、子 Agent 会话锁与浏览器 Profile 都以当前用户为作用域，不支持两个进程同时写。
+ * 第二次启动只激活已有窗口，避免同一 task_key / session_id 在两个渲染进程里并发执行。
+ */
+const singleInstance = app.requestSingleInstanceLock()
+if (!singleInstance) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+  })
+}
 
 const db = DatabaseManager.getInstance()
 const workspace = WorkspaceManager.getInstance()
@@ -98,7 +146,10 @@ const schedule = new ScheduleManager()
  * 等待界面答复的访问申请：id → 答复回调与它所属的会话。
  * 成对清理：界面答复、等到超时、这段会话被停止，三条路都会收尾。
  */
-const approvals = new Map<string, { conversationId: string; settle: (allow: boolean) => void }>()
+const approvals = new Map<
+  string,
+  { conversationId: string; sourceSessionId: string; settle: (allow: boolean) => void }
+>()
 const APPROVAL_TIMEOUT = 5 * 60 * 1000
 
 /** 用户数据比客户端新：提示原因，确认后退出，避免旧结构继续读写新数据 */
@@ -138,11 +189,13 @@ function closeApproval(id: string): boolean {
  * 这些申请是命令 / 文件操作等在那一步的凭据，留着就等于「停止」之后还能点允许，
  * 一轮对话被停止后不该再有一步能借它继续跑下去。
  */
-function cancelApprovals(conversationId: string): void {
+function cancelApprovals(conversationId: string, sourceSessionId = ''): void {
   const id = String(conversationId ?? '')
   if (!id) return
+  const source = String(sourceSessionId ?? '')
   for (const [requestId, pending] of [...approvals]) {
     if (pending.conversationId !== id) continue
+    if (source && pending.sourceSessionId !== source) continue
     if (!closeApproval(requestId)) continue
     pending.settle(false)
   }
@@ -161,6 +214,7 @@ function requestApproval(request: WorkspaceApproval): Promise<boolean> {
     }, APPROVAL_TIMEOUT)
     approvals.set(request.id, {
       conversationId: String(request.conversationId ?? ''),
+      sourceSessionId: String(request.sourceSessionId ?? ''),
       settle: (allow: boolean) => {
         clearTimeout(timer)
         settle(allow)
@@ -182,6 +236,81 @@ function dragIcon(): NativeImage | string {
     dragImage = image.isEmpty() ? icon : image.resize({ width: 32, height: 32 })
   }
   return dragImage
+}
+
+function closeAgentWindows(): void {
+  for (const window of agentWindows.values()) {
+    if (!window.isDestroyed()) window.close()
+  }
+  agentWindows.clear()
+  agentSnapshots.clear()
+}
+
+function openAgentWindow(sessionId: string): BrowserWindow {
+  const existing = agentWindows.get(sessionId)
+  if (existing && !existing.isDestroyed()) {
+    if (existing.isMinimized()) existing.restore()
+    existing.show()
+    existing.focus()
+    return existing
+  }
+
+  const owner = mainWindow
+  const bounds = owner?.getBounds()
+  const area = bounds
+    ? screen.getDisplayMatching(bounds).workArea
+    : screen.getPrimaryDisplay().workArea
+  const width = Math.min(820, Math.max(520, area.width - 40))
+  const height = Math.min(760, Math.max(460, area.height - 40))
+  let x = bounds ? bounds.x + bounds.width + 12 : area.x + Math.round((area.width - width) / 2)
+  let y = bounds ? Math.max(area.y, Math.min(bounds.y, area.y + area.height - height)) : area.y + 40
+  if (x + width > area.x + area.width) {
+    x = bounds
+      ? Math.max(area.x, Math.min(bounds.x - width - 12, area.x + area.width - width))
+      : area.x + Math.round((area.width - width) / 2)
+    y = bounds ? Math.min(area.y + area.height - height, bounds.y + 24) : y
+  }
+
+  const detailWindow = new BrowserWindow({
+    x,
+    y,
+    width,
+    height,
+    minWidth: 520,
+    minHeight: 460,
+    show: false,
+    autoHideMenuBar: true,
+    title: '子 Agent 执行详情',
+    backgroundColor: '#f5f7fa',
+    ...(process.platform === 'linux' ? { icon } : {}),
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false
+    }
+  })
+  agentWindows.set(sessionId, detailWindow)
+
+  detailWindow.once('ready-to-show', () => {
+    detailWindow.show()
+    const snapshot = agentSnapshots.get(sessionId)
+    if (snapshot) detailWindow.webContents.send('agent-window:update', snapshot)
+  })
+  detailWindow.on('closed', () => {
+    if (agentWindows.get(sessionId) === detailWindow) agentWindows.delete(sessionId)
+    agentSnapshots.delete(sessionId)
+  })
+  detailWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
+  const hash = `/agent-detail?sessionId=${encodeURIComponent(sessionId)}`
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    void detailWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#${hash}`)
+  } else {
+    void detailWindow.loadFile(join(__dirname, '../renderer/index.html'), { hash })
+  }
+  return detailWindow
 }
 
 function createWindow(): void {
@@ -213,6 +342,12 @@ function createWindow(): void {
     applyFilesPanelWidth()
   })
 
+  mainWindow.on('close', (event) => {
+    if (quitHandshakeDone) return
+    event.preventDefault()
+    requestQuitHandshake()
+  })
+
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
@@ -233,6 +368,7 @@ function createWindow(): void {
   })
   mainWindow.webContents.on('render-process-gone', () => schedule.stop())
   mainWindow.on('closed', () => {
+    closeAgentWindows()
     mainWindow = null
     // 窗口关闭即视为客户端停止：不在后台继续跑定时任务
     schedule.stop()
@@ -270,6 +406,11 @@ ipcMain.handle('window:close', () => {
 /** 强制升级弹窗的「退出应用」：跨平台退出整个进程，而不是只关闭窗口 */
 ipcMain.handle('app:quit', () => {
   app.quit()
+})
+
+/** 渲染进程已经写完退出检查点；此时才允许真正退出并关闭数据库 */
+ipcMain.handle('app:quit-ready', () => {
+  finishQuitHandshake()
 })
 
 ipcMain.handle('window:is-maximized', () => {
@@ -371,7 +512,7 @@ ipcMain.handle('window:toggle-pin', (_event, pin: boolean) => {
   }
 })
 
-/** 右侧文件区展开 / 收起 / 拖宽：界面只报意愿与宽度，窗口怎么让位由主进程算 */
+/** 右侧文件区展开 / 收起：界面只报意愿与宽度，窗口怎么让位由主进程算 */
 ipcMain.handle('window:files-panel', (_event, request: { visible?: boolean; width?: number }) => {
   filesPanelVisible = true === request?.visible
   const width = Number(request?.width)
@@ -424,6 +565,45 @@ app.whenReady().then(async () => {
   skills.init(runtimeDir)
   // 图标目录初始化：选中的本地图片复制到这里，界面按 app-icon://<文件名> 引用
   initIcons(runtimeDir)
+  // 浏览器自动化：登录态、临时截图与下载都放在运行目录下
+  browserAutomation.init(runtimeDir)
+
+  ipcMain.handle('agent-window:open', (event, request: { sessionId?: string }) => {
+    if (!mainWindow || event.sender !== mainWindow.webContents) {
+      throw new Error('只能从主对话窗口打开子 Agent 详情')
+    }
+    const sessionId = String(request?.sessionId ?? '').trim()
+    if (!sessionId) throw new Error('缺少子 Agent 会话标识')
+    const rows = db.select('agent_sessions', { id: sessionId }).data as Record<string, unknown>[]
+    if (!rows[0]) throw new Error('找不到子 Agent 会话')
+    const window = openAgentWindow(sessionId)
+    return { opened: true, sessionId, focused: !window.isDestroyed() }
+  })
+
+  ipcMain.on('agent-window:publish', (event, request: { sessionId?: string }) => {
+    if (!mainWindow || event.sender !== mainWindow.webContents) return
+    const sessionId = String(request?.sessionId ?? '').trim()
+    if (!sessionId || !agentWindows.has(sessionId)) return
+    const payload = {
+      sessionId,
+      interaction: request && 'interaction' in request ? request.interaction : null
+    }
+    agentSnapshots.set(sessionId, payload)
+    const window = agentWindows.get(sessionId)
+    if (window && !window.isDestroyed()) {
+      window.webContents.send('agent-window:update', payload)
+    }
+  })
+
+  ipcMain.handle('agent-window:close-self', (event) => {
+    const window = BrowserWindow.fromWebContents(event.sender)
+    window?.close()
+  })
+
+  ipcMain.handle('agent-window:close-all', (event) => {
+    if (!mainWindow || event.sender !== mainWindow.webContents) return
+    closeAgentWindows()
+  })
 
   ipcMain.handle('db:init-user', async (_event, request: DbInitUserRequest) => {
     try {
@@ -452,6 +632,15 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('db:upsert', (_event, request: DbUpsertRequest) => {
     return db.upsert(request.table, request.data)
+  })
+
+  ipcMain.handle('db:save-messages', (_event, request: DbSaveMessagesRequest) => {
+    return db.saveMessages(
+      request.conversationId,
+      request.messages,
+      request.leafId,
+      request.updatedAt
+    )
   })
 
   ipcMain.handle('db:delete', (_event, request: DbDeleteRequest) => {
@@ -616,8 +805,60 @@ app.whenReady().then(async () => {
    */
   ipcMain.handle('workspace:cancel', (_event, request: { conversationId?: string }) => {
     const conversationId = String(request?.conversationId ?? '')
-    cancelApprovals(conversationId)
+    let approvalConversationId = conversationId
+    let sourceSessionId = ''
+    if (conversationId) {
+      try {
+        const rows = db.select('agent_sessions', { id: conversationId }).data as Record<
+          string,
+          unknown
+        >[]
+        if (rows[0]) {
+          approvalConversationId = String(rows[0]['parent_conversation_id'] ?? conversationId)
+          sourceSessionId = conversationId
+        }
+      } catch {
+        // 主对话自己的任务不会出现在 agent_sessions 中。
+      }
+    }
+    cancelApprovals(approvalConversationId, sourceSessionId)
+    browserAutomation.cancel(conversationId)
     return { stopped: workspace.cancel(conversationId) }
+  })
+
+  /** 浏览器自动化：模型按快照 ref 操作页面，执行器自动等待、处理弹窗与记录下载 */
+  ipcMain.handle('automation:browser', async (_event, request: BrowserOperationRequest) => {
+    const uploadPaths: string[] = []
+    if ('upload' === request.action) uploadPaths.push(String(request.args?.path ?? '').trim())
+    if ('perform' === request.action && Array.isArray(request.args?.steps)) {
+      for (const step of request.args.steps) {
+        if (!step || 'object' !== typeof step) continue
+        const row = step as Record<string, unknown>
+        if ('upload' === row['action']) uploadPaths.push(String(row['path'] ?? '').trim())
+      }
+    }
+    const browserSessionId = String(request.conversationId ?? '')
+    let approvalConversationId = browserSessionId
+    if (browserSessionId) {
+      try {
+        const rows = db.select('agent_sessions', { id: browserSessionId }).data as Record<
+          string,
+          unknown
+        >[]
+        approvalConversationId = String(rows[0]?.['parent_conversation_id'] ?? browserSessionId)
+      } catch {
+        // 主对话自己的浏览器会话不在 agent_sessions 中，沿用原会话标识。
+      }
+    }
+    for (const path of uploadPaths.filter(Boolean)) {
+      await workspace.authorizeRead(
+        String(request.projectId ?? ''),
+        path,
+        approvalConversationId,
+        browserSessionId
+      )
+    }
+    return browserAutomation.run(request)
   })
 
   /**
@@ -846,8 +1087,15 @@ app.whenReady().then(async () => {
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
+app.on('before-quit', (event) => {
+  if (quitHandshakeDone) return
+  event.preventDefault()
+  requestQuitHandshake()
+})
+
 app.on('will-quit', () => {
   schedule.stop()
+  void browserAutomation.closeAll()
   // 退出前把待更新的完整性哈希落盘，并关闭数据库（触发 WAL checkpoint）
   db.close()
 })

@@ -6,6 +6,7 @@ import { useConversationStore } from '@renderer/stores/conversation'
 import { useProjectStore } from '@renderer/stores/project'
 import { useChatStore } from '@renderer/stores/chat'
 import { useApprovalStore } from '@renderer/stores/approval'
+import { useAgentStore } from '@renderer/stores/agents'
 import { groupByTime, GROUP_LABELS } from '@renderer/utils/TimeUtil'
 import { errorMessage } from '@renderer/utils/ErrorUtil'
 import { confirmRemoveConversation } from '@renderer/utils/ConversationUtil'
@@ -16,6 +17,7 @@ const conversationStore = useConversationStore()
 const projectStore = useProjectStore()
 const chatStore = useChatStore()
 const approvalStore = useApprovalStore()
+const agentStore = useAgentStore()
 const loading = ref(false)
 const loadError = ref('')
 
@@ -61,7 +63,11 @@ function isWaiting(id: string): boolean {
   return approvalStore.pendingOf(id) > 0
 }
 
-async function handleSelect(id: string) {
+function agentStatus(id: string): { active: number; waiting: number } {
+  return agentStore.statusForConversation(id)
+}
+
+async function handleSelect(id: string): Promise<void> {
   try {
     await conversationStore.select(id)
     router.push(page.home)
@@ -87,7 +93,7 @@ async function handleRename(id: string, title: string): Promise<void> {
 </script>
 
 <template>
-  <el-scrollbar class="sidebar-content" v-loading="loading">
+  <el-scrollbar v-loading="loading" class="sidebar-content">
     <div class="project-filter">
       <el-select
         v-model="conversationStore.filterProjectId"
@@ -122,6 +128,8 @@ async function handleRename(id: string, title: string): Promise<void> {
             :project-name="projectName(conv.projectId)"
             :running="isRunning(conv.id)"
             :waiting="isWaiting(conv.id)"
+            :agent-active="agentStatus(conv.id).active > 0"
+            :agent-waiting="agentStatus(conv.id).waiting > 0"
             @select="handleSelect($event)"
             @remove="handleDelete($event)"
             @rename="handleRename"

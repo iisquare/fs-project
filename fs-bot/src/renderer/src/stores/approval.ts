@@ -24,6 +24,8 @@ export interface ApprovalRequest {
   command?: string
   /** 发起这次访问的会话：申请只归它处理（主进程从工具调用那里带上来） */
   conversationId: string
+  /** 发起申请的专业子 Agent 会话（浏览器子 Agent 等） */
+  sourceSessionId?: string
 }
 
 /** 主进程推上来的申请：正常路径一定带会话标识，这里按可选收，缺了就走下面的告警 */
