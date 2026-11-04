@@ -87,6 +87,10 @@ function vendorChunkName(pkg: string): string {
   if (pkg === 'cron-parser' || pkg === 'luxon') return 'cron-parser'
   if (sqlFormatterPackages.has(pkg)) return 'sql-formatter'
   if (pkg === 'vditor') return 'vditor'
+  if (pkg === 'jszip') return 'jszip'
+  if (pkg === 'docx-preview') return 'docx-preview'
+  if (pkg === 'jspdf' || pkg === 'html2canvas') return 'pdf-export'
+  if (pkg.startsWith('@hufe921/') || pkg === 'docx') return 'canvas-editor'
   if (pkg.startsWith('@antv/')) return 'antv'
   if (bpmnPackages.has(pkg)) return 'bpmn'
   if (

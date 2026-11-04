@@ -3,7 +3,13 @@ import { computed, ref, watch } from 'vue'
 import { RefreshLeft, Upload } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import DashboardPropertySection from './DashboardPropertySection.vue'
-import { createWidget, findParent, widgetContentSize } from './model'
+import {
+  componentStyleDefaults,
+  createWidget,
+  findParent,
+  widgetContentSize,
+  type DashboardModel,
+} from './model'
 
 const props = defineProps({
   widget: { type: Object, default: null },
@@ -266,7 +272,14 @@ const uploadBackground = (event: Event) => {
 const resetAppearance = () => {
   if (!props.widget) return
   const zIndex = props.widget.style.zIndex
-  Object.assign(props.widget.style, createWidget(props.widget.type).style)
+  Object.assign(
+    props.widget.style,
+    createWidget(
+      props.widget.type,
+      {},
+      componentStyleDefaults(props.model as DashboardModel, props.widget.type),
+    ).style,
+  )
   props.widget.style.zIndex = zIndex
 }
 const changeCanvasDisplayUnit = (field: 'width' | 'height', unit: 'px' | '%') => {

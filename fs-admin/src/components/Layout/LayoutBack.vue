@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 返回按钮 - 点击优先调用 router.back()，若上一页为启动页或无历史记录则跳转到指定路由。
+ * 返回按钮 - 点击优先调用 router.back()，若上一页为鉴权过渡页或无历史记录则跳转到指定路由。
  *
  * 展示形式由 variant 选择，也可用默认插槽完全自定义内容：
  * - icon   仅图标（默认），用于工具栏
@@ -41,16 +41,19 @@ const props = withDefaults(defineProps<{
 
 const router = useRouter()
 
-const skipBackPaths: string[] = ['/startup']
+const skipBackPaths: string[] = ['/startup', '/login', '/signup', '/forgot', '/redirect']
 
 const isSkipBack = (backPath: string) => {
-  return skipBackPaths.some(path => backPath === path || backPath.startsWith(path + '?'))
+  return skipBackPaths.some(path => {
+    return backPath === path || backPath.startsWith(path + '?') || backPath.startsWith(path + '#')
+  })
 }
 
 const handleClick = () => {
   const history = router.options.history as any
-  const backPath = history?.state?.back
-  if (backPath && !isSkipBack(backPath)) {
+  const backPath = String(history?.state?.back || '')
+  const currentPath = router.currentRoute.value.fullPath
+  if (backPath.startsWith('/') && backPath !== currentPath && !isSkipBack(backPath)) {
     router.back()
     return
   }

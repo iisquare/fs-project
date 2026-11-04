@@ -10,6 +10,7 @@ import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.web.bi.dao.DashboardDao;
 import com.iisquare.fs.web.bi.entity.Dashboard;
+import com.iisquare.fs.web.bi.entity.DashboardTemplate;
 import com.iisquare.fs.web.bi.util.AggregationUtil;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,8 @@ public class DashboardService extends ServiceBase {
 
     @Autowired
     DashboardDao dashboardDao;
+    @Autowired
+    DashboardTemplateService dashboardTemplateService;
     @Autowired
     DefaultRbacService rbacService;
     @Autowired
@@ -165,15 +168,31 @@ public class DashboardService extends ServiceBase {
             if (!DPUtil.empty(name)) {
                 predicates.add(cb.like(root.get("name"), "%" + name + "%"));
             }
+            int templateId = ValidateUtil.filterInteger(param.get("templateId"), 1, null, 0);
+            if (templateId > 0) {
+                predicates.add(cb.equal(root.get("templateId"), templateId));
+            }
             return cb.and(predicates.toArray(new Predicate[0]));
         }, PageRequest.of(page - 1, pageSize,
                 Sort.by(new Sort.Order(Sort.Direction.DESC, "sort"), new Sort.Order(Sort.Direction.DESC, "id"))));
-        List<?> rows = data.getContent();
+        List<Dashboard> rows = data.getContent();
         if (!DPUtil.empty(config.get("withUserInfo"))) {
             rbacService.fillUserInfo(rows, "createdUid", "updatedUid");
         }
         if (!DPUtil.empty(config.get("withStatusText"))) {
             DPUtil.fillValues(rows, new String[]{"status"}, new String[]{"statusText"}, status("full"));
+        }
+        if (!DPUtil.empty(config.get("withTemplateInfo"))) {
+            Set<Integer> templateIds = new HashSet<>();
+            for (Dashboard row : rows) {
+                if (null != row.getTemplateId() && row.getTemplateId() > 0) {
+                    templateIds.add(row.getTemplateId());
+                }
+            }
+            Map<Integer, String> templateNames = dashboardTemplateService.names(templateIds);
+            for (Dashboard row : rows) {
+                row.setTemplateName(templateNames.getOrDefault(row.getTemplateId(), ""));
+            }
         }
         result.put("page", page);
         result.put("pageSize", pageSize);
@@ -208,6 +227,7 @@ public class DashboardService extends ServiceBase {
         String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
         int sort = DPUtil.parseInt(param.get("sort"));
         int status = DPUtil.parseInt(param.get("status"));
+        int templateId = ValidateUtil.filterInteger(param.get("templateId"), 1, null, 0);
         String content = DPUtil.parseString(param.get("content"));
         String description = DPUtil.parseString(param.get("description"));
         if (param.containsKey("name") || id < 1) {
@@ -221,15 +241,50 @@ public class DashboardService extends ServiceBase {
             if (!rbacService.hasPermit(request, "modify")) return ApiUtil.result(9403, null, null);
             info = info(id);
             if (null == info) return ApiUtil.result(404, null, id);
+            if (templateId > 0 && !Objects.equals(templateId, info.getTemplateId())) {
+                DashboardTemplate template = dashboardTemplateService.info(templateId);
+                if (null == template || null == template.getStatus() || template.getStatus() != 1) {
+                    return ApiUtil.result(1005, "大屏模板不存在或已停用", templateId);
+                }
+            }
         } else {
             if (!rbacService.hasPermit(request, "add")) return ApiUtil.result(9403, null, null);
             info = new Dashboard();
+            if (templateId > 0) {
+                DashboardTemplate template = dashboardTemplateService.info(templateId);
+                if (null == template || null == template.getStatus() || template.getStatus() != 1) {
+                    return ApiUtil.result(1005, "大屏模板不存在或已停用", templateId);
+                }
+                if (DPUtil.empty(template.getContent())) {
+                    return ApiUtil.result(1006, "大屏模板内容为空", templateId);
+                }
+                JsonNode templateContent = DPUtil.parseJSON(template.getContent());
+                if (null == templateContent || !templateContent.isObject()) {
+                    return ApiUtil.result(1007, "大屏模板配置格式异常", templateId);
+                }
+                ObjectNode dashboardContent = (ObjectNode) templateContent.deepCopy();
+                JsonNode providedContent = DPUtil.parseJSON(content);
+                if (null != providedContent && providedContent.isObject()
+                        && providedContent.has("commonComponentStyle")) {
+                    // 设计器已应用模板后继续编辑时，以当前画布内容为准。
+                    dashboardContent = (ObjectNode) providedContent.deepCopy();
+                } else if (null != providedContent && providedContent.isObject()
+                        && providedContent.get("widgets") != null
+                        && providedContent.get("widgets").isArray()) {
+                    // 首次保存前已经添加组件时，只合并模板布局和样式，保留用户组件。
+                    dashboardContent.set("widgets", providedContent.get("widgets").deepCopy());
+                } else {
+                    dashboardContent.putArray("widgets");
+                }
+                content = DPUtil.stringify(dashboardContent);
+            }
         }
         if (param.containsKey("name") || null == info.getId()) info.setName(name);
         if (param.containsKey("content") || null == info.getId()) info.setContent(content);
         if (param.containsKey("description") || null == info.getId()) info.setDescription(description);
         if (param.containsKey("sort") || null == info.getId()) info.setSort(sort);
         if (param.containsKey("status") || null == info.getId()) info.setStatus(status);
+        if (param.containsKey("templateId") || null == info.getId()) info.setTemplateId(templateId);
         int uid = rbacService.uid(request);
         long time = System.currentTimeMillis();
         info.setUpdatedTime(time);
@@ -257,6 +312,18 @@ public class DashboardService extends ServiceBase {
         } catch (Exception e) {
             return ApiUtil.result(1500, "删除数据大屏失败", e.getMessage());
         }
+    }
+
+    public List<Map<String, Object>> templates() {
+        return dashboardTemplateService.options();
+    }
+
+    public Map<String, Object> template(Integer id) {
+        DashboardTemplate template = dashboardTemplateService.info(id);
+        if (null == template || null == template.getStatus() || template.getStatus() != 1) {
+            return ApiUtil.result(1005, "大屏模板不存在或已停用", id);
+        }
+        return ApiUtil.result(0, null, template);
     }
 
 }

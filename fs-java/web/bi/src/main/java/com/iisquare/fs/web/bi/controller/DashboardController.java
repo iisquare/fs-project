@@ -37,6 +37,19 @@ public class DashboardController extends PermitControllerBase {
         return ApiUtil.echoResult(dashboardService.search(datasetId, preview, levels));
     }
 
+    @RequestMapping("/templates")
+    @Permission("")
+    public String templatesAction() {
+        return ApiUtil.echoResult(0, null, dashboardService.templates());
+    }
+
+    @RequestMapping("/template")
+    @Permission("")
+    public String templateAction(@RequestBody Map<?, ?> param) {
+        int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
+        return ApiUtil.echoResult(dashboardService.template(id));
+    }
+
     @RequestMapping("/info")
     @Permission("")
     public String infoAction(@RequestBody Map<?, ?> param) {
@@ -49,7 +62,7 @@ public class DashboardController extends PermitControllerBase {
     @Permission("")
     public String listAction(@RequestBody Map<?, ?> param) {
         Map<?, ?> result = dashboardService.search(param, DPUtil.buildMap(
-                "withUserInfo", true, "withStatusText", true
+                "withUserInfo", true, "withStatusText", true, "withTemplateInfo", true
         ));
         return ApiUtil.echoResult(0, null, result);
     }

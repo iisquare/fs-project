@@ -19,4 +19,10 @@ export default {
   search(data: any = {}, tips = {}) {
     return base.post('/dashboard/search', data, tips)
   },
+  templates(tips = {}) {
+    return base.post('/dashboard/templates', {}, tips)
+  },
+  template(id: any, tips = {}) {
+    return base.post('/dashboard/template', { id }, tips)
+  },
 }

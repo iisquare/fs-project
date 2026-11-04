@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
+  Back,
   Check,
   FullScreen,
   Grid,
@@ -14,7 +15,6 @@ import {
   RefreshRight,
   View,
 } from '@element-plus/icons-vue'
-import LayoutBack from '@/components/Layout/LayoutBack.vue'
 import LayoutDesigner from '@/components/Layout/LayoutDesigner.vue'
 import LayoutHeading from '@/components/Layout/LayoutHeading.vue'
 import LayoutWidget from '@/components/Layout/LayoutWidget.vue'
@@ -23,15 +23,16 @@ import ApiUtil from '@/utils/ApiUtil'
 import DashboardInspector from '@/views/bi/components/dashboard/DashboardInspector.vue'
 import DashboardRenderer from '@/views/bi/components/dashboard/DashboardRenderer.vue'
 import {
+  componentStyleDefaults,
   createWidget,
   defaultDashboard,
   findParent,
   findWidget,
   removeWidget,
-  styleDefaults,
   widgetContentSize,
   walkWidgets,
   widgetGroups,
+  type DashboardComponentStyles,
   type DashboardModel,
   type DashboardWidget,
 } from '@/views/bi/components/dashboard/model'
@@ -40,8 +41,16 @@ const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
 const saving = ref(false)
+const applyingTemplate = ref(false)
 const model = ref<DashboardModel>(defaultDashboard())
-const title = ref('未命名大屏')
+const meta = ref({
+  name: '未命名大屏',
+  status: '1',
+  sort: 0,
+  description: '',
+  templateId: undefined as number | undefined,
+})
+const statusOptions = ref<Record<string, string>>({ 1: '启用', 2: '禁用' })
 const selectedId = ref('')
 const refreshToken = ref(0)
 const zoom = ref(1)
@@ -68,6 +77,8 @@ const historyIndex = ref(-1)
 const restoring = ref(false)
 const placementContexts = new Map<string, any>()
 const savedSnapshot = ref('')
+const isNew = computed(() => !route.query.id)
+let allowRouteLeave = false
 
 const selectedWidget = computed(() => selectedId.value ? findWidget(model.value.widgets, selectedId.value) : null)
 const stageStyle = computed(() => ({
@@ -77,10 +88,7 @@ const stageStyle = computed(() => ({
 const formatGeometry = (value: number, unit: string) => `${value}${unit === '%' ? '%' : 'px'}`
 const canUndo = computed(() => historyIndex.value > 0)
 const canRedo = computed(() => historyIndex.value >= 0 && historyIndex.value < history.value.length - 1)
-const dirty = computed(() => Boolean(savedSnapshot.value) && (
-  savedSnapshot.value !== snapshot() || title.value !== savedTitle.value
-))
-const savedTitle = ref('')
+const dirty = computed(() => Boolean(savedSnapshot.value) && savedSnapshot.value !== snapshot())
 const layoutLabels: Record<string, string> = {
   absolute: '绝对定位',
   relative: '相对定位',
@@ -111,9 +119,19 @@ const layoutSignature = computed(() => {
   return parts.join('|')
 })
 
-const normalizeWidget = (source: any): DashboardWidget => {
-  const widget = createWidget(source.type || 'Container', source)
-  widget.style = Object.assign(styleDefaults(), source.style || {})
+const normalizeWidget = (
+  source: any,
+  componentStyles: DashboardComponentStyles = {},
+  commonStyle: DashboardModel['commonComponentStyle'] = {},
+): DashboardWidget => {
+  const widget = createWidget(
+    source.type || 'Container',
+    source,
+    {
+      ...(commonStyle || {}),
+      ...(componentStyles[(source.type || 'Container') as DashboardWidget['type']] || {}),
+    },
+  )
   widget.data = {
     datasetId: source.data?.datasetId,
     filter: source.data?.filter || [],
@@ -122,7 +140,9 @@ const normalizeWidget = (source: any): DashboardWidget => {
       buckets: source.data?.axis?.buckets || [],
     },
   }
-  widget.children = Array.isArray(source.children) ? source.children.map(normalizeWidget) : []
+  widget.children = Array.isArray(source.children)
+    ? source.children.map((child: any) => normalizeWidget(child, componentStyles, commonStyle))
+    : []
   return widget
 }
 
@@ -131,10 +151,20 @@ const parseContent = (content: any) => {
   try {
     const parsed = typeof content === 'string' ? JSON.parse(content) : content
     const defaults = defaultDashboard()
+    const componentDefaults = parsed?.componentDefaults && typeof parsed.componentDefaults === 'object'
+      ? parsed.componentDefaults as DashboardComponentStyles
+      : {}
+    const commonComponentStyle = parsed?.commonComponentStyle && typeof parsed.commonComponentStyle === 'object'
+      ? parsed.commonComponentStyle
+      : {}
     const result: DashboardModel = {
       version: 2,
-      canvas: Object.assign(defaults.canvas, parsed.canvas || {}),
-      widgets: Array.isArray(parsed.widgets) ? parsed.widgets.map(normalizeWidget) : [],
+      canvas: Object.assign(defaults.canvas, parsed?.canvas || {}),
+      commonComponentStyle,
+      componentDefaults,
+      widgets: Array.isArray(parsed?.widgets)
+        ? parsed.widgets.map((widget: any) => normalizeWidget(widget, componentDefaults, commonComponentStyle))
+        : [],
     }
     model.value = result
   } catch (error: any) {
@@ -143,18 +173,39 @@ const parseContent = (content: any) => {
   }
 }
 
+const loadOptions = () => {
+  DashboardApi.config().then((result: any) => {
+    if (!ApiUtil.succeed(result)) return
+    statusOptions.value = ApiUtil.data(result)?.status || statusOptions.value
+  }).catch(() => {})
+}
+
 const load = () => {
   if (!route.query.id) {
+    const templateId = Number(route.query.templateId)
+    meta.value = {
+      name: '未命名大屏',
+      status: '1',
+      sort: 0,
+      description: '',
+      templateId: templateId > 0 ? templateId : undefined,
+    }
     syncPlacementContexts()
     initHistory()
     savedSnapshot.value = snapshot()
-    savedTitle.value = title.value
+    if (templateId > 0) applyTemplate(templateId)
     return
   }
   loading.value = true
   DashboardApi.info(route.query.id).then((result: any) => {
     if (!ApiUtil.succeed(result)) return
-    title.value = result.data?.name || title.value
+    meta.value = {
+      name: result.data?.name || '未命名大屏',
+      status: String(result.data?.status || 1),
+      sort: Number(result.data?.sort) || 0,
+      description: result.data?.description || '',
+      templateId: Number(result.data?.templateId) > 0 ? Number(result.data.templateId) : undefined,
+    }
     parseContent(result.data?.content)
   }).catch(() => {}).finally(async () => {
     loading.value = false
@@ -163,11 +214,52 @@ const load = () => {
     syncPlacementContexts()
     initHistory()
     savedSnapshot.value = snapshot()
-    savedTitle.value = title.value
   })
 }
 
-const snapshot = () => JSON.stringify(model.value)
+const applyTemplate = (templateId: number) => {
+  if (applyingTemplate.value) return
+  applyingTemplate.value = true
+  const widgets = JSON.parse(JSON.stringify(model.value.widgets || []))
+  DashboardApi.template(templateId).then(async (result: any) => {
+    if (!ApiUtil.succeed(result)) return
+    if (isNew.value) {
+      parseContent(result.data?.content)
+      model.value.widgets = widgets
+    } else {
+      try {
+        const parsed = JSON.parse(result.data?.content || '{}')
+        model.value.commonComponentStyle = parsed.commonComponentStyle || {}
+        model.value.componentDefaults = parsed.componentDefaults || {}
+      } catch {
+        ElMessage.error('模板默认样式解析失败')
+        return
+      }
+    }
+    await nextTick()
+    if (isNew.value) fitCanvas()
+    syncPlacementContexts()
+    refreshToken.value++
+    if (isNew.value) initHistory()
+    else commitHistory()
+  }).catch(() => {}).finally(() => {
+    applyingTemplate.value = false
+  })
+}
+
+const updateMeta = (next: typeof meta.value) => {
+  const previousTemplateId = meta.value.templateId
+  meta.value = next
+  if (next.templateId && next.templateId !== previousTemplateId) {
+    applyTemplate(next.templateId)
+  }
+}
+
+const defaultComponentStyle = (type: DashboardWidget['type']) => {
+  return componentStyleDefaults(model.value, type)
+}
+
+const snapshot = () => JSON.stringify({ meta: meta.value, model: model.value })
 const initHistory = () => {
   history.value = [snapshot()]
   historyIndex.value = 0
@@ -498,7 +590,7 @@ const positionNewWidget = (
 const addWidget = (type: string, parentId = '', position?: { x: number; y: number }) => {
   const parent = parentId ? findWidget(model.value.widgets, parentId) : null
   if (parent && parent.type !== 'Container') return
-  const widget = createWidget(type as any)
+  const widget = createWidget(type as DashboardWidget['type'], {}, defaultComponentStyle(type as DashboardWidget['type']))
   positionNewWidget(widget, parent, position)
   const siblings = parent ? parent.children : model.value.widgets
   widget.style.zIndex = Math.max(0, ...siblings.map((item: DashboardWidget) => Number(item.style?.zIndex) || 0)) + 1
@@ -650,25 +742,30 @@ const handleClone = () => {
 
 const handleSave = () => {
   if (saving.value) return
-  if (!title.value.trim()) {
+  if (applyingTemplate.value) {
+    ElMessage.info('模板样式正在应用，请稍候')
+    return
+  }
+  if (!meta.value.name.trim()) {
     ElMessage.warning('请输入大屏名称')
     return
   }
   saving.value = true
   const data = {
-    id: route.query.id,
-    name: title.value,
+    id: isNew.value ? undefined : route.query.id,
+    name: meta.value.name.trim(),
+    status: Number(meta.value.status) || 1,
+    sort: Number(meta.value.sort) || 0,
+    description: meta.value.description,
+    templateId: meta.value.templateId || 0,
     content: JSON.stringify(model.value),
-    status: 1,
-    sort: 0,
   }
   DashboardApi.save(data, { success: true }).then((result: any) => {
     if (ApiUtil.succeed(result)) {
-      savedSnapshot.value = snapshot()
-      savedTitle.value = title.value
-      if (!route.query.id && result.data?.id) {
+      if (isNew.value && result.data?.id) {
         router.replace({ path: route.path, query: { id: result.data.id } }).catch(() => {})
       }
+      savedSnapshot.value = snapshot()
     }
   }).catch(() => {}).finally(() => {
     saving.value = false
@@ -682,6 +779,27 @@ const preview = () => {
   }
   const target = router.resolve({ path: '/bi/dashboard/view', query: { id: route.query.id } })
   window.open(target.href, '_blank')
+}
+
+const handleBack = async () => {
+  if (saving.value || applyingTemplate.value) return
+  if (dirty.value) {
+    try {
+      await ElMessageBox.confirm('当前大屏有未保存的修改，确定离开吗？', '未保存提醒', {
+        type: 'warning',
+        confirmButtonText: '离开',
+        cancelButtonText: '继续编辑',
+      })
+    } catch {
+      return
+    }
+  }
+  allowRouteLeave = true
+  try {
+    await router.push('/bi/olap/dashboard').catch(() => {})
+  } finally {
+    allowRouteLeave = false
+  }
 }
 
 const zoomIn = () => {
@@ -749,7 +867,7 @@ const onBeforeUnload = (event: BeforeUnloadEvent) => {
   event.returnValue = ''
 }
 onBeforeRouteLeave(async () => {
-  if (!dirty.value) return true
+  if (allowRouteLeave || !dirty.value) return true
   try {
     await ElMessageBox.confirm('当前大屏有未保存的修改，确定离开吗？', '未保存提醒', {
       type: 'warning',
@@ -763,6 +881,7 @@ onBeforeRouteLeave(async () => {
 })
 
 onMounted(async () => {
+  loadOptions()
   load()
   window.addEventListener('keydown', onKeydown)
   window.addEventListener('beforeunload', onBeforeUnload)
@@ -787,12 +906,8 @@ onBeforeUnmount(() => {
         <div class="palette-brand">
           <span class="palette-brand__mark">BI</span>
           <div class="palette-brand__meta">
-            <strong>可视化组件</strong>
-            <el-input
-              v-model="title"
-              class="palette-name"
-              size="small"
-              placeholder="输入大屏名称" />
+            <strong>{{ meta.name || '未命名大屏' }}</strong>
+            <small>{{ isNew ? '新建大屏' : '大屏设计' }}</small>
           </div>
         </div>
       </div>
@@ -844,7 +959,7 @@ onBeforeUnmount(() => {
     <template #top>
       <div class="designer-topbar">
         <div class="designer-topbar__left">
-          <LayoutBack to="/bi/olap/dashboard" title="返回" />
+          <el-button text :icon="Back" title="返回" @click="handleBack" />
           <el-button text :icon="RefreshLeft" :disabled="!canUndo" title="撤销（Ctrl+Z）" @click="undo" />
           <el-button text :icon="RefreshRight" :disabled="!canRedo" title="重做（Ctrl+Y）" @click="redo" />
           <el-button text :icon="Refresh" title="刷新全部数据" @click="refreshToken++" />
@@ -858,7 +973,12 @@ onBeforeUnmount(() => {
         <div class="designer-topbar__right">
           <span v-if="dirty" class="dirty-mark">未保存</span>
           <el-button text :icon="View" title="预览大屏" @click="preview" />
-          <el-button type="primary" :icon="Check" :loading="saving" @click="handleSave">保存</el-button>
+          <el-button
+            type="primary"
+            :icon="Check"
+            :loading="saving"
+            :disabled="applyingTemplate"
+            @click="handleSave">保存</el-button>
         </div>
       </div>
     </template>
@@ -896,6 +1016,10 @@ onBeforeUnmount(() => {
       <DashboardInspector
         :widget="selectedWidget"
         :model="model"
+        :meta="meta"
+        :statuses="statusOptions"
+        :is-new="isNew"
+        @update:meta="updateMeta"
         @refresh="refreshToken++"
         @remove="handleRemove()"
         @clone="handleClone" />
@@ -954,26 +1078,11 @@ onBeforeUnmount(() => {
     font-size: 14px;
     color: var(--el-text-color-primary);
   }
-}
-.palette-name {
-  width: 100%;
-  margin-top: 1px;
-  :deep(.el-input__wrapper) {
-    padding: 0 3px;
-    box-shadow: none;
-    background: transparent;
-  }
-  :deep(.el-input__wrapper:hover) {
-    background: var(--el-fill-color-light);
-  }
-  :deep(.el-input__wrapper.is-focus) {
-    background: var(--el-fill-color-lighter);
-    box-shadow: inset 0 0 0 1px var(--el-color-primary-light-5);
-  }
-  :deep(.el-input__inner) {
-    height: 20px;
-    color: var(--el-text-color-secondary);
-    font-size: 11px;
+  small {
+    display: block;
+    margin-top: 1px;
+    color: var(--el-text-color-placeholder);
+    font-size: 10px;
   }
 }
 .palette-tip {

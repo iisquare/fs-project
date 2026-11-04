@@ -21,7 +21,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-259685';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-259764';
 
 --
 -- Table structure for table `fs_bi_cluster`
@@ -61,6 +61,7 @@ CREATE TABLE `fs_bi_dashboard` (
   `id` int NOT NULL AUTO_INCREMENT COMMENT '主键',
   `name` varchar(255) NOT NULL DEFAULT '' COMMENT '大屏名称',
   `content` longtext NOT NULL COMMENT '画布、组件树及数据配置 JSON',
+  `template_id` int NOT NULL DEFAULT '0' COMMENT '引用的数据大屏模板',
   `sort` int NOT NULL DEFAULT '0' COMMENT '排序',
   `status` tinyint NOT NULL DEFAULT '0' COMMENT '状态',
   `description` text NOT NULL COMMENT '描述',
@@ -70,7 +71,31 @@ CREATE TABLE `fs_bi_dashboard` (
   `updated_time` bigint NOT NULL DEFAULT '0' COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_status_sort` (`status`,`sort`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='数据大屏';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='数据大屏';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_bi_dashboard_template`
+--
+
+DROP TABLE IF EXISTS `fs_bi_dashboard_template`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_bi_dashboard_template` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `name` varchar(255) NOT NULL DEFAULT '' COMMENT '模板名称',
+  `content` longtext NOT NULL COMMENT '画布、样例组件及组件默认样式 JSON',
+  `sort` int NOT NULL DEFAULT '0' COMMENT '排序',
+  `status` tinyint NOT NULL DEFAULT '1' COMMENT '状态：1-启用，2-禁用，-1-已删除',
+  `description` text NOT NULL COMMENT '描述',
+  `created_uid` int NOT NULL DEFAULT '0' COMMENT '创建者',
+  `created_time` bigint NOT NULL DEFAULT '0' COMMENT '创建时间',
+  `updated_uid` int NOT NULL DEFAULT '0' COMMENT '修改者',
+  `updated_time` bigint NOT NULL DEFAULT '0' COMMENT '修改时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_dashboard_template_name` (`name`) USING BTREE,
+  KEY `idx_dashboard_template_status_sort` (`status`,`sort`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='数据大屏模板';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -383,4 +408,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-10-31 12:12:10
+-- Dump completed on 2026-11-03  9:14:05

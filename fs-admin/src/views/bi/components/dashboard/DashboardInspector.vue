@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, type PropType } from 'vue'
-import { Delete, Plus, Rank, Setting } from '@element-plus/icons-vue'
+import { Delete, Plus, Rank } from '@element-plus/icons-vue'
+import DashboardTemplateApi from '@/api/bi/DashboardTemplateApi'
 import DatasetApi from '@/api/bi/DatasetApi'
 import DataQueryFilter from '@/components/Data/DataQueryFilter.vue'
 import DashboardPropertySection from './DashboardPropertySection.vue'
@@ -9,8 +10,11 @@ import DashboardStylePanel from './DashboardStylePanel.vue'
 const props = defineProps({
   widget: { type: Object as PropType<any>, default: null },
   model: { type: Object, required: true },
+  meta: { type: Object, required: true },
+  statuses: { type: Object, default: () => ({}) },
+  isNew: { type: Boolean, default: false },
 })
-const emit = defineEmits(['refresh', 'remove', 'clone'])
+const emit = defineEmits(['refresh', 'remove', 'clone', 'update:meta'])
 
 const activeTab = ref('style')
 const columns = ref<any[]>([])
@@ -21,6 +25,18 @@ let columnsSerial = 0
 const dataWidgets = ['Metric', 'Table', 'Line', 'Bar', 'Area', 'Pie', 'Funnel', 'Radar', 'Gauge']
 const isDataWidget = computed(() => dataWidgets.includes(props.widget?.type))
 const isRoot = computed(() => !props.widget)
+const updateMeta = (field: string, value: any) => {
+  emit('update:meta', { ...props.meta, [field]: value })
+}
+const templateCallback = (params: any) => DashboardTemplateApi.list(params).then((result: any) => {
+  if (Array.isArray(result?.data?.rows)) {
+    result.data.rows = result.data.rows.map((row: any) => ({
+      ...row,
+      disabled: Number(row.status) !== 1,
+    }))
+  }
+  return result
+})
 const fields = computed(() => columns.value.map((item: any) => ({
   label: item.title || item.name,
   value: item.name,
@@ -111,7 +127,7 @@ watch(
   ([widgetId, datasetId], previous = [] as any[]) => {
     const [previousWidgetId, previousDatasetId] = previous
     if (!widgetId) {
-      activeTab.value = 'style'
+      activeTab.value = props.isNew ? 'data' : 'style'
       return
     }
     if (widgetId !== previousWidgetId) {
@@ -190,11 +206,63 @@ const removeMetric = (index: number) => {
         <DashboardStylePanel :widget="widget" :model="model" />
       </el-tab-pane>
       <el-tab-pane label="数据" name="data">
-        <div v-if="isRoot" class="inspector-empty">
-          <el-icon><Setting /></el-icon>
-          <strong>选择组件后配置数据</strong>
-          <span>容器负责布局，图表和指标卡可以绑定数据集。</span>
-        </div>
+        <section v-if="isRoot" class="screen-info">
+          <div class="screen-info__heading">
+            <strong>大屏信息</strong>
+            <span>随顶部“保存”统一提交</span>
+          </div>
+          <div class="screen-info__grid">
+            <label class="screen-info__field screen-info__field--full">
+              <span>大屏名称 <i>*</i></span>
+              <el-input
+                :model-value="meta.name"
+                maxlength="255"
+                placeholder="请输入大屏名称"
+                @update:model-value="updateMeta('name', $event)" />
+            </label>
+            <label class="screen-info__field">
+              <span>状态</span>
+              <el-select
+                :model-value="meta.status"
+                @update:model-value="updateMeta('status', $event)">
+                <el-option
+                  v-for="(label, value) in statuses"
+                  :key="value"
+                  :label="label"
+                  :value="String(value)" />
+              </el-select>
+            </label>
+            <label class="screen-info__field">
+              <span>排序</span>
+              <el-input-number
+                :model-value="meta.sort"
+                :controls="false"
+                @update:model-value="updateMeta('sort', $event ?? 0)" />
+            </label>
+            <label class="screen-info__field screen-info__field--full">
+              <span>引用模板</span>
+              <form-select
+                :model-value="meta.templateId"
+                :callback="templateCallback"
+                :page-size="20"
+                :label-formatter="(row: any) => `${row.name}${Number(row.status) === 1 ? '' : '（已停用）'}`"
+                clearable
+                placeholder="不使用模板"
+                @update:model-value="updateMeta('templateId', $event || undefined)" />
+              <small v-if="isNew">创建时继承模板布局、通用样式和个性化组件样式</small>
+              <small v-else>切换模板只更新后续新增组件的默认样式，现有组件保持不变</small>
+            </label>
+            <label class="screen-info__field screen-info__field--full">
+              <span>描述</span>
+              <el-input
+                :model-value="meta.description"
+                type="textarea"
+                :rows="3"
+                placeholder="请输入大屏说明"
+                @update:model-value="updateMeta('description', $event)" />
+            </label>
+          </div>
+        </section>
 
         <template v-else-if="isDataWidget">
           <DashboardPropertySection title="数据来源" description="数据集">
@@ -406,6 +474,57 @@ const removeMetric = (index: number) => {
     }
     :deep(.el-tabs__content) {
       overflow: visible;
+    }
+  }
+}
+.screen-info {
+  padding: 12px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  background: var(--el-fill-color-extra-light);
+  &__heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+    strong {
+      color: var(--el-text-color-primary);
+      font-size: 13px;
+    }
+    span {
+      color: var(--el-text-color-placeholder);
+      font-size: 10px;
+    }
+  }
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    > span {
+      color: var(--el-text-color-secondary);
+      font-size: 10px;
+      i {
+        color: var(--el-color-danger);
+        font-style: normal;
+      }
+    }
+    > small {
+      color: var(--el-text-color-placeholder);
+      font-size: 9px;
+      line-height: 1.5;
+    }
+    .el-select,
+    .el-input-number {
+      width: 100%;
+    }
+    &--full {
+      grid-column: 1 / -1;
     }
   }
 }

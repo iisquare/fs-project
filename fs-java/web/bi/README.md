@@ -75,6 +75,9 @@
 - 每个数据组件独立选择数据集，自由组合多个维度和多个聚合指标，并支持 AND/OR 条件过滤。
 - 画布按 1920 × 1080 设计，编辑器和只读预览均等比适配屏幕；预览页面支持浏览器全屏。
 - 提供实时数据刷新、撤销/重做、组件复制/删除、图层面板和未保存提醒。
+- 提供大屏模板管理。模板在独立配置页集中维护基础信息、页面布局、通用组件样式和特殊组件个性化样式；基于模板创建大屏时生成空白画布并继承模板配置。
+- 新建和编辑大屏均直接进入设计器，大屏名称、状态、排序、描述和引用模板在右侧“数据”页签的根画布信息中维护，通过顶部“保存”统一提交。
+- 大屏保存引用的模板 ID。已有大屏切换模板时只更新后续新增组件的默认样式，现有组件和画布保持不变。
 
 ### 故事，基于报表
 - 在线制作PPT，方便动态展示数据报表。
@@ -89,11 +92,17 @@
 | POST `/dataQueryLog/config` | 查询类型、状态与排序字典 | `bi:dataQueryLog:` |
 | POST `/dashboard/list` | 数据大屏列表 | `bi:dashboard:` |
 | POST `/dashboard/info` | 数据大屏详情 | `bi:dashboard:` |
-| POST `/dashboard/save` | 新增或修改数据大屏 | `bi:dashboard:add` / `bi:dashboard:modify` |
+| POST `/dashboard/save` | 新增或修改数据大屏；保存 `templateId` 引用，新建时应用模板布局与组件默认样式 | `bi:dashboard:add` / `bi:dashboard:modify` |
 | POST `/dashboard/delete` | 删除数据大屏 | `bi:dashboard:delete` |
 | POST `/dashboard/search` | 按数据集、维度、指标和过滤条件查询图表数据 | `bi:dashboard:search` |
+| POST `/dashboard/templates` | 获取创建大屏可用的启用模板 | `bi:dashboard:` |
+| POST `/dashboard/template` | 获取指定启用模板的完整配置，用于设计器即时应用 | `bi:dashboard:` |
+| POST `/dashboardTemplate/list` | 大屏模板列表 | `bi:dashboardTemplate:` |
+| POST `/dashboardTemplate/info` | 大屏模板详情 | `bi:dashboardTemplate:` |
+| POST `/dashboardTemplate/save` | 新增或修改大屏模板 | `bi:dashboardTemplate:add` / `bi:dashboardTemplate:modify` |
+| POST `/dashboardTemplate/delete` | 删除大屏模板 | `bi:dashboardTemplate:delete` |
 
-数据大屏建表、菜单和权限初始化脚本见 `docs/fs-project-bi-dashboard.sql`。
+数据大屏模板建表、菜单和权限初始化脚本见 `docs/fs-project-bi-dashboard-template.sql`。
 
 ## 最佳实践
 

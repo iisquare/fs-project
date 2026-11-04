@@ -68,6 +68,8 @@ export interface DashboardStyle {
   zIndex: number
 }
 
+export type DashboardComponentStyles = Partial<Record<DashboardWidgetType, Partial<DashboardStyle>>>
+
 export interface DashboardData {
   datasetId?: number
   filter: any[]
@@ -136,6 +138,14 @@ export interface DashboardModel {
     justifyContent: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around' | 'space-evenly'
     alignItems: 'stretch' | 'flex-start' | 'center' | 'flex-end' | 'baseline'
   }
+  /**
+   * 模板通用组件样式，对所有组件生效。
+   */
+  commonComponentStyle?: Partial<DashboardStyle>
+  /**
+   * 模板显式定义的组件类型默认样式。创建大屏时复制，后续新增组件按类型应用。
+   */
+  componentDefaults?: DashboardComponentStyles
   widgets: DashboardWidget[]
 }
 
@@ -214,7 +224,11 @@ const titleFor = (type: DashboardWidgetType) => ({
   Border: '科技边框',
 }[type])
 
-export const createWidget = (type: DashboardWidgetType, position: Partial<DashboardWidget> = {}): DashboardWidget => {
+export const createWidget = (
+  type: DashboardWidgetType,
+  position: Partial<DashboardWidget> = {},
+  componentStyle?: Partial<DashboardStyle>,
+): DashboardWidget => {
   const style = styleDefaults()
   if (type === 'Text') {
     Object.assign(style, {
@@ -271,7 +285,7 @@ export const createWidget = (type: DashboardWidgetType, position: Partial<Dashbo
       titleText: '布局容器',
     })
   }
-  return {
+  const result: DashboardWidget = {
     id: UIUtil.uuid('widget-'),
     type,
     name: titleFor(type),
@@ -310,6 +324,8 @@ export const createWidget = (type: DashboardWidgetType, position: Partial<Dashbo
     children: [],
     ...position,
   }
+  Object.assign(result.style, componentStyle || {}, position.style || {})
+  return result
 }
 
 export const defaultDashboard = (): DashboardModel => ({
@@ -416,6 +432,14 @@ export const walkWidgets = (widgets: DashboardWidget[], callback: (widget: Dashb
     walkWidgets(widget.children || [], callback)
   })
 }
+
+export const componentStyleDefaults = (
+  model: DashboardModel,
+  type: DashboardWidgetType,
+): Partial<DashboardStyle> => ({
+  ...(model.commonComponentStyle || {}),
+  ...(model.componentDefaults?.[type] || {}),
+})
 
 export const widgetTitleHeight = (widget: DashboardWidget) => (
   widget.style.titleShow ? Math.max(22, widget.style.titleSize * 1.25) + 6 : 0

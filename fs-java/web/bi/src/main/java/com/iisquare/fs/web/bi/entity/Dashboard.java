@@ -27,6 +27,10 @@ public class Dashboard {
     @Column
     private String content;
     @Column
+    private Integer templateId;
+    @Transient
+    private String templateName;
+    @Column
     private Integer sort;
     @Column
     private Integer status;

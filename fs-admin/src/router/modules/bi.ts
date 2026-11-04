@@ -42,9 +42,17 @@ export const layouts = [{
     meta: { title: '数据大屏', permit: ['bi:dashboard:'] },
     component: () => import('@/views/bi/report/dashboard/list.vue')
   }, {
+    path: '/bi/olap/dashboardTemplate',
+    meta: { title: '大屏模板', permit: ['bi:dashboardTemplate:'] },
+    component: () => import('@/views/bi/report/dashboard/template.vue')
+  }, {
     path: '/bi/design/dashboard',
     meta: { title: '大屏设计', fit: true, permit: ['bi:dashboard:'] },
     component: () => import('@/views/bi/report/dashboard/model.vue')
+  }, {
+    path: '/bi/design/dashboardTemplate',
+    meta: { title: '大屏模板配置', fit: true, permit: ['bi:dashboardTemplate:'] },
+    component: () => import('@/views/bi/report/dashboard/templateModel.vue')
   }, {
     path: '/bi/design/visualize',
     meta: { title: '报表设计', fit: true, permit: ['bi:visualize:'] },
