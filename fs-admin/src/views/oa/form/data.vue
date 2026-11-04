@@ -11,6 +11,7 @@ import ApiUtil from '@/utils/ApiUtil'
 import TableUtil from '@/utils/TableUtil'
 import FormDataApi from '@/api/oa/FormDataApi'
 import FormFrameApi from '@/api/oa/FormFrameApi'
+import PrintApi from '@/api/oa/PrintApi'
 
 const route = useRoute()
 const router = useRouter()
@@ -38,6 +39,11 @@ const selection: any = ref([])
 
 const infoVisible = ref(false)
 const infoRow = ref<any>({})
+
+const printVisible = ref(false)
+const printLoading = ref(false)
+const printRow = ref<any>({})
+const printTemplates = ref<any[]>([])
 
 const formVisible = ref(false)
 const formLoading = ref(false)
@@ -113,6 +119,30 @@ const handleShow = (scope: any) => {
     content: record.content ? JSON.stringify(record.content, null, 2) : '',
   })
   infoVisible.value = true
+}
+
+const handlePrint = (scope: any) => {
+  printRow.value = scope.row
+  printVisible.value = true
+  printLoading.value = true
+  PrintApi.list({
+    frameId: scope.row.frameId,
+    status: 1,
+    page: 1,
+    pageSize: 500,
+  }).then((result: any) => {
+    printTemplates.value = ApiUtil.data(result)?.rows || []
+  }).catch(() => {}).finally(() => {
+    printLoading.value = false
+  })
+}
+
+const handleOpenPrint = (template: any) => {
+  const location = router.resolve({
+    path: '/oa/print/pdf',
+    query: { id: template.id, dataId: printRow.value._id, returnTo: '/oa/form/data' },
+  })
+  window.open(location.href)
 }
 
 const handleCopyContent = () => {
@@ -255,6 +285,7 @@ const handleDelete = () => {
         <template #default="scope">
           <el-button link v-permit="'oa:formData:'" @click="() => handleShow(scope)">查看</el-button>
           <el-button link v-permit="'oa:formData:modify'" @click="() => handleEdit(scope)">编辑</el-button>
+          <el-button link type="primary" v-permit="'oa:print:'" @click="() => handlePrint(scope)">打印</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -321,9 +352,64 @@ const handleDelete = () => {
       <el-button type="primary" @click="handleSubmit" :loading="formLoading">确定</el-button>
     </template>
   </el-dialog>
+
+  <el-dialog v-model="printVisible" :title="`套打 - ${printRow._id}`" width="620">
+    <div class="print-template-list" v-loading="printLoading">
+      <button
+        v-for="template in printTemplates"
+        :key="template.id"
+        type="button"
+        class="print-template-list__item"
+        :disabled="!template.hasTemplate"
+        @click="handleOpenPrint(template)"
+      >
+        <span>
+          <strong>{{ template.name }}</strong>
+          <small>{{ template.templateName || '未上传 Word 模板' }}</small>
+        </span>
+        <el-icon><ElementPlusIcons.ArrowRight /></el-icon>
+      </button>
+      <el-empty v-if="!printLoading && !printTemplates.length" description="当前表单未配置打印模板" />
+    </div>
+  </el-dialog>
 </template>
 
 <style lang="scss" scoped>
+.print-template-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 120px;
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 12px 14px;
+    color: var(--el-text-color-primary);
+    text-align: left;
+    background: var(--el-fill-color-blank);
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 6px;
+    cursor: pointer;
+    &:hover:not(:disabled) {
+      border-color: var(--el-color-primary);
+      background: var(--el-color-primary-light-9);
+    }
+    &:disabled {
+      cursor: not-allowed;
+      opacity: .55;
+    }
+    span {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    small {
+      color: var(--el-text-color-secondary);
+    }
+  }
+}
 .content-view {
   margin-top: 16px;
   border: 1px solid var(--el-border-color-lighter);

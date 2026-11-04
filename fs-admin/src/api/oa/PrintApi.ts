@@ -16,4 +16,16 @@ export default {
   save(param: any, tips = {}) {
     return base.post('/print/save', param, tips)
   },
+  uploadDocument(param: any, tips = {}) {
+    return base.form('/print/document/save', param, tips)
+  },
+  loadDocument(param: any, tips = {}) {
+    return base.post('/print/document/load', param, tips)
+  },
+  fields(param: any, tips = {}) {
+    return base.post('/print/fields', param, tips)
+  },
+  render(param: any, tips = {}) {
+    return base.post('/print/render', param, tips)
+  },
 }

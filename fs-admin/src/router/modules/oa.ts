@@ -4,6 +4,10 @@ export const blanks = [{
   path: '/oa/print/model',
   meta: { title: '打印设计', fit: true, permit: ['oa:print:'] },
   component: () => import('@/views/oa/print/model.vue')
+}, {
+  path: '/oa/print/pdf',
+  meta: { title: '打印预览', fit: true, permit: ['oa:print:'] },
+  component: () => import('@/views/oa/print/pdf.vue')
 }]
 
 export const layouts = [{
@@ -81,10 +85,6 @@ export const layouts = [{
     path: '/oa/print/list',
     meta: { title: '在线打印', permit: ['oa:print:'] },
     component: () => import('@/views/oa/print/list.vue')
-  }, {
-    path: '/oa/print/pdf',
-    meta: { title: '打印预览', permit: ['oa:print:'] },
-    component: () => import('@/views/oa/print/pdf.vue')
   }]
 }]
 

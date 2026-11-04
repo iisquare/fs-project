@@ -70,6 +70,10 @@ CREATE TABLE `fs_oa_print`  (
   `html` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `state` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  `frame_id` int(0) NULL DEFAULT NULL,
+  `template_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `template_size` bigint(0) NOT NULL DEFAULT 0,
+  `has_template` bit(1) NOT NULL DEFAULT b'0',
   `sort` tinyint(0) NOT NULL DEFAULT 0,
   `status` tinyint(0) NOT NULL DEFAULT 0,
   `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -78,8 +82,21 @@ CREATE TABLE `fs_oa_print`  (
   `updated_time` bigint(0) NOT NULL DEFAULT 0,
   `updated_uid` int(0) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_name`(`name`) USING BTREE
+  INDEX `idx_name`(`name`) USING BTREE,
+  INDEX `idx_frame_id`(`frame_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for fs_oa_print_document
+-- ----------------------------
+DROP TABLE IF EXISTS `fs_oa_print_document`;
+CREATE TABLE `fs_oa_print_document`  (
+  `print_id` int(0) NOT NULL,
+  `template_data` longblob NOT NULL,
+  `updated_time` bigint(0) NOT NULL DEFAULT 0,
+  `updated_uid` int(0) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`print_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for fs_oa_workflow

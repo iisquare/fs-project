@@ -30,6 +30,14 @@ public class Print {
     @Column
     private String content; // 模板配置
     @Column
+    private Integer frameId; // 关联的数据表单
+    @Column
+    private String templateName; // Word模板文件名
+    @Column
+    private Long templateSize; // Word模板文件大小
+    @Column
+    private Boolean hasTemplate;
+    @Column
     private Integer sort;
     @Column
     private Integer status;

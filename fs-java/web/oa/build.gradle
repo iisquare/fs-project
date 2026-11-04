@@ -3,6 +3,7 @@ dependencies {
     implementation project(':base:jpa')
     implementation project(':web:core')
     implementation project(':base:mongodb')
+    implementation group: 'com.deepoove', name: 'poi-tl', version: '1.12.2'
     implementation group: 'org.flowable', name: 'flowable-spring-boot-starter-process', version: flowableVersion
     testImplementation project(':web:test')
 }
