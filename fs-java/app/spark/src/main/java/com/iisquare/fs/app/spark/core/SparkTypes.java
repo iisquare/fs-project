@@ -16,6 +16,7 @@ public final class SparkTypes {
     public static final DAGType<Dataset<String>> DATASET_JSON = DAGType.of(Dataset.class, "Dataset<String>");
     public static final DAGType<StreamingQuery> QUERY = DAGType.of(StreamingQuery.class, "StreamingQuery");
     public static final DAGType<Void> VOID = DAGType.of(Void.class, "Void");
+    public static final DAGType<Object> OBJECT = DAGType.of(Object.class, "Object");
 
     private SparkTypes() {
     }

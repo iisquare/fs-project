@@ -3,6 +3,7 @@ import { computed, onMounted, ref, shallowRef } from 'vue'
 import ApiUtil from '@/utils/ApiUtil'
 import FormApi from '@/api/oa/FormApi'
 import FormFrameApi from '@/api/oa/FormFrameApi'
+import PropertySection from '@/components/Layout/PropertySection.vue'
 
 const active = ref('property')
 const props = defineProps<{
@@ -49,35 +50,38 @@ const handleFormChange = (value: any) => {
   <el-tabs v-model="active" class="tab-property">
     <el-tab-pane label="流程属性" name="property">
       <el-form :model="workflow">
-        <el-form-item label="主键">{{ workflow?.id || '新建' }}</el-form-item>
-        <el-form-item label="名称">
-          <el-input v-model="workflow.name" placeholder="请输入流程名称" autocomplete="off" />
-        </el-form-item>
-        <el-form-item label="关联表单">
-          <form-select
-            v-model="workflow.formId"
-            :callback="FormFrameApi.list"
-            clearable
-            placeholder="输入名称进行检索"
-            @change="handleFormChange" />
-        </el-form-item>
-        <el-form-item label="排序">
-          <el-input-number v-model="workflow.sort" :min="0" :max="200" :controls="false" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="workflow.status" placeholder="请选择">
-            <el-option :key="item.value" :value="item.value" :label="item.label" v-for="item in statuses" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input type="textarea" v-model="workflow.description" placeholder="请输入流程描述" />
-        </el-form-item>
-        <el-divider>流程标识</el-divider>
-        <el-form-item label="标识" :key="element.id" v-for="element in rootElements">
-          <el-input v-model="element.id" placeholder="流程定义标识，需全局唯一" />
-          <div class="fs-form-tip">流程发布后作为流程定义标识（key）使用，不同流程请勿重复</div>
-        </el-form-item>
-        <el-empty description="流程定义尚未载入" :image-size="60" v-if="rootElements.length === 0" />
+        <PropertySection title="基础信息" :reset-key="workflow?.id">
+          <el-form-item label="主键">{{ workflow?.id || '新建' }}</el-form-item>
+          <el-form-item label="名称">
+            <el-input v-model="workflow.name" placeholder="请输入流程名称" autocomplete="off" />
+          </el-form-item>
+          <el-form-item label="关联表单">
+            <form-select
+              v-model="workflow.formId"
+              :callback="FormFrameApi.list"
+              clearable
+              placeholder="输入名称进行检索"
+              @change="handleFormChange" />
+          </el-form-item>
+          <el-form-item label="排序">
+            <el-input-number v-model="workflow.sort" :min="0" :max="200" :controls="false" />
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-select v-model="workflow.status" placeholder="请选择">
+              <el-option :key="item.value" :value="item.value" :label="item.label" v-for="item in statuses" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="描述">
+            <el-input type="textarea" v-model="workflow.description" placeholder="请输入流程描述" />
+          </el-form-item>
+        </PropertySection>
+        <PropertySection title="流程标识" :reset-key="workflow?.id">
+          <el-form-item label="标识" :key="element.id" v-for="element in rootElements">
+            <el-input v-model="element.id" placeholder="流程定义标识，需全局唯一" />
+            <div class="fs-form-tip">流程发布后作为流程定义标识（key）使用，不同流程请勿重复</div>
+          </el-form-item>
+          <el-empty description="流程定义尚未载入" :image-size="60" v-if="rootElements.length === 0" />
+        </PropertySection>
       </el-form>
     </el-tab-pane>
   </el-tabs>

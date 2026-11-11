@@ -3,6 +3,7 @@
  * 设计器布局容器 - 标准的三栏布局：左侧面板(240px) + 中间画布区 + 右侧属性面板(300px) + 底部状态栏(35px)。
  *
  * @prop {Boolean} splitter - 采用 Splitter 分隔面板布局，左右面板可通过分隔条拖拽调整宽度，默认 false
+ * @prop {Boolean} unifiedProperty - 属性面板使用与画布一致的背景、满宽分组标题和 BI 设计器排版，默认 false
  *
  * @slot left    - 左侧面板内容（如组件库/图层树）
  * @slot top     - 中间区域顶部工具栏
@@ -21,6 +22,7 @@
  */
 const {
   splitter = false,
+  unifiedProperty = false,
   leftSize = 240,
   rightSize = 300,
   leftMin = 160,
@@ -29,6 +31,7 @@ const {
   rightMax = 700,
 } = defineProps({
   splitter: { type: Boolean, required: false },
+  unifiedProperty: { type: Boolean, required: false },
   leftSize: { type: Number, required: false },
   rightSize: { type: Number, required: false },
   leftMin: { type: Number, required: false },
@@ -40,7 +43,7 @@ const {
 
 <template>
   <div class="box">
-    <div :class="['content', splitter && 'splitter']">
+    <div :class="['content', splitter && 'splitter', { 'unified-property': unifiedProperty }]">
       <el-splitter v-if="splitter" lazy>
         <el-splitter-panel :size="leftSize" :min="leftMin" :max="leftMax" collapsible>
           <el-scrollbar class="left">
@@ -257,7 +260,7 @@ const {
           }
         }
         .el-tab-pane {
-          padding: 12px;
+          padding: var(--fs-property-pane-padding, 12px);
         }
         .el-form-item.title {
           /* 分组标题吸附在页签栏下方 */
@@ -277,6 +280,145 @@ const {
           height: auto;
           overflow: visible;
         }
+      }
+    }
+    &.unified-property {
+      .right {
+        background: var(--fs-layout-background-color, #f7fafc);
+      }
+      :deep(.right .el-scrollbar__view) {
+        min-height: 100%;
+        background: var(--fs-layout-background-color, #f7fafc);
+      }
+      :deep(.right .tab-property) {
+        /* 属性页签保留在顶部，整条标题栏统一响应悬浮，避免局部色块 */
+        .el-tabs__header {
+          background-color: var(--fs-layout-background-color, #f7fafc);
+          &:hover {
+            background-color: var(--el-fill-color-lighter);
+          }
+        }
+        .el-tabs__item:hover {
+          background-color: transparent;
+        }
+        /* 页签内容不再留边，由表单承担左右留白，使分组标题和分隔线铺满面板 */
+        .el-tab-pane {
+          padding: 0;
+        }
+        .el-tab-pane > .el-form {
+          padding: 0 12px 12px;
+          box-sizing: border-box;
+        }
+        .el-form-item.title {
+          min-height: 38px;
+          margin: 0 -12px 8px;
+          padding: 0 12px;
+          box-sizing: border-box;
+          border-bottom: solid 1px var(--el-border-color-lighter);
+          background-color: var(--fs-layout-background-color, #f7fafc);
+          transition: background-color 0.15s ease;
+          &:hover {
+            background-color: var(--el-fill-color-lighter);
+          }
+          &.is-collapsible {
+            cursor: pointer;
+          }
+        }
+      }
+      /* 属性项以标签在上、控件在下为主，保证窄面板中的可读性 */
+      :deep(.right .el-form .el-form-item:not(.title):not(.fs-form-inline)) {
+        display: block;
+        .el-form-item__label {
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          width: 100%;
+          min-width: 0;
+          margin-bottom: 4px;
+          line-height: 1.45;
+          text-align: left;
+        }
+        .el-form-item__content {
+          width: 100%;
+          margin-left: 0;
+        }
+      }
+      /* 开关、数字和少量短控件采用左右分布，作为上下结构的补充 */
+      :deep(.right .el-form .el-form-item:has(> .el-form-item__content > .el-switch)) {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        .el-form-item__label {
+          flex: none;
+          justify-content: flex-start;
+          width: auto;
+          min-width: 0;
+          margin-bottom: 0;
+          text-align: left;
+          white-space: nowrap;
+        }
+        .el-form-item__content {
+          flex: none;
+          width: auto;
+          margin-left: auto;
+          justify-content: flex-end;
+        }
+      }
+      :deep(.right .el-form .el-form-item:has(> .el-form-item__content > .el-input-number)) {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        .el-form-item__label {
+          flex: none;
+          justify-content: flex-start;
+          width: auto;
+          min-width: 0;
+          margin-bottom: 0;
+          text-align: left;
+          white-space: nowrap;
+        }
+        .el-form-item__content {
+          flex: 1 1 120px;
+          width: auto;
+          min-width: 72px;
+          max-width: 150px;
+          margin-left: auto;
+          justify-content: flex-end;
+          > .el-input-number {
+            width: 100%;
+            min-width: 0;
+          }
+        }
+      }
+      :deep(.right .el-form .el-form-item.fs-form-inline) {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        .el-form-item__label {
+          flex: none;
+          justify-content: flex-start;
+          width: auto;
+          min-width: 0;
+          margin-bottom: 0;
+          text-align: left;
+          white-space: nowrap;
+        }
+        .el-form-item__content {
+          flex: 1 1 132px;
+          width: auto;
+          min-width: 132px;
+          margin-left: auto;
+          justify-content: flex-end;
+        }
+      }
+      :deep(.right .el-form),
+      :deep(.right .el-form-item),
+      :deep(.right .el-form-item__content) {
+        min-width: 0;
+        max-width: 100%;
       }
     }
     &.splitter {

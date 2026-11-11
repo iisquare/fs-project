@@ -16,6 +16,7 @@ import ElementUtil from '@/utils/ElementUtil';
 import SpiderPlanParams from '@/designer/Spider/SpiderPlanParams.vue';
 import SpiderPage from '@/designer/Spider/SpiderPage.vue';
 import SpiderIntercept from '@/designer/Spider/SpiderIntercept.vue';
+import ProxyApi from '@/api/spider/ProxyApi';
 
 const route = useRoute()
 const router = useRouter()
@@ -31,6 +32,9 @@ const columns = ref([
   { prop: 'rateInfo.parallelByKey', label: '并行度' },
   { prop: 'rateInfo.concurrent', label: '并发数' },
   { prop: 'rateInfo.intervalMillisecond', label: '并发间隔' },
+  { prop: 'proxyInfo.name', label: '代理分组' },
+  { prop: 'proxyMode', label: '代理模式', hide: true },
+  { prop: 'stateMode', label: '状态保持', hide: true },
   { prop: 'priority', label: '优先级', hide: true },
   { prop: 'minHalt', label: '最小停顿间隔', hide: true },
   { prop: 'maxHalt', label: '最大停顿间隔', hide: true },
@@ -46,6 +50,17 @@ const config: any = ref({
   sorts: {},
   status: {},
   types: {},
+  proxyGroups: [],
+  proxyModes: {
+    none: '不使用代理',
+    rotate: '每个任务轮换',
+    sticky: '粘性代理',
+  },
+  stateModes: {
+    none: '不保持',
+    template: '按模板保持',
+    task: '按任务保持',
+  },
 })
 const rows = ref([])
 const filterRef = ref<FormInstance>()
@@ -69,6 +84,9 @@ onMounted(() => {
   TemplateApi.config().then((result: any) => {
     Object.assign(config.value, { ready: true }, ApiUtil.data(result))
   }).catch(() => {})
+  ProxyApi.groupOptions().then((result: any) => {
+    config.value.proxyGroups = ApiUtil.data(result) || []
+  }).catch(() => {})
 })
 const infoVisible = ref(false)
 const infoLoading = ref(false)
@@ -89,6 +107,11 @@ const handleAdd = () => {
   form.value = {
     status: '1',
     params: {},
+    proxyGroupId: 0,
+    proxyMode: 'none',
+    stateMode: 'none',
+    stateKey: '',
+    stateTtl: 0,
   }
   active.value = 'params'
   formVisible.value = true
@@ -109,6 +132,11 @@ const handleReload = () => {
 const handleEdit = (scope: any) => {
   form.value = Object.assign({}, scope.row, {
     status: scope.row.status + '',
+    proxyGroupId: scope.row.proxyGroupId || 0,
+    proxyMode: scope.row.proxyMode || 'none',
+    stateMode: scope.row.stateMode || 'none',
+    stateKey: scope.row.stateKey || '',
+    stateTtl: scope.row.stateTtl || 0,
   })
   active.value = 'params'
   formVisible.value = true
@@ -229,6 +257,30 @@ const handleClear = (scope: any) => {
         </el-descriptions-item>
         <el-descriptions-item label="最大线程"><form-input-number v-model="form.maxThreads" /></el-descriptions-item>
         <el-descriptions-item label="请求频率"><form-select v-model="form.rateId" :callback="RateApi.list" clearable /></el-descriptions-item>
+        <el-descriptions-item label="代理分组">
+          <el-select v-model="form.proxyGroupId" clearable placeholder="不使用代理" @change="(value: any) => form.proxyMode = value ? (form.proxyMode === 'none' ? 'rotate' : form.proxyMode) : 'none'">
+            <el-option v-for="item in config.proxyGroups" :key="item.id" :value="item.id" :label="item.name" />
+          </el-select>
+        </el-descriptions-item>
+        <el-descriptions-item label="代理策略">
+          <el-select v-model="form.proxyMode" :disabled="!form.proxyGroupId">
+            <el-option v-for="(label, key) in config.proxyModes" :key="key" :value="key" :label="label" />
+          </el-select>
+        </el-descriptions-item>
+        <el-descriptions-item label="状态保持">
+          <el-select v-model="form.stateMode" :disabled="!form.proxyGroupId" @change="(value: any) => value !== 'none' && (form.proxyMode = 'sticky')">
+            <el-option v-for="(label, key) in config.stateModes" :key="key" :value="key" :label="label" />
+          </el-select>
+        </el-descriptions-item>
+        <el-descriptions-item label="状态作用域">
+          <el-input v-model="form.stateKey" :disabled="!form.proxyGroupId || form.stateMode !== 'template'" placeholder="默认 default" />
+        </el-descriptions-item>
+        <el-descriptions-item label="状态有效期">
+          <el-space>
+            <form-input-number v-model="form.stateTtl" />
+            <span>秒</span>
+          </el-space>
+        </el-descriptions-item>
         <el-descriptions-item label="排序"><form-input-number v-model="form.sort" /></el-descriptions-item>
         <el-descriptions-item label="优先级"><form-input-number v-model="form.priority" /></el-descriptions-item>
         <el-descriptions-item label="最小停顿间隔">

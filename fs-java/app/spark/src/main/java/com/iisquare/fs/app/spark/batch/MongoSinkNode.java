@@ -29,12 +29,15 @@ public class MongoSinkNode extends AbstractMongoSink<Void> {
     public boolean configure(JsonNode... configs) {
         if (!super.configure(configs)) return false;
         Map<String, String> config = new LinkedHashMap<>();
-        String uri = "mongodb://";
-        String username = options.at("/username").asText();
-        if (!DPUtil.empty(username)) {
-            uri += username + ":" + options.at("/password").asText() + "@";
+        String uri = options.at("/uri").asText();
+        if (DPUtil.empty(uri)) {
+            uri = "mongodb://";
+            String username = options.at("/username").asText();
+            if (!DPUtil.empty(username)) {
+                uri += username + ":" + options.at("/password").asText() + "@";
+            }
+            uri += options.at("/hosts").asText() + "/";
         }
-        uri += options.at("/hosts").asText() + "/";
         config.put(OUTPUT_PREFIX + "connection.uri", uri);
         config.put(OUTPUT_PREFIX + "database", options.at("/database").asText());
         config.put(OUTPUT_PREFIX + "collection", options.at("/collection").asText());

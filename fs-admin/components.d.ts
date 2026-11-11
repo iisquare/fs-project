@@ -145,6 +145,7 @@ declare module 'vue' {
     LayoutWidget: typeof import('./src/components/Layout/LayoutWidget.vue')['default']
     MarkdownEditor: typeof import('./src/components/Editor/MarkdownEditor.vue')['default']
     MetadataTable: typeof import('./src/components/Data/MetadataTable.vue')['default']
+    PropertySection: typeof import('./src/components/Layout/PropertySection.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     StepDetail: typeof import('./src/components/Agentic/StepDetail.vue')['default']

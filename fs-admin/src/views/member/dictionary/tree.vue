@@ -6,7 +6,6 @@ import { useRoute, useRouter } from 'vue-router';
 import DictionaryApi from '@/api/member/DictionaryApi';
 import ApiUtil from '@/utils/ApiUtil';
 import DateUtil from '@/utils/DateUtil';
-import * as ElementPlusIcons from '@element-plus/icons-vue';
 import TableUtil from '@/utils/TableUtil';
 
 const route = useRoute()
@@ -29,18 +28,44 @@ const config = ref({
   ready: false,
   status: {},
 })
-const rows = ref([])
+const rows = ref<any[]>([])
+const tableKey = ref(0)
 const filterRef = ref<FormInstance>()
 const filters = ref(RouteUtil.query2filter(route, { advanced: false, roleIds: [] }))
 const selection: any = ref([])
+const treeProps = {
+  children: 'children',
+  hasChildren: 'hasChildren',
+}
+const lazyRows = (data: any[]) => (data ?? []).map((row: any) => ({
+  ...row,
+  children: undefined,
+  hasChildren: typeof row.hasChildren === 'boolean' ? row.hasChildren : row.leaf !== true,
+}))
+const handleLoad = (row: any, treeNode: any, resolve: (data: any[]) => void) => {
+  const isDictionary = row.ancestorId === 0
+  DictionaryApi.tree({
+    ...filters.value,
+    ancestorId: isDictionary ? row.id : row.ancestorId,
+    parentId: isDictionary ? 0 : row.id,
+    lazy: true,
+  }).then((result: any) => {
+    resolve(lazyRows(result.data))
+  }).catch(() => {
+    resolve([])
+  })
+}
 const handleRefresh = (filter2query: boolean, keepPage: boolean) => {
   tableRef.value?.clearSelection()
   filter2query && RouteUtil.filter2query(route, router, filters.value)
   loading.value = true
-  DictionaryApi.tree(filters.value).then((result: any) => {
-    rows.value = result.data
-    toggle.value = false
-    expandedRowKeys.value = TableUtil.expandedRowKeys(rows.value)
+  DictionaryApi.tree({
+    ...filters.value,
+    parentId: 0,
+    lazy: true,
+  }).then((result: any) => {
+    rows.value = lazyRows(result.data)
+    tableKey.value++
   }).catch(() => {}).finally(() => {
     loading.value = false
   })
@@ -117,17 +142,7 @@ const handleDelete = () => {
   }).catch(() => {})
 }
 
-const toggle = ref(false)
-const expandedRowKeys = ref([])
 const spacer = h(ElDivider, { direction: 'vertical' })
-const handleExpand = () => {
-  toggle.value = !toggle.value
-  if (toggle.value) {
-    expandedRowKeys.value = []
-  } else {
-    expandedRowKeys.value = TableUtil.expandedRowKeys(rows.value)
-  }
-}
 </script>
 
 <template>
@@ -135,7 +150,6 @@ const handleExpand = () => {
     <template #header>
       <div class="flex-between">
         <el-space :size="0" :spacer="spacer">
-          <el-button @click="handleExpand" :icon="expandedRowKeys.length === 0 ? ElementPlusIcons.Expand : ElementPlusIcons.Fold"></el-button>
           <button-add v-permit="'member:menu:add'" @click="handleAdd" />
           <button-delete v-permit="'member:menu:delete'" :disabled="selection.length === 0" @click="handleDelete" />
         </el-space>
@@ -152,10 +166,13 @@ const handleExpand = () => {
       </div>
     </template>
     <el-table
+      :key="tableKey"
       ref="tableRef"
       :data="rows"
       :row-key="(record: any) => record.id"
-      :expand-row-keys="expandedRowKeys"
+      :tree-props="treeProps"
+      lazy
+      :load="handleLoad"
       :border="true"
       v-loading="loading"
       table-layout="auto"

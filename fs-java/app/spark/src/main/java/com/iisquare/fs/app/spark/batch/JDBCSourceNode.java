@@ -46,7 +46,14 @@ public class JDBCSourceNode extends AbstractJDBCSource<Dataset<Row>> {
             JsonNode options = DAGUtil.formatOptions(this.options.deepCopy(), iterator.next());
             Map<String, String> cfg = new LinkedHashMap<>();
             cfg.put("url", options.at("/url").asText());
-            cfg.put("query", options.at("/sql").asText());
+            String query = options.at("/sql").asText();
+            int debugLimit = options.at("/debugLimit").asInt(0);
+            if (debugLimit > 0) {
+                query = query.trim();
+                while (query.endsWith(";")) query = query.substring(0, query.length() - 1).trim();
+                query = "SELECT * FROM (" + query + ") fs_debug_source LIMIT " + debugLimit;
+            }
+            cfg.put("query", query);
             cfg.put("driver", DAGCore.jdbcDriver(options.at("/driver").asText()));
             cfg.put("user", options.at("/username").asText());
             cfg.put("password", options.at("/password").asText());

@@ -52,6 +52,8 @@ public class DatasourceService extends JPAServiceBase {
         types.put("postgresql", "PostgreSQL");
         types.put("mongodb", "MongoDB");
         types.put("elasticsearch", "Elasticsearch");
+        types.put("neo4j", "Neo4j");
+        types.put("kafka", "Apache Kafka");
         return types;
     }
 

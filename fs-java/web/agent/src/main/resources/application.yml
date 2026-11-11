@@ -3,6 +3,16 @@ spring:
     name: fs-agent-service
   profiles:
     active: dev,idev
+  jpa:
+    show-sql: true
+    hibernate:
+      naming:
+        physical-strategy: com.iisquare.fs.web.agent.dsconfig.NamingStrategy
+  servlet:
+    multipart:
+      # 客户端安装包上传需要更大的容器上限；普通聊天附件仍由 fs.agent.bot.upload.maxSize 限制
+      max-file-size: 4096MB
+      max-request-size: 4096MB
 fs:
   agent:
     # 模型网关调用超时（毫秒）：向量化 / 重排序等接口慢，读超时给足；
@@ -44,13 +54,3 @@ fs:
     web:
       maxContent: 30000
       maxResultContent: 8000
-  jpa:
-    show-sql: true
-    hibernate:
-      naming:
-        physical-strategy: com.iisquare.fs.web.agent.dsconfig.NamingStrategy
-  servlet:
-    multipart:
-      # 客户端安装包上传需要更大的容器上限；普通聊天附件仍由 fs.agent.bot.upload.maxSize 限制
-      max-file-size: 4096MB
-      max-request-size: 4096MB

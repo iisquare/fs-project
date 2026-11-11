@@ -7,9 +7,13 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.ValidateUtil;
 import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
+import com.iisquare.fs.web.spider.dao.BlacklistDao;
 import com.iisquare.fs.web.spider.dao.SiteDao;
+import com.iisquare.fs.web.spider.dao.WhitelistDao;
+import com.iisquare.fs.web.spider.entity.Blacklist;
 import com.iisquare.fs.web.spider.entity.Site;
 import com.iisquare.fs.web.spider.entity.Template;
+import com.iisquare.fs.web.spider.entity.Whitelist;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +38,12 @@ public class SiteService extends JPAServiceBase {
     DefaultRbacService rbacService;
     @Autowired
     PageService pageService;
+    @Autowired
+    WhitelistDao whitelistDao;
+    @Autowired
+    BlacklistDao blacklistDao;
+    @Autowired
+    NodeService nodeService;
 
     @Override
     public Map<String, String> sorts() {
@@ -166,6 +176,143 @@ public class SiteService extends JPAServiceBase {
 
     public Map<String, Object> remove(List<Integer> ids) {
         return remove(siteDao, ids);
+    }
+
+    /**
+     * 接收 site.backend 的网站入口与访问规则，先同步到指定模板，再发布并启动采集作业。
+     */
+    public Map<String, Object> sync(Map<?, ?> param, HttpServletRequest request) {
+        int templateId = DPUtil.parseInt(param.get("templateId"));
+        Template template = templateService.info(templateId);
+        if (null == template || !Integer.valueOf(1).equals(template.getStatus())) {
+            return ApiUtil.result(1401, "采集模板不存在或已禁用", templateId);
+        }
+        List<?> sites = param.get("sites") instanceof List<?> list ? list : List.of();
+        List<?> whitelists = param.get("whitelists") instanceof List<?> list ? list : List.of();
+        List<?> blacklists = param.get("blacklists") instanceof List<?> list ? list : List.of();
+        if (sites.isEmpty() && whitelists.isEmpty()) {
+            return ApiUtil.result(1402, "网站入口与白名单不能同时为空", templateId);
+        }
+        int siteCount = syncSites(templateId, sites);
+        int whitelistCount = syncWhitelists(templateId, whitelists);
+        int blacklistCount = syncBlacklists(templateId, blacklists);
+        Map<String, Object> published = templateService.publish(DPUtil.buildMap("id", templateId), request);
+        if (ApiUtil.failed(published)) return published;
+        Map<String, Object> job = null;
+        if (!param.containsKey("start") || DPUtil.parseBoolean(param.get("start"))) {
+            ObjectNode jobParam = DPUtil.objectNode();
+            jobParam.put("id", templateId);
+            job = nodeService.startJob(jobParam);
+            if (ApiUtil.failed(job)) return job;
+        }
+        ObjectNode data = DPUtil.objectNode();
+        data.put("templateId", templateId)
+                .put("sites", siteCount)
+                .put("whitelists", whitelistCount)
+                .put("blacklists", blacklistCount);
+        JsonNode publishedData = DPUtil.toJSON(published.get("data"));
+        data.set("published", publishedData);
+        data.set("job", null == job ? DPUtil.objectNode() : DPUtil.toJSON(job.get("data")));
+        return ApiUtil.result(0, null, data);
+    }
+
+    private int syncSites(int templateId, List<?> sites) {
+        int count = 0;
+        Map<String, Site> existing = new LinkedHashMap<>();
+        for (Site site : siteDao.findAll((Specification<Site>) (root, query, cb) ->
+                cb.equal(root.get("templateId"), templateId))) {
+            existing.put(site.getDomain(), site);
+        }
+        for (Object raw : sites) {
+            if (!(raw instanceof Map<?, ?> item)) continue;
+            String domain = DPUtil.trim(DPUtil.parseString(item.get("domain")));
+            if (DPUtil.empty(domain)) continue;
+            Site site = existing.get(domain);
+            if (null == site) {
+                site = new Site();
+                site.setTemplateId(templateId);
+                site.setDomain(domain);
+                site.setStatus(1);
+                existing.put(domain, site);
+            }
+            site.setName(DPUtil.parseString(item.get("name")));
+            site.setDomain(domain);
+            String charset = DPUtil.parseString(item.get("charset"));
+            site.setCharset(DPUtil.empty(charset) ? "utf-8" : charset);
+            site.setCollection(DPUtil.parseString(item.get("collection")));
+            site.setRetryCount(DPUtil.parseInt(item.get("retryCount")));
+            site.setRetainQuery(0);
+            site.setRetainAnchor(0);
+            site.setConnectTimeout(0);
+            site.setSocketTimeout(0);
+            site.setIterateCount(0);
+            site.setFetchMode("http");
+            site.setBrowserWaitUntil("networkidle");
+            site.setBrowserTimeout(30000);
+            save(siteDao, site, 0);
+            count++;
+        }
+        return count;
+    }
+
+    private int syncWhitelists(int templateId, List<?> rules) {
+        int count = 0;
+        Map<String, Whitelist> existing = new LinkedHashMap<>();
+        for (Whitelist rule : whitelistDao.findAll((Specification<Whitelist>) (root, query, cb) ->
+                cb.equal(root.get("templateId"), templateId))) {
+            existing.put(rule.getDomain() + "|" + rule.getPath(), rule);
+        }
+        for (Object raw : rules) {
+            if (!(raw instanceof Map<?, ?> item)) continue;
+            String domain = DPUtil.trim(DPUtil.parseString(item.get("domain")));
+            String path = DPUtil.trim(DPUtil.parseString(item.get("path")));
+            if (DPUtil.empty(domain)) continue;
+            if (DPUtil.empty(path)) path = "*";
+            String key = domain + "|" + path;
+            Whitelist rule = existing.get(key);
+            if (null == rule) {
+                rule = new Whitelist();
+                rule.setTemplateId(templateId);
+                rule.setDomain(domain);
+                rule.setPath(path);
+                rule.setStatus(1);
+                existing.put(key, rule);
+            }
+            rule.setName(DPUtil.parseString(item.get("name")));
+            save(whitelistDao, rule, 0);
+            count++;
+        }
+        return count;
+    }
+
+    private int syncBlacklists(int templateId, List<?> rules) {
+        int count = 0;
+        Map<String, Blacklist> existing = new LinkedHashMap<>();
+        for (Blacklist rule : blacklistDao.findAll((Specification<Blacklist>) (root, query, cb) ->
+                cb.equal(root.get("templateId"), templateId))) {
+            existing.put(rule.getDomain() + "|" + rule.getPath(), rule);
+        }
+        for (Object raw : rules) {
+            if (!(raw instanceof Map<?, ?> item)) continue;
+            String domain = DPUtil.trim(DPUtil.parseString(item.get("domain")));
+            String path = DPUtil.trim(DPUtil.parseString(item.get("path")));
+            if (DPUtil.empty(domain)) continue;
+            if (DPUtil.empty(path)) path = "*";
+            String key = domain + "|" + path;
+            Blacklist rule = existing.get(key);
+            if (null == rule) {
+                rule = new Blacklist();
+                rule.setTemplateId(templateId);
+                rule.setDomain(domain);
+                rule.setPath(path);
+                rule.setStatus(1);
+                existing.put(key, rule);
+            }
+            rule.setName(DPUtil.parseString(item.get("name")));
+            save(blacklistDao, rule, 0);
+            count++;
+        }
+        return count;
     }
 
 }

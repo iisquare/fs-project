@@ -40,7 +40,7 @@ const handleRemove = (element: any, index: any) => {
   <el-tabs v-model="active" class="tab-property">
     <el-tab-pane label="组件属性" name="property">
       <el-form :model="model">
-        <NodeSlice v-model="model" :instance="instance" :config="config" :tips="tips" />
+        <NodeSlice v-model="model" :instance="instance" :config="config" :tips="tips">
         <el-form-item label="名称"><el-input v-model="model.label" /></el-form-item>
         <el-form-item label="栅格间隔">
           <el-input-number v-model="model.options.gutter" :controls="false" :min="0" />
@@ -74,6 +74,7 @@ const handleRemove = (element: any, index: any) => {
             <el-button :icon="ElementPlusIcons.CirclePlus" link type="primary" @click="handleAdd">添加栅格</el-button>
           </template>
         </draggable>
+        </NodeSlice>
       </el-form>
     </el-tab-pane>
   </el-tabs>

@@ -17,11 +17,14 @@ import com.microsoft.playwright.options.FormData;
 import com.microsoft.playwright.options.RequestOptions;
 import com.microsoft.playwright.options.WaitUntilState;
 import com.microsoft.playwright.options.LoadState;
+import com.microsoft.playwright.options.Proxy;
 
 import java.io.Closeable;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -101,6 +104,28 @@ public class PlaywrightWorker implements Closeable {
                 .setUserAgent(config.at("/userAgent").asText())
                 .setIgnoreHTTPSErrors(config.at("/ignoreHttpsErrors").asBoolean(false))
                 .setExtraHTTPHeaders(headers);
+        JsonNode proxyData = request.at("/proxy");
+        if (proxyData.isObject() && !DPUtil.empty(proxyData.at("/host").asText())) {
+            String protocol = proxyData.at("/protocol").asText("http");
+            Proxy proxy = new Proxy(protocol + "://" + proxyData.at("/host").asText()
+                    + ":" + proxyData.at("/port").asInt());
+            if (!DPUtil.empty(proxyData.at("/username").asText())) {
+                proxy.setUsername(proxyData.at("/username").asText());
+                proxy.setPassword(proxyData.at("/password").asText(""));
+            }
+            contextOptions.setProxy(proxy);
+        }
+        Path storageStateFile = null;
+        String storageState = request.at("/storageState").asText("");
+        if (!DPUtil.empty(storageState) && !"null".equals(storageState)) {
+            try {
+                storageStateFile = Files.createTempFile("fs-spider-state-", ".json");
+                Files.writeString(storageStateFile, storageState, StandardCharsets.UTF_8);
+                contextOptions.setStorageStatePath(storageStateFile);
+            } catch (Exception e) {
+                throw new IllegalStateException("载入浏览器状态失败", e);
+            }
+        }
         String contentType = normalizedContentType(request.at("/contentType").asText("none"), charset);
         try (BrowserContext context = browser.newContext(contextOptions)) {
             context.route("**/*", route -> route(route, method, targetUrl, request,
@@ -126,9 +151,16 @@ public class PlaywrightWorker implements Closeable {
             storage.put("exception", "");
             storage.put("warning", warning);
             storage.put("browser", name);
+            storage.put("storageState", context.storageState());
             return storage;
         } catch (RuntimeException e) {
             throw e;
+        } finally {
+            if (null != storageStateFile) {
+                try {
+                    Files.deleteIfExists(storageStateFile);
+                } catch (Exception ignored) {}
+            }
         }
     }
 

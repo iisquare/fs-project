@@ -98,7 +98,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <LayoutDesigner splitter>
+  <LayoutDesigner splitter unified-property>
     <template #left>
       <LayoutWidget :widgets="config.widgets" :native="false" />
     </template>

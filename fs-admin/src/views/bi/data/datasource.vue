@@ -211,6 +211,13 @@ const handleTest = () => {
         <el-descriptions-item label="用户名">{{ form.content?.username }}</el-descriptions-item>
         <el-descriptions-item label="密码"><form-password v-model="form.content.password" /></el-descriptions-item>
       </el-descriptions>
+      <el-descriptions border :column="2" label-width="150px" v-else-if="form.type === 'kafka'">
+        <el-descriptions-item label="服务地址" :span="2">{{ form.content?.servers || form.content?.bootstrap }}</el-descriptions-item>
+        <el-descriptions-item label="安全协议">{{ form.content?.securityProtocol || 'PLAINTEXT' }}</el-descriptions-item>
+        <el-descriptions-item label="连接超时(ms)">{{ form.content?.connectTimeout }}</el-descriptions-item>
+        <el-descriptions-item label="SASL机制">{{ form.content?.saslMechanism || '无' }}</el-descriptions-item>
+        <el-descriptions-item label="SASL认证配置">{{ form.content?.saslJaasConfig ? '已配置' : '无' }}</el-descriptions-item>
+      </el-descriptions>
       <el-descriptions border :column="2" label-width="150px" v-else-if="form.type === 'mongodb'">
         <el-descriptions-item label="连接地址" :span="2">{{ form.content?.uri }}</el-descriptions-item>
         <el-descriptions-item label="用户名">{{ form.content?.username }}</el-descriptions-item>
@@ -221,6 +228,15 @@ const handleTest = () => {
         <el-descriptions-item label="最小连接池">{{ form.content?.minSize }}</el-descriptions-item>
         <el-descriptions-item label="最大连接池">{{ form.content?.maxSize }}</el-descriptions-item>
         <el-descriptions-item label="最大等待时间(ms)" :span="2">{{ form.content?.maxWaitTime }}</el-descriptions-item>
+      </el-descriptions>
+      <el-descriptions border :column="2" label-width="150px" v-else-if="form.type === 'neo4j'">
+        <el-descriptions-item label="连接地址" :span="2">{{ form.content?.uri }}</el-descriptions-item>
+        <el-descriptions-item label="用户名">{{ form.content?.username }}</el-descriptions-item>
+        <el-descriptions-item label="密码"><form-password v-model="form.content.password" /></el-descriptions-item>
+        <el-descriptions-item label="数据库">{{ form.content?.database || '默认数据库' }}</el-descriptions-item>
+        <el-descriptions-item label="连接超时(ms)">{{ form.content?.connectTimeout }}</el-descriptions-item>
+        <el-descriptions-item label="连接池上限">{{ form.content?.maxSize }}</el-descriptions-item>
+        <el-descriptions-item label="连接最长存活(ms)">{{ form.content?.maxConnectionLifetime }}</el-descriptions-item>
       </el-descriptions>
       <el-empty v-else description="暂无配置项" />
     </el-form>
@@ -282,6 +298,28 @@ const handleTest = () => {
         <el-descriptions-item label="用户名"><el-input v-model="form.content.username" /></el-descriptions-item>
         <el-descriptions-item label="密码"><el-input type="password" v-model="form.content.password" show-password /></el-descriptions-item>
       </el-descriptions>
+      <el-descriptions border :column="2" label-width="150px" v-else-if="form.type === 'kafka'">
+        <el-descriptions-item label="服务地址" :span="2">
+          <el-input v-model="form.content.servers" placeholder="host1:9092,host2:9092" />
+        </el-descriptions-item>
+        <el-descriptions-item label="安全协议">
+          <el-input v-model="form.content.securityProtocol" placeholder="PLAINTEXT / SASL_PLAINTEXT / SASL_SSL" />
+        </el-descriptions-item>
+        <el-descriptions-item label="连接超时(ms)">
+          <form-input-number v-model="form.content.connectTimeout" :min="1000" :step="1000" placeholder="5000" />
+        </el-descriptions-item>
+        <el-descriptions-item label="SASL机制">
+          <el-input v-model="form.content.saslMechanism" placeholder="PLAIN / SCRAM-SHA-256" />
+        </el-descriptions-item>
+        <el-descriptions-item label="SASL认证配置" :span="2">
+          <el-input
+            type="textarea"
+            v-model="form.content.saslJaasConfig"
+            :rows="3"
+            placeholder='org.apache.kafka.common.security.plain.PlainLoginModule required username="..." password="...";'
+          />
+        </el-descriptions-item>
+      </el-descriptions>
       <el-descriptions border :column="2" label-width="150px" v-else-if="form.type === 'mongodb'">
         <el-descriptions-item label="连接地址" :span="2"><el-input v-model="form.content.uri" placeholder="例如: mongodb://localhost:27017/" /></el-descriptions-item>
         <el-descriptions-item label="用户名"><el-input v-model="form.content.username" placeholder="可选，使用URI内的凭据时可不填" /></el-descriptions-item>
@@ -292,6 +330,17 @@ const handleTest = () => {
         <el-descriptions-item label="最小连接池"><form-input-number v-model="form.content.minSize" :min="0" placeholder="0" /></el-descriptions-item>
         <el-descriptions-item label="最大连接池"><form-input-number v-model="form.content.maxSize" :min="1" placeholder="100" /></el-descriptions-item>
         <el-descriptions-item label="最大等待时间(ms)" :span="2"><form-input-number v-model="form.content.maxWaitTime" :min="0" :step="100" placeholder="1000" /></el-descriptions-item>
+      </el-descriptions>
+      <el-descriptions border :column="2" label-width="150px" v-else-if="form.type === 'neo4j'">
+        <el-descriptions-item label="连接地址" :span="2">
+          <el-input v-model="form.content.uri" placeholder="neo4j://localhost:7687" />
+        </el-descriptions-item>
+        <el-descriptions-item label="用户名"><el-input v-model="form.content.username" /></el-descriptions-item>
+        <el-descriptions-item label="密码"><el-input type="password" v-model="form.content.password" show-password /></el-descriptions-item>
+        <el-descriptions-item label="数据库"><el-input v-model="form.content.database" placeholder="留空使用服务端默认数据库" /></el-descriptions-item>
+        <el-descriptions-item label="连接超时(ms)"><form-input-number v-model="form.content.connectTimeout" :min="0" :step="1000" placeholder="3000" /></el-descriptions-item>
+        <el-descriptions-item label="连接池上限"><form-input-number v-model="form.content.maxSize" :min="1" placeholder="20" /></el-descriptions-item>
+        <el-descriptions-item label="连接最长存活(ms)" :span="2"><form-input-number v-model="form.content.maxConnectionLifetime" :min="0" :step="60000" placeholder="3600000" /></el-descriptions-item>
       </el-descriptions>
       <el-empty v-else description="暂无配置项" />
     </el-form>

@@ -18,11 +18,13 @@
  * <data-query-filter v-model="filter" v-model:fields="datasetFields" />
  */
 import { computed } from 'vue'
+import { Rank } from '@element-plus/icons-vue'
+import draggable from 'vuedraggable'
 import UIUtil from '@/utils/UIUtil'
 
 defineOptions({ name: 'DataQueryFilter' })
 
-const model: any = defineModel({ default: () => [] })
+const model = defineModel<any[]>({ default: () => [] })
 const fields = defineModel<Object[]>('fields', { default: () => [] })
 const { toolbar = true } = defineProps({
   toolbar: { type: Boolean, default: true },
@@ -105,72 +107,206 @@ const visible = (item: any) => {
       <el-button size="small" @click="appendRelation()">添加关系</el-button>
       <el-button size="small" type="danger" @click="clear()">清空全部</el-button>
     </el-space>
-    <template v-for="(item, index) in model" :key="item.id">
-      <div class="query-filter-node" :class="{ 'is-relation': item.type === 'RELATION' }">
-        <el-space class="query-filter-line">
-          <el-checkbox v-model="item.enabled" />
-          <el-select v-if="item.type === 'RELATION'" v-model="item.value" size="small" class="relation-selector">
-            <el-option v-for="relation in relations" :key="relation.value" :value="relation.value" :label="relation.label" />
-          </el-select>
-          <template v-else>
-            <el-autocomplete
-              v-model="item.left"
-              size="small"
-              class="field-selector"
-              placeholder="字段"
-              clearable
-              :fetch-suggestions="(query: string) => UIUtil.fetchSuggestions(fieldOptions, query, 'value')">
-              <template #default="{ item: option }">{{ option.data.label || option.value }}</template>
-            </el-autocomplete>
-            <el-select v-model="item.value" size="small" class="operation-selector">
-              <el-option v-for="operation in operations" :key="operation.value" :value="operation.value" :label="operation.label" />
+    <draggable
+      v-if="model.length"
+      v-model="model"
+      class="query-filter-list"
+      item-key="id"
+      handle=".query-filter-drag"
+      ghost-class="query-filter-node--ghost"
+      :animation="160">
+      <template #item="{ element: item, index }">
+        <div class="query-filter-node" :class="{ 'is-relation': item.type === 'RELATION' }">
+          <div class="query-filter-line">
+            <el-icon class="query-filter-drag" title="拖动排序"><Rank /></el-icon>
+            <el-checkbox v-model="item.enabled" />
+            <el-select v-if="item.type === 'RELATION'" v-model="item.value" size="small" class="relation-selector">
+              <el-option v-for="relation in relations" :key="relation.value" :value="relation.value" :label="relation.label" />
             </el-select>
-            <el-autocomplete
-              v-if="visible(item)"
-              v-model="item.right"
-              size="small"
-              class="field-selector"
-              placeholder="值（引用字段使用反引号）"
-              clearable
-              :fetch-suggestions="(query: string) => UIUtil.fetchSuggestions(fieldExpressions, query, 'value')">
-              <template #default="{ item: option }">{{ option.data.label || option.value }}</template>
-            </el-autocomplete>
-          </template>
-          <template v-if="item.type === 'RELATION'">
-            <el-button size="small" link @click="appendRelation(item)">关系</el-button>
-            <el-button size="small" link @click="appendOperation(item)">条件</el-button>
-            <el-button size="small" link @click="clear(item)">清空</el-button>
-          </template>
-          <el-button size="small" link type="danger" @click="remove(index)">删除</el-button>
-        </el-space>
-        <data-query-filter v-if="item.type === 'RELATION' && item.children && item.children.length" v-model="item.children" v-model:fields="fields" :toolbar="false" class="query-filter-children" />
-      </div>
-    </template>
-    <el-empty v-if="!model.length" description="暂无筛选条件" :image-size="60" />
+            <template v-else>
+              <el-autocomplete
+                v-model="item.left"
+                size="small"
+                class="field-selector"
+                popper-class="query-filter-field-dropdown"
+                style="flex: 0 0 150px; width: 150px; max-width: 150px"
+                placeholder="字段"
+                clearable
+                :fetch-suggestions="(query: string) => UIUtil.fetchSuggestions(fieldOptions, query, 'value')">
+                <template #default="{ item: option }">{{ option.data.label || option.value }}</template>
+              </el-autocomplete>
+              <el-select
+                v-model="item.value"
+                size="small"
+                popper-class="query-filter-operation-dropdown"
+                class="operation-selector"
+                style="flex: 0 0 160px; width: 160px">
+                <el-option v-for="operation in operations" :key="operation.value" :value="operation.value" :label="operation.label" />
+              </el-select>
+              <el-autocomplete
+                v-if="visible(item)"
+                v-model="item.right"
+                size="small"
+                class="value-selector"
+                style="flex: 1 1 220px; min-width: 180px; max-width: 280px"
+                placeholder="值（引用字段使用反引号）"
+                clearable
+                :fetch-suggestions="(query: string) => UIUtil.fetchSuggestions(fieldExpressions, query, 'value')">
+                <template #default="{ item: option }">{{ option.data.label || option.value }}</template>
+              </el-autocomplete>
+            </template>
+            <div class="query-filter-actions">
+              <template v-if="item.type === 'RELATION'">
+                <el-button size="small" link @click="appendRelation(item)">关系</el-button>
+                <el-button size="small" link @click="appendOperation(item)">条件</el-button>
+                <el-button size="small" link @click="clear(item)">清空</el-button>
+              </template>
+              <el-button size="small" link type="danger" @click="remove(index)">删除</el-button>
+            </div>
+          </div>
+          <data-query-filter v-if="item.type === 'RELATION' && item.children && item.children.length" v-model="item.children" v-model:fields="fields" :toolbar="false" class="query-filter-children" />
+        </div>
+      </template>
+    </draggable>
+    <el-empty v-if="!model.length" class="query-filter-empty" description="暂无筛选条件" :image-size="48" />
   </div>
 </template>
 <style lang="scss" scoped>
 .query-filter {
-  min-width: 480px;
+  width: 100%;
 }
 .query-filter-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
   margin-bottom: 10px;
+  border-bottom: 1px dashed var(--el-border-color-lighter);
+}
+.query-filter-toolbar :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
+.query-filter-empty {
+  display: flex;
+  min-height: 64px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0;
+
+  :deep(.el-empty__description) {
+    margin-top: 4px;
+
+    p {
+      font-size: 11px;
+      line-height: 18px;
+    }
+  }
 }
 .query-filter-node {
-  padding: 3px 0;
+  padding: 3px 4px;
+  border-radius: 6px;
+  transition: background-color 0.15s;
+
+  &:hover {
+    background: var(--el-fill-color-lighter);
+  }
+
+  &.is-relation {
+    padding-top: 6px;
+    padding-bottom: 6px;
+    border: 1px solid var(--el-border-color-extra-light);
+    background: #fafbfd;
+  }
+}
+.query-filter-node--ghost {
+  opacity: 0.45;
+  background: var(--el-color-primary-light-9);
+}
+.query-filter-line {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+
+  :deep(.el-checkbox) {
+    flex: none;
+    margin-right: 0;
+  }
+
+  :deep(.el-input__wrapper),
+  :deep(.el-select__wrapper) {
+    min-height: 26px;
+  }
+}
+.query-filter-line :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
+.query-filter-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  margin-left: 8px;
+
+  :deep(.el-button) {
+    height: 24px;
+    margin-left: 0;
+    padding: 0 5px;
+    font-size: 11px;
+  }
+
+  :deep(.el-button.is-link:not(.el-button--danger)) {
+    color: var(--el-text-color-secondary);
+
+    &:hover {
+      color: var(--el-color-primary);
+    }
+  }
+}
+.query-filter-drag {
+  flex: none;
+  padding: 4px 2px;
+  color: var(--el-text-color-placeholder);
+  font-size: 14px;
+  cursor: grab;
+  transition: color 0.15s;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+.query-filter-line:hover .query-filter-drag {
+  color: var(--el-color-primary);
 }
 .query-filter-children {
   padding-left: 24px;
-  border-left: 1px dashed var(--el-border-color);
-  margin-left: 7px;
+  border-left: 1px dashed var(--el-border-color-light);
+  margin-top: 4px;
+  margin-left: 8px;
 }
 .relation-selector {
-  width: 140px;
+  width: 124px;
 }
 .field-selector {
-  width: 180px;
+  flex: 0 0 150px;
+  width: 150px;
+  max-width: 150px;
 }
 .operation-selector {
+  flex: 0 0 160px;
   width: 160px;
+}
+.value-selector {
+  flex: 1;
+  min-width: 190px;
+  max-width: 280px;
+}
+
+:global(.query-filter-operation-dropdown .el-select-dropdown__item) {
+  min-width: 176px;
+}
+
+:global(.query-filter-field-dropdown) {
+  min-width: 240px;
 }
 </style>

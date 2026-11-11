@@ -3,12 +3,13 @@
  * 代码编辑器 - 基于 CodeMirror 的代码编辑组件，支持语法高亮、代码折叠、搜索替换、自动提示等功能。
  *
  * @v-model  {String}          编辑器内容（双向绑定主值）
- * @prop     {String}           mode         - 语法模式，默认 'null'，可选 'javascript', 'sql' 等
+ * @prop     {String}           mode         - 语法模式，默认 'null'，可选 'javascript', 'application/json', 'sql' 等
  * @prop     {Number}           height       - 编辑器高度(px)，默认 500
  * @prop     {String}           theme        - 主题，默认 'base16-light'，可选 'ayu-dark'
  * @prop     {Boolean}          foldGutter   - 是否显示代码折叠，默认 false
  * @prop     {Boolean}          lineNumbers  - 是否显示行号，默认 true
  * @prop     {Boolean}          lineWrapping - 是否自动换行，默认 true
+ * @prop     {Boolean}          readonly     - 是否只读查看，默认 false（仍允许聚焦、选择和复制）
  * @prop     {Boolean}          resizable    - 是否允许拖拽调整高度，默认 false
  * @prop     {Boolean}          fill         - 是否铺满父容器高度，默认 false
  * @prop     {Boolean}          bordered     - 是否显示输入框式边框，默认 true；
@@ -40,6 +41,9 @@
  *
  * <!-- 带自定义提示 -->
  * <code-editor v-model="sql" mode="sql" :hints="sqlHints" />
+ *
+ * <!-- 只读 JSON 查看器（支持语法高亮与折叠） -->
+ * <code-editor :model-value="jsonText" mode="application/json" readonly fold-gutter />
  *
  * <!-- 变量占位符以标签展示（内容仍是 {{#名称#}} 文本） -->
  * <code-editor ref="editorRef" v-model="text" trigger="/" @trigger="openPanel" />
@@ -75,6 +79,12 @@ import 'codemirror/mode/javascript/javascript'
 import 'codemirror/mode/sql/sql'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
+// JSON/JavaScript 模式默认没有 fold helper，显式注册括号折叠器。
+if ((CodeMirror as any).fold?.brace) {
+  CodeMirror.registerHelper('fold', 'json', (CodeMirror as any).fold.brace)
+  CodeMirror.registerHelper('fold', 'javascript', (CodeMirror as any).fold.brace)
+}
+
 const model: any = defineModel()
 const emit = defineEmits(['trigger'])
 const {
@@ -84,6 +94,7 @@ const {
   foldGutter = false,
   lineNumbers = true,
   lineWrapping = true,
+  readonly = false,
   resizable = false,
   fill = false,
   bordered = true,
@@ -102,6 +113,7 @@ const {
   foldGutter: { type: Boolean, required: false },
   lineNumbers: { type: Boolean, required: false },
   lineWrapping: { type: Boolean, required: false },
+  readonly: { type: Boolean, required: false },
   resizable: { type: Boolean, required: false },
   fill: { type: Boolean, required: false },
   bordered: { type: Boolean, required: false },
@@ -122,6 +134,7 @@ watch(model, (val) => {
 })
 const editorRef = ref()
 let editor: any = null
+let foldMarkerClickHandler: any = null
 // 监听容器尺寸变化，容器在抽屉/标签页过渡动画结束后尺寸才稳定，
 // CodeMirror 不会自动感知尺寸变化，需触发 refresh() 重绘，否则内容不显示
 let resizeObserver: any = null
@@ -261,6 +274,12 @@ const replaceRange = (text: string, from: any, to: any) => {
 const focus = () => {
   editor?.focus()
 }
+const foldAll = () => {
+  editor?.execCommand('foldAll')
+}
+const unfoldAll = () => {
+  editor?.execCommand('unfoldAll')
+}
 
 // 输入法合成状态：合成期间不拦截按键，保证中文等输入法正常使用
 let composing = false
@@ -309,6 +328,21 @@ const hintRender = (elt: any, data: any, cur: any) => {
   wrapper.textContent = cur.displayText
   elt.appendChild(wrapper)
 }
+const bindFoldMarkerClick = () => {
+  if (!editor || !foldGutter || foldMarkerClickHandler) return
+  const scroller = editor.getScrollerElement()
+  foldMarkerClickHandler = (event: MouseEvent) => {
+    if (event.button !== 0) return
+    const target = event.target as HTMLElement | null
+    const marker = target?.closest('.CodeMirror-foldgutter-open, .CodeMirror-foldgutter-folded')
+    if (!marker) return
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    const line = editor.lineAtHeight(event.clientY, 'window')
+    editor.foldCode(CodeMirror.Pos(line, 0), { rangeFinder: CodeMirror.fold.brace })
+  }
+  scroller.addEventListener('mousedown', foldMarkerClickHandler, true)
+}
 const load = () => {
   // 只有真正需要时才保留 gutter，避免 lineNumbers 关闭时左侧留一条空灰条
   const gutters: string[] = []
@@ -318,9 +352,10 @@ const load = () => {
     value: model.value || '',
     mode: mode,
     theme: theme,
-    foldGutter: foldGutter,
+    foldGutter: foldGutter ? { rangeFinder: CodeMirror.fold.brace } : false,
     lineNumbers: lineNumbers,
     lineWrapping: lineWrapping,
+    readOnly: readonly,
     placeholder: placeholder,
     hintOptions: {
       completeSingle: false,
@@ -328,6 +363,7 @@ const load = () => {
     },
     gutters: gutters,
   })
+  bindFoldMarkerClick()
   editor.setSize('auto', fill ? '100%' : currentHeight.value + 'px')
   editor.setOption('extraKeys', buildExtraKeys())
   const inputField: any = editor.getInputField()
@@ -357,18 +393,22 @@ onMounted(() => {
   })
 })
 onUnmounted(() => {
-  model.value = getContent()
+  if (!readonly) model.value = getContent()
   clearTokens()
   const inputField: any = editor?.getInputField?.()
   inputField?.removeEventListener('compositionstart', onCompositionStart)
   inputField?.removeEventListener('compositionend', onCompositionEnd)
   resizeObserver?.disconnect()
+  if (foldMarkerClickHandler) {
+    editor?.getScrollerElement?.()?.removeEventListener('mousedown', foldMarkerClickHandler, true)
+    foldMarkerClickHandler = null
+  }
   document.removeEventListener('mousemove', onResizeMouseMove)
   document.removeEventListener('mouseup', onResizeMouseUp)
 })
 defineExpose({
   getContent, setContent, replaceSelection, getSelection, renderTokens,
-  getCursor, getLine, cursorCoords, replaceRange, focus,
+  getCursor, getLine, cursorCoords, replaceRange, focus, foldAll, unfoldAll,
 })
 </script>
 
@@ -471,6 +511,14 @@ defineExpose({
   :deep(.CodeMirror-gutters) {
     border-right: none;
     background: transparent;
+  }
+  :deep(.CodeMirror-foldgutter) {
+    width: 12px;
+  }
+  :deep(.CodeMirror-foldgutter-open),
+  :deep(.CodeMirror-foldgutter-folded) {
+    cursor: pointer;
+    pointer-events: auto;
   }
   /* 行号列默认 min-width: 20px，只有个位数行号时左侧会空出一大块；改为按行号内容自适应 */
   :deep(.CodeMirror-linenumber) {

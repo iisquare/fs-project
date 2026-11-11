@@ -11,7 +11,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Kafka 记录反序列化：将消息封装为 {topic, partition, offset, message} 结构
+ * Kafka 记录反序列化：将消息封装为 {topic, partition, offset, timestamp, message} 结构
  */
 public class KafkaDeserialization implements KafkaRecordDeserializationSchema<JsonNode> {
 
@@ -21,6 +21,7 @@ public class KafkaDeserialization implements KafkaRecordDeserializationSchema<Js
         row.put("topic", record.topic());
         row.put("partition", record.partition());
         row.put("offset", record.offset());
+        row.put("timestamp", record.timestamp());
         row.put("message", null == record.value() ? "" : new String(record.value(), StandardCharsets.UTF_8));
         out.collect(row);
     }

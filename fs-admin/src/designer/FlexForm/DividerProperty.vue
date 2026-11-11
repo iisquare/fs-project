@@ -37,7 +37,7 @@ const borderStyles = [
   <el-tabs v-model="active" class="tab-property">
     <el-tab-pane label="组件属性" name="property">
       <el-form :model="model">
-        <NodeSlice v-model="model" :instance="instance" :config="config" :tips="tips" />
+        <NodeSlice v-model="model" :instance="instance" :config="config" :tips="tips">
         <el-form-item label="名称"><el-input v-model="model.label" /></el-form-item>
         <el-form-item label="方向">
           <el-radio-group v-model="model.options.direction">
@@ -54,6 +54,7 @@ const borderStyles = [
             <el-option v-for="item in borderStyles" :key="item.value" :value="item.value" :label="item.label" />
           </el-select>
         </el-form-item>
+        </NodeSlice>
       </el-form>
     </el-tab-pane>
   </el-tabs>

@@ -1,6 +1,7 @@
 package com.iisquare.fs.web.spark.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.app.spark.SparkApplication;
 import com.iisquare.fs.app.spark.core.SparkRunner;
@@ -8,6 +9,7 @@ import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.DAGCore;
 import com.iisquare.fs.base.dag.core.DAGExecution;
+import com.iisquare.fs.base.dag.core.DAGException;
 import com.iisquare.fs.base.dag.core.DAGNode;
 import com.iisquare.fs.base.dag.util.DAGUtil;
 import com.iisquare.fs.web.spark.client.SparkClusterClient;
@@ -44,7 +46,8 @@ public class BIService {
                     DAGCore.class.getPackage().getName() + ".node",
                     DAGCore.class.getPackage().getName() + ".config");
             batch = DAGUtil.scanNodes(
-                    SparkApplication.class.getPackage().getName() + ".batch");
+                    SparkApplication.class.getPackage().getName() + ".batch",
+                    "com.iisquare.fs.ext.spark");
             stream = DAGUtil.scanNodes(
                     SparkApplication.class.getPackage().getName() + ".stream");
         } catch (ClassNotFoundException e) {
@@ -82,10 +85,7 @@ public class BIService {
             if (!DPUtil.empty(debugId)) {
                 runner.debug(debugId);
                 DAGExecution execution = runner.execute();
-                ObjectNode data = DPUtil.objectNode();
-                data.put("debug", debugId);
-                data.set("outputs", execution.outputs());
-                return ApiUtil.result(0, null, data);
+                return ApiUtil.result(0, null, debugData(debugId, execution, true, null));
             }
             runner.execute();
             if ("stream".equals(model)) {
@@ -102,8 +102,42 @@ public class BIService {
             }
             return ApiUtil.result(0, null, diagram);
         } catch (Exception e) {
+            if (!DPUtil.empty(debugId)) {
+                DAGExecution execution = e instanceof DAGException dagException
+                        ? dagException.execution() : null;
+                if (null != execution) {
+                    return ApiUtil.result(0, null, debugData(debugId, execution, false, e.getMessage()));
+                }
+            }
             return ApiUtil.result(500, null, ApiUtil.getStackTrace(e));
         }
+    }
+
+    /**
+     * 节点调试结果既包含逐节点执行明细，也包含各节点的数据预览。
+     */
+    private ObjectNode debugData(
+            String debugId, DAGExecution execution, boolean succeeded, String message) {
+        ObjectNode data = DPUtil.objectNode();
+        data.put("debug", debugId);
+        data.put("succeeded", succeeded);
+        if (!DPUtil.empty(message)) data.put("message", message);
+        data.set("outputs", execution.outputs());
+        ArrayNode details = data.putArray("execution");
+        for (DAGExecution.NodeExecution item : execution.items().values()) {
+            ObjectNode row = details.addObject();
+            row.put("id", item.getId());
+            row.put("name", item.getName());
+            row.put("type", item.getType());
+            row.put("outputType", item.getOutputType());
+            row.put("elapsedMs", item.getElapsedMs());
+            row.put("succeed", item.succeed());
+            row.put("error", item.getError());
+            row.set("preview", null == item.getPreview() ? DPUtil.toJSON(null) : item.getPreview());
+        }
+        JsonNode finalValue = execution.outputs().get(debugId);
+        data.set("final", null == finalValue ? DPUtil.toJSON(null) : finalValue);
+        return data;
     }
 
     /**

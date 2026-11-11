@@ -12,6 +12,7 @@ import { casePortId } from '@/designer/X6/switch'
 import CollapseItem from './CollapseItem.vue'
 import NodeSlice from './NodeSlice.vue'
 import { useCollapse } from './collapse'
+import PropertySection from '@/components/Layout/PropertySection.vue'
 
 const active = ref('property')
 const model: any = defineModel()
@@ -73,35 +74,36 @@ const summaryTags = (item: any) => {
     <el-tab-pane label="节点属性" name="property">
       <el-form :model="model">
         <NodeSlice v-model="model" :instance="props.instance" :config="props.config" :tips="tips" />
-        <el-form-item label="" class="title">分支配置</el-form-item>
-        <el-form-item label="">
-          <div class="case-slice">
-            <CollapseItem
-              :key="item.id"
-              v-for="(item, index) in model.data.cases"
-              :title="item.name || '分支 ' + (index + 1)"
-              :tags="summaryTags(item)"
-              :expanded="isOpen(index)"
-              @toggle="toggle(index)"
-              @delete="handleRemove(index)">
-              <el-input v-model="item.name" placeholder="分支名称，同时作为连线名称" />
-              <el-input
-                type="textarea"
-                :rows="2"
-                v-model="item.condition"
-                placeholder="分支条件，如 state['api1'] == 'SUCCEED'；留空表示该分支不参与命中" />
-            </CollapseItem>
-            <el-button link type="primary" :icon="Plus" @click="handleAdd">添加分支</el-button>
-          </div>
-        </el-form-item>
-        <el-form-item label="默认分支名称">
-          <el-input v-model="model.data.defaultName" placeholder="以上分支均未命中时走该分支" />
-        </el-form-item>
-        <el-form-item label="">
-          <tip-text>
-            节点右侧每个分支各有一个锚点，可分别连线到不同节点；调度时未命中分支上的节点标记为跳过执行，移除分支时其连线一并移除
-          </tip-text>
-        </el-form-item>
+        <PropertySection title="分支配置" :reset-key="model.id">
+          <el-form-item label="">
+            <div class="case-slice">
+              <CollapseItem
+                :key="item.id"
+                v-for="(item, index) in model.data.cases"
+                :title="item.name || '分支 ' + (index + 1)"
+                :tags="summaryTags(item)"
+                :expanded="isOpen(index)"
+                @toggle="toggle(index)"
+                @delete="handleRemove(index)">
+                <el-input v-model="item.name" placeholder="分支名称，同时作为连线名称" />
+                <el-input
+                  type="textarea"
+                  :rows="2"
+                  v-model="item.condition"
+                  placeholder="分支条件，如 state['api1'] == 'SUCCEED'；留空表示该分支不参与命中" />
+              </CollapseItem>
+              <el-button link type="primary" :icon="Plus" @click="handleAdd">添加分支</el-button>
+            </div>
+          </el-form-item>
+          <el-form-item label="默认分支名称">
+            <el-input v-model="model.data.defaultName" placeholder="以上分支均未命中时走该分支" />
+          </el-form-item>
+          <el-form-item label="">
+            <tip-text>
+              节点右侧每个分支各有一个锚点，可分别连线到不同节点；调度时未命中分支上的节点标记为跳过执行，移除分支时其连线一并移除
+            </tip-text>
+          </el-form-item>
+        </PropertySection>
       </el-form>
     </el-tab-pane>
   </el-tabs>

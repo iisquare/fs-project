@@ -15,9 +15,10 @@ const props = defineProps<{
   <el-tabs v-model="active" class="tab-property">
     <el-tab-pane label="组件属性" name="property">
       <el-form :model="model">
-        <NodeSlice v-model="model" :instance="instance" :config="config" :tips="tips" />
+        <NodeSlice v-model="model" :instance="instance" :config="config" :tips="tips">
         <el-form-item label="名称"><el-input v-model="model.label" /></el-form-item>
         <el-form-item label="文本"><el-input type="textarea" v-model="model.options.txt" :rows="5"/></el-form-item>
+        </NodeSlice>
       </el-form>
     </el-tab-pane>
   </el-tabs>

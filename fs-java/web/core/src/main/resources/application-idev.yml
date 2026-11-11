@@ -72,6 +72,9 @@ rpc:
   agent:
     name: fs-agent-service
     rest: http://127.0.0.1:7827
+  sitebackend:
+    name: fs-site-backend-service
+    rest: http://127.0.0.1:8037
   demo:
     name: fs-demo-service
     rest: http://127.0.0.1:8033

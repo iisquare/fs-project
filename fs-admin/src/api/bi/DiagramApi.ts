@@ -28,4 +28,19 @@ export default {
   debug(data: any, tips = {}) {
     return base.post('/dag/debug', data, tips)
   },
+  jarList(params: any = {}, tips = {}) {
+    return base.post('/diagram/jar/list', params, tips)
+  },
+  jarInfo(id: string, tips = {}) {
+    return base.get('/diagram/jar/info', { id }, tips)
+  },
+  jarNodes(id: string, tips = {}) {
+    return base.get('/diagram/jar/nodes', { id }, tips)
+  },
+  uploadJar(file: File, tips = {}) {
+    return base.form('/diagram/jar/upload', { file }, tips)
+  },
+  deleteJar(id: string, tips = {}) {
+    return base.post('/diagram/jar/delete', { id }, tips)
+  },
 }

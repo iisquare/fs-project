@@ -134,6 +134,12 @@ const handleLog = (scope: any, env: Event) => {
     query: RouteUtil.filter({ jobName: String(scope.row.id), jobGroup: 'com.iisquare.fs.web.bi.service.DatasetService' })
   })
 }
+const handleQuery = (scope: any) => {
+  router.push({
+    path: '/bi/data/datasetQuery',
+    query: { id: scope.row.id }
+  }).catch(() => {})
+}
 const active = ref('table')
 const handleUpdateFields = () => {
   const sql = (form.value.content || '').trim()
@@ -225,6 +231,7 @@ const handleUpdateFields = () => {
         <template #default="scope">
           <el-button v-if="scope.row.type === 'cron'" link @click="handleTrigger(scope)" :loading="triggerLoading === scope.row.id" v-permit="'bi:dataset:'">触发</el-button>
           <el-button link @click="(e: any) => handleLog(scope, e)" v-permit="'bi:dataset:'">日志</el-button>
+          <el-button link @click="handleQuery(scope)" v-permit="'bi:dataset:'">查询</el-button>
           <el-button link @click="handleShow(scope)" v-permit="'bi:dataset:'">查看</el-button>
           <el-button link @click="handleEdit(scope)" v-permit="'bi:dataset:modify'">编辑</el-button>
         </template>

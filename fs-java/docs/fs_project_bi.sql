@@ -51,6 +51,35 @@ CREATE TABLE `fs_bi_cluster` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `fs_bi_jar`
+--
+
+DROP TABLE IF EXISTS `fs_bi_jar`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_bi_jar` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `file_id` varchar(64) NOT NULL DEFAULT '' COMMENT '文件服务文件标识',
+  `name` varchar(255) NOT NULL DEFAULT '' COMMENT '原始文件名',
+  `bucket` varchar(128) NOT NULL DEFAULT 'fs-bi' COMMENT '文件服务存储桶',
+  `filepath` varchar(1024) NOT NULL DEFAULT '' COMMENT '文件服务对象路径',
+  `sha256` varchar(64) NOT NULL DEFAULT '' COMMENT '文件SHA-256',
+  `size` bigint NOT NULL DEFAULT '0' COMMENT '文件大小',
+  `nodes` longtext NOT NULL COMMENT 'DAG节点元数据JSON',
+  `status` tinyint NOT NULL DEFAULT '1' COMMENT '状态：1-可用，-1-已删除',
+  `created_time` bigint NOT NULL DEFAULT '0' COMMENT '创建时间',
+  `created_uid` int NOT NULL DEFAULT '0' COMMENT '创建者',
+  `updated_time` bigint NOT NULL DEFAULT '0' COMMENT '修改时间',
+  `updated_uid` int NOT NULL DEFAULT '0' COMMENT '修改者',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_jar_file_id` (`file_id`) USING BTREE,
+  KEY `idx_jar_name` (`name`) USING BTREE,
+  KEY `idx_jar_sha256` (`sha256`) USING BTREE,
+  KEY `idx_jar_status_created` (`status`,`created_time`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='BI自定义JAR元数据';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `fs_bi_dashboard`
 --
 

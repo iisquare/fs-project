@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import UserTaskAuthority from './UserTaskAuthority.vue'
+import PropertySection from '@/components/Layout/PropertySection.vue'
 
 const active = ref('property')
 const props = defineProps<{
@@ -56,12 +57,15 @@ watch(form, (obj) => {
   <el-tabs v-model="active" class="tab-property">
     <el-tab-pane label="节点属性" name="property">
       <el-form :model="form">
-        <el-form-item label="类型">{{ element?.type }}</el-form-item>
-        <el-form-item label="标识"><el-input v-model="form.id" autocomplete="off" /></el-form-item>
-        <el-form-item label="名称"><el-input v-model="form.name" autocomplete="off" /></el-form-item>
-        <el-form-item label="描述"><el-input type="textarea" v-model="form.documentation" /></el-form-item>
-        <el-divider>表单权限</el-divider>
-        <UserTaskAuthority v-model="form.authority" :bpmn="bpmn" :element="element" :workflow="workflow" />
+        <PropertySection title="基础信息" :reset-key="form.id">
+          <el-form-item label="类型">{{ element?.type }}</el-form-item>
+          <el-form-item label="标识"><el-input v-model="form.id" autocomplete="off" /></el-form-item>
+          <el-form-item label="名称"><el-input v-model="form.name" autocomplete="off" /></el-form-item>
+          <el-form-item label="描述"><el-input type="textarea" v-model="form.documentation" /></el-form-item>
+        </PropertySection>
+        <PropertySection title="表单权限" :reset-key="form.id">
+          <UserTaskAuthority v-model="form.authority" :bpmn="bpmn" :element="element" :workflow="workflow" />
+        </PropertySection>
       </el-form>
     </el-tab-pane>
   </el-tabs>

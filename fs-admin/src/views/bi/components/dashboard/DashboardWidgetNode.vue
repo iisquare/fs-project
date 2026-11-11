@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, type CSSProperties } from 'vue'
 import DashboardContent from './DashboardContent.vue'
-import { commonStyle } from './model'
+import { commonStyle, widgetTitleHeight, type DashboardWidget } from './model'
 
 defineOptions({ name: 'DashboardWidgetNode' })
 
@@ -42,8 +42,21 @@ const resizeHandles = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'] as const
 type ResizeDirection = typeof resizeHandles[number]
 
 const selected = computed(() => props.selectedId === props.widget.id)
-const childWidth = computed(() => Math.max(40, props.widget.w - props.widget.style.paddingLeft - props.widget.style.paddingRight))
-const childHeight = computed(() => Math.max(40, props.widget.h - props.widget.style.paddingTop - props.widget.style.paddingBottom))
+const childWidth = computed(() => Math.max(
+  40,
+  props.widget.w
+    - props.widget.style.paddingLeft
+    - props.widget.style.paddingRight
+    - props.widget.style.borderWidth * 2,
+))
+const childHeight = computed(() => Math.max(
+  40,
+  props.widget.h
+    - props.widget.style.paddingTop
+    - props.widget.style.paddingBottom
+    - props.widget.style.borderWidth * 2
+    - widgetTitleHeight(props.widget as DashboardWidget),
+))
 const geometryValue = (value: number, unit: string) => `${Number(value) || 0}${unit === '%' ? '%' : 'px'}`
 const geometryText = (value: number, unit: string) => {
   const number = Number(value) || 0
@@ -133,6 +146,7 @@ const childrenStyle = computed<CSSProperties>(() => {
     const columnGuideEnd = Math.min(columnStep, cellWidth + guideWidth / 2)
     const rowGuideEnd = Math.min(rowStep, cellHeight + guideWidth / 2)
     const line = 'rgba(83, 205, 255, 0.66)'
+    const showGrid = props.design && props.showGrid
     return {
       display: 'grid',
       gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
@@ -141,7 +155,7 @@ const childrenStyle = computed<CSSProperties>(() => {
         : { gridAutoRows: `${props.widget.gridRowHeight}px` }),
       gap: `${gap}px`,
       position: 'relative',
-      backgroundImage: props.design && props.showGrid
+      backgroundImage: showGrid
         ? [
             `repeating-linear-gradient(to right, ${line} 0 ${guideWidth}px, transparent ${guideWidth}px ${columnStep}px)`,
             `repeating-linear-gradient(to right, transparent 0 ${columnGuideEnd}px, ${line} ${columnGuideEnd}px ${Math.min(columnStep, columnGuideEnd + guideWidth)}px, transparent ${Math.min(columnStep, columnGuideEnd + guideWidth)}px ${columnStep}px)`,
@@ -149,6 +163,7 @@ const childrenStyle = computed<CSSProperties>(() => {
             `repeating-linear-gradient(to bottom, transparent 0 ${rowGuideEnd}px, ${line} ${rowGuideEnd}px ${Math.min(rowStep, rowGuideEnd + guideWidth)}px, transparent ${Math.min(rowStep, rowGuideEnd + guideWidth)}px ${rowStep}px)`,
           ].join(',')
         : undefined,
+      boxShadow: showGrid ? `inset 0 0 0 ${guideWidth}px ${line}` : undefined,
     }
   }
   if (props.widget.layout === 'flex') {

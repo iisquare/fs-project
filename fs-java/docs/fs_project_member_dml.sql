@@ -44,6 +44,7 @@ INSERT INTO `fs_member_application` VALUES (305,'kg','知识图谱','layout.know
 INSERT INTO `fs_member_application` VALUES (306,'auth','鉴权中心','Promotion','/auth/index/index','',0,2,'资源权限、数据权限、授权日志',1742262571109,1,1744774472388,1);
 INSERT INTO `fs_member_application` VALUES (307,'worker','消息队列','','','',0,1,'',1788918645617,1,1788918645617,1);
 INSERT INTO `fs_member_application` VALUES (308,'agent','智能体','ai.robot','/agent/index/index','',100,1,'智能体应用、模型对话、知识库、插件管理',1789300000000,1,1789300000000,1);
+INSERT INTO `fs_member_application` VALUES (309,'siteBackend','网站资产','OfficeBuilding','/siteBackend/setting/site','',10,1,'网站入口、子目录站点与黑白名单统一管理',1794195502000,1,1794195502000,1);
 /*!40000 ALTER TABLE `fs_member_application` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -243,6 +244,10 @@ INSERT INTO `fs_member_menu` VALUES (423,'项目共享','智能体:客户端:项
 INSERT INTO `fs_member_menu` VALUES (424,'版本管理','智能体:客户端:版本管理',308,422,'','/agent/bot/clientVersion','',0,1,'',1792502400000,1,1792502400000,1);
 INSERT INTO `fs_member_menu` VALUES (425,'更新统计','智能体:客户端:更新统计',308,422,'','/agent/bot/clientUpdateStatistic','',0,1,'',1792502401000,1,1792502401000,1);
 INSERT INTO `fs_member_menu` VALUES (426,'运行维护','后台管理:数据治理:系统设置:运行维护',157,119,'Tool','/govern/setting/state','',20,1,'',1761190000000,1,1761190000000,1);
+INSERT INTO `fs_member_menu` VALUES (427,'大屏模板','商业智能:智能报表:大屏模板',31,37,'','/bi/olap/dashboardTemplate','',20,1,'定义大屏全局布局和组件默认样式',1793692800000,1,1793692800000,1);
+INSERT INTO `fs_member_menu` VALUES (428,'代理服务','数据采集:采集配置:代理服务',26,175,'','/spider/setting/proxy','',20,1,'代理渠道、代理分组与运行统计',1793750400000,1,1793785276773,1);
+INSERT INTO `fs_member_menu` VALUES (429,'网站资产','网站资产',309,0,'OfficeBuilding','/siteBackend/setting/site','',10,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_menu` VALUES (430,'入口与名单','网站资产:入口与名单',309,429,'','/siteBackend/setting/site','',0,1,'',1794195502000,1,1794195502000,1);
 /*!40000 ALTER TABLE `fs_member_menu` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -607,6 +612,40 @@ INSERT INTO `fs_member_resource` VALUES (451,'添加','商业智能:数据大屏
 INSERT INTO `fs_member_resource` VALUES (452,'修改','商业智能:数据大屏:修改',31,450,'bi','dashboard','modify',0,1,'',1793419818000,1,1793419818000,1);
 INSERT INTO `fs_member_resource` VALUES (453,'删除','商业智能:数据大屏:删除',31,450,'bi','dashboard','delete',0,1,'',1793419818000,1,1793419818000,1);
 INSERT INTO `fs_member_resource` VALUES (454,'检索','商业智能:数据大屏:检索',31,450,'bi','dashboard','search',0,1,'',1793419818000,1,1793419818000,1);
+INSERT INTO `fs_member_resource` VALUES (455,'大屏模板','商业智能:大屏模板',31,0,'bi','dashboardTemplate','',0,1,'大屏模板管理',1793692800000,1,1793692800000,1);
+INSERT INTO `fs_member_resource` VALUES (456,'添加','商业智能:大屏模板:添加',31,455,'bi','dashboardTemplate','add',0,1,'新增大屏模板',1793692800000,1,1793692800000,1);
+INSERT INTO `fs_member_resource` VALUES (457,'修改','商业智能:大屏模板:修改',31,455,'bi','dashboardTemplate','modify',0,1,'修改大屏模板',1793692800000,1,1793692800000,1);
+INSERT INTO `fs_member_resource` VALUES (458,'删除','商业智能:大屏模板:删除',31,455,'bi','dashboardTemplate','delete',0,1,'删除大屏模板',1793692800000,1,1793692800000,1);
+INSERT INTO `fs_member_resource` VALUES (459,'代理服务','数据采集:代理服务',26,0,'spider','proxy','',0,1,'代理调度与状态保持',1793750400000,1,1793750400000,1);
+INSERT INTO `fs_member_resource` VALUES (460,'代理渠道','数据采集:代理服务:代理渠道',26,459,'spider','proxyChannel','',0,1,'管理静态代理池和渠道提取接口',1793750400000,1,1793750400000,1);
+INSERT INTO `fs_member_resource` VALUES (461,'添加','数据采集:代理服务:代理渠道:添加',26,460,'spider','proxyChannel','add',0,1,'',1793750400000,1,1793750400000,1);
+INSERT INTO `fs_member_resource` VALUES (462,'修改','数据采集:代理服务:代理渠道:修改',26,460,'spider','proxyChannel','modify',0,1,'',1793750400000,1,1793750400000,1);
+INSERT INTO `fs_member_resource` VALUES (463,'删除','数据采集:代理服务:代理渠道:删除',26,460,'spider','proxyChannel','delete',0,1,'',1793750400000,1,1793750400000,1);
+INSERT INTO `fs_member_resource` VALUES (464,'代理分组','数据采集:代理服务:代理分组',26,459,'spider','proxyGroup','',0,1,'管理代理资源分组和租约策略',1793750400000,1,1793750400000,1);
+INSERT INTO `fs_member_resource` VALUES (465,'添加','数据采集:代理服务:代理分组:添加',26,464,'spider','proxyGroup','add',0,1,'',1793750400000,1,1793750400000,1);
+INSERT INTO `fs_member_resource` VALUES (466,'修改','数据采集:代理服务:代理分组:修改',26,464,'spider','proxyGroup','modify',0,1,'',1793750400000,1,1793750400000,1);
+INSERT INTO `fs_member_resource` VALUES (467,'删除','数据采集:代理服务:代理分组:删除',26,464,'spider','proxyGroup','delete',0,1,'',1793750400000,1,1793750400000,1);
+INSERT INTO `fs_member_resource` VALUES (468,'代理统计','数据采集:代理服务:代理统计',26,459,'spider','proxy','stats',0,1,'按分组、渠道、协议、资源和状态统计',1793750400000,1,1793750400000,1);
+INSERT INTO `fs_member_resource` VALUES (469,'网站入口','网站资产:网站入口',309,0,'backend','siteEntry','',0,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (470,'添加','网站资产:网站入口:添加',309,469,'backend','siteEntry','add',1,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (471,'修改','网站资产:网站入口:修改',309,469,'backend','siteEntry','modify',2,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (472,'删除','网站资产:网站入口:删除',309,469,'backend','siteEntry','delete',3,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (473,'访问规则','网站资产:访问规则',309,0,'backend','accessRule','',4,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (474,'添加','网站资产:访问规则:添加',309,473,'backend','accessRule','add',1,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (475,'修改','网站资产:访问规则:修改',309,473,'backend','accessRule','modify',2,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (476,'删除','网站资产:访问规则:删除',309,473,'backend','accessRule','delete',3,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (477,'同步采集','网站资产:同步采集',309,0,'backend','siteSync','',5,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (478,'info','网站资产:网站入口:详情',309,469,'backend','siteEntry','info',10,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (479,'list','网站资产:网站入口:列表',309,469,'backend','siteEntry','list',10,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (480,'search','网站资产:网站入口:检索',309,469,'backend','siteEntry','search',10,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (481,'config','网站资产:网站入口:配置',309,469,'backend','siteEntry','config',10,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (482,'info','网站资产:访问规则:详情',309,473,'backend','accessRule','info',10,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (483,'list','网站资产:访问规则:列表',309,473,'backend','accessRule','list',10,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (484,'config','网站资产:访问规则:配置',309,473,'backend','accessRule','config',10,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (485,'stats','网站资产:系统状态',309,0,'backend','siteSystem','stats',10,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (486,'mongoSample','网站资产:采集索引样例',309,0,'backend','siteSystem','mongoSample',10,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (487,'rebuildSearch','网站资产:重建检索索引',309,0,'backend','siteSystem','rebuildSearch',10,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (488,'spider','网站资产:同步采集:执行',309,0,'backend','siteSync','spider',10,1,'',1794195502000,1,1794195502000,1);
 /*!40000 ALTER TABLE `fs_member_resource` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -619,4 +658,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-11-02 14:51:57
+-- Dump completed on 2026-11-09 11:45:35

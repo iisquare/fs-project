@@ -337,6 +337,8 @@
 - 所有客户端业务请求会带 `x-client-version`、`x-client-platform`、`x-client-arch`、
   `x-client-id`、`x-client-channel`。agent 服务的版本拦截器对低于最低支持版本、命中回滚目标
   或版本头非法的请求返回 HTTP 426 / 业务码 `90426`，公开的 `/clientUpdate/*` 更新接口除外。
+  `/bot/*` 与客户端专属的 `/skill/available`、`/skillVersion/available`、
+  `/skillVersion/package` 缺少版本头时同样拒绝；管理端技能接口不受影响。
 - 更新埋点写入 `fs_agent_client_update_log`：`download_started`、`update_failed`、
   `install_failed`、`install_success`；管理端「版本管理 → 更新统计」查看汇总与最近记录。
 - 下载缓存按目标 SHA-512 持久化。断点续传使用 HTTP `Range`，服务器忽略 Range 时自动回退为

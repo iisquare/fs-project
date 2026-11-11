@@ -125,13 +125,16 @@ public class DictionaryService extends JPAServiceBase {
     public ArrayNode tree(Map<?, ?> param, Map<?, ?> args) {
         Sort sort = JPAUtil.sort(DPUtil.parseString(param.get("sort")), Arrays.asList("id", "name", "pinyin", "sort"));
         if (null == sort) sort = Sort.by(Sort.Order.desc("sort"), Sort.Order.asc("pinyin"), Sort.Order.asc("id"));
+        boolean lazy = DPUtil.parseBoolean(param.get("lazy"));
+        String parentIdValue = DPUtil.parseString(param.get("parentId"));
+        int parentId = DPUtil.parseInt(parentIdValue);
         List<Dictionary> list = dictionaryDao.findAll((Specification<Dictionary>) (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             int ancestorId = DPUtil.parseInt(param.get("ancestorId"));
             // 为空时为所有字典列表，非空时为单个字典的所有字典项
             predicates.add(cb.equal(root.get("ancestorId"), ancestorId));
-            int parentId = DPUtil.parseInt(param.get("parentId"));
-            if (!"".equals(DPUtil.parseString(param.get("parentId")))) {
+            // 异步加载始终限定当前父级；未传 parentId 时默认加载根级
+            if (lazy || !DPUtil.empty(parentIdValue)) {
                 predicates.add(cb.equal(root.get("parentId"), parentId));
             }
             int status = DPUtil.parseInt(param.get("status"));
@@ -148,7 +151,13 @@ public class DictionaryService extends JPAServiceBase {
         if(!DPUtil.empty(args.get("withStatusText"))) {
             fillStatus(data, status());
         }
-        int parentId = DPUtil.parseInt(param.get("parentId"));
+        if (lazy) {
+            // 异步模式只返回当前层级，由前端展开时继续请求子级
+            for (JsonNode item : data) {
+                ((ObjectNode) item).put("hasChildren", !item.at("/leaf").asBoolean());
+            }
+            return data;
+        }
         return DPUtil.formatRelation(data, "parentId", parentId, "id", "children");
     }
 

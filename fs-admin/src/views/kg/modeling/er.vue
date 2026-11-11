@@ -83,7 +83,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <LayoutDesigner splitter>
+  <LayoutDesigner splitter unified-property>
     <template #left>
       <OutlineList :instance="flowRef" :active-item="activeItem" @update:active-item="(v: any) => activeItem = v" />
     </template>

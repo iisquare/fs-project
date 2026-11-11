@@ -43,6 +43,44 @@
 - 浏览器资源不足：采集端不等待和重试，立即把任务作为可重试错误上报，由 Spider
   将任务放回 Redis 队列。是否继续调度由 Token、优先级和模板停顿参数共同控制。
 
+### 代理调度与状态保持
+
+- 代理渠道（Proxy Channel）维护静态资源池或渠道提取 API，内置 `static`、`generic`、
+  快代理、巨量IP、芝麻代理、IPIDEA、Bright Data 适配器。提取参数和响应字段映射均保存在
+  渠道 JSON 配置中，不依赖固定 SDK。
+- 代理分组（Proxy Group）定义协议、区域、轮换策略、租约时长、粘性时长、最大活动租约、
+  超时和失败阈值。模板通过 `proxyGroupId` 选择分组，并配置 `rotate`（每任务轮换）或
+  `sticky`（粘性使用）。
+- 状态保持支持 `template` 和 `task` 两种作用域。状态（HTTP Cookie/认证请求头、
+  Playwright storage state）与代理资源绑定在 Redis 租约中，任务上报时回写；资源失效
+  后保留状态并在下次申请时重新绑定资源。
+- `/node/obtain` 在分配任务时返回代理配置和初始状态，`/node/report` 完成状态回写、
+  租约释放和统计。按代理计频通过资源 IP 生成限频键。
+- 管理接口为 `/proxy/channel/*`、`/proxy/group/*`、`GET /proxy/stats`。分组外部接口为
+  `POST /proxy/service/{code}/acquire`、`heartbeat`、`release` 和
+  `GET /proxy/service/{code}/stats`，需在分组中配置访问密钥。
+- 统计维度支持 `group`、`channel`、`protocol`、`resource`、`status`，指标包括申请量、
+  成功率、失败量、活动租约、状态绑定数和平均耗时。统计存于 Redis，保留 7 天。
+
+已有数据库先执行：
+
+```bash
+mysql -u root -p fs_project < docs/fs_project_spider_proxy.sql
+```
+
+分组申请示例：
+
+```bash
+curl -X POST http://127.0.0.1:7806/proxy/service/account-pool/acquire \
+  -H 'Content-Type: application/json' \
+  -H 'X-Proxy-Access-Key: your-access-key' \
+  -d '{"clientId":"crawler-1","stateKey":"account-42","sticky":true,"stateTtl":1800}'
+```
+
+返回中的 `proxy` 用于建立 HTTP/SOCKS5 代理，`headers` 包含代理认证，`state` 是该
+资源当前绑定的会话状态。外部调用方完成请求后使用 `release`，或通过 `heartbeat`
+续租；内部采集端由 `/node/report` 自动完成相同的状态回写和租约处理。
+
 ### 无头浏览器节点
 
 ```bash
@@ -55,6 +93,4 @@ gradle :web:browser:bootJar
 
 ### 研发计划
 
-- 请求代理
-- 状态保持
 - 浏览器交互动作与网络请求捕获

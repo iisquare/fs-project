@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.core.util.HttpUtil;
 import com.iisquare.fs.web.crawler.service.NodeService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.Header;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -282,11 +284,14 @@ public class Worker implements Runnable {
         }
         int socketTimeout = socketTimeout(job, task, uri);
         int connectTimeout = connectTimeout(job, task, uri);
+        JsonNode proxyData = data.at("/proxy");
         if (connectTimeout > 0 && socketTimeout > 0) {
             RequestConfig.Builder builder = RequestConfig.custom()
                     .setConnectTimeout(connectTimeout).setSocketTimeout(socketTimeout);
             fetcher.config(builder.build());
         }
+        RequestConfig proxyConfig = proxyConfig(proxyData);
+        if (null != proxyConfig) fetcher.config(proxyConfig);
         fetcher.charset(charset(job, task, uri)).downloader(new HttpDownloader() {
             @Override
             public String download(HttpFetcher fetcher, CloseableHttpResponse response) throws Exception {
@@ -317,7 +322,16 @@ public class Worker implements Runnable {
         if (!DPUtil.empty(referer)) {
             headers.put("Referer", referer);
         }
-        headers.putAll(requestHeaders(job, task));
+        Map<String, String> stateHeaders = stateHeaders(proxyData);
+        String stateCookie = headerValue(stateHeaders, "Cookie");
+        headers.putAll(stateHeaders);
+        Map<String, String> taskHeaders = requestHeaders(job, task);
+        String taskCookie = headerValue(taskHeaders, "Cookie");
+        headers.putAll(taskHeaders);
+        if (!DPUtil.empty(stateCookie) && !DPUtil.empty(taskCookie)) {
+            headers.put("Cookie", HttpUtil.cookie(stateCookie, taskCookie));
+        }
+        headers.putAll(proxyHeaders(proxyData));
         long time = System.currentTimeMillis();
         fetcher.url(url)
                 .headers(headers)
@@ -336,6 +350,7 @@ public class Worker implements Runnable {
         if (null != exception) {
             storage.put("exception", ApiUtil.getStackTrace(exception));
         }
+        updateHttpState(proxyData, fetcher.getLastRequestHeaders(), fetcher.getLastResponseHeaders());
         storage.put("html", html);
         return ApiUtil.result(0, null, data);
     }
@@ -346,6 +361,8 @@ public class Worker implements Runnable {
         String referer = task.at("/referer").asText();
         Map<String, String> headers = defaultHeaders();
         if (!DPUtil.empty(referer)) headers.put("Referer", referer);
+        Map<String, String> stateHeaders = stateHeaders(data.at("/proxy"));
+        headers.putAll(stateHeaders);
         headers.putAll(requestHeaders(job, task));
         BrowserFetchResult result = nodeService.browserFetcher().fetch(
                 url,
@@ -357,8 +374,15 @@ public class Worker implements Runnable {
                 charset(job, task, URI.create(url)).name(),
                 browserTimeout(job, task),
                 browserWaitUntil(job, task),
-                browserWaitSelector(job, task)
+                browserWaitSelector(job, task),
+                data.at("/proxy")
         );
+        if (!DPUtil.empty(result.getStorageState())) {
+            ObjectNode proxyObject = data.with("proxy");
+            JsonNode stateNode = proxyObject.get("state");
+            ObjectNode state = stateNode instanceof ObjectNode object ? object : proxyObject.putObject("state");
+            state.put("storageState", result.getStorageState());
+        }
         if (result.getStatus() == 0 && result.isRetryable()) {
             return ApiUtil.result(7502, result.getException(), data);
         }
@@ -373,6 +397,80 @@ public class Worker implements Runnable {
         if (!DPUtil.empty(result.getWarning())) storage.put("warning", result.getWarning());
         if (!DPUtil.empty(result.getException())) storage.put("exception", result.getException());
         return ApiUtil.result(0, null, data);
+    }
+
+    private RequestConfig proxyConfig(JsonNode proxyData) {
+        JsonNode proxy = proxyData.at("/proxy");
+        if (!proxy.isObject() || DPUtil.empty(proxy.at("/host").asText(""))) return null;
+        RequestConfig.Builder builder = RequestConfig.custom()
+                .setProxy(new org.apache.http.HttpHost(
+                        proxy.at("/host").asText(), proxy.at("/port").asInt(),
+                        proxy.at("/protocol").asText("http")));
+        int connectTimeout = proxy.at("/connectTimeout").asInt(10000);
+        int socketTimeout = proxy.at("/socketTimeout").asInt(30000);
+        if (connectTimeout > 0) builder.setConnectTimeout(connectTimeout);
+        if (socketTimeout > 0) builder.setSocketTimeout(socketTimeout);
+        return builder.build();
+    }
+
+    private Map<String, String> proxyHeaders(JsonNode proxyData) {
+        Map<String, String> result = new LinkedHashMap<>();
+        JsonNode headers = proxyData.at("/headers");
+        if (headers.isObject()) {
+            headers.fields().forEachRemaining(entry -> result.put(entry.getKey(), entry.getValue().asText("")));
+        }
+        return result;
+    }
+
+    private Map<String, String> stateHeaders(JsonNode proxyData) {
+        Map<String, String> result = new LinkedHashMap<>();
+        JsonNode headers = proxyData.at("/state/headers");
+        if (headers.isObject()) {
+            headers.fields().forEachRemaining(entry -> result.put(entry.getKey(), entry.getValue().asText("")));
+        }
+        return result;
+    }
+
+    private String headerValue(Map<String, String> headers, String name) {
+        if (null == headers) return "";
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            if (name.equalsIgnoreCase(entry.getKey())) return entry.getValue();
+        }
+        return "";
+    }
+
+    private void updateHttpState(JsonNode proxyData, Header[] requestHeaders, Header[] responseHeaders) {
+        JsonNode stateNode = proxyData.at("/state");
+        if (!stateNode.isObject()) return;
+        ObjectNode state = (ObjectNode) stateNode;
+        ObjectNode headers = state.putObject("headers");
+        String cookie = "";
+        for (Header header : requestHeaders) {
+            String name = header.getName();
+            if ("Proxy-Authorization".equalsIgnoreCase(name)
+                    || "Cookie".equalsIgnoreCase(name)
+                    || "Host".equalsIgnoreCase(name)
+                    || "Content-Length".equalsIgnoreCase(name)
+                    || "Connection".equalsIgnoreCase(name)
+                    || "Proxy-Connection".equalsIgnoreCase(name)) continue;
+            headers.put(name, header.getValue());
+        }
+        for (Header header : requestHeaders) {
+            if ("Cookie".equalsIgnoreCase(header.getName())) {
+                cookie = header.getValue();
+                break;
+            }
+        }
+        if (null != responseHeaders) {
+            for (Header header : responseHeaders) {
+                if (!"Set-Cookie".equalsIgnoreCase(header.getName())) continue;
+                String value = header.getValue();
+                int separator = value.indexOf(';');
+                if (separator >= 0) value = value.substring(0, separator);
+                cookie = HttpUtil.cookie(cookie, value);
+            }
+        }
+        if (!DPUtil.empty(cookie)) headers.put("Cookie", cookie);
     }
 
     @Override

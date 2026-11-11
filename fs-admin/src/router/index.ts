@@ -15,6 +15,7 @@ import oa from './modules/oa'
 import server from './modules/server'
 import spider from './modules/spider'
 import kg from './modules/kg'
+import siteBackend from './modules/siteBackend'
 
 
 const blanks: any = [] // 独立页面
@@ -31,7 +32,7 @@ const layouts: any = [] // 布局页面
  */
 const routes: any = []
 
-;([member, demo, bi, cms, face, govern, lm, agent, oa, server, spider, kg] as any).forEach((module: any) => {
+;([member, demo, bi, cms, face, govern, lm, agent, oa, server, spider, kg, siteBackend] as any).forEach((module: any) => {
   module.blanks && blanks.push(...module.blanks)
   module.layouts && layouts.push(...module.layouts)
 })

@@ -26,7 +26,7 @@ onMounted(() => {
 
 <template>
   <el-form-item label="数据来源">
-    <el-radio-group v-model="model.options.type" size="small">
+    <el-radio-group v-model="model.options.type" class="data-source-group">
       <el-radio-button :label="item.label" :value="item.value" v-for="item in types" :key="item.value" />
     </el-radio-group>
   </el-form-item>
@@ -69,6 +69,17 @@ onMounted(() => {
 </template>
 
 <style lang="scss" scoped>
+.data-source-group {
+  display: flex;
+  width: 100%;
+  :deep(.el-radio-button) {
+    flex: 1;
+    min-width: 0;
+  }
+  :deep(.el-radio-button__inner) {
+    width: 100%;
+  }
+}
 .selector-item {
   display: flex;
   align-items: center;

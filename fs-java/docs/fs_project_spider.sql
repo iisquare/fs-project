@@ -21,7 +21,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-259657';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-261668';
 
 --
 -- Table structure for table `fs_spider_blacklist`
@@ -108,8 +108,8 @@ CREATE TABLE `fs_spider_page` (
   `mapper` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `sort` tinyint NOT NULL DEFAULT '0',
   `status` tinyint NOT NULL DEFAULT '0',
-  `fetch_mode` varchar(16) NOT NULL DEFAULT 'http' COMMENT '页面请求模式：http、browser',
-  `browser_wait_until` varchar(32) NOT NULL DEFAULT 'networkidle' COMMENT 'browser 模式等待状态',
+  `fetch_mode` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'http' COMMENT '页面请求模式：http、browser',
+  `browser_wait_until` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'networkidle' COMMENT 'browser 模式等待状态',
   `browser_wait_selector` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT 'browser 模式等待选择器',
   `browser_timeout` int NOT NULL DEFAULT '30000' COMMENT 'browser 模式执行超时（毫秒）',
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
@@ -120,6 +120,71 @@ CREATE TABLE `fs_spider_page` (
   PRIMARY KEY (`id`),
   KEY `idx_template_id` (`template_id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_spider_proxy_channel`
+--
+
+DROP TABLE IF EXISTS `fs_spider_proxy_channel`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_spider_proxy_channel` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL DEFAULT '',
+  `adapter` varchar(32) NOT NULL DEFAULT 'generic',
+  `protocol` varchar(16) NOT NULL DEFAULT 'http',
+  `endpoint` varchar(4096) NOT NULL DEFAULT '',
+  `credentials` longtext NOT NULL,
+  `config` longtext NOT NULL,
+  `sort` int NOT NULL DEFAULT '0',
+  `status` tinyint NOT NULL DEFAULT '1',
+  `description` text NOT NULL,
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_proxy_channel_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_spider_proxy_group`
+--
+
+DROP TABLE IF EXISTS `fs_spider_proxy_group`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_spider_proxy_group` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL DEFAULT '',
+  `code` varchar(64) NOT NULL DEFAULT '',
+  `channel_id` int NOT NULL DEFAULT '0',
+  `protocol` varchar(16) NOT NULL DEFAULT 'http',
+  `region` varchar(255) NOT NULL DEFAULT '',
+  `strategy` varchar(32) NOT NULL DEFAULT 'round_robin',
+  `batch_size` int NOT NULL DEFAULT '1',
+  `lease_seconds` int NOT NULL DEFAULT '300',
+  `sticky_seconds` int NOT NULL DEFAULT '1800',
+  `max_uses` int NOT NULL DEFAULT '100',
+  `concurrency` int NOT NULL DEFAULT '0',
+  `connect_timeout` int NOT NULL DEFAULT '10000',
+  `socket_timeout` int NOT NULL DEFAULT '30000',
+  `failure_threshold` int NOT NULL DEFAULT '3',
+  `access_key` varchar(255) NOT NULL DEFAULT '',
+  `sort` int NOT NULL DEFAULT '0',
+  `status` tinyint NOT NULL DEFAULT '1',
+  `description` text NOT NULL,
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_proxy_group_code` (`code`),
+  KEY `idx_proxy_group_channel` (`channel_id`),
+  KEY `idx_proxy_group_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -177,8 +242,8 @@ CREATE TABLE `fs_spider_site` (
   `retry_count` int NOT NULL DEFAULT '0',
   `sort` tinyint NOT NULL DEFAULT '0',
   `status` tinyint NOT NULL DEFAULT '0',
-  `fetch_mode` varchar(16) NOT NULL DEFAULT 'http' COMMENT '页面请求模式：http、browser',
-  `browser_wait_until` varchar(32) NOT NULL DEFAULT 'networkidle' COMMENT '浏览器页面就绪条件',
+  `fetch_mode` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'http' COMMENT '页面请求模式：http、browser',
+  `browser_wait_until` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'networkidle' COMMENT '浏览器页面就绪条件',
   `browser_wait_selector` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '浏览器等待元素',
   `browser_timeout` int NOT NULL DEFAULT '30000' COMMENT '浏览器执行超时（毫秒）',
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
@@ -207,6 +272,11 @@ CREATE TABLE `fs_spider_template` (
   `priority` bigint NOT NULL DEFAULT '0',
   `min_halt` int NOT NULL DEFAULT '0',
   `max_halt` int NOT NULL DEFAULT '0',
+  `proxy_group_id` int NOT NULL DEFAULT '0',
+  `proxy_mode` varchar(16) NOT NULL DEFAULT 'none',
+  `state_mode` varchar(16) NOT NULL DEFAULT 'none',
+  `state_key` varchar(255) NOT NULL DEFAULT '',
+  `state_ttl` int NOT NULL DEFAULT '0',
   `params` longtext CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
   `content` longtext NOT NULL,
   `sort` tinyint NOT NULL DEFAULT '0',
@@ -219,7 +289,8 @@ CREATE TABLE `fs_spider_template` (
   `updated_time` bigint NOT NULL DEFAULT '0',
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
-  KEY `idx_rate_id` (`rate_id`) USING BTREE
+  KEY `idx_rate_id` (`rate_id`) USING BTREE,
+  KEY `idx_proxy_group_id` (`proxy_group_id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -258,4 +329,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-10-30 16:47:49
+-- Dump completed on 2026-11-09 15:05:41

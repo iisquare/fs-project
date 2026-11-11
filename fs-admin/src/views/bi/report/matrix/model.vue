@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router';
 import * as ElementPlusIcons from '@element-plus/icons-vue';
 import draggable from 'vuedraggable';
 import LayoutDesigner from '@/components/Layout/LayoutDesigner.vue';
+import PropertySection from '@/components/Layout/PropertySection.vue';
 import LayoutBack from '@/components/Layout/LayoutBack.vue';
 import LayoutHeading from '@/components/Layout/LayoutHeading.vue';
 import LayoutIcon from '@/components/Layout/LayoutIcon.vue';
@@ -279,7 +280,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <LayoutDesigner splitter :left-size="320" :right-size="360" :left-min="240" :right-min="300">
+  <LayoutDesigner splitter unified-property :left-size="320" :right-size="360" :left-min="240" :right-min="300">
     <template #left>
       <div class="designer-aside">
         <div class="designer-aside__head">
@@ -373,37 +374,38 @@ onMounted(() => {
     </template>
     <template #right>
       <el-scrollbar class="designer-property">
-        <layout-heading title="字段属性" />
-        <el-form v-if="itemEditing.type" label-width="80px" label-position="left" size="small">
-          <el-form-item label="启用状态">
-            <el-checkbox v-model="itemEditing.enabled">{{ itemEditing.type }}</el-checkbox>
-          </el-form-item>
-          <el-form-item label="展示名称">
-            <el-input v-model="itemEditing.title" placeholder="请输入展示名称" />
-          </el-form-item>
-          <el-form-item label="聚合字段">
-            <el-autocomplete
-              v-model="itemEditing.name"
-              clearable
-              style="width: 100%"
-              placeholder="请输入聚合字段"
-              :fetch-suggestions="(query: string) => UIUtil.fetchSuggestions(simpleFields, query, 'value')" />
-          </el-form-item>
-          <el-form-item label="排序方式" v-if="itemEditing.type !== 'metrics'">
-            <el-select v-model="itemEditing.sort">
-              <el-option v-for="item in directions" :key="item.value" :value="item.value" :label="item.label" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="聚合方式" v-if="itemEditing.type === 'metrics'">
-            <el-select v-model="itemEditing.aggregation">
-              <el-option v-for="item in metrics" :key="item.value" :value="item.value" :label="item.label" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="定制运算" v-if="itemEditing.type === 'levels'">
-            <code-editor v-model="itemEditing.expression" mode="sql" :hints="hints" :height="120" :line-numbers="false" placeholder="支持 SQL 表达式，字段引用使用反引号，如 `字段`" />
-          </el-form-item>
-        </el-form>
-        <el-empty v-else description="拖拽字段至编辑区，点击字段进行编辑" :image-size="56" />
+        <PropertySection title="字段属性" :reset-key="itemEditing.id">
+          <el-form v-if="itemEditing.type" label-position="top" size="small">
+            <el-form-item label="启用状态">
+              <el-checkbox v-model="itemEditing.enabled">{{ itemEditing.type }}</el-checkbox>
+            </el-form-item>
+            <el-form-item label="展示名称">
+              <el-input v-model="itemEditing.title" placeholder="请输入展示名称" />
+            </el-form-item>
+            <el-form-item label="聚合字段">
+              <el-autocomplete
+                v-model="itemEditing.name"
+                clearable
+                style="width: 100%"
+                placeholder="请输入聚合字段"
+                :fetch-suggestions="(query: string) => UIUtil.fetchSuggestions(simpleFields, query, 'value')" />
+            </el-form-item>
+            <el-form-item label="排序方式" v-if="itemEditing.type !== 'metrics'">
+              <el-select v-model="itemEditing.sort">
+                <el-option v-for="item in directions" :key="item.value" :value="item.value" :label="item.label" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="聚合方式" v-if="itemEditing.type === 'metrics'">
+              <el-select v-model="itemEditing.aggregation">
+                <el-option v-for="item in metrics" :key="item.value" :value="item.value" :label="item.label" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="定制运算" v-if="itemEditing.type === 'levels'">
+              <code-editor v-model="itemEditing.expression" mode="sql" :hints="hints" :height="120" :line-numbers="false" placeholder="支持 SQL 表达式，字段引用使用反引号，如 `字段`" />
+            </el-form-item>
+          </el-form>
+          <el-empty v-else description="拖拽字段至编辑区，点击字段进行编辑" :image-size="56" />
+        </PropertySection>
       </el-scrollbar>
     </template>
     <template #footer>
@@ -451,16 +453,13 @@ onMounted(() => {
     }
   }
 }
-.designer-aside__section :deep(.fs-heading),
-.designer-property :deep(.fs-heading) {
-  margin-bottom: 8px;
+.designer-aside__section :deep(.fs-heading) {
+  margin-bottom: 0;
 }
-.designer-aside__section :deep(.fs-heading__title),
-.designer-property :deep(.fs-heading__title) {
-  font-size: 14px;
+.designer-aside__section :deep(.fs-heading__title) {
+  font-size: 13px;
 }
-.designer-aside__section :deep(.fs-heading__title)::before,
-.designer-property :deep(.fs-heading__title)::before {
+.designer-aside__section :deep(.fs-heading__title)::before {
   height: 14px;
 }
 .field-list {
@@ -611,8 +610,11 @@ onMounted(() => {
   height: 100%;
   :deep(.el-scrollbar__view) {
     min-height: 100%;
-    padding: 12px;
+    padding: 0 12px 12px;
     box-sizing: border-box;
+  }
+  :deep(.el-form) {
+    padding: 0;
   }
   :deep(.el-form-item) {
     margin-bottom: 12px;

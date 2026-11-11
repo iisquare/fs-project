@@ -17,7 +17,7 @@ const props = defineProps<{
   <el-tabs v-model="active" class="tab-property">
     <el-tab-pane label="组件属性" name="property">
       <el-form :model="model">
-        <NodeSlice v-model="model" :instance="instance" :config="config" :tips="tips" />
+        <NodeSlice v-model="model" :instance="instance" :config="config" :tips="tips">
         <el-form-item label="名称"><el-input v-model="model.label" /></el-form-item>
         <el-form-item label="字段"><el-input v-model="model.options.field" placeholder="必填" /></el-form-item>
         <el-form-item label="默认值">
@@ -31,6 +31,7 @@ const props = defineProps<{
         <el-form-item label="允许创建"><el-switch v-model="model.options.allowCreate" /></el-form-item>
         <el-form-item label="保留搜索"><el-switch v-model="model.options.reserveKeyword" /></el-form-item>
         <SelectorSlice v-model="model" :instance="instance" :config="config" :tips="tips" />
+        </NodeSlice>
       </el-form>
     </el-tab-pane>
     <el-tab-pane label="校验规则" name="rule">

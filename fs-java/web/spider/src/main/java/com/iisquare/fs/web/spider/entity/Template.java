@@ -36,6 +36,16 @@ public class Template implements Serializable {
     private Integer maxHalt; // 最大停顿间隔，毫秒
     private String params; // 启动参数
     @Column
+    private Integer proxyGroupId; // 代理资源分组
+    @Column
+    private String proxyMode; // none、rotate、sticky
+    @Column
+    private String stateMode; // none、template、task
+    @Column
+    private String stateKey; // 状态作用域标识
+    @Column
+    private Integer stateTtl; // 状态有效期，秒
+    @Column
     private String content; // 发布的配置快照内容，用于任务的JSON序列化缓存
     @Column
     private Integer sort;

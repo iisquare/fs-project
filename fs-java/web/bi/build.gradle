@@ -4,9 +4,11 @@ dependencies {
     implementation project(':base:dag')
     implementation project(':base:mongodb')
     implementation project(':base:elasticsearch')
+    implementation project(':base:neo4j')
     implementation project(':base:redis')
     implementation project(':web:core')
     testImplementation project(':web:test')
+    implementation group: 'org.apache.kafka', name: 'kafka-clients', version: '4.2.0'
 
     // Trino 查询引擎 JDBC 客户端
     implementation group: 'io.trino', name: 'trino-jdbc', version: '483'

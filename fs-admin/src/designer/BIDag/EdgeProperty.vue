@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import PropertyPanel from './PropertyPanel.vue'
+import PropertySection from '@/components/Layout/PropertySection.vue'
+
 const model: any = defineModel()
 const tips: any = defineModel('tips', { type: null })
 defineProps<{
@@ -8,19 +11,18 @@ defineProps<{
 </script>
 
 <template>
-  <el-tabs model-value="property" class="tab-property">
-    <el-tab-pane label="连线属性" name="property">
-      <el-form :model="model">
-        <el-form-item label="" class="title">基础信息</el-form-item>
+  <property-panel title="连线属性" tab-title="连线属性">
+    <el-form :model="model" label-position="top">
+      <property-section title="基础信息" :reset-key="model.id">
         <el-form-item label="名称">
           <el-input v-model="model.data.name" />
         </el-form-item>
         <el-form-item label="描述">
           <el-input type="textarea" v-model="model.data.description" />
         </el-form-item>
-      </el-form>
-    </el-tab-pane>
-  </el-tabs>
+      </property-section>
+    </el-form>
+  </property-panel>
 </template>
 
 <style lang="scss" scoped>

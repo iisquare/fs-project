@@ -72,10 +72,22 @@ const reload = () => {
   } else { // 加载全部字典项
     loading.value = true
     DictionaryApi.options(params).then((result: any) => {
-      options.value = result.data
+      options.value = level.value > 0 ? limitLevel(result.data, 1) : result.data
       loading.value = false
     }).catch(() => {})
   }
+}
+
+/** 非懒加载时也按层级裁剪，避免业务字段选择到字典更深层。 */
+const limitLevel = (list: any[], depth: number): any[] => {
+  return (list ?? []).map((item: any) => {
+    const reached = depth >= level.value
+    return {
+      ...item,
+      leaf: reached || item.leaf,
+      children: reached ? undefined : limitLevel(item.children ?? [], depth + 1),
+    }
+  })
 }
 
 onMounted(async () => {

@@ -49,11 +49,25 @@ const emit = defineEmits<{
 }>()
 
 const handleDragStart = (event: any) => {
-  emit('dragStart', event, widgetMap.value[event.clone.dataset.id])
+  const widget = widgetMap.value[event.clone.dataset.id]
+  if (widget?.disabled) {
+    event.cancel?.()
+    return
+  }
+  emit('dragStart', event, widget)
 }
 
 const handleNativeDragStart = (event: any, widget: any) => {
+  if (widget?.disabled) {
+    event.preventDefault()
+    return
+  }
   emit('dragStart', event, widget)
+}
+
+const handleClick = (widget: any) => {
+  if (widget?.disabled) return
+  emit('clickWidget', widget)
 }
 
 const active: any = ref([])
@@ -67,14 +81,16 @@ onMounted(() => {
     <el-collapse-item :title="group.name" :name="group.id" v-for="group in groups">
       <ul v-if="native">
         <li
-          draggable="true"
+          :draggable="!item.disabled"
           class="widget-item"
+          :class="{ 'is-disabled': item.disabled }"
           :data-id="item.type"
           :title="item.title"
+          :aria-disabled="!!item.disabled"
           :key="item.id"
           v-for="item in group.children"
           @dragstart="(event: any) => handleNativeDragStart(event, item)"
-          @click="emit('clickWidget', item)">
+          @click="handleClick(item)">
           <LayoutIcon :name="item.icon" />
           <span>{{ item.label }}</span>
         </li>
@@ -87,7 +103,13 @@ onMounted(() => {
         v-bind="{ group: { name:'widgets', pull:'clone', put:false }, sort:false, ghostClass: 'ghost' }"
         tag="ul">
         <template #item="{ element }">
-          <li class="widget-item" :data-id="element.id" :title="element.title">
+          <li
+            class="widget-item"
+            :class="{ 'is-disabled': element.disabled }"
+            :data-id="element.id"
+            :title="element.title"
+            :aria-disabled="!!element.disabled"
+            @click="handleClick(element)">
             <LayoutIcon :name="element.icon" />
             <span>{{ element.label }}</span>
           </li>
@@ -145,6 +167,16 @@ onMounted(() => {
       color: var(--el-color-primary);
       background: var(--el-color-primary-light-9);
       border: 1px dashed var(--el-color-primary);
+    }
+    &.is-disabled {
+      cursor: not-allowed;
+      color: var(--el-text-color-disabled);
+      opacity: 0.58;
+      &:hover {
+        color: var(--el-text-color-disabled);
+        background: var(--fs-panel-surface);
+        border-color: transparent;
+      }
     }
   }
 }

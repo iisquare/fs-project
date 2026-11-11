@@ -39,7 +39,7 @@ public class ElasticsearchSinkNode extends AbstractElasticsearchSink<Void> {
         config.put("es.write.operation", options.at("/mode").asText("index"));
         String idField = options.at("/idField").asText();
         if (!DPUtil.empty(idField)) config.put("es.mapping.id", idField); // default none
-        config.put("es.batch.size.entries", options.at("/batchSize").asText()); // default 1000
+        config.put("es.batch.size.entries", options.at("/batchSize").asText("1000")); // default 1000
         config.put("es.batch.write.refresh", "true"); // default true
         return true;
     }

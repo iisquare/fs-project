@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import PropertySection from '@/components/Layout/PropertySection.vue';
 
 const active = ref('property')
 const model: any = defineModel()
@@ -9,57 +10,82 @@ defineProps<{
   instance: any,
 }>()
 
-const labelPositions = [{ value: 'left', label: '左对齐' }, { value: 'right', label: '右对齐' }, { value: 'top', label: '顶对齐' }]
+const labelPositions = [
+  { value: 'left', label: '左对齐' },
+  { value: 'right', label: '右对齐' },
+  { value: 'top', label: '顶对齐' },
+]
 </script>
 
 <template>
   <el-tabs v-model="active" class="tab-property">
     <el-tab-pane label="表单属性" name="property">
       <el-form :model="model">
-        <el-form-item label="" class="title">基础信息</el-form-item>
-        <el-form-item label="标识" v-if="model.id">{{ model.id }}</el-form-item>
-        <el-form-item label="名称">
-          <el-input v-model="model.name" />
-        </el-form-item>
-        <el-form-item label="排序">
-          <el-input-number v-model="model.sort" :controls="false" />
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-select v-model="model.status" placeholder="请选择">
-            <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input type="textarea" v-model="model.description" />
-        </el-form-item>
-        <el-form-item label="" class="title">标签配置</el-form-item>
-        <el-form-item label="对齐方式">
-          <el-radio-group v-model="model.content.labelPosition">
-            <el-radio-button :label="item.label" :value="item.value" v-for="item in labelPositions" :key="item.value" />
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="标签宽度">
-          <el-input-number v-model="model.content.labelWidth" :controls="false" :min="0">
-            <template #suffix><span>px</span></template>
-          </el-input-number>
-        </el-form-item>
+        <PropertySection title="基础信息" :reset-key="model.id">
+          <el-form-item label="标识" v-if="model.id">{{ model.id }}</el-form-item>
+          <el-form-item label="名称">
+            <el-input v-model="model.name" />
+          </el-form-item>
+          <el-form-item label="排序">
+            <el-input-number v-model="model.sort" :controls="false" />
+          </el-form-item>
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="model.status" placeholder="请选择">
+              <el-option v-for="(value, key) in config.status" :key="key" :value="key" :label="value" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="描述">
+            <el-input type="textarea" v-model="model.description" />
+          </el-form-item>
+        </PropertySection>
+        <PropertySection title="标签配置" :reset-key="model.id">
+          <el-form-item label="对齐方式">
+            <el-radio-group v-model="model.content.labelPosition" class="form-align-group">
+              <el-radio-button
+                :label="item.label"
+                :value="item.value"
+                v-for="item in labelPositions"
+                :key="item.value">
+                {{ item.label }}
+              </el-radio-button>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="标签宽度">
+            <el-input-number v-model="model.content.labelWidth" :controls="false" :min="0">
+              <template #suffix><span>px</span></template>
+            </el-input-number>
+          </el-form-item>
+        </PropertySection>
       </el-form>
     </el-tab-pane>
     <el-tab-pane label="列表配置" name="table">
       <el-form :model="model">
-        <el-form-item label="分页大小">
-          <el-input-number v-model="model.content.pageSize" :controls="false" :min="0" />
-        </el-form-item>
-        <el-form-item label="列表字段">
-          <el-input type="textarea" v-model="model.content.column" placeholder="采用英文逗号分隔" />
-        </el-form-item>
-        <el-form-item label="默认排序">
-          <el-input type="textarea" v-model="model.content.sort" placeholder="a,b.asc,c.desc" />
-        </el-form-item>
+        <PropertySection title="列表配置" :reset-key="model.id">
+          <el-form-item label="分页大小">
+            <el-input-number v-model="model.content.pageSize" :controls="false" :min="0" />
+          </el-form-item>
+          <el-form-item label="列表字段">
+            <el-input type="textarea" v-model="model.content.column" placeholder="采用英文逗号分隔" />
+          </el-form-item>
+          <el-form-item label="默认排序">
+            <el-input type="textarea" v-model="model.content.sort" placeholder="a,b.asc,c.desc" />
+          </el-form-item>
+        </PropertySection>
       </el-form>
     </el-tab-pane>
   </el-tabs>
 </template>
 
 <style lang="scss" scoped>
+.form-align-group {
+  display: flex;
+  width: 100%;
+  :deep(.el-radio-button) {
+    flex: 1;
+    min-width: 0;
+  }
+  :deep(.el-radio-button__inner) {
+    width: 100%;
+  }
+}
 </style>

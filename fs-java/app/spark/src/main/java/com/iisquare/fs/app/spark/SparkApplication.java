@@ -17,7 +17,9 @@ public class SparkApplication {
         JsonNode diagram = DAGUtil.loadDiagram(args[0]);
         Map<String, Class<? extends DAGNode<?>>> nodes = DAGUtil.scanNodes(
                 SparkApplication.class.getPackage().getName() + ".node",
-                SparkApplication.class.getPackage().getName() + "." + diagram.at("/model").asText(),
+                SparkApplication.class.getPackage().getName() + ".batch",
+                SparkApplication.class.getPackage().getName() + ".stream",
+                "com.iisquare.fs.ext.spark",
                 DAGCore.class.getPackage().getName() + ".node",
                 DAGCore.class.getPackage().getName() + ".config");
         String appName = diagram.at("/name").asText(SparkApplication.class.getSimpleName());

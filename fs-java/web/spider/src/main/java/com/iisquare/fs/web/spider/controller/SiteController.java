@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.core.rbac.Permission;
+import com.iisquare.fs.web.core.rbac.PermitRpc;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
 import com.iisquare.fs.web.spider.entity.Site;
 import com.iisquare.fs.web.spider.service.SiteService;
@@ -65,6 +66,15 @@ public class SiteController extends PermitControllerBase {
         model.put("browserWaitModes", siteService.browserWaitModes());
         model.put("sorts", siteService.sorts());
         return ApiUtil.echoResult(0, null, model);
+    }
+
+    /**
+     * site.backend 内部调用：同步入口/规则到模板，并可选立即启动采集作业。
+     */
+    @RequestMapping("/sync")
+    @PermitRpc
+    public String syncAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
+        return ApiUtil.echoResult(siteService.sync(param, request));
     }
 
 }

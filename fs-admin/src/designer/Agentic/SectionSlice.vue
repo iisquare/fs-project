@@ -9,8 +9,7 @@
  * @slot default - 分组内容（若干个表单项/子组件）
  * @slot actions - 标题行右侧的额外操作（如删除按钮），点击不会触发收起
  */
-import { ref } from 'vue'
-import LayoutIcon from '@/components/Layout/LayoutIcon.vue'
+import PropertySection from '@/components/Layout/PropertySection.vue'
 
 const {
   title = '',
@@ -20,41 +19,20 @@ const {
   collapsed?: boolean,
 }>()
 
-const expanded = ref(!collapsed)
 </script>
 
 <template>
-  <el-form-item
-    label=""
-    class="title is-collapsible"
-    role="button"
-    tabindex="0"
-    :aria-expanded="expanded"
-    @click="expanded = !expanded"
-    @keydown.enter.prevent="expanded = !expanded"
-    @keydown.space.prevent="expanded = !expanded">
-    <LayoutIcon class="section-caret" :name="expanded ? 'ArrowDown' : 'ArrowRight'" />
-    <span class="section-title"><slot name="title">{{ title }}</slot></span>
-    <span class="section-actions" @click.stop><slot name="actions"></slot></span>
-  </el-form-item>
-  <div class="section-body" v-show="expanded">
+  <PropertySection :title="title" :open="!collapsed">
+    <template v-if="$slots.title" #title><slot name="title"></slot></template>
+    <template v-if="$slots.actions" #extra><slot name="actions"></slot></template>
     <slot></slot>
-  </div>
+  </PropertySection>
 </template>
 
 <style lang="scss" scoped>
-.section-caret {
-  /* 展开/收起按钮放在标题左侧：与面板内列表项（CollapseItem）方向一致，
-     也符合「层级展开」的阅读顺序——先看到箭头，再读标题 */
-  margin-right: 6px;
-  color: var(--el-text-color-placeholder);
-}
-.section-actions {
-  margin-left: auto;
+:deep(.property-section__title) {
   display: inline-flex;
   align-items: center;
-}
-.section-body {
-  min-height: 0;
+  gap: 4px;
 }
 </style>

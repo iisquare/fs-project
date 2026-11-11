@@ -2,9 +2,10 @@ package com.iisquare.fs.app.flink.stream;
 
 import com.iisquare.fs.app.flink.core.FlinkRunner;
 import com.iisquare.fs.app.flink.core.FlinkTypes;
+import com.iisquare.fs.app.flink.util.CDCSupport;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.core.DAGType;
-import com.iisquare.fs.base.dag.source.AbstractKafkaSource;
+import com.iisquare.fs.base.dag.source.AbstractCDCSource;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.cdc.connectors.mysql.source.MySqlSource;
 import org.apache.flink.cdc.connectors.mysql.source.MySqlSourceBuilder;
@@ -18,7 +19,7 @@ import java.util.Properties;
 /**
  * @see(https://ververica.github.io/flink-cdc-connectors/master/content/connectors/mysql-cdc.html)
  */
-public class MySQLCaptureNode extends AbstractKafkaSource<DataStream<String>> {
+public class MySQLCaptureNode extends AbstractCDCSource<DataStream<String>> {
 
     @Override
     public DAGType<DataStream<String>> outputType() {
@@ -27,27 +28,42 @@ public class MySQLCaptureNode extends AbstractKafkaSource<DataStream<String>> {
 
     @Override
     public DataStream<String> process() {
-        String[] database = DPUtil.explode("\n", options.at("/database").asText());
-        if (database.length == 0) database = new String[]{".*"};
-        String[] table = DPUtil.explode("\n", options.at("/table").asText());
-        if (table.length == 0) table = new String[]{".*"};
+        String databaseValue = options.at("/databaseList").asText(options.at("/database").asText(""));
+        String tableValue = options.at("/tableList").asText(options.at("/table").asText(""));
         MySqlSourceBuilder<String> builder = MySqlSource.<String>builder()
                 .hostname(options.at("/hostname").asText())
                 .port(options.at("/port").asInt(3306))
-                .databaseList(database).tableList(table)
+                .databaseList(CDCSupport.patterns(options, "databaseList", databaseValue))
+                .tableList(CDCSupport.patterns(options, "tableList", tableValue))
                 .username(options.at("/username").asText())
                 .password(options.at("/password").asText())
-                .deserializer(new JsonDebeziumDeserializationSchema());
+                .deserializer(new JsonDebeziumDeserializationSchema(options.at("/includeSchema").asBoolean(false)));
         String timeZone = options.at("/timeZone").asText();
         if (!DPUtil.empty(timeZone)) builder.serverTimeZone(timeZone);
+        String serverId = options.at("/serverId").asText("");
+        if (!DPUtil.empty(serverId)) builder.serverId(serverId);
         int poolSize = options.at("/poolSize").asInt(0);
         if (poolSize > 0) builder.connectionPoolSize(poolSize); // default 20
         int fetchSize = options.at("/fetchSize").asInt(0);
         if (fetchSize > 0) builder.fetchSize(fetchSize); // default 1024
+        int splitSize = options.at("/splitSize").asInt(0);
+        if (splitSize > 0) builder.splitSize(splitSize);
+        int splitMetaGroupSize = options.at("/splitMetaGroupSize").asInt(0);
+        if (splitMetaGroupSize > 0) builder.splitMetaGroupSize(splitMetaGroupSize);
+        long connectTimeout = options.at("/connectTimeout").asLong(0);
+        if (connectTimeout > 0) builder.connectTimeout(CDCSupport.duration(options, "connectTimeout", 30000));
+        int connectMaxRetries = options.at("/connectMaxRetries").asInt(0);
+        if (connectMaxRetries > 0) builder.connectMaxRetries(connectMaxRetries);
+        if (options.has("includeSchemaChanges")) {
+            builder.includeSchemaChanges(options.at("/includeSchemaChanges").asBoolean(false));
+        }
+        if (options.has("scanNewlyAddedTable")) {
+            builder.scanNewlyAddedTableEnabled(options.at("/scanNewlyAddedTable").asBoolean(false));
+        }
         StartupOptions startup = startup(options.at("/startup").asText());
         if (null != startup) builder.startupOptions(startup);
-        builder.jdbcProperties(properties(options.at("/jdbcProperties").asText()));
-        builder.debeziumProperties(properties(options.at("/debeziumProperties").asText()));
+        builder.jdbcProperties(CDCSupport.properties(options, "jdbcProperties"));
+        builder.debeziumProperties(CDCSupport.properties(options, "debeziumProperties"));
         DataStream<String> source = runner(FlinkRunner.class).stream()
                 .fromSource(builder.build(), WatermarkStrategy.noWatermarks(), getClass().getSimpleName()).setParallelism(parallelism);
         return source;
@@ -64,7 +80,7 @@ public class MySQLCaptureNode extends AbstractKafkaSource<DataStream<String>> {
             if (2 != strings.length) {
                 throw new RuntimeException("startup specific offset should like specific:OffsetFile,OffsetPos");
             }
-            return StartupOptions.specificOffset(strings[0], DPUtil.parseInt(strings[1]));
+            return StartupOptions.specificOffset(strings[0], DPUtil.parseLong(strings[1]));
         }
         if (startup.startsWith("timestamp:")) {
             long timestamp = DPUtil.parseLong(startup.substring("timestamp:".length()));

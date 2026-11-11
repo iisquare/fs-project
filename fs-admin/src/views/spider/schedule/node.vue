@@ -19,6 +19,7 @@ const data: any = ref({
   spiders: [],
   crawlers: [],
   browsers: [],
+  proxy: [],
 })
 
 const handleRefresh = () => {
@@ -134,6 +135,22 @@ const storageVisible = ref(false)
           <el-button link @click="handleStop(scope.row.nodeId)" v-if="scope.row.isRunning">停止</el-button>
           <el-button link @click="handleStart(scope.row.nodeId)" v-else>启动</el-button>
         </template>
+      </el-table-column>
+    </el-table>
+  </el-card>
+  <el-card :bordered="false" shadow="never" header="代理服务" class="mb-20">
+    <el-table :data="data.proxy" :border="true" v-loading="loading" table-layout="auto">
+      <el-table-column label="分组" prop="name" />
+      <el-table-column label="申请次数" prop="total" />
+      <el-table-column label="成功" prop="success" />
+      <el-table-column label="失败" prop="failure" />
+      <el-table-column label="活动租约" prop="active" />
+      <el-table-column label="状态绑定" prop="stateful" />
+      <el-table-column label="成功率">
+        <template #default="scope">{{ scope.row.successRate }}%</template>
+      </el-table-column>
+      <el-table-column label="最近活跃">
+        <template #default="scope">{{ DateUtil.format(scope.row.lastTime) }}</template>
       </el-table-column>
     </el-table>
   </el-card>

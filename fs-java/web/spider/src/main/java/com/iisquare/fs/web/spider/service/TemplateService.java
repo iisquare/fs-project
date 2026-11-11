@@ -42,6 +42,8 @@ public class TemplateService extends JPAServiceBase {
     NodeService nodeService;
     @Autowired
     RateService rateService;
+    @Autowired
+    ProxyGroupService proxyGroupService;
 
     @Override
     public Map<String, String> sorts() {
@@ -98,6 +100,31 @@ public class TemplateService extends JPAServiceBase {
         info.setMinHalt(DPUtil.parseInt(param.get("minHalt")));
         info.setMaxHalt(DPUtil.parseInt(param.get("maxHalt")));
         info.setParams(DPUtil.stringify(param.get("params")));
+        int proxyGroupId = DPUtil.parseInt(param.get("proxyGroupId"));
+        if (proxyGroupId > 0 && null == proxyGroupService.info(proxyGroupId)) {
+            return ApiUtil.result(1004, "代理分组不存在", proxyGroupId);
+        }
+        String proxyMode = DPUtil.trim(DPUtil.parseString(param.get("proxyMode"))).toLowerCase(Locale.ROOT);
+        if (DPUtil.empty(proxyMode)) proxyMode = proxyGroupId > 0 ? "rotate" : "none";
+        if (!Arrays.asList("none", "rotate", "sticky").contains(proxyMode)) {
+            return ApiUtil.result(1005, "代理模式异常", proxyMode);
+        }
+        String stateMode = DPUtil.trim(DPUtil.parseString(param.get("stateMode"))).toLowerCase(Locale.ROOT);
+        if (DPUtil.empty(stateMode)) stateMode = "none";
+        if (!Arrays.asList("none", "template", "task").contains(stateMode)) {
+            return ApiUtil.result(1006, "状态保持模式异常", stateMode);
+        }
+        if (proxyGroupId < 1) {
+            proxyMode = "none";
+            stateMode = "none";
+        } else if (!"none".equals(stateMode)) {
+            proxyMode = "sticky";
+        }
+        info.setProxyGroupId(proxyGroupId);
+        info.setProxyMode(proxyMode);
+        info.setStateMode(stateMode);
+        info.setStateKey(DPUtil.parseString(param.get("stateKey")));
+        info.setStateTtl(DPUtil.parseInt(param.get("stateTtl")));
         info.setSort(DPUtil.parseInt(param.get("sort")));
         info.setStatus(status);
         info.setDescription(DPUtil.parseString(param.get("description")));
@@ -137,6 +164,9 @@ public class TemplateService extends JPAServiceBase {
         if(!DPUtil.empty(args.get("withRateInfo"))) {
             rateService.fillInfo(rows, "rateId");
         }
+        if(!DPUtil.empty(args.get("withProxyGroupInfo"))) {
+            proxyGroupService.fillInfo(rows, "proxyGroupId");
+        }
         return result;
     }
 
@@ -144,6 +174,9 @@ public class TemplateService extends JPAServiceBase {
         for (JsonNode row : rows) {
             ObjectNode node = (ObjectNode) row;
             node.replace("params", DPUtil.parseJSON(node.at("/params").asText(), k -> DPUtil.objectNode()));
+            if (DPUtil.empty(node.at("/proxyMode").asText())) node.put("proxyMode", "none");
+            if (DPUtil.empty(node.at("/stateMode").asText())) node.put("stateMode", "none");
+            if (node.at("/proxyGroupId").isMissingNode()) node.put("proxyGroupId", 0);
         }
         return rows;
     }
@@ -166,6 +199,12 @@ public class TemplateService extends JPAServiceBase {
         if (null == template || 1 != template.getStatus()) {
             return ApiUtil.result(1401, "模板不存在或已禁用", null);
         }
+        if (null != template.getProxyGroupId() && template.getProxyGroupId() > 0) {
+            ProxyGroup group = proxyGroupService.info(template.getProxyGroupId());
+            if (null == group || !Integer.valueOf(1).equals(group.getStatus())) {
+                return ApiUtil.result(1402, "模板引用的代理分组不存在或已禁用", group);
+            }
+        }
         ObjectNode node = DPUtil.objectNode();
         node.put("id", template.getId());
         node.put("name", template.getName());
@@ -175,6 +214,11 @@ public class TemplateService extends JPAServiceBase {
         node.put("priority", template.getPriority());
         node.put("minHalt", template.getMinHalt());
         node.put("maxHalt", template.getMaxHalt());
+        node.put("proxyGroupId", template.getProxyGroupId());
+        node.put("proxyMode", DPUtil.empty(template.getProxyMode()) ? "none" : template.getProxyMode());
+        node.put("stateMode", DPUtil.empty(template.getStateMode()) ? "none" : template.getStateMode());
+        node.put("stateKey", template.getStateKey());
+        node.put("stateTtl", template.getStateTtl());
         node.replace("params", DPUtil.parseJSON(template.getParams(), j -> DPUtil.objectNode()));
         int templateId = template.getId();
         if (Arrays.asList("broad", "single", "smart").contains(template.getType())) {

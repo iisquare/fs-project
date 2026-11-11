@@ -18,6 +18,10 @@ export const layouts = [{
     meta: { title: '请求频率', permit: ['spider:rate:'] },
     component: () => import('@/views/spider/setting/rate.vue')
   }, {
+    path: '/spider/setting/proxy',
+    meta: { title: '代理服务', permit: ['spider:proxyChannel:', 'spider:proxyGroup:', 'spider:proxy:'] },
+    component: () => import('@/views/spider/setting/proxy.vue')
+  }, {
     path: '/spider/schedule/node',
     meta: { title: '节点状态', permit: ['spider:node:'] },
     component: () => import('@/views/spider/schedule/node.vue')

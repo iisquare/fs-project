@@ -218,6 +218,7 @@ class Flow {
       name: `${widget.label}_${this.counter}`,
       icon: widget.icon,
       type: widget.type,
+      direction: widget.direction,
       description: widget.title,
     })
     // 节点尺寸可由组件自行计算（如条件分支按分支数量决定高度）

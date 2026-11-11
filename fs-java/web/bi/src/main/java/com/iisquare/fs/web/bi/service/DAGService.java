@@ -10,20 +10,27 @@ import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.bi.dao.DiagramDao;
 import com.iisquare.fs.web.bi.entity.Cluster;
+import com.iisquare.fs.web.bi.entity.Datasource;
 import com.iisquare.fs.web.bi.entity.Diagram;
 import com.iisquare.fs.web.bi.entity.Job;
+import com.iisquare.fs.web.bi.datasource.MongoDBConnector;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rpc.FlinkRpc;
+import com.iisquare.fs.web.core.rpc.KGRpc;
 import com.iisquare.fs.web.core.rpc.SparkRpc;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Service
 public class DAGService extends ServiceBase {
@@ -35,6 +42,8 @@ public class DAGService extends ServiceBase {
     @Autowired
     JobService jobService;
     @Autowired
+    DatasourceService datasourceService;
+    @Autowired
     AlarmService alarmService;
     @Autowired
     DefaultRbacService rbacService;
@@ -42,6 +51,12 @@ public class DAGService extends ServiceBase {
     SparkRpc sparkRpc;
     @Autowired
     FlinkRpc flinkRpc;
+    @Autowired
+    KGRpc kgRpc;
+    @Value("${fs.bi.debug.preview-limit:20}")
+    int debugPreviewLimit;
+
+    private static final Pattern SAFE_NAME = Pattern.compile("^[A-Za-z][A-Za-z0-9_]*$");
 
     /**
      * 兼容旧接口：按流程默认集群提交
@@ -66,9 +81,14 @@ public class DAGService extends ServiceBase {
         frame.set("cluster", clusterNode(cluster, diagram.getEngine()));
         frame.set("data", param.containsKey("data") ? DPUtil.toJSON(param.get("data")) : DPUtil.objectNode());
         if (param.containsKey("diagramUrl")) frame.put("diagramUrl", DPUtil.parseString(param.get("diagramUrl")));
+        ObjectNode executionFrame = frame.deepCopy();
+        String datasourceError = resolveDatasources(executionFrame);
+        if (!DPUtil.empty(datasourceError)) return ApiUtil.result(1003, datasourceError, id);
+        String ontologyError = resolveOntologies(executionFrame);
+        if (!DPUtil.empty(ontologyError)) return ApiUtil.result(1003, ontologyError, id);
         int uid = null == request ? 0 : rbacUid(request);
         Job job = jobService.create(diagram, cluster, triggerType, frame.at("/data"), frame, uid);
-        return submit(job, diagram, frame, triggerType);
+        return submit(job, diagram, executionFrame, triggerType);
     }
 
     /**
@@ -85,13 +105,27 @@ public class DAGService extends ServiceBase {
         if (null == frame) return ApiUtil.result(404, "编排流程不存在或已禁用", id);
         frame.set("cluster", clusterNode(null, diagram.getEngine()));
         frame.put("debug", nodeId);
+        int previewLimit = DPUtil.parseInt(param.get("previewLimit"));
+        if (previewLimit < 1) previewLimit = debugPreviewLimit;
+        previewLimit = Math.max(1, Math.min(previewLimit, 1000));
+        frame.put("debugLimit", previewLimit);
         frame.set("data", param.containsKey("data") ? DPUtil.toJSON(param.get("data")) : DPUtil.objectNode());
+        ObjectNode executionFrame = frame.deepCopy();
+        String datasourceError = resolveDatasources(executionFrame);
+        if (!DPUtil.empty(datasourceError)) return ApiUtil.result(1003, datasourceError, id);
+        String ontologyError = resolveOntologies(executionFrame);
+        if (!DPUtil.empty(ontologyError)) return ApiUtil.result(1003, ontologyError, id);
         int uid = null == request ? 0 : rbacUid(request);
         Job job = jobService.create(diagram, null, Job.TRIGGER_DEBUG, frame.at("/data"), frame, uid);
-        Map<String, Object> result = submit(diagram.getEngine(), frame);
+        Map<String, Object> result = submit(diagram.getEngine(), executionFrame);
         if (ApiUtil.succeed(result)) {
             JsonNode data = DPUtil.toJSON(ApiUtil.data(result, Object.class));
-            jobService.debugged(job, data.at("/outputs"));
+            if (data.path("succeeded").asBoolean(true)) {
+                jobService.debugged(job, data.at("/outputs"));
+            } else {
+                String message = data.path("message").asText("节点调试失败");
+                jobService.failed(job, message);
+            }
         } else {
             jobService.failed(job, ApiUtil.message(result));
             alarmService.alarm(job, Job.TRIGGER_DEBUG, ApiUtil.message(result));
@@ -159,6 +193,346 @@ public class DAGService extends ServiceBase {
                     : "com.iisquare.fs.app.spark.SparkApplication");
         }
         return node;
+    }
+
+    /**
+     * 将编排节点选择的数据源展开为计算引擎所需的连接参数。
+     *
+     * 该转换只作用于提交和调试时的临时 frame，不写回编排内容，也不向前端回传数据源密码。
+     * 未配置 datasourceId 的旧编排继续使用节点自身的 options，保持向后兼容。
+     */
+    private String resolveDatasources(ObjectNode frame) {
+        JsonNode nodes = frame.get("nodes");
+        if (null == nodes || !nodes.isArray()) return null;
+        Map<Integer, Datasource> cache = new HashMap<>();
+        for (JsonNode item : nodes) {
+            if (!item.isObject()) continue;
+            ObjectNode node = (ObjectNode) item;
+            ObjectNode options = (ObjectNode) node.get("options");
+            if (null == options || !options.isObject()) continue;
+            int datasourceId = options.at("/datasourceId").asInt(0);
+            if (datasourceId < 1) continue;
+            Datasource datasource = cache.get(datasourceId);
+            if (null == datasource) {
+                datasource = datasourceService.info(datasourceId);
+                cache.put(datasourceId, datasource);
+            }
+            String nodeName = node.at("/name").asText(node.at("/id").asText("未命名节点"));
+            if (null == datasource || !Integer.valueOf(1).equals(datasource.getStatus())) {
+                return String.format("节点“%s”引用的数据源不存在或已禁用", nodeName);
+            }
+            String error = applyDatasource(options, node.at("/type").asText(), datasource);
+            if (!DPUtil.empty(error)) {
+                return String.format("节点“%s”%s", nodeName, error);
+            }
+        }
+        return null;
+    }
+
+    private String applyDatasource(ObjectNode options, String nodeType, Datasource datasource) {
+        JsonNode config = DPUtil.parseJSON(datasource.getContent());
+        if (null == config || !config.isObject()) {
+            return String.format("引用的数据源“%s”配置格式异常", datasource.getName());
+        }
+        String type = datasource.getType();
+        switch (nodeType) {
+            case "JDBCSource":
+            case "JDBCSink": {
+                if (!isDatasourceType(type, "mysql", "doris", "postgresql", "postgres")) {
+                    return "只能引用 MySQL、Doris 或 PostgreSQL 数据源";
+                }
+                String host = config.at("/host").asText();
+                if (DPUtil.empty(host)) return String.format("引用的数据源“%s”缺少主机地址", datasource.getName());
+                boolean postgresql = "postgresql".equals(type) || "postgres".equals(type);
+                String protocol = postgresql ? "postgresql" : "mysql";
+                int port = config.at("/port").asInt(0);
+                String url = "jdbc:" + protocol + "://" + host;
+                if (port > 0) url += ":" + port;
+                url += "/" + config.at("/database").asText("");
+                String params = config.at("/paramsQueryString").asText("");
+                if (!DPUtil.empty(params)) url += "?" + params;
+                options.put("url", url);
+                options.put("driver", postgresql ? "org.postgresql.Driver" : "com.mysql.cj.jdbc.Driver");
+                options.put("username", config.at("/username").asText(""));
+                options.put("password", config.at("/password").asText(""));
+                return null;
+            }
+            case "MySQLCapture": {
+                if (!"mysql".equals(type)) return "只能引用 MySQL 数据源";
+                String host = config.at("/host").asText();
+                if (DPUtil.empty(host)) return String.format("引用的数据源“%s”缺少主机地址", datasource.getName());
+                options.put("hostname", host);
+                options.put("port", config.at("/port").asInt(3306));
+                options.put("username", config.at("/username").asText(""));
+                options.put("password", config.at("/password").asText(""));
+                options.put("database", config.at("/database").asText(""));
+                return null;
+            }
+            case "PostgreSQLCapture": {
+                if (!isDatasourceType(type, "postgresql", "postgres")) return "只能引用 PostgreSQL 数据源";
+                String host = config.at("/host").asText();
+                if (DPUtil.empty(host)) return String.format("引用的数据源“%s”缺少主机地址", datasource.getName());
+                options.put("hostname", host);
+                options.put("port", config.at("/port").asInt(5432));
+                options.put("username", config.at("/username").asText(""));
+                options.put("password", config.at("/password").asText(""));
+                options.put("database", config.at("/database").asText(""));
+                return null;
+            }
+            case "MongoCapture": {
+                if (!"mongodb".equals(type)) return "只能引用 MongoDB 数据源";
+                String uri = new MongoDBConnector(type, config).connectionUrl();
+                String hosts = mongoHosts(uri);
+                if (DPUtil.empty(hosts)) return String.format("引用的数据源“%s”缺少主机地址", datasource.getName());
+                options.put("hosts", hosts);
+                options.put("username", config.at("/username").asText(""));
+                options.put("password", config.at("/password").asText(""));
+                if (uri.startsWith("mongodb+srv://")) options.put("scheme", "mongodb+srv");
+                String connectionOptions = mongoOptions(uri);
+                if (!DPUtil.empty(connectionOptions)) options.put("connectionOptions", connectionOptions);
+                if (DPUtil.empty(options.at("/databaseList").asText(""))) {
+                    String database = config.at("/database").asText("");
+                    if (DPUtil.empty(database)) database = mongoDatabase(uri);
+                    if (!DPUtil.empty(database)) options.put("databaseList", database);
+                }
+                return null;
+            }
+            case "MongoSource":
+            case "MongoSink": {
+                if (!"mongodb".equals(type)) return "只能引用 MongoDB 数据源";
+                String uri = new MongoDBConnector(type, config).connectionUrl();
+                if (DPUtil.empty(uri)) return String.format("引用的数据源“%s”缺少连接地址", datasource.getName());
+                options.put("uri", uri);
+                String database = config.at("/database").asText("");
+                if (DPUtil.empty(database)) database = mongoDatabase(uri);
+                if (DPUtil.empty(database)) return String.format("引用的数据源“%s”未指定数据库", datasource.getName());
+                options.put("database", database);
+                return null;
+            }
+            case "ElasticsearchSource":
+            case "ElasticsearchSink": {
+                if (!"elasticsearch".equals(type)) return "只能引用 Elasticsearch 数据源";
+                String uris = config.at("/uris").asText("");
+                if (DPUtil.empty(uris)) return String.format("引用的数据源“%s”缺少服务地址", datasource.getName());
+                options.put("servers", uris);
+                options.put("username", config.at("/username").asText(""));
+                options.put("password", config.at("/password").asText(""));
+                if (DPUtil.empty(options.at("/collection").asText()) && options.has("index")) {
+                    options.set("collection", options.get("index"));
+                }
+                return null;
+            }
+            case "Neo4jSource":
+            case "Neo4jSink":
+            case "OntologySource":
+            case "OntologySink": {
+                if (!"neo4j".equals(type)) return "只能引用 Neo4j 数据源";
+                String uri = config.at("/uri").asText("");
+                if (DPUtil.empty(uri)) uri = config.at("/url").asText("");
+                if (DPUtil.empty(uri)) return String.format("引用的数据源“%s”缺少连接地址", datasource.getName());
+                options.put("uri", uri);
+                options.put("username", config.at("/username").asText(""));
+                options.put("password", config.at("/password").asText(""));
+                options.put("database", config.at("/database").asText(""));
+                options.put("connectTimeout", config.at("/connectTimeout").asInt(3000));
+                options.put("maxConnectionLifetime", config.at("/maxConnectionLifetime").asInt(3600000));
+                options.put("maxSize", config.at("/maxSize").asInt(20));
+                return null;
+            }
+            case "KafkaSource":
+            case "KafkaSink": {
+                if (!"kafka".equals(type)) return "只能引用 Kafka 数据源";
+                String servers = config.at("/servers").asText("");
+                if (DPUtil.empty(servers)) servers = config.at("/bootstrap").asText("");
+                if (DPUtil.empty(servers)) return String.format("引用的数据源“%s”缺少服务地址", datasource.getName());
+                options.put("servers", servers);
+                options.put("bootstrap", servers);
+                options.put("securityProtocol", config.at("/securityProtocol").asText(""));
+                options.put("saslMechanism", config.at("/saslMechanism").asText(""));
+                options.put("saslJaasConfig", config.at("/saslJaasConfig").asText(""));
+                options.put("connectTimeout", config.at("/connectTimeout").asInt(5000));
+                return null;
+            }
+            default:
+                return String.format("不支持引用数据源“%s”", datasource.getName());
+        }
+    }
+
+    /**
+     * 知识图谱节点在提交时按本体定义生成 Cypher。
+     *
+     * 本体只用于解析实体标签、主键和字段约束，实际图数据仍写入节点所选的 Neo4j 数据源。
+     * 生成后的 frame 只用于本次执行，不写回编排配置。
+     */
+    private String resolveOntologies(ObjectNode frame) {
+        JsonNode nodes = frame.get("nodes");
+        if (null == nodes || !nodes.isArray()) return null;
+        Map<Integer, JsonNode> models = new HashMap<>();
+        for (JsonNode item : nodes) {
+            if (!item.isObject()) continue;
+            ObjectNode node = (ObjectNode) item;
+            String type = node.at("/type").asText("");
+            if (!"OntologySource".equals(type) && !"OntologySink".equals(type)) continue;
+            ObjectNode options = node.get("options") instanceof ObjectNode value ? value : DPUtil.objectNode();
+            node.set("options", options);
+            int ontologyId = options.at("/ontologyId").asInt(0);
+            String nodeName = node.at("/name").asText(node.at("/id").asText("未命名节点"));
+            if (ontologyId < 1) return String.format("知识图谱节点“%s”未选择本体", nodeName);
+            JsonNode model = models.get(ontologyId);
+            if (null == model) {
+                try {
+                    model = RpcUtil.data(kgRpc.post("/ontology/model", DPUtil.buildMap("id", ontologyId)), false);
+                } catch (Exception e) {
+                    return String.format("知识图谱节点“%s”读取本体失败：%s", nodeName, e.getMessage());
+                }
+                if (null != model && model.isObject()) models.put(ontologyId, model);
+            }
+            if (null == model || !model.isObject()) {
+                return String.format("知识图谱节点“%s”引用的本体不存在", nodeName);
+            }
+            if (!DPUtil.empty(model.at("/status").asText(""))) {
+                int status = model.at("/status").asInt(0);
+                if (status > 0 && status != 1) {
+                    return String.format("知识图谱节点“%s”引用的本体已禁用", nodeName);
+                }
+            }
+            String entityKey = options.at("/entityLabel").asText("");
+            if (DPUtil.empty(entityKey)) entityKey = options.at("/entity").asText("");
+            JsonNode entity = findOntologyEntity(model.at("/entities"), entityKey);
+            if (null == entity) {
+                return String.format("知识图谱节点“%s”未选择有效的本体实体", nodeName);
+            }
+            String label = entity.at("/label").asText("");
+            String primaryField = entity.at("/primaryField").asText("");
+            if (!SAFE_NAME.matcher(label).matches() || !SAFE_NAME.matcher(primaryField).matches()) {
+                return String.format("知识图谱节点“%s”的实体标签或主键字段不合法", nodeName);
+            }
+            options.put("ontologyName", model.at("/name").asText(""));
+            options.put("entityLabel", label);
+            options.put("entityName", entity.at("/name").asText(label));
+            options.put("primaryField", primaryField);
+            List<String> requiredFields = new ArrayList<>();
+            List<String> allowedFields = new ArrayList<>();
+            JsonNode fields = entity.at("/fields");
+            if (fields.isArray()) {
+                for (JsonNode field : fields) {
+                    String name = field.at("/name").asText("");
+                    if (!SAFE_NAME.matcher(name).matches()) continue;
+                    allowedFields.add(name);
+                    if (field.at("/required").asBoolean(false)) requiredFields.add(name);
+                }
+            }
+            options.set("requiredFields", DPUtil.toJSON(requiredFields));
+            options.set("allowedFields", DPUtil.toJSON(allowedFields));
+            if ("OntologySource".equals(type)) {
+                String error = ontologySourceOptions(options, entity);
+                if (!DPUtil.empty(error)) return String.format("知识图谱节点“%s”%s", nodeName, error);
+            } else {
+                options.put("cypher", "UNWIND $rows AS row\n"
+                        + "MERGE (n:" + quote(label) + " {" + quote(primaryField) + ": row." + quote(primaryField) + "})\n"
+                        + "SET n += row");
+            }
+        }
+        return null;
+    }
+
+    private JsonNode findOntologyEntity(JsonNode entities, String key) {
+        if (null == entities || !entities.isArray() || DPUtil.empty(key)) return null;
+        for (JsonNode entity : entities) {
+            if (key.equals(entity.at("/label").asText(""))
+                    || key.equals(entity.at("/code").asText(""))
+                    || key.equals(entity.at("/id").asText(""))) {
+                return entity;
+            }
+        }
+        return null;
+    }
+
+    private String ontologySourceOptions(ObjectNode options, JsonNode entity) {
+        JsonNode filters = options.get("filters");
+        if (null == filters) filters = DPUtil.objectNode();
+        if (filters.isTextual()) filters = DPUtil.parseJSON(filters.asText());
+        if (null == filters || filters.isNull() || filters.isMissingNode()) filters = DPUtil.objectNode();
+        if (!filters.isObject()) return "过滤条件必须是JSON对象";
+        StringBuilder cypher = new StringBuilder("MATCH (n:")
+                .append(quote(entity.at("/label").asText(""))).append(")");
+        ObjectNode params = DPUtil.objectNode();
+        int index = 0;
+        Iterator<Map.Entry<String, JsonNode>> iterator = filters.fields();
+        while (iterator.hasNext()) {
+            Map.Entry<String, JsonNode> entry = iterator.next();
+            if (!SAFE_NAME.matcher(entry.getKey()).matches()) {
+                return "过滤字段[" + entry.getKey() + "]不合法";
+            }
+            if (null == findOntologyField(entity.at("/fields"), entry.getKey())) {
+                return "过滤字段[" + entry.getKey() + "]未在本体中定义";
+            }
+            String parameter = "p" + index++;
+            if (index == 1) cypher.append(" WHERE ");
+            else cypher.append(" AND ");
+            cypher.append("n.").append(quote(entry.getKey())).append(" = $").append(parameter);
+            params.set(parameter, entry.getValue());
+        }
+        cypher.append(" RETURN n");
+        String orderField = options.at("/orderField").asText("");
+        if (!DPUtil.empty(orderField)) {
+            if (!SAFE_NAME.matcher(orderField).matches()
+                    || null == findOntologyField(entity.at("/fields"), orderField)) {
+                return "排序字段[" + orderField + "]未在本体中定义";
+            }
+            String direction = "DESC".equalsIgnoreCase(options.at("/orderDirection").asText())
+                    ? "DESC" : "ASC";
+            cypher.append(" ORDER BY n.").append(quote(orderField)).append(" ").append(direction);
+        }
+        options.put("cypher", cypher.toString());
+        options.set("params", params);
+        return null;
+    }
+
+    private JsonNode findOntologyField(JsonNode fields, String key) {
+        if (null == fields || !fields.isArray()) return null;
+        for (JsonNode field : fields) {
+            if (key.equals(field.at("/name").asText(""))) return field;
+        }
+        return null;
+    }
+
+    private String quote(String name) {
+        return "`" + name.replace("`", "``") + "`";
+    }
+
+    private boolean isDatasourceType(String actual, String... expected) {
+        for (String type : expected) {
+            if (type.equals(actual)) return true;
+        }
+        return false;
+    }
+
+    private String mongoDatabase(String uri) {
+        int scheme = uri.indexOf("://");
+        String rest = scheme < 0 ? uri : uri.substring(scheme + 3);
+        int slash = rest.indexOf('/');
+        if (slash < 0) return "";
+        int query = rest.indexOf('?', slash);
+        String database = rest.substring(slash + 1, query < 0 ? rest.length() : query);
+        return URLDecoder.decode(database, StandardCharsets.UTF_8);
+    }
+
+    private String mongoHosts(String uri) {
+        int scheme = uri.indexOf("://");
+        String rest = scheme < 0 ? uri : uri.substring(scheme + 3);
+        int slash = rest.indexOf('/');
+        String hosts = slash < 0 ? rest : rest.substring(0, slash);
+        int at = hosts.lastIndexOf('@');
+        if (at >= 0) hosts = hosts.substring(at + 1);
+        int query = hosts.indexOf('?');
+        if (query >= 0) hosts = hosts.substring(0, query);
+        return hosts;
+    }
+
+    private String mongoOptions(String uri) {
+        int query = uri.indexOf('?');
+        return query < 0 ? "" : uri.substring(query + 1);
     }
 
     private Map<String, Object> submit(String engine, ObjectNode frame) {

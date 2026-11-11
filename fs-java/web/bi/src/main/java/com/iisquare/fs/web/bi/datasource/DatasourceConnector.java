@@ -24,6 +24,8 @@ public abstract class DatasourceConnector<T> {
             case "http" -> new HttpConnector(type, config);
             case "elasticsearch" -> new ElasticsearchConnector(type, config);
             case "mongodb" -> new MongoDBConnector(type, config);
+            case "neo4j" -> new Neo4jConnector(type, config);
+            case "kafka" -> new KafkaConnector(type, config);
             default -> new EmptyConnector(type, config);
         };
     }

@@ -11,6 +11,7 @@ import SqlUtil from '@/utils/SqlUtil';
 import FormUtil from '@/utils/FormUtil';
 import MenuUtil from '@/utils/MenuUtil';
 import DatasetApi from '@/api/bi/DatasetApi';
+import RowDataDetail from '@/views/bi/components/RowDataDetail.vue';
 
 const treeRef = ref()
 const treeKey = ref(0)
@@ -301,6 +302,8 @@ const handleExport = (command: string | number | object) => {
 
 watch(activeResult, () => {
   resultKeyword.value = ''
+  rowDetailVisible.value = false
+  rowDetailIndex.value = -1
 })
 
 const tabLabel = (tab: any) => {
@@ -388,10 +391,10 @@ const formatCell = (value: any) => {
 }
 
 const rowDetailVisible = ref(false)
-const rowDetail = ref<any>(null)
+const rowDetailIndex = ref(-1)
 
 const handleRowClick = (row: any) => {
-  rowDetail.value = row
+  rowDetailIndex.value = filteredRows.value.indexOf(row)
   rowDetailVisible.value = true
 }
 
@@ -537,6 +540,7 @@ onUnmounted(() => {
                       <span>共 {{ activeResult.rows.length }} 行</span>
                       <span>耗时 {{ activeResult.elapsed }} ms</span>
                       <span>LIMIT {{ activeResult.limit }}</span>
+                      <span class="olap-sql__row-hint">双击行查看详情</span>
                     </el-space>
                     <el-space>
                       <el-input
@@ -608,13 +612,13 @@ onUnmounted(() => {
         </el-splitter>
       </el-splitter-panel>
     </el-splitter>
-    <el-drawer v-model="rowDetailVisible" title="行数据" size="50%" append-to-body>
-      <el-descriptions v-if="rowDetail" :column="1" border size="small">
-        <el-descriptions-item v-for="col in visibleColumns" :key="col.prop" :label="col.label">
-          <span class="olap-sql__cell-value">{{ formatCell(rowDetail[col.prop]) }}</span>
-        </el-descriptions-item>
-      </el-descriptions>
-    </el-drawer>
+    <RowDataDetail
+      v-model="rowDetailVisible"
+      :row-index="rowDetailIndex"
+      :rows="filteredRows"
+      :columns="visibleColumns"
+      @changeRow="rowDetailIndex = $event"
+    />
   </div>
 </template>
 
@@ -867,6 +871,10 @@ onUnmounted(() => {
   border-bottom: 1px solid var(--el-border-color-light);
 }
 
+.olap-sql__row-hint {
+  color: var(--el-text-color-placeholder);
+}
+
 .olap-sql__result-sql {
   flex: none;
   padding: 6px var(--olap-sql-bar-padding);
@@ -903,11 +911,6 @@ onUnmounted(() => {
 }
 
 .olap-sql__cell-explain {
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.olap-sql__cell-value {
   white-space: pre-wrap;
   word-break: break-all;
 }

@@ -35,7 +35,8 @@ public class TemplateController extends PermitControllerBase {
     @Permission("")
     public String listAction(@RequestBody Map<String, Object> param) {
         ObjectNode result = templateService.search(param, DPUtil.buildMap(
-                "withUserInfo", true, "withStatusText", true, "withTypeText", true, "withRateInfo", true));
+                "withUserInfo", true, "withStatusText", true, "withTypeText", true,
+                "withRateInfo", true, "withProxyGroupInfo", true));
         return ApiUtil.echoResult(0, null, result);
     }
 

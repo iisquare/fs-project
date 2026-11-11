@@ -34,7 +34,7 @@ public class BrowserFetcher {
     public BrowserFetchResult fetch(String url, String requestType, String requestBody,
                                     String contentType, Map<String, String> payloadForm,
                                     Map<String, String> headers, String charset, int timeout,
-                                    String waitUntil, String waitSelector) {
+                                    String waitUntil, String waitSelector, JsonNode proxyData) {
         ObjectNode request = DPUtil.objectNode();
         request.put("url", url);
         request.put("requestType", requestType);
@@ -47,6 +47,12 @@ public class BrowserFetcher {
         request.put("scroll", false);
         request.set("payloadForm", DPUtil.toJSON(null == payloadForm ? Map.of() : payloadForm));
         request.set("headers", DPUtil.toJSON(null == headers ? Map.of() : headers));
+        if (null != proxyData && proxyData.at("/proxy").isObject()) {
+            request.set("proxy", proxyData.at("/proxy"));
+            if (proxyData.at("/state").isObject()) {
+                request.set("storageState", proxyData.at("/state/storageState"));
+            }
+        }
 
         BrowserNode node = select();
         if (null == node) return failure(null, "没有可用的无头浏览器节点", true);
@@ -76,6 +82,7 @@ public class BrowserFetcher {
             result.setWarning(storage.at("/warning").asText(""));
             result.setCoast(storage.at("/coast").asLong());
             result.setNodeId(node.getId());
+            result.setStorageState(storage.at("/storageState").asText(""));
             result.setRetryable(false);
             return result;
         } catch (Exception e) {

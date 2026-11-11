@@ -23,6 +23,7 @@
 import * as ElementPlusIcons from '@element-plus/icons-vue'
 import { onMounted, ref, computed, watch } from 'vue'
 import type { DropdownInstance, TreeInstance } from 'element-plus'
+import type { PropType } from 'vue'
 import TreeUtil from '@/utils/TreeUtil'
 import DataUtil from '@/utils/DataUtil'
 
@@ -32,6 +33,9 @@ const loading = defineModel('loading', { type: Boolean, default: false })
 const props = defineProps({
   columns: { type: Array<any>, required: true },
   sortable: { type: [String, Object], default: '' },
+  label: { type: String, default: '' },
+  tool: { type: Boolean, default: false },
+  size: { type: String as PropType<'' | 'default' | 'large' | 'small'>, default: '' },
 })
 
 /** 常用排序字段名称定义，可通过 columns 传入同名 prop 覆盖 */
@@ -158,17 +162,31 @@ const handleCheck = (node: any, data: any) => {
 }
 
 const isActive = computed(() => !!model.value)
+const activeCount = computed(() => parseSortEntries(model.value).length)
 </script>
 
 <template>
-  <el-dropdown ref="dropdown" placement="bottom-end" trigger="click" popper-class="fs-table-dropdown">
+  <el-dropdown
+    ref="dropdown"
+    :placement="props.tool ? 'bottom-start' : 'bottom-end'"
+    trigger="click"
+    popper-class="fs-table-dropdown">
     <el-button
       :icon="ElementPlusIcons.Sort"
-      circle
-      :type="isActive ? 'primary' : undefined"
+      :circle="!props.label"
+      :type="isActive && !props.tool ? 'primary' : undefined"
+      :size="props.size || undefined"
+      :class="[{ 'is-active': isActive, 'table-sort-tool': props.tool }]"
       title="排序"
       :loading="loading"
-    />
+    >
+      <template v-if="props.label">
+        <span class="table-sort-tool__content">
+          <span class="table-sort-tool__label">{{ props.label }}</span>
+          <span v-if="activeCount" class="table-sort-tool__count">{{ activeCount }}</span>
+        </span>
+      </template>
+    </el-button>
     <template #dropdown>
       <el-space class="header flex-end" spacer="/">
         <el-button link @click="tree?.setCheckedKeys(treeCheckedKeys = TreeUtil.ids(treeData))">全选</el-button>
@@ -213,6 +231,62 @@ const isActive = computed(() => !!model.value)
   height: 35px;
   padding: 0 12px;
   box-sizing: border-box;
+}
+.table-sort-tool {
+  display: inline-flex;
+  height: var(--query-control-height, 30px);
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 6px;
+  color: var(--el-text-color-regular);
+  background: var(--el-bg-color);
+  font-weight: 400;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+
+  .table-sort-tool__content {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 0;
+  }
+
+  &.is-active {
+    color: var(--el-color-primary);
+    border-color: var(--el-color-primary-light-5);
+    background: var(--el-color-primary-light-9);
+    box-shadow: 0 0 0 2px var(--el-color-primary-light-9);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--el-color-primary-light-7);
+  }
+
+  .table-sort-tool__label {
+    flex: none;
+    margin-left: 0;
+    white-space: nowrap;
+  }
+
+  .table-sort-tool__count {
+    display: inline-flex;
+    flex: 0 0 auto;
+    min-width: 17px;
+    height: 17px;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0;
+    padding: 0 4px;
+    border-radius: 999px;
+    color: #fff;
+    background: var(--el-color-primary);
+    font-size: 9px;
+    font-style: normal;
+    line-height: 1;
+    white-space: nowrap;
+  }
 }
 .header {
   border-bottom: solid 1px var(--fs-layout-border-color);

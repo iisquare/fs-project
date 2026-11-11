@@ -89,6 +89,14 @@ public class SparkClusterClient {
                 conf.put(entry.getKey(), entry.getValue().asText());
             }
         }
+        JsonNode jars = content.at("/jars");
+        if (jars.isArray() && !jars.isEmpty()) {
+            List<String> list = new ArrayList<>();
+            for (JsonNode pluginJar : jars) {
+                if (!DPUtil.empty(pluginJar.asText())) list.add(pluginJar.asText());
+            }
+            if (!list.isEmpty()) conf.put("spark.jars", String.join(",", list));
+        }
         RestUtil.Response response = RestUtil.postJson(rest + "/v1/submissions/create", DPUtil.stringify(body));
         if (!response.succeed()) return ApiUtil.result(2006, "提交作业失败", response.toString());
         return ApiUtil.result(0, null, response.json());
@@ -117,6 +125,17 @@ public class SparkClusterClient {
                 Map.Entry<String, JsonNode> entry = iterator.next();
                 command.add("--conf");
                 command.add(entry.getKey() + "=" + entry.getValue().asText());
+            }
+        }
+        JsonNode jars = content.at("/jars");
+        if (jars.isArray() && !jars.isEmpty()) {
+            List<String> list = new ArrayList<>();
+            for (JsonNode pluginJar : jars) {
+                if (!DPUtil.empty(pluginJar.asText())) list.add(pluginJar.asText());
+            }
+            if (!list.isEmpty()) {
+                command.add("--jars");
+                command.add(String.join(",", list));
             }
         }
         int para = null == parallelism ? content.at("/parallelism").asInt(0) : parallelism;

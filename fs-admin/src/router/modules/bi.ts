@@ -22,6 +22,10 @@ export const layouts = [{
     meta: { title: '数据集管理', permit: ['bi:dataset:'] },
     component: () => import('@/views/bi/data/dataset.vue')
   }, {
+    path: '/bi/data/datasetQuery',
+    meta: { title: '数据集查询', fit: true, permit: ['bi:dataset:'] },
+    component: () => import('@/views/bi/data/datasetQuery.vue')
+  }, {
     path: '/bi/data/theme',
     meta: { title: '数据主题', permit: ['bi:dataTheme:'] },
     component: () => import('@/views/bi/data/theme.vue')

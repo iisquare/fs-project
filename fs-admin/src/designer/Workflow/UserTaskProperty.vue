@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import UserTaskAuthority from './UserTaskAuthority.vue'
 import UserTaskCandidate from './UserTaskCandidate.vue'
+import PropertySection from '@/components/Layout/PropertySection.vue'
 
 const active = ref('property')
 const props = defineProps<{
@@ -116,35 +117,39 @@ watch(form, (obj) => {
   <el-tabs v-model="active" class="tab-property">
     <el-tab-pane label="节点属性" name="property">
       <el-form :model="form">
-        <el-form-item label="类型">{{ element?.type }}</el-form-item>
-        <el-form-item label="标识"><el-input v-model="form.id" autocomplete="off" /></el-form-item>
-        <el-form-item label="名称"><el-input v-model="form.name" autocomplete="off" /></el-form-item>
-        <el-form-item label="描述"><el-input type="textarea" v-model="form.documentation" /></el-form-item>
-        <template v-if="candidacy">
-          <el-divider>任务指派</el-divider>
+        <PropertySection title="基础信息" :reset-key="form.id">
+          <el-form-item label="类型">{{ element?.type }}</el-form-item>
+          <el-form-item label="标识"><el-input v-model="form.id" autocomplete="off" /></el-form-item>
+          <el-form-item label="名称"><el-input v-model="form.name" autocomplete="off" /></el-form-item>
+          <el-form-item label="描述"><el-input type="textarea" v-model="form.documentation" /></el-form-item>
+        </PropertySection>
+        <PropertySection v-if="candidacy" title="任务指派" :reset-key="form.id">
           <UserTaskCandidate v-model="form.candidateGroups" :bpmn="bpmn" :element="element" :workflow="workflow" />
-        </template>
-        <el-divider>表单权限</el-divider>
-        <UserTaskAuthority v-model="form.authority" :bpmn="bpmn" :element="element" :workflow="workflow" />
+        </PropertySection>
+        <PropertySection title="表单权限" :reset-key="form.id">
+          <UserTaskAuthority v-model="form.authority" :bpmn="bpmn" :element="element" :workflow="workflow" />
+        </PropertySection>
       </el-form>
     </el-tab-pane>
     <el-tab-pane label="多方会签" name="multiInstance" v-if="candidacy">
       <el-form :model="form">
-        <el-form-item label="启用会签"><el-switch v-model="form.loopCharacteristics" /></el-form-item>
-        <template v-if="form.loopCharacteristics">
-          <el-form-item label="顺序执行"><el-checkbox v-model="form.isSequential" /></el-form-item>
-          <el-form-item label="循环基数"><el-input v-model="form.loopCardinality" placeholder="Loop Cardinality" /></el-form-item>
-          <el-form-item label="集合变量"><el-input v-model="form.collection" placeholder="Collection" /></el-form-item>
-          <el-form-item label="元素变量"><el-input v-model="form.elementVariable" placeholder="Element Variable" /></el-form-item>
-          <el-form-item label="完成条件">
-            <el-tooltip placement="top">
-              <template #content>
-                nrOfInstances - 实例总数<br />nrOfActiveInstances - 活动中<br />nrOfCompletedInstances - 已完成
-              </template>
-              <el-input type="textarea" v-model="form.completionCondition" placeholder="Completion Condition" />
-            </el-tooltip>
-          </el-form-item>
-        </template>
+        <PropertySection title="会签配置" :reset-key="form.id">
+          <el-form-item label="启用会签"><el-switch v-model="form.loopCharacteristics" /></el-form-item>
+          <template v-if="form.loopCharacteristics">
+            <el-form-item label="顺序执行"><el-checkbox v-model="form.isSequential" /></el-form-item>
+            <el-form-item label="循环基数"><el-input v-model="form.loopCardinality" placeholder="Loop Cardinality" /></el-form-item>
+            <el-form-item label="集合变量"><el-input v-model="form.collection" placeholder="Collection" /></el-form-item>
+            <el-form-item label="元素变量"><el-input v-model="form.elementVariable" placeholder="Element Variable" /></el-form-item>
+            <el-form-item label="完成条件">
+              <el-tooltip placement="top">
+                <template #content>
+                  nrOfInstances - 实例总数<br />nrOfActiveInstances - 活动中<br />nrOfCompletedInstances - 已完成
+                </template>
+                <el-input type="textarea" v-model="form.completionCondition" placeholder="Completion Condition" />
+              </el-tooltip>
+            </el-form-item>
+          </template>
+        </PropertySection>
       </el-form>
     </el-tab-pane>
   </el-tabs>

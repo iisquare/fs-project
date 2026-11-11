@@ -238,6 +238,8 @@ public class NodeService extends ServiceBase implements Runnable, DisposableBean
                             } else {
                                 idleLock.wait(15000); // 工作者也闲置，等待时间长一些
                             }
+                        } else if (code >= 1013 && code <= 1018) { // 代理资源暂不可用或状态作用域被占用
+                            idleLock.wait(1000);
                         }
                     } catch (InterruptedException ignored) {}
                 }

@@ -900,7 +900,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <LayoutDesigner splitter :left-size="240" :right-size="360" :left-min="210" :right-min="320">
+  <LayoutDesigner splitter :left-size="240" :right-size="300" :left-min="210" :right-min="300">
     <template #left>
       <div class="palette-head">
         <div class="palette-brand">

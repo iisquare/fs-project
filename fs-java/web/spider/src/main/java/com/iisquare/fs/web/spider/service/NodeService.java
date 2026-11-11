@@ -79,6 +79,8 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
     @Autowired
     TemplateService templateService;
     @Autowired
+    ProxyLeaseService proxyLeaseService;
+    @Autowired
     StringRedisTemplate redis;
     @Autowired
     ServletWebServerApplicationContext context;
@@ -126,6 +128,10 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
 
     public String nodeId() {
         return this.zhNodeId;
+    }
+
+    public String keyPrefix() {
+        return this.keyPrefix;
     }
 
     public ObjectPool<Worker> workerPool() {
@@ -254,6 +260,8 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         } else {
             storage.replace("last", lastStorage);
         }
+        Map<String, Object> proxyStats = proxyLeaseService.stats("group", null, null, null);
+        data.set("proxy", DPUtil.toJSON(proxyStats.get("data")));
         return ApiUtil.result(0, null, data);
     }
 
@@ -615,6 +623,18 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         data.put("nodeId", nodeId);
         data.putPOJO("token", token);
         data.putPOJO("task", task);
+        Map<String, Object> proxyResult = proxyLeaseService.acquire(job, task, nodeId);
+        if (ApiUtil.failed(proxyResult)) {
+            channel.putToken(token.back(job));
+            channel.putTask(task.back(job));
+            return proxyResult;
+        }
+        JsonNode proxyData = DPUtil.toJSON(proxyResult.get("data"));
+        data.set("proxy", proxyData);
+        String leaseId = proxyData.at("/leaseId").asText("");
+        String proxyHost = proxyData.at("/proxy/host").asText("");
+        String proxyIp = DPUtil.empty(proxyHost) ? "" : proxyHost + ":"
+                + proxyData.at("/proxy/port").asText("");
         String rateId = job.getTemplate().at("/rateId").asText();
         if (DPUtil.parseInt(rateId) < 1) {
             channel.putAck(token.getId(), data); // 放入待确认队列
@@ -622,21 +642,24 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         }
         ZooRate rate = zookeeper.rate(rateId);
         if (null == rate) {
+            proxyLeaseService.release(leaseId, false);
             channel.putToken(token.back(job)); // 归还令牌
             channel.putTask(task); // 归还任务
             job.status = ZooJob.Status.PAUSE;
             zookeeper.save(job); // 暂停作业
             return ApiUtil.result(1010, "获取请求频率失败", job);
         }
-        if (!channel.incrRateParallel(rate, token, job, task, nodeId, "")) {
+        if (!channel.incrRateParallel(rate, token, job, task, nodeId, proxyIp)) {
+            proxyLeaseService.release(leaseId, false);
             channel.putToken(token); // 归还令牌
             channel.putTask(task); // 归还任务
             return ApiUtil.result(1011, "并行度已达上限", rate);
         }
-        if (!channel.checkRateConcurrent(rate, token, job, task, nodeId, "")) {
+        if (!channel.checkRateConcurrent(rate, token, job, task, nodeId, proxyIp)) {
+            proxyLeaseService.release(leaseId, false);
             channel.putToken(token); // 归还令牌
             channel.putTask(task); // 归还任务
-            channel.decrRateParallel(rate, token, job, task, nodeId, ""); // 恢复计数
+            channel.decrRateParallel(rate, token, job, task, nodeId, proxyIp); // 恢复计数
             return ApiUtil.result(1012, "并发数已达上限", rate);
         }
         channel.putAck(token.getId(), data); // 放入待确认队列
@@ -663,21 +686,47 @@ public class NodeService extends ServiceBase implements Runnable, InitializingBe
         }
         channel.removeAck(token.getId()); // 确认
         channel.putToken(token.back(job)); // 归还令牌
+        JsonNode proxyData = data.at("/proxy");
+        String proxyHost = proxyData.at("/proxy/host").asText("");
+        String proxyIp = DPUtil.empty(proxyHost) ? "" : proxyHost + ":"
+                + proxyData.at("/proxy/port").asText("");
         String rateId = job.getTemplate().at("/rateId").asText();
         if (!DPUtil.empty(rateId)) { // 恢复计数
             ZooRate rate = zookeeper.rate(rateId);
             if (null != rate) {
-                channel.decrRateParallel(rate, token, job, task, nodeId, "");
+                channel.decrRateParallel(rate, token, job, task, nodeId, proxyIp);
             }
         }
-        if (0 == json.at("/code").asInt(-1)) {
+        int code = json.at("/code").asInt(-1);
+        int storageStatus = data.at("/storage/status").asInt(0);
+        long coast = data.at("/storage/coast").asLong(0);
+        boolean success = 0 == code && storageStatus >= 200 && storageStatus < 400;
+        if (0 == code) {
+            proxyLeaseService.complete(proxyData, storageStatus, coast, success);
+            sanitizeProxy(data, proxyData);
             if (!channel.putStorage(data)) {
                 return ApiUtil.result(1005, "写入存储队列失败", json);
             }
         } else {
             channel.putTask(task.back(job)); // 采集端执行异常，归还任务
+            proxyLeaseService.complete(proxyData, storageStatus, coast, false);
         }
         return ApiUtil.result(0, null, null);
+    }
+
+    private void sanitizeProxy(JsonNode data, JsonNode proxyData) {
+        if (!(data instanceof ObjectNode object) || null == proxyData || !proxyData.isObject()) return;
+        ObjectNode metadata = DPUtil.objectNode();
+        metadata.put("leaseId", proxyData.at("/leaseId").asText(""));
+        metadata.put("mode", proxyData.at("/mode").asText("none"));
+        metadata.put("stateKey", proxyData.at("/stateKey").asText(""));
+        metadata.set("group", proxyData.at("/group"));
+        ObjectNode proxy = metadata.putObject("proxy");
+        proxy.put("protocol", proxyData.at("/proxy/protocol").asText(""));
+        proxy.put("host", proxyData.at("/proxy/host").asText(""));
+        proxy.put("port", proxyData.at("/proxy/port").asInt());
+        proxy.put("resourceKey", proxyData.at("/proxy/resourceKey").asText(""));
+        object.set("proxy", metadata);
     }
 
     public void start() {

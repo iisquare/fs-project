@@ -166,7 +166,155 @@ Base64 快照或 `diagramUrl`，由 `FlinkApplication` / `SparkApplication` 的 
 - `POST /bi/diagram/{info,list,save,delete,config}`：编排流程 CRUD
 - `GET /bi/dag/diagram?id=`：导出计算有向无环图
 - `POST /bi/dag/run`：提交作业（`{id, clusterId, data}`）
-- `POST /bi/dag/debug`：指定节点调试（`{id, nodeId}`），返回各节点输出
+- `POST /bi/dag/debug`：指定节点调试（`{id, nodeId, previewLimit}`），返回各节点输出
+
+### 节点即时调试
+
+调试请求会同时返回 `execution`（逐节点类型、耗时、状态、异常）和 `outputs`
+（Dataset 的 schema、最多 20 行数据样例）。设计器在画布下方直接展示执行明细与输出样例，
+不再跳转页面；`outputs` 键名使用 `dag_{diagramId}_{cellId}`，与画布节点保持一致。
+
+调试模式会自动向上游数据源注入读取限制：
+
+- MongoSource：聚合管道末尾追加 `$limit`，并使用单分区读取。
+- JDBCSource：将原查询包装为 `SELECT * FROM (...) fs_debug_source LIMIT N`。
+- ElasticsearchSource：通过 `es.scroll.limit` 限制实际拉取文档数，并在 Dataset 上再次限流。
+- Neo4jSource / OntologySource：在 Cypher 末尾追加或收紧 `LIMIT N`；Cypher 使用参数化
+  `LIMIT $limit` 时保留语句自身的参数约束。
+- 正常作业提交不注入上述限制。
+
+### Elasticsearch 与 Neo4j 节点
+
+Spark 批处理提供以下通用数据源节点：
+
+- `ElasticsearchSource`：按索引读取 Query DSL 结果，可限制返回字段和读取条数。
+- `ElasticsearchSink`：按配置写入索引，支持 `index/create/update/upsert`、主键字段和批大小。
+- `Neo4jSource`：执行带参数的 Cypher 查询。单返回列是节点或映射时，结果属性展开为
+  Dataset 顶层字段；节点额外携带 `_elementId` 和 `_labels`，关系额外携带类型与端节点标识。
+- `Neo4jSink`：上游 Dataset 每批转换为 `$rows`，通过 `UNWIND $rows AS row` 执行写入。
+  Cypher 由节点自行提供，因此 MERGE、关系写入、更新和删除语义均可按业务定义。
+
+Neo4j 数据源配置使用 Bolt/Neo4j URI、用户名、密码、数据库和连接池参数。Neo4j 节点引用的
+数据源由“数据源管理”统一维护，执行前才展开连接凭据，不会写回编排配置。
+
+### Kafka 消息队列节点
+
+`KafkaSource` / `KafkaSink` 同时注册在 Spark 与 Flink 的流处理、批处理模式：
+
+- 数据源既可通过“数据源管理”中的 Kafka 连接引用，也可继续在节点上直接填写服务地址，兼容历史编排。
+- 支持 `PLAINTEXT`、`SASL_PLAINTEXT`、`SASL_SSL` 等安全协议和自定义消费者/生产者参数。
+- Spark 读取结果保留 Kafka 原始列，并额外生成字符串 `message` 列；Flink 读取输出
+  `{topic, partition, offset, timestamp, message}` JSON。
+- 批量读取通过 `startingOffsets` / `endingOffsets` 形成有界区间，支持 `earliest`、`latest`
+  和分区 offset JSON，例如 `{"orders":{"0":100,"1":200}}`；Flink 额外支持 `committed` 和
+  `timestamp:毫秒`。
+- 写入节点默认读取 `message` 字段，也可指定其他消息字段；Spark 与 Flink 均支持动态主题：
+  从消息 JSON 指定字段取值。动态分区和 Flink 投递语义仅适用于 Flink。
+- Spark 流写入使用独立 checkpoint，未配置时按节点名称自动生成，避免多个 Kafka 写入节点共用检查点。
+
+RabbitMQ 当前没有随 Flink 2.x / Spark 3.5 一并提供的稳定通用连接器，本期暂不内置；
+后续可按独立连接器或自定义 Source/Sink 扩展，不影响 Kafka 节点。
+
+### CDC 变更捕获节点
+
+Flink 流处理模式提供三类原生 CDC 读取节点：
+
+- `MySQLCapture`：基于 Binlog，支持数据库/表正则、启动位置、Server ID、分片、结构变更和新增表扫描。
+- `PostgreSQLCapture`：基于逻辑复制，支持 Schema/表正则、`pgoutput`/`decoderbufs`、复制槽和快照模式。
+- `MongoCapture`：基于 Change Stream，支持数据库/集合正则、存量复制、完整变更日志和轮询参数。
+
+三类节点都可以从“数据源管理”选择对应连接，并兼容直接填写连接信息的历史方式。输出统一为
+Debezium JSON 字符串，可直接接入 Kafka 写入节点或后续自定义处理节点。
+
+部署侧要求：
+
+- MySQL 开启 Binlog，使用 `ROW` 格式并配置唯一的 Server ID。
+- PostgreSQL 开启 logical replication，按需设置 `wal_level=logical`，并授予复制与发布槽权限。
+- MongoDB 使用副本集或 mongos，并授予 Change Stream 所需权限。
+- CDC 为持续流任务，依赖 Flink checkpoint 保存和恢复消费位置。
+
+Spark 3.5 没有项目可直接复用的原生 CDC Source，本期没有用普通 JDBC 轮询模拟 CDC。
+
+CDC Source 本身没有确定的结束位置，因此只在 Flink 流处理模式开放。设计器切换引擎或处理模式时，
+节点面板不会隐藏其他节点，不兼容的节点会置灰并禁止拖入画布。
+
+### 知识图谱本体节点
+
+`OntologySource` 和 `OntologySink` 用于把 BI 编排与知识图谱本体联动：
+
+- 读取：选择本体和实体后，按实体标签生成 `MATCH`；属性过滤和排序字段必须在本体中已声明。
+- 写入：按实体主键生成 `MERGE`，并从上游 Dataset 中筛选本体已声明字段后写入 Neo4j。
+- 本体中的必填字段会作为写入前置校验；未声明字段不会写入图节点。
+- 本体选择只用于生成 Cypher 与校验，图数据仍由节点选择的 Neo4j 数据源承载。
+
+通用 `Neo4jSource/Neo4jSink` 适合复杂 Cypher；本体节点适合遵循知识图谱模型的标准化读写，
+两者可以混合使用。
+
+预览行数可通过后端配置调整：
+
+```yaml
+fs:
+  bi:
+    debug:
+      preview-limit: 20
+```
+
+### 自定义 JAR 节点
+
+设计器通过以下接口上传、扫描和下载节点 JAR：
+
+- `POST /bi/diagram/jar/upload`：multipart 字段 `file`，仅接受 JAR
+- `POST /bi/diagram/jar/list`：按 `keyword` 分页检索文件名、SHA-256 或作业节点
+- `GET /bi/diagram/jar/info?id=`：读取单个 JAR 及已解析节点
+- `GET /bi/diagram/jar/nodes?id=`：读取指定 JAR 内可用的 `DAGNode` 实现
+- `GET /bi/diagram/jar/download?id=`：供计算引擎加载插件
+
+插件类需实现 `com.iisquare.fs.base.dag.core.DAGSource`、`DAGTransform`、
+`DAGSink` 或 `DAGConfig`。设计器会从 JAR 读取输入/输出类型，并将插件包装为
+`ScriptTransform` 节点；拖入画布后按正常节点方式连接上下游即可执行。
+
+JAR 文件本体通过文件服务保存到 `fs-bi` 桶，BI 服务数据库只保存文件标识、
+对象路径、SHA-256、大小和节点元数据。上传时完成解析，之后列表检索直接查询数据库。
+部署前需要预先创建 `fs-bi` 桶，并保证 BI 服务能够调用文件服务。
+
+```yaml
+fs:
+  bi:
+    jar:
+      bucket: fs-bi
+      public-base-url: http://127.0.0.1:7815
+      max-size: 1073741824
+```
+
+`public-base-url` 必须是 Spark/Flink 计算节点可访问的 BI 地址。计算引擎请求
+`/diagram/jar/download` 后，BI 服务会实时向文件服务换取带时效的下载地址并重定向。
+因此 `fs.site.urls.file` 映射的文件服务地址也必须能被计算节点访问。
+
+### Spider 官方站点清洗
+
+`ext:spark` 提供两个批处理节点。官方站点清洗不再作为内置数据加工组件，
+而是通过画布中的“JAR作业”节点加载：
+
+1. 构建 `ext:spark` 的 JAR。
+2. 拖入“JAR作业”节点，在右侧属性中上传 JAR。
+3. 在 JAR 作业中选择 `OfficialSiteCleanTransform`，按
+   `MongoSource(fs_spider_index) → 官方站点清洗 → 数据库写入` 连线执行。
+4. 在通用“数据库写入”节点中选择 `fs_site` 所在的数据源，配置：
+   `table=fs_site_entry`、`mode=upsert`、`keyFields=domain,path`、
+   `updateExclude=created_time`。
+
+- `OfficialSiteCleanTransform`：识别科技、工信、发改、人社等政府官方渠道，
+  生成域名、子目录、类别和官方标识，并按一级目录聚合入口。
+- 清洗 Transform 直接输出 `fs_site_entry` 的目标字段；通用 JDBC Sink
+  按 `domain + path` 执行 upsert。Spider 同步不经过 Spark，
+  而是在“网站资产”页面或 `/siteBackend/sync/spider` 接口中由 `site.backend`
+  通过 `SpiderRpc` 直接完成；可选择同步后立即启动采集作业。
+
+“写入网站入口”已完全移除，站点清洗入库统一使用通用“数据库写入”节点。
+JAR 详情会展示原始文件名、JAR 标识、
+SHA-256、上传时间、大小和作业节点数量，支持按内容区分重复上传的版本并删除历史 JAR。
+
+`site.backend` 建表、菜单、权限和运行配置见 `docs/fs_project_site_backend.sql`。
 
 集群配置：
 

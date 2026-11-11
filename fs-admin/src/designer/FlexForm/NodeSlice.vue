@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
+import PropertySection from '@/components/Layout/PropertySection.vue';
 
 
 const model: any = defineModel()
@@ -23,14 +24,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <el-form-item label="" class="title">
-    <span>基础信息</span>
-    <el-popconfirm title="确认删除该元素？" @confirm="handleDelete" width="180">
-      <template #reference>
+  <PropertySection title="基础信息" :reset-key="model.id">
+    <template #extra>
+      <el-popconfirm title="确认删除该元素？" @confirm="handleDelete" width="180">
+        <template #reference>
           <LayoutIcon name="Delete" class="delete" />
-      </template>
-    </el-popconfirm>
-  </el-form-item>
+        </template>
+      </el-popconfirm>
+    </template>
+    <slot></slot>
+  </PropertySection>
 </template>
 
 <style lang="scss" scoped>

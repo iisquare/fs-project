@@ -83,6 +83,7 @@ const layoutGuideStyle = computed(() => {
         `repeating-linear-gradient(to bottom, ${line} 0 ${guideWidth}px, transparent ${guideWidth}px ${rowStep}px)`,
         `repeating-linear-gradient(to bottom, transparent 0 ${rowGuideEnd}px, ${line} ${rowGuideEnd}px ${Math.min(rowStep, rowGuideEnd + guideWidth)}px, transparent ${Math.min(rowStep, rowGuideEnd + guideWidth)}px ${rowStep}px)`,
       ].join(','),
+      boxShadow: `inset 0 0 0 ${guideWidth}px ${line}`,
     }
   }
   return {}
@@ -182,7 +183,6 @@ const onDragOverStage = (event: DragEvent) => {
     overflow: hidden;
     pointer-events: none;
     background-repeat: repeat;
-    box-shadow: inset 0 0 0 1px rgba(83, 205, 255, 0.32);
   }
 }
 .stage-empty {

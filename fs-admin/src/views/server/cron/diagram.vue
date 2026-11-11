@@ -113,7 +113,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <LayoutDesigner splitter>
+  <LayoutDesigner splitter unified-property>
     <template #left>
       <LayoutWidget :widgets="config.widgets" @drag-start="handleDragStart" />
     </template>

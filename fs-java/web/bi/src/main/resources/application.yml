@@ -8,3 +8,12 @@ spring:
     hibernate:
       naming:
         physical-strategy: com.iisquare.fs.web.bi.dsconfig.NamingStrategy
+
+fs:
+  bi:
+    debug:
+      preview-limit: 20
+    jar:
+      bucket: fs-bi
+      public-base-url: http://127.0.0.1:7815
+      max-size: 1073741824

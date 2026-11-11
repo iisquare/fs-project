@@ -14,5 +14,6 @@ public class BrowserFetchResult {
     private String warning;
     private long coast;
     private String nodeId;
+    private String storageState;
     private boolean retryable;
 }

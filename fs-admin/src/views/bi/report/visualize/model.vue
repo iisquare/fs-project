@@ -8,6 +8,7 @@ import LayoutDesigner from '@/components/Layout/LayoutDesigner.vue';
 import LayoutBack from '@/components/Layout/LayoutBack.vue';
 import LayoutHeading from '@/components/Layout/LayoutHeading.vue';
 import LayoutIcon from '@/components/Layout/LayoutIcon.vue';
+import PropertySection from '@/components/Layout/PropertySection.vue';
 import Chart from '@/views/bi/components/Chart.vue';
 import config from '@/views/bi/components/config';
 import DataQueryFilter from '@/components/Data/DataQueryFilter.vue';
@@ -200,7 +201,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <LayoutDesigner splitter :left-size="300" :right-size="380" :left-min="220" :right-min="320">
+  <LayoutDesigner splitter unified-property :left-size="300" :right-size="380" :left-min="220" :right-min="320">
     <template #left>
       <div class="designer-aside">
         <div class="designer-aside__head">
@@ -267,12 +268,10 @@ onMounted(() => {
     </template>
     <template #right>
       <el-scrollbar class="designer-property">
-        <div class="property-section">
-          <layout-heading title="Y-度量" description="纵坐标展示的指标">
-            <template #extra>
-              <el-button text size="small" type="primary" :icon="icon('Plus')" @click="addMetric">指标</el-button>
-            </template>
-          </layout-heading>
+        <PropertySection title="Y-度量" description="纵坐标展示的指标">
+          <template #extra>
+            <el-button text size="small" type="primary" :icon="icon('Plus')" @click="addMetric">指标</el-button>
+          </template>
           <el-collapse v-model="activeMetrics" expand-icon-position="left" class="property-collapse">
             <el-collapse-item :name="index" v-for="(metric, index) in axis.metrics" :key="index">
               <template #title>
@@ -308,13 +307,11 @@ onMounted(() => {
             </el-collapse-item>
           </el-collapse>
           <el-empty v-if="!axis.metrics.length" description="暂无度量，点击右上角「指标」添加" :image-size="48" />
-        </div>
-        <div class="property-section">
-          <layout-heading title="X-维度" description="横坐标展示的维度">
-            <template #extra>
-              <el-button text size="small" type="primary" :icon="icon('Plus')" @click="addBucket">钻取</el-button>
-            </template>
-          </layout-heading>
+        </PropertySection>
+        <PropertySection title="X-维度" description="横坐标展示的维度">
+          <template #extra>
+            <el-button text size="small" type="primary" :icon="icon('Plus')" @click="addBucket">钻取</el-button>
+          </template>
           <el-collapse v-model="activeBuckets" expand-icon-position="left" class="property-collapse">
             <el-collapse-item :name="index" v-for="(bucket, index) in axis.buckets" :key="index">
               <template #title>
@@ -375,7 +372,7 @@ onMounted(() => {
             </el-collapse-item>
           </el-collapse>
           <el-empty v-if="!axis.buckets.length" description="暂无维度，点击右上角「钻取」添加" :image-size="48" />
-        </div>
+        </PropertySection>
       </el-scrollbar>
     </template>
     <template #footer>
@@ -423,16 +420,13 @@ onMounted(() => {
     }
   }
 }
-.designer-aside__section :deep(.fs-heading),
-.property-section :deep(.fs-heading) {
-  margin-bottom: 8px;
+.designer-aside__section :deep(.fs-heading) {
+  margin-bottom: 0;
 }
-.designer-aside__section :deep(.fs-heading__title),
-.property-section :deep(.fs-heading__title) {
-  font-size: 14px;
+.designer-aside__section :deep(.fs-heading__title) {
+  font-size: 13px;
 }
-.designer-aside__section :deep(.fs-heading__title)::before,
-.property-section :deep(.fs-heading__title)::before {
+.designer-aside__section :deep(.fs-heading__title)::before {
   height: 14px;
 }
 .field-list {
@@ -518,14 +512,8 @@ onMounted(() => {
   height: 100%;
   :deep(.el-scrollbar__view) {
     min-height: 100%;
-    padding: 12px;
+    padding: 0 12px 12px;
     box-sizing: border-box;
-  }
-}
-.property-section {
-  margin-bottom: 16px;
-  :deep(.el-form-item) {
-    margin-bottom: 12px;
   }
 }
 .property-collapse {

@@ -1,14 +1,9 @@
 package com.iisquare.fs.base.core;
 
-import org.apache.commons.io.IOUtils;
-
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLStreamHandlerFactory;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 public class JarClassLoader extends URLClassLoader {
 
@@ -34,25 +29,8 @@ public class JarClassLoader extends URLClassLoader {
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
-        synchronized (getClassLoadingLock(name)) {
-            ZipInputStream in = null;
-            for (URL url : getURLs()) {
-                try {
-                    in = new ZipInputStream(url.openStream());
-                    ZipEntry ze;
-                    while ((ze = in.getNextEntry()) != null) {
-                        String classname = ze.getName().replaceFirst("\\.class", "").replaceAll("/", ".");
-                        if(!classname.equals(name)) continue;
-                        byte[] data = IOUtils.toByteArray(in);
-                        return defineClass(name, data, 0, data.length);
-                    }
-                } catch (IOException e) {
-                    throw new ClassNotFoundException(e.getMessage(), e.getCause());
-                } finally {
-                    IOUtils.closeQuietly(in);
-                }
-            }
-        }
+        // 标准双亲委派：框架的 DAGNode/DAGType 必须与宿主使用同一 Class 实例，
+        // 插件 JAR 即使携带完整依赖，也不能重新定义这些基础类。
         return super.loadClass(name);
     }
 

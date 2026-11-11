@@ -12,6 +12,7 @@ import org.apache.spark.sql.types.StructField;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Iterator;
 
 public class SparkRunner extends DAGRunner {
 
@@ -33,6 +34,35 @@ public class SparkRunner extends DAGRunner {
         return "stream".equals(diagram.at("/model").asText(""));
     }
 
+    public int debugLimit() {
+        return Math.max(1, Math.min(diagram.at("/debugLimit").asInt(20), 1000));
+    }
+
+    @Override
+    public com.iisquare.fs.base.dag.core.DAGExecution execute() {
+        if (isDebug() && diagram instanceof ObjectNode root) {
+            JsonNode nodes = root.get("nodes");
+            if (null != nodes && nodes.isArray()) {
+                int limit = debugLimit();
+                Iterator<JsonNode> iterator = nodes.iterator();
+                while (iterator.hasNext()) {
+                    JsonNode item = iterator.next();
+                    if (!item.isObject()) continue;
+                    String type = item.at("/type").asText();
+                    if (!"MongoSource".equals(type)
+                            && !"JDBCSource".equals(type)
+                            && !"ElasticsearchSource".equals(type)
+                            && !"Neo4jSource".equals(type)
+                            && !"OntologySource".equals(type)) continue;
+                    ObjectNode node = (ObjectNode) item;
+                    ObjectNode options = node.with("options");
+                    options.put("debugLimit", limit);
+                }
+            }
+        }
+        return super.execute();
+    }
+
     /**
      * 调试输出：对Dataset类型采集Schema与前若干行数据，便于可视化查看节点结果
      */
@@ -47,7 +77,7 @@ public class SparkRunner extends DAGRunner {
             for (StructField field : dataset.schema().fields()) {
                 schema.put(field.name(), field.dataType().catalogString());
             }
-            int limit = 20;
+            int limit = debugLimit();
             json.put("limit", limit);
             try {
                 ArrayNode rows = json.putArray("rows");
