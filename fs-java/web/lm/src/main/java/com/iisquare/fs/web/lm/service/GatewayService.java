@@ -159,6 +159,13 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         return null != xApiKey ? xApiKey : "";
     }
 
+    /** 用量追踪标识：与 agent 使用同一 header，限制长度并剔除不适合入库的字符。 */
+    public String traceId(HttpServletRequest request) {
+        String value = DPUtil.trim(null == request ? "" : request.getHeader("x-trace-id"));
+        value = value.replaceAll("[^A-Za-z0-9._:-]", "");
+        return value.length() > 128 ? value.substring(0, 128) : value;
+    }
+
     public static ObjectNode error401(HttpServletResponse response) {
         response.setStatus(401);
         return SsePlainEmitter.error("invalid_request_error", "Authentication Fails, Your api key is invalid", "authentication_error", null);
@@ -169,12 +176,15 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
      */
     protected String recordHeaders(Map<String, String> headers) {
         Map<String, String> data = new LinkedHashMap<>(headers);
-        data.entrySet().removeIf(entry -> FeignInterceptor.HEADER_AUTH_TOKEN.equalsIgnoreCase(entry.getKey()));
+        // 凭证只用于本次网关鉴权，不能通过调用详情反查出 API Key 或成员会话
+        data.entrySet().removeIf(entry -> FeignInterceptor.HEADER_AUTH_TOKEN.equalsIgnoreCase(entry.getKey())
+                || "authorization".equalsIgnoreCase(entry.getKey())
+                || "x-api-key".equalsIgnoreCase(entry.getKey()));
         return DPUtil.stringify(data);
     }
 
     public ObjectNode models(Map<String, Object> param, HttpServletRequest request, HttpServletResponse response) {
-        ObjectNode auth = creditService.authByKey(token(request), cache);
+        ObjectNode auth = creditService.authByKey(token(request), request, cache, true);
         if (null == auth) return error401(response);
         boolean isAnthropic = isAnthropicModelsRequest(request);
         ObjectNode result = DPUtil.objectNode();
@@ -242,7 +252,7 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         long beginTime = System.currentTimeMillis();
         SsePlainEmitter emitter = new SsePlainEmitter(request, response, 0L);
         // 认证信息（含归属用户）：密钥开启用户代理且调用端带了会话令牌时，已按会话用户切换
-        ObjectNode auth = creditService.authByKey(token(request), request, cache);
+        ObjectNode auth = creditService.authByKey(token(request), request, cache, true);
         if (null == auth) {
             return emitter.error("token_invalid", "无效的认证标识", "gateway", null, false).sync(401);
         }
@@ -289,7 +299,8 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         }
         Map<String, String> headers = ServletUtil.headers(request);
         Usage.UsageBuilder usage = Usage.builder().type("consume_llm").place(place);
-        usage.uid(auth.at("/uid").asInt()).authId(auth.at("/id").asInt());
+        usage.uid(auth.at("/uid").asInt()).authId(auth.at("/id").asInt())
+                .traceId(traceId(request));
         usage.modelId(model.at("/id").asInt()).providerId(provider.at("/id").asInt());
         usage.status("completed").requestIp(ServletUtil.getRemoteAddr(request)).beginTime(beginTime);
         // 基础校验和并发校验完成，进入受理阶段
@@ -530,7 +541,7 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         long beginTime = System.currentTimeMillis();
         // 1. 认证
         // 认证信息（含归属用户）：密钥开启用户代理且调用端带了会话令牌时，已按会话用户切换
-        ObjectNode auth = creditService.authByKey(token(request), request, cache);
+        ObjectNode auth = creditService.authByKey(token(request), request, cache, true);
         if (null == auth) {
             return error401(response);
         }
@@ -588,7 +599,8 @@ public class GatewayService extends ServiceBase implements MessageListener, Init
         // 6. 准备使用记录
         Map<String, String> headers = ServletUtil.headers(request);
         Usage.UsageBuilder usage = Usage.builder().type("consume_" + modelType).place(place);
-        usage.uid(uid).authId(auth.at("/id").asInt());
+        usage.uid(uid).authId(auth.at("/id").asInt())
+                .traceId(traceId(request));
         usage.modelId(model.at("/id").asInt()).providerId(provider.at("/id").asInt());
         usage.status("completed").requestIp(ServletUtil.getRemoteAddr(request)).beginTime(beginTime);
         usage.requestBody(DPUtil.stringify(json)).requestStream(0);

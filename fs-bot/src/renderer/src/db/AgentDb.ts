@@ -198,13 +198,17 @@ function parseInteractionTask(value: unknown): AgentInteractionTask | null {
   }
 }
 
+function parseAgentKind(value: unknown): AgentKind {
+  return value === 'project_tools' || value === 'desktop' ? value : 'browser'
+}
+
 function formatSession(row: Record<string, unknown>): AgentSession {
   const mode = String(row['session_mode'] ?? 'new')
   return {
     id: String(row['id'] ?? ''),
     projectId: String(row['project_id'] ?? ''),
     parentConversationId: String(row['parent_conversation_id'] ?? ''),
-    agent: row['agent'] === 'project_tools' ? 'project_tools' : 'browser',
+    agent: parseAgentKind(row['agent']),
     taskKey: String(row['task_key'] ?? ''),
     sessionMode: 'auto' === mode || 'reuse' === mode ? mode : 'new',
     reused: 1 === Number(row['reused'] ?? 0) || true === row['reused'],
@@ -223,7 +227,7 @@ function formatExperience(row: Record<string, unknown>): AgentExperience {
   return {
     id: String(row['id'] ?? ''),
     projectId: String(row['project_id'] ?? ''),
-    agent: row['agent'] === 'project_tools' ? 'project_tools' : 'browser',
+    agent: parseAgentKind(row['agent']),
     content: String(row['content'] ?? ''),
     sourceSessionId: String(row['source_session_id'] ?? ''),
     createdAt: String(row['created_at'] ?? '')

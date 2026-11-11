@@ -1,6 +1,6 @@
 /**
  * 编排流式调用的通用编排（组合式函数）：
- * 把 /agentic/invokeStream、/agentic/runStream 的「事件分发 + 运行状态 + 兜底策略」收敛到一处，
+ * 把 /agentic/invoke?stream=true、/agentic/runStream 的「事件分发 + 运行状态 + 兜底策略」收敛到一处，
  * 页面只需关心「收到增量怎么画」「结束后做什么」，不再各写一份 FetchEventSource 分支。
  *
  * 事件约定（与后端一致）：`{ type: delta|step|round|done|error, data }`
@@ -38,6 +38,7 @@ export default function useAgenticStream(options: AgenticStreamOptions = {}) {
   const {
     app = 'agent',
     uri = '',
+    streamParams = {},
     headers = {},
     fallback = 'none',
     invoke = null,
@@ -136,7 +137,8 @@ export default function useAgenticStream(options: AgenticStreamOptions = {}) {
       finish()
     })
     sse.onClose(finish)
-    sse.send(payload)
+    // streamParams 只进入 SSE 请求；fallback 仍使用原始 payload，确保一次性调用返回 JSON
+    sse.send(Object.assign({}, payload, streamParams))
   }
 
   /** 中断：保留已经上屏的内容，只是不再接收后续事件（不算失败，不触发 onError） */

@@ -216,14 +216,17 @@ public class ProviderService extends JPAServiceBase {
         info.setSerial(serial);
         info.setName(name);
         info.setEndpoint(endpoint);
-        info.setToken(DPUtil.parseString(param.get("token")));
+        // 编辑页不回传明文密钥：未携带 token 字段表示保持原值，显式传空串才清空
+        if (id < 1 || param.containsKey("token")) {
+            info.setToken(DPUtil.parseString(param.get("token")));
+        }
         info.setWebsite(DPUtil.parseString(param.get("website")));
         info.setContent(DPUtil.stringify(param.get("content")));
         info.setSort(DPUtil.parseInt(param.get("sort")));
         info.setStatus(status);
         info.setDescription(DPUtil.parseString(param.get("description")));
         info = save(providerDao, info, rbacService.uid(request));
-        return ApiUtil.result(0, null, info);
+        return ApiUtil.result(0, null, safeInfo(info));
     }
 
     public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {
@@ -250,9 +253,22 @@ public class ProviderService extends JPAServiceBase {
     public JsonNode format(JsonNode rows) {
         for (JsonNode row : rows) {
             ObjectNode node = (ObjectNode) row;
-            node.replace("content", DPUtil.parseJSON(row.at("/content").asText()));
+            maskSecretFields(node);
         }
         return rows;
+    }
+
+    /** 对外供应商对象只保留是否配置密钥，不回传密钥正文或可能含认证信息的配置。 */
+    protected ObjectNode maskSecretFields(ObjectNode node) {
+        String token = node.at("/token").asText("");
+        node.put("tokenConfigured", !DPUtil.empty(token));
+        node.remove("token");
+        node.remove("content");
+        return node;
+    }
+
+    protected ObjectNode safeInfo(Provider info) {
+        return maskSecretFields(DPUtil.toJSON(info, ObjectNode.class));
     }
 
     public Map<String, Object> remove(List<Integer> ids) {
@@ -263,6 +279,14 @@ public class ProviderService extends JPAServiceBase {
     }
 
     public JsonNode fillInfo(JsonNode rows, String ...properties) {
-        return fillInfo(providerDao, rows, properties);
+        JsonNode result = fillInfo(providerDao, rows, properties);
+        for (JsonNode row : rows) {
+            for (String property : properties) {
+                JsonNode source = row.get(property + "Info");
+                if (null == source || !source.isObject()) continue;
+                maskSecretFields((ObjectNode) source);
+            }
+        }
+        return result;
     }
 }

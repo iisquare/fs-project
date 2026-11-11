@@ -101,30 +101,7 @@ public class BotService implements DisposableBean {
      * 服务端没配（给 0）时客户端按未知处理，由用户在界面上手工指定。
      */
     public Map<String, Object> models() {
-        Map<String, Object> result = aiService.models();
-        if (ApiUtil.failed(result)) return result;
-        JsonNode payload = ApiUtil.data(result, JsonNode.class);
-        if (null == payload) payload = DPUtil.objectNode();
-        ObjectNode data = DPUtil.objectNode();
-        ArrayNode rows = data.putArray("rows");
-        for (JsonNode item : payload.at("/data")) {
-            String name = item.at("/id").asText("");
-            if (DPUtil.empty(name)) continue;
-            ObjectNode row = rows.addObject();
-            row.put("name", name);
-            row.put("ownedBy", item.at("/owned_by").asText(""));
-            row.put("contextLength", contextLength(item));
-        }
-        return ApiUtil.result(0, null, data);
-    }
-
-    /**
-     * 模型上下文长度：取网关 /v1/models 给出的 context_length（网关按模型的「上下文长度」配置算出）。
-     * 网关没给时退回上下文长度参数的本名 max_position_embeddings，两处都没有就是 0（未知）。
-     */
-    protected int contextLength(JsonNode item) {
-        int length = item.at("/context_length").asInt(0);
-        return length > 0 ? length : item.at("/max_position_embeddings").asInt(0);
+        return aiService.authorizedModels();
     }
 
     /**
@@ -416,6 +393,8 @@ public class BotService implements DisposableBean {
             return ApiUtil.result(0, null, DPUtil.toJSON(data));
         } catch (Exception e) {
             return ApiUtil.result(1002, DPUtil.parseString(e.getMessage()), null);
+        } finally {
+            agenticService.clearRuntimeContext();
         }
     }
 

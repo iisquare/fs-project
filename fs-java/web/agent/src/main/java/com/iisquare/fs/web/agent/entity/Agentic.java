@@ -10,7 +10,7 @@ import jakarta.persistence.*;
  * 编排应用（智能体工作流）：画布内容分草稿与发布内容两套，互不影响。
  *
  * - content：草稿内容（画布 JSON），保存后供设计器与调试运行（/run、/runStream）使用；
- * - publishedContent：发布时固化的发布内容，外部调用（/invoke、/invokeStream）只读它；
+ * - publishedContent：发布时固化的发布内容，外部调用（/invoke）只读它；
  *   发布时会把工具方法定义快照进去，之后工具变动不影响已发布版本；
  * - roleIds：授权角色，为空表示所有登录用户可用；对话页只列出「已发布 + 状态启用 + 授权命中」的应用；
  * - 运行记录见 AgenticLog，对话记录见 AgenticChat / AgenticDialog。

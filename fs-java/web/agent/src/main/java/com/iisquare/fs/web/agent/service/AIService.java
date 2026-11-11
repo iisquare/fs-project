@@ -1,11 +1,12 @@
 package com.iisquare.fs.web.agent.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.core.util.FileUtil;
-import com.iisquare.fs.web.core.mvc.FeignInterceptor;
+import com.iisquare.fs.web.agent.core.AgentGatewayAuth;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -19,6 +20,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -48,6 +50,8 @@ public class AIService implements DisposableBean {
     private int gatewaySocketTimeout;
     @Value("${fs.agent.gateway.requestTimeout:10000}")
     private int gatewayRequestTimeout;
+    @Autowired
+    AgentGatewayAuth gatewayAuth;
 
     public AIService() {
         PoolingHttpClientConnectionManager pooling = new PoolingHttpClientConnectionManager();
@@ -131,7 +135,46 @@ public class AIService implements DisposableBean {
 
     public Map<String, Object> models() {
         String url = gatewayEndpoint + "/v1/models";
-        return get(url, authorization(gatewayToken));
+        return get(url, gatewayHeaders(null));
+    }
+
+    /**
+     * 当前服务密钥可访问的模型目录。
+     *
+     * 网关只返回认证主体在 auth.models 中获授权的模型键，不会暴露供应商、接口地址或密钥。
+     * 这里统一归一成列表接口使用的 `{ rows: [{ name, ownedBy, contextLength }] }`，
+     * Bot、模型对比和 Agentic 编排共用同一口径，避免各自直连管理端模型库。
+     */
+    public Map<String, Object> authorizedModels() {
+        return authorizedModels("");
+    }
+
+    /**
+     * 当前服务密钥可访问的模型目录，按网关模型键过滤。
+     * 过滤只影响返回列表，不改变服务密钥的授权范围。
+     */
+    public Map<String, Object> authorizedModels(String keyword) {
+        Map<String, Object> result = models();
+        if (ApiUtil.failed(result)) return result;
+        JsonNode payload = ApiUtil.data(result, JsonNode.class);
+        if (null == payload) payload = DPUtil.objectNode();
+        ObjectNode data = DPUtil.objectNode();
+        ArrayNode rows = data.putArray("rows");
+        String search = DPUtil.trim(keyword).toLowerCase();
+        for (JsonNode item : payload.at("/data")) {
+            String name = item.at("/id").asText("");
+            if (DPUtil.empty(name)) continue;
+            if (!DPUtil.empty(search) && !name.toLowerCase().contains(search)) continue;
+            ObjectNode row = rows.addObject();
+            row.put("name", name);
+            row.put("ownedBy", item.at("/owned_by").asText(""));
+            int contextLength = item.at("/context_length").asInt(0);
+            if (contextLength <= 0) {
+                contextLength = item.at("/max_position_embeddings").asInt(0);
+            }
+            row.put("contextLength", contextLength);
+        }
+        return ApiUtil.result(0, null, data);
     }
 
     /**
@@ -139,7 +182,7 @@ public class AIService implements DisposableBean {
      * 返回总消耗、剩余与各积分限流周期的用量、剩余和下次重置时间。
      */
     public Map<String, Object> credit(String session) {
-        return get(gatewayEndpoint + "/v1/credit", sessionHeaders(session));
+        return get(gatewayEndpoint + "/v1/credit", gatewayHeaders(session));
     }
 
     public Map<String, Object> embeddings(String model, List<String> inputs) {
@@ -147,7 +190,7 @@ public class AIService implements DisposableBean {
         ObjectNode body = DPUtil.objectNode();
         body.put("model", model);
         body.replace("input", DPUtil.toJSON(inputs));
-        return post(url, body, authorization(gatewayToken));
+        return post(url, body, gatewayHeaders(null));
     }
 
     public Map<String, Object> rerank(String model, String query, List<String> documents, int topN) {
@@ -158,7 +201,7 @@ public class AIService implements DisposableBean {
         body.replace("documents", DPUtil.toJSON(documents));
         body.put("return_documents", true);
         if (topN > 0) body.put("top_n", topN);
-        return post(url, body, authorization(gatewayToken));
+        return post(url, body, gatewayHeaders(null));
     }
 
     /**
@@ -167,7 +210,7 @@ public class AIService implements DisposableBean {
      * （x-auth-token），供网关按「用户代理」口径记账（密钥未开启代理时网关忽略该头）。
      */
     public Map<String, Object> chat(JsonNode body, String session) {
-        return post(gatewayEndpoint + "/v1/chat/completions", body, sessionHeaders(session));
+        return post(gatewayEndpoint + "/v1/chat/completions", body, gatewayHeaders(session));
     }
 
     /**
@@ -175,7 +218,7 @@ public class AIService implements DisposableBean {
      * 调用端带了会话令牌时同样透传，记账口径与对话一致。
      */
     public Map<String, Object> webSearch(JsonNode body, String session) {
-        return post(gatewayEndpoint + "/v1/tools/search", body, sessionHeaders(session));
+        return post(gatewayEndpoint + "/v1/tools/search", body, gatewayHeaders(session));
     }
 
     /**
@@ -183,14 +226,12 @@ public class AIService implements DisposableBean {
      * 目标站点访问策略、正文提取与计费由网关及其供应商处理。
      */
     public Map<String, Object> webFetch(JsonNode body, String session) {
-        return post(gatewayEndpoint + "/v1/tools/fetch", body, sessionHeaders(session));
+        return post(gatewayEndpoint + "/v1/tools/fetch", body, gatewayHeaders(session));
     }
 
-    /** 服务级密钥 + 可选的调用端会话令牌 */
-    private Map<String, String> sessionHeaders(String session) {
-        Map<String, String> headers = authorization(gatewayToken);
-        if (!DPUtil.empty(session)) headers.put(FeignInterceptor.HEADER_AUTH_TOKEN, session);
-        return headers;
+    /** 当前运行密钥（入站 API Key 优先）+ 可选的调用端会话令牌 */
+    private Map<String, String> gatewayHeaders(String session) {
+        return gatewayAuth.headers(gatewayToken, session);
     }
 
 }

@@ -68,6 +68,7 @@ public abstract class GatewayHandler {
     /** Provider types that speak the Messages API. */
     private static final Set<String> MESSAGES_PROVIDER_TYPES = Set.of(
         "vllm",
+        "sglang",
         "mixed-compatible",
         "anthropic-compatible",
         "deepseek",
@@ -188,7 +189,7 @@ public abstract class GatewayHandler {
         request.addHeader("Content-Type", "application/json;charset=" + CHARSET.name());
         json.put("model", model.at("/name").asText(""));
         json.put("stream", json.at("/stream").asBoolean(false));
-        transformRequest(json);
+        transformRequest(json, model, provider);
         request.setEntity(new StringEntity(json.toString(), CHARSET));
         chunkId = "gw-" + DPUtil.random(100000, 999999);
         return request;
@@ -215,6 +216,15 @@ public abstract class GatewayHandler {
 
     /** Transform the request body from client format to backend format (in-place). */
     protected abstract void transformRequest(ObjectNode json);
+
+    /**
+     * Provider-aware request transformation.
+     * The default keeps the protocol-only hook above; providers with their own
+     * reasoning controls can override this without changing every handler.
+     */
+    protected void transformRequest(ObjectNode json, JsonNode model, JsonNode provider) {
+        transformRequest(json);
+    }
 
     /**
      * Process one SSE message from the backend.

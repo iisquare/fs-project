@@ -17,8 +17,12 @@ const typed = (payload: any): AgenticStreamEvent[] => {
 }
 
 export default {
-  /** 发布版流程对话：增量 + 节点进度 + ReAct 轮次（/agentic/invokeStream） */
-  agenticInvoke: { uri: '/agentic/invokeStream', parse: typed } as AgenticStreamEndpoint,
+  /** 发布版流程对话：同一公开接口通过 stream=true 返回增量、节点进度与 ReAct 轮次 */
+  agenticInvoke: {
+    uri: '/agentic/invoke',
+    streamParams: { stream: true },
+    parse: typed,
+  } as AgenticStreamEndpoint,
 
   /** 编排页运行抽屉：同一套协议，只有 uri 不同（/agentic/runStream） */
   agenticRun: { uri: '/agentic/runStream', parse: typed } as AgenticStreamEndpoint,

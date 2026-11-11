@@ -309,7 +309,7 @@ public class AgenticRunner implements AgenticScheduler {
         return runtime.stepSink();
     }
 
-    /** 注入 ReAct 轮次进度回调（/runStream、/invokeStream 设置）：每轮推理与每次工具调用实时推给前端 */
+    /** 注入 ReAct 轮次进度回调（/runStream、/invoke?stream=true 设置）：每轮推理与每次工具调用实时推给前端 */
     public void roundSink(java.util.function.Consumer<JsonNode> sink) {
         runtime.roundSink(sink);
     }

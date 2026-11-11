@@ -16,6 +16,9 @@ import org.hibernate.annotations.DynamicUpdate;
  *   steps 逐节点状态与输入输出摘要、error 完整失败原因（保留堆栈，不截断）；
  * - failures 为写入时预计算的异常摘要（JSON 数组，节点失败与工具方法调用失败，
  *   最多 5 条、单条截断），会话回看直接展示异常图标；
+ * - 调用来源：createdUid 是最终生效用户，apiKeyId 关联 agent 外部调用 Key；
+ *   名称与属主在查询时按 apiKeyId 填充，callerType 与 userProxy 标识调用方式；
+ * - traceId 同时写入 LM 用量，externalUserId 仅作为外部终端用户审计标识，不参与鉴权；
  * - 日志写入失败不影响运行结果，仅记录 warn 日志；删除为标记删除（deletedTime=0 表示未删除）。
  */
 @Entity
@@ -57,6 +60,16 @@ public class AgenticLog {
     private String failures; // 异常摘要（JSON 数组，写入时预计算）：会话回看直接展示，不必再解析 steps
     @Column
     private String ip; // 调用来源 IP
+    @Column
+    private Integer apiKeyId; // agent 外部调用密钥
+    @Column
+    private String callerType; // session / api_key / user_proxy
+    @Column
+    private Integer userProxy; // 是否使用用户会话代理：1-是，0-否
+    @Column
+    private String externalUserId; // 外部系统终端用户标识，仅审计，不参与鉴权
+    @Column
+    private String traceId; // 贯穿 agent 与 LM 用量记录的追踪标识
     @Column
     private Long createdTime;
     @Column

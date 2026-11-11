@@ -14,6 +14,7 @@
         SELECT
             uid,
             auth_id AS authId,
+            trace_id AS traceId,
             provider_id AS providerId,
             model_id AS modelId,
             status,

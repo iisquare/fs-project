@@ -509,30 +509,7 @@ public class CompareService extends JPAServiceBase implements DisposableBean {
      * contextLength 是模型的上下文长度（词元数），与客户端 bot 接口同一口径。
      */
     public Map<String, Object> models() {
-        Map<String, Object> result = aiService.models();
-        if (ApiUtil.failed(result)) return result;
-        JsonNode payload = ApiUtil.data(result, JsonNode.class);
-        if (null == payload) payload = DPUtil.objectNode();
-        ObjectNode data = DPUtil.objectNode();
-        ArrayNode rows = data.putArray("rows");
-        for (JsonNode item : payload.at("/data")) {
-            String name = item.at("/id").asText("");
-            if (DPUtil.empty(name)) continue;
-            ObjectNode row = rows.addObject();
-            row.put("name", name);
-            row.put("ownedBy", item.at("/owned_by").asText(""));
-            row.put("contextLength", contextLength(item));
-        }
-        return ApiUtil.result(0, null, data);
-    }
-
-    /**
-     * 模型上下文长度：取网关 /v1/models 给出的 context_length（网关按模型的「上下文长度」配置算出）。
-     * 网关没给时退回上下文长度参数的本名 max_position_embeddings，两处都没有就是 0（未知）。
-     */
-    protected int contextLength(JsonNode item) {
-        int length = item.at("/context_length").asInt(0);
-        return length > 0 ? length : item.at("/max_position_embeddings").asInt(0);
+        return aiService.authorizedModels();
     }
 
     /* ------------------------------- 工作区 ------------------------------- */

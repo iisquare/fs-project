@@ -28,6 +28,7 @@ const filters = ref({
   uid: '',
   place: '',
   authId: '',
+  traceId: '',
   modelId: '',
   providerId: '',
   aggregation: 'day',
@@ -388,8 +389,11 @@ const extractPlaceKeys = (data: any[]): string[] => {
         <form-search-item label="调用服务" prop="place">
           <el-input v-model="filters.place" clearable />
         </form-search-item>
-        <form-search-item label="密钥" prop="authId">
+        <form-search-item label="调用密钥" prop="authId">
           <form-select v-model="filters.authId" :callback="AuthApi.list" clearable />
+        </form-search-item>
+        <form-search-item label="追踪标识" prop="traceId">
+          <el-input v-model="filters.traceId" clearable />
         </form-search-item>
         <form-search-item label="模型" prop="modelId">
           <form-select v-model="filters.modelId" :callback="ModelApi.list" clearable />

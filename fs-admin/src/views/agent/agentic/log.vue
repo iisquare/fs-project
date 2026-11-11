@@ -8,6 +8,7 @@ import { computed, onMounted, ref } from 'vue'
 import type { FormInstance, TableInstance } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import AgenticApi from '@/api/agent/AgenticApi'
+import AgentApiKeyApi from '@/api/agent/ApiKeyApi'
 import UserApi from '@/api/member/UserApi'
 import StepDetail from '@/components/Agentic/StepDetail.vue'
 import ChatTextBlock from '@/components/Chat/ChatTextBlock.vue'
@@ -31,14 +32,25 @@ const columns = ref([
   { prop: 'statusText', label: '状态', slot: 'status' },
   { prop: 'duration', label: '耗时(毫秒)' },
   { prop: 'createdUid', label: '调用人', slot: 'createdUid' },
-  { prop: 'error', label: '失败原因', showOverflowTooltip: true },
+  { prop: 'callerTypeText', label: '调用方式' },
+  { prop: 'apiKeyName', label: 'Agent API Key' },
+  { prop: 'userProxy', label: '用户代理', slot: 'userProxy', hide: true },
+  { prop: 'externalUserId', label: '外部用户', hide: true },
+  { prop: 'traceId', label: '追踪标识', hide: true },
+  { prop: 'error', label: '失败原因', hide: true, showOverflowTooltip: true },
   { prop: 'createdTime', label: '调用时间', formatter: DateUtil.render },
   { prop: 'ip', label: '来源IP', hide: true },
 ])
 const config: any = ref({ sorts: {}, sources: {}, status: {} })
 const rows = ref([])
 const filterRef = ref<FormInstance>()
-const filters = ref(RouteUtil.query2filter(route, { advanced: false, deleted: 'without', agenticId: '', createdUid: '' }))
+const filters = ref(RouteUtil.query2filter(route, {
+  advanced: false,
+  deleted: 'without',
+  agenticId: '',
+  createdUid: '',
+  apiKeyId: '',
+}))
 const pagination = ref(RouteUtil.pagination(filters.value))
 const selection: any = ref([])
 
@@ -131,6 +143,28 @@ const statusText = (status: number) => 2 === status ? '失败' : '成功'
           <el-option :value="2" label="失败" />
         </el-select>
       </form-search-item>
+      <form-search-item label="调用方式" prop="callerType">
+        <el-select v-model="filters.callerType" placeholder="请选择" clearable>
+          <el-option value="session" label="登录会话" />
+          <el-option value="api_key" label="API Key" />
+          <el-option value="user_proxy" label="API Key + 用户代理" />
+        </el-select>
+      </form-search-item>
+      <form-search-item label="Agent API Key" prop="apiKeyId">
+        <form-select
+          v-model="filters.apiKeyId"
+          :callback="AgentApiKeyApi.list"
+          clearable
+          filterable
+          placeholder="请选择 API Key"
+        />
+      </form-search-item>
+      <form-search-item label="外部用户" prop="externalUserId">
+        <el-input v-model="filters.externalUserId" clearable />
+      </form-search-item>
+      <form-search-item label="追踪标识" prop="traceId">
+        <el-input v-model="filters.traceId" clearable />
+      </form-search-item>
       <form-search-item label="创建开始时间" prop="createdTimeBegin">
         <form-date-picker v-model="filters.createdTimeBegin" placeholder="开始时间" />
       </form-search-item>
@@ -164,6 +198,11 @@ const statusText = (status: number) => 2 === status ? '失败' : '成功'
         <!-- 用户输入由后端从入参里抽好（inputsText，已截断成一行），列表接口不返回 inputs 大字段 -->
         <template #input="scope">{{ scope.row.inputsText }}</template>
         <template #createdUid="scope">{{ scope.row.createdUserInfo?.name || '系统' }}</template>
+        <template #userProxy="scope">
+          <el-tag :type="scope.row.userProxy ? 'warning' : 'info'" size="small" effect="plain">
+            {{ scope.row.userProxy ? '是' : '否' }}
+          </el-tag>
+        </template>
         <template #status="scope">
           <el-tag :type="2 === scope.row.status ? 'danger' : 'success'" size="small" effect="plain">
             {{ statusText(scope.row.status) }}
@@ -193,6 +232,12 @@ const statusText = (status: number) => 2 === status ? '失败' : '成功'
       <el-descriptions-item label="耗时">{{ info.duration }} 毫秒</el-descriptions-item>
       <el-descriptions-item label="调用时间">{{ DateUtil.format(info.createdTime) }}</el-descriptions-item>
       <el-descriptions-item label="调用人">{{ info.createdUserInfo?.name || '系统' }}</el-descriptions-item>
+      <el-descriptions-item label="调用方式">{{ info.callerTypeText }}</el-descriptions-item>
+      <el-descriptions-item label="Agent API Key">{{ info.apiKeyName || (info.apiKeyId ? '#' + info.apiKeyId : '—') }}</el-descriptions-item>
+      <el-descriptions-item label="API Key 属主">{{ info.apiKeyOwnerUidUserInfo?.name || (info.apiKeyOwnerUid ? '#' + info.apiKeyOwnerUid : '—') }}</el-descriptions-item>
+      <el-descriptions-item label="用户代理">{{ info.userProxy ? '是' : '否' }}</el-descriptions-item>
+      <el-descriptions-item label="外部用户">{{ info.externalUserId || '—' }}</el-descriptions-item>
+      <el-descriptions-item label="追踪标识">{{ info.traceId || '—' }}</el-descriptions-item>
       <el-descriptions-item label="来源IP">{{ info.ip || '暂无' }}</el-descriptions-item>
     </el-descriptions>
     <el-alert class="log-alert" type="error" show-icon :closable="false" :title="info.error" v-if="info.error" />

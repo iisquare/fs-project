@@ -54,6 +54,8 @@ public class AgenticRuntime {
     private int chatReadTimeout;
     @Autowired
     FileRpc fileRpc;
+    @Autowired
+    AgentGatewayAuth gatewayAuth;
 
     /**
      * 流式输出回调：由 /agentic/runStream 设置，模型节点把增量内容推给前端；
@@ -87,7 +89,7 @@ public class AgenticRuntime {
         return stepThread.get();
     }
 
-    /** 轮次回调（/runStream、/invokeStream 设置）：ReAct 每轮推理与每次工具调用的实时进度 */
+    /** 轮次回调（/runStream、/invoke?stream=true 设置）：ReAct 每轮推理与每次工具调用的实时进度 */
     private final ThreadLocal<Consumer<JsonNode>> roundThread = new ThreadLocal<>();
 
     public void roundSink(Consumer<JsonNode> sink) {
@@ -281,8 +283,8 @@ public class AgenticRuntime {
 
     public String post(String url, String json) throws Exception {
         HttpPost http = new HttpPost(url);
-        // 认证密钥：服务级配置 fs.agent.token，整个 agent 服务共用
-        if (!DPUtil.empty(gatewayToken)) http.addHeader("Authorization", "Bearer " + gatewayToken);
+        // 普通运行使用服务级密钥；API Key 调用透传原密钥，并保持 LM 的用户代理规则
+        gatewayAuth.headers(gatewayToken, null).forEach(http::addHeader);
         http.addHeader("Content-Type", "application/json;charset=" + StandardCharsets.UTF_8.name());
         http.setEntity(new StringEntity(json, StandardCharsets.UTF_8));
         try (CloseableHttpClient client = gatewayClient();
@@ -329,7 +331,7 @@ public class AgenticRuntime {
         body.put("stream", true);
         if (!body.has("stream_options")) body.putObject("stream_options").put("include_usage", true);
         HttpPost request = new HttpPost(gatewayEndpoint + "/v1/chat/completions");
-        if (!DPUtil.empty(gatewayToken)) request.addHeader("Authorization", "Bearer " + gatewayToken);
+        gatewayAuth.headers(gatewayToken, null).forEach(request::addHeader);
         request.addHeader("Content-Type", "application/json;charset=" + StandardCharsets.UTF_8.name());
         request.setEntity(new StringEntity(DPUtil.stringify(body), StandardCharsets.UTF_8));
         StringBuilder content = new StringBuilder();

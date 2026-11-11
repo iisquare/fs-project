@@ -12,6 +12,8 @@ export interface AgenticStreamEvent {
 /** 流式接口的端点定义：uri（相对 app）+ 报文适配（把各家协议归一成事件数组） */
 export interface AgenticStreamEndpoint {
   uri: string
+  /** 仅在建立 SSE 连接时合并到请求体；非流式兜底不携带这些参数 */
+  streamParams?: Record<string, any>
   parse: (payload: any) => AgenticStreamEvent[]
 }
 
@@ -19,6 +21,7 @@ export interface AgenticStreamEndpoint {
 export interface AgenticStreamOptions {
   app?: string
   uri?: string
+  streamParams?: Record<string, any>
   headers?: Record<string, any>
   fallback?: 'none' | 'invoke'
   invoke?: ((payload: any) => Promise<any>) | null

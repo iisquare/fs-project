@@ -59,7 +59,7 @@ public class ToolsService {
     private String forward(ObjectNode json, HttpServletRequest request, HttpServletResponse response, String toolType) {
         long beginTime = System.currentTimeMillis();
         // 1. 密钥认证与积分检查
-        ObjectNode auth = creditService.authByKey(token(request), request, gatewayService.cache());
+        ObjectNode auth = creditService.authByKey(token(request), request, gatewayService.cache(), true);
         if (null == auth) {
             return error(response, 401, "invalid_request_error", "Authentication Fails, Your api key is invalid");
         }
@@ -126,6 +126,7 @@ public class ToolsService {
         // 6. 准备使用记录
         Usage.UsageBuilder usage = Usage.builder().type("consume_" + toolType).place(place);
         usage.uid(uid).authId(auth.at("/id").asInt())
+                .traceId(gatewayService.traceId(request))
                 .modelId(model.at("/id").asInt()).providerId(provider.at("/id").asInt());
         usage.status("completed").requestIp(ServletUtil.getRemoteAddr(request)).beginTime(beginTime);
         usage.requestBody(DPUtil.stringify(json)).requestStream(0).requestHeader("");

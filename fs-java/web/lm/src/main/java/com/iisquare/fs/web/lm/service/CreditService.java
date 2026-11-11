@@ -7,6 +7,7 @@ import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.jpa.helper.SpecificationHelper;
 import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
+import com.iisquare.fs.web.core.mvc.FeignInterceptor;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.lm.core.RedisKey;
 import com.iisquare.fs.web.lm.dao.AuthDao;
@@ -59,62 +60,60 @@ public class CreditService extends JPAServiceBase {
         return status;
     }
 
-    /**
-     * 按密钥解析认证信息（不含用户代理）
-     */
+    protected Auth activeAuth(String secret) {
+        if (DPUtil.empty(secret)) return null;
+        Auth auth = authDao.findOne((Specification<Auth>) (root, query, cb) -> cb.and(
+                cb.equal(root.get("secret"), secret),
+                cb.equal(root.get("status"), "valid"),
+                cb.equal(root.get("deletedTime"), 0L))).orElse(null);
+        if (null == auth) return null;
+        Long expiredTime = auth.getExpiredTime();
+        if (null != expiredTime && expiredTime > 0 && expiredTime <= System.currentTimeMillis()) return null;
+        return auth;
+    }
+
+    /** 按访问密钥解析认证信息（兼容单 Key 调用）。 */
     public ObjectNode authByKey(String key, ObjectNode cache) {
         return authByKey(key, null, cache);
     }
 
-    /**
-     * 按密钥解析认证信息：密钥自身（id / name / secret / 可用模型 / 限流）与记账用户。
-     *
-     * 密钥开启「允许用户代理」（proxyable）且调用方带上用户会话令牌（请求头 x-auth-token）时，
-     * 直接把生效用户切成令牌对应的会话用户：身份、积分与限流都取该用户，密钥只是代理入口
-     * （不再查密钥属主，省掉一次无效请求）。会话失效或用户不可用时返回 null（等同认证失败）。
-     */
     public ObjectNode authByKey(String key, HttpServletRequest request, ObjectNode cache) {
         return authByKey(key, request, cache, true);
     }
 
-    /**
-     * 按密钥解析认证信息。
-     *
-     * requireCredit 为 true 时保持网关原有口径：生效用户必须有启用中的积分记录；
-     * 为 false 时只校验密钥、会话与用户身份，供客户端展示积分概览使用——
-     * 未开通或已停用的账号也要能拿到自己的状态，而不是被当成认证失败。
-     */
     public ObjectNode authByKey(String key, HttpServletRequest request, ObjectNode cache, boolean requireCredit) {
-        if (DPUtil.empty(key)) return null;
-        Auth auth = authDao.findOne((Specification<Auth>) (root, query, cb) -> cb.and(
-                cb.equal(root.get("secret"), key), cb.equal(root.get("status"), "valid"))).orElse(null);
+        Auth auth = activeAuth(key);
         if (null == auth) return null;
-        Long expiredTime = auth.getExpiredTime();
-        if (null != expiredTime && expiredTime > 0 && expiredTime <= System.currentTimeMillis()) return null;
-        // 生效用户：默认密钥属主；密钥允许代理且调用端带了会话令牌时，按令牌切换（积分判定与消耗都以生效用户为准）
-        String session = 1 == DPUtil.parseInt(auth.getProxyable()) && null != request
-                ? rbacService.token(request) : "";
+        boolean proxyable = 1 == DPUtil.parseInt(auth.getProxyable());
+        String suppliedSession = null == request ? "" : DPUtil.parseString(
+                request.getHeader(FeignInterceptor.HEADER_AUTH_TOKEN));
+        String session = proxyable && null != request ? rbacService.token(request) : "";
+        // 明确携带了会话来代理，但会话无法解析时直接拒绝，不能静默回退到代理密钥属主
+        if (proxyable && !DPUtil.empty(suppliedSession) && DPUtil.empty(session)) return null;
+
         JsonNode identity;
         int uid = auth.getUid();
-        if (DPUtil.empty(session)) { // 未带会话令牌（定时任务、服务端编排等）：沿用密钥所属用户
+        if (DPUtil.empty(session)) {
             identity = rbacService.identityById(uid);
         } else {
             identity = rbacService.identityByToken(session);
             uid = null == identity ? 0 : identity.at("/id").asInt(0);
-            if (uid < 1) return null; // 会话已失效或用户不可用：等同认证失败，避免把用量记到密钥所属用户头上
+            if (uid < 1) return null;
         }
         if (null == identity || identity.isNull() || identity.isEmpty()) return null;
         JsonNode roles = identity.at("/roles");
         if (null == roles || roles.isEmpty()) return null;
-        Credit credit = info(uid); // 只取生效用户的这条积分记录：余额、限流策略都以它为准
+        Credit credit = info(uid);
         if (requireCredit && (null == credit || 1 != credit.getStatus())) return null;
+
         ObjectNode result = DPUtil.objectNode();
         result.put("id", auth.getId());
         result.put("name", auth.getName());
         result.put("uid", uid);
         result.put("secret", auth.getSecret());
-        result.put("proxyable", DPUtil.parseBoolean(auth.getProxyable()));
+        result.put("proxyable", proxyable);
         result.replace("identity", identity);
+
         ObjectNode creditNode = result.putObject("credit");
         creditNode.put("uid", uid);
         if (null == credit) {
@@ -128,11 +127,9 @@ public class CreditService extends JPAServiceBase {
         }
         ObjectNode rates = result.putObject("rates");
         List<Integer> rateIds = null == credit ? Collections.emptyList() : DPUtil.parseIntList(credit.getRateIds());
-        for (Integer rateId : rateIds) { // 限流策略与计数都归生效用户
+        for (Integer rateId : rateIds) {
             JsonNode rate = cache.at("/rates/" + rateId);
-            if (!rate.isEmpty()) {
-                rates.replace(String.valueOf(rateId), rate);
-            }
+            if (!rate.isEmpty()) rates.replace(String.valueOf(rateId), rate);
         }
         ObjectNode models = result.putObject("models");
         Set<Integer> authModelIds = new HashSet<>(DPUtil.parseIntList(auth.getModelIds()));

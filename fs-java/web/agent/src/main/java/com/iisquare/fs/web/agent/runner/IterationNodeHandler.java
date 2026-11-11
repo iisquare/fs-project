@@ -10,6 +10,7 @@ import com.iisquare.fs.web.agent.entity.ToolMethod;
 import com.iisquare.fs.web.agent.core.AgenticNodeContext;
 import com.iisquare.fs.web.agent.core.AgenticNodeHandler;
 import com.iisquare.fs.web.agent.core.AgenticRuntime;
+import com.iisquare.fs.web.agent.core.AgentGatewayAuth;
 import com.iisquare.fs.web.agent.tool.DocumentParser;
 import com.hubspot.jinjava.Jinjava;
 import com.iisquare.fs.web.core.rpc.FileRpc;
@@ -59,6 +60,8 @@ public class IterationNodeHandler implements AgenticNodeHandler {
 
     @Autowired
     com.iisquare.fs.web.agent.react.AgenticInvokeTool agenticInvokeTool;
+    @Autowired
+    AgentGatewayAuth gatewayAuth;
 
     @Override
     public String type() {
@@ -126,6 +129,7 @@ public class IterationNodeHandler implements AgenticNodeHandler {
         ArrayNode parentSteps = ctx.runtime().steps();
         String parentAnswerSource = ctx.runtime().answerSource();
         java.util.function.BiFunction<Integer, String, ObjectNode> parentInvoker = agenticInvokeTool.invoker();
+        AgentGatewayAuth.Context parentGatewayAuth = gatewayAuth.get();
         int threads = Math.min(items.size(), Math.max(1, data.at("/parallelCount").asInt(1)));
         ExecutorService pool = Executors.newFixedThreadPool(threads);
         try {
@@ -150,6 +154,7 @@ public class IterationNodeHandler implements AgenticNodeHandler {
                     ctx.runtime().steps(parentSteps);
                     ctx.runtime().answerSource(parentAnswerSource);
                     agenticInvokeTool.invoker(parentInvoker);
+                    gatewayAuth.set(parentGatewayAuth);
                     // 子线程继承画布结构，容器内节点才能在并行迭代里继续执行
                     ctx.nodeMap().clear();
                     ctx.edgeMap().clear();
@@ -179,6 +184,7 @@ public class IterationNodeHandler implements AgenticNodeHandler {
                         ctx.runtime().stepSink(null);
                         ctx.runtime().roundSink(null);
                         agenticInvokeTool.invoker(null);
+                        gatewayAuth.clear();
                         RequestContextHolder.resetRequestAttributes();
                     }
                 }));

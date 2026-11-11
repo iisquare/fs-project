@@ -81,7 +81,8 @@ public class AuthService extends JPAServiceBase {
         info.setName(name);
         info.setUid(DPUtil.parseInt(param.get("uid")));
         info.setSecret(secret);
-        info.setProxyable(DPUtil.parseBoolean(param.get("proxyable")) ? 1 : 0);
+        boolean proxyable = DPUtil.parseBoolean(param.get("proxyable"));
+        info.setProxyable(proxyable ? 1 : 0);
         info.setModelIds(DPUtil.implode(",", DPUtil.parseIntList(param.get("modelIds"))));
         info.setStatus(status);
         if(param.containsKey("expiredTime")) {

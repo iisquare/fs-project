@@ -3,4 +3,9 @@ dependencies {
     implementation project(':base:jpa')
     implementation project(':base:mybatis')
     implementation project(':base:redis')
+    testImplementation project(':base:test')
+}
+
+test {
+    enabled = true
 }

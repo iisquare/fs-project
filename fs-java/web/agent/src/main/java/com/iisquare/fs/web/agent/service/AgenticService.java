@@ -18,6 +18,8 @@ import com.iisquare.fs.web.agent.entity.AgenticDialog;
 import com.iisquare.fs.web.agent.entity.AgenticLog;
 import com.iisquare.fs.web.agent.entity.Tool;
 import com.iisquare.fs.web.agent.entity.ToolMethod;
+import com.iisquare.fs.web.agent.core.AgentGatewayAuth;
+import com.iisquare.fs.web.agent.core.AgentInvocation;
 import com.iisquare.fs.web.agent.mapper.AgenticStatisticMapper;
 import com.iisquare.fs.web.agent.mvc.Configuration;
 import com.iisquare.fs.web.agent.runner.ChartNodeHandler;
@@ -25,7 +27,6 @@ import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rpc.FileRpc;
 import com.iisquare.fs.web.core.file.StreamFileUploader;
 import com.iisquare.fs.base.web.sse.SsePlainEmitter;
-import com.iisquare.fs.base.web.util.RpcUtil;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -47,6 +48,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 /**
  * 智能体编排服务。
@@ -62,7 +64,9 @@ public class AgenticService extends JPAServiceBase {
 
     public static final String MODE_WORKFLOW = "workflow";
     public static final String MODE_CHAT = "chat";
-
+    public static final String HEADER_TRACE_ID = "x-trace-id";
+    public static final String HEADER_EXTERNAL_USER_ID = "x-external-user-id";
+    private static final Pattern TRACE_ID_PATTERN = Pattern.compile("[A-Za-z0-9._:-]{1,128}");
     @Autowired
     AgenticDao agenticDao;
     @Autowired
@@ -89,6 +93,12 @@ public class AgenticService extends JPAServiceBase {
     StreamFileUploader streamFileUploader;
     @Autowired
     KnowledgeService knowledgeService;
+    @Autowired
+    AgentGatewayAuth gatewayAuth;
+    @Autowired
+    AgentApiKeyService agentApiKeyService;
+    @Autowired
+    AIService aiService;
 
     /** 编排调试上传的文件桶：编排会话的附件单独成桶，路径按 agentic 前缀隔离 */
     public static final String BUCKET = "fs-agentic";
@@ -125,6 +135,14 @@ public class AgenticService extends JPAServiceBase {
         item.put("size", data.at("/size").asLong(0));
         item.put("filepath", filepath);
         return ApiUtil.result(0, null, item);
+    }
+
+    /**
+     * Agentic 节点可选择的模型：使用服务配置的 fs.agent.token 访问模型网关，
+     * 只返回该密钥实际获授权的模型键，不读取管理端模型/供应商实体。
+     */
+    public Map<String, Object> models(Map<?, ?> param) {
+        return aiService.authorizedModels(DPUtil.parseString(param.get("name")));
     }
 
     @Override
@@ -171,6 +189,11 @@ public class AgenticService extends JPAServiceBase {
 
     protected Set<Integer> roleIds(HttpServletRequest request) {
         JsonNode identity = rbacService.identity(request);
+        return roleIds(identity);
+    }
+
+    protected Set<Integer> roleIds(JsonNode identity) {
+        if (null == identity) return Collections.emptySet();
         return DPUtil.values(identity.at("/roles"), Integer.class, "id");
     }
 
@@ -179,10 +202,18 @@ public class AgenticService extends JPAServiceBase {
      * 配置后要求调用人的角色与之有交集，否则拒绝运行/调用
      */
     public boolean authorized(Agentic info, HttpServletRequest request) {
+        return authorized(info, rbacService.identity(request));
+    }
+
+    /**
+     * 编排应用的授权角色校验（使用调用方当前生效身份）。
+     * API Key 调用时传入 LM 已解析的生效用户，用户代理时即会话用户，否则为密钥所属用户。
+     */
+    public boolean authorized(Agentic info, JsonNode identity) {
         if (null == info) return false;
         Set<Integer> allowed = new LinkedHashSet<>(DPUtil.parseIntList(info.getRoleIds()));
         if (allowed.isEmpty()) return true;
-        return !Collections.disjoint(allowed, roleIds(request));
+        return !Collections.disjoint(allowed, roleIds(identity));
     }
 
     /**
@@ -480,18 +511,62 @@ public class AgenticService extends JPAServiceBase {
      * 运行前准备：注入「编排工具」的调用器（把另一个编排应用当工具调用），
      * 用回调注入而不是让运行时反向依赖本服务
      */
+    /** 当前成员会话对应的生效身份，供网页运行与 Bot 工具调用复用。 */
+    protected AgentInvocation sessionInvocation(HttpServletRequest request) {
+        JsonNode identity = rbacService.identity(request);
+        if (null == identity || identity.isNull() || !identity.isObject()) {
+            identity = DPUtil.objectNode();
+        }
+        int uid = identity.at("/id").asInt(rbacService.uid(request));
+        return new AgentInvocation(uid, identity, rbacService.token(request), 0,
+                "session", false,
+                externalUserId(request), traceId(request));
+    }
+
+    protected String traceId(HttpServletRequest request) {
+        String value = DPUtil.trim(null == request ? "" : request.getHeader(HEADER_TRACE_ID));
+        if (TRACE_ID_PATTERN.matcher(value).matches()) return value;
+        return "agent-" + UUID.randomUUID().toString().replace("-", "");
+    }
+
+    protected String externalUserId(HttpServletRequest request) {
+        String value = DPUtil.trim(null == request ? "" : request.getHeader(HEADER_EXTERNAL_USER_ID));
+        if (DPUtil.empty(value)) return "";
+        value = value.replaceAll("\\p{Cntrl}", "");
+        return value.length() > 128 ? value.substring(0, 128) : value;
+    }
+
+    /**
+     * 网页会话或 Bot 工具调用：按当前成员会话解析生效身份后准备运行时。
+     */
     protected void prepareRuntime(Integer uid, HttpServletRequest request) {
-        agenticRunner.agenticInvoker((agenticId, query) -> toolInvoke(agenticId, query, uid, request));
+        AgentInvocation current = sessionInvocation(request);
+        prepareRuntime(new AgentInvocation(uid, current.identity(), current.session(),
+                current.apiKeyId(), current.callerType(), current.userProxy(),
+                current.externalUserId(), current.traceId()), request);
+    }
+
+    protected void prepareRuntime(AgentInvocation invocation, HttpServletRequest request) {
+        gatewayAuth.set(new AgentGatewayAuth.Context(invocation.session(), invocation.traceId()));
+        agenticRunner.agenticInvoker((agenticId, query) ->
+                toolInvoke(agenticId, query, invocation, request));
+    }
+
+    /** 释放当前线程的编排调用器与 LM 认证上下文，避免密钥在复用线程上残留。 */
+    public void clearRuntimeContext() {
+        gatewayAuth.clear();
+        agenticRunner.agenticInvoker(null);
     }
 
     /**
      * 编排作为工具：以 query 作为开始节点入参调用另一个编排应用的发布内容。
      * 子编排不写会话与运行日志，避免污染调用方的对话记录。
      */
-    public ObjectNode toolInvoke(Integer agenticId, String query, Integer uid, HttpServletRequest request) {
+    public ObjectNode toolInvoke(Integer agenticId, String query, AgentInvocation invocation,
+                                 HttpServletRequest request) {
         Agentic info = null == agenticId || agenticId < 1 ? null : info(agenticId);
         if (null == info) throw new IllegalStateException("编排应用不存在：" + agenticId);
-        if (!authorized(info, request)) {
+        if (!authorized(info, invocation.identity())) {
             throw new IllegalStateException("无权限使用该编排应用：" + info.getName());
         }
         if (1 != DPUtil.parseInt(info.getStatus())) {
@@ -515,7 +590,7 @@ public class AgenticService extends JPAServiceBase {
         inputs.put("query", DPUtil.parseString(query));
         // 子编排同样要能继续使用「编排工具」（嵌套调用），并临时关闭流式输出：
         // 子编排的输出作为工具结果返回给外层模型，不应混进外层对话的气泡
-        prepareRuntime(uid, request);
+        prepareRuntime(invocation, request);
         Consumer<JsonNode> sink = agenticRunner.streamSink();
         // 子编排的节点状态同样不推给外层画布（外层只展示自己这一层的执行过程）
         Consumer<JsonNode> stepSink = agenticRunner.stepSink();
@@ -528,7 +603,7 @@ public class AgenticService extends JPAServiceBase {
         nestedDepthThread.set(depth + 1);
         ObjectNode result;
         try {
-            result = agenticRunner.execute(content, inputs, DPUtil.arrayNode(), system(info, null, uid, request));
+            result = agenticRunner.execute(content, inputs, DPUtil.arrayNode(), system(info, null, invocation, request));
         } finally {
             nestedDepthThread.set(depth);
             agenticRunner.streamSink(sink);
@@ -551,7 +626,7 @@ public class AgenticService extends JPAServiceBase {
     }
 
     /**
-     * 流式外部调用：与调试运行同一套事件，只是执行的是发布内容（用户对话页使用）
+     * 流式外部调用的内部处理：/agentic/invoke?stream=true 使用，与调试运行同一套事件
      */
     public SseEmitter invokeStream(Map<?, ?> param, HttpServletRequest request, HttpServletResponse response) {
         return stream(param, request, response, true);
@@ -610,12 +685,15 @@ public class AgenticService extends JPAServiceBase {
         int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         Agentic info = id > 0 ? info(id) : null;
         if (null == info) return ApiUtil.result(404, null, id);
+        AgentInvocation invocation = sessionInvocation(request);
         // 授权角色：配置了授权角色时按调用人的角色放行
-        if (!authorized(info, request)) return ApiUtil.result(9403, "无权限使用该编排应用：" + info.getName(), id);
+        if (!authorized(info, invocation.identity())) {
+            return ApiUtil.result(9403, "无权限使用该编排应用：" + info.getName(), id);
+        }
         JsonNode content = DPUtil.parseJSON(DPUtil.parseString(info.getContent()));
         if (null == content || !content.isObject()) return ApiUtil.result(1001, "编排内容为空，请先保存", id);
         ObjectNode inputs = parseObject(param.get("inputs"));
-        Integer uid = rbacService.uid(request);
+        Integer uid = invocation.uid();
         // 多轮对话：调试运行与发布应用的会话分开存（draft / published），且只能续写自己的会话
         String query = query(inputs);
         Integer existsId = ownedChatId(DPUtil.parseInt(param.get("chatId")), info, CHAT_DRAFT, uid);
@@ -632,23 +710,28 @@ public class AgenticService extends JPAServiceBase {
         // 显式从会话起点新起分支（编辑第一条提问重新发送）：本轮模型上下文为空，不能退回全部消息
         boolean branchStart = null != parentId && parentId <= 0;
         boolean reuseQuestion = DPUtil.parseBoolean(param.get("reuseQuestion"));
-        prepareRuntime(uid, request);
+        prepareRuntime(invocation, request);
         long begin = System.currentTimeMillis();
         ObjectNode result;
         try {
-            result = agenticRunner.execute(content, inputs, history(chat.getId(), branch, branchStart), system(info, chat, uid, request));
+            result = agenticRunner.execute(content, inputs, history(chat.getId(), branch, branchStart),
+                    system(info, chat, invocation, request));
         } catch (Exception e) {
-            return failureResult(info, chat.getId(), "draft", 0, inputs, e, System.currentTimeMillis() - begin, uid, request);
+            return failureResult(info, chat.getId(), "draft", 0, inputs, e,
+                    System.currentTimeMillis() - begin, invocation, request);
+        } finally {
+            clearRuntimeContext();
         }
         result.put("id", info.getId());
         result.put("name", info.getName());
         result.put("mode", info.getMode());
         result.put("source", "draft"); // 调试运行使用保存后的草稿内容
+        result.put("traceId", invocation.traceId());
         result.set("inputs", inputs);
         result.put("chatId", chat.getId());
         // 消息落库与标识回传：前端按 answerId 对本轮回复做反馈，按 questionId/leafId 续写或新起分支
         appendTurn(chat, branch, reuseQuestion, result, query, inputs, uid);
-        AgenticLog log = writeLog(info, chat.getId(), "draft", 0, inputs, result, uid, request);
+        AgenticLog log = writeLog(info, chat.getId(), "draft", 0, inputs, result, invocation, request);
         result.put("logId", null == log ? 0 : log.getId());
         return ApiUtil.result(0, null, result);
     }
@@ -658,10 +741,32 @@ public class AgenticService extends JPAServiceBase {
      */
     public Map<String, Object> invoke(Map<?, ?> param, HttpServletRequest request) {
         int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
+        String apiKey = DPUtil.trim(request.getHeader("x-api-key"));
+        String traceId = traceId(request);
+        String externalUserId = externalUserId(request);
+        AgentInvocation invocation;
+        if (DPUtil.empty(apiKey)) {
+            AgentInvocation current = sessionInvocation(request);
+            invocation = new AgentInvocation(current.uid(), current.identity(), current.session(),
+                    0, "session", false, externalUserId, traceId);
+        } else {
+            AgentApiKeyService.AuthenticatedKey auth = agentApiKeyService.authenticate(apiKey, request);
+            if (null == auth) return ApiUtil.result(1001, "无效的 Agent API Key", null);
+            List<Integer> allowed = DPUtil.parseIntList(auth.key().getAgenticIds());
+            if (!allowed.contains(id)) {
+                return ApiUtil.result(9403, "API Key 无权调用该编排流程", id);
+            }
+            invocation = new AgentInvocation(auth.uid(), auth.identity(), auth.session(),
+                    auth.key().getId(),
+                    auth.userProxy() ? "user_proxy" : "api_key", auth.userProxy(),
+                    externalUserId, traceId);
+        }
         Agentic info = id > 0 ? info(id) : null;
         if (null == info) return ApiUtil.result(404, null, id);
         // 授权角色：配置了授权角色时按调用人的角色放行
-        if (!authorized(info, request)) return ApiUtil.result(9403, "无权限使用该编排应用：" + info.getName(), id);
+        if (!authorized(info, invocation.identity())) {
+            return ApiUtil.result(9403, "无权限使用该编排应用：" + info.getName(), id);
+        }
         int version = null == info.getPublishedVersion() ? 0 : info.getPublishedVersion();
         if (version < 1 || DPUtil.empty(info.getPublishedContent())) {
             return ApiUtil.result(1002, "编排尚未发布，外部调用不可用", id);
@@ -672,7 +777,7 @@ public class AgenticService extends JPAServiceBase {
         JsonNode content = DPUtil.parseJSON(DPUtil.parseString(info.getPublishedContent()));
         if (null == content || !content.isObject()) return ApiUtil.result(1002, "发布内容无效，请重新发布", id);
         ObjectNode inputs = parseObject(param.get("inputs"));
-        Integer uid = rbacService.uid(request);
+        Integer uid = invocation.uid();
         String query = query(inputs);
         Integer existsId = ownedChatId(DPUtil.parseInt(param.get("chatId")), info, CHAT_PUBLISHED, uid);
         // 仅新建会话时校验必填参数：继续对话的入参已随会话带入，不再重复要求
@@ -688,13 +793,17 @@ public class AgenticService extends JPAServiceBase {
         // 显式从会话起点新起分支（编辑第一条提问重新发送）：本轮模型上下文为空，不能退回全部消息
         boolean branchStart = null != parentId && parentId <= 0;
         boolean reuseQuestion = DPUtil.parseBoolean(param.get("reuseQuestion"));
-        prepareRuntime(uid, request);
+        prepareRuntime(invocation, request);
         long begin = System.currentTimeMillis();
         ObjectNode result;
         try {
-            result = agenticRunner.execute(content, inputs, history(chat.getId(), branch, branchStart), system(info, chat, uid, request));
+            result = agenticRunner.execute(content, inputs, history(chat.getId(), branch, branchStart),
+                    system(info, chat, invocation, request));
         } catch (Exception e) {
-            return failureResult(info, chat.getId(), "published", version, inputs, e, System.currentTimeMillis() - begin, uid, request);
+            return failureResult(info, chat.getId(), "published", version, inputs, e,
+                    System.currentTimeMillis() - begin, invocation, request);
+        } finally {
+            clearRuntimeContext();
         }
         result.put("id", info.getId());
         result.put("name", info.getName());
@@ -702,11 +811,12 @@ public class AgenticService extends JPAServiceBase {
         result.put("version", version);
         result.put("publishedTime", null == info.getPublishedTime() ? 0L : info.getPublishedTime());
         result.put("source", "published");
+        result.put("traceId", traceId);
         result.set("inputs", inputs);
         result.put("chatId", chat.getId());
         // 消息落库与标识回传：前端按 answerId 对本轮回复做反馈，按 questionId/leafId 续写或新起分支
         appendTurn(chat, branch, reuseQuestion, result, query, inputs, uid);
-        AgenticLog log = writeLog(info, chat.getId(), "published", version, inputs, result, uid, request);
+        AgenticLog log = writeLog(info, chat.getId(), "published", version, inputs, result, invocation, request);
         result.put("logId", null == log ? 0 : log.getId());
         return ApiUtil.result(0, null, result);
     }
@@ -758,11 +868,12 @@ public class AgenticService extends JPAServiceBase {
      * 时间按东八区格式化，一次运行内所有节点取到同一时刻：
      * datetime 为「yyyy-MM-dd HH:mm:ss」，date 为「yyyy-MM-dd」。
      */
-    protected Map<String, Object> system(Agentic info, AgenticChat chat, Integer uid, HttpServletRequest request) {
-        JsonNode user = currentUser(request);
+    protected Map<String, Object> system(Agentic info, AgenticChat chat, AgentInvocation invocation,
+                                         HttpServletRequest request) {
+        JsonNode user = invocation.identity();
         Map<String, Object> system = new LinkedHashMap<>();
         system.put("appId", String.valueOf(info.getId()));
-        system.put("userId", null == uid ? "" : String.valueOf(uid));
+        system.put("userId", invocation.uid() < 1 ? "" : String.valueOf(invocation.uid()));
         system.put("userName", null == user ? "" : user.at("/name").asText(""));
         system.put("conversationId", null == chat ? "" : String.valueOf(chat.getId()));
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Shanghai"));
@@ -1225,24 +1336,26 @@ public class AgenticService extends JPAServiceBase {
      */
     protected Map<String, Object> failureResult(Agentic info, Integer chatId, String source, int version,
                                                 ObjectNode inputs, Exception e, long duration,
-                                                Integer uid, HttpServletRequest request) {
+                                                AgentInvocation invocation, HttpServletRequest request) {
         String message = DPUtil.parseString(e.getMessage());
         String error = DPUtil.empty(message) ? e.getClass().getSimpleName() : message;
         ObjectNode result = DPUtil.objectNode();
         result.put("status", 2);
         result.put("error", error);
         result.put("duration", duration);
+        result.put("traceId", invocation.traceId());
         // 已执行到的节点明细：运行时按线程保存，异常时取到的正是部分进度
         result.set("steps", agenticRunner.steps());
-        AgenticLog log = writeLog(info, chatId, source, version, inputs, result, uid, request);
+        AgenticLog log = writeLog(info, chatId, source, version, inputs, result, invocation, request);
         logger.warn("编排运行异常（agenticId={}, chatId={}, logId={}）：{}", info.getId(), chatId,
                 null == log ? 0 : log.getId(), error, e);
-        return ApiUtil.result(9500, "运行异常：" + error, null);
+        return ApiUtil.result(9500, "运行异常：" + error,
+                DPUtil.buildMap("traceId", invocation.traceId()));
     }
 
     /** 写入运行日志：调试运行与外部调用共用，记录入参、输出、步骤与失败原因 */
     protected AgenticLog writeLog(Agentic info, Integer chatId, String source, int version, ObjectNode inputs,
-                                  ObjectNode result, Integer uid, HttpServletRequest request) {
+                                  ObjectNode result, AgentInvocation invocation, HttpServletRequest request) {
         try {
             AgenticLog log = AgenticLog.builder()
                     .agenticId(info.getId())
@@ -1261,8 +1374,13 @@ public class AgenticService extends JPAServiceBase {
                     .failures(DPUtil.stringify(failures(result.at("/steps"),
                             result.at("/status").asInt(1), result.at("/error").asText(""))))
                     .ip(null == request ? "" : DPUtil.parseString(request.getRemoteAddr()))
+                    .apiKeyId(invocation.apiKeyId())
+                    .callerType(invocation.callerType())
+                    .userProxy(invocation.userProxy() ? 1 : 0)
+                    .externalUserId(invocation.externalUserId())
+                    .traceId(invocation.traceId())
                     .createdTime(System.currentTimeMillis())
-                    .createdUid(null == uid ? 0 : uid)
+                    .createdUid(invocation.uid())
                     .deletedTime(0L)
                     .deletedUid(0)
                     .build();
@@ -1280,7 +1398,10 @@ public class AgenticService extends JPAServiceBase {
             SpecificationHelper<AgenticLog> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.dateFormat(configuration.getFormatDate()).equalWithIntGTZero("id")
                     .equalWithIntGTZero("agenticId").equalWithIntGTZero("createdUid")
-                    .equalWithIntNotEmpty("status").equal("source");
+                    .equalWithIntGTZero("apiKeyId")
+                    .equalWithIntNotEmpty("status")
+                    .equal("source").equal("callerType")
+                    .equal("externalUserId").equal("traceId");
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>(Arrays.asList(helper.predicates()));
             // 删除状态筛选：only 只看已删除、without 只看未删除、其余为全部
             addDeleted(predicates, root, cb, param);
@@ -1290,8 +1411,9 @@ public class AgenticService extends JPAServiceBase {
         JsonNode rows = formatLog(ApiUtil.rows(result), false);
         // 编排名称不再冗余存库：按 agenticId 填充展示
         fillAgenticName(rows);
+        agentApiKeyService.fillLogInfo(rows);
         if (!DPUtil.empty(args.get("withUserInfo"))) {
-            rbacService.fillUserInfo(rows, "createdUid");
+            rbacService.fillUserInfo(rows, "createdUid", "apiKeyOwnerUid");
         }
         return result;
     }
@@ -1305,10 +1427,11 @@ public class AgenticService extends JPAServiceBase {
         JsonNode items = DPUtil.arrayNode();
         ((ArrayNode) items).add(node); // fillAgenticName 会就地填充，传入同一节点引用即可
         fillAgenticName(items);
+        agentApiKeyService.fillLogInfo(items);
         // 调用人信息：列表走 withUserInfo 填充，详情同样要填充，否则前端只能显示「系统」
         ArrayNode userRows = DPUtil.arrayNode();
         userRows.add(node);
-        rbacService.fillUserInfo(userRows, "createdUid");
+        rbacService.fillUserInfo(userRows, "createdUid", "apiKeyOwnerUid");
         return node;
     }
 
@@ -1369,6 +1492,12 @@ public class AgenticService extends JPAServiceBase {
             node.replace("failures", parseArray(node.at("/failures").asText("")));
             node.put("sourceText", "published".equals(node.at("/source").asText("")) ? "外部调用" : "调试运行");
             node.put("statusText", 2 == node.at("/status").asInt(1) ? "失败" : "成功");
+            String callerType = node.at("/callerType").asText("session");
+            node.put("callerTypeText", switch (callerType) {
+                case "api_key" -> "API Key";
+                case "user_proxy" -> "API Key + 用户代理";
+                default -> "登录会话";
+            });
             node.put("deletedText", node.at("/deletedTime").asLong(0) > 0 ? "已删除" : "正常");
         }
         return rows;
@@ -1436,13 +1565,28 @@ public class AgenticService extends JPAServiceBase {
         final Set<Integer> members = new LinkedHashSet<>();
     }
 
+    /** API Key 排名：会话单独去重，同时保留用户与流程两个成员集合。 */
+    private static class ApiKeyStat {
+        long rounds;
+        long succeeded;
+        long failed;
+        long proxyRounds;
+        long duration;
+        long durationCount;
+        long lastTime;
+        final Set<Integer> sessions = new LinkedHashSet<>();
+        final Set<Integer> users = new LinkedHashSet<>();
+        final Set<Integer> flows = new LinkedHashSet<>();
+    }
+
     /**
-     * 流程统计：会话数量与对话轮次按时间轴聚合，另出流程排名与用户排名。
+     * 流程统计：会话数量与对话轮次按时间轴聚合，另出流程、API Key 与用户排名。
      *
      * - 会话取会话表（按创建时间），对话轮次取运行日志（一轮对话一条），两侧共用
-     *   「流程 + 用户 + 类型 + 删除状态」四个条件，两张时间轴看的是同一批对话；
-     * - 支持时间、流程、用户、对话类型（draft / published）、对话状态（全部 / 未删除 / 已删除）
-     *   执行状态（全部 / 成功 / 失败）与时间聚合层级（hour / day / week / month），默认近一周、按天；
+     *   「流程 + API Key + 用户 + 类型 + 删除状态」条件，两张时间轴看的是同一批对话；
+     * - 支持时间、流程、API Key、用户、对话类型（draft / published）、调用方式（登录会话 / API Key / 用户代理）、
+     *   对话状态（全部 / 未删除 / 已删除）、执行状态（全部 / 成功 / 失败）
+     *   与时间聚合层级（hour / day / week / month），默认近一周、按天；
      * - 数据经 MyBatis 取回（与 lm 用量统计同一套做法）：SQL 只按条件取聚合需要的列
      *   （不读标题、入参、输出、步骤等大字段），分桶、排名与去重都在服务层内存里完成，
      *   既免了为每种筛选组合各写一条 SQL，也不用数据库方言的日期函数；
@@ -1493,11 +1637,13 @@ public class AgenticService extends JPAServiceBase {
         // 时间桶 -> [会话数量, 对话轮次, 参与用户, 覆盖流程, 成功轮次, 失败轮次, 成功会话, 失败会话]
         Map<String, Set<Integer>> timelineUsers = new TreeMap<>();
         Map<String, Set<Integer>> timelineFlows = new TreeMap<>();
+        Map<String, Set<Integer>> timelineApiKeys = new TreeMap<>();
         Map<String, long[]> typeRows = new LinkedHashMap<>(); // 对话类型 -> [会话数量, 对话轮次]
         // 执行状态分布：先记分布再按筛选决定算不算数，所以这里不带执行状态筛选
         Map<Integer, long[]> statusRows = new LinkedHashMap<>();
         Map<Integer, StatRank> flowRanks = new LinkedHashMap<>();
         Map<Integer, StatRank> userRanks = new LinkedHashMap<>();
+        Map<Integer, ApiKeyStat> apiKeyRanks = new LinkedHashMap<>();
         Set<Integer> users = new LinkedHashSet<>();
         Set<Integer> flows = new LinkedHashSet<>();
         long sessions = 0, rounds = 0, succeeded = 0, duration = 0, durationCount = 0;
@@ -1543,6 +1689,7 @@ public class AgenticService extends JPAServiceBase {
             if (2 == status && succeed) continue;
             int flowId = DPUtil.parseInt(log.get("agenticId"));
             int owner = DPUtil.parseInt(log.get("createdUid"));
+            int apiKeyId = DPUtil.parseInt(log.get("apiKeyId"));
             long cost = DPUtil.parseLong(log.get("duration"));
             String key = statisticTimeKey(created, aggregation);
             long[] cell = timeline.computeIfAbsent(key, k -> new long[8]);
@@ -1556,6 +1703,9 @@ public class AgenticService extends JPAServiceBase {
             cell[succeed ? 4 : 5]++;
             timelineUsers.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(owner);
             timelineFlows.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(flowId);
+            if (apiKeyId > 0) {
+                timelineApiKeys.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(apiKeyId);
+            }
             users.add(owner);
             flows.add(flowId);
             statisticTypeRow(typeRows, DPUtil.parseString(log.get("source")))[1]++;
@@ -1579,6 +1729,22 @@ public class AgenticService extends JPAServiceBase {
             }
             user.members.add(flowId);
             user.lastTime = Math.max(user.lastTime, created);
+            if (apiKeyId > 0) {
+                ApiKeyStat apiKey = apiKeyRanks.computeIfAbsent(apiKeyId, k -> new ApiKeyStat());
+                int chatId = DPUtil.parseInt(log.get("chatId"));
+                if (chatId > 0) apiKey.sessions.add(chatId);
+                apiKey.rounds++;
+                if (succeed) apiKey.succeeded++;
+                else apiKey.failed++;
+                if (1 == DPUtil.parseInt(log.get("userProxy"))) apiKey.proxyRounds++;
+                if (cost > 0) {
+                    apiKey.duration += cost;
+                    apiKey.durationCount++;
+                }
+                apiKey.users.add(owner);
+                apiKey.flows.add(flowId);
+                apiKey.lastTime = Math.max(apiKey.lastTime, created);
+            }
         }
 
         ObjectNode result = DPUtil.objectNode();
@@ -1591,6 +1757,7 @@ public class AgenticService extends JPAServiceBase {
         summary.put("rounds", rounds);
         summary.put("users", users.size());
         summary.put("flows", flows.size());
+        summary.put("apiKeys", apiKeyRanks.size());
         summary.put("succeeded", succeeded);
         summary.put("failed", rounds - succeeded);
         summary.put("successRate", rounds < 1 ? 0L : Math.round(succeeded * 100d / rounds));
@@ -1609,6 +1776,7 @@ public class AgenticService extends JPAServiceBase {
             // 参与用户与覆盖流程按桶内去重：同一用户在同一个桶里聊了十轮，仍然算一个人
             row.put("users", timelineUsers.getOrDefault(entry.getKey(), Collections.emptySet()).size());
             row.put("flows", timelineFlows.getOrDefault(entry.getKey(), Collections.emptySet()).size());
+            row.put("apiKeys", timelineApiKeys.getOrDefault(entry.getKey(), Collections.emptySet()).size());
             row.put("succeeded", cell[4]);
             row.put("failed", cell[5]);
             row.put("succeededSessions", cell[6]);
@@ -1652,6 +1820,35 @@ public class AgenticService extends JPAServiceBase {
             row.put("lastTime", item.lastTime);
         }
         fillAgenticName(flowNodes);
+
+        // API Key 排名：会话按 chatId 去重，轮次与成败取自运行日志；
+        // 名称和属主不在日志里存快照，统一按 apiKeyId 批量填充。
+        ArrayNode apiKeyNodes = result.putArray("apiKeys");
+        List<Map.Entry<Integer, ApiKeyStat>> apiKeyEntries = new ArrayList<>(apiKeyRanks.entrySet());
+        apiKeyEntries.sort((a, b) -> {
+            int compare = Long.compare(b.getValue().sessions.size(), a.getValue().sessions.size());
+            if (0 != compare) return compare;
+            compare = Long.compare(b.getValue().rounds, a.getValue().rounds);
+            if (0 != compare) return compare;
+            return Integer.compare(a.getKey(), b.getKey());
+        });
+        for (Map.Entry<Integer, ApiKeyStat> entry : apiKeyEntries) {
+            ApiKeyStat item = entry.getValue();
+            ObjectNode row = apiKeyNodes.addObject();
+            row.put("apiKeyId", entry.getKey());
+            row.put("sessions", item.sessions.size());
+            row.put("rounds", item.rounds);
+            row.put("proxyRounds", item.proxyRounds);
+            row.put("users", item.users.size());
+            row.put("flows", item.flows.size());
+            row.put("succeeded", item.succeeded);
+            row.put("failed", item.failed);
+            row.put("successRate", item.rounds < 1 ? 0L : Math.round(item.succeeded * 100d / item.rounds));
+            row.put("avgDuration", item.durationCount < 1 ? 0L : Math.round(item.duration * 1d / item.durationCount));
+            row.put("lastTime", item.lastTime);
+        }
+        agentApiKeyService.fillLogInfo(apiKeyNodes);
+        rbacService.fillUserInfo(apiKeyNodes, "apiKeyOwnerUid");
 
         // 用户排名：与流程排名同一套排序，成员集合换成「覆盖了几个流程」
         ArrayNode userNodes = result.putArray("users");
@@ -1705,6 +1902,31 @@ public class AgenticService extends JPAServiceBase {
         int deleted = statisticDeleted(param.get("deleted"));
         if (1 == deleted) where.append(" AND deleted_time > 0");
         else if (0 == deleted) where.append(" AND deleted_time = 0");
+        int apiKeyId = DPUtil.parseInt(param.get("apiKeyId"));
+        String callerType = statisticCallerType(param.get("callerType"));
+        if ("type".equals(typeColumn) && (apiKeyId > 0 || !callerType.isEmpty())) {
+            where.append(" AND EXISTS (SELECT 1 FROM fs_agent_agentic_log statistic_log")
+                    .append(" WHERE statistic_log.chat_id = fs_agent_agentic_chat.id")
+                    .append(" AND statistic_log.created_time >= #{beginTime}")
+                    .append(" AND statistic_log.created_time <= #{endTime}");
+            if (CHAT_DRAFT.equals(type) || CHAT_PUBLISHED.equals(type)) {
+                where.append(" AND statistic_log.source = #{type}");
+            }
+            if (1 == deleted) where.append(" AND statistic_log.deleted_time > 0");
+            else if (0 == deleted) where.append(" AND statistic_log.deleted_time = 0");
+            if (apiKeyId > 0) where.append(" AND statistic_log.api_key_id = #{apiKeyId}");
+            if (!callerType.isEmpty()) where.append(" AND statistic_log.caller_type = #{callerType}");
+            where.append(")");
+        } else {
+            if ("type".equals(typeColumn)) {
+                // 会话查询没有 apiKeyId / callerType 列，只在有日志维度筛选时走上面的 EXISTS。
+            } else {
+                if (apiKeyId > 0) where.append(" AND api_key_id = #{apiKeyId}");
+                if (!callerType.isEmpty()) where.append(" AND caller_type = #{callerType}");
+            }
+        }
+        if (apiKeyId > 0) filters.put("apiKeyId", apiKeyId);
+        if (!callerType.isEmpty()) filters.put("callerType", callerType);
         filters.put("where", where.toString());
         return filters;
     }
@@ -1731,6 +1953,15 @@ public class AgenticService extends JPAServiceBase {
         if ("success".equals(mode)) return 1;
         if ("failed".equals(mode)) return 2;
         return 0;
+    }
+
+    /** 调用方式：只接受日志里实际存在的三种值，其余视为全部。 */
+    protected String statisticCallerType(Object value) {
+        String callerType = DPUtil.parseString(value);
+        if ("session".equals(callerType) || "api_key".equals(callerType) || "user_proxy".equals(callerType)) {
+            return callerType;
+        }
+        return "";
     }
 
     /** 时间轴分桶：东八区切分，周取周一、小时取整点 */

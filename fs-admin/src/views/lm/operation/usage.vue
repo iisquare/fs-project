@@ -25,7 +25,8 @@ const columns = ref([
   { prop: 'id', label: 'ID' },
   { prop: 'uid', label: '用户ID', hide: true },
   { prop: 'uidUserInfo.name', label: '用户名称' },
-  { prop: 'authInfo.name', label: '密钥', hide: true },
+  { prop: 'authInfo.name', label: '调用密钥', hide: true },
+  { prop: 'traceId', label: '追踪标识', hide: true },
   { prop: 'type', label: '计费类型', hide: true },
   { prop: 'place', label: '调用服务' },
   { prop: 'creditAmount', label: '积分数量' },
@@ -147,8 +148,11 @@ const handleDelete = () => {
       <form-search-item label="用户" prop="uid">
         <form-select v-model="filters.uid" :callback="UserApi.list" clearable />
       </form-search-item>
-      <form-search-item label="密钥" prop="authId">
+      <form-search-item label="调用密钥" prop="authId">
         <form-select v-model="filters.authId" :callback="AuthApi.list" clearable />
+      </form-search-item>
+      <form-search-item label="追踪标识" prop="traceId">
+        <el-input v-model="filters.traceId" clearable />
       </form-search-item>
       <form-search-item label="处理开始时间" prop="beginTimeBegin">
         <form-date-picker v-model="filters.beginTimeBegin" placeholder="开始时间" />
@@ -257,7 +261,8 @@ const handleDelete = () => {
       </template>
       <el-descriptions border>
         <el-descriptions-item label="用户ID">{{ form.uidUserInfo?.name }}[{{ form.uid }}]</el-descriptions-item>
-        <el-descriptions-item label="密钥">{{ form.authInfo?.name }}</el-descriptions-item>
+        <el-descriptions-item label="调用密钥">{{ form.authInfo?.name }}</el-descriptions-item>
+        <el-descriptions-item label="追踪标识">{{ form.traceId || '—' }}</el-descriptions-item>
         <el-descriptions-item label="计费类型">{{ form.type }}</el-descriptions-item>
         <el-descriptions-item label="调用服务">{{ form.place }}</el-descriptions-item>
         <el-descriptions-item label="供应商">{{ form.providerInfo?.name }}</el-descriptions-item>

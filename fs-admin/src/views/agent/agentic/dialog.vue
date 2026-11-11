@@ -132,7 +132,7 @@ const handleDeleteChat = (item: any) => {
 }
 
 /**
- * 发送消息：发布应用走流式外部调用（/agentic/invokeStream），模型与思考内容实时上屏，
+ * 发送消息：发布应用走流式外部调用（/agentic/invoke + stream=true），模型与思考内容实时上屏，
  * 结束后取回运行结果（会话标识、日志标识）并刷新会话列表
  */
 const handleSend = () => {
@@ -626,7 +626,7 @@ onBeforeUnmount(() => {
           :prefix-icon="Search"
           placeholder="搜索会话标题" />
       </div>
-      <div class="aside-list" v-loading="chatsLoading">
+      <el-scrollbar class="aside-list" v-loading="chatsLoading">
         <div
           class="chat-item"
           :class="{ 'is-active': chatId === item.id }"
@@ -653,7 +653,7 @@ onBeforeUnmount(() => {
           :description="keyword ? '没有匹配的会话' : '还没有对话，选择右侧流程开始'"
           :image-size="60"
           v-if="!chats.length" />
-      </div>
+      </el-scrollbar>
     </el-splitter-panel>
     <!-- 右侧：未选流程时居中选流程（支持检索），选中后进入对话 -->
     <el-splitter-panel class="dialog-main">
@@ -865,7 +865,8 @@ $dialog-row-max: $dialog-max + $dialog-inset * 2;  /* 860px：消息行总宽 */
   /* 左侧：浅灰底与右侧白色对话区形成层次，四周留出内边距（分隔线由 splitter 自带） */
   :deep(.dialog-aside) {
     min-width: 0;
-    padding: 16px;
+    /* 右侧不留内边距，让滚动条贴齐面板边缘 */
+    padding: 16px 0 16px 16px;
     background: var(--fs-layout-background-color);
   }
   :deep(.dialog-main) {
@@ -877,13 +878,15 @@ $dialog-row-max: $dialog-max + $dialog-inset * 2;  /* 860px：消息行总宽 */
   /* 新建会话：整行按钮，主操作置顶 */
   .aside-new {
     flex: none;
-    width: 100%;
+    width: calc(100% - 16px);
+    margin-right: 16px;
     border-radius: 6px;
   }
   .aside-filter {
     flex: none;
-    width: 100%;
+    width: calc(100% - 16px);
     margin-top: 8px;
+    margin-right: 16px;
     .el-input {
       width: 100%;
     }
@@ -893,8 +896,13 @@ $dialog-row-max: $dialog-max + $dialog-inset * 2;  /* 860px：消息行总宽 */
     min-height: 0;
     width: 100%;
     margin-top: 8px;
-    overflow-x: hidden;
-    overflow-y: auto;
+    /* 留白放入滚动内容，避免滚动条跟着内容内缩 */
+    :deep(.el-scrollbar__view) {
+      padding-right: 16px;
+    }
+    :deep(.el-scrollbar__wrap) {
+      overflow-x: hidden;
+    }
     .chat-item {
       padding: 8px 10px;
       border-radius: 8px;

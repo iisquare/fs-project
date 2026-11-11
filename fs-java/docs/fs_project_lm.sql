@@ -21,7 +21,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-163584';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-275625';
 
 --
 -- Table structure for table `fs_lm_auth`
@@ -105,7 +105,7 @@ CREATE TABLE `fs_lm_model` (
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `idx_provider_id` (`provider_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -204,6 +204,7 @@ CREATE TABLE `fs_lm_usage` (
   `credit_amount` decimal(20,12) NOT NULL DEFAULT '0.000000000000',
   `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '',
   `auth_id` int NOT NULL DEFAULT '0',
+  `trace_id` varchar(128) NOT NULL DEFAULT '' COMMENT '调用链追踪标识',
   `model_id` int NOT NULL DEFAULT '0',
   `provider_id` int NOT NULL DEFAULT '0',
   `request_ip` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
@@ -242,8 +243,9 @@ CREATE TABLE `fs_lm_usage` (
   KEY `idx_provider_id` (`provider_id`) USING BTREE,
   KEY `idx_request_ip` (`request_ip`) USING BTREE,
   KEY `idx_finish_reason` (`finish_reason`) USING BTREE,
-  KEY `idx_deleted_time_begin_time` (`deleted_time`,`begin_time`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1158 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  KEY `idx_deleted_time_begin_time` (`deleted_time`,`begin_time`) USING BTREE,
+  KEY `idx_trace_id` (`trace_id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=3398 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -256,4 +258,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-10-14  9:45:21
+-- Dump completed on 2026-11-11 18:31:59

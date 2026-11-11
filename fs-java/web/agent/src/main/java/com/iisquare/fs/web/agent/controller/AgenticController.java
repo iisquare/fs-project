@@ -5,6 +5,7 @@ import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.agent.service.AgenticService;
 import com.iisquare.fs.web.agent.entity.AgenticDialog;
+import com.iisquare.fs.web.core.rbac.ApiKeyAuth;
 import com.iisquare.fs.web.core.rbac.Permission;
 import com.iisquare.fs.web.core.rbac.PermitControllerBase;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,7 @@ import java.util.Map;
  * - list/info/config/run/invoke：agent:agentic:
  * - save/publish：agent:agentic:add 或 agent:agentic:modify
  * - delete：agent:agentic:delete
+ * - invoke 还允许通过 x-api-key 调用，stream=true 时返回 SSE；密钥与生效用户由业务服务校验
  */
 @RestController
 @RequestMapping("/agentic")
@@ -91,6 +93,16 @@ public class AgenticController extends PermitControllerBase {
         return ApiUtil.echoResult(0, null, model);
     }
 
+    /**
+     * 当前 Agentic 服务密钥获授权的模型清单，供编排节点的模型选择使用。
+     * 该列表从模型网关获取，不包含供应商地址、配置或密钥。
+     */
+    @RequestMapping("/models")
+    @Permission("")
+    public String modelsAction(@RequestBody(required = false) Map<String, Object> param) {
+        return ApiUtil.echoResult(agenticService.models(null == param ? new HashMap<>() : param));
+    }
+
     @RequestMapping("/run")
     @Permission("")
     public String runAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
@@ -119,20 +131,14 @@ public class AgenticController extends PermitControllerBase {
     }
 
     @RequestMapping("/invoke")
+    @ApiKeyAuth
     @Permission("")
-    public String invokeAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
+    public Object invokeAction(@RequestBody Map<?, ?> param, HttpServletRequest request,
+                               HttpServletResponse response) {
+        if (DPUtil.parseBoolean(param.get("stream"))) {
+            return agenticService.invokeStream(param, request, response);
+        }
         return ApiUtil.echoResult(agenticService.invoke(param, request));
-    }
-
-    /**
-     * 流式外部调用：模型增量实时推送（SSE），供用户对话页展示流式输出
-     * 事件格式：{ type: delta|step|done|error, data: ... }
-     */
-    @RequestMapping("/invokeStream")
-    @Permission("")
-    public SseEmitter invokeStreamAction(@RequestBody Map<?, ?> param, HttpServletRequest request,
-                                         HttpServletResponse response) {
-        return agenticService.invokeStream(param, request, response);
     }
 
     /**

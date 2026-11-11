@@ -119,7 +119,8 @@ public class UsageService extends JPAServiceBase {
             SpecificationHelper<Usage> helper = SpecificationHelper.newInstance(root, cb, param);
             helper.dateFormat(configuration.getFormatDate()).withoutDeleted().equalWithLongGTZero("id");
             helper.equalWithIntGTZero("uid").equal("type").equal("place").equal("status");
-            helper.equalWithIntGTZero("authId").equalWithIntGTZero("modelId").equalWithIntGTZero("providerId");
+            helper.equalWithIntGTZero("authId").equalWithIntGTZero("modelId")
+                    .equalWithIntGTZero("providerId").equal("traceId");
             helper.equal("requestIp").like("requestHeader").like("requestBody");
             helper.like("requestPrompt").like("requestSystem").like("requestUser");
             helper.like("responseHeader").like("responseBody");
@@ -162,6 +163,12 @@ public class UsageService extends JPAServiceBase {
 
         int authId = DPUtil.parseInt(param.get("authId"));
         if (authId > 0) { where.append(" AND auth_id = #{authId}"); filters.put("authId", authId); }
+
+        String traceId = DPUtil.parseString(param.get("traceId"));
+        if (!DPUtil.empty(traceId)) {
+            where.append(" AND trace_id = #{traceId}");
+            filters.put("traceId", traceId);
+        }
 
         int modelId = DPUtil.parseInt(param.get("modelId"));
         if (modelId > 0) { where.append(" AND model_id = #{modelId}"); filters.put("modelId", modelId); }

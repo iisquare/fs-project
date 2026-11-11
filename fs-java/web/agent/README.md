@@ -62,7 +62,8 @@
   `sys.datetime` 当前时间（东八区，`yyyy-MM-dd HH:mm:ss`）、`sys.date` 当前日期（东八区，`yyyy-MM-dd`）；
   用户输入与用户文件属于开始节点自身，直接引用开始节点的 `query` / `files` 输出，不在系统变量里重复；
 - 已支持节点：`Start`（入参）、`End`（回复内容与输出变量）、`Template`、`HTTP`、
-  `LLM`（模型网关 `/v1/chat/completions`，地址取 `rpc.lm.rest`，认证密钥取 `fs.agent.token`，整个 agent 服务共用）、
+  `LLM`（模型网关 `/v1/chat/completions`，地址取 `rpc.lm.rest`；网页运行使用服务级 `fs.agent.token`，
+  外部调用同样只使用 `fs.agent.token` 访问 LM，外部身份由 agent API Key 管理）、
   `Chart`（输出图表：把上游数据交给模型按内置提示词归纳成图表定义）、
   `VariableAggregator`（分组聚合）、`VariableAssigner`（会话变量赋值）、`SwitchCase`（条件分支）；
   其它节点类型会返回「节点类型暂未支持」并中断执行，日志里会标明失败节点。
@@ -116,22 +117,58 @@
 | 接口 | 说明 | 权限 |
 | --- | --- | --- |
 | POST `/agentic/run` | 调试运行（草稿内容），返回结果并写日志 | `agent:agentic:` |
-| POST `/agentic/invoke` | 外部调用（发布内容），返回结果并写日志 | `agent:agentic:` |
-| POST `/agentic/invokeStream` | 外部调用的流式版本（发布内容，SSE，供用户对话页展示流式输出） | `agent:agentic:` |
+| POST `/agentic/invoke` | 外部调用（发布内容）；`stream=false/缺省` 返回 JSON，`stream=true` 返回 SSE | `agent:agentic:` / `x-api-key` |
 | POST `/agentic/authorized` | 用户对话页可用的编排应用：已发布 + 状态启用 + 授权角色命中当前用户 | `agent:agentic:` |
 | POST `/agentic/logList`、`/agentic/logInfo` | 运行日志列表、详情（含步骤） | `agent:agentic:` |
 | POST `/agentic/logDelete` | 删除运行日志 | `agent:agentic:delete` |
 | POST `/agentic/chatList`、`/agentic/chatInfo` | 对话历史列表、详情（消息 + 每轮运行记录） | `agent:agentic:` |
 | POST `/agentic/chatDelete` | 删除会话（连同消息与运行日志） | `agent:agentic:delete` |
 | POST `/agentic/chatFeedback` | 消息反馈：点赞/点踩（可附标签与说明），再次提交同一情绪表示取消 | `agent:agentic:` |
-| POST `/agentic/statistic` | 流程统计：会话数量与对话轮次时间轴、流程排名、用户排名 | `agent:agentic:` |
+| POST `/agentic/statistic` | 流程统计：会话数量与对话轮次时间轴、流程 / API Key / 用户排名 | `agent:agentic:` |
+| POST `/apiKey/list`、`/apiKey/config` | Agent API Key 列表、状态下拉与排序 | `agent:apiKey:` |
+| POST `/apiKey/save` | 新增或修改 Agent API Key | `agent:apiKey:add` / `agent:apiKey:modify` |
+| POST `/apiKey/delete` | 删除 Agent API Key | `agent:apiKey:delete` |
 
+完整的外部对接说明见 [`docs/agent-orchestration-api.md`](../../docs/agent-orchestration-api.md)。
+
+#### API Key 外部调用
+
+`/agentic/invoke` 支持外部系统使用 agent 自有 API Key 调用；请求体 `stream=true` 时返回 SSE：
+
+```http
+POST /agentic/invoke
+x-api-key: <Agent API Key>
+x-auth-token: <member 会话，可选>
+x-external-user-id: <外部系统终端用户标识，可选>
+x-trace-id: <调用链追踪标识，可选>
+Content-Type: application/json
+
+{"id": 123, "inputs": {"query": "你好"}}
+```
+
+- agent 自有 `fs_agent_api_key` 管理外部系统 Key，Secret 与 LM 授权密钥一致，可在列表中查看和复制，
+  编辑时留空会自动生成新密钥；
+- API Key 必须绑定允许调用的 `agenticIds`；不在白名单中的流程直接拒绝；
+- API Key 开启「用户代理」且同时携带有效 `x-auth-token` 时，生效用户切换为会话用户，
+  积分、限流、会话、运行日志与编排授权角色都按该用户处理；未开启代理时忽略请求中的会话；
+- 编排运行中的所有 LM 调用只使用 `fs.agent.token`，不再向 LM 传外部 API Key 或 `x-proxy-key`；
+  允许用户代理时透传 `x-auth-token` 与 `x-trace-id`；
+- agent API Key 和用户会话都不写入会话正文或 LM 用量请求头；无密钥的网页调用继续使用
+  `fs.agent.token` 和成员会话；
+- 运行日志保存 Agent API Key ID、`callerType`、`userProxy`、`externalUserId` 和 `traceId`；
+  名称与属主在列表/详情查询时按 `apiKeyId` 批量填充，`createdUid` 始终是最终生效用户。
+- `x-external-user-id` 只用于审计，不参与鉴权、积分或会话归属；没有会员会话时，会话仍归属
+  Agent API Key 所属用户。需要区分外部终端用户时应为每个系统签发独立 API Key，或同时传会员会话。
+- agent 生成或透传 `x-trace-id` 并写入运行日志，同时传给 LM；LM 用量写入同一个 `traceId`，
+  因此一个流程内多次模型调用可按追踪标识精确关联。
 #### 流程统计
 
 - 会话数量取会话表（按创建时间）、对话轮次取运行日志（一轮对话一条），两侧共用
-  「流程 + 用户 + 对话类型 + 对话状态」四个条件，两张时间轴看的是同一批对话；
-- 入参：`beginTime` / `endTime`（毫秒，默认近一周）、`agenticId`、`uid`、
-  `type`（draft 调试运行 / published 发布应用）、`deleted`（only 已删除 / without 未删除 / 空 全部）、
+  「流程 + API Key + 用户 + 对话类型 + 对话状态」条件，两张时间轴看的是同一批对话；
+- 入参：`beginTime` / `endTime`（毫秒，默认近一周）、`agenticId`、`apiKeyId`、`uid`、
+  `type`（draft 调试运行 / published 发布应用）、
+  `callerType`（session 登录会话 / api_key / user_proxy）、
+  `deleted`（only 已删除 / without 未删除 / 空 全部）、
   `status`（success 成功 / failed 失败 / 空 全部，按执行状态筛选）、
   `aggregation`（hour / day / week / month，默认 day，周取周一、小时取整点，按东八区切分）；
 - 时间切分固定用东八区（与 `sys.datetime` 同一口径），服务所在时区（容器常见为 UTC）不影响分桶；
@@ -141,12 +178,13 @@
 - 执行状态：轮次看运行日志自身的状态（1 成功 / 2 失败），会话看它自己的轮次——
   有一轮失败即为失败，全成功才算成功；会话状态由轮次推导，所以状态筛选不落到 SQL
   （先取回全量轮次再在内存里筛），筛选只影响统计结果，不影响会话状态的判定；
-- 返回：`summary`（会话数量、对话轮次、参与用户、覆盖流程、成功率、平均耗时）、
-  `timeline`（每个时间桶的会话数量 / 对话轮次 / 参与用户 / 覆盖流程 / 成功失败轮次 / 成功失败会话，键升序）、
+- 返回：`summary`（会话数量、对话轮次、参与用户、覆盖流程、覆盖 API Key、成功率、平均耗时）、
+  `timeline`（每个时间桶的会话数量 / 对话轮次 / 参与用户 / 覆盖流程 / 使用 API Key / 成功失败轮次 / 成功失败会话，键升序）、
   `types`（按对话类型的会话数量与对话轮次）、
   `statuses`（执行状态分布：成功 / 失败的会话数量与对话轮次，
   **不含执行状态筛选**——先记分布再按筛选决定算不算数，筛「失败」时也能看到两边的盘面）、
   `flows`（流程排名：会话数量、对话轮次、参与用户、成功率、平均耗时、最近对话）、
+  `apiKeys`（API Key 排名：会话数量、对话轮次、代理轮次、参与用户、覆盖流程、成功率、平均耗时、最近调用）、
   `users`（用户排名：会话数量、对话轮次、覆盖流程、成功率、最近对话）；
 - 排名按会话数量降序、轮次数量次之；明细经 MyBatis（`AgenticStatisticMapper`）按条件取回，
   只取聚合需要的列（不读标题、入参、输出、步骤等大字段），分桶、排名与去重都在服务层内存里完成
@@ -182,13 +220,9 @@
   列表接口会按 `roleIds` 填充 `roles`（角色 `id` 与 `name`），前端列表页展示授权角色列，未配置时展示「全部用户」；
 - 生效范围：`/agentic/invoke`（外部调用）与 `/agentic/run`（调试运行）都会先校验，未命中返回 `9403` 无权限；
   `/agentic/authorized` 同样按该规则筛选，用户对话页只列出可用的已发布应用；
-- 存量库需要加列：`ALTER TABLE fs_agent_agentic ADD COLUMN role_ids varchar(2048) NOT NULL DEFAULT '' COMMENT '授权角色，为空表示所有登录用户可用' AFTER tags;`
 - 运行日志与对话历史为**标记删除**（会话、消息、运行日志记 `deleted_time` / `deleted_uid`，不物理删除；
   会话列表支持按删除状态筛选：不传或 0 只看未删除、1 只看已删除、-1 全部），
-  运行日志的编排名称不再冗余存库，返回时按 `agenticId` 关联填充；存量库调整：
-  `ALTER TABLE fs_agent_agentic_log DROP COLUMN agentic_name,
-   ADD COLUMN deleted_time bigint NOT NULL DEFAULT 0 COMMENT '删除时间，0 表示未删除（标记删除）',
-   ADD COLUMN deleted_uid int NOT NULL DEFAULT 0;`
+  运行日志的编排名称不再冗余存库，返回时按 `agenticId` 关联填充。
 
 ### 记忆（多轮上下文）
 
@@ -544,6 +578,7 @@ POST /knowledgeImage/url
 | --- | --- | --- |
 | `agent:agent:` | AgentController | 智能体：应用管理 |
 | `agent:agentic:` | AgenticController | 智能体：应用管理（编排列表）、应用编排（画布、调试运行、发布、外部调用） |
+| `agent:apiKey:` | ApiKeyController | Agent 外部调用密钥：列表、启用状态、流程白名单与 Secret 维护 |
 | `agent:chat:` | ChatController | 模型对话：模型调试、模型对话、模型对比 |
 | `agent:knowledge:` | KnowledgeController、KnowledgeDocumentController、KnowledgeSegmentController、KnowledgeChunkController | 知识库：知识管理、文档管理、分段管理、知识召回 |
 | `agent:tool:` | ToolController | 插件管理：工具管理、MCP 服务 |
@@ -559,7 +594,7 @@ POST /knowledgeImage/url
 | --- | --- |
 | `/agent/agentic/list` | 智能体应用管理 |
 | `/agent/agentic/model` | 智能体应用编排（画布：新增、修改、调试运行、发布） |
-| `/agent/agentic/statistic` | 流程统计（会话数量与对话轮次时间轴、流程排名、用户排名） |
+| `/agent/agentic/statistic` | 流程统计（会话数量与对话轮次时间轴、流程 / API Key / 用户排名） |
 | `/agent/chat/demo`、`/agent/chat/dialog`、`/agent/chat/compare` | 模型调试、模型对话、模型对比 |
 | `/agent/knowledge/list`、`/agent/knowledge/document`、`/agent/knowledge/segment`、`/agent/knowledge/recall` | 知识库管理 |
 | `/agent/plugin/tool`、`/agent/plugin/mcp`、`/agent/plugin/skill`、`/agent/plugin/skillVersion` | 插件管理 |
@@ -572,7 +607,7 @@ POST /knowledgeImage/url
 | `spring.datasource.agent.*` | 数据源：url、username、password、`table-prefix=fs_agent_` |
 | `rpc.agent.name`、`rpc.agent.rest` | 服务注册信息，管理端 `/api/agent/**` 按 `rpc.agent.rest` 转发 |
 | `rpc.lm.rest` | 模型网关地址，对话转发、词嵌入、重排经此调用 |
-| `fs.agent.token` | 访问模型网关的认证密钥，整个 agent 服务共用（大语言模型等节点、模型对话、词嵌入均使用） |
+| `fs.agent.token` | agent 访问 LM 的唯一服务级模型密钥；外部调用方身份由 agent API Key 单独管理 |
 | `fs.agent.web.searchModel` / `fs.agent.web.fetchModel` | MCP 网页搜索 / 抓取使用的网关模型别名，默认 `deepseek-search` / `deepseek-fetch`；也可由工具参数 `model` 临时指定 |
 | `fs.agent.web.maxContent` / `fs.agent.web.maxResultContent` | 网页抓取正文、搜索单条结果正文的字符上限，默认 30000 / 8000 |
 | `fs.agent.image.expire` | 原图地址签发有效期（毫秒），默认 1800000 |
@@ -584,14 +619,13 @@ JPA 表前缀策略为 `com.iisquare.fs.web.agent.dsconfig.NamingStrategy`。
 
 ## 数据与存储
 
-- MySQL：`fs_agent_agentic`（编排草稿与发布内容）、`fs_agent_agentic_chat`（会话）、
+- MySQL：`fs_agent_agentic`（编排草稿与发布内容）、`fs_agent_api_key`（外部调用密钥）、
+  `fs_agent_agentic_chat`（会话）、
   `fs_agent_agentic_dialog`（会话消息）、`fs_agent_agentic_log`（运行日志）、
   `fs_agent_knowledge`、`fs_agent_knowledge_chunk`、`fs_agent_knowledge_document`、`fs_agent_knowledge_image`、
   `fs_agent_knowledge_segment`、`fs_agent_project_share`（分享的项目）、`fs_agent_project_version`（项目版本）、
   `fs_agent_skill`、`fs_agent_skill_version`、`fs_agent_tool`，
-  建表语句见 `docs/fs_project_agent.sql`，存量库改造见 `docs/fs_project_agent_migrate.sql`。
-  工具表新增「传递用户会话」开关 `pass_session`，存量库执行
-  `docs/fs_project_agent_pass_session.sql`。
+  建表语句见 `docs/fs_project_agent.sql`。工具表通过 `pass_session` 控制是否传递用户会话。
 - 流程统计的明细查询走 MyBatis（`mapper/AgenticStatisticMapper.xml`），与 JPA 共用同一数据源
   （`spring.datasource.agent`，即 `@Primary` 的 `agentDataSource`）。
 - Elasticsearch：检索块集合 `fs_lm_knowledge_chunk`。
@@ -607,55 +641,3 @@ JPA 表前缀策略为 `com.iisquare.fs.web.agent.dsconfig.NamingStrategy`。
   另建审核表留痕（多次审核）比在消息行上放单值列更合适。
 - `fs_agent_tool.content_hash` / `parse_status` 已删除：标注为「解析缓存 / 解析状态」用，
   但保存与手动重解析都会真实重解析，页面提示读的是 `parse_error`，两者从未被读取。
-
-#### 项目分享的存量库改造与权限初始化
-
-存量库补两张表（新库直接执行 `docs/fs_project_agent.sql` 里的建表语句）：
-
-```sql
-CREATE TABLE `fs_agent_project_share` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(128) NOT NULL DEFAULT '',
-  `icon` varchar(500) NOT NULL DEFAULT '',
-  `role_ids` varchar(2048) NOT NULL DEFAULT '',
-  `sort` tinyint NOT NULL DEFAULT '0',
-  `status` tinyint NOT NULL DEFAULT '0',
-  `description` text NOT NULL,
-  `created_time` bigint NOT NULL DEFAULT '0',
-  `created_uid` int NOT NULL DEFAULT '0',
-  `updated_time` bigint NOT NULL DEFAULT '0',
-  `updated_uid` int NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`),
-  KEY `idx_created_uid` (`created_uid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE `fs_agent_project_version` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `project_id` int NOT NULL DEFAULT '0',
-  `name` varchar(128) NOT NULL DEFAULT '',
-  `content` longtext NOT NULL,
-  `status` tinyint NOT NULL DEFAULT '0',
-  `description` text NOT NULL,
-  `created_time` bigint NOT NULL DEFAULT '0',
-  `created_uid` int NOT NULL DEFAULT '0',
-  `updated_time` bigint NOT NULL DEFAULT '0',
-  `updated_uid` int NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`),
-  KEY `idx_project_id` (`project_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-```
-
-管理端的菜单与资源在「用户中心 → 菜单管理 / 资源管理」里维护（也可以按下面的字段值直接插库），
-资源归属智能体应用（`application_id = 308`）：
-
-| 表 | 层级 | 名称 | 字段值 |
-| --- | --- | --- | --- |
-| `fs_member_resource` | 一级 | 项目分享 | module `agent`、controller `projectShare`、action 空 |
-| `fs_member_resource` | 二级 | 添加 / 修改 / 删除 | 父级为上一条，action 分别 `add` / `modify` / `delete` |
-| `fs_member_menu` | 一级 | 项目分享 | 应用 308、url `/agent/bot`、图标 `Share`（可自定） |
-| `fs_member_menu` | 二级 | 分享的项目 | 父级为上一条、url `/agent/bot/projectShare` |
-| `fs_member_menu` | 二级 | 版本记录 | 父级为上一条、url `/agent/bot/projectVersion` |
-
-建好资源后还要在「角色管理 → 资源授权」里把 `agent:projectShare:`（含 `add` / `modify` / `delete`）
-授予需要管理分享项目的角色，否则页面与接口都会返回 9403。
-客户端侧不需要新增资源：项目分享的客户端接口挂在 `BotController` 下，沿用既有的 `agent:bot:`。

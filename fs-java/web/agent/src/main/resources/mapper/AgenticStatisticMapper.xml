@@ -4,7 +4,8 @@
 
     <!--
       流程统计：与 lm 的 UsageMapper 同一套路。
-      只取聚合需要的列：会话侧的标题与日志侧的入参 / 输出 / 步骤都是大字段，统计一眼也用不上；
+      只取聚合需要的列：会话侧标题与日志侧入参 / 输出 / 步骤都是大字段，统计一眼也用不上；
+      日志侧额外读取 api_key_id 与 user_proxy，用于 API Key 排名和代理轮次统计；
       筛选条件用「为空即不过滤」的写法拼接（见 AgenticService.statisticParam），
       省得为每种条件组合各写一条查询。时间轴分桶放在服务层按东八区切，SQL 里不写日期函数。
     -->
@@ -27,7 +28,9 @@
             status AS status,
             duration AS duration,
             created_time AS createdTime,
-            created_uid AS createdUid
+            created_uid AS createdUid,
+            api_key_id AS apiKeyId,
+            user_proxy AS userProxy
         FROM fs_agent_agentic_log
         ${where}
     </select>

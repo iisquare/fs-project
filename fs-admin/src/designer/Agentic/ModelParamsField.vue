@@ -14,7 +14,7 @@
  * @slot extra - 节点专有参数，插在思考参数与多模态参数之间
  */
 import { computed } from 'vue'
-import ModelApi from '@/api/lm/ModelApi'
+import AgenticApi from '@/api/agent/AgenticApi'
 import MultimodalField from './MultimodalField.vue'
 import ParamRow from './ParamRow.vue'
 import SectionSlice from './SectionSlice.vue'
@@ -43,7 +43,7 @@ const effortEnabled = computed(() => false !== data.value?.thinkEffortEnabled)
   <SectionSlice title="模型配置">
     <!-- 模型名称：可直接输入，也从模型库联想（绑定模型名称） -->
     <ParamRow label="模型名称" wide>
-      <form-autocomplete v-model="data.model" :callback="ModelApi.list" clearable placeholder="请输入或选择模型名称" />
+      <form-autocomplete v-model="data.model" :callback="AgenticApi.models" clearable placeholder="请输入或选择模型名称" />
     </ParamRow>
     <ParamRow label="温度" switchable v-model:enabled="data.temperatureEnabled">
       <el-input-number

@@ -34,6 +34,8 @@ public class Usage {
     @Column
     private Integer authId; // 密钥
     @Column
+    private String traceId; // 调用链追踪标识，与 agent 运行日志关联
+    @Column
     private Integer modelId; // 模型
     @Column
     private Integer providerId; // 供应商

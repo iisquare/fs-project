@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * 流程统计 - 按 时间 / 流程 / 用户 / 对话类型 / 对话状态 / 执行状态 / 时间聚合层级 筛选，
- * 统计会话数量（时间轴）、对话轮次数量（时间轴）、流程排名与用户排名。
+ * 流程统计 - 按 时间 / 流程 / API Key / 用户 / 对话类型 / 对话状态 / 执行状态 / 时间聚合层级 筛选，
+ * 统计会话数量（时间轴）、对话轮次数量（时间轴）、流程排名、API Key 排名与用户排名。
  *
  * 口径：
  * - 会话取编排会话（按创建时间），对话轮次取运行日志（一轮对话一条）；
@@ -20,6 +20,7 @@ import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import AgenticApi from '@/api/agent/AgenticApi'
+import AgentApiKeyApi from '@/api/agent/ApiKeyApi'
 import UserApi from '@/api/member/UserApi'
 import ApiUtil from '@/utils/ApiUtil'
 import DateUtil from '@/utils/DateUtil'
@@ -38,18 +39,18 @@ const RANK_LIMIT = 10
 const COLORS = ['#409eff', '#67c23a', '#e6a23c', '#909399', '#f56c6c', '#79bbff', '#95d475', '#eebe77', '#b1b3b8', '#f89898']
 
 /** 默认近一周（含今天共 7 天） */
-const defaultRange = (): string[] => [
-  DateUtil.format(Date.now() - 6 * DAY, 'yyyy-MM-dd 00:00:00'),
-  DateUtil.format(Date.now(), 'yyyy-MM-dd 23:59:59'),
-]
+const defaultBeginTime = () => DateUtil.format(Date.now() - 6 * DAY, 'yyyy-MM-dd 00:00:00')
 
 const loading = ref(false)
 const data = ref<any>({})
 const filters = ref<any>(RouteUtil.query2filter(route, {
-  range: defaultRange(),
+  beginTime: defaultBeginTime(),
+  endTime: '',
   agenticId: '',
+  apiKeyId: '',
   uid: '',
   type: '',
+  callerType: '',
   deleted: '',
   status: '',
   aggregation: 'day',
@@ -63,14 +64,15 @@ const millis = (value: any, fallback: number) => {
 }
 
 const buildParam = () => {
-  const range: string[] = filters.value.range ?? []
   const now = Date.now()
   return {
-    beginTime: millis(range[0], now - 6 * DAY),
-    endTime: millis(range[1], now),
+    beginTime: millis(filters.value.beginTime, now - 6 * DAY),
+    endTime: millis(filters.value.endTime, now),
     agenticId: Number(filters.value.agenticId) || 0,
+    apiKeyId: Number(filters.value.apiKeyId) || 0,
     uid: Number(filters.value.uid) || 0,
     type: filters.value.type || '',
+    callerType: filters.value.callerType || '',
     deleted: filters.value.deleted || '',
     status: filters.value.status || '',
     aggregation: filters.value.aggregation || 'day',
@@ -101,7 +103,9 @@ const handleSearch = () => {
 }
 const handleReset = () => {
   filters.value = {
-    range: defaultRange(), agenticId: '', uid: '', type: '', deleted: '', status: '', aggregation: 'day',
+    beginTime: defaultBeginTime(), endTime: '',
+    agenticId: '', apiKeyId: '', uid: '', type: '', callerType: '',
+    deleted: '', status: '', aggregation: 'day',
   }
   handleSearch()
 }
@@ -125,6 +129,7 @@ const overview = computed(() => {
     { label: '失败轮次', value: Number(item.failed ?? 0) },
     { label: '参与用户', value: Number(item.users ?? 0) },
     { label: '覆盖流程', value: Number(item.flows ?? 0) },
+    { label: '覆盖 API Key', value: Number(item.apiKeys ?? 0) },
     { label: '平均轮次/会话', value: sessions < 1 ? '—' : (rounds / sessions).toFixed(1) },
     { label: '对话成功率', value: rounds < 1 ? '—' : Math.round(Number(item.successRate ?? 0)) + '%' },
     { label: '平均耗时', value: renderSeconds(item.avgDuration) },
@@ -173,6 +178,7 @@ const bindRounds = bind('rounds')
 const bindTypes = bind('types')
 const bindStatuses = bind('statuses')
 const bindFlows = bind('flows')
+const bindApiKeys = bind('apiKeys')
 const bindUsers = bind('users')
 
 const renderChart = (key: string, option: any) => {
@@ -291,7 +297,12 @@ const statusOption = (rows: any[]) => ({
 })
 
 /** 排名：横向条从下往上画（量大的在最上面），桶尾标数 */
-const rankOption = (rows: any[], label: (row: any) => string, name: string) => {
+const rankOption = (
+  rows: any[],
+  label: (row: any) => string,
+  name: string,
+  details: Array<{ key: string; name: string }>,
+) => {
   const top = rows.slice(0, RANK_LIMIT)
   const list = [...top].reverse()
   return {
@@ -305,7 +316,7 @@ const rankOption = (rows: any[], label: (row: any) => string, name: string) => {
           `${label(row)}`,
           `会话数量：${row.sessions ?? 0}`,
           `对话轮次：${row.rounds ?? 0}`,
-          row.createdUid === undefined ? `参与用户：${row.users ?? 0}` : `覆盖流程：${row.flows ?? 0}`,
+          ...details.map((item) => `${item.name}：${row[item.key] ?? 0}`),
         ].join('<br/>')
       },
     },
@@ -325,7 +336,11 @@ const rankOption = (rows: any[], label: (row: any) => string, name: string) => {
 
 const renderAll = () => {
   const timeline = data.value?.timeline ?? []
-  const extras = [{ key: 'users', name: '参与用户' }, { key: 'flows', name: '覆盖流程' }]
+  const extras = [
+    { key: 'users', name: '参与用户' },
+    { key: 'flows', name: '覆盖流程' },
+    { key: 'apiKeys', name: '使用 API Key' },
+  ]
   renderChart('sessions', timelineOption(timeline, 'sessions', '会话数量', [
     { key: 'succeededSessions', name: '成功会话', color: COLORS[1] },
     { key: 'failedSessions', name: '失败会话', color: COLORS[4] },
@@ -336,8 +351,24 @@ const renderAll = () => {
   ], extras))
   renderChart('types', typeOption(data.value?.types ?? []))
   renderChart('statuses', statusOption(data.value?.statuses ?? []))
-  renderChart('flows', rankOption(data.value?.flows ?? [], (row: any) => row.agenticName || `流程#${row.agenticId}`, '会话数量'))
-  renderChart('users', rankOption(data.value?.users ?? [], (row: any) => row.createdUserInfo?.name || `用户#${row.createdUid}`, '会话数量'))
+  renderChart('flows', rankOption(
+    data.value?.flows ?? [],
+    (row: any) => row.agenticName || `流程#${row.agenticId}`,
+    '会话数量',
+    [{ key: 'users', name: '参与用户' }],
+  ))
+  renderChart('apiKeys', rankOption(
+    data.value?.apiKeys ?? [],
+    (row: any) => row.apiKeyName || `API Key#${row.apiKeyId}`,
+    '会话数量',
+    [{ key: 'users', name: '参与用户' }, { key: 'flows', name: '覆盖流程' }],
+  ))
+  renderChart('users', rankOption(
+    data.value?.users ?? [],
+    (row: any) => row.createdUserInfo?.name || `用户#${row.createdUid}`,
+    '会话数量',
+    [{ key: 'flows', name: '覆盖流程' }],
+  ))
 }
 
 watch(data, () => nextTick(renderAll), { deep: true })
@@ -363,46 +394,11 @@ onBeforeUnmount(() => {
     <!-- 筛选：时间 / 流程 / 用户 / 类型 / 状态 / 聚合层级，默认近一周；沿用列表页统一的 form-search 栅格 -->
     <el-card class="stat-card fs-table-search" :bordered="false" shadow="never">
       <form-search :model="filters">
-        <form-search-item label="时间" prop="range">
-          <el-date-picker
-            v-model="filters.range"
-            type="datetimerange"
-            :clearable="false"
-            :format="DateUtil.moment()"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            range-separator="至"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间" />
+        <form-search-item label="开始时间" prop="beginTime">
+          <form-date-picker v-model="filters.beginTime" placeholder="开始时间" />
         </form-search-item>
         <form-search-item label="流程" prop="agenticId">
           <form-select v-model="filters.agenticId" :callback="AgenticApi.list" clearable filterable placeholder="全部流程" />
-        </form-search-item>
-        <form-search-item label="用户" prop="uid">
-          <form-select v-model="filters.uid" :callback="UserApi.list" clearable filterable placeholder="全部用户" />
-        </form-search-item>
-        <form-search-item>
-          <el-button type="primary" @click="handleSearch" :loading="loading">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </form-search-item>
-        <form-search-item label="对话类型" prop="type">
-          <el-select v-model="filters.type" clearable placeholder="全部类型">
-            <el-option value="published" label="发布应用" />
-            <el-option value="draft" label="调试运行" />
-          </el-select>
-        </form-search-item>
-        <form-search-item label="对话状态" prop="deleted">
-          <el-select v-model="filters.deleted" clearable placeholder="全部状态">
-            <el-option value="" label="全部" />
-            <el-option value="without" label="未删除" />
-            <el-option value="only" label="已删除" />
-          </el-select>
-        </form-search-item>
-        <form-search-item label="执行状态" prop="status">
-          <el-select v-model="filters.status" clearable placeholder="全部">
-            <el-option value="" label="全部" />
-            <el-option value="success" label="成功" />
-            <el-option value="failed" label="失败" />
-          </el-select>
         </form-search-item>
         <form-search-item label="聚合层级" prop="aggregation">
           <el-select v-model="filters.aggregation" clearable>
@@ -412,6 +408,49 @@ onBeforeUnmount(() => {
             <el-option value="month" label="按月" />
           </el-select>
         </form-search-item>
+        <form-search-item>
+          <el-button type="primary" @click="handleSearch" :loading="loading">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
+          <button-advanced v-model="filters.advanced" />
+        </form-search-item>
+        <template v-if="filters.advanced">
+          <form-search-item label="结束时间" prop="endTime">
+          <form-date-picker v-model="filters.endTime" placeholder="结束时间" />
+        </form-search-item>
+          <form-search-item label="用户" prop="uid">
+            <form-select v-model="filters.uid" :callback="UserApi.list" clearable filterable placeholder="全部用户" />
+          </form-search-item>
+          <form-search-item label="API Key" prop="apiKeyId">
+            <form-select v-model="filters.apiKeyId" :callback="AgentApiKeyApi.list" clearable filterable placeholder="全部 API Key" />
+          </form-search-item>
+          <form-search-item label="对话类型" prop="type">
+            <el-select v-model="filters.type" clearable placeholder="全部类型">
+              <el-option value="published" label="发布应用" />
+              <el-option value="draft" label="调试运行" />
+            </el-select>
+          </form-search-item>
+          <form-search-item label="调用方式" prop="callerType">
+            <el-select v-model="filters.callerType" clearable placeholder="全部方式">
+              <el-option value="session" label="登录会话" />
+              <el-option value="api_key" label="API Key" />
+              <el-option value="user_proxy" label="API Key + 用户代理" />
+            </el-select>
+          </form-search-item>
+          <form-search-item label="对话状态" prop="deleted">
+            <el-select v-model="filters.deleted" clearable placeholder="全部状态">
+              <el-option value="" label="全部" />
+              <el-option value="without" label="未删除" />
+              <el-option value="only" label="已删除" />
+            </el-select>
+          </form-search-item>
+          <form-search-item label="执行状态" prop="status">
+            <el-select v-model="filters.status" clearable placeholder="全部">
+              <el-option value="" label="全部" />
+              <el-option value="success" label="成功" />
+              <el-option value="failed" label="失败" />
+            </el-select>
+          </form-search-item>
+        </template>
       </form-search>
     </el-card>
 
@@ -490,6 +529,49 @@ onBeforeUnmount(() => {
         </el-table-column>
       </el-table>
       <el-empty description="该条件下没有流程记录" :image-size="70" v-if="!(data.flows ?? []).length && !loading" />
+    </el-card>
+
+    <!-- API Key 排名 -->
+    <el-card class="stat-card" :bordered="false" shadow="never">
+      <div class="section-title">API Key 排名</div>
+      <el-row :gutter="12">
+        <el-col :span="24" v-if="(data.apiKeys ?? []).length">
+          <div class="chart-title">
+            会话数量
+            <span class="chart-tip">最多展示前 {{ RANK_LIMIT }} 个 API Key；同一会话可能由多个 Key 调用</span>
+          </div>
+          <div class="chart is-tall" :ref="bindApiKeys"></div>
+        </el-col>
+      </el-row>
+      <el-table class="section-table" :data="data.apiKeys ?? []" size="small" border table-layout="auto">
+        <el-table-column label="API Key" min-width="180">
+          <template #default="scope">{{ scope.row.apiKeyName || `API Key#${scope.row.apiKeyId}` }}</template>
+        </el-table-column>
+        <el-table-column label="所属用户" min-width="140">
+          <template #default="scope">
+            {{ scope.row.apiKeyOwnerUidUserInfo?.name || (scope.row.apiKeyOwnerUid ? `用户#${scope.row.apiKeyOwnerUid}` : '—') }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="sessions" label="会话数量" width="100" />
+        <el-table-column prop="rounds" label="对话轮次" width="100" />
+        <el-table-column prop="proxyRounds" label="代理轮次" width="100" />
+        <el-table-column prop="users" label="参与用户" width="100" />
+        <el-table-column prop="flows" label="覆盖流程" width="100" />
+        <el-table-column prop="failed" label="失败轮次" width="100" />
+        <el-table-column label="成功率" width="100">
+          <template #default="scope">
+            <span class="muted" v-if="!scope.row.rounds">—</span>
+            <span v-else>{{ Math.round(scope.row.successRate ?? 0) }}%</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="平均耗时" width="110">
+          <template #default="scope">{{ renderSeconds(scope.row.avgDuration) }}</template>
+        </el-table-column>
+        <el-table-column label="最近调用" width="170">
+          <template #default="scope">{{ DateUtil.format(scope.row.lastTime) || '—' }}</template>
+        </el-table-column>
+      </el-table>
+      <el-empty description="该条件下没有 API Key 调用记录" :image-size="70" v-if="!(data.apiKeys ?? []).length && !loading" />
     </el-card>
 
     <!-- 用户排名 -->

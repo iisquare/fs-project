@@ -21,7 +21,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-227758';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '62aa6980-af0e-11f0-bf53-c2f7353079da:1-275625';
 
 --
 -- Table structure for table `fs_agent_agentic`
@@ -78,7 +78,7 @@ CREATE TABLE `fs_agent_agentic_chat` (
   PRIMARY KEY (`id`),
   KEY `idx_agentic_user` (`agentic_id`,`type`,`created_uid`) USING BTREE,
   KEY `idx_updated_time` (`updated_time`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=56 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -107,7 +107,7 @@ CREATE TABLE `fs_agent_agentic_dialog` (
   PRIMARY KEY (`id`),
   KEY `idx_chat_parent` (`chat_id`,`parent_id`,`id`) USING BTREE,
   KEY `idx_created_time` (`created_time`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=218 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=229 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -132,6 +132,11 @@ CREATE TABLE `fs_agent_agentic_log` (
   `error` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '失败原因（保留完整堆栈，不做截断）',
   `failures` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '[]' COMMENT '异常摘要（JSON 数组，写入时预计算，会话回看直接展示）',
   `ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '调用来源 IP',
+  `api_key_id` int NOT NULL DEFAULT '0' COMMENT 'agent 外部调用密钥',
+  `caller_type` varchar(32) NOT NULL DEFAULT 'session' COMMENT '调用来源：session/api_key/user_proxy',
+  `user_proxy` tinyint NOT NULL DEFAULT '0' COMMENT '是否使用用户会话代理',
+  `external_user_id` varchar(128) NOT NULL DEFAULT '' COMMENT '外部系统终端用户标识，仅审计',
+  `trace_id` varchar(128) NOT NULL DEFAULT '' COMMENT '调用链追踪标识',
   `created_time` bigint NOT NULL DEFAULT '0',
   `created_uid` int NOT NULL DEFAULT '0',
   `deleted_time` bigint NOT NULL DEFAULT '0' COMMENT '删除时间，0 表示未删除（标记删除）',
@@ -141,8 +146,102 @@ CREATE TABLE `fs_agent_agentic_log` (
   KEY `idx_chat` (`chat_id`,`id`) USING BTREE,
   KEY `idx_answer` (`answer_id`) USING BTREE,
   KEY `idx_source_status` (`source`,`status`) USING BTREE,
+  KEY `idx_created_time` (`created_time`) USING BTREE,
+  KEY `idx_trace_id` (`trace_id`) USING BTREE,
+  KEY `idx_external_user_id` (`external_user_id`) USING BTREE,
+  KEY `idx_api_key_id` (`api_key_id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=124 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_agent_api_key`
+--
+
+DROP TABLE IF EXISTS `fs_agent_api_key`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_agent_api_key` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `uid` int NOT NULL DEFAULT '0' COMMENT '密钥所属用户',
+  `secret` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '密钥',
+  `agentic_ids` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '允许调用的编排流程',
+  `proxyable` tinyint NOT NULL DEFAULT '0' COMMENT '是否接受用户会话并按会话用户记账',
+  `status` tinyint NOT NULL DEFAULT '1' COMMENT '1-启用，2-禁用',
+  `expired_time` bigint NOT NULL DEFAULT '0',
+  `last_used_time` bigint NOT NULL DEFAULT '0',
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  `deleted_time` bigint NOT NULL DEFAULT '0',
+  `deleted_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_secret` (`secret`) USING BTREE,
+  KEY `idx_uid` (`uid`) USING BTREE,
+  KEY `idx_last_used_time` (`last_used_time`) USING BTREE,
+  KEY `idx_deleted_time` (`deleted_time`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_agent_client_update_log`
+--
+
+DROP TABLE IF EXISTS `fs_agent_client_update_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_agent_client_update_log` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `client_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `platform` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `architecture` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `channel` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `from_version` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `target_version` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `event` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `created_time` bigint NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_client_version_event` (`client_id`,`target_version`,`event`) USING BTREE,
+  KEY `idx_event` (`event`) USING BTREE,
   KEY `idx_created_time` (`created_time`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=117 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=106 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fs_agent_client_version`
+--
+
+DROP TABLE IF EXISTS `fs_agent_client_version`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fs_agent_client_version` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `platform` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'win32 / darwin / linux',
+  `architecture` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'x64' COMMENT 'x64 / arm64 / ia32 / armv7l / universal',
+  `channel` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'stable' COMMENT '发布渠道 stable / beta',
+  `version` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '安装包版本',
+  `minimum_version` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '最低支持版本，低于此版本强制升级',
+  `release_notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '发布日志',
+  `file_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '文件服务标识',
+  `filepath` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '文件存储路径',
+  `file_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '安装包文件名',
+  `file_size` bigint NOT NULL DEFAULT '0',
+  `sha512` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '安装包SHA-512（十六进制）',
+  `delta_manifest` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'gzip+Base64 的固定块差分清单',
+  `rollout_percentage` tinyint NOT NULL DEFAULT '100' COMMENT '灰度发布比例 0-100',
+  `allow_rollback` tinyint NOT NULL DEFAULT '0' COMMENT '1-允许从更高版本降级到本版本',
+  `status` tinyint NOT NULL DEFAULT '0' COMMENT '1-启用，2-停用',
+  `created_time` bigint NOT NULL DEFAULT '0',
+  `created_uid` int NOT NULL DEFAULT '0',
+  `updated_time` bigint NOT NULL DEFAULT '0',
+  `updated_uid` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_platform_arch_version` (`platform`,`architecture`,`version`) USING BTREE,
+  KEY `idx_platform_arch_status` (`platform`,`architecture`,`channel`,`status`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -451,65 +550,6 @@ CREATE TABLE `fs_agent_project_version` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `fs_agent_client_version`
---
-
-DROP TABLE IF EXISTS `fs_agent_client_version`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `fs_agent_client_version` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `platform` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'win32 / darwin / linux',
-  `architecture` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'x64' COMMENT 'x64 / arm64 / ia32 / armv7l / universal',
-  `channel` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'stable' COMMENT '发布渠道 stable / beta',
-  `version` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '安装包版本',
-  `minimum_version` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '最低支持版本，低于此版本强制升级',
-  `release_notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '发布日志',
-  `file_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '文件服务标识',
-  `filepath` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '文件存储路径',
-  `file_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '安装包文件名',
-  `file_size` bigint NOT NULL DEFAULT '0',
-  `sha512` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '安装包SHA-512（十六进制）',
-  `delta_manifest` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'gzip+Base64 的固定块差分清单',
-  `rollout_percentage` tinyint NOT NULL DEFAULT '100' COMMENT '灰度发布比例 0-100',
-  `allow_rollback` tinyint NOT NULL DEFAULT '0' COMMENT '1-允许从更高版本降级到本版本',
-  `status` tinyint NOT NULL DEFAULT '0' COMMENT '1-启用，2-停用',
-  `created_time` bigint NOT NULL DEFAULT '0',
-  `created_uid` int NOT NULL DEFAULT '0',
-  `updated_time` bigint NOT NULL DEFAULT '0',
-  `updated_uid` int NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_platform_arch_version` (`platform`,`architecture`,`version`) USING BTREE,
-  KEY `idx_platform_arch_status` (`platform`,`architecture`,`channel`,`status`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `fs_agent_client_update_log`
---
-
-DROP TABLE IF EXISTS `fs_agent_client_update_log`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `fs_agent_client_update_log` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `client_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `platform` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `architecture` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `channel` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `from_version` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `target_version` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `event` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `created_time` bigint NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`),
-  KEY `idx_client_version_event` (`client_id`,`target_version`,`event`) USING BTREE,
-  KEY `idx_event` (`event`) USING BTREE,
-  KEY `idx_created_time` (`created_time`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `fs_agent_skill`
 --
 
@@ -555,7 +595,7 @@ CREATE TABLE `fs_agent_skill_version` (
   `updated_uid` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `idx_skill_id` (`skill_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -628,4 +668,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-10-19 20:36:10
+-- Dump completed on 2026-11-11 18:32:03

@@ -249,7 +249,7 @@ const handleDelete = () => {
         <form-select v-model="form.modelIds" :callback="ModelApi.list" :labelFormatter="modelName" multiple clearable />
       </el-form-item>
       <el-form-item prop="proxyable" label="用户代理">
-        <el-checkbox v-model="form.proxyable">允许携带用户会话令牌，按会话用户记账并扣除其积分</el-checkbox>
+        <el-checkbox v-model="form.proxyable">允许携带有效用户会话时按会话用户记账</el-checkbox>
       </el-form-item>
       <el-form-item prop="expiredTime" label="过期时间">
          <form-date-picker v-model="form.expiredTime" placeholder="留空为永久有效" />

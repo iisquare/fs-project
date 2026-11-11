@@ -40,7 +40,8 @@ public class AuthController extends PermitControllerBase {
     @Permission("")
     public String listAction(@RequestBody Map<String, Object> param) {
         ObjectNode result = authService.search(param, DPUtil.buildMap(
-                "withUserInfo", true, "withStatusText", true, "withModels", true));
+                "withUserInfo", true, "withStatusText", true,
+                "withModels", true));
         return ApiUtil.echoResult(0, null, result);
     }
 
