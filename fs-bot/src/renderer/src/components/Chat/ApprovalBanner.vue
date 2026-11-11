@@ -2,20 +2,21 @@
 /**
  * 工作区外的访问申请 - 横幅（不是弹窗：不挡消息、不挡输入，也不打断这一轮对话）。
  *
- * 模型调用的本地工具（读文件 / 写文件 / 执行命令）越过项目声明的目录时，主进程把这次申请推上来等答复：
- * 拒绝 / 允许本次 / 始终允许（顺带把策略切成「帮我批准」，后续不再逐个询问）三个动作都是一步到位，
- * 不再先勾选再确认——同意一件事不该点两次。
+ * 模型调用的本地工具（读文件 / 写文件 / 执行命令）越过项目声明的目录时，主进程把这次申请推上来等答复。
+ * 工作区申请提供「拒绝 / 允许本次 / 始终允许」；桌面授权按任务生效，只提供「拒绝 / 允许本任务」，
+ * 避免每个鼠标、键盘动作都重复弹窗，同时保留拒绝整项任务的明确入口。
  * 命令**每次**都要在这里过一遍（命令的落点不限于工作目录，不能按 cwd 放行），
  * 所以横幅对命令给的是「执行命令」的口径：连命令原文一起给出，人看着命令决定。
  *
  * **跟着对话走**：只画属于本段对话的申请（归属见 `stores/approval`），摆在那段对话的输入框上方；
  * 别处触发的申请由侧边栏会话项上的「待确认」点提示，点进去才由这里的横幅接手。
  *
- * 版式：首行「标题在左、三个动作在右」左右两端分布，动作不侵入下面的内容区——
+ * 版式：首行「标题在左、动作在右」左右两端分布，动作不侵入下面的内容区——
  * 路径 / 命令 / 说明因此独占整行宽度（命令原文常常很长，被按钮挤掉就没法看清了）。
  */
 import { computed } from 'vue'
 import { useApprovalStore } from '@renderer/stores/approval'
+import { desktopEmergencyShortcutLabel } from '../../../../shared/desktop'
 
 const props = defineProps<{
   /** 这段对话的标识：横幅只画属于它的申请（没有归属信息的申请哪段对话都接） */
@@ -23,6 +24,7 @@ const props = defineProps<{
 }>()
 
 const approval = useApprovalStore()
+const emergencyStopShortcut = desktopEmergencyShortcutLabel(window.electron.process.platform)
 
 /** 本段对话要答复的那一条：**逐条**确认，答复后换下一条 */
 const current = computed(() => approval.currentOf(props.conversationId))
@@ -30,9 +32,17 @@ const current = computed(() => approval.currentOf(props.conversationId))
 const waiting = computed(() => Math.max(0, approval.pendingOf(props.conversationId) - 1))
 /** 这次申请要做什么：命令单独一句，读 / 写共用文件的口径 */
 const isCommand = computed(() => 'command' === current.value?.need)
+const isDesktop = computed(() => 'desktop' === current.value?.kind)
 /** 标题：命令不按工作区算，说「工作区外」会误导 */
-const title = computed(() => (isCommand.value ? '本地命令执行申请' : '工作区外的访问申请'))
+const title = computed(() =>
+  isDesktop.value
+    ? current.value?.title || '桌面操作授权'
+    : isCommand.value
+      ? '本地命令执行申请'
+      : '工作区外的访问申请'
+)
 const needLabel = computed(() => {
+  if (isDesktop.value) return '桌面'
   if ('command' === current.value?.need) return '执行命令'
   return 'write' === current.value?.need ? '写入' : '读取'
 })
@@ -64,7 +74,11 @@ const needLabel = computed(() => {
           text
           type="danger"
           :loading="approval.isSubmitting(current)"
-          title="拒绝这一步：失败原因会作为工具返回交给模型，本轮对话不中断"
+          :title="
+            isDesktop
+              ? '拒绝桌面操作：本次任务不会获得桌面控制权限'
+              : '拒绝这一步：失败原因会作为工具返回交给模型，本轮对话不中断'
+          "
           @click="approval.answer(current, false)"
         >
           <!-- 图标走 #icon 插槽：Element Plus 会把它包进 el-icon，自动跟着按钮的尺寸与字色走 -->
@@ -82,6 +96,7 @@ const needLabel = computed(() => {
           拒绝
         </el-button>
         <el-button
+          v-if="!isDesktop"
           class="banner-btn"
           size="small"
           text
@@ -108,9 +123,13 @@ const needLabel = computed(() => {
           class="banner-btn"
           size="small"
           text
-          type="success"
+          :type="isDesktop ? 'primary' : 'success'"
           :loading="approval.isSubmitting(current)"
-          title="放行这一次，并把访问策略切成「帮我批准」：后续工作区外的访问不再逐个询问"
+          :title="
+            isDesktop
+              ? '允许当前桌面任务继续；任务结束后自动收回，不会修改工作区访问策略'
+              : '放行这一次，并把访问策略切成「帮我批准」：后续工作区外的访问不再逐个询问'
+          "
           @click="approval.answer(current, true, true)"
         >
           <!-- 圈内对勾：与「允许本次」的裸勾拉开差别；双勾在 12px 下糊成一团，试过不好认 -->
@@ -127,13 +146,13 @@ const needLabel = computed(() => {
               />
             </svg>
           </template>
-          始终允许
+          {{ isDesktop ? '允许本任务' : '始终允许' }}
         </el-button>
       </div>
     </div>
     <!-- 内容块：与标题左对齐，独占整行宽度 -->
     <div class="banner-content">
-      <div class="banner-line">
+      <div v-if="!isDesktop" class="banner-line">
         <span class="banner-label">{{ isCommand ? '目录' : '路径' }}</span>
         <span class="banner-text">{{ current.path }}</span>
       </div>
@@ -141,11 +160,17 @@ const needLabel = computed(() => {
         <span class="banner-label">命令</span>
         <span class="banner-text">{{ current.command }}</span>
       </div>
+      <div v-if="isDesktop && current.detail" class="banner-line">
+        <span class="banner-label">说明</span>
+        <span class="banner-text">{{ current.detail }}</span>
+      </div>
       <div class="banner-note">
         {{
-          isCommand
-            ? '命令以本机身份运行，能改动的范围不限于工作目录；拒绝会把失败原因作为工具返回交给模型，本轮不会中断。'
-            : '允许后模型才能继续这一步；拒绝会把失败原因作为工具返回交给模型，本轮不会中断。'
+          isDesktop
+            ? `桌面授权按任务生效，允许后不会为每个点击重复确认；拒绝后会停止当前主任务及全部子任务，后续桌面调用不会再次弹窗。任务结束、停止或失败后自动收回授权。紧急停止：${emergencyStopShortcut}。`
+            : isCommand
+              ? '命令以本机身份运行，能改动的范围不限于工作目录；拒绝会把失败原因作为工具返回交给模型，本轮不会中断。'
+              : '允许后模型才能继续这一步；拒绝会把失败原因作为工具返回交给模型，本轮不会中断。'
         }}
       </div>
     </div>
@@ -226,7 +251,7 @@ const needLabel = computed(() => {
 }
 
 /**
- * 三个动作：左右两端分布里的「右端」。
+ * 动作区：左右两端分布里的「右端」。
  * 都是文字按钮，视觉间隔 = 行内 gap + 两侧按钮的内边距：取 gap 2px / 内边距 7px，标签之间约 16px。
  */
 .banner-actions {

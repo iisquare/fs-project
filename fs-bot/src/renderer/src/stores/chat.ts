@@ -1169,13 +1169,14 @@ export const useChatStore = defineStore('chat', () => {
     call.status = 'running'
     const started = Date.now()
     try {
-      call.result = await tools.invoke(
+      const result = await tools.invoke(
         call.name,
         parseArgs(call.args),
         session.projectId,
         session.conversationId,
         session.agentRunToken
       )
+      call.result = 'string' === typeof result ? result : result.content
       call.status = 'success'
       if (!call.result) call.result = '（无返回内容）'
     } catch (error) {
@@ -1301,7 +1302,13 @@ export const useChatStore = defineStore('chat', () => {
         continue
       }
       for (const row of assistantChain(item)) {
-        total += estimateTokens(row.content ?? '') + MESSAGE_OVERHEAD
+        const content = Array.isArray(row.content)
+          ? row.content
+              .map((part) => ('text' === part.type ? part.text : ''))
+              .filter(Boolean)
+              .join('\n')
+          : String(row.content ?? '')
+        total += estimateTokens(content) + MESSAGE_OVERHEAD
         for (const call of row.toolCalls ?? []) total += estimateTokens(call.function.arguments)
       }
     }

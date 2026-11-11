@@ -567,7 +567,7 @@ defineExpose({ focus, addPaths })
 <template>
   <div class="chat-composer">
     <!-- 候选项浮层：@ 引用与 / 指令共用一处，浮在输入框上方 -->
-    <el-scrollbar class="composer-menu" max-height="480px" v-if="menuOpen">
+    <el-scrollbar v-if="menuOpen" class="composer-menu" max-height="480px">
       <div class="menu-head">
         <span class="menu-title">{{
           'command' === menu.kind ? '内置指令' : '引用本机文件与技能'
@@ -576,12 +576,12 @@ defineExpose({ focus, addPaths })
       </div>
 
       <!-- / 指令 -->
-      <ul class="menu-list" v-if="'command' === menu.kind">
+      <ul v-if="'command' === menu.kind" class="menu-list">
         <li
-          class="menu-item"
-          :class="{ active: index === menu.index }"
           v-for="(item, index) in matchedCommands"
           :key="item.name"
+          class="menu-item"
+          :class="{ active: index === menu.index }"
           @mouseenter="menu.index = index"
           @mousedown.prevent="selectAt(index)"
         >
@@ -595,10 +595,10 @@ defineExpose({ focus, addPaths })
         <ul class="menu-list menu-actions">
           <!-- 本机选择：文件与文件夹各一条（系统对话框无法混选），选中即打开对话框 -->
           <li
-            class="menu-item is-action"
-            :class="{ active: row.index === menu.index }"
             v-for="row in actionRows"
             :key="row.item.action"
+            class="menu-item is-action"
+            :class="{ active: row.index === menu.index }"
             @mouseenter="menu.index = row.index"
             @mousedown.prevent="selectAt(row.index)"
           >
@@ -625,16 +625,16 @@ defineExpose({ focus, addPaths })
           </li>
         </ul>
         <!-- 已安装技能：同一套标题行 + 单行列表 -->
-        <div class="menu-group" v-if="skillRows.length">
+        <div v-if="skillRows.length" class="menu-group">
           <div class="menu-group-head">
             <span class="menu-group-title">已安装技能</span>
           </div>
           <ul class="menu-list">
             <li
-              class="menu-item"
-              :class="{ active: row.index === menu.index }"
               v-for="row in skillRows"
               :key="row.item.path"
+              class="menu-item"
+              :class="{ active: row.index === menu.index }"
               @mouseenter="menu.index = row.index"
               @mousedown.prevent="selectAt(row.index)"
             >
@@ -643,7 +643,7 @@ defineExpose({ focus, addPaths })
             </li>
           </ul>
         </div>
-        <div class="menu-empty" v-if="!skillRows.length">还没有安装技能</div>
+        <div v-if="!skillRows.length" class="menu-empty">还没有安装技能</div>
       </template>
     </el-scrollbar>
 
@@ -653,7 +653,7 @@ defineExpose({ focus, addPaths })
         文本区照常负责文字、光标与选区，删掉 @ 那一段标签也就跟着消失
       -->
       <div class="composer-field">
-        <div class="composer-mirror" ref="mirrorRef" aria-hidden="true" v-html="mirrorHtml" />
+        <div ref="mirrorRef" class="composer-mirror" aria-hidden="true" v-html="mirrorHtml" />
         <el-input
           ref="inputRef"
           class="composer-input"
@@ -729,8 +729,8 @@ defineExpose({ focus, addPaths })
           />
           <!-- 生成中按输入状态只显示一个主按钮：空输入是停止，有输入是灰色发送（进队列） -->
           <el-button
-            class="composer-stop"
             v-if="running && !hasDraft"
+            class="composer-stop"
             circle
             type="danger"
             plain

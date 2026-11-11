@@ -16,14 +16,18 @@ import { SseStream } from './Stream'
 
 export interface ModelChatMessage {
   role: string
-  /** 文本内容；带工具调用的助手消息可为空，工具返回消息即返回的文本 */
-  content?: string
+  /** 文本内容或多模态内容块；工具返回消息仍使用文本 */
+  content?: string | ModelContentPart[]
   /** 助手发起的工具调用：模型给的回调标识、函数名与参数（JSON 文本） */
   toolCalls?: ModelToolCall[]
   /** 工具返回消息：对应哪次调用、哪个函数 */
   toolCallId?: string
   name?: string
 }
+
+export type ModelContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string; detail?: 'auto' | 'low' | 'high' } }
 
 /** 一次工具调用（发送给模型时用完整形态，流式接收时用分片形态） */
 export interface ModelToolCall {

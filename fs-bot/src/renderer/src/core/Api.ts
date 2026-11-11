@@ -3,6 +3,11 @@ import axios from 'axios'
 import ApiUtil from '@renderer/utils/ApiUtil'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@renderer/stores/user'
+import {
+  CLIENT_UPGRADE_WINDOW_EVENT,
+  clientRequestHeaders,
+  isClientUpgradeResponse
+} from '../../../shared/client'
 
 const $axios = axios.create({
   baseURL: import.meta.env.VITE_APP_API_URL,
@@ -33,8 +38,8 @@ export default {
               type: 'warning'
             })
           }
-          if (ApiUtil.code(result) === 90426) {
-            window.dispatchEvent(new CustomEvent('fs-client-upgrade-required'))
+          if (isClientUpgradeResponse(Number(response.status), result)) {
+            window.dispatchEvent(new CustomEvent(CLIENT_UPGRADE_WINDOW_EVENT))
           }
           if (ApiUtil.succeed(result)) {
             resolve(result)
@@ -44,8 +49,8 @@ export default {
         })
         .catch((error: any) => {
           const result = error?.response?.data
-          if (ApiUtil.code(result) === 90426) {
-            window.dispatchEvent(new CustomEvent('fs-client-upgrade-required'))
+          if (isClientUpgradeResponse(Number(error?.response?.status ?? 0), result)) {
+            window.dispatchEvent(new CustomEvent(CLIENT_UPGRADE_WINDOW_EVENT))
           }
           tips.error && ElMessage.error(ApiUtil.message(result) || error.message)
           reject(result || ApiUtil.result(500, error.message, error))
@@ -59,14 +64,7 @@ export default {
     if (!options.headers) {
       options.headers = {}
     }
-    Object.assign(options.headers, {
-      Accept: 'application/json',
-      'x-client-version': client.clientVersion,
-      'x-client-platform': client.platform,
-      'x-client-arch': client.architecture,
-      'x-client-id': client.clientId,
-      'x-client-channel': client.channel
-    })
+    Object.assign(options.headers, { Accept: 'application/json' }, clientRequestHeaders(client))
     if (user.info.token) {
       Object.assign(options.headers, {
         Authorization: 'Bearer ' + user.info.token

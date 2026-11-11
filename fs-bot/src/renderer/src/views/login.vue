@@ -9,6 +9,7 @@ import TitleBar from '@renderer/components/Layout/TitleBar.vue'
 import BrandLogo from '@renderer/components/Brand/BrandLogo.vue'
 import { useUserStore } from '@renderer/stores/user'
 import { useLoadingStore } from '@renderer/stores/loading'
+import { useWindowStore } from '@renderer/stores/window'
 import { useRouter, useRoute } from 'vue-router'
 import ApiUtil from '@renderer/utils/ApiUtil'
 import Config from '@renderer/core/Config'
@@ -17,6 +18,7 @@ import { errorMessage, networkErrorMessage } from '@renderer/utils/ErrorUtil'
 
 const user = useUserStore()
 const appLoading = useLoadingStore()
+const windowStore = useWindowStore()
 const captchRef: any = ref(null)
 const route = useRoute()
 const router = useRouter()
@@ -102,13 +104,13 @@ const redirect = async (): Promise<void> => {
   leaving.value = true
   const url = destination()
   try {
-    // 先把遮罩画出来，再改窗口尺寸并直接进主界面；路由资源在遮罩下加载
+    // 先在登录尺寸下完成主界面路由资源加载与首帧布局，最后再放大窗口。
+    // 反过来会先露出新增的原生窗口区域，随后才填充主界面，形成短暂残留。
     await nextTick()
-    const resized = window.ipc
+    await router.push(url)
+    await window.ipc
       .setNormalSize()
       .catch((error) => console.error('[Login] Failed to resize window:', error))
-    await router.push(url)
-    await resized
     // 两帧之后再显示：让主界面按 900×670 完成布局与首次绘制
     await new Promise<void>((done) => {
       requestAnimationFrame(() => requestAnimationFrame(() => done()))
@@ -127,6 +129,8 @@ const redirect = async (): Promise<void> => {
 }
 
 onMounted(() => {
+  // 从上一次主界面退出时可能还停留在置顶状态，登录页始终恢复普通窗口。
+  windowStore.pinned = false
   void window.ipc
     .setLoginSize()
     .catch((error) => console.error('[Login] Failed to set login size:', error))
@@ -157,7 +161,7 @@ const openForgot = () => {
 
 <template>
   <div class="login-page" :class="{ 'login-page--leaving': leaving }">
-    <TitleBar class="login-page__titlebar" :show-maximize="false" />
+    <TitleBar class="login-page__titlebar" :show-maximize="false" :show-pin="false" />
     <el-scrollbar class="login-container">
       <div class="login-stage">
         <div class="login-brand">
@@ -316,6 +320,8 @@ const openForgot = () => {
   top: 0;
   left: 0;
   right: 0;
+  /* 登录内容铺满整个窗口且排在标题栏之后，必须把标题栏提到上层才能响应窗口按钮 */
+  z-index: 2;
 }
 
 .login-container {
@@ -327,7 +333,8 @@ const openForgot = () => {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  width: min(100%, 520px);
+  /* 450×600 登录窗口下收出 360px 的内容列，左右留白与标题、表单保持同一中线 */
+  width: min(100%, 408px);
   min-height: 100%;
   margin: 0 auto;
   padding: calc(var(--title-bar-height) + 18px) 24px 18px;

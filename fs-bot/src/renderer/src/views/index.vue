@@ -35,11 +35,7 @@ const fill = computed(() => route.path === page.home)
   <div class="main-layout" :class="{ 'main-layout--mac': isMac }">
     <TitleBar v-if="isMac" class="main-layout__titlebar" />
     <!-- 只响应拖动事件；窗口缩放引起的内部比例变化不写回用户的像素宽度。 -->
-    <el-splitter
-      class="main-splitter"
-      @resize="resizeSidebar"
-      @resize-end="finishSidebarResize"
-    >
+    <el-splitter class="main-splitter" @resize="resizeSidebar" @resize-end="finishSidebarResize">
       <!-- 侧边栏：拖分隔条调整宽度，宽度记在 store 里（拖到多宽，下次打开还是多宽） -->
       <el-splitter-panel
         v-if="sidebar.visible"

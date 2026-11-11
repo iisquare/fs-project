@@ -24,6 +24,10 @@ export default defineConfig(
   {
     files: ['**/*.{ts,mts,tsx,vue}'],
     rules: {
+      // 返回值由 TypeScript/vue-tsc 完整推断，强制每个函数重复声明收益很低。
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      // 服务端响参与工具参数在边界层是动态结构，本项目沿用 any 并在消费处校验。
+      '@typescript-eslint/no-explicit-any': 'warn',
       'vue/require-default-prop': 'off',
       'vue/multi-word-component-names': 'off',
       'vue/block-lang': [
@@ -34,6 +38,13 @@ export default defineConfig(
           }
         }
       ]
+    }
+  },
+  {
+    files: ['scripts/**/*.mjs'],
+    rules: {
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/no-explicit-any': 'off'
     }
   },
   eslintConfigPrettier

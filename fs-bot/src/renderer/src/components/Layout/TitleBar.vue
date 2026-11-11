@@ -2,11 +2,16 @@
 import { ref, nextTick, onMounted } from 'vue'
 import { useWindowStore } from '@renderer/stores/window'
 
-withDefaults(defineProps<{
-  showMaximize?: boolean
-}>(), {
-  showMaximize: true
-})
+withDefaults(
+  defineProps<{
+    showMaximize?: boolean
+    showPin?: boolean
+  }>(),
+  {
+    showMaximize: true,
+    showPin: true
+  }
+)
 
 const ipc = window.ipc
 const isMaximized = ref(false)
@@ -59,18 +64,54 @@ async function togglePin(): Promise<void> {
           <rect width="6" height="1" fill="currentColor" />
         </svg>
       </button>
-      <button v-if="showMaximize" class="mac-btn mac-btn--maximize" :title="isMaximized ? '还原' : '最大化'" @click="ipc.maximize()">
+      <button
+        v-if="showMaximize"
+        class="mac-btn mac-btn--maximize"
+        :title="isMaximized ? '还原' : '最大化'"
+        @click="ipc.maximize()"
+      >
         <svg v-if="isMaximized" width="6" height="6" viewBox="0 0 6 6">
-          <rect x="0.5" y="1.5" width="4" height="4" stroke="currentColor" stroke-width="1" fill="none" />
+          <rect
+            x="0.5"
+            y="1.5"
+            width="4"
+            height="4"
+            stroke="currentColor"
+            stroke-width="1"
+            fill="none"
+          />
           <path d="M1.5 0.5V1.5H0.5" stroke="currentColor" stroke-width="1" fill="none" />
         </svg>
         <svg v-else width="6" height="6" viewBox="0 0 6 6">
-          <rect x="0.5" y="0.5" width="5" height="5" stroke="currentColor" stroke-width="1" fill="none" />
+          <rect
+            x="0.5"
+            y="0.5"
+            width="5"
+            height="5"
+            stroke="currentColor"
+            stroke-width="1"
+            fill="none"
+          />
         </svg>
       </button>
-      <span class="mac-controls-divider" />
-      <button class="mac-pin-btn" :class="{ 'mac-pin-btn--active': win.pinned }" :title="win.pinned ? '取消置顶' : '置顶'" @click="togglePin">
-        <svg width="12" height="12" viewBox="0 0 24 24" :fill="win.pinned ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <span v-if="showPin" class="mac-controls-divider" />
+      <button
+        v-if="showPin"
+        class="mac-pin-btn"
+        :class="{ 'mac-pin-btn--active': win.pinned }"
+        :title="win.pinned ? '取消置顶' : '置顶'"
+        @click="togglePin"
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          :fill="win.pinned ? 'currentColor' : 'none'"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M12 2L15 9H21L16 14V22H8V14L3 9H9L12 2Z" />
         </svg>
       </button>
@@ -81,8 +122,21 @@ async function togglePin(): Promise<void> {
 
     <!-- Windows/Linux: standard window controls on the right -->
     <div v-if="!isMac" class="title-bar__win-controls">
-      <button class="win-btn win-btn--pin" :class="{ 'win-btn--pin-active': win.pinned }" :title="win.pinned ? '取消置顶' : '置顶'" @click="togglePin">
-        <svg width="12" height="12" viewBox="0 0 24 24" :fill="win.pinned ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+      <button
+        v-if="showPin"
+        class="win-btn win-btn--pin"
+        :class="{ 'win-btn--pin-active': win.pinned }"
+        :title="win.pinned ? '取消置顶' : '置顶'"
+        @click="togglePin"
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          :fill="win.pinned ? 'currentColor' : 'none'"
+          stroke="currentColor"
+          stroke-width="2"
+        >
           <path d="M12 2L15 9H21L16 14V22H8V14L3 9H9L12 2Z" stroke-linejoin="round" />
         </svg>
       </button>
@@ -91,13 +145,34 @@ async function togglePin(): Promise<void> {
           <rect y="4.5" width="10" height="1" fill="currentColor" />
         </svg>
       </button>
-      <button v-if="showMaximize" class="win-btn win-btn--maximize" :title="isMaximized ? '还原' : '最大化'" @click="ipc.maximize()">
+      <button
+        v-if="showMaximize"
+        class="win-btn win-btn--maximize"
+        :title="isMaximized ? '还原' : '最大化'"
+        @click="ipc.maximize()"
+      >
         <svg v-if="isMaximized" width="10" height="10" viewBox="0 0 10 10">
-          <rect x="1.5" y="0.5" width="7" height="7" stroke="currentColor" stroke-width="1" fill="none" />
+          <rect
+            x="1.5"
+            y="0.5"
+            width="7"
+            height="7"
+            stroke="currentColor"
+            stroke-width="1"
+            fill="none"
+          />
           <path d="M1 1.5V2.5H0" stroke="currentColor" stroke-width="1" fill="none" />
         </svg>
         <svg v-else width="10" height="10" viewBox="0 0 10 10">
-          <rect x="0.5" y="0.5" width="9" height="9" stroke="currentColor" stroke-width="1" fill="none" />
+          <rect
+            x="0.5"
+            y="0.5"
+            width="9"
+            height="9"
+            stroke="currentColor"
+            stroke-width="1"
+            fill="none"
+          />
         </svg>
       </button>
       <button class="win-btn win-btn--close" title="关闭" @click="ipc.close()">

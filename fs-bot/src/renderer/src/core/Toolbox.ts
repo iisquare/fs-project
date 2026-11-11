@@ -28,7 +28,8 @@ import { PROJECT_TOOL_KIND_LABELS, projectToolCapabilitySummary } from './Projec
  *   **项目一个技能都没启用时 `local_skill` 不下发**（模型的工具清单里根本没有这个函数），
  *   启用了就只认清单里的那几个名字——技能是本机能力，但「哪些技能能影响这个项目」由项目说了算。
  * - 项目工具：工具方法 / 知识库 / 数据主题 / 知识图谱 / 编排应用，凭据与真实调用都在服务端；
- *   这些定义交给 Project Tool Agent，主 Agent 只拿摘要。
+ *   Project Tool Agent 开启时，这些定义只交给子 Agent，主 Agent 只拿摘要；关闭时则直接放进
+ *   主 Agent 的工具清单，由主 Agent 调用服务端工具。技能始终由主 Agent 的 `local_skill` 管理。
  *
  * 「同一实体的一族操作」都收在一个工具里、用 action 参数区分（file_op / schedule_task /
  * memory / local_skill）：定义每轮请求都要带上，一个实体拆成五个 function
@@ -50,6 +51,17 @@ export interface ToolInfo {
   label: string
 }
 
+export interface ToolInvocationImage {
+  url: string
+  detail?: 'auto' | 'low' | 'high'
+}
+
+export interface ToolInvocationResult {
+  content: string
+  /** 只进入当前模型调用链，由子 Agent 决定是否把截图发给视觉模型；不写入工具结果库 */
+  images?: ToolInvocationImage[]
+}
+
 export interface ToolSet {
   /** 模型可见的 function 定义清单 */
   definitions: any[]
@@ -67,7 +79,7 @@ export interface ToolSet {
     conversationId: string,
     agentRunToken?: string,
     signal?: AbortSignal
-  ): Promise<string>
+  ): Promise<string | ToolInvocationResult>
 }
 
 interface ServerToolRef {
@@ -317,19 +329,101 @@ function browserTools(): Array<{ tool: any; info: ToolInfo }> {
 }
 
 /**
+ * Windows / macOS 桌面操作。第一版以截图和目标窗口为观察依据，坐标使用 0-1000 归一化值，
+ * 不把屏幕像素直接暴露给模型，避免 Retina、DPI 和截图缩放造成系统性的误点。
+ */
+function desktopTools(): Array<{ tool: any; info: ToolInfo }> {
+  return [
+    row(
+      'desktop_op',
+      '操作 Windows 或 macOS 的用户桌面。先 windows 查看窗口，再 snapshot 获取当前窗口截图；' +
+        '后续用截图中的目标位置操作。x、y 是相对当前截图左上角的 0-1000 归一化坐标，不是屏幕像素；' +
+        '窗口引用形如 w1，screen 表示主显示器。每次点击、输入、按键、滚动或拖拽后都会返回新截图，' +
+        '应先看新截图确认结果，再决定下一步。任务完成时调用 close。' +
+        '遇到系统权限窗口、登录、密码、验证码、支付、删除、覆盖保存、发送或安装确认时停止操作，' +
+        '在最终回答中单独写一行「需要用户介入：<原因>」。不要关闭无关应用，不要操作未经授权的窗口。',
+      {
+        action: {
+          type: 'string',
+          enum: [
+            'windows',
+            'snapshot',
+            'focus',
+            'click',
+            'type_text',
+            'press',
+            'scroll',
+            'drag',
+            'wait',
+            'screenshot',
+            'close'
+          ],
+          description: '要执行的桌面操作'
+        },
+        target: text('目标窗口引用，如 w1；screen 表示主显示器（snapshot / click 等可省略）'),
+        x: {
+          type: 'integer',
+          description: '相对目标截图宽度的 0-1000 坐标（click / scroll 选填，默认 500）'
+        },
+        y: {
+          type: 'integer',
+          description: '相对目标截图高度的 0-1000 坐标（click / scroll 选填，默认 500）'
+        },
+        button: {
+          type: 'string',
+          enum: ['left', 'right'],
+          description: '鼠标按钮（click 选填，默认 left）'
+        },
+        double: { type: 'boolean', description: '是否双击（click 选填，默认 false）' },
+        text: text('要输入的文字（type_text 需要，单次最多 10000 字）'),
+        key: text(
+          '按键或组合键，例如 Enter、Tab、Escape、Ctrl+A；Windows 可写 Win+R，macOS 可写 Cmd+Space（press 需要）'
+        ),
+        direction: {
+          type: 'string',
+          enum: ['up', 'down', 'left', 'right'],
+          description: '滚动方向（scroll 选填，默认 down）'
+        },
+        amount: { type: 'integer', description: '滚动格数（scroll 选填，默认 3，最多 30）' },
+        fromX: { type: 'integer', description: '拖拽起点横坐标，0-1000（drag 需要）' },
+        fromY: { type: 'integer', description: '拖拽起点纵坐标，0-1000（drag 需要）' },
+        toX: { type: 'integer', description: '拖拽终点横坐标，0-1000（drag 需要）' },
+        toY: { type: 'integer', description: '拖拽终点纵坐标，0-1000（drag 需要）' },
+        ms: { type: 'integer', description: '等待毫秒数（wait 选填，默认 800，最多 10000）' }
+      },
+      ['action']
+    )
+  ]
+}
+
+/**
  * 主 Agent 只拿到委派入口，不直接拿 browser_op 或整套项目工具。
  * 子 Agent 的原始快照和业务参数只留在子会话，主会话接收精简摘要。
  */
-function delegationTools(projectTools: ProjectTool[]): Array<{ tool: any; info: ToolInfo }> {
-  const hasProjectTools = projectTools.length > 0
-  const agents = hasProjectTools ? ['browser', 'project_tools'] : ['browser']
+function delegationTools(
+  projectTools: ProjectTool[],
+  browserAgentEnabled: boolean,
+  projectToolAgentEnabled: boolean,
+  desktopAgentEnabled: boolean
+): Array<{ tool: any; info: ToolInfo }> {
+  const hasProjectTools = projectToolAgentEnabled && projectTools.length > 0
+  const agents = [
+    ...(browserAgentEnabled ? ['browser'] : []),
+    ...(hasProjectTools ? ['project_tools'] : []),
+    ...(desktopAgentEnabled ? ['desktop'] : [])
+  ]
+  if (!agents.length) return []
   const capabilitySummary = projectToolCapabilitySummary(projectTools)
   return [
     row(
       'delegate_agent',
       '把适合隔离上下文的多步任务交给专业子 Agent，并在完成后只接收精简结果。' +
-        `当前可用：browser${hasProjectTools ? '、project_tools' : ''}。` +
-        'browser 负责网页浏览、点击、填表、登录辅助、提取和截图；' +
+        `当前可用：${agents.join('、')}。` +
+        (browserAgentEnabled ? 'browser 负责网页浏览、点击、填表、登录辅助、提取和截图；' : '') +
+        (desktopAgentEnabled
+          ? 'desktop 负责查看 Windows / macOS 桌面截图，并操作本机窗口、鼠标和键盘（需先在系统设置启用）；' +
+            '桌面任务通常需要连续观察画面再操作。\n'
+          : '') +
         (hasProjectTools
           ? 'project_tools 负责当前项目启用的自定义业务工具。' +
             `${capabilitySummary}\n` +
@@ -513,20 +607,28 @@ function skillTools(skills: ProjectTool[]): Array<{ tool: any; info: ToolInfo }>
 }
 
 /**
- * 本地工具清单：文件与命令、定时任务、记忆（历史对话 + 长期记忆）、本地技能。
- * 记忆与技能都按项目开关决定下不下发：关掉记忆时整个 `memory` 函数不出现。
+ * 本地工具清单：文件与命令、定时任务、记忆（历史对话 + 长期记忆）、本地技能与子 Agent 委派。
+ * 记忆、技能和三类子 Agent 都按项目开关决定下不下发。
  */
 function localTools(
   skills: ProjectTool[],
   memoryEnabled: boolean,
-  projectTools: ProjectTool[]
+  browserAgentEnabled: boolean,
+  projectToolAgentEnabled: boolean,
+  projectTools: ProjectTool[],
+  desktopAgentEnabled: boolean
 ): Array<{ tool: any; info: ToolInfo }> {
   return [
     ...fileTools(),
     ...scheduleTools(),
     ...(memoryEnabled ? memoryTools() : []),
     ...skillTools(skills),
-    ...delegationTools(projectTools)
+    ...delegationTools(
+      projectTools,
+      browserAgentEnabled,
+      projectToolAgentEnabled,
+      desktopAgentEnabled
+    )
   ]
 }
 
@@ -580,6 +682,29 @@ async function invokeBrowser(
   return result.screenshot ? `${result.text}\n\n![浏览器截图](${result.screenshot})` : result.text
 }
 
+/** 桌面动作：主进程完成授权、截图和输入注入；压缩截图随工具结果临时进入视觉模型。 */
+async function invokeDesktop(
+  args: any,
+  projectId: string,
+  conversationId: string
+): Promise<ToolInvocationResult> {
+  const action = String(args?.action ?? '').trim()
+  if (!action) throw new Error('desktop_op 需要 action')
+  const rest = { ...(args ?? {}) }
+  delete rest.action
+  const result = await window.ipc.automation.desktop({
+    projectId,
+    conversationId,
+    sourceSessionId: conversationId,
+    action,
+    args: rest
+  })
+  return {
+    content: result.text,
+    ...(result.image ? { images: [{ url: result.image, detail: 'high' as const }] } : {})
+  }
+}
+
 /** 主 Agent 的委派入口：组装专用工具集，交给独立子会话运行。 */
 async function invokeAgentDelegation(
   args: any,
@@ -588,19 +713,34 @@ async function invokeAgentDelegation(
   parentRunToken: string
 ): Promise<string> {
   const agent = String(args?.agent ?? '').trim() as AgentKind
-  if ('browser' !== agent && 'project_tools' !== agent) {
-    throw new Error('delegate_agent 的 agent 只能是 browser 或 project_tools')
+  if ('browser' !== agent && 'project_tools' !== agent && 'desktop' !== agent) {
+    throw new Error('delegate_agent 的 agent 只能是 browser、project_tools 或 desktop')
   }
   const objective = String(args?.objective ?? '').trim()
   if (!objective) throw new Error('委派任务需要 objective（完整任务目标）')
   const project = useProjectStore().find(projectId)
   if (!project) throw new Error(`找不到当前项目：${projectId}`)
+  const enabled =
+    ('browser' === agent && project.browserAgentEnabled) ||
+    ('project_tools' === agent && project.projectToolAgentEnabled) ||
+    ('desktop' === agent && project.desktopAgentEnabled)
+  if (!enabled) {
+    const label =
+      'browser' === agent
+        ? 'Browser Agent'
+        : 'project_tools' === agent
+          ? 'Project Tool Agent'
+          : 'Desktop Agent'
+    throw new Error(`本项目未启用 ${label}（在项目编辑器的「子 Agent」里打开后才能使用）`)
+  }
   const tools = await buildAgentTools(agent, project)
   if (!tools.definitions.length) {
     throw new Error(
       'browser' === agent
         ? 'Browser Agent 没有可用的浏览器工具'
-        : '当前项目没有可交给 Project Tool Agent 的自定义工具'
+        : 'desktop' === agent
+          ? 'Desktop Agent 没有可用的桌面工具'
+          : '当前项目没有可交给 Project Tool Agent 的自定义工具'
     )
   }
   return runAgentTask({
@@ -1354,9 +1494,7 @@ function commandResult(result: {
   return lines.join('\n')
 }
 
-/**
- * 主 Agent 的工具集：保留与其强相关的本地工具，并把浏览器和项目工具收敛成两个委派入口。
- */
+/** 主 Agent 的工具集：本地工具，加上主 Agent 模式下的项目工具或子 Agent 委派入口。 */
 export async function buildTools(project: Project | null): Promise<ToolSet> {
   return sharedToolset(project, () => buildProjectTools(project))
 }
@@ -1367,22 +1505,50 @@ async function buildProjectTools(
 ): Promise<{ toolset: ToolSet; complete: boolean }> {
   const refs = (project?.tools ?? []).filter((item) => false !== item?.enabled)
   const memoryEnabled = true === project?.memoryEnabled
+  const browserAgentEnabled = true === project?.browserAgentEnabled
+  const projectToolAgentEnabled = true === project?.projectToolAgentEnabled
+  const desktopAgentEnabled = true === project?.desktopAgentEnabled
   // 技能在客户端解析（读本机技能目录），不发给 /bot/tools——服务端只认它自己的五类工具；
   // 启用清单同时决定 local_skill 这个函数下不下发、作用范围有多大
   const skills = refs.filter((item) => 'skill' === item.kind)
   const remoteRefs = refs.filter((item) => 'skill' !== item.kind)
-  // 仍先校验服务端目录与说明；主 Agent 不下发这些定义，只使用委派入口。
-  let complete = true
-  if (remoteRefs.length) {
-    const remote = await buildRemoteTools(project, remoteRefs)
-    complete = remote.complete
-  }
+  const desktopStatus = desktopAgentEnabled
+    ? await window.ipc.automation.desktopStatus().catch(() => null)
+    : null
+  // 工具定义随已打开的会话缓存；平台可用就先暴露委派入口，系统设置与主进程仍会在每次
+  // 实际执行前检查开关。这样用户刚打开开关时，不必再新建会话才能生效。
+  const desktopAvailable = desktopStatus?.supported === true
   const definitions: any[] = []
   const catalog: Record<string, ToolInfo> = {}
-  const local = localTools(skills, memoryEnabled, remoteRefs)
+  const local = localTools(
+    skills,
+    memoryEnabled,
+    browserAgentEnabled,
+    projectToolAgentEnabled,
+    remoteRefs,
+    desktopAvailable
+  )
   for (const item of local) {
     definitions.push(item.tool)
     catalog[item.info.name] = item.info
+  }
+
+  let complete = true
+  let directRemote: ToolSet | null = null
+  if (remoteRefs.length) {
+    // 子 Agent 开启时只校验服务端定义，主 Agent 只拿委派摘要；关闭时定义直接交给主 Agent。
+    // 本地工具名优先，避免服务端同名函数覆盖文件、命令等客户端能力。
+    const remote = await buildRemoteTools(
+      project,
+      remoteRefs,
+      projectToolAgentEnabled ? [] : local.map((item) => item.info.name)
+    )
+    complete = remote.complete
+    if (!projectToolAgentEnabled) {
+      directRemote = remote.toolset
+      definitions.push(...remote.toolset.definitions)
+      Object.assign(catalog, remote.toolset.catalog)
+    }
   }
 
   async function invoke(
@@ -1392,8 +1558,11 @@ async function buildProjectTools(
     conversationId: string,
     agentRunToken = '',
     signal?: AbortSignal
-  ): Promise<string> {
+  ): Promise<string | ToolInvocationResult> {
     if (signal?.aborted) throw new Error('工具调用已停止')
+    if (directRemote?.catalog[name]) {
+      return directRemote.invoke(name, args, projectId, conversationId, agentRunToken, signal)
+    }
     return invokeLocal(name, args, projectId, conversationId, skills, memoryEnabled, agentRunToken)
   }
 
@@ -1412,6 +1581,19 @@ export async function buildAgentTools(agent: AgentKind, project: Project): Promi
       invoke: (name, args, projectId, conversationId) => {
         if ('browser_op' !== name) throw new Error(`Browser Agent 不支持工具：${name}`)
         return invokeBrowser(args, projectId, conversationId)
+      }
+    }
+  }
+  if ('desktop' === agent) {
+    const rows = desktopTools()
+    const definitions = rows.map((item) => item.tool)
+    const catalog = Object.fromEntries(rows.map((item) => [item.info.name, item.info]))
+    return {
+      definitions,
+      catalog,
+      invoke: (name, args, projectId, conversationId) => {
+        if ('desktop_op' !== name) throw new Error(`Desktop Agent 不支持工具：${name}`)
+        return invokeDesktop(args, projectId, conversationId)
       }
     }
   }
@@ -1435,16 +1617,17 @@ export async function buildAgentTools(agent: AgentKind, project: Project): Promi
 }
 
 /**
- * 服务端自定义工具定义：主 Agent 只借它校验配置，Project Tool Agent 用它执行任务。
- * 单只工具不可用时不拖累其余工具；只有可执行的子集返回给 Worker。
+ * 服务端自定义工具定义：Project Tool Agent 开启时只借它校验配置并交给 Worker；
+ * 关闭时同一份工具集直接挂到主 Agent。单只工具不可用时不拖累其余工具。
  */
 async function buildRemoteTools(
   project: Project | null,
-  remoteRefs: ProjectTool[]
+  remoteRefs: ProjectTool[],
+  reservedNames: Iterable<string> = []
 ): Promise<{ toolset: ToolSet; complete: boolean }> {
   const definitions: any[] = []
   const catalog: Record<string, ToolInfo> = {}
-  const taken = new Set<string>()
+  const taken = new Set<string>(reservedNames)
   const remote = new Map<string, { ref: any; info: ToolInfo }>()
   let complete = true
   try {

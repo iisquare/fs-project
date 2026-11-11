@@ -1,4 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- SSE 事件体由各类业务接口自行解释 */
+import {
+  CLIENT_UPGRADE_WINDOW_EVENT,
+  clientRequestHeaders,
+  isClientUpgradeResponse
+} from '../../../shared/client'
 /**
  * SSE 流式调用（POST + fetch 流读取）。
  *
@@ -56,14 +61,10 @@ export class SseStream {
     try {
       const client = await window.ipc.clientMeta()
       const headers: Record<string, string> = {
+        ...(options.headers ?? {}),
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
-        'x-client-version': client.clientVersion,
-        'x-client-platform': client.platform,
-        'x-client-arch': client.architecture,
-        'x-client-id': client.clientId,
-        'x-client-channel': client.channel,
-        ...(options.headers ?? {})
+        ...clientRequestHeaders(client)
       }
       if (options.token) headers['Authorization'] = 'Bearer ' + options.token
       const response = await fetch(options.url, {
@@ -75,8 +76,8 @@ export class SseStream {
       })
       if (!response.ok) {
         const result = await response.json().catch(() => null)
-        if (Number(result?.code) === 90426) {
-          window.dispatchEvent(new CustomEvent('fs-client-upgrade-required'))
+        if (isClientUpgradeResponse(response.status, result)) {
+          window.dispatchEvent(new CustomEvent(CLIENT_UPGRADE_WINDOW_EVENT))
         }
         throw new Error(result?.message || `流式接口返回异常：HTTP ${response.status}`)
       }

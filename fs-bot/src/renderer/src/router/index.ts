@@ -78,7 +78,7 @@ router.beforeEach(async (to) => {
 
   const user = useUserStore()
   try {
-    await user.initialize(to.path !== page.agentDetail)
+    await user.initialize()
   } catch (error) {
     console.error('[Router] Failed to restore session:', error)
   }

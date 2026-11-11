@@ -12,11 +12,21 @@ export default defineConfig({
   main: {
     build: {
       rollupOptions: {
-        external: ['better-sqlite3-multiple-ciphers']
+        // 桌面自动化依赖本地 .node 预编译模块，必须由 Electron 运行时直接 require。
+        external: ['better-sqlite3-multiple-ciphers', '@nut-tree-fork/nut-js', 'koffi']
       }
     }
   },
-  preload: {},
+  preload: {
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve('src/preload/index.ts'),
+          'desktop-overlay': resolve('src/preload/desktop-overlay.ts')
+        }
+      }
+    }
+  },
   renderer: {
     resolve: {
       alias: {

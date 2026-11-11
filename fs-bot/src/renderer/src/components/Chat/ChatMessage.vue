@@ -249,7 +249,7 @@ async function copy(): Promise<void> {
             {{ message.content || '（未输入内容）' }}
           </div>
           <!-- 编辑提问：改完重新发送会在同一处新起一条分支（原分支保留） -->
-          <div class="chat-edit" v-else>
+          <div v-else class="chat-edit">
             <el-input
               v-model="draft"
               type="textarea"
@@ -264,7 +264,7 @@ async function copy(): Promise<void> {
               >
             </div>
           </div>
-          <div class="chat-mentions" v-if="message.mentions?.length && !editing">
+          <div v-if="message.mentions?.length && !editing" class="chat-mentions">
             <!--
               引用到的本机文件 / 技能：一条引用一个小块（图标 + 名字），
               点一下用默认程序打开，行尾的小按钮在文件夹中定位，完整路径走悬浮提示
@@ -352,7 +352,7 @@ async function copy(): Promise<void> {
         </template>
         <!-- 助手回复：调用过程铺成一条时间线（生成时铺开、结束后收起），之后是回复正文 -->
         <template v-else>
-          <el-collapse class="chat-process" v-if="rounds.length" v-model="processPanels">
+          <el-collapse v-if="rounds.length" v-model="processPanels" class="chat-process">
             <el-collapse-item name="process">
               <template #title>
                 <span class="process-state" :class="processState"></span>
@@ -365,14 +365,14 @@ async function copy(): Promise<void> {
                   <div class="timeline-step is-round" :class="{ live: index === liveIndex }">
                     <div class="step-head">
                       <span class="step-title">第 {{ index + 1 }} 轮</span>
-                      <span class="step-meta" v-if="roundMeta(round)">{{ roundMeta(round) }}</span>
+                      <span v-if="roundMeta(round)" class="step-meta">{{ roundMeta(round) }}</span>
                     </div>
                   </div>
                   <!-- 思考过程：次一级的节点，点行头铺开正文（正在跑的那一轮默认铺开） -->
                   <div
+                    v-if="round.reasoning"
                     class="timeline-step is-reasoning"
                     :class="{ open: isReasoningOpen(index) }"
-                    v-if="round.reasoning"
                   >
                     <button
                       type="button"
@@ -398,14 +398,14 @@ async function copy(): Promise<void> {
                         />
                       </svg>
                     </button>
-                    <div class="step-body chat-reasoning-text" v-show="isReasoningOpen(index)">
+                    <div v-show="isReasoningOpen(index)" class="step-body chat-reasoning-text">
                       {{ round.reasoning }}
                     </div>
                   </div>
                   <!-- 工具调用：这一轮里的每次调用都是线上的一个节点 -->
                   <ToolCallList :calls="round.calls ?? []" :project-id="projectId" />
                   <!-- 中间输出：不是节点，但主轴要接着往下走（末轮的正文就是气泡里的回复，不在这里重复） -->
-                  <div class="timeline-content" v-if="round.content && index !== rounds.length - 1">
+                  <div v-if="round.content && index !== rounds.length - 1" class="timeline-content">
                     <ChatMarkdown
                       :content="round.content"
                       :project-id="projectId"
@@ -416,7 +416,7 @@ async function copy(): Promise<void> {
               </div>
             </el-collapse-item>
           </el-collapse>
-          <div class="chat-error" v-if="'failed' === message.status && !hasBody && !streaming">
+          <div v-if="'failed' === message.status && !hasBody && !streaming" class="chat-error">
             {{ message.content || '本轮未完成' }}
           </div>
           <!-- 回复正文按 Markdown 渲染（用户消息保持原文） -->
@@ -426,20 +426,20 @@ async function copy(): Promise<void> {
             :project-id="projectId"
             :conversation-id="conversationId"
           />
-          <div class="chat-content placeholder" v-else-if="idle">（无回复内容）</div>
-          <div class="chat-streaming" v-if="streaming">
+          <div v-else-if="idle" class="chat-content placeholder">（无回复内容）</div>
+          <div v-if="streaming" class="chat-streaming">
             <span class="chat-streaming-dot" />
             <span>{{ streamingText }}</span>
           </div>
         </template>
       </div>
       <!-- 气泡下方：复制 / 编辑 / 重新生成 / 分支切换 / 异常状态 / 时间 -->
-      <div class="chat-toolbar" v-if="!streaming">
+      <div v-if="!streaming" class="chat-toolbar">
         <el-button
+          v-if="hasBody"
           class="chat-action"
           link
           :title="copied ? '已复制' : '复制内容'"
-          v-if="hasBody"
           @click="copy"
         >
           <svg v-if="copied" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
@@ -473,10 +473,10 @@ async function copy(): Promise<void> {
           </svg>
         </el-button>
         <el-button
+          v-if="isUser && editable"
           class="chat-action chat-edit-action"
           link
           title="编辑后重新发送"
-          v-if="isUser && editable"
           @click="startEdit"
         >
           <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
@@ -490,10 +490,10 @@ async function copy(): Promise<void> {
           </svg>
         </el-button>
         <el-button
+          v-if="!isUser && regenerable"
           class="chat-action chat-regen"
           link
           title="重新生成"
-          v-if="!isUser && regenerable"
           @click="emit('regenerate')"
         >
           <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
@@ -515,7 +515,7 @@ async function copy(): Promise<void> {
           </svg>
         </el-button>
         <!-- 分支切换：同一处有多条分支时前后切换 -->
-        <span class="chat-branches" v-if="branch && branch.count > 1">
+        <span v-if="branch && branch.count > 1" class="chat-branches">
           <button type="button" class="branch-step" title="上一个分支" @click="emit('switch', -1)">
             <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
               <path
@@ -542,9 +542,9 @@ async function copy(): Promise<void> {
             </svg>
           </button>
         </span>
-        <span class="chat-status" v-if="!isUser && 'stopped' === message.status">已停止</span>
-        <span class="chat-status" v-else-if="!isUser && 'failed' === message.status">未完成</span>
-        <span class="chat-time" v-if="timeText">{{ timeText }}</span>
+        <span v-if="!isUser && 'stopped' === message.status" class="chat-status">已停止</span>
+        <span v-else-if="!isUser && 'failed' === message.status" class="chat-status">未完成</span>
+        <span v-if="timeText" class="chat-time">{{ timeText }}</span>
       </div>
     </div>
   </div>

@@ -4,7 +4,9 @@ import AgentDb, {
   type AgentInteractionTask,
   type AgentKind,
   type AgentSession,
-  type AgentStatus
+  type AgentStatus,
+  WAITING_SETTLED_ERROR,
+  WAITING_SETTLED_TEXT
 } from '@renderer/db/AgentDb'
 import {
   cancelAgentSession,
@@ -52,6 +54,8 @@ export const useAgentStore = defineStore('agents', () => {
     const summary = String(session.summary ?? '')
       .replace(/\s+/g, ' ')
       .trim()
+    const sessionError =
+      WAITING_SETTLED_ERROR === session.error ? WAITING_SETTLED_TEXT : session.error
     return {
       sessionId: session.id,
       parentConversationId: session.parentConversationId,
@@ -64,8 +68,8 @@ export const useAgentStore = defineStore('agents', () => {
       round: 0,
       tool: lastTrace?.tool ?? '',
       message:
-        session.error ||
-        ('waiting_user' === session.status ? '等待用户登录、扫码或处理验证码' : '') ||
+        sessionError ||
+        ('waiting_user' === session.status ? '等待用户处理授权、登录或确认' : '') ||
         ('completed' === session.status && summary ? `最近结果：${summary.slice(0, 120)}` : '') ||
         (lastTrace
           ? `${lastTrace.tool}：${'failed' === lastTrace.status ? '失败' : '已完成'}`
@@ -157,6 +161,9 @@ export const useAgentStore = defineStore('agents', () => {
         if (0 === recoveryTick % 6) void recoverInterrupted()
       }, 5000)
       await recoverInterrupted()
+      // 应用启动时不存在正在运行的主对话；上次遗留的 waiting_user 只作为可续接历史，
+      // 不再长期占用侧边栏和“正在处理”区域。
+      await settleWaiting()
       const waiting = await AgentDb.waiting()
       for (const session of waiting) {
         if (!runs.value[session.id]) runs.value[session.id] = fromSession(session)
@@ -209,6 +216,26 @@ export const useAgentStore = defineStore('agents', () => {
       if ('waiting_user' === run.status) waiting++
     }
     return { active, waiting }
+  }
+
+  /** 主轮次结束时释放该对话尚未承接的等待状态，保留会话供显式 session_id 续接。 */
+  async function settleWaiting(conversationId = ''): Promise<void> {
+    const ids = await AgentDb.settleWaiting(conversationId)
+    if (!ids.length) return
+    const at = new Date().toISOString()
+    for (const id of ids) {
+      const run = runs.value[id]
+      if (!run) continue
+      run.status = 'interrupted'
+      run.message = WAITING_SETTLED_TEXT
+      run.lastActivityAt = at
+      if (run.interaction) {
+        run.interaction.status = 'interrupted'
+        run.interaction.error = ''
+        run.interaction.completedAt = at
+        run.interaction.updatedAt = at
+      }
+    }
   }
 
   function stop(sessionId: string): boolean {
@@ -267,6 +294,7 @@ export const useAgentStore = defineStore('agents', () => {
     loadConversation,
     forConversation,
     statusForConversation,
+    settleWaiting,
     refreshStale,
     stop,
     openInspector,

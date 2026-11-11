@@ -8,11 +8,13 @@ import { createPinia } from 'pinia'
 
 import App from './App.vue'
 import router from './router'
+import { page } from './router/config'
 import { useLoadingStore } from './stores/loading'
 import { useUpdateStore } from './stores/update'
 
 const app = createApp(App)
 const pinia = createPinia()
+const standaloneDetail = window.location.hash.startsWith('#/agent-detail')
 
 app.use(pinia)
 
@@ -44,18 +46,27 @@ app.use(router)
 app.mount('#app')
 
 // 更新检查只由主窗口发起；独立子 Agent 详情窗口不应重复弹更新或占用网络。
-if (!window.location.hash.startsWith('#/agent-detail')) {
+if (!standaloneDetail) {
   void useUpdateStore(pinia).checkOnStartup()
 }
 
-// 首屏路由完成后还要等两帧，确保主界面已经绘制，再撤掉启动遮罩
-void router
-  .isReady()
-  .catch((error) => console.error('[App] Failed to restore session:', error))
-  .finally(async () => {
+void (async () => {
+  try {
+    // 已登录用户也要先在登录尺寸下完成主界面路由资源加载与首帧布局。
+    // 切换窗口尺寸放在最后，避免原生区域先变宽、主界面随后才填充。
+    await router.isReady()
+    if (!standaloneDetail && router.currentRoute.value.path !== page.login) {
+      await window.ipc
+        .setNormalSize()
+        .catch((error) => console.error('[App] Failed to resize window:', error))
+    }
     await nextTick()
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
     })
+  } catch (error) {
+    console.error('[App] Failed to restore session:', error)
+  } finally {
     releaseBoot()
-  })
+  }
+})()

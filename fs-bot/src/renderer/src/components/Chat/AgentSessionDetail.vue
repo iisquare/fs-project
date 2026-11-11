@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import type { AgentInteractionRound, AgentInteractionTask, AgentStatus } from '@renderer/db/AgentDb'
+import {
+  WAITING_SETTLED_ERROR,
+  type AgentInteractionRound,
+  type AgentInteractionTask,
+  type AgentStatus
+} from '@renderer/db/AgentDb'
 import type { AgentRunView } from '@renderer/stores/agents'
 import { useAgentStore } from '@renderer/stores/agents'
 import type { ChatMessage as ChatMessageView, ChatRound, ChatToolCall } from '@renderer/stores/chat'
@@ -116,13 +121,19 @@ const visibleTasks = computed(() => {
 const selectedTask = computed(
   () => visibleTasks.value.find((task) => task.id === selectedTaskId.value) ?? null
 )
+const selectedTaskError = computed(() => {
+  const value = String(selectedTask.value?.error ?? '').trim()
+  return WAITING_SETTLED_ERROR === value ? '' : value
+})
 const currentStatus = computed<AgentStatus>(
   () => selectedTask.value?.status ?? props.run?.status ?? 'running'
 )
 const agentLabel = computed(() => {
   const agent = props.run?.agent
   if (!agent) return '子 Agent'
-  return 'project_tools' === agent ? 'Project Tool Agent' : 'Browser Agent'
+  if ('project_tools' === agent) return 'Project Tool Agent'
+  if ('desktop' === agent) return 'Desktop Agent'
+  return 'Browser Agent'
 })
 const currentAction = computed(() => {
   const task = selectedTask.value
@@ -312,7 +323,15 @@ function duration(task: AgentInteractionTask): string {
   <section v-if="visible" class="agent-inspector-panel" :class="{ vertical, standalone }">
     <header class="compact-head">
       <span class="agent-mark" aria-hidden="true">
-        {{ run?.agent ? ('project_tools' === run.agent ? 'P' : 'B') : 'A' }}
+        {{
+          run?.agent
+            ? 'project_tools' === run.agent
+              ? 'P'
+              : 'desktop' === run.agent
+                ? 'D'
+                : 'B'
+            : 'A'
+        }}
       </span>
       <strong>{{ agentLabel }}</strong>
       <el-tag size="small" effect="plain" :type="types[currentStatus] || 'info'">
@@ -410,13 +429,9 @@ function duration(task: AgentInteractionTask): string {
                     次工具调用
                   </span>
                 </div>
-                <el-alert
-                  v-if="selectedTask.error"
-                  :title="selectedTask.error"
-                  type="error"
-                  :closable="false"
-                  show-icon
-                />
+                <div v-if="selectedTaskError" class="task-error-note" role="status">
+                  {{ selectedTaskError }}
+                </div>
                 <div class="agent-message-column">
                   <ChatMessage
                     v-for="message in selectedMessages"
@@ -517,6 +532,13 @@ function duration(task: AgentInteractionTask): string {
   flex: none;
   margin: 10px 16px 0;
   width: auto;
+}
+
+.task-error-note {
+  padding: 2px 1px;
+  color: var(--el-color-danger);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .agent-splitter {

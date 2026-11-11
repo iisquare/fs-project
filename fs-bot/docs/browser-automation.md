@@ -13,23 +13,23 @@
 
 ## 可用动作
 
-| 动作 | 主要参数 | 用途 |
-| --- | --- | --- |
-| `open` | `url` | 打开网址 |
-| `snapshot` | `maxElements` | 获取页面、可操作控件和可见文字 |
-| `click` | `ref` | 点击按钮、链接、菜单等 |
-| `fill` | `ref`、`value` | 填写输入框 |
-| `select` | `ref`、`value` / `label` | 选择下拉项 |
-| `check` / `uncheck` | `ref` | 勾选或取消勾选 |
-| `press` | `key`、`ref` | 按键或提交 |
-| `scroll` | `x`、`y` | 滚动页面 |
-| `upload` | `ref`、`path` | 为文件控件选择本机文件 |
-| `extract` | `ref`、`maxChars` | 读取控件或整页文字 |
-| `screenshot` | `fullPage` | 保存截图并返回路径 |
-| `wait` | `ms` 或 `ref` | 等待时间或控件出现 |
-| `back` / `reload` | - | 返回或刷新 |
-| `pages` / `switch` | `index` | 查看、切换标签页 |
-| `perform` | `steps` | 一次连续执行最多 30 个动作 |
+| 动作                | 主要参数                 | 用途                           |
+| ------------------- | ------------------------ | ------------------------------ |
+| `open`              | `url`                    | 打开网址                       |
+| `snapshot`          | `maxElements`            | 获取页面、可操作控件和可见文字 |
+| `click`             | `ref`                    | 点击按钮、链接、菜单等         |
+| `fill`              | `ref`、`value`           | 填写输入框                     |
+| `select`            | `ref`、`value` / `label` | 选择下拉项                     |
+| `check` / `uncheck` | `ref`                    | 勾选或取消勾选                 |
+| `press`             | `key`、`ref`             | 按键或提交                     |
+| `scroll`            | `x`、`y`                 | 滚动页面                       |
+| `upload`            | `ref`、`path`            | 为文件控件选择本机文件         |
+| `extract`           | `ref`、`maxChars`        | 读取控件或整页文字             |
+| `screenshot`        | `fullPage`               | 保存截图并返回路径             |
+| `wait`              | `ms` 或 `ref`            | 等待时间或控件出现             |
+| `back` / `reload`   | -                        | 返回或刷新                     |
+| `pages` / `switch`  | `index`                  | 查看、切换标签页               |
+| `perform`           | `steps`                  | 一次连续执行最多 30 个动作     |
 
 `perform` 用于减少模型往返。例如：
 
@@ -61,4 +61,5 @@
 - 页面快照只扫描主页面，暂不支持 iframe 内的控件。
 - 验证码、扫码登录和 MFA 仍需要用户接管。
 - 页面控件如果没有可读名称，模型可能需要先截图，再通过 `selector` 或 `text` 后备定位。
-- 第一版只实现浏览器操作；Windows 桌面 UI Automation 尚未接入。
+- 浏览器操作仍使用页面控件快照；Windows / macOS 的用户桌面操作由独立的
+  [`desktop-automation.md`](./desktop-automation.md) 提供，第一版采用截图视觉定位。

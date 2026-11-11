@@ -138,6 +138,19 @@ export class BrowserAutomation {
   private profileKey = ''
   private sessions = new Map<string, BrowserSession>()
   private attachedPages = new WeakSet<Page>()
+  private closing = false
+  private closeCount = 0
+  private pendingLaunches = new Set<Promise<BrowserContext>>()
+  private pendingContextClosures = new Set<Promise<void>>()
+
+  private get accepting(): boolean {
+    return !this.closing && this.closeCount === 0
+  }
+
+  private assertAccepting(): void {
+    if (this.closing) throw new Error('客户端正在退出，无法继续浏览器操作')
+    if (this.closeCount > 0) throw new Error('浏览器正在关闭，请稍后重试')
+  }
 
   init(runtimeDir: string): void {
     this.root = join(runtimeDir, 'userdata', 'automation')
@@ -159,18 +172,26 @@ export class BrowserAutomation {
 
   /** 让 Playwright 使用机器上已安装的 Edge / Chrome，避免第一版额外下载一套 Chromium。 */
   private async ensureContext(userId: unknown): Promise<BrowserContext> {
+    this.assertAccepting()
     const nextProfile = this.profileDir(userId)
     if (this.context && nextProfile === this.profileKey) return this.context
     if (this.context) {
       const previous = this.context
       this.context = null
       this.profileKey = ''
-      await previous.close().catch(() => undefined)
+      const closing = previous.close().catch(() => undefined)
+      this.pendingContextClosures.add(closing)
+      try {
+        await closing
+      } finally {
+        this.pendingContextClosures.delete(closing)
+      }
     }
 
     const failures: string[] = []
     for (const channel of ['msedge', 'chrome']) {
-      try {
+      this.assertAccepting()
+      const launch = (async () => {
         const context = await chromium.launchPersistentContext(nextProfile, {
           channel,
           headless: false,
@@ -183,6 +204,18 @@ export class BrowserAutomation {
             '--disable-blink-features=AutomationControlled'
           ]
         })
+        // 启动窗口可能和退出清理并发：清理先到就把刚启动的浏览器立即关掉，
+        // 不能让 closeAll 只等待 launch、却不等它随后的关闭完成。
+        if (!this.accepting) {
+          await context.close().catch(() => undefined)
+          if (this.closing) throw new Error('客户端正在退出，无法启动浏览器操作')
+          throw new Error('浏览器正在关闭，请稍后重试')
+        }
+        return context
+      })()
+      this.pendingLaunches.add(launch)
+      try {
+        const context = await launch
         context.setDefaultTimeout(DEFAULT_TIMEOUT)
         context.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT)
         context.on('close', () => {
@@ -196,6 +229,8 @@ export class BrowserAutomation {
         return context
       } catch (error) {
         failures.push(`${channel}: ${error instanceof Error ? error.message : String(error)}`)
+      } finally {
+        this.pendingLaunches.delete(launch)
       }
     }
     throw new Error(
@@ -750,6 +785,7 @@ export class BrowserAutomation {
   async run(request: BrowserOperationRequest): Promise<BrowserOperationResult> {
     if (!request || typeof request.action !== 'string') throw new Error('缺少浏览器动作')
     if (!this.root) throw new Error('浏览器自动化尚未初始化')
+    this.assertAccepting()
     const { session, page } = await this.sessionFor(request.userId, request.conversationId)
     const context = this.context
     if (!context) throw new Error('浏览器上下文不可用')
@@ -793,11 +829,25 @@ export class BrowserAutomation {
   }
 
   async closeAll(): Promise<void> {
-    const context = this.context
-    this.context = null
-    this.profileKey = ''
-    this.sessions.clear()
-    if (context) await context.close().catch(() => undefined)
+    this.closeCount++
+    try {
+      // 等已经发出的 launch 与正在关闭的旧 Context 完成，再拿最终要关闭的上下文。
+      // closeCount 让启动中的任务看到“正在关闭”，又能在注销后重新开放浏览器。
+      await Promise.allSettled([...this.pendingLaunches, ...this.pendingContextClosures])
+      const context = this.context
+      this.context = null
+      this.profileKey = ''
+      this.sessions.clear()
+      if (context) await context.close().catch(() => undefined)
+    } finally {
+      this.closeCount--
+    }
+  }
+
+  /** 客户端退出专用：先禁止新的浏览器任务，再关闭所有已启动与启动中的浏览器。 */
+  async shutdown(): Promise<void> {
+    this.closing = true
+    await this.closeAll()
   }
 }
 

@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-
 import { createHash } from 'node:crypto'
 import {
   accessSync,
@@ -329,6 +327,7 @@ allowBuilds:
   electron: true
   electron-winstaller: true
   esbuild: true
+  koffi: false
 
 onlyBuiltDependencies:
   - '@parcel/watcher'
@@ -339,6 +338,8 @@ onlyBuiltDependencies:
 
 overrides:
   esbuild: ${COMPAT.esbuild}
+  '@nut-tree-fork/node-mac-permissions': npm:@computer-use/node-mac-permissions@2.2.2
+  follow-redirects: 1.16.2
 `
   )
 
@@ -365,7 +366,12 @@ overrides:
       },
       'package.json'
     ],
-    asarUnpack: ['resources/**', 'node_modules/better-sqlite3-multiple-ciphers/**'],
+    asarUnpack: [
+      'resources/**',
+      'node_modules/better-sqlite3-multiple-ciphers/**',
+      'node_modules/@nut-tree-fork/**',
+      'node_modules/@computer-use/**'
+    ],
     mac: {
       category: 'public.app-category.productivity',
       target: [
@@ -422,6 +428,29 @@ function installedPackageVersion(packageName) {
   }
 }
 
+function installedNutMacPermissionsVersion() {
+  const pnpmDir = join(envDir, 'node_modules', '.pnpm')
+  let entries = []
+  try {
+    entries = readdirSync(pnpmDir, { withFileTypes: true })
+  } catch {
+    return null
+  }
+  const match = entries.find(
+    (entry) => entry.isDirectory() && entry.name.startsWith('@computer-use+node-mac-permissions@')
+  )
+  if (!match) return null
+  const packageDir = join(
+    pnpmDir,
+    match.name,
+    'node_modules',
+    '@computer-use',
+    'node-mac-permissions'
+  )
+  if (!existsSync(join(packageDir, 'build', 'Release', 'permissions.node'))) return null
+  return match.name.slice('@computer-use+node-mac-permissions@'.length)
+}
+
 function packageBinEntry(baseDir, packageName, binName) {
   const packageDir = join(baseDir, 'node_modules', packageName)
   const manifest = JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8'))
@@ -439,10 +468,12 @@ function packageBinEntry(baseDir, packageName, binName) {
 
 function compatibilityRuntimeIsReady() {
   const installedVite = installedPackageVersion('vite')
+  const installedPermissions = installedNutMacPermissionsVersion()
   const versionsMatch =
     installedPackageVersion('electron') === COMPAT.electron &&
     installedVite?.startsWith('7.2.') &&
-    installedPackageVersion('esbuild') === COMPAT.esbuild
+    installedPackageVersion('esbuild') === COMPAT.esbuild &&
+    ('darwin' !== process.platform || installedPermissions === '2.2.2')
 
   return (
     versionsMatch &&
@@ -513,12 +544,12 @@ function ensureDependencies() {
   if (rebuild.status !== 0) {
     die('native dependency rebuild for Electron failed')
   }
-
   if (!compatibilityRuntimeIsReady()) {
     const detected = {
       electron: installedPackageVersion('electron'),
       vite: installedPackageVersion('vite'),
-      esbuild: installedPackageVersion('esbuild')
+      esbuild: installedPackageVersion('esbuild'),
+      'node-mac-permissions': installedNutMacPermissionsVersion()
     }
     die(
       'the compatibility dependency installation is incomplete or has ' +
@@ -848,6 +879,7 @@ async function main() {
   const arch = currentArchitecture(command === 'build')
   writeEnvironmentFiles(arch)
   ensureDependencies()
+  info(`node-mac-permissions: ${installedNutMacPermissionsVersion()}`)
 
   if (command === 'install') {
     info('Compatibility environment is ready')

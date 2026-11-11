@@ -59,9 +59,7 @@ export const useConversationStore = defineStore('conversation', () => {
   onMessageLanded(markActive)
   // 一轮真正收尾后再发下一条：模型流结束不等于落库结束，必须等 chat store 的收尾
   onRunSettled((conversationId) => {
-    void drain(conversationId).catch((error) => {
-      console.error('Queued send failed:', error)
-    })
+    void settleAndDrain(conversationId)
   })
   // 轮次循环里的插入点：chat store 在每次模型往返边界问这里有没有新消息
   onQueuedPending((conversationId) => queuedOf(conversationId).length > 0)
@@ -78,6 +76,21 @@ export const useConversationStore = defineStore('conversation', () => {
       ? conversations.value.filter((item) => item.projectId === filterProjectId.value)
       : conversations.value
   )
+
+  /**
+   * 主对话的一轮完整结束后，先释放未再承接的 waiting_user 状态，再发送排队消息。
+   * 这样旧子 Agent 不会在下一次主对话都结束时仍占着“等待用户 / 正在处理”。
+   */
+  async function settleAndDrain(conversationId: string): Promise<void> {
+    await useAgentStore()
+      .settleWaiting(conversationId)
+      .catch((error) => {
+        console.warn('[Conversation] Failed to settle waiting agents:', error)
+      })
+    await drain(conversationId).catch((error) => {
+      console.error('Queued send failed:', error)
+    })
+  }
 
   /** 列表按最后一条消息的时间倒序：时间相同（同一毫秒）时保持原有先后 */
   function sortConversations(): void {

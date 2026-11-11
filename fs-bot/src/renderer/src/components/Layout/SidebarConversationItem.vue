@@ -109,13 +109,24 @@ function onMenuCommand(command: string): void {
     <!-- 行右侧：待确认 / 运行状态 + 更多操作（重命名与删除收进菜单，常显不占额外宽度） -->
     <div class="conv-side">
       <span class="conv-status" aria-label="会话执行状态">
-        <span v-if="waiting" class="conv-waiting" title="有访问申请待确认">●</span>
-        <span v-if="running" class="conv-running" title="对话进行中">●</span>
-        <span v-if="agentActive" class="conv-agent" title="子 Agent 执行中"></span>
+        <span
+          v-if="waiting"
+          class="conv-waiting"
+          title="有访问申请待确认"
+          aria-hidden="true"
+        ></span>
+        <span v-if="running" class="conv-running" title="对话进行中" aria-hidden="true"></span>
+        <span
+          v-if="agentActive"
+          class="conv-agent"
+          title="子 Agent 执行中"
+          aria-hidden="true"
+        ></span>
         <span
           v-if="agentWaiting"
           class="conv-agent is-waiting"
           title="子 Agent 正在等待用户"
+          aria-hidden="true"
         ></span>
       </span>
       <el-dropdown
@@ -280,23 +291,32 @@ function onMenuCommand(command: string): void {
 }
 
 .conv-running {
+  display: block;
+  flex: none;
   width: 7px;
   height: 7px;
+  padding: 0;
   border-radius: 50%;
   background: var(--el-color-success);
 }
 
 /* 待确认用警示色：和「运行中」的绿点并排时不至于看混 */
 .conv-waiting {
+  display: block;
+  flex: none;
   width: 7px;
   height: 7px;
+  padding: 0;
   border-radius: 50%;
   background: var(--el-color-warning);
 }
 
 .conv-agent {
+  display: block;
+  flex: none;
   width: 7px;
   height: 7px;
+  padding: 0;
   border-radius: 50%;
   background: var(--el-color-primary);
   animation: agent-pulse 1s ease-in-out infinite;

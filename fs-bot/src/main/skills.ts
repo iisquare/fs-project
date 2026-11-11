@@ -7,10 +7,16 @@ import {
   statSync,
   writeFileSync
 } from 'fs'
-import { get as httpGet } from 'http'
+import { get as httpGet, type IncomingMessage } from 'http'
 import { get as httpsGet } from 'https'
 import { join, resolve, sep } from 'path'
 import { extract } from './archive'
+import {
+  ClientUpgradeRequiredError,
+  clientRequestHeaders,
+  isClientUpgradeResponse,
+  type ClientMeta
+} from '../shared/client'
 
 /**
  * 本地技能目录：技能包由服务端下发（/agent/skillVersion/package），下载后解压到 <运行目录>/skills，
@@ -57,6 +63,8 @@ export interface SkillFileContent {
 export interface SkillInstallRequest {
   baseUrl: string
   token: string
+  /** 主进程在请求前注入；渲染进程只提供接口地址与登录令牌 */
+  client: ClientMeta
   skillId: number
   skillName: string
   versionId: number
@@ -124,7 +132,7 @@ export class SkillManager {
     const name = resolveName(request.skillName)
     const target = this.target(name)
     const url = buildUrl(request.baseUrl, `/agent/skillVersion/package?id=${request.versionId}`)
-    const buffer = await download(url, request.token)
+    const buffer = await download(url, request.token, request.client, new URL(url).origin)
     if (target !== resolve(this.root)) {
       rmSync(target, { recursive: true, force: true })
     }
@@ -367,18 +375,30 @@ function buildUrl(baseUrl: string, path: string): string {
   return base + path
 }
 
-/** 下载文件：手动跟随重定向（服务端返回文件服务地址），每次请求都带上登录态 */
-function download(url: string, token: string, redirect = 0): Promise<Buffer> {
+/**
+ * 下载文件：手动跟随重定向（服务端返回文件服务地址）。
+ * 业务接口始终带客户端版本上下文；令牌与客户端标识只发送到最初的应用域名，
+ * 跳到文件服务等外域时只使用重定向地址自身的访问控制，避免把登录态带给第三方来源。
+ */
+function download(
+  url: string,
+  token: string,
+  client: ClientMeta | null,
+  apiOrigin: string,
+  redirect = 0
+): Promise<Buffer> {
   return new Promise((resolvePromise, reject) => {
     const request = new URL(url)
-    const client = 'https:' === request.protocol ? httpsGet : httpGet
-    const req = client(
+    const transport = 'https:' === request.protocol ? httpsGet : httpGet
+    const headers: Record<string, string> = {
+      Accept: 'application/octet-stream, application/zip, */*'
+    }
+    if (client) Object.assign(headers, clientRequestHeaders(client))
+    if (token) headers.Authorization = 'Bearer ' + token
+    const req = transport(
       url,
       {
-        headers: {
-          Accept: 'application/octet-stream, application/zip, */*',
-          ...(token ? { Authorization: 'Bearer ' + token } : {})
-        },
+        headers,
         timeout: DOWNLOAD_TIMEOUT
       },
       (res) => {
@@ -389,13 +409,46 @@ function download(url: string, token: string, redirect = 0): Promise<Buffer> {
             reject(new Error('下载技能包失败：重定向次数过多'))
             return
           }
-          const next = new URL(res.headers.location, url).toString()
-          download(next, token, redirect + 1).then(resolvePromise, reject)
+          const next = new URL(res.headers.location, url)
+          const sameOrigin = next.origin === apiOrigin
+          download(
+            next.toString(),
+            sameOrigin ? token : '',
+            sameOrigin ? client : null,
+            apiOrigin,
+            redirect + 1
+          ).then(resolvePromise, reject)
           return
         }
         if (status < 200 || status >= 300) {
-          res.resume()
-          reject(new Error(`下载技能包失败：HTTP ${status}`))
+          void readResponseText(res)
+            .then((text) => {
+              let payload: unknown = null
+              try {
+                payload = JSON.parse(text)
+              } catch {
+                payload = null
+              }
+              if (isClientUpgradeResponse(status, payload)) {
+                const message = (payload as { message?: unknown }).message
+                reject(
+                  new ClientUpgradeRequiredError(
+                    String(message ?? '') || `下载技能包失败：客户端需要升级（HTTP ${status}）`,
+                    status
+                  )
+                )
+                return
+              }
+              const detail = String(text ?? '').trim()
+              reject(
+                new Error(
+                  detail
+                    ? `下载技能包失败（HTTP ${status}）：${detail.slice(0, 200)}`
+                    : `下载技能包失败：HTTP ${status}`
+                )
+              )
+            })
+            .catch(reject)
           return
         }
         const chunks: Buffer[] = []
@@ -408,5 +461,22 @@ function download(url: string, token: string, redirect = 0): Promise<Buffer> {
       req.destroy(new Error('下载技能包超时'))
     })
     req.on('error', reject)
+  })
+}
+
+/** 错误响应只保留开头足够解析业务报文即可，避免异常时把整页内容读进内存。 */
+function readResponseText(response: IncomingMessage, limit = 8192): Promise<string> {
+  return new Promise((resolvePromise, reject) => {
+    const chunks: Buffer[] = []
+    let size = 0
+    response.on('data', (chunk: Buffer) => {
+      if (size >= limit) return
+      const remain = limit - size
+      const part = chunk.subarray(0, remain)
+      chunks.push(part)
+      size += part.length
+    })
+    response.on('end', () => resolvePromise(Buffer.concat(chunks).toString('utf8')))
+    response.on('error', reject)
   })
 }

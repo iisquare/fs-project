@@ -1,39 +1,39 @@
 const DataUtil = {
-  isString (value: any) {
+  isString(value: any) {
     return typeof value === 'string'
   },
-  isNumber (value: any) {
+  isNumber(value: any) {
     return typeof value === 'number' && !isNaN(value)
   },
-  isArray (value: any) {
+  isArray(value: any) {
     return Array.isArray(value)
   },
-  isObject (value: any) {
+  isObject(value: any) {
     return value !== null && typeof value === 'object' && !Array.isArray(value)
   },
-  isBoolean (value: any) {
+  isBoolean(value: any) {
     return typeof value === 'boolean'
   },
-  isFunction (value: any) {
+  isFunction(value: any) {
     return typeof value === 'function'
   },
-  isUndefined (value: any) {
+  isUndefined(value: any) {
     return typeof value === 'undefined'
   },
-  isNull (value: any) {
+  isNull(value: any) {
     return value === null
   },
-  isSymbol (value: any) {
+  isSymbol(value: any) {
     return typeof value === 'symbol'
   },
-  trim (str: any, charlist = ' ') {
+  trim(str: any, charlist = ' ') {
     if (this.isUndefined(str) || this.isNull(str)) return ''
     if (!this.isString(str)) return ''
     str = str.replace(new RegExp('^[' + charlist + ']+'), '')
     str = str.replace(new RegExp('[' + charlist + ']+$'), '')
     return str
   },
-  empty (data: any) {
+  empty(data: any) {
     if (this.isUndefined(data) || this.isNull(data)) return true
     if (this.isArray(data) && data.length < 1) return true
     if (this.isObject(data) && Object.getOwnPropertyNames(data).length < 1) return true
@@ -47,7 +47,7 @@ const DataUtil = {
    * @param {Array} remove [ '目标数据字段' ]
    * @returns 目标数据
    */
-  filtration (obj: any, remain: any, remove: any) {
+  filtration(obj: any, remain: any, remove: any) {
     if (!obj) return obj
     const result: any = Array.isArray(obj) ? [] : {}
     for (const field in obj) {
@@ -74,7 +74,7 @@ const DataUtil = {
     }
     return result
   },
-  values (obj: any, field: any) {
+  values(obj: any, field: any) {
     const result: any = Array.isArray(obj) ? [] : {}
     for (const index in obj) {
       if (field instanceof String) {
@@ -85,7 +85,7 @@ const DataUtil = {
     }
     return result
   },
-  value (obj: any, field: string) {
+  value(obj: any, field: string) {
     if (!field) return undefined
     const fields = field.split('.')
     let value = obj
@@ -94,7 +94,7 @@ const DataUtil = {
     }
     return value
   },
-  array2map (rows: any, key = 'id') {
+  array2map(rows: any, key = 'id') {
     const result: any = {}
     for (const index in rows) {
       const item = rows[index]
@@ -102,13 +102,13 @@ const DataUtil = {
     }
     return result
   },
-  removeArrayItem (arr: any, items: any) {
+  removeArrayItem(arr: any, items: any) {
     for (let index = arr.length - 1; index >= 0; index--) {
       if (items.includes(arr[index])) {
         arr.splice(index, 1)
       }
     }
     return arr
-  },
+  }
 }
 export default DataUtil

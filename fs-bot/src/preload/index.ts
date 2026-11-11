@@ -1,5 +1,12 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
+import { CLIENT_UPGRADE_REQUIRED_CHANNEL } from '../shared/client'
+
+/** 沙箱 preload 只暴露渲染层真正需要的只读环境信息。 */
+const electronAPI = Object.freeze({
+  process: Object.freeze({
+    platform: process.platform
+  })
+})
 
 const ipc = {
   // 拖进对话区的文件 / 文件夹：File 对象只在渲染进程手里，路径只能由 preload 用 webUtils 取
@@ -30,6 +37,12 @@ const ipc = {
   isMaximized: () => ipcRenderer.invoke('window:is-maximized'),
   appVersions: () => ipcRenderer.invoke('app:versions'),
   clientMeta: () => ipcRenderer.invoke('app:client-meta'),
+  /** 主进程直发请求命中版本闸门时触发；与普通 API 的窗口事件汇入同一升级流程 */
+  onClientUpgradeRequired: (callback: () => void) => {
+    const listener = (): void => callback()
+    ipcRenderer.on(CLIENT_UPGRADE_REQUIRED_CHANNEL, listener)
+    return () => ipcRenderer.removeListener(CLIENT_UPGRADE_REQUIRED_CHANNEL, listener)
+  },
   update: {
     downloadAndInstall: (request: {
       url: string
@@ -253,7 +266,27 @@ const ipc = {
       conversationId?: string
       action: string
       args?: Record<string, unknown>
-    }) => ipcRenderer.invoke('automation:browser', request)
+    }) => ipcRenderer.invoke('automation:browser', request),
+    desktop: (request: {
+      projectId?: string
+      conversationId?: string
+      sourceSessionId?: string
+      action: string
+      args?: Record<string, unknown>
+    }) => ipcRenderer.invoke('automation:desktop', request),
+    desktopStatus: () => ipcRenderer.invoke('automation:desktop:status'),
+    openDesktopPermissionSettings: (permission: string) =>
+      ipcRenderer.invoke('automation:desktop:open-permission-settings', { permission }),
+    setDesktopEnabled: (enabled: boolean) =>
+      ipcRenderer.invoke('automation:desktop:set-enabled', { enabled }),
+    onDesktopUnavailable: (callback: (notice: unknown) => void) => {
+      const listener = (_: unknown, notice: unknown): void => callback(notice)
+      ipcRenderer.on('automation:desktop:unavailable', listener)
+      return () => ipcRenderer.removeListener('automation:desktop:unavailable', listener)
+    },
+    releaseDesktopUnavailable: () => ipcRenderer.invoke('automation:desktop:release-unavailable'),
+    setDesktopApprovalPolicy: (policy: string) =>
+      ipcRenderer.invoke('automation:desktop:set-approval-policy', { policy })
   },
   agent: {
     open: (sessionId: string) => ipcRenderer.invoke('agent-window:open', { sessionId }),

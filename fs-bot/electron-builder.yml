@@ -1,4 +1,4 @@
-appId: com.electron.app
+appId: com.iisquare.fs.bot
 productName: fs-bot
 directories:
   buildResources: build
@@ -9,6 +9,10 @@ files:
 asarUnpack:
   - resources/**
   - node_modules/better-sqlite3-multiple-ciphers/**
+  - node_modules/@nut-tree-fork/**
+  - node_modules/@computer-use/**
+  - node_modules/koffi/**
+  - node_modules/@koromix/koffi-*/**
 win:
   executableName: fs-bot
 nsis:

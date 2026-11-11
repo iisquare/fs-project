@@ -110,6 +110,12 @@ export interface Project {
    * 打开后长期记忆随每轮请求下发，模型才能按用户明确要求读写它。
    */
   memoryEnabled: boolean
+  /** 是否允许主 Agent 委派 Browser Agent：默认关闭 */
+  browserAgentEnabled: boolean
+  /** 是否允许主 Agent 委派 Project Tool Agent：默认关闭 */
+  projectToolAgentEnabled: boolean
+  /** 是否允许主 Agent 委派 Desktop Agent：默认关闭 */
+  desktopAgentEnabled: boolean
   /** 思考强度：low | medium | high | max，留空则由模型与网关取默认值 */
   thinkEffort: string
   name: string
@@ -148,6 +154,9 @@ function format(row: Record<string, unknown>): Project {
     systemPrompt: String(row['system_prompt'] ?? ''),
     memory: String(row['memory'] ?? ''),
     memoryEnabled: 1 === Number(row['memory_enabled'] ?? 0),
+    browserAgentEnabled: 1 === Number(row['browser_agent_enabled'] ?? 0),
+    projectToolAgentEnabled: 1 === Number(row['project_tool_agent_enabled'] ?? 0),
+    desktopAgentEnabled: 1 === Number(row['desktop_agent_enabled'] ?? 0),
     thinkEffort: String(row['think_effort'] ?? ''),
     name: String(row['name'] ?? ''),
     description: String(row['description'] ?? ''),
@@ -188,6 +197,9 @@ export default {
       system_prompt: data.systemPrompt ?? '',
       memory: data.memory ?? '',
       memory_enabled: true === data.memoryEnabled ? 1 : 0,
+      browser_agent_enabled: true === data.browserAgentEnabled ? 1 : 0,
+      project_tool_agent_enabled: true === data.projectToolAgentEnabled ? 1 : 0,
+      desktop_agent_enabled: true === data.desktopAgentEnabled ? 1 : 0,
       think_effort: data.thinkEffort ?? '',
       name: data.name ?? '未命名项目',
       description: data.description ?? '',
@@ -215,6 +227,15 @@ export default {
     if (data.memory !== undefined) row['memory'] = data.memory
     if (data.memoryEnabled !== undefined) {
       row['memory_enabled'] = true === data.memoryEnabled ? 1 : 0
+    }
+    if (data.browserAgentEnabled !== undefined) {
+      row['browser_agent_enabled'] = true === data.browserAgentEnabled ? 1 : 0
+    }
+    if (data.projectToolAgentEnabled !== undefined) {
+      row['project_tool_agent_enabled'] = true === data.projectToolAgentEnabled ? 1 : 0
+    }
+    if (data.desktopAgentEnabled !== undefined) {
+      row['desktop_agent_enabled'] = true === data.desktopAgentEnabled ? 1 : 0
     }
     if (data.thinkEffort !== undefined) row['think_effort'] = data.thinkEffort
     if (data.name !== undefined) row['name'] = data.name

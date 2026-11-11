@@ -96,8 +96,79 @@ DOMPurify.addHook('afterSanitizeAttributes', (node: Node) => {
 export function renderMarkdown(text: string, options: MarkdownOptions = {}): string {
   const value = String(text ?? '')
   if (!value) return ''
-  const rendered = marked.parse(value, { ...options, async: false })
+  const rendered = marked.parser(tokensOf(value), {
+    ...marked.defaults,
+    ...options,
+    async: false
+  })
   return DOMPurify.sanitize(rendered, { ADD_ATTR: ['target'], ALLOWED_URI_REGEXP: ALLOWED_URI })
+}
+
+/** 词法结果里可能继续嵌套 token 的字段（列表、引用、表格单元格等） */
+interface NestedTokens {
+  tokens?: Token[]
+  items?: Token[]
+  header?: Array<{ tokens?: Token[] }>
+  rows?: Array<Array<{ tokens?: Token[] }>>
+}
+
+/**
+ * marked 会把图片目标里的反斜杠当 Markdown 转义符处理。Windows 路径因此会被悄悄改坏，
+ * 例如 `C:\Users\Lenovo\.fs-bot\a.png` 里的 `\.` 只剩 `.`，主进程随后找不到文件。
+ *
+ * 图片原始文本仍保留在 token.raw 里，所以统一在解析器开始前把本机图片目标恢复成原文；
+ * http(s) 等普通图片地址不受影响。这里只恢复目的地，标题等 Markdown 语义仍交给 marked。
+ */
+function rawImageHref(raw: string): string {
+  const value = String(raw ?? '')
+  const marker = value.lastIndexOf('](')
+  if (marker < 0 || !value.endsWith(')')) return ''
+  const body = value.slice(marker + 2, -1).trim()
+  if (!body) return ''
+
+  // 尖括号写法允许路径里有空格：![说明](<C:\my screenshots\a.png>)
+  if (body.startsWith('<')) {
+    const end = body.indexOf('>')
+    return end > 1 ? body.slice(1, end).trim() : ''
+  }
+
+  // 普通写法的目的地到第一个未转义的空白为止，空白之后是可选标题
+  for (let index = 0; index < body.length; index++) {
+    if (!/\s/.test(body[index])) continue
+    let slashes = 0
+    for (let cursor = index - 1; cursor >= 0 && body[cursor] === '\\'; cursor--) slashes++
+    if (slashes % 2 === 0) return body.slice(0, index).trim()
+  }
+  return body.trim()
+}
+
+/** 递归恢复图片 token 的目标，其它 token 原样交给 marked */
+function restoreImageHrefs(tokens: Token[]): void {
+  for (const token of tokens) {
+    if ('image' === token.type) {
+      const href = rawImageHref(token.raw)
+      if (href) (token as Tokens.Image).href = href
+      continue
+    }
+    const nested = token as unknown as NestedTokens
+    if (Array.isArray(nested.tokens)) restoreImageHrefs(nested.tokens)
+    if (Array.isArray(nested.items)) restoreImageHrefs(nested.items)
+    if (Array.isArray(nested.header)) {
+      nested.header.forEach((cell) => cell.tokens && restoreImageHrefs(cell.tokens))
+    }
+    if (Array.isArray(nested.rows)) {
+      nested.rows.forEach((row) =>
+        row.forEach((cell) => cell.tokens && restoreImageHrefs(cell.tokens))
+      )
+    }
+  }
+}
+
+/** 统一的词法入口：所有正文渲染与图片扫描都必须先经过这里，避免路径口径各算一遍 */
+function tokensOf(text: string): Token[] {
+  const tokens = marked.lexer(String(text ?? ''))
+  restoreImageHrefs(tokens)
+  return tokens
 }
 
 /**
@@ -128,7 +199,7 @@ function imageHrefs(text: string): string[] {
       }
     }
   }
-  visit(marked.lexer(String(text ?? '')))
+  visit(tokensOf(text))
   return hrefs
 }
 
@@ -194,6 +265,7 @@ export type MarkdownPart =
 export function markdownParts(text: string, options: MarkdownOptions = {}): MarkdownPart[] {
   const value = String(text ?? '')
   if (!value) return []
+  const tokens = tokensOf(value)
   const parts: MarkdownPart[] = []
   let buffer: Token[] = []
   const render = (tokens: Token[]): string => {
@@ -210,7 +282,7 @@ export function markdownParts(text: string, options: MarkdownOptions = {}): Mark
     parts.push({ type: 'text', html: render(buffer) })
     buffer = []
   }
-  for (const token of marked.lexer(value)) {
+  for (const token of tokens) {
     if ('code' === token.type) {
       flush()
       parts.push({

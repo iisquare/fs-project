@@ -15,7 +15,10 @@ export function computeTablesHash(key: Buffer, db: Database.Database, ddl: strin
   const tables = extractTableNames(ddl)
   const parts: string[] = []
   for (const table of tables) {
-    const rows = db.prepare(`SELECT * FROM "${table}" ORDER BY 1`).all() as Record<string, unknown>[]
+    const rows = db.prepare(`SELECT * FROM "${table}" ORDER BY 1`).all() as Record<
+      string,
+      unknown
+    >[]
     const serialized = rows.map((r) => JSON.stringify(r)).join(';')
     parts.push(`${table}:${serialized}`)
   }

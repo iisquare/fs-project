@@ -4,9 +4,14 @@ allowBuilds:
   electron: true
   electron-winstaller: true
   esbuild: true
+  koffi: false
 
 minimumReleaseAgeExclude:
   - sass@1.105.2
+
+overrides:
+  '@nut-tree-fork/node-mac-permissions': npm:@computer-use/node-mac-permissions@2.2.2
+  follow-redirects: 1.16.2
 
 onlyBuiltDependencies:
   - '@parcel/watcher'

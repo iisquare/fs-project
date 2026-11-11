@@ -23,13 +23,10 @@ defineProps<{
       fill="none"
       stroke="currentColor"
       stroke-width="1.2"
-      stroke-linejoin="round" />
+      stroke-linejoin="round"
+    />
     <template v-if="'ask' === mode">
-      <path
-        d="M8 5.4v2.9"
-        stroke="currentColor"
-        stroke-width="1.3"
-        stroke-linecap="round" />
+      <path d="M8 5.4v2.9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
       <circle cx="8" cy="10.5" r="0.8" fill="currentColor" />
     </template>
     <path
@@ -39,20 +36,23 @@ defineProps<{
       stroke="currentColor"
       stroke-width="1.3"
       stroke-linecap="round"
-      stroke-linejoin="round" />
+      stroke-linejoin="round"
+    />
     <path
       v-else-if="'deny' === mode"
       d="M6.2 6.2l3.6 3.6M9.8 6.2l-3.6 3.6"
       stroke="currentColor"
       stroke-width="1.3"
-      stroke-linecap="round" />
+      stroke-linecap="round"
+    />
     <path
       v-else
       d="M8 3.9 11.2 5.1v3c0 2.1-1.3 3.7-3.2 4.7-1.9-1-3.2-2.6-3.2-4.7v-3L8 3.9Z"
       fill="none"
       stroke="currentColor"
       stroke-width="1"
-      stroke-linejoin="round" />
+      stroke-linejoin="round"
+    />
   </svg>
 </template>
 

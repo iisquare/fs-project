@@ -152,7 +152,7 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <el-form label-width="96px" class="share-form" v-loading="loading">
+  <el-form v-loading="loading" label-width="96px" class="share-form">
     <el-alert
       v-if="loadError"
       class="share-alert"
@@ -181,7 +181,7 @@ async function submit(): Promise<void> {
       <div class="field-tip">
         分享的是这个项目的当前配置：模型、上下文大小、系统提示词、记忆、思考强度、工具、环境变量（标了「密钥」的除外）与工作区目录。
       </div>
-      <div class="field-tip" v-if="sharingProject && !sharingProject.model">
+      <div v-if="sharingProject && !sharingProject.model" class="field-tip">
         这个项目还没配置模型：别人取用这份配置后要自己补一个模型才能跑起来。
       </div>
     </el-form-item>
@@ -198,7 +198,7 @@ async function submit(): Promise<void> {
       <div class="field-tip">
         选择已有的分享项目就是在它下面追加一个版本；新建会在服务端建一个新的分享项目。
       </div>
-      <div class="field-tip" v-if="shareStore.mineTotal > shareStore.mine.length">
+      <div v-if="shareStore.mineTotal > shareStore.mine.length" class="field-tip">
         这里只列出了已载入的 {{ shareStore.mine.length }} 个（共 {{ shareStore.mineTotal }} 个）：
         在「我的分享」里点「加载更多」后回来，剩下的分享项目也会出现在这里。
       </div>
@@ -211,10 +211,10 @@ async function submit(): Promise<void> {
     </el-form-item>
     <el-form-item label="版本号">
       <el-input v-model="form.version" placeholder="如 1.0 / 2026-10-14" />
-      <div class="field-tip" v-if="targetLatest()">
+      <div v-if="targetLatest()" class="field-tip">
         该分享项目最近一次发布的版本是 v{{ targetLatest() }}，已按它给出建议版本号。
       </div>
-      <div class="field-tip" v-else>版本号由你决定，用于在版本记录里区分这次发布。</div>
+      <div v-else class="field-tip">版本号由你决定，用于在版本记录里区分这次发布。</div>
     </el-form-item>
     <el-form-item label="版本说明">
       <el-input

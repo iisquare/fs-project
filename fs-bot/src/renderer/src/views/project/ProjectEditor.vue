@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import { useProjectStore } from '@renderer/stores/project'
 import { useCatalogStore } from '@renderer/stores/catalog'
 import { useSkillStore } from '@renderer/stores/skill'
+import { useSettingsStore } from '@renderer/stores/settings'
 import ApiUtil from '@renderer/utils/ApiUtil'
 import { errorMessage } from '@renderer/utils/ErrorUtil'
 import { formatTokens } from '@renderer/core/Tokens'
@@ -49,6 +50,7 @@ const emit = defineEmits<{
 const projectStore = useProjectStore()
 const catalogStore = useCatalogStore()
 const skillStore = useSkillStore()
+const settingsStore = useSettingsStore()
 
 interface ProjectForm {
   id: string
@@ -57,6 +59,9 @@ interface ProjectForm {
   systemPrompt: string
   memory: string
   memoryEnabled: boolean
+  browserAgentEnabled: boolean
+  projectToolAgentEnabled: boolean
+  desktopAgentEnabled: boolean
   thinkEffort: string
   name: string
   description: string
@@ -101,8 +106,37 @@ const searching = ref(false)
 const toolSearchError = ref('')
 const editorLoading = ref(false)
 const editorError = ref('')
+const desktopStatusLoaded = ref(false)
 
 const isEdit = computed(() => Boolean(form.value.id))
+
+/** 项目允许委派还不够，系统设置中的桌面操作总开关也必须开启 */
+const desktopSetupRequired = computed(
+  () =>
+    desktopStatusLoaded.value &&
+    form.value.desktopAgentEnabled &&
+    settingsStore.desktopAutomationSupported &&
+    !settingsStore.desktopAutomationEnabled
+)
+
+async function refreshDesktopStatus(): Promise<void> {
+  try {
+    await settingsStore.refreshDesktopStatus()
+    desktopStatusLoaded.value = true
+  } catch {
+    // 状态读取失败时不展示可能错误的操作引导；系统设置页仍会给出具体错误。
+    desktopStatusLoaded.value = false
+  }
+}
+
+onMounted(() => {
+  void refreshDesktopStatus()
+  window.addEventListener('focus', refreshDesktopStatus)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('focus', refreshDesktopStatus)
+})
 
 /** 当前模型在服务端声明的上下文窗口：手工值留 0 时就是按它算比例 */
 const declaredContextText = computed(() => {
@@ -147,6 +181,9 @@ function emptyForm(): ProjectForm {
     systemPrompt: '',
     memory: '',
     memoryEnabled: false,
+    browserAgentEnabled: false,
+    projectToolAgentEnabled: false,
+    desktopAgentEnabled: false,
     thinkEffort: '',
     name: '',
     description: '',
@@ -168,6 +205,9 @@ function load(project: Project | null) {
         systemPrompt: project.systemPrompt,
         memory: project.memory,
         memoryEnabled: project.memoryEnabled,
+        browserAgentEnabled: project.browserAgentEnabled,
+        projectToolAgentEnabled: project.projectToolAgentEnabled,
+        desktopAgentEnabled: project.desktopAgentEnabled,
         thinkEffort: project.thinkEffort,
         name: project.name,
         description: project.description,
@@ -667,6 +707,9 @@ async function submit(): Promise<string> {
       systemPrompt: form.value.systemPrompt,
       memory: form.value.memory,
       memoryEnabled: form.value.memoryEnabled,
+      browserAgentEnabled: form.value.browserAgentEnabled,
+      projectToolAgentEnabled: form.value.projectToolAgentEnabled,
+      desktopAgentEnabled: form.value.desktopAgentEnabled,
       thinkEffort: form.value.thinkEffort,
       name: form.value.name,
       description: form.value.description,
@@ -732,10 +775,10 @@ async function share(): Promise<void> {
 <template>
   <el-form
     ref="formRef"
+    v-loading="editorLoading"
     :model="form"
     label-width="96px"
     class="project-editor"
-    v-loading="editorLoading"
   >
     <el-alert
       v-if="editorError"
@@ -887,53 +930,47 @@ async function share(): Promise<void> {
     <section class="section">
       <div class="section-head">
         <div class="section-label">
-          <span class="section-title">环境变量</span>
-          <span class="section-count">{{ form.envVars.length }}</span>
+          <span class="section-title">工作区</span>
+          <span class="section-count">{{ form.workspace.length }}</span>
         </div>
         <div class="section-actions">
-          <el-button @click="addEnv">添加变量</el-button>
+          <el-button @click="addWorkspace">添加目录</el-button>
         </div>
       </div>
       <div class="section-note">
-        <div>
-          执行本机命令（run_command）时带进进程环境；非密钥的值会写入本机说明，随模型请求发送。
-        </div>
-        <div>标为「密钥」的值不下发，仅在本机执行时使用，命令输出中显示为 ***。</div>
-        <div>
-          变量名用字母或下划线开头、只含字母 / 数字 / 下划线（不合规的行不生效）；值不做变量展开。
-        </div>
+        权限决定这个项目的会话能否读写该目录下的文件、能否在该目录下执行命令，
+        保存后立刻生效，只影响本项目。
+        主目录决定命令默认在哪个目录里执行、相对路径优先按哪个目录解析；没标主目录时用列表里的第一个。
       </div>
-      <div v-if="invalidEnvNames.length" class="section-warning">
-        变量名不合规（不会生效）：{{ invalidEnvNames.join('、') }}
-      </div>
-      <div v-if="form.envVars.length === 0" class="section-empty">暂无环境变量</div>
-      <div v-for="(item, index) in form.envVars" :key="index" class="env-row">
-        <el-input v-model="item.key" placeholder="变量名" />
-        <!-- 掩码只给「密钥」行：el-input 一开 show-password 就忽略 type，写死会让普通值也变圆点 -->
-        <el-input
-          v-model="item.value"
-          placeholder="变量值"
-          :type="item.secret ? 'password' : 'text'"
-          :show-password="item.secret"
-        >
-          <!-- 值常常就是一条路径：两个后缀按钮分别选文件 / 目录，选中的路径填进这一格 -->
+      <div v-if="form.workspace.length === 0" class="section-empty">暂无工作区目录</div>
+      <!--
+        key 用索引而不是路径：路径本身就是这一行里随手可改的输入框，
+        拿它当 key 会让每次按键都换掉整行的 DOM（输入框当场丢焦点）。
+      -->
+      <div v-for="(item, index) in form.workspace" :key="index" class="workspace-row">
+        <el-input v-model="item.path" placeholder="目录路径">
           <template #suffix>
-            <span class="env-picks">
-              <span class="path-pick" title="选择文件并填入" @click="pickEnvPath(index, 'file')">
-                <LayoutIcon name="plus.file" />
-              </span>
-              <span
-                class="path-pick"
-                title="选择目录并填入"
-                @click="pickEnvPath(index, 'directory')"
-              >
-                <LayoutIcon name="plus.folder" />
-              </span>
+            <span class="path-pick" title="重新选择这个目录" @click="changeWorkspace(index)">
+              <LayoutIcon name="plus.folder" />
             </span>
           </template>
         </el-input>
-        <el-checkbox v-model="item.secret">密钥</el-checkbox>
-        <el-button text type="danger" @click="removeEnv(index)">删除</el-button>
+        <el-radio-group v-model="item.permission">
+          <el-radio-button label="只读" value="read" />
+          <el-radio-button label="只写" value="write" />
+          <el-radio-button label="读写" value="readwrite" />
+        </el-radio-group>
+        <div class="primary-slot">
+          <el-tooltip
+            v-if="primaryIndex() === index"
+            content="命令默认在它里面执行，相对路径优先按它解析；要在它里面跑命令，权限得给写"
+            placement="top"
+          >
+            <el-tag type="warning" effect="plain" size="small">主目录</el-tag>
+          </el-tooltip>
+          <el-button v-else text @click="setPrimary(index)">设为主目录</el-button>
+        </div>
+        <el-button text type="danger" @click="removeWorkspace(index)">移除</el-button>
       </div>
     </section>
 
@@ -1107,55 +1144,134 @@ async function share(): Promise<void> {
     <section class="section">
       <div class="section-head">
         <div class="section-label">
-          <span class="section-title">工作区</span>
-          <span class="section-count">{{ form.workspace.length }}</span>
-        </div>
-        <div class="section-actions">
-          <el-button @click="addWorkspace">添加目录</el-button>
+          <span class="section-title">子 Agent</span>
         </div>
       </div>
       <div class="section-note">
-        权限决定这个项目的会话能否读写该目录下的文件、能否在该目录下执行命令，
-        保存后立刻生效，只影响本项目。
-        主目录决定命令默认在哪个目录里执行、相对路径优先按哪个目录解析；没标主目录时用列表里的第一个。
+        <div>
+          至少一种类型实际可用时才会提供delegate_agent；关闭的、无可用工具或平台不支持的类型不会出现，本地技能始终由主Agent直接调用。
+        </div>
       </div>
-      <div v-if="form.workspace.length === 0" class="section-empty">暂无工作区目录</div>
-      <!--
-        key 用索引而不是路径：路径本身就是这一行里随手可改的输入框，
-        拿它当 key 会让每次按键都换掉整行的 DOM（输入框当场丢焦点）。
-      -->
-      <div v-for="(item, index) in form.workspace" :key="index" class="workspace-row">
-        <el-input v-model="item.path" placeholder="目录路径">
+      <div class="agent-settings-card">
+        <div class="agent-setting-item">
+          <div class="agent-setting-label">
+            <span class="agent-setting-title">项目工具 Agent</span>
+            <span class="agent-setting-desc">
+              开启且有已启用的项目工具时，由独立子 Agent 执行；关闭时这些工具由主 Agent 直接调用。
+            </span>
+          </div>
+          <div class="agent-setting-action">
+            <span
+              class="agent-setting-state"
+              :class="{ 'is-enabled': form.projectToolAgentEnabled }"
+            >
+              {{ form.projectToolAgentEnabled ? '已启用' : '未启用' }}
+            </span>
+            <el-switch v-model="form.projectToolAgentEnabled" />
+          </div>
+        </div>
+        <el-divider />
+        <div class="agent-setting-item">
+          <div class="agent-setting-label">
+            <span class="agent-setting-title">浏览器 Agent</span>
+            <span class="agent-setting-desc">
+              允许主 Agent 委派网页浏览、点击、填表、登录辅助、信息提取与截图任务。
+            </span>
+          </div>
+          <div class="agent-setting-action">
+            <span class="agent-setting-state" :class="{ 'is-enabled': form.browserAgentEnabled }">
+              {{ form.browserAgentEnabled ? '已启用' : '未启用' }}
+            </span>
+            <el-switch v-model="form.browserAgentEnabled" />
+          </div>
+        </div>
+        <el-divider />
+        <div class="agent-setting-item">
+          <div class="agent-setting-label">
+            <span class="agent-setting-title">桌面 Agent</span>
+            <span class="agent-setting-desc">
+              允许主 Agent 委派本机桌面截图、窗口与鼠标键盘操作；仍需在系统设置中启用桌面子
+              Agent，并按桌面授权策略请求授权或自动允许。
+            </span>
+          </div>
+          <div class="agent-setting-action">
+            <span class="agent-setting-state" :class="{ 'is-enabled': form.desktopAgentEnabled }">
+              {{ form.desktopAgentEnabled ? '已启用' : '未启用' }}
+            </span>
+            <el-switch v-model="form.desktopAgentEnabled" />
+          </div>
+        </div>
+        <el-alert
+          v-if="desktopSetupRequired"
+          class="desktop-agent-guide"
+          type="warning"
+          :closable="false"
+          show-icon
+          title="系统设置中的「桌面操作」尚未开启"
+        >
+          <div class="desktop-agent-guide__steps">
+            <span>1. 保存当前项目配置。</span>
+            <span>2. 打开「系统设置 → 本地访问策略」，开启「桌面操作」。</span>
+          </div>
+        </el-alert>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div class="section-label">
+          <span class="section-title">环境变量</span>
+          <span class="section-count">{{ form.envVars.length }}</span>
+        </div>
+        <div class="section-actions">
+          <el-button @click="addEnv">添加变量</el-button>
+        </div>
+      </div>
+      <div class="section-note">
+        <div>
+          变量名用字母或下划线开头、只含字母 / 数字 / 下划线（不合规的行不生效）；
+          执行本机命令（run_command）时带进进程环境；非密钥的值会写入本机说明，随模型请求发送。
+        </div>
+      </div>
+      <div v-if="invalidEnvNames.length" class="section-warning">
+        变量名不合规（不会生效）：{{ invalidEnvNames.join('、') }}
+      </div>
+      <div v-if="form.envVars.length === 0" class="section-empty">暂无环境变量</div>
+      <div v-for="(item, index) in form.envVars" :key="index" class="env-row">
+        <el-input v-model="item.key" placeholder="变量名" />
+        <!-- 掩码只给「密钥」行：el-input 一开 show-password 就忽略 type，写死会让普通值也变圆点 -->
+        <el-input
+          v-model="item.value"
+          placeholder="变量值"
+          :type="item.secret ? 'password' : 'text'"
+          :show-password="item.secret"
+        >
+          <!-- 值常常就是一条路径：两个后缀按钮分别选文件 / 目录，选中的路径填进这一格 -->
           <template #suffix>
-            <span class="path-pick" title="重新选择这个目录" @click="changeWorkspace(index)">
-              <LayoutIcon name="plus.folder" />
+            <span class="env-picks">
+              <span class="path-pick" title="选择文件并填入" @click="pickEnvPath(index, 'file')">
+                <LayoutIcon name="plus.file" />
+              </span>
+              <span
+                class="path-pick"
+                title="选择目录并填入"
+                @click="pickEnvPath(index, 'directory')"
+              >
+                <LayoutIcon name="plus.folder" />
+              </span>
             </span>
           </template>
         </el-input>
-        <el-radio-group v-model="item.permission">
-          <el-radio-button label="只读" value="read" />
-          <el-radio-button label="只写" value="write" />
-          <el-radio-button label="读写" value="readwrite" />
-        </el-radio-group>
-        <div class="primary-slot">
-          <el-tooltip
-            v-if="primaryIndex() === index"
-            content="命令默认在它里面执行，相对路径优先按它解析；要在它里面跑命令，权限得给写"
-            placement="top"
-          >
-            <el-tag type="warning" effect="plain" size="small">主目录</el-tag>
-          </el-tooltip>
-          <el-button v-else text @click="setPrimary(index)">设为主目录</el-button>
-        </div>
-        <el-button text type="danger" @click="removeWorkspace(index)">移除</el-button>
+        <el-checkbox v-model="item.secret">密钥</el-checkbox>
+        <el-button text type="danger" @click="removeEnv(index)">删除</el-button>
       </div>
     </section>
 
     <div class="editor-footer">
-      <el-button @click="exportConfig" title="导出当前表单里的配置，未保存的改动也一并导出">
+      <el-button title="导出当前表单里的配置，未保存的改动也一并导出" @click="exportConfig">
         导出配置
       </el-button>
-      <el-button v-if="isEdit" @click="share" title="先保存，再发布到服务端供自己与其他人使用">
+      <el-button v-if="isEdit" title="先保存，再发布到服务端供自己与其他人使用" @click="share">
         分享
       </el-button>
       <el-button @click="cancel">取消</el-button>
@@ -1238,6 +1354,82 @@ async function share(): Promise<void> {
   padding: 2px 0 6px;
   font-size: 13px;
   color: var(--ev-c-text-3);
+}
+
+/* 子 Agent 开关沿用系统设置的分组卡片：左侧说明、右侧状态与开关 */
+.agent-settings-card {
+  padding: 14px 22px;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-card-border);
+  border-radius: var(--ui-card-radius);
+  box-shadow: var(--ui-card-shadow);
+
+  :deep(.el-divider--horizontal) {
+    margin: 0;
+    border-top-color: var(--ui-divider);
+  }
+}
+
+.agent-setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 13px 10px;
+  margin: 0 -10px;
+  border-radius: 9px;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background: color-mix(in srgb, var(--ui-surface-hover) 76%, transparent);
+  }
+}
+
+.agent-setting-label {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.agent-setting-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ev-c-text-1);
+}
+
+.agent-setting-desc {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ev-c-text-3);
+}
+
+.agent-setting-action {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+}
+
+.agent-setting-state {
+  font-size: 12px;
+  color: var(--ev-c-text-3);
+
+  &.is-enabled {
+    color: var(--el-color-primary);
+  }
+}
+
+.desktop-agent-guide {
+  margin: 0 auto;
+}
+
+.desktop-agent-guide__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.6;
 }
 
 .icon-field {

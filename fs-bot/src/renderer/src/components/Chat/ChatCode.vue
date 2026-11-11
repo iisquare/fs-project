@@ -40,12 +40,7 @@ async function copy(): Promise<void> {
   <div class="chat-code">
     <div class="code-head">
       <span class="code-lang">{{ language || '代码' }}</span>
-      <button
-        type="button"
-        class="code-copy"
-        :title="copied ? '已复制' : '复制代码'"
-        @click="copy"
-      >
+      <button type="button" class="code-copy" :title="copied ? '已复制' : '复制代码'" @click="copy">
         <svg v-if="copied" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
           <path
             d="M3.6 8.4 6.4 11.2 12.4 5"
@@ -53,7 +48,8 @@ async function copy(): Promise<void> {
             stroke="currentColor"
             stroke-width="1.5"
             stroke-linecap="round"
-            stroke-linejoin="round" />
+            stroke-linejoin="round"
+          />
         </svg>
         <svg v-else viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
           <rect
@@ -64,13 +60,15 @@ async function copy(): Promise<void> {
             rx="1.7"
             fill="none"
             stroke="currentColor"
-            stroke-width="1.2" />
+            stroke-width="1.2"
+          />
           <path
             d="M10.4 3.9H4.8a1.7 1.7 0 0 0-1.7 1.7v5.6"
             fill="none"
             stroke="currentColor"
             stroke-width="1.2"
-            stroke-linecap="round" />
+            stroke-linecap="round"
+          />
         </svg>
         <span class="code-copy-text">{{ copied ? '已复制' : '复制' }}</span>
       </button>
@@ -129,7 +127,9 @@ async function copy(): Promise<void> {
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    transition: color 0.2s, background-color 0.2s;
+    transition:
+      color 0.2s,
+      background-color 0.2s;
 
     &:hover {
       color: var(--el-color-primary);

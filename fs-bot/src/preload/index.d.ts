@@ -1,10 +1,31 @@
-import { ElectronAPI } from '@electron-toolkit/preload'
+import type { ClientMeta } from '../shared/client'
+import type {
+  DesktopAgentUnavailableNotice,
+  DesktopApprovalPolicy,
+  DesktopAutomationStatus,
+  DesktopPermissionKey
+} from '../shared/desktop'
+
+export type {
+  DesktopApprovalPolicy,
+  DesktopAgentUnavailableNotice,
+  DesktopAutomationStatus,
+  DesktopPermissionKey,
+  DesktopPermissionState,
+  DesktopPermissionStatus
+} from '../shared/desktop'
 
 /** 项目工作区目录权限：只读 / 只写 / 读写 */
 export type WorkspacePermission = 'read' | 'write' | 'readwrite'
 
 /** 工作区外文件的访问策略：请求批准 / 帮我批准 / 自动拒绝 / 完全访问权限 */
 export type WorkspacePolicy = 'ask' | 'auto' | 'deny' | 'full'
+
+export interface ClientElectronAPI {
+  process: {
+    platform: string
+  }
+}
 
 /** 一次本地访问想做什么：读文件 / 写文件 / 执行命令 */
 export type WorkspaceNeed = 'read' | 'write' | 'command'
@@ -95,7 +116,13 @@ export interface WorkspaceApproval {
   id: string
   projectId: string
   path: string
-  need: WorkspaceNeed
+  need: WorkspaceNeed | 'desktop'
+  /** 缺省按工作区访问处理；desktop 使用独立的短期任务授权，不修改工作区策略 */
+  kind?: 'workspace' | 'desktop'
+  /** 桌面操作申请的动作、标题与说明 */
+  action?: string
+  title?: string
+  detail?: string
   /** 执行命令时带上的命令原文 */
   command?: string
   /** 发起这次访问的会话：界面据此把申请交回那段对话 */
@@ -124,6 +151,14 @@ export interface BrowserOperationResult {
   url: string
   title: string
   screenshot?: string
+}
+
+export interface DesktopOperationResult {
+  text: string
+  screenshot?: string
+  image?: string
+  width?: number
+  height?: number
 }
 
 export interface InstalledSkill {
@@ -187,7 +222,7 @@ export interface SkillFileEntry {
 
 declare global {
   interface Window {
-    electron: ElectronAPI
+    electron: ClientElectronAPI
     ipc: {
       /** 拖入的文件 / 文件夹的绝对路径：取不到路径的项（不是磁盘上的文件）已过滤掉 */
       filePaths: (files: File[]) => string[]
@@ -208,13 +243,9 @@ declare global {
         platform: string
         architecture: string
       }>
-      clientMeta: () => Promise<{
-        clientVersion: string
-        platform: string
-        architecture: string
-        clientId: string
-        channel: string
-      }>
+      clientMeta: () => Promise<ClientMeta>
+      /** 主进程直发请求命中版本闸门时触发，回调返回取消注册函数 */
+      onClientUpgradeRequired: (callback: () => void) => () => void
       update: {
         downloadAndInstall: (request: {
           url: string
@@ -420,6 +451,21 @@ declare global {
           action: string
           args?: Record<string, unknown>
         }) => Promise<BrowserOperationResult>
+        desktop: (request: {
+          projectId?: string
+          conversationId?: string
+          sourceSessionId?: string
+          action: string
+          args?: Record<string, unknown>
+        }) => Promise<DesktopOperationResult>
+        desktopStatus: () => Promise<DesktopAutomationStatus>
+        openDesktopPermissionSettings: (permission: DesktopPermissionKey) => Promise<void>
+        setDesktopEnabled: (enabled: boolean) => Promise<DesktopAutomationStatus>
+        onDesktopUnavailable: (
+          callback: (notice: DesktopAgentUnavailableNotice) => void
+        ) => () => void
+        releaseDesktopUnavailable: () => Promise<boolean>
+        setDesktopApprovalPolicy: (policy: DesktopApprovalPolicy) => Promise<DesktopApprovalPolicy>
       }
       agent: {
         open: (sessionId: string) => Promise<{

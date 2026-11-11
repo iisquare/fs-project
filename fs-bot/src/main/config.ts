@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto'
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs'
 import { dirname, join } from 'path'
 import { parse, stringify } from 'smol-toml'
+import { normalizeDesktopApprovalPolicy } from './desktop-policy'
 
 /**
  * 系统级配置（原 system.db 中的 system_config 表，改为 <运行目录>/userdata/config.toml 存储；
@@ -14,6 +15,8 @@ import { parse, stringify } from 'smol-toml'
  * autoUpgrade = true
  * ignoredUpdateVersion = ""
  * workspacePolicy = "ask"
+ * desktopAutomationEnabled = false
+ * desktopApprovalPolicy = "ask"
  */
 
 /** 设置项取值：与 TOML 原生标量一致 */
@@ -38,7 +41,11 @@ const SETTINGS_SCHEMA: Record<string, SettingValue> = {
   /** 用户选择忽略的更新版本；仅抑制后台提示，强制升级与版本回滚不受影响 */
   ignoredUpdateVersion: '',
   /** 工作区外文件的访问策略，见 WorkspaceManager */
-  workspacePolicy: 'ask'
+  workspacePolicy: 'ask',
+  /** 是否允许模型通过桌面子 Agent 查看画面并注入鼠标键盘 */
+  desktopAutomationEnabled: false,
+  /** 桌面任务首次操作前请求授权，还是直接放行当前任务 */
+  desktopApprovalPolicy: 'ask'
 }
 
 interface ConfigData {
@@ -128,6 +135,7 @@ export class ConfigStore {
     if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
       return undefined
     }
+    if ('desktopApprovalPolicy' === key) return normalizeDesktopApprovalPolicy(value)
     const expect = SETTINGS_SCHEMA[key]
     if (typeof expect === 'boolean') {
       if (typeof value === 'boolean') return value

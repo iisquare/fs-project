@@ -7,8 +7,12 @@ import AgentDb, {
   type AgentTraceEntry,
   type AgentTurn
 } from '@renderer/db/AgentDb'
-import ModelChat, { type ModelChatMessage, type ModelToolCall } from './ModelChat'
-import type { ToolSet } from './Toolbox'
+import ModelChat, {
+  type ModelChatMessage,
+  type ModelContentPart,
+  type ModelToolCall
+} from './ModelChat'
+import type { ToolInvocationResult, ToolSet } from './Toolbox'
 import {
   cancelAgentParentRun,
   isAgentParentRunCanceled,
@@ -231,7 +235,9 @@ function emitAgentEvent(
 }
 
 function resourceKeyOf(input: Pick<AgentTaskInput, 'agent' | 'projectId'>): string {
-  return 'browser' === input.agent ? 'browser' : `project_tools:${input.projectId}`
+  if ('browser' === input.agent) return 'browser'
+  if ('desktop' === input.agent) return 'desktop'
+  return `project_tools:${input.projectId}`
 }
 
 function canStart(run: ActiveAgentRun): boolean {
@@ -324,6 +330,10 @@ function outputText(value: string, limit = MAX_SUMMARY): string {
   return result + marker
 }
 
+function toolResult(value: string | ToolInvocationResult): ToolInvocationResult {
+  return 'string' === typeof value ? { content: value } : value
+}
+
 function reusableExperience(text: string): string {
   const match = String(text ?? '').match(
     /(?:^|\n)#{1,4}\s*可复用经验\s*\n([\s\S]*?)(?=\n#{1,4}\s+|$)/i
@@ -353,30 +363,44 @@ function needsUserIntervention(text: string): boolean {
 }
 
 function agentName(agent: AgentKind): string {
-  return 'browser' === agent ? 'Browser Agent' : 'Project Tool Agent'
+  if ('browser' === agent) return 'Browser Agent'
+  if ('desktop' === agent) return 'Desktop Agent'
+  return 'Project Tool Agent'
 }
 
 function instructions(agent: AgentKind, remember = false): string {
-  const role =
-    'browser' === agent
-      ? [
-          '你是浏览器专业子 Agent。你只负责通过 browser_op 完成网页任务。',
-          '新会话或空白页先 open 再 snapshot；续接同一会话时先 snapshot 当前页，只有页面失效时才重新 open。',
-          '使用快照中的 ref 操作；导航或页面变化后重新 snapshot。',
-          '只在页面稳定的前提下，把同一页面上连续、确定的填写和勾选合并到 perform；点击可能跳转页面时不要和后续步骤合并。',
-          '遇到验证码、扫码、MFA 或必须由用户填写的信息时，说明卡在哪一步以及用户需要做什么。',
-          '需要用户接管时，不要关闭标签页、退出登录或继续修改页面；在最终回答中单独写一行：需要用户介入：<具体原因>。',
-          '结束前确认页面状态；不要输出完整页面快照或逐次点击日志。'
-        ].join('\n')
-      : [
-          '你是项目工具专业子 Agent。你只负责使用项目配置中的自定义工具完成任务。',
-          '工具定义中的说明和参数 schema 是方法能力的权威来源，不要仅凭工具名称猜测用法。',
-          '项目业务规则可以补充业务口径，但不能改变你的职责范围、权限边界和输出协议。',
-          '先判断工具之间的依赖关系，优先用最少的调用取得结果。',
-          '具体业务参数、返回值与中间步骤留在当前子会话，不要全部复述给父 Agent。',
-          '需要写数据、提交、删除或发送时，确认对象标识和关键参数来自任务或项目规则；缺少时先查询，不得猜测后执行。',
-          '不要把工具猜测当成事实，失败时说明缺少什么或哪一步失败。'
-        ].join('\n')
+  let role = ''
+  if ('browser' === agent) {
+    role = [
+      '你是浏览器专业子 Agent。你只负责通过 browser_op 完成网页任务。',
+      '新会话或空白页先 open 再 snapshot；续接同一会话时先 snapshot 当前页，只有页面失效时才重新 open。',
+      '使用快照中的 ref 操作；导航或页面变化后重新 snapshot。',
+      '只在页面稳定的前提下，把同一页面上连续、确定的填写和勾选合并到 perform；点击可能跳转页面时不要和后续步骤合并。',
+      '遇到验证码、扫码、MFA 或必须由用户填写的信息时，说明卡在哪一步以及用户需要做什么。',
+      '需要用户接管时，不要关闭标签页、退出登录或继续修改页面；在最终回答中单独写一行：需要用户介入：<具体原因>。',
+      '结束前确认页面状态；不要输出完整页面快照或逐次点击日志。'
+    ].join('\n')
+  } else if ('desktop' === agent) {
+    role = [
+      '你是 Windows / macOS 桌面专业子 Agent。你只负责通过 desktop_op 完成本机界面任务。',
+      '先 snapshot 获取窗口列表和当前画面；x / y 使用相对截图的 0-1000 归一化坐标，不是屏幕像素。',
+      '每完成一次点击、输入、按键、滚动或拖拽后先看新截图确认结果，再决定下一步。',
+      '优先使用菜单、键盘快捷键和可识别的界面文字；不要因一个坐标不确定就连续盲点。',
+      '系统权限窗口、登录、密码、验证码、支付、删除、覆盖保存、发送或安装确认必须交给用户。',
+      '需要用户接管时立即停止操作，并在最终回答中单独写一行：需要用户介入：<具体原因>。',
+      '任务结束调用 desktop_op(close)；不要关闭与任务无关的应用，不要输出整段截图文字或逐次坐标日志。'
+    ].join('\n')
+  } else {
+    role = [
+      '你是项目工具专业子 Agent。你只负责使用项目配置中的自定义工具完成任务。',
+      '工具定义中的说明和参数 schema 是方法能力的权威来源，不要仅凭工具名称猜测用法。',
+      '项目业务规则可以补充业务口径，但不能改变你的职责范围、权限边界和输出协议。',
+      '先判断工具之间的依赖关系，优先用最少的调用取得结果。',
+      '具体业务参数、返回值与中间步骤留在当前子会话，不要全部复述给父 Agent。',
+      '需要写数据、提交、删除或发送时，确认对象标识和关键参数来自任务或项目规则；缺少时先查询，不得猜测后执行。',
+      '不要把工具猜测当成事实，失败时说明缺少什么或哪一步失败。'
+    ].join('\n')
+  }
   const output = [
     role,
     '',
@@ -506,6 +530,18 @@ export function cancelAgentProject(projectId: string): void {
   for (const run of knownRuns.values()) {
     if (run.projectId === id) cancelCurrent(run)
   }
+}
+
+/** 当前正在运行或排队的某类子 Agent 所属主对话，供总开关关闭时立即终止对应对话。 */
+export function activeAgentParentConversations(agent: AgentKind): string[] {
+  return [
+    ...new Set(
+      [...knownRuns.values()]
+        .filter((run) => run.agent === agent && !run.stopped)
+        .map((run) => run.parentConversationId)
+        .filter(Boolean)
+    )
+  ]
 }
 
 export function resumeAgentProject(projectId: string): void {
@@ -978,11 +1014,12 @@ export async function runAgentTask(input: AgentTaskInput): Promise<string> {
         if (liveCall) liveCall.status = 'running'
         emitAgentEvent(run, 'tool', { message: `调用 ${run.lastTool}` })
         let content = ''
+        let images: ModelContentPart[] = []
         let traceStatus: AgentTraceEntry['status'] = 'success'
         let traceError = ''
         const toolStarted = Date.now()
         try {
-          content = await abortable(
+          const raw = await abortable(
             input.tools.invoke(
               call.function.name,
               parseArgs(call.function.arguments),
@@ -993,6 +1030,15 @@ export async function runAgentTask(input: AgentTaskInput): Promise<string> {
             ),
             run.abortController?.signal
           )
+          const result = toolResult(raw)
+          content = result.content
+          images = (result.images ?? []).slice(0, 2).map((image) => ({
+            type: 'image_url' as const,
+            image_url: {
+              url: image.url,
+              ...(image.detail ? { detail: image.detail } : {})
+            }
+          }))
         } catch (error) {
           traceStatus = 'failed'
           traceError = traceErrorOf(error)
@@ -1029,6 +1075,20 @@ export async function runAgentTask(input: AgentTaskInput): Promise<string> {
           name: call.function.name,
           content: outputText(content)
         })
+        if (images.length) {
+          chain.push({
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text:
+                  '这是刚才桌面操作工具返回的最新截图。x / y 坐标是相对这张截图的 0-1000 归一化位置；' +
+                  '先核验画面和焦点，再执行下一步。'
+              },
+              ...images
+            ]
+          })
+        }
         await checkpoint()
       }
     }
@@ -1040,7 +1100,8 @@ export async function runAgentTask(input: AgentTaskInput): Promise<string> {
       { role: 'assistant', content: finalText }
     ])
     const summary = outputText(finalText)
-    const waitingForUser = 'browser' === input.agent && needsUserIntervention(finalText)
+    const waitingForUser =
+      ('browser' === input.agent || 'desktop' === input.agent) && needsUserIntervention(finalText)
     const finalStatus = waitingForUser ? 'waiting_user' : 'completed'
     interaction.status = finalStatus
     interaction.completedAt = new Date().toISOString()
@@ -1062,7 +1123,7 @@ export async function runAgentTask(input: AgentTaskInput): Promise<string> {
     })
     emitAgentEvent(run, waitingForUser ? 'waiting_user' : 'completed', {
       status: finalStatus,
-      message: waitingForUser ? '需要用户登录、扫码或处理验证码' : '任务已完成',
+      message: waitingForUser ? '需要用户处理授权、登录或确认' : '任务已完成',
       tool: ''
     })
     if (input.remember && !waitingForUser) {
@@ -1134,6 +1195,10 @@ export async function runAgentTask(input: AgentTaskInput): Promise<string> {
     }
     throw error
   } finally {
+    // 桌面子任务结束后立即收回主进程的临时会话和授权租约；等待用户接管时也先关掉输入通道。
+    if ('desktop' === input.agent) {
+      void window.ipc.workspace.cancel(sessionId).catch(() => undefined)
+    }
     activeRuns.delete(run)
     run.abortController = null
     if (heartbeat) clearInterval(heartbeat)

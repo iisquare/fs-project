@@ -8,7 +8,11 @@ const MAX_EXPERIENCES_PER_AGENT = 100
 const MAX_INTERACTION_ROUNDS = 25
 const MAX_INTERACTION_CALLS = 100
 
-export type AgentKind = 'browser' | 'project_tools'
+/** 旧版本把这段内部控制文案写进了 error；界面据此识别并降级为普通状态。 */
+export const WAITING_SETTLED_ERROR = '主对话已结束，等待用户状态已释放'
+export const WAITING_SETTLED_TEXT = '等待已释放'
+
+export type AgentKind = 'browser' | 'project_tools' | 'desktop'
 export type AgentStatus =
   'queued' | 'running' | 'waiting_user' | 'completed' | 'failed' | 'canceled' | 'interrupted'
 
@@ -283,6 +287,28 @@ async function markInteractionsInterrupted(sessionId: string, at: string): Promi
   }
 }
 
+async function settleInteractions(sessionId: string, at: string): Promise<void> {
+  const result = (await Db.select('agent_interactions', { session_id: sessionId })) as {
+    code: number
+    message: string
+    data: unknown[]
+  }
+  if (!ApiUtil.succeed(result)) return
+  for (const row of ApiUtil.data(result) as Record<string, unknown>[]) {
+    const task = parseInteractionTask(row['payload'])
+    if (!task || !['queued', 'running', 'waiting_user'].includes(task.status)) continue
+    task.status = 'interrupted'
+    task.error = ''
+    task.completedAt = at
+    task.updatedAt = at
+    await Db.update(
+      'agent_interactions',
+      { id: task.id },
+      { updated_at: at, payload: JSON.stringify(task) }
+    )
+  }
+}
+
 export default {
   async get(id: string): Promise<AgentSession | null> {
     if (!id) return null
@@ -465,6 +491,43 @@ export default {
     )) as { code: number; message: string; data: unknown[] }
     if (!ApiUtil.succeed(result)) return []
     return (ApiUtil.data(result) as Record<string, unknown>[]).map(formatSession)
+  },
+
+  /**
+   * 主轮次结束或应用重新启动后，把不再有活动主对话承接的 waiting_user 收口为 interrupted。
+   * 会话本身和历史保留，显式 session_id 仍可续接；只是不再占用“正在处理”和侧边栏等待状态。
+   */
+  async settleWaiting(parentConversationId = ''): Promise<string[]> {
+    const where: Record<string, unknown> = { status: 'waiting_user' }
+    if (parentConversationId) where['parent_conversation_id'] = parentConversationId
+    const listed = (await Db.select(
+      SESSION_TABLE,
+      where,
+      'updated_at DESC, created_at DESC',
+      200
+    )) as {
+      code: number
+      message: string
+      data: unknown[]
+    }
+    if (!ApiUtil.succeed(listed)) return []
+    const now = new Date().toISOString()
+    const ids: string[] = []
+    for (const row of ApiUtil.data(listed) as Record<string, unknown>[]) {
+      const id = String(row['id'] ?? '')
+      if (!id) continue
+      const updated = (await Db.update(
+        SESSION_TABLE,
+        { id },
+        { status: 'interrupted', error: '', updated_at: now }
+      )) as { code: number; message: string; data: unknown }
+      if (!ApiUtil.succeed(updated)) continue
+      await settleInteractions(id, now).catch((error) => {
+        console.warn('[AgentDb] Failed to settle waiting interaction:', error)
+      })
+      ids.push(id)
+    }
+    return ids
   },
 
   /** 活动执行的心跳：只刷新时间，不改状态；多实例启动时据此避免误判其他进程的任务 */

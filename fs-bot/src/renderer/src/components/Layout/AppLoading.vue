@@ -63,10 +63,9 @@ watch(
   cursor: progress;
   user-select: none;
   -webkit-app-region: no-drag;
-  background: rgba(255, 255, 255, 0.54);
-  background: color-mix(in srgb, var(--el-bg-color-page, #fff) 54%, transparent);
-  backdrop-filter: blur(6px) saturate(1.04);
-  -webkit-backdrop-filter: blur(6px) saturate(1.04);
+  /* 窗口尺寸切换只发生在这段整窗加载中。使用不透明页面底色，
+     新视口即使晚一帧提交，也不会露出旧页面或原生窗口底色。 */
+  background: var(--el-bg-color-page, #f2f3f5);
 }
 
 .app-loading__content {

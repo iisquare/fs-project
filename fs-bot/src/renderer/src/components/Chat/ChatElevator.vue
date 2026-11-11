@@ -97,7 +97,10 @@ function revealActive(): void {
   const row = element?.querySelector<HTMLElement>('.elevator-item.is-active')
   if (!element || !row) return
   const top = row.offsetTop
-  if (top >= element.scrollTop && top + row.offsetHeight <= element.scrollTop + element.clientHeight)
+  if (
+    top >= element.scrollTop &&
+    top + row.offsetHeight <= element.scrollTop + element.clientHeight
+  )
     return
   element.scrollTo({
     top: Math.max(0, top - element.clientHeight / 2 + row.offsetHeight / 2),
@@ -106,7 +109,11 @@ function revealActive(): void {
 }
 
 // 容器或内容变化：重新采集条目
-watch(() => [target, revision], () => nextTick(collect), { immediate: true })
+watch(
+  () => [target, revision],
+  () => nextTick(collect),
+  { immediate: true }
+)
 // 容器滚动：组件自己同步当前条
 watch(
   () => target,
@@ -124,20 +131,20 @@ onBeforeUnmount(() => target?.removeEventListener('scroll', syncActive))
 <template>
   <!-- 横条列：收起只显示横条，悬停 / 聚焦展开成内容列表 -->
   <el-scrollbar
+    v-if="marks.length >= min"
+    ref="rootRef"
     class="elevator"
     :class="{ 'is-open': open }"
-    ref="rootRef"
-    v-if="marks.length >= min"
     @mouseenter="open = true"
     @mouseleave="open = false"
     @focusin="open = true"
     @focusout="open = false"
   >
     <div
+      v-for="mark in marks"
+      :key="mark.key"
       class="elevator-item"
       :class="{ 'is-hover': mark.key === hoverMark, 'is-active': mark.key === activeMark }"
-      :key="mark.key"
-      v-for="mark in marks"
       @mouseenter="hoverMark = mark.key"
       @mouseleave="hoverMark = ''"
       @click="scrollTo(mark)"

@@ -16,5 +16,5 @@ export default {
   },
   forgot(body: any = {}, tips = {}) {
     return api.post('/member/user/forgot', Object.assign({}, body, { module: 'admin' }), tips)
-  },
+  }
 }

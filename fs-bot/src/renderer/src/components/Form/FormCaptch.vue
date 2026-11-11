@@ -10,7 +10,7 @@ interface CaptchaResult {
   retry: number
 }
 
-const model: any = defineModel()
+const model = defineModel<string>({ default: '' })
 const emit = defineEmits<{
   success: []
   error: [message: string]
@@ -40,7 +40,9 @@ async function reload(): Promise<void> {
   captcha.value = { ...captcha.value, retry: param.retry }
 
   try {
-    const result: any = await CaptchApi.generate(param, { error: false, warning: false })
+    const result = (await CaptchApi.generate(param, { error: false, warning: false })) as {
+      data?: Partial<CaptchaResult>
+    }
     const data = result?.data ?? {}
     if (!data.base64 || !data.uuid) throw new Error('验证码返回内容不完整')
     captcha.value = {

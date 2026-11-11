@@ -1,11 +1,21 @@
 # 多 Agent 试运行版
 
-这一版把容易污染主上下文、需要连续多步执行的能力拆成两个专业子 Agent：
+这一版把容易污染主上下文、需要连续多步执行的能力拆成三个专业子 Agent：
+
+项目编辑器为 Browser、Project Tool 与 Desktop 三类子 Agent 各提供一个独立开关，默认全部关闭。
+至少一种类型实际可用时，主 Agent 的工具清单才包含 `delegate_agent`，且只能委派已开启的类型；
+旧项目和旧配置导入后三类都按关闭处理。
 
 - `Browser Agent`：只持有 `browser_op`，负责网页观察、点击、填表、提取和截图。
-- `Project Tool Agent`：只持有当前项目已启用、且除技能外的自定义工具，负责工具方法、知识库、数据主题、知识图谱和编排应用。
+- `Project Tool Agent`：开启时持有当前项目已启用、且除技能外的自定义工具；关闭时这些工具直接交给主 Agent 调用。
+- `Desktop Agent`：只持有 `desktop_op`，在 Windows / macOS 上查看桌面截图并操作本机窗口、鼠标和键盘。
 
-主 Agent 不再直接拿这些工具，只保留一个 `delegate_agent` 委派入口，通过 `agent: browser | project_tools` 参数调度。只有当前项目至少启用一个服务端工具时，`project_tools` 才会出现在 `agent` 枚举中。文件、命令、技能、记忆和定时任务仍由主 Agent 管理。
+主 Agent 不直接持有浏览器与桌面工具，仅通过 `delegate_agent` 调度这两类子 Agent；
+项目工具则按 Project Tool Agent 开关切换执行边界。委派入口通过
+`agent: browser | project_tools | desktop` 参数调度。只有 Project Tool Agent 已开启且当前项目至少启用一个服务端工具时，
+`project_tools` 才会出现在 `agent` 枚举中；Project 的 Desktop Agent 开关开启且当前平台支持后，才会暴露桌面委派入口，
+实际执行仍受系统设置和审批控制。
+文件、命令、技能、记忆和定时任务仍由主 Agent 管理。
 
 同一个主模型回合里如果返回多个 `delegate_agent`，不同资源域会并行执行；混有本地工具的回合仍保持串行。全局最多同时运行 3 个子 Agent，浏览器任务按当前用户串行，同项目的 Project Tool Agent 也串行，避免共享登录态或业务账号被并发修改。
 
@@ -43,14 +53,15 @@ session_id: <子 Agent 会话标识>
 
 ### 配置发现
 
-- 项目工具以 `project.tools` 为配置来源。装配时先过滤 `enabled: false` 的引用，再把 `kind: skill` 留给主 Agent 的 `local_skill`，其余五类服务端工具交给 Project Tool Agent。
+- 项目工具以 `project.tools` 为配置来源。装配时先过滤 `enabled: false` 的引用，再把 `kind: skill` 留给主 Agent 的 `local_skill`。Project Tool Agent 开启时，其余五类服务端工具交给子 Agent；关闭时直接放入主 Agent 的工具清单。
 - 新建会话或刷新工具集时，客户端主动调用 `/bot/tools` 获取工具定义与说明，用于配置预校验和后续子 Agent 装配。这不是主 Agent 发起的工具调用。
 - 工具定义缺少函数名或说明时会拒绝本次装配，并提示修改项目工具配置；不会用本地模板猜测缺失的服务端能力。
 - 服务端工具定义、完整方法说明与参数 schema 是执行口径的权威来源。主 Agent 的委派摘要只读取当前项目配置中的类型、名称和简短描述。
 
 ### 主 Agent 的委派描述
 
-主 Agent 不持有具体项目工具，也不会主动探查工具方法。它只通过 `delegate_agent.function.description` 看到一份由当前启用配置生成的精简能力摘要：
+Project Tool Agent 开启时，主 Agent 不持有具体项目工具，也不会主动探查工具方法。它只通过
+`delegate_agent.function.description` 看到一份由当前启用配置生成的精简能力摘要：
 
 - 只声明实际启用的工具类型及数量，不再固定列出全部五类。
 - 最多展开 8 个代表能力；名称最多 48 个字符，说明最多 72 个字符，换行会归一为空格，超出部分明确标注未展开。
@@ -106,6 +117,8 @@ project_tools 负责当前项目启用的自定义业务工具。
 - 超过 2 分钟没有进展的“等待进展”提示。
 - 单个子 Agent 的停止入口。
 - 切到别的对话时，侧边栏会话行会显示子 Agent 运行中或等待用户的标记。
+- `waiting_user` 只属于仍在运行的主轮次。主对话这一轮结束后（或应用重新启动后），未再承接的等待会话会转成
+  `interrupted` 历史，并保留 `session_id` 供显式续接，不再占用“正在处理”和侧边栏等待提示。
 - 侧边栏里“对话进行中”和“子 Agent 执行中”按上下两枚状态点排列，整组在会话行内垂直居中。
 
 子 Agent 运行期间每 30 秒写一次心跳。应用启动、重新登录及后续巡检时，会把超过 2 分钟没有心跳的 `queued/running` 会话标记为 `interrupted`。浏览器子 Agent 被要求用单独一行“需要用户介入：<原因>”报告登录、扫码、验证码或 MFA；旧的自然语言判断仅作为兼容兜底。
@@ -126,6 +139,7 @@ project_tools 负责当前项目启用的自定义业务工具。
 
 - 子 Agent 全局最多同时运行 3 个。
 - 同一个子 Agent 会话不能并发运行。
+- Desktop Agent 全局串行，因为鼠标、键盘和前台窗口是整台电脑共享的资源。
 - 父会话停止时，会停止它正在运行的模型流，并取消子会话对应的浏览器标签页和本地待处理操作。
 - 主会话每轮都有独立取消令牌。子 Agent 即使还在等待工具定义或排队，父轮次停止后也不会被迟到的异步调用重新启动。
 - Browser Agent 的文件上传同样经过项目工作区读取策略，不能绕过本地访问授权。

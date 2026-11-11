@@ -20,10 +20,15 @@ const cache = new Map<string, unknown>()
 const pendingBuilds = new Map<string, PendingBuild<unknown>>()
 const revisions = new Map<string, number>()
 
-/** 共享工具集的配置键：工具引用或记忆开关变化时视为新的一份配置 */
+/** 共享工具集的配置键：工具引用、记忆或任一子 Agent 开关变化时视为新的一份配置 */
 export function toolConfigKey(project: Project | null): string {
   const refs = (project?.tools ?? []).filter((item) => false !== item?.enabled)
-  return `${JSON.stringify(refs)}|memory:${true === project?.memoryEnabled ? 1 : 0}`
+  return (
+    `${JSON.stringify(refs)}|memory:${true === project?.memoryEnabled ? 1 : 0}` +
+    `|browserAgent:${true === project?.browserAgentEnabled ? 1 : 0}` +
+    `|projectToolAgent:${true === project?.projectToolAgentEnabled ? 1 : 0}` +
+    `|desktopAgent:${true === project?.desktopAgentEnabled ? 1 : 0}`
+  )
 }
 
 /**

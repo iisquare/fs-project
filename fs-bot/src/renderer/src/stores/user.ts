@@ -1,4 +1,4 @@
-import { nextTick, ref } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import ApiUtil from '@renderer/utils/ApiUtil'
 import UserApi from '@renderer/api/UserApi'
@@ -35,7 +35,7 @@ export const useUserStore = defineStore('user', () => {
   const ready = ref(false)
   const info = ref<UserInfo>(Object.assign({}, USER_DEFAULT_STATE))
 
-  const reload = async (resize = false): Promise<void> => {
+  const reload = async (): Promise<void> => {
     Object.assign(info.value, { token: localStorage.getItem(STORAGE_KEY) || '' })
     if (info.value.token) {
       let result: unknown
@@ -44,12 +44,6 @@ export const useUserStore = defineStore('user', () => {
       } catch {
         await reset(null, false)
         return
-      }
-      if (resize) {
-        await nextTick()
-        await window.ipc
-          .setNormalSize()
-          .catch((error) => console.error('[UserStore] Failed to resize window:', error))
       }
       await reset(ApiUtil.data(result), true)
     }
@@ -80,7 +74,7 @@ export const useUserStore = defineStore('user', () => {
     ready.value = isReady
   }
 
-  const restoreSession = async (resize = true): Promise<void> => {
+  const restoreSession = async (): Promise<void> => {
     Object.assign(info.value, { token: localStorage.getItem(STORAGE_KEY) || '' })
     if (!info.value.token) {
       await reset()
@@ -88,7 +82,7 @@ export const useUserStore = defineStore('user', () => {
     }
     let timedOut = false
     await Promise.race([
-      reload(resize),
+      reload(),
       new Promise<void>((resolve) => {
         setTimeout(() => {
           timedOut = true
@@ -101,8 +95,8 @@ export const useUserStore = defineStore('user', () => {
 
   /** 路由多次导航会重复调用：同一份登录态只还原一次 */
   let initializing: Promise<void> | null = null
-  const initialize = (resize = true): Promise<void> => {
-    if (!initializing) initializing = restoreSession(resize)
+  const initialize = (): Promise<void> => {
+    if (!initializing) initializing = restoreSession()
     return initializing
   }
 

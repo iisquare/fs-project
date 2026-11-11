@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { useChatStore } from './chat'
 import { useSettingsStore } from './settings'
 
 /**
@@ -20,7 +21,12 @@ export interface ApprovalRequest {
   id: string
   projectId: string
   path: string
-  need: 'read' | 'write' | 'command'
+  need: 'read' | 'write' | 'command' | 'desktop'
+  /** 桌面授权与工作区访问共用横幅，但使用独立的短期任务授权语义 */
+  kind?: 'workspace' | 'desktop'
+  action?: string
+  title?: string
+  detail?: string
   command?: string
   /** 发起这次访问的会话：申请只归它处理（主进程从工具调用那里带上来） */
   conversationId: string
@@ -81,9 +87,16 @@ export const useApprovalStore = defineStore('approval', () => {
   ): Promise<void> {
     if (!request || submittingId.value) return
     submittingId.value = request.id
+    // 桌面任务被拒绝后不能只让当前工具失败：先同步中止父轮次与子 Agent，
+    // 再提交拒绝，避免工具失败回包后模型抢在下一次调度前继续推进。
+    if (!allow && 'desktop' === request.kind) {
+      useChatStore().stop(request.conversationId)
+    }
     try {
       await window.ipc.workspace.approve({ id: request.id, allow, always: allow && always })
-      if (allow && always) useSettingsStore().workspacePolicy = 'auto'
+      if (allow && always && 'desktop' !== request.kind) {
+        useSettingsStore().workspacePolicy = 'auto'
+      }
     } finally {
       submittingId.value = ''
       queue.value = queue.value.filter((item) => item.id !== request.id)

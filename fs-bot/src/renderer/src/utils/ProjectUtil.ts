@@ -32,6 +32,10 @@ export interface ProjectConfig {
   memory: string
   /** 是否启用客户端记忆：默认关闭；旧配置文件里没有这一项时按关闭处理 */
   memoryEnabled: boolean
+  /** 三类子 Agent 各自独立启用，默认关闭；旧配置缺少对应字段时也按关闭处理 */
+  browserAgentEnabled: boolean
+  projectToolAgentEnabled: boolean
+  desktopAgentEnabled: boolean
   thinkEffort: string
   name: string
   description: string
@@ -91,6 +95,9 @@ export function configOf(source: Partial<Project> | Record<string, any>): Projec
     systemPrompt: text(source?.systemPrompt),
     memory: text(source?.memory),
     memoryEnabled: flag(source?.memoryEnabled),
+    browserAgentEnabled: flag(source?.browserAgentEnabled),
+    projectToolAgentEnabled: flag(source?.projectToolAgentEnabled),
+    desktopAgentEnabled: flag(source?.desktopAgentEnabled),
     thinkEffort: text(source?.thinkEffort),
     name: text(source?.name),
     description: text(source?.description),

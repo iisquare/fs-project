@@ -49,7 +49,9 @@ const types: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary
 }
 
 function agentName(run: AgentRunView): string {
-  return 'browser' === run.agent ? 'Browser Agent' : 'Project Tool Agent'
+  if ('browser' === run.agent) return 'Browser Agent'
+  if ('desktop' === run.agent) return 'Desktop Agent'
+  return 'Project Tool Agent'
 }
 
 function statusText(run: AgentRunView): string {
@@ -95,7 +97,12 @@ async function openDetail(run: AgentRunView): Promise<void> {
 
 async function clearExperience(agent: AgentKind): Promise<void> {
   if (!props.projectId) return
-  const name = 'browser' === agent ? 'Browser Agent' : 'Project Tool Agent'
+  const name =
+    'browser' === agent
+      ? 'Browser Agent'
+      : 'desktop' === agent
+        ? 'Desktop Agent'
+        : 'Project Tool Agent'
   try {
     await ElMessageBox.confirm(
       `确认清空当前项目中 ${name} 沉淀的全部跨任务经验？子 Agent 会话仍会保留。`,
@@ -182,7 +189,10 @@ watch(() => props.conversationId, load)
                 type="button"
                 @click="clearExperience(agent)"
               >
-                清空 {{ 'browser' === agent ? 'Browser' : 'Project Tool' }}
+                清空
+                {{
+                  'browser' === agent ? 'Browser' : 'desktop' === agent ? 'Desktop' : 'Project Tool'
+                }}
               </button>
             </div>
           </div>

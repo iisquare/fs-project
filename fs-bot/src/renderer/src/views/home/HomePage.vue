@@ -661,7 +661,7 @@ async function uploadFiles(): Promise<void> {
 </script>
 
 <template>
-  <div class="home-page" v-loading="pageLoading || conversationStore.opening">
+  <div v-loading="pageLoading || conversationStore.opening" class="home-page">
     <el-alert
       v-if="pageError"
       class="page-alert"
@@ -732,9 +732,9 @@ async function uploadFiles(): Promise<void> {
             </div>
             <div v-else class="project-list">
               <div
-                class="project-card"
                 v-for="item in filteredProjects"
                 :key="item.id"
+                class="project-card"
                 @click="startConversation(item)"
               >
                 <el-avatar :size="32" :src="item.icon">{{ item.name.charAt(0) }}</el-avatar>
@@ -776,6 +776,14 @@ async function uploadFiles(): Promise<void> {
                 effect="plain"
                 >{{ stopping ? '正在停止' : '运行中' }}</el-tag
               >
+              <el-tag
+                v-else-if="agentStatus.waiting > 0"
+                class="conv-tag"
+                size="small"
+                type="warning"
+                effect="plain"
+                >等待用户</el-tag
+              >
             </header>
 
             <!--
@@ -791,7 +799,7 @@ async function uploadFiles(): Promise<void> {
             >
               <!-- 消息区：滚动容器 + 电梯导航（导航在容器之外，不随消息一起滚） -->
               <div class="conversation-body">
-                <el-scrollbar class="message-list" :ref="setScrollRef" @scroll="onScroll">
+                <el-scrollbar :ref="setScrollRef" class="message-list" @scroll="onScroll">
                   <div class="message-column">
                     <div v-if="messages.length === 0" class="message-empty">
                       <span class="message-empty-mark" aria-hidden="true">
@@ -812,9 +820,9 @@ async function uploadFiles(): Promise<void> {
                       </p>
                     </div>
                     <ChatMessage
-                      class="message"
                       v-for="message in messages"
                       :key="message.id"
+                      class="message"
                       :message="message"
                       :project-id="session?.projectId ?? ''"
                       :conversation-id="session?.conversationId ?? ''"

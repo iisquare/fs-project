@@ -12,7 +12,9 @@ dotenv.config({ path: join(process.cwd(), `.env.${mode}`), quiet: true })
 // ── Key derivation (must match src/main/database/encryption.ts) ──
 
 function deriveKey(ident, dbSecret, purpose = '') {
-  return createHash('sha256').update(ident + ':' + dbSecret + ':' + purpose).digest()
+  return createHash('sha256')
+    .update(ident + ':' + dbSecret + ':' + purpose)
+    .digest()
 }
 
 function derivePassphrase(ident, dbSecret) {
@@ -118,9 +120,9 @@ function openDb(dbPath, passphrase) {
     db.pragma('legacy=4')
     db.pragma(`key='${passphrase}'`)
     try {
-      db.prepare("SELECT COUNT(*) FROM sqlite_master").get()
+      db.prepare('SELECT COUNT(*) FROM sqlite_master').get()
     } catch (e) {
-    console.error('Error: Failed to open encrypted database - wrong passphrase or corrupted file')
+      console.error('Error: Failed to open encrypted database - wrong passphrase or corrupted file')
       console.error(e.message)
       process.exit(1)
     }
@@ -133,17 +135,21 @@ function openDb(dbPath, passphrase) {
 function dumpSchema(db) {
   const stmts = []
 
-  const tableRows = db.prepare(
-    "SELECT sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND sql IS NOT NULL ORDER BY name"
-  ).all()
+  const tableRows = db
+    .prepare(
+      "SELECT sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND sql IS NOT NULL ORDER BY name"
+    )
+    .all()
 
   for (const row of tableRows) {
     stmts.push(row.sql)
   }
 
-  const indexRows = db.prepare(
-    "SELECT sql FROM sqlite_master WHERE type='index' AND sql IS NOT NULL AND name NOT LIKE 'sqlite_%' ORDER BY name"
-  ).all()
+  const indexRows = db
+    .prepare(
+      "SELECT sql FROM sqlite_master WHERE type='index' AND sql IS NOT NULL AND name NOT LIKE 'sqlite_%' ORDER BY name"
+    )
+    .all()
 
   for (const row of indexRows) {
     stmts.push(row.sql)
@@ -272,7 +278,9 @@ function cmdVersion(dbPath, passphrase) {
 
   // 终端输出保持 ASCII，避免 Windows GBK 控制台出现乱码
   if (version === null) {
-    console.log('Note: this database predates schema versioning; the app will apply the latest schema on start.')
+    console.log(
+      'Note: this database predates schema versioning; the app will apply the latest schema on start.'
+    )
   } else if (version < expected) {
     console.log(
       `Note: database is behind; the app will run: ${
@@ -284,7 +292,9 @@ function cmdVersion(dbPath, passphrase) {
   } else {
     console.log('Note: versions match; no migration will run.')
   }
-  console.log('Note: the integrity hash is verified by the app at startup; this shows the stored value.')
+  console.log(
+    'Note: the integrity hash is verified by the app at startup; this shows the stored value.'
+  )
 }
 
 // ── Main ─────────────────────────────────────────────────────────
@@ -341,12 +351,8 @@ if (opts.command === 'export') {
 
   const passphrase = getPassphrase(opts)
   if (!passphrase) {
-    console.error(
-      'Warning: No passphrase specified. If the database is encrypted, this will fail.'
-    )
-    console.error(
-      'Use --passphrase <hex>, or --db-secret + --ident.'
-    )
+    console.error('Warning: No passphrase specified. If the database is encrypted, this will fail.')
+    console.error('Use --passphrase <hex>, or --db-secret + --ident.')
   }
 
   exportSchema(resolve(positional[0]), passphrase)

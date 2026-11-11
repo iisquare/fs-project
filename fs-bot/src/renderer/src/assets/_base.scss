@@ -48,6 +48,10 @@ ul {
   list-style: none;
 }
 
+html {
+  background: var(--el-bg-color-page);
+}
+
 body {
   min-height: 100vh;
   color: var(--el-text-color-primary);

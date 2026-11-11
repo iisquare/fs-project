@@ -18,6 +18,12 @@ import { basename, dirname, extname, isAbsolute, join, resolve, sep } from 'path
 import { shell } from 'electron'
 import { mergeProjectEnv, redactSecretValues, type ProjectEnvVar } from './project-env'
 import { chatImageType, issueChatImage, MAX_CHAT_IMAGE_SIZE } from './images'
+import {
+  ClientUpgradeRequiredError,
+  clientRequestHeaders,
+  isClientUpgradeResponse,
+  type ClientMeta
+} from '../shared/client'
 
 /**
  * 项目工作区文件访问：每个项目声明自己的目录与权限（只读 / 只写 / 读写），
@@ -112,7 +118,7 @@ interface RunningCommand {
   /** 发起这条命令的会话：停止按会话收，各对话互不干扰 */
   conversationId: string
   /** 收掉这条命令：杀掉进程树、按「已停止」立刻收尾 */
-  stop: () => void
+  stop: () => Promise<void>
 }
 
 /** 界面给出的答复：允许本次放行，或顺带把策略改成「帮我批准」 */
@@ -187,6 +193,8 @@ export interface WorkspaceReference {
 export interface WorkspaceUploadTarget {
   url: string
   token: string
+  /** 主进程在请求前注入，渲染进程不需要也不应该自行拼版本头 */
+  client: ClientMeta
 }
 
 /** 上传回执：文件服务给出的文件标识与文件信息，随后即可按 id 引用该文件 */
@@ -392,6 +400,14 @@ function systemLabel(): string {
 }
 
 const SYSTEM = systemLabel()
+
+/** 当前本地日期：固定成 YYYY-MM-DD，避免各语言环境的日期格式不一致 */
+function localDateLabel(): string {
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${now.getFullYear()}-${month}-${day}`
+}
 
 /**
  * 命令输出解码：先按 UTF-8 解；出现替换字符说明不是 UTF-8（Windows 控制台常见 GBK），
@@ -602,6 +618,8 @@ export class WorkspaceManager {
    * （尤其是它跑完还会把结果交回对话循环，让整轮对话接着往下走）。
    */
   private commands = new Set<RunningCommand>()
+  /** 客户端进入退出清理后不再启动新命令，避免新进程错过 shutdown 的快照 */
+  private shuttingDown = false
 
   static getInstance(): WorkspaceManager {
     if (!WorkspaceManager.instance) {
@@ -694,6 +712,7 @@ export class WorkspaceManager {
     const lines = [
       `# 环境信息`,
       `## 本机环境`,
+      `- 当前日期：${localDateLabel()}`,
       `- 操作系统：${SYSTEM}`,
       `- 命令执行：${COMMAND_SHELL}`
     ]
@@ -1079,9 +1098,14 @@ export class WorkspaceManager {
     )
     let response: Response
     try {
+      const headers: Record<string, string> = {
+        Accept: 'application/json',
+        ...clientRequestHeaders(target.client)
+      }
+      if (token) headers.Authorization = `Bearer ${token}`
       response = await fetch(url, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers,
         body: form,
         signal: AbortSignal.timeout(UPLOAD_TIMEOUT)
       })
@@ -1094,6 +1118,12 @@ export class WorkspaceManager {
       payload = JSON.parse(text)
     } catch {
       payload = null
+    }
+    if (isClientUpgradeResponse(response.status, payload)) {
+      throw new ClientUpgradeRequiredError(
+        String(payload?.message ?? '') || `上传失败：客户端需要升级（HTTP ${response.status}）`,
+        response.status
+      )
     }
     if (!response.ok) throw new Error(`上传失败（HTTP ${response.status}）：${cut(text)}`)
     if (!payload || 0 !== Number(payload.code)) {
@@ -1325,6 +1355,18 @@ export class WorkspaceManager {
   }
 
   /**
+   * 客户端退出时收掉全部本机命令。
+   * 这里不能只处理带会话标识的命令：退出动作属于整个应用，任何仍在运行的 shell
+   * 都必须在主进程消失前按进程树终止，否则常驻子进程会留在系统里。
+   */
+  async shutdown(): Promise<number> {
+    this.shuttingDown = true
+    const running = [...this.commands]
+    await Promise.allSettled(running.map((command) => command.stop()))
+    return running.length
+  }
+
+  /**
    * 真正跑命令：输出按上限裁剪，超时把进程收掉，结果一次给全（调用方不用管流的事）。
    * 命令在跑期间登记在案的（按会话可收），收尾时不管走哪条路都会摘掉。
    */
@@ -1335,12 +1377,16 @@ export class WorkspaceManager {
     conversationId = '',
     vars: ProjectEnvVar[] = []
   ): Promise<WorkspaceCommandResult> {
+    if (this.shuttingDown) throw new Error('客户端正在退出，无法再执行新命令')
     const started = Date.now()
     return new Promise<WorkspaceCommandResult>((settle) => {
       const child = spawn(command, {
         cwd,
         shell: true,
         windowsHide: true,
+        // POSIX 下让 shell 成为独立进程组组长，停止时可以向整个后代进程树发信号。
+        // Windows 没有这层语义，统一用 taskkill /T。
+        detached: process.platform !== 'win32',
         // 标准输入接空设备（NUL / /dev/null），不是默认的管道：默认管道没人写、也没人关，
         // 命令只要去读 stdin（findstr、sort、more、set /p、要凭据的 CLI……）就会一直等着，
         // 等待期间一个字都不输出——看着就是「命令卡住了」，最后拖到超时才被收掉。
@@ -1378,19 +1424,20 @@ export class WorkspaceManager {
       }
       running = {
         conversationId: String(conversationId ?? ''),
-        stop: () => {
-          if (settled) return
+        stop: (): Promise<void> => {
+          if (settled) return Promise.resolve()
           cancelled = true
-          this.kill(child)
+          const killed = this.kill(child)
           // 与超时同一口径：先收进程树，再立刻收尾——树没能在这一刻清干净，
           // 也不该让等着这一步的调用悬着（挂着的工具调用正是「卡住」的样子）
           finish(null, null)
+          return killed
         }
       }
-      if (running.conversationId) this.commands.add(running)
+      this.commands.add(running)
       timer = setTimeout(() => {
         timedOut = true
-        this.kill(child)
+        void this.kill(child)
         // 立刻按超时收尾：进程树没能在这一刻清干净，也不该让这一步悬着
         finish(null, 'SIGKILL')
       }, timeout * 1000)
@@ -1420,14 +1467,42 @@ export class WorkspaceManager {
    * 必须趁 shell 还活着（进程树是沿父进程找的，先把 shell 杀掉就找不到子进程了）；
    * 其余平台给 shell 发 SIGKILL，taskkill 调不起来时同样兜底 kill。
    */
-  private kill(child: ChildProcess): void {
+  private kill(child: ChildProcess): Promise<void> {
     const pid = child.pid
     if (pid && 'win32' === process.platform) {
       try {
-        spawn('taskkill', ['/pid', String(pid), '/T', '/F'], { windowsHide: true })
-        return
+        const killer = spawn('taskkill', ['/pid', String(pid), '/T', '/F'], {
+          windowsHide: true,
+          stdio: 'ignore'
+        })
+        return new Promise<void>((resolve) => {
+          let done = false
+          const finish = (): void => {
+            if (done) return
+            done = true
+            resolve()
+          }
+          killer.once('error', () => {
+            try {
+              child.kill('SIGKILL')
+            } catch {
+              // 主进程或命令可能已经退出
+            }
+            finish()
+          })
+          killer.once('close', finish)
+        })
       } catch {
         // 调不起 taskkill 时走下面的 kill 兜底
+      }
+    }
+    if (pid && process.platform !== 'win32') {
+      try {
+        // detached 后 pid 也是进程组 id；负号表示向整个组发信号，常驻后代一起退出。
+        process.kill(-pid, 'SIGKILL')
+        return Promise.resolve()
+      } catch {
+        // 进程组可能已退出，退回只杀 shell
       }
     }
     try {
@@ -1435,6 +1510,7 @@ export class WorkspaceManager {
     } catch {
       // 进程可能已经退出，忽略
     }
+    return Promise.resolve()
   }
 
   /** 解析并鉴权：返回命中项目清单里的哪个目录以及实际权限 */
