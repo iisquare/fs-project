@@ -513,7 +513,7 @@ defineExpose({
     background: transparent;
   }
   :deep(.CodeMirror-foldgutter) {
-    width: 12px;
+    width: 10px;
   }
   :deep(.CodeMirror-foldgutter-open),
   :deep(.CodeMirror-foldgutter-folded) {
@@ -523,6 +523,8 @@ defineExpose({
   /* 行号列默认 min-width: 20px，只有个位数行号时左侧会空出一大块；改为按行号内容自适应 */
   :deep(.CodeMirror-linenumber) {
     min-width: 0;
+    padding: 0 3px 0 1px;
+    font-size: 11px;
   }
   /* 编辑器内部滚动条：细样式，与面板滚动条一致 */
   :deep(.CodeMirror-vscrollbar),

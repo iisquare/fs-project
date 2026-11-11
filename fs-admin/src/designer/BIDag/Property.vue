@@ -1,17 +1,25 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import LayoutIcon from '@/components/Layout/LayoutIcon.vue'
+import CodeEditor from '@/components/Editor/CodeEditor.vue'
 import DatasourceApi from '@/api/bi/DatasourceApi'
+import DiagramApi from '@/api/bi/DiagramApi'
 import OntologyApi from '@/api/kg/OntologyApi'
+import ApiUtil from '@/utils/ApiUtil'
+import SqlUtil from '@/utils/SqlUtil'
 import PropertyPanel from './PropertyPanel.vue'
 import PropertySection from '@/components/Layout/PropertySection.vue'
 import TipText from '@/components/Layout/TipText.vue'
+import FieldMapEditor from './FieldMapEditor.vue'
+import TableBrowser from './TableBrowser.vue'
 
 const model: any = defineModel()
 const tips: any = defineModel('tips', { type: null })
 const props = defineProps<{
   config: any,
   instance: any,
+  context?: any,
 }>()
 
 /** 依据节点类型取参数编辑字段 */
@@ -19,6 +27,49 @@ const fields = computed(() => {
   const type = model.value?.data?.type
   return (props.config?.fields ?? {})[type] ?? []
 })
+
+const nodeGuide = computed(() => {
+  const type = model.value?.data?.type
+  return (props.config?.nodeGuides ?? {})[type] ?? null
+})
+
+const fieldHelps = computed(() => fields.value.filter((field: any) => field.help))
+
+const mappingSources = ref<any[]>([])
+const mappingTargets = ref<any[]>([])
+const mappingLoading = ref(false)
+const mappingMessage = ref('')
+const mappingInputNames = ref('')
+const mappingOutputNames = ref('')
+const sqlEditorRef = ref()
+const tableBrowserVisible = ref(false)
+const tableBrowserSqlMode = ref(false)
+const tableBrowserField = ref<any>(null)
+
+const resetMappingSchema = () => {
+  mappingSources.value = []
+  mappingTargets.value = []
+  mappingLoading.value = false
+  mappingMessage.value = ''
+  mappingInputNames.value = ''
+  mappingOutputNames.value = ''
+}
+
+const hydrateMappingSchema = () => {
+  resetMappingSchema()
+  const schema = model.value?.data?.options?.mappingSchema
+  if (!schema || typeof schema !== 'object') return
+  mappingSources.value = Array.isArray(schema.sources) ? schema.sources : []
+  mappingTargets.value = Array.isArray(schema.targets) ? schema.targets : []
+  mappingInputNames.value = schema.inputNames || ''
+  mappingOutputNames.value = schema.outputNames || ''
+  mappingMessage.value = schema.message || ''
+}
+
+watch(() => model.value?.id, hydrateMappingSchema, { immediate: true })
+
+const optionValue = (item: any) => typeof item === 'object' ? item.value : item
+const optionLabel = (item: any) => typeof item === 'object' ? item.label : item
 
 /**
  * SQLTransform 会把直接上游数据以「上游节点名称」注册为临时表。
@@ -52,6 +103,17 @@ const duplicateSqlTables = computed(() => {
   return Array.from(counts)
     .filter(([name, count]) => name && count > 1)
     .map(([name]) => name)
+})
+
+const sqlEditorHints = computed(() => {
+  if (model.value?.data?.type !== 'SQLTransform') return []
+  return sqlInputTables.value
+    .filter(table => table.name)
+    .map(table => ({
+      text: `\`${table.name}\``,
+      displayText: table.name,
+      className: 'fs-sql-hint-table',
+    }))
 })
 
 const options = computed(() => {
@@ -163,9 +225,100 @@ const updateOntology = (value: any) => {
   delete options.value.entity
 }
 
-const updateDatasource = (field: any, value: any) => {
+const updateDatasource = async (field: any, value: any) => {
   options.value[field.key] = value
   for (const key of field.clearOptions ?? []) delete options.value[key]
+  const databaseField = fields.value.find((item: any) => item.resourceDatabaseField)?.resourceDatabaseField
+  if (!(Number(value) > 0) || !databaseField || options.value[databaseField]) return
+  try {
+    const result: any = await DatasourceApi.list({ id: Number(value), page: 1, pageSize: 1 }, { success: false })
+    if (String(options.value[field.key]) !== String(value)) return
+    const row = ApiUtil.data(result)?.rows?.[0]
+    const content = parseJson(row?.content)
+    const database = String(content?.database ?? '').trim()
+    if (database) options.value[databaseField] = database
+  } catch {
+    // 默认数据库只用于交互预填，读取失败不阻断数据源选择
+  }
+}
+
+const activeSqlField = computed(() => fields.value.find((field: any) => field.component === 'sql'))
+const sqlEditor = () => Array.isArray(sqlEditorRef.value) ? sqlEditorRef.value[0] : sqlEditorRef.value
+
+const formatSql = (field: any = activeSqlField.value) => {
+  if (!field) return
+  const value = String(options.value[field.key] ?? '')
+  if (!value.trim()) {
+    ElMessage.warning('请先输入 SQL 语句')
+    return
+  }
+  try {
+    const editor = sqlEditor()
+    const selected = editor?.getSelection?.() || ''
+    if (selected.trim()) {
+      const formatted = SqlUtil.format(selected, field.dialect || 'sql')
+      if (formatted !== selected) editor?.replaceSelection?.(formatted)
+    } else {
+      options.value[field.key] = SqlUtil.format(value, field.dialect || 'sql')
+    }
+  } catch (error: any) {
+    ElMessage.error('SQL 格式化失败：' + (error?.message || error))
+  }
+}
+
+const sqlEditorKeys = {
+  'Shift-Alt-F': () => {
+    formatSql()
+    return true
+  },
+}
+
+const openTableBrowser = (sqlMode: boolean, field: any) => {
+  if (!(Number(options.value.datasourceId) > 0)) {
+    ElMessage.warning('请先选择数据源')
+    return
+  }
+  tableBrowserSqlMode.value = sqlMode
+  tableBrowserField.value = field
+  tableBrowserVisible.value = true
+}
+
+const tableBrowserSelected = computed(() => {
+  if (tableBrowserSqlMode.value || !tableBrowserField.value) return ''
+  return options.value[tableBrowserField.value.key] || ''
+})
+
+const tableBrowserDatabase = computed(() => {
+  const field = tableBrowserField.value
+  if (!field?.resourceDatabaseFilter || !field.resourceDatabaseField) return ''
+  return String(options.value[field.resourceDatabaseField] ?? '').trim()
+})
+
+const applyTableSelection = (table: any, action: 'name' | 'query') => {
+  const field = tableBrowserField.value
+  if (!field) return
+  const quotedName = table.quotedName || table.qualifiedName || table.name
+  const editor = sqlEditor()
+  if (tableBrowserSqlMode.value) {
+    if (action === 'query') {
+      const query = `SELECT * FROM ${quotedName}`
+      const current = String(options.value[field.key] ?? '')
+      if (!current.trim()) {
+        options.value[field.key] = query
+      } else {
+        editor?.replaceSelection?.(`\n${query}`)
+      }
+    } else {
+      editor?.replaceSelection?.(quotedName)
+    }
+    editor?.focus?.()
+  } else {
+    options.value[field.key] = table.value || table.qualifiedName || table.name
+    if (field.resourceDatabaseField && table.catalog) {
+      options.value[field.resourceDatabaseField] = table.catalog
+    }
+  }
+  tableBrowserVisible.value = false
 }
 
 const setRoot = (text: string) => {
@@ -174,6 +327,206 @@ const setRoot = (text: string) => {
     model.value.data.options = (parsed && 'object' === typeof parsed && !Array.isArray(parsed)) ? parsed : {}
   } catch (e) {
     // 非法JSON暂不写回，保留上次有效配置
+  }
+}
+
+const parseJson = (value: any) => {
+  if (typeof value !== 'string') return value
+  const text = value.trim()
+  if (!text || !['{', '['].includes(text[0])) return value
+  try {
+    return JSON.parse(text)
+  } catch {
+    return value
+  }
+}
+
+const typeToClass = (field: any) => {
+  const text = `${field?.className ?? ''} ${field?.type ?? ''}`.toLowerCase()
+  if (/timestamp|datetime/.test(text)) return 'java.sql.Timestamp'
+  if (/date/.test(text)) return 'java.sql.Date'
+  if (/bigint|int8|long/.test(text)) return 'java.lang.Long'
+  if (/integer|int4|smallint|int2|tinyint|int\b/.test(text)) return 'java.lang.Integer'
+  if (/double|float|decimal|numeric|real/.test(text)) return 'java.lang.Double'
+  if (/bool/.test(text)) return 'java.lang.Boolean'
+  return 'java.lang.String'
+}
+
+const normalizeSchema = (value: any, origin: string) => {
+  value = parseJson(value)
+  if (value && typeof value === 'object' && typeof value.preview === 'string') {
+    const preview = parseJson(value.preview)
+    if (preview !== value.preview) value = preview
+  }
+  const result: any[] = []
+  const seen = new Set<string>()
+  const add = (name: any, type: any = '', className: any = '') => {
+    const field = String(name ?? '').trim()
+    if (!field || seen.has(field)) return
+    seen.add(field)
+    const meta = { className, type: type || className }
+    result.push({ name: field, type: meta.type || 'unknown', clsType: typeToClass(meta), origin })
+  }
+  const columns = Array.isArray(value?.columns) ? value.columns : []
+  if (columns.length) {
+    columns.forEach((column: any) => {
+      add(column.name ?? column.field ?? column.label, column.type, column.className)
+    })
+  } else {
+    const schema = value?.schema ?? value
+    if (schema && typeof schema === 'object' && !Array.isArray(schema)) {
+      Object.entries(schema).forEach(([name, type]) => {
+        if (typeof type === 'object' && type) {
+          const field: any = type
+          add(name, field.type, field.className)
+        } else if (name !== 'columns') {
+          add(name, type)
+        }
+      })
+    }
+  }
+  const rows = Array.isArray(value?.rows) ? value.rows : (Array.isArray(value) ? value : [])
+  rows.forEach((row: any) => {
+    if (!row || typeof row !== 'object' || Array.isArray(row)) return
+    Object.entries(row).forEach(([name, raw]) => {
+      const type = raw === null || raw === undefined ? 'unknown' : typeof raw
+      add(name, type)
+    })
+  })
+  return result
+}
+
+const sourceNode = (edge: any) => {
+  const graph = props.instance?.flow?.graph
+  return edge?.getSourceCell?.() ?? graph?.getCellById?.(edge?.getSourceCellId?.())
+}
+
+const targetNode = (edge: any) => {
+  const graph = props.instance?.flow?.graph
+  return edge?.getTargetCell?.() ?? graph?.getCellById?.(edge?.getTargetCellId?.())
+}
+
+const nodeInfo = (node: any) => {
+  const data = node?.getData?.() ?? node?.data ?? {}
+  return { id: node?.id ?? '', name: data.name || node?.id || '未命名节点', type: data.type || '', options: data.options ?? {} }
+}
+
+const downstreamSinks = (cell: any) => {
+  const graph = props.instance?.flow?.graph
+  if (!graph) return []
+  const result: any[] = []
+  const visited = new Set<string>()
+  const queue = [cell]
+  while (queue.length) {
+    const current = queue.shift()
+    for (const edge of graph.getOutgoingEdges?.(current) ?? []) {
+      const node = targetNode(edge)
+      if (!node || visited.has(node.id)) continue
+      visited.add(node.id)
+      const info = nodeInfo(node)
+      if (info.type === 'JDBCSink') result.push(info)
+      queue.push(node)
+    }
+  }
+  return result
+}
+
+const saveDiagramSnapshot = () => DiagramApi.save(Object.assign({}, props.context ?? {}, {
+  schedule: props.context?.schedule ? true : false,
+  autoRecover: props.context?.autoRecover ? true : false,
+  content: props.instance.flow.toJSON(),
+}), { success: false })
+
+const loadMappingSchema = async () => {
+  if (model.value?.data?.type !== 'ConvertTransform') return
+  const graph = props.instance?.flow?.graph
+  const cell = graph?.getCellById?.(model.value.id) ?? model.value
+  if (!graph || !cell) {
+    mappingMessage.value = '无法读取画布连线'
+    return
+  }
+  const incoming = (graph.getIncomingEdges?.(cell) ?? [])
+    .map(sourceNode)
+    .filter((node: any) => node)
+    .map(nodeInfo)
+    .filter((node: any) => !String(node.type).endsWith('Config'))
+  if (!incoming.length) {
+    mappingMessage.value = '请先把上游数据节点连接到字段映射节点'
+    return
+  }
+  mappingLoading.value = true
+  mappingMessage.value = ''
+  mappingInputNames.value = incoming.map((node: any) => node.name).join('、')
+  try {
+    const saved: any = await saveDiagramSnapshot()
+    const diagramId = Number(ApiUtil.data(saved)?.id)
+    if (!(diagramId > 0)) throw new Error('保存编排失败，无法读取上游字段')
+    if (props.context) props.context.id = diagramId
+    const sources: any[] = []
+    const warnings: string[] = []
+    for (const node of incoming) {
+      const debugId = `dag_${diagramId}_${node.id}`
+      try {
+        const result: any = await DiagramApi.debug({
+          id: diagramId, nodeId: debugId, previewLimit: 1,
+        }, { success: false })
+        const data = ApiUtil.data(result) ?? {}
+        const output = parseJson(data.outputs?.[debugId] ?? data.final)
+        const fields = normalizeSchema(output, node.name)
+        if (fields.length) sources.push(...fields)
+        else warnings.push(`${node.name} 未返回字段结构`)
+      } catch (error: any) {
+        warnings.push(`${node.name}：${ApiUtil.message(error) || '读取失败'}`)
+      }
+    }
+    mappingSources.value = sources.filter((field, index, list) =>
+      list.findIndex(item => item.name === field.name) === index)
+
+    const sinks = downstreamSinks(cell)
+    mappingOutputNames.value = sinks.map((node: any) => node.name).join('、')
+    const targets: any[] = []
+    for (const sink of sinks) {
+      const datasourceId = Number(sink.options?.datasourceId)
+      const table = String(sink.options?.table ?? '').trim()
+      if (!(datasourceId > 0) || !table) {
+        warnings.push(`${sink.name} 尚未选择目标数据源或目标表`)
+        continue
+      }
+      try {
+        const result: any = await DiagramApi.columns({ datasourceId, table }, { success: false })
+        targets.push(...normalizeSchema(ApiUtil.data(result), sink.name))
+      } catch (error: any) {
+        warnings.push(`${sink.name}：${ApiUtil.message(error) || '读取目标表字段失败'}`)
+      }
+    }
+    mappingTargets.value = targets.filter((field, index, list) =>
+      list.findIndex(item => item.name === field.name) === index)
+    if (!mappingTargets.value.length) {
+      mappingTargets.value = mappingSources.value.map((field: any) => ({ ...field }))
+      mappingOutputNames.value = mappingOutputNames.value || '未连接固定结构的目标节点'
+      warnings.push('下游未提供固定表结构，已使用上游字段名作为目标字段')
+    }
+    mappingMessage.value = warnings.join('；')
+    options.value.mappingSchema = {
+      sources: mappingSources.value,
+      targets: mappingTargets.value,
+      inputNames: mappingInputNames.value,
+      outputNames: mappingOutputNames.value,
+      message: mappingMessage.value,
+      updatedAt: Date.now(),
+    }
+    try {
+      await saveDiagramSnapshot()
+    } catch (error: any) {
+      warnings.push(`字段结构已读取，但自动保存失败：${ApiUtil.message(error) || '未知错误'}`)
+    }
+    mappingMessage.value = warnings.join('；')
+  } catch (error: any) {
+    mappingSources.value = []
+    mappingTargets.value = []
+    mappingMessage.value = ApiUtil.message(error) || '读取连线字段失败'
+  } finally {
+    mappingLoading.value = false
   }
 }
 </script>
@@ -205,7 +558,11 @@ const setRoot = (text: string) => {
       </property-section>
 
       <property-section v-if="fields.length" title="参数配置" :reset-key="model.id">
-          <el-form-item :label="field.label" v-for="field in fields" :key="field.key">
+          <el-form-item
+            :label="['mapping', 'sql'].includes(field.component) ? undefined : field.label"
+            v-for="field in fields"
+            :key="field.key"
+          >
             <el-switch v-if="field.component === 'switch'" v-model="options[field.key]" />
             <el-input-number v-else-if="field.component === 'number'" v-model="options[field.key]" :controls="false" />
             <form-select
@@ -236,7 +593,12 @@ const setRoot = (text: string) => {
               clearable
             />
             <el-select v-else-if="field.component === 'select'" v-model="options[field.key]" clearable :placeholder="field.placeholder">
-              <el-option v-for="item in field.options" :key="item" :value="item" :label="item" />
+              <el-option
+                v-for="item in field.options"
+                :key="optionValue(item)"
+                :value="optionValue(item)"
+                :label="optionLabel(item)"
+              />
             </el-select>
             <el-select v-else-if="field.component === 'timezone'" v-model="options[field.key]" clearable>
               <el-option v-for="item in (config.timezones || [])" :key="item" :value="item" :label="item" />
@@ -259,15 +621,59 @@ const setRoot = (text: string) => {
               :placeholder="field.placeholder"
               @update:model-value="(value: string) => parse(field.key, value)"
             />
+            <template v-else-if="field.component === 'sql'">
+              <div class="sql-editor-field">
+                <div class="sql-editor-field__toolbar">
+                  <strong>{{ field.label }}</strong>
+                  <div>
+                    <el-button
+                      v-if="model.data.type === 'JDBCSource'"
+                      link
+                      type="primary"
+                      @click="openTableBrowser(true, field)"
+                    >获取表名</el-button>
+                    <el-button
+                      link
+                      type="primary"
+                      title="格式化（Shift+Alt+F）"
+                      @click="formatSql(field)"
+                    >格式化</el-button>
+                  </div>
+                </div>
+                <CodeEditor
+                  ref="sqlEditorRef"
+                  v-model="options[field.key]"
+                  mode="sql"
+                  :height="240"
+                  :hints="sqlEditorHints"
+                  :keys="sqlEditorKeys"
+                  :placeholder="field.placeholder"
+                  resizable
+                />
+              </div>
+            </template>
             <el-input
-              v-else-if="field.component === 'sql'"
-              type="textarea"
-              :rows="8"
+              v-else-if="field.component === 'resource'"
               v-model="options[field.key]"
               :placeholder="field.placeholder"
+            >
+              <template #append>
+                <el-button @click="openTableBrowser(false, field)">
+                  获取{{ field.resourceLabel || '表名' }}
+                </el-button>
+              </template>
+            </el-input>
+            <FieldMapEditor
+              v-else-if="field.component === 'mapping'"
+              v-model="options[field.key]"
+              :sources="mappingSources"
+              :targets="mappingTargets"
+              :loading="mappingLoading"
+              :message="mappingMessage"
+              @refresh="loadMappingSchema"
             />
             <el-input v-else v-model="options[field.key]" :placeholder="field.placeholder" />
-            <div v-if="field.component === 'sql'" class="sql-table-tip">
+            <div v-if="field.component === 'sql' && model.data.type === 'SQLTransform'" class="sql-table-tip">
               <TipText>
                 SQL 节点的直接上游数据会以对应上游节点的<em>名称</em>注册为临时表，
                 不使用节点类型或 ID 作为表名。
@@ -297,7 +703,7 @@ const setRoot = (text: string) => {
           </el-form-item>
       </property-section>
 
-      <property-section v-else title="参数配置" :reset-key="model.id">
+      <property-section v-else-if="!nodeGuide" title="参数配置" :reset-key="model.id">
           <el-form-item label="参数JSON">
             <el-input
               type="textarea"
@@ -307,11 +713,71 @@ const setRoot = (text: string) => {
             />
           </el-form-item>
       </property-section>
+
+      <property-section
+        v-if="nodeGuide || fieldHelps.length"
+        title="配置说明"
+        :reset-key="model.id"
+        :open="model.data.type !== 'ConvertTransform' || !(model.data.options?.items?.length)"
+      >
+        <div class="node-guide">
+          <template v-if="nodeGuide">
+            <p>{{ nodeGuide.summary }}</p>
+            <ul v-if="nodeGuide.points?.length">
+              <li v-for="point in nodeGuide.points" :key="point">{{ point }}</li>
+            </ul>
+            <code v-if="nodeGuide.example">{{ nodeGuide.example }}</code>
+          </template>
+          <div v-if="fieldHelps.length" class="node-guide__fields">
+            <strong>字段说明</strong>
+            <dl>
+              <template v-for="field in fieldHelps" :key="field.key">
+                <dt>{{ field.label }}</dt>
+                <dd>{{ field.help }}</dd>
+              </template>
+            </dl>
+          </div>
+        </div>
+      </property-section>
     </el-form>
   </property-panel>
+  <TableBrowser
+    v-model="tableBrowserVisible"
+    :datasource-id="options.datasourceId"
+    :database="tableBrowserDatabase"
+    :selected-table="tableBrowserSelected"
+    :sql-mode="tableBrowserSqlMode"
+    @select="applyTableSelection"
+  />
 </template>
 
 <style lang="scss" scoped>
+.sql-editor-field {
+  width: 100%;
+
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 5px;
+
+    strong {
+      color: var(--el-text-color-regular);
+      font-size: var(--el-font-size-base);
+      font-weight: 400;
+      line-height: 1.4;
+    }
+
+    > div {
+      display: flex;
+      flex: none;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+}
+
 .sql-table-tip {
   width: 100%;
   margin-top: 8px;
@@ -340,6 +806,73 @@ const setRoot = (text: string) => {
     color: var(--el-color-primary);
     background: var(--el-color-primary-light-9);
     font-family: var(--el-font-family-mono, monospace);
+  }
+}
+
+.node-guide {
+  width: 100%;
+  padding: 9px 10px;
+  box-sizing: border-box;
+  border: 1px solid var(--el-color-primary-light-7);
+  border-radius: 6px;
+  background: var(--el-color-primary-light-9);
+
+  p {
+    margin: 0;
+    color: var(--el-text-color-regular);
+    font-size: 12px;
+    line-height: 1.65;
+  }
+
+  ul {
+    margin: 6px 0 0;
+    padding-left: 16px;
+    color: var(--el-text-color-secondary);
+    font-size: 11px;
+    line-height: 1.65;
+  }
+
+  code {
+    display: block;
+    margin-top: 6px;
+    padding: 5px 7px;
+    border-radius: 4px;
+    color: var(--el-color-primary-dark-2);
+    background: var(--el-bg-color);
+    font-family: var(--el-font-family-mono, monospace);
+    font-size: 11px;
+    line-height: 1.55;
+    white-space: normal;
+  }
+
+  &__fields {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--el-color-primary-light-7);
+
+    strong {
+      color: var(--el-text-color-regular);
+      font-size: 11px;
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: 78px minmax(0, 1fr);
+      gap: 4px 8px;
+      margin: 6px 0 0;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    dt {
+      color: var(--el-text-color-regular);
+      font-weight: 500;
+    }
+
+    dd {
+      margin: 0;
+      color: var(--el-text-color-secondary);
+    }
   }
 }
 </style>

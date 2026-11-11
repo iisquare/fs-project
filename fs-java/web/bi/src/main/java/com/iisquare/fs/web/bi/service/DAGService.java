@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.base.elasticsearch.util.ElasticsearchUtil;
 import com.iisquare.fs.base.jpa.util.JPAUtil;
 import com.iisquare.fs.base.web.mvc.ServiceBase;
 import com.iisquare.fs.base.web.util.RpcUtil;
@@ -13,6 +14,10 @@ import com.iisquare.fs.web.bi.entity.Cluster;
 import com.iisquare.fs.web.bi.entity.Datasource;
 import com.iisquare.fs.web.bi.entity.Diagram;
 import com.iisquare.fs.web.bi.entity.Job;
+import com.iisquare.fs.web.bi.datasource.DatasourceConnector;
+import com.iisquare.fs.web.bi.datasource.ElasticsearchConnector;
+import com.iisquare.fs.web.bi.datasource.JDBCConnector;
+import com.iisquare.fs.web.bi.datasource.KafkaConnector;
 import com.iisquare.fs.web.bi.datasource.MongoDBConnector;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rpc.FlinkRpc;
@@ -21,15 +26,25 @@ import com.iisquare.fs.web.core.rpc.SparkRpc;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.apache.http.util.EntityUtils;
+import org.bson.Document;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.Response;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 @Service
@@ -57,6 +72,17 @@ public class DAGService extends ServiceBase {
     int debugPreviewLimit;
 
     private static final Pattern SAFE_NAME = Pattern.compile("^[A-Za-z][A-Za-z0-9_]*$");
+    private static final int MAX_TABLE_ROWS = 1000;
+
+    private static final class MongoDatabaseDiscovery {
+        final List<String> names;
+        final boolean complete;
+
+        MongoDatabaseDiscovery(List<String> names, boolean complete) {
+            this.names = names;
+            this.complete = complete;
+        }
+    }
 
     /**
      * 兼容旧接口：按流程默认集群提交
@@ -132,6 +158,389 @@ public class DAGService extends ServiceBase {
         }
         result.put("job", job.getId());
         return result;
+    }
+
+    /**
+     * 读取数据源可选择的资源名称：关系库表/视图、MongoDB 集合、ES 索引或 Kafka 主题。
+     * 资源枚举只认请求中的 database；数据源默认数据库不参与这里，便于浏览全部可访问库。
+     */
+    public Map<String, Object> tables(Map<?, ?> param) {
+        int datasourceId = DPUtil.parseInt(param.get("datasourceId"));
+        String requestedDatabase = DPUtil.trim(DPUtil.parseString(param.get("database")));
+        if (datasourceId < 1) return ApiUtil.result(1001, "数据源不能为空", datasourceId);
+        Datasource datasource = datasourceService.info(datasourceId);
+        if (null == datasource || !Integer.valueOf(1).equals(datasource.getStatus())) {
+            return ApiUtil.result(404, "数据源不存在或已禁用", datasourceId);
+        }
+        JsonNode config = DPUtil.parseJSON(datasource.getContent());
+        DatasourceConnector<?> connector = DatasourceConnector.connector(datasource.getType(), config);
+        if (connector instanceof JDBCConnector jdbc) return jdbcResources(datasource, jdbc, requestedDatabase);
+        if (connector instanceof MongoDBConnector mongo) return mongoResources(datasource, mongo, requestedDatabase);
+        if (connector instanceof ElasticsearchConnector elasticsearch) return elasticsearchResources(datasource, elasticsearch);
+        if (connector instanceof KafkaConnector kafka) return kafkaResources(datasource, kafka, config);
+        return ApiUtil.result(1003, "当前数据源类型不支持获取资源名称", datasource.getType());
+    }
+
+    private Map<String, Object> jdbcResources(
+            Datasource datasource, JDBCConnector jdbc, String requestedDatabase) {
+        int datasourceId = datasource.getId();
+        try (Connection connection = jdbc.open()) {
+            String catalog = DPUtil.trim(connection.getCatalog());
+            String schema = null;
+            try {
+                schema = DPUtil.trim(connection.getSchema());
+            } catch (Exception ignored) {
+                // 部分驱动不支持 JDBC 4.1 Schema，保持 null 由 DatabaseMetaData 推断
+            }
+            ObjectNode result = DPUtil.objectNode();
+            result.put("datasourceId", datasourceId);
+            result.put("datasourceType", datasource.getType());
+            result.put("resourceType", "TABLE");
+            result.put("resourceLabel", "表");
+            result.put("supportsColumns", true);
+            result.put("catalog", catalog);
+            result.put("schema", DPUtil.parseString(schema));
+            ArrayNode tables = result.putArray("tables");
+            Set<String> names = new HashSet<>();
+            boolean truncated = false;
+            DatabaseMetaData meta = connection.getMetaData();
+            boolean mysqlLike = "mysql".equals(datasource.getType()) || "doris".equals(datasource.getType());
+            boolean postgresql = isPostgresql(datasource.getType());
+            List<String> catalogs = new ArrayList<>();
+            if (!DPUtil.empty(requestedDatabase)) {
+                catalogs.add(requestedDatabase);
+            } else {
+                try (ResultSet resultSet = meta.getCatalogs()) {
+                    while (resultSet.next()) {
+                        String name = DPUtil.trim(resultSet.getString("TABLE_CAT"));
+                        if (DPUtil.empty(name) || (mysqlLike && isSystemDatabase(name))) continue;
+                        catalogs.add(name);
+                    }
+                }
+            }
+            if (catalogs.isEmpty()) catalogs.add(DPUtil.empty(catalog) ? null : catalog);
+            result.put("databaseConfigured", !DPUtil.empty(requestedDatabase));
+            ArrayNode databaseNames = result.putArray("databaseNames");
+            for (String currentCatalog : catalogs) {
+                if (!DPUtil.empty(currentCatalog)) databaseNames.add(currentCatalog);
+            }
+            // MySQL/Doris 枚举多个 Catalog；PostgreSQL 展示当前数据库下的全部业务 Schema。
+            String metaSchema = null;
+            for (String currentCatalog : catalogs) {
+                Connection targetConnection = connection;
+                boolean closeTarget = false;
+                try {
+                    DatabaseMetaData targetMeta = meta;
+                    if (postgresql && !DPUtil.empty(currentCatalog)) {
+                        targetConnection = jdbc.open(currentCatalog);
+                        closeTarget = true;
+                        targetMeta = targetConnection.getMetaData();
+                    }
+                    try (ResultSet resultSet = targetMeta.getTables(
+                            DPUtil.empty(currentCatalog) ? null : currentCatalog,
+                            metaSchema,
+                            "%", new String[]{"TABLE", "VIEW"})) {
+                        while (resultSet.next()) {
+                            if (tables.size() >= MAX_TABLE_ROWS) {
+                                truncated = true;
+                                break;
+                            }
+                            String name = DPUtil.trim(resultSet.getString("TABLE_NAME"));
+                            if (DPUtil.empty(name)) continue;
+                            String tableCatalog = DPUtil.trim(resultSet.getString("TABLE_CAT"));
+                            if (DPUtil.empty(tableCatalog)) tableCatalog = DPUtil.parseString(currentCatalog);
+                            String tableSchema = DPUtil.trim(resultSet.getString("TABLE_SCHEM"));
+                            if (postgresql && isSystemSchema(tableSchema)) continue;
+                            String qualifiedName = qualifiedTableName(datasource.getType(), tableCatalog, tableSchema, name);
+                            String resourceKey = tableCatalog + "\u0000" + tableSchema + "\u0000" + name;
+                            if (!names.add(resourceKey.toLowerCase())) continue;
+                            ObjectNode table = tables.addObject();
+                            table.put("name", name);
+                            table.put("catalog", tableCatalog);
+                            table.put("schema", tableSchema);
+                            table.put("qualifiedName", qualifiedName);
+                            table.put("value", qualifiedName);
+                            table.put("quotedName", quoteTableName(datasource.getType(), tableCatalog, tableSchema, name));
+                            table.put("type", resultSet.getString("TABLE_TYPE"));
+                            table.put("remark", DPUtil.parseString(resultSet.getString("REMARKS")));
+                        }
+                    }
+                } catch (Exception e) {
+                    if (!DPUtil.empty(requestedDatabase)) throw e;
+                } finally {
+                    if (closeTarget) jdbc.close(targetConnection);
+                }
+                if (truncated) break;
+            }
+            result.put("truncated", truncated);
+            return ApiUtil.result(0, null, result);
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "读取数据源表名失败", e.getMessage());
+        }
+    }
+
+    private Map<String, Object> mongoResources(
+            Datasource datasource, MongoDBConnector connector, String requestedDatabase) {
+        int datasourceId = datasource.getId();
+        try (var client = connector.open()) {
+            String database = requestedDatabase;
+            List<String> databases = new ArrayList<>();
+            MongoDatabaseDiscovery discovery = null;
+            if (DPUtil.empty(database)) {
+                discovery = mongoDatabaseNames(client);
+                for (String name : discovery.names) {
+                    if (DPUtil.empty(name) || isSystemMongoDatabase(name)) continue;
+                    databases.add(name);
+                }
+            } else {
+                databases.add(database);
+            }
+            ObjectNode result = DPUtil.objectNode();
+            result.put("datasourceId", datasourceId);
+            result.put("datasourceType", datasource.getType());
+            result.put("resourceType", "COLLECTION");
+            result.put("resourceLabel", "集合");
+            result.put("supportsColumns", false);
+            result.put("catalog", database);
+            result.put("schema", "");
+            result.put("databaseConfigured", !DPUtil.empty(database));
+            result.put("databaseEnumerationComplete", null == discovery || discovery.complete);
+            ArrayNode databaseNames = result.putArray("databaseNames");
+            databases.forEach(databaseNames::add);
+            ArrayNode tables = result.putArray("tables");
+            boolean truncated = false;
+            for (String databaseName : databases) {
+                for (String name : client.getDatabase(databaseName).listCollectionNames()) {
+                    if (DPUtil.empty(name)) continue;
+                    ObjectNode table = tables.addObject();
+                    table.put("name", name);
+                    table.put("catalog", databaseName);
+                    table.put("schema", "");
+                    table.put("qualifiedName", name);
+                    table.put("value", name);
+                    table.put("quotedName", name);
+                    table.put("type", "COLLECTION");
+                    table.put("remark", "");
+                }
+            }
+            result.put("truncated", truncated);
+            return ApiUtil.result(0, null, result);
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "读取 MongoDB 集合失败", e.getMessage());
+        }
+    }
+
+    private MongoDatabaseDiscovery mongoDatabaseNames(com.mongodb.client.MongoClient client) {
+        List<String> names = new ArrayList<>();
+        try {
+            for (Document document : client.listDatabases().authorizedDatabasesOnly(false)) {
+                names.add(document.getString("name"));
+            }
+            return new MongoDatabaseDiscovery(names, true);
+        } catch (Exception ignored) {
+            // 无 listDatabases 权限时降级为驱动默认的可见数据库列表
+            for (String name : client.listDatabaseNames()) names.add(name);
+            return new MongoDatabaseDiscovery(names, false);
+        }
+    }
+
+    private Map<String, Object> elasticsearchResources(Datasource datasource, ElasticsearchConnector connector) {
+        int datasourceId = datasource.getId();
+        try (var client = connector.open()) {
+            Request request = new Request("GET",
+                    "/_cat/indices?format=json&h=index,status,docs.count,store.size&expand_wildcards=open,closed");
+            Response response = ElasticsearchUtil.rest(client).performRequest(request);
+            String body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+            JsonNode indexes = DPUtil.parseJSON(body);
+            if (null == indexes || !indexes.isArray()) return ApiUtil.result(1500, "索引列表响应格式异常", body);
+            ObjectNode result = DPUtil.objectNode();
+            result.put("datasourceId", datasourceId);
+            result.put("datasourceType", datasource.getType());
+            result.put("resourceType", "INDEX");
+            result.put("resourceLabel", "索引");
+            result.put("supportsColumns", false);
+            ArrayNode tables = result.putArray("tables");
+            boolean truncated = false;
+            for (JsonNode item : indexes) {
+                if (tables.size() >= MAX_TABLE_ROWS) {
+                    truncated = true;
+                    break;
+                }
+                String name = DPUtil.trim(item.at("/index").asText(""));
+                if (DPUtil.empty(name)) continue;
+                String status = item.at("/status").asText("");
+                String documents = item.at("/docs.count").asText("");
+                String store = item.at("/store.size").asText("");
+                ObjectNode table = tables.addObject();
+                table.put("name", name);
+                table.put("qualifiedName", name);
+                table.put("value", name);
+                table.put("quotedName", name);
+                table.put("type", "INDEX");
+                List<String> details = new ArrayList<>();
+                if (!DPUtil.empty(status)) details.add(status);
+                if (!DPUtil.empty(documents)) details.add(documents + " docs");
+                if (!DPUtil.empty(store)) details.add(store);
+                table.put("remark", String.join(" · ", details));
+            }
+            result.put("truncated", truncated);
+            return ApiUtil.result(0, null, result);
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "读取 Elasticsearch 索引失败", e.getMessage());
+        }
+    }
+
+    private Map<String, Object> kafkaResources(Datasource datasource, KafkaConnector connector, JsonNode config) {
+        int datasourceId = datasource.getId();
+        try (var client = connector.open()) {
+            int timeout = Math.max(1000, config.at("/connectTimeout").asInt(5000));
+            Set<String> names = client.listTopics().names().get(timeout, TimeUnit.MILLISECONDS);
+            ObjectNode result = DPUtil.objectNode();
+            result.put("datasourceId", datasourceId);
+            result.put("datasourceType", datasource.getType());
+            result.put("resourceType", "TOPIC");
+            result.put("resourceLabel", "主题");
+            result.put("supportsColumns", false);
+            ArrayNode tables = result.putArray("tables");
+            boolean truncated = false;
+            for (String name : names) {
+                if (tables.size() >= MAX_TABLE_ROWS) {
+                    truncated = true;
+                    break;
+                }
+                if (DPUtil.empty(name)) continue;
+                ObjectNode table = tables.addObject();
+                table.put("name", name);
+                table.put("qualifiedName", name);
+                table.put("value", name);
+                table.put("quotedName", name);
+                table.put("type", "TOPIC");
+                table.put("remark", "");
+            }
+            result.put("truncated", truncated);
+            return ApiUtil.result(0, null, result);
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "读取 Kafka 主题失败", e.getMessage());
+        }
+    }
+
+    private String qualifiedTableName(String datasourceType, String catalog, String schema, String table) {
+        if (isPostgresql(datasourceType) && !DPUtil.empty(schema)) {
+            return schema + "." + table;
+        }
+        if (!DPUtil.empty(catalog)) return catalog + "." + table;
+        if (!DPUtil.empty(schema)) return schema + "." + table;
+        return table;
+    }
+
+    private String quoteTableName(String datasourceType, String catalog, String schema, String table) {
+        if (isPostgresql(datasourceType) && !DPUtil.empty(schema)) {
+            return quoteIdentifier(schema, "\"") + "." + quoteIdentifier(table, "\"");
+        }
+        if (!DPUtil.empty(catalog)) {
+            String quote = isPostgresql(datasourceType) ? "\"" : "`";
+            return quoteIdentifier(catalog, quote) + "." + quoteIdentifier(table, quote);
+        }
+        if (!DPUtil.empty(schema)) {
+            String quote = isPostgresql(datasourceType) ? "\"" : "`";
+            return quoteIdentifier(schema, quote) + "." + quoteIdentifier(table, quote);
+        }
+        String quote = isPostgresql(datasourceType) ? "\"" : "`";
+        return quoteIdentifier(table, quote);
+    }
+
+    private String quoteIdentifier(String value, String quote) {
+        return quote + DPUtil.parseString(value).replace(quote, quote + quote) + quote;
+    }
+
+    private boolean isPostgresql(String datasourceType) {
+        return "postgresql".equals(datasourceType) || "postgres".equals(datasourceType);
+    }
+
+    private boolean isSystemSchema(String schema) {
+        return "information_schema".equals(schema)
+                || "pg_catalog".equals(schema)
+                || (null != schema && schema.startsWith("pg_"));
+    }
+
+    private boolean isSystemDatabase(String database) {
+        String name = DPUtil.parseString(database).toLowerCase();
+        return "information_schema".equals(name)
+                || "mysql".equals(name)
+                || "performance_schema".equals(name)
+                || "sys".equals(name);
+    }
+
+    private boolean isSystemMongoDatabase(String database) {
+        String name = DPUtil.parseString(database).toLowerCase();
+        return "admin".equals(name) || "local".equals(name) || "config".equals(name);
+    }
+
+    /**
+     * 读取字段映射下游 JDBC 目标表的列定义，供画布按连线生成目标字段。
+     */
+    public Map<String, Object> columns(Map<?, ?> param) {
+        int datasourceId = DPUtil.parseInt(param.get("datasourceId"));
+        String table = DPUtil.trim(DPUtil.parseString(param.get("table")));
+        if (datasourceId < 1) return ApiUtil.result(1001, "目标数据源不能为空", datasourceId);
+        if (DPUtil.empty(table)) return ApiUtil.result(1002, "目标表不能为空", table);
+        Datasource datasource = datasourceService.info(datasourceId);
+        if (null == datasource || !Integer.valueOf(1).equals(datasource.getStatus())) {
+            return ApiUtil.result(404, "目标数据源不存在或已禁用", datasourceId);
+        }
+        JsonNode config = DPUtil.parseJSON(datasource.getContent());
+        DatasourceConnector<?> connector = DatasourceConnector.connector(datasource.getType(), config);
+        if (!(connector instanceof JDBCConnector jdbc)) {
+            return ApiUtil.result(1003, "仅关系型数据源支持读取目标表字段", datasource.getType());
+        }
+        String[] parts = table.replace("`", "").replace("\"", "").split("\\.");
+        String catalog = null;
+        String schema = null;
+        String name = parts[parts.length - 1];
+        try (Connection connection = jdbc.open()) {
+            catalog = connection.getCatalog();
+            try {
+                schema = connection.getSchema();
+            } catch (Exception ignored) {
+                // 部分驱动不支持 JDBC 4.1 Schema，回退为 null 由 DatabaseMetaData 推断
+            }
+            if (parts.length >= 3) {
+                catalog = parts[parts.length - 3];
+                schema = parts[parts.length - 2];
+            } else if (parts.length == 2) {
+                if (isPostgresql(datasource.getType())) schema = parts[0];
+                else catalog = parts[0];
+            }
+            ObjectNode result = DPUtil.objectNode();
+            result.put("datasourceId", datasourceId);
+            result.put("table", table);
+            ArrayNode columns = result.putArray("columns");
+            DatabaseMetaData meta = connection.getMetaData();
+            try (ResultSet resultSet = meta.getColumns(catalog, schema, name, "%")) {
+                while (resultSet.next()) {
+                    ObjectNode column = columns.addObject();
+                    column.put("name", resultSet.getString("COLUMN_NAME"));
+                    String typeName = resultSet.getString("TYPE_NAME");
+                    String className = "";
+                    try {
+                        className = resultSet.getString("CLASS_NAME");
+                    } catch (Exception ignored) {
+                        // 非标准可选列，使用 TYPE_NAME 交由前端推断
+                    }
+                    column.put("type", typeName);
+                    column.put("className", DPUtil.empty(className) ? typeName : className);
+                    column.put("nullable", resultSet.getInt("NULLABLE") != DatabaseMetaData.columnNoNulls);
+                    column.put("remark", DPUtil.parseString(resultSet.getString("REMARKS")));
+                    column.put("index", resultSet.getInt("ORDINAL_POSITION"));
+                }
+            }
+            if (columns.isEmpty()) {
+                return ApiUtil.result(1004, "目标表不存在或没有可读取字段", table);
+            }
+            return ApiUtil.result(0, null, result);
+        } catch (Exception e) {
+            return ApiUtil.result(1500, "读取目标表字段失败", e.getMessage());
+        }
     }
 
     private Map<String, Object> submit(Job job, Diagram diagram, ObjectNode frame, String triggerType) {
@@ -235,6 +644,7 @@ public class DAGService extends ServiceBase {
             return String.format("引用的数据源“%s”配置格式异常", datasource.getName());
         }
         String type = datasource.getType();
+        // 实际执行与资源枚举语义不同：节点显式值优先，其次使用数据源默认数据库构建连接。
         switch (nodeType) {
             case "JDBCSource":
             case "JDBCSink": {
@@ -266,6 +676,10 @@ public class DAGService extends ServiceBase {
                 options.put("username", config.at("/username").asText(""));
                 options.put("password", config.at("/password").asText(""));
                 options.put("database", config.at("/database").asText(""));
+                if (DPUtil.empty(options.at("/databaseList").asText(""))
+                        && DPUtil.empty(options.at("/database").asText(""))) {
+                    options.put("databaseList", ".*");
+                }
                 return null;
             }
             case "PostgreSQLCapture": {
@@ -276,7 +690,12 @@ public class DAGService extends ServiceBase {
                 options.put("port", config.at("/port").asInt(5432));
                 options.put("username", config.at("/username").asText(""));
                 options.put("password", config.at("/password").asText(""));
-                options.put("database", config.at("/database").asText(""));
+                String database = options.at("/database").asText("");
+                if (DPUtil.empty(database)) database = config.at("/database").asText("");
+                if (DPUtil.empty(database)) {
+                    return String.format("引用的数据源“%s”未指定数据库，请在节点中填写数据库", datasource.getName());
+                }
+                options.put("database", database);
                 return null;
             }
             case "MongoCapture": {
@@ -303,7 +722,8 @@ public class DAGService extends ServiceBase {
                 String uri = new MongoDBConnector(type, config).connectionUrl();
                 if (DPUtil.empty(uri)) return String.format("引用的数据源“%s”缺少连接地址", datasource.getName());
                 options.put("uri", uri);
-                String database = config.at("/database").asText("");
+                String database = options.at("/database").asText("");
+                if (DPUtil.empty(database)) database = config.at("/database").asText("");
                 if (DPUtil.empty(database)) database = mongoDatabase(uri);
                 if (DPUtil.empty(database)) return String.format("引用的数据源“%s”未指定数据库", datasource.getName());
                 options.put("database", database);
@@ -347,9 +767,11 @@ public class DAGService extends ServiceBase {
                 if (DPUtil.empty(servers)) return String.format("引用的数据源“%s”缺少服务地址", datasource.getName());
                 options.put("servers", servers);
                 options.put("bootstrap", servers);
-                options.put("securityProtocol", config.at("/securityProtocol").asText(""));
-                options.put("saslMechanism", config.at("/saslMechanism").asText(""));
-                options.put("saslJaasConfig", config.at("/saslJaasConfig").asText(""));
+                String securityProtocol = config.at("/securityProtocol").asText("");
+                boolean sasl = securityProtocol.toUpperCase().startsWith("SASL_");
+                options.put("securityProtocol", securityProtocol);
+                options.put("saslMechanism", sasl ? config.at("/saslMechanism").asText("") : "");
+                options.put("saslJaasConfig", sasl ? config.at("/saslJaasConfig").asText("") : "");
                 options.put("connectTimeout", config.at("/connectTimeout").asInt(5000));
                 return null;
             }

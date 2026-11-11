@@ -39,13 +39,15 @@ public class KafkaConnector extends DatasourceConnector<AdminClient> {
         if (!DPUtil.empty(securityProtocol)) {
             properties.put("security.protocol", securityProtocol);
         }
-        String saslMechanism = config.at("/saslMechanism").asText("");
-        if (!DPUtil.empty(saslMechanism)) {
-            properties.put("sasl.mechanism", saslMechanism);
-        }
-        String saslJaasConfig = config.at("/saslJaasConfig").asText("");
-        if (!DPUtil.empty(saslJaasConfig)) {
-            properties.put("sasl.jaas.config", saslJaasConfig);
+        if (securityProtocol.toUpperCase().startsWith("SASL_")) {
+            String saslMechanism = config.at("/saslMechanism").asText("");
+            if (!DPUtil.empty(saslMechanism)) {
+                properties.put("sasl.mechanism", saslMechanism);
+            }
+            String saslJaasConfig = config.at("/saslJaasConfig").asText("");
+            if (!DPUtil.empty(saslJaasConfig)) {
+                properties.put("sasl.jaas.config", saslJaasConfig);
+            }
         }
         return properties;
     }

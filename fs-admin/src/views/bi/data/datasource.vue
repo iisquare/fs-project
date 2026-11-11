@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { ElMessage } from 'element-plus';
 import type { FormInstance, TableInstance } from 'element-plus';
 import RouteUtil from '@/utils/RouteUtil'
 import { useRoute, useRouter } from 'vue-router';
@@ -62,6 +63,50 @@ const rules = ref({
   type: [{ required: true, message: '请选择数据源类型', trigger: 'change' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 })
+const kafkaSecurityProtocols = [
+  { value: 'PLAINTEXT', label: 'PLAINTEXT · 无加密、无认证' },
+  { value: 'SSL', label: 'SSL · TLS 加密' },
+  { value: 'SASL_PLAINTEXT', label: 'SASL_PLAINTEXT · SASL 认证、无加密' },
+  { value: 'SASL_SSL', label: 'SASL_SSL · SASL 认证 + TLS 加密' },
+]
+const kafkaSaslMechanisms = [
+  { value: 'PLAIN', label: 'PLAIN' },
+  { value: 'SCRAM-SHA-256', label: 'SCRAM-SHA-256' },
+  { value: 'SCRAM-SHA-512', label: 'SCRAM-SHA-512' },
+  { value: 'OAUTHBEARER', label: 'OAUTHBEARER' },
+]
+const kafkaSecurityProtocol = computed(() => form.value?.content?.securityProtocol || 'PLAINTEXT')
+const kafkaSaslEnabled = computed(() =>
+  ['SASL_PLAINTEXT', 'SASL_SSL'].includes(kafkaSecurityProtocol.value))
+const kafkaJaasPlaceholder = computed(() => {
+  const mechanism = form.value?.content?.saslMechanism || 'PLAIN'
+  if (mechanism.startsWith('SCRAM-')) {
+    return 'org.apache.kafka.common.security.scram.ScramLoginModule required username="..." password="...";'
+  }
+  return 'org.apache.kafka.common.security.plain.PlainLoginModule required username="..." password="...";'
+})
+watch(() => form.value?.type, (type) => {
+  if (type !== 'kafka') return
+  form.value.content ||= {}
+  if (!form.value.content.securityProtocol) form.value.content.securityProtocol = 'PLAINTEXT'
+  if (!form.value.content.connectTimeout) form.value.content.connectTimeout = 5000
+})
+watch(kafkaSecurityProtocol, (protocol) => {
+  if (!kafkaSaslEnabled.value || form.value.content?.saslMechanism) return
+  form.value.content.saslMechanism = 'PLAIN'
+})
+const validateConnectionConfig = () => {
+  if (form.value.type !== 'kafka') return true
+  if (!String(form.value.content?.servers ?? '').trim()) {
+    ElMessage.warning('请填写 Kafka 服务地址')
+    return false
+  }
+  if (kafkaSaslEnabled.value && !form.value.content?.saslMechanism) {
+    ElMessage.warning('SASL 安全协议需要选择 SASL 机制')
+    return false
+  }
+  return true
+}
 const lastTestResult = ref<any>(null)
 const handleAdd = () => {
   form.value = {
@@ -86,7 +131,7 @@ const handleEdit = (scope: any) => {
 }
 const handleSubmit = () => {
   formRef.value?.validate((valid: boolean) => {
-    if (!valid || formLoading.value) return
+    if (!valid || formLoading.value || !validateConnectionConfig()) return
     formLoading.value = true
     DatasourceApi.save(form.value, { success: true }).then(result => {
       handleRefresh(false, true)
@@ -108,7 +153,7 @@ const handleDelete = () => {
 }
 const handleTest = () => {
   formRef.value?.validate((valid: boolean) => {
-    if (!valid || formLoading.value) return
+    if (!valid || formLoading.value || !validateConnectionConfig()) return
     formLoading.value = true
     DatasourceApi.test(form.value, { success: true }).then((result: any) => {
       lastTestResult.value = result
@@ -201,7 +246,9 @@ const handleTest = () => {
       <el-descriptions border :column="2" label-width="100px" v-if="['mysql', 'doris', 'postgresql'].includes(form.type)">
         <el-descriptions-item label="主机地址">{{ form.content?.host }}</el-descriptions-item>
         <el-descriptions-item label="端口">{{ form.content?.port }}</el-descriptions-item>
-        <el-descriptions-item label="数据库名" :span="2">{{ form.content?.database }}</el-descriptions-item>
+        <el-descriptions-item label="数据库名" :span="2">
+          {{ form.content?.database || (form.type === 'postgresql' ? '未指定（使用默认数据库）' : '未指定（展示全部可见数据库）') }}
+        </el-descriptions-item>
         <el-descriptions-item label="用户名">{{ form.content?.username }}</el-descriptions-item>
         <el-descriptions-item label="密码"><form-password v-model="form.content.password" /></el-descriptions-item>
         <el-descriptions-item label="附加参数" :span="2">{{ form.content?.paramsQueryString || '暂无' }}</el-descriptions-item>
@@ -215,11 +262,12 @@ const handleTest = () => {
         <el-descriptions-item label="服务地址" :span="2">{{ form.content?.servers || form.content?.bootstrap }}</el-descriptions-item>
         <el-descriptions-item label="安全协议">{{ form.content?.securityProtocol || 'PLAINTEXT' }}</el-descriptions-item>
         <el-descriptions-item label="连接超时(ms)">{{ form.content?.connectTimeout }}</el-descriptions-item>
-        <el-descriptions-item label="SASL机制">{{ form.content?.saslMechanism || '无' }}</el-descriptions-item>
-        <el-descriptions-item label="SASL认证配置">{{ form.content?.saslJaasConfig ? '已配置' : '无' }}</el-descriptions-item>
+        <el-descriptions-item v-if="kafkaSaslEnabled" label="SASL机制">{{ form.content?.saslMechanism || '未配置' }}</el-descriptions-item>
+        <el-descriptions-item v-if="kafkaSaslEnabled" label="SASL认证配置">{{ form.content?.saslJaasConfig ? '已配置' : '未配置' }}</el-descriptions-item>
       </el-descriptions>
       <el-descriptions border :column="2" label-width="150px" v-else-if="form.type === 'mongodb'">
         <el-descriptions-item label="连接地址" :span="2">{{ form.content?.uri }}</el-descriptions-item>
+        <el-descriptions-item label="默认数据库" :span="2">{{ form.content?.database || '未指定（展示全部可见数据库）' }}</el-descriptions-item>
         <el-descriptions-item label="用户名">{{ form.content?.username }}</el-descriptions-item>
         <el-descriptions-item label="密码"><form-password v-model="form.content.password" /></el-descriptions-item>
         <el-descriptions-item label="认证库">{{ form.content?.authSource }}</el-descriptions-item>
@@ -285,7 +333,10 @@ const handleTest = () => {
         <el-descriptions-item label="主机地址"><el-input v-model="form.content.host" /></el-descriptions-item>
         <el-descriptions-item label="端口"><form-input-number v-model="form.content.port" /></el-descriptions-item>
         <el-descriptions-item label="数据库名" :span="2">
-          <el-input v-model="form.content.database" placeholder="数据库名可为空；Postgres建议填写，不指定时默认连接用户同名数据库。" />
+          <el-input
+            v-model="form.content.database"
+            placeholder="可留空；MySQL/Doris 留空时展示全部可见数据库，Postgres 默认连接用户同名数据库"
+          />
         </el-descriptions-item>
         <el-descriptions-item label="用户名"><el-input v-model="form.content.username" /></el-descriptions-item>
         <el-descriptions-item label="密码"><el-input type="password" v-model="form.content.password" show-password /></el-descriptions-item>
@@ -298,30 +349,68 @@ const handleTest = () => {
         <el-descriptions-item label="用户名"><el-input v-model="form.content.username" /></el-descriptions-item>
         <el-descriptions-item label="密码"><el-input type="password" v-model="form.content.password" show-password /></el-descriptions-item>
       </el-descriptions>
-      <el-descriptions border :column="2" label-width="150px" v-else-if="form.type === 'kafka'">
+      <template v-else-if="form.type === 'kafka'">
+      <el-alert
+        class="kafka-config-guide"
+        title="PLAINTEXT 无认证；SSL 仅 TLS 加密；SASL_PLAINTEXT 仅 SASL 认证；SASL_SSL 同时使用 SASL 与 TLS。"
+        type="info"
+        :closable="false"
+        show-icon
+      />
+      <el-descriptions class="kafka-config-form" border :column="2" label-width="150px">
         <el-descriptions-item label="服务地址" :span="2">
-          <el-input v-model="form.content.servers" placeholder="host1:9092,host2:9092" />
+          <el-input v-model="form.content.servers" placeholder="host1:9092,host2:9092">
+            <template #append>Bootstrap Servers</template>
+          </el-input>
         </el-descriptions-item>
         <el-descriptions-item label="安全协议">
-          <el-input v-model="form.content.securityProtocol" placeholder="PLAINTEXT / SASL_PLAINTEXT / SASL_SSL" />
+          <el-select v-model="form.content.securityProtocol" style="width: 100%" placeholder="选择安全协议">
+            <el-option
+              v-for="item in kafkaSecurityProtocols"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
         </el-descriptions-item>
         <el-descriptions-item label="连接超时(ms)">
-          <form-input-number v-model="form.content.connectTimeout" :min="1000" :step="1000" placeholder="5000" />
+          <form-input-number
+            v-model="form.content.connectTimeout"
+            style="width: 100%"
+            :min="1000"
+            :step="1000"
+            placeholder="5000"
+          />
         </el-descriptions-item>
-        <el-descriptions-item label="SASL机制">
-          <el-input v-model="form.content.saslMechanism" placeholder="PLAIN / SCRAM-SHA-256" />
+        <el-descriptions-item v-if="kafkaSaslEnabled" label="SASL机制" :span="2">
+          <el-select v-model="form.content.saslMechanism" style="width: 100%" placeholder="选择 SASL 机制">
+            <el-option
+              v-for="item in kafkaSaslMechanisms"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
         </el-descriptions-item>
-        <el-descriptions-item label="SASL认证配置" :span="2">
+        <el-descriptions-item v-if="kafkaSaslEnabled" label="SASL认证配置" :span="2">
           <el-input
             type="textarea"
             v-model="form.content.saslJaasConfig"
-            :rows="3"
-            placeholder='org.apache.kafka.common.security.plain.PlainLoginModule required username="..." password="...";'
+            :rows="4"
+            resize="vertical"
+            :placeholder="kafkaJaasPlaceholder"
           />
+          <div class="kafka-form-tip">
+            格式：登录模块 required username="..." password="...";；SCRAM 使用 ScramLoginModule。
+          </div>
         </el-descriptions-item>
       </el-descriptions>
+      </template>
       <el-descriptions border :column="2" label-width="150px" v-else-if="form.type === 'mongodb'">
         <el-descriptions-item label="连接地址" :span="2"><el-input v-model="form.content.uri" placeholder="例如: mongodb://localhost:27017/" /></el-descriptions-item>
+        <el-descriptions-item label="默认数据库" :span="2">
+          <el-input v-model="form.content.database" placeholder="可选；留空时展示全部可见数据库" />
+        </el-descriptions-item>
         <el-descriptions-item label="用户名"><el-input v-model="form.content.username" placeholder="可选，使用URI内的凭据时可不填" /></el-descriptions-item>
         <el-descriptions-item label="密码"><el-input type="password" v-model="form.content.password" show-password placeholder="可选，使用URI内的凭据时可不填" /></el-descriptions-item>
         <el-descriptions-item label="认证库"><el-input v-model="form.content.authSource" placeholder="admin" /></el-descriptions-item>
@@ -353,5 +442,24 @@ const handleTest = () => {
 }
 .el-alert {
   word-break: break-all;
+}
+.kafka-config-guide {
+  margin-bottom: 10px;
+}
+.kafka-config-form {
+  :deep(.el-select) {
+    width: 100%;
+    min-width: 220px;
+  }
+
+  :deep(.el-input-number) {
+    width: 100%;
+  }
+}
+.kafka-form-tip {
+  margin-top: 4px;
+  color: var(--el-text-color-secondary);
+  font-size: 11px;
+  line-height: 1.5;
 }
 </style>

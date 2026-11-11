@@ -167,6 +167,8 @@ Base64 快照或 `diagramUrl`，由 `FlinkApplication` / `SparkApplication` 的 
 - `GET /bi/dag/diagram?id=`：导出计算有向无环图
 - `POST /bi/dag/run`：提交作业（`{id, clusterId, data}`）
 - `POST /bi/dag/debug`：指定节点调试（`{id, nodeId, previewLimit}`），返回各节点输出
+- `POST /bi/dag/tables`：读取数据源可选资源（`{datasourceId}`），支持关系库表/视图、MongoDB 集合、Elasticsearch 索引和 Kafka 主题
+- `POST /bi/dag/columns`：读取指定表的字段结构（`{datasourceId, table}`）
 
 ### 节点即时调试
 
@@ -249,6 +251,28 @@ CDC Source 本身没有确定的结束位置，因此只在 Flink 流处理模�
 
 通用 `Neo4jSource/Neo4jSink` 适合复杂 Cypher；本体节点适合遵循知识图谱模型的标准化读写，
 两者可以混合使用。
+
+### 通用处理节点
+
+设计器的“数据加工”分组提供以下处理节点：
+
+- `FilterTransform`：按字段和条件过滤数据。Spark 将上游 Dataset 转为过滤表达式；Flink
+  同时兼容 `Row`、`JsonNode` 和 JSON 字符串输入，CDC 数据可使用 `after.status` 等点路径。
+- `UnionTransform`：按入边顺序合并多个上游数据，要求参与合并的数据结构一致。
+- `ConvertTransform`：按 `target/source/clsType` 映射字段并转换类型。Spark 输出 Dataset，
+  Flink Row 输入保持 Row 输出，JSON 和 JSON 字符串输入输出 JsonNode。设计器会根据
+  映射节点的连线读取上游输出 schema，并从下游 JDBC 目标表读取列定义；字段可点击加入映射，
+  属性面板以表格展示字段、anchor 和连接线，可拖拽 anchor 重新连接或按同名自动匹配。
+- `WindowTransform`：Flink 流处理窗口，支持可选的按键字段。窗口达到最大条数或窗口时间
+  到期时触发，复用 `CountTimeoutTrigger`，输出包含窗口起止时间、键、条数和明细的 JSON 批次。
+- `AggregateTransform`：按 `groupBy` 字段分组，并通过 `aggregations` 配置
+  `count(*) AS total` 等聚合表达式。
+- `SortTransform`：按指定字段升序或降序排列。
+- `LimitTransform`：限制输出行数。
+
+过滤和数据合并支持流处理与批处理。分组聚合、排序和行数限制只在批处理模式开放，
+避免在无界流上引入无限状态或无法得出结果的处理语义；更复杂的连接、窗口和去重逻辑
+可继续使用 SQL 节点或自定义 JAR 节点。Flink 窗口当前使用处理时间语义。
 
 预览行数可通过后端配置调整：
 

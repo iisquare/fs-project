@@ -268,11 +268,6 @@ const highlightDebugRun = (run: any) => {
 const debugRunLabel = (run: any) => {
   return `#${run.id} ${run.nodeLabel} · ${run.succeeded ? '成功' : '失败'} · ${run.elapsedMs} ms`
 }
-const clearDebugRuns = () => {
-  debugRuns.value = []
-  activeDebugRun.value = null
-  flowRef.value?.flow?.highlight?.({})
-}
 const debugPreview = computed(() => debugSelected.value?.preview ?? debugFinal.value)
 const debugSampleTableRef = ref<TableInstance>()
 const debugSampleColumns = ref<any[]>([])
@@ -484,18 +479,16 @@ watch(
                   </span>
                 </template>
               </div>
-              <el-space>
-                <span class="debug-run-count">{{ debugRuns.length }} 条执行记录</span>
-                <el-button v-if="debugRuns.length" link @click="clearDebugRuns">清空记录</el-button>
-              </el-space>
+              <span class="debug-run-count">{{ debugRuns.length }} 条执行记录</span>
             </header>
             <div v-if="debugRuns.length" class="debug-console__tabs">
               <layout-tabs v-model="activeDebugRun" :tabs="debugRuns" :label="debugRunLabel" />
             </div>
-            <div v-if="!activeDebugRun" class="debug-console__empty">
-              <el-empty description="选择画布节点并点击“调试节点”，每次执行结果都会保留在这里" :image-size="54" />
-            </div>
-            <div v-else class="debug-console__body">
+            <el-scrollbar class="debug-console__scroll">
+              <div v-if="!activeDebugRun" class="debug-console__empty">
+                <el-empty description="选择画布节点并点击“调试节点”，每次执行结果都会保留在这里" :image-size="54" />
+              </div>
+              <div v-else class="debug-console__body">
               <section
                 v-if="!debugSucceeded"
                 class="debug-error"
@@ -661,7 +654,8 @@ watch(
                   </el-table>
                 </div>
               </div>
-            </div>
+              </div>
+            </el-scrollbar>
           </section>
           <RowDataDetail
             v-model="debugRowDetailVisible"
@@ -674,7 +668,7 @@ watch(
       </el-splitter>
     </template>
     <template #right>
-      <LayoutProperty v-model="diagram" :active-item="activeItem" :instance="flowRef" :config="config" :tips="tips" :property="property" />
+      <LayoutProperty v-model="diagram" :active-item="activeItem" :instance="flowRef" :config="config" :context="diagram" :tips="tips" :property="property" />
     </template>
     <template #footer>
       <el-space>
@@ -745,6 +739,19 @@ watch(
     background: var(--el-bg-color);
     border-bottom: solid 1px var(--fs-layout-border-color);
   }
+  &__scroll {
+    flex: 1;
+    min-height: 0;
+    background: var(--el-bg-color);
+    :deep(.el-scrollbar__wrap) {
+      height: 100%;
+    }
+    :deep(.el-scrollbar__view) {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+  }
   &__empty {
     flex: 1;
     min-height: 0;
@@ -754,14 +761,13 @@ watch(
     background: var(--el-bg-color);
   }
   &__body {
-    flex: 1;
-    min-height: 0;
+    flex: none;
+    min-height: auto;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
     background: var(--el-bg-color);
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: visible;
   }
 }
 .debug-error {

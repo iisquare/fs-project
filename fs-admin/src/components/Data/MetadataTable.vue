@@ -17,7 +17,9 @@ import DataUtil from '@/utils/DataUtil';
 const model = defineModel<Record<string, string>>({ default: () => ({}) })
 const tableRef = ref<TableInstance>()
 const editable = defineModel('editable', { type: Boolean, default: false })
-const sensitives = defineModel<string[]>('sensitives', { default: () => ['authorization', 'x-api-key', 'x-auth-token'] })
+const sensitives = defineModel<string[]>('sensitives', {
+  default: () => ['authorization', 'x-api-key', 'x-auth-token'],
+})
 // 窄容器（如设计器属性面板）下的紧凑排版
 const { compact = false } = defineProps<{ compact?: boolean }>()
 const size = computed(() => compact ? 'small' : 'default')

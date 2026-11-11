@@ -6,6 +6,7 @@
  * @prop {*}          activeItem  - 当前激活组件的数据（非空时作为 v-model）
  * @prop {*}          instance    - 画布操作实例，传递给属性组件
  * @prop {*}          config      - 全局配置参数，传递给属性组件
+ * @prop {*}          context     - 当前画布数据，传递给属性组件
  * @prop {*}          tips        - 提示消息，传递给属性组件
  * @prop {Component}  property    - 要渲染的属性组件（异步组件）
  *
@@ -44,11 +45,13 @@ const render = (props: any) => {
     modelValue: props.modelValue,
     instance: props.instance,
     config: props.config,
+    context: props.context,
     tips: props.tips,
   } : {
     modelValue: props.activeItem,
     instance: props.instance,
     config: props.config,
+    context: props.context,
     tips: props.tips,
   })
 }
@@ -59,6 +62,7 @@ export default defineComponent({
     activeItem: { type: null, required: true },
     instance: { type: null, required: false },
     config: { type: null, required: false },
+    context: { type: null, required: false },
     tips: { type: null, required: false },
     property: { type: null, required: false },
   },

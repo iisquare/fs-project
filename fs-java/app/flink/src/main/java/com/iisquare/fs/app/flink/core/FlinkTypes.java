@@ -16,6 +16,7 @@ public final class FlinkTypes {
     public static final DAGType<DataStream<Row>> DATASTREAM = DAGType.of(DataStream.class, "DataStream<Row>");
     public static final DAGType<DataStream<JsonNode>> DATASTREAM_JSON = DAGType.of(DataStream.class, "DataStream<JsonNode>");
     public static final DAGType<DataStream<String>> DATASTREAM_STRING = DAGType.of(DataStream.class, "DataStream<String>");
+    public static final DAGType<DataStream<Object>> DATASTREAM_OBJECT = DAGType.of(DataStream.class, "DataStream<?>");
     public static final DAGType<Row> ROW = DAGType.of(Row.class, "Row");
     public static final DAGType<JobClient> CLIENT = DAGType.of(JobClient.class, "JobClient");
     public static final DAGType<Void> VOID = DAGType.of(Void.class, "Void");

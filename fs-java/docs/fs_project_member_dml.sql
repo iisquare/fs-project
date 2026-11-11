@@ -248,6 +248,7 @@ INSERT INTO `fs_member_menu` VALUES (427,'大屏模板','商业智能:智能报�
 INSERT INTO `fs_member_menu` VALUES (428,'代理服务','数据采集:采集配置:代理服务',26,175,'','/spider/setting/proxy','',20,1,'代理渠道、代理分组与运行统计',1793750400000,1,1793785276773,1);
 INSERT INTO `fs_member_menu` VALUES (429,'网站资产','网站资产',309,0,'OfficeBuilding','/siteBackend/setting/site','',10,1,'',1794195502000,1,1794195502000,1);
 INSERT INTO `fs_member_menu` VALUES (430,'入口与名单','网站资产:入口与名单',309,429,'','/siteBackend/setting/site','',0,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_menu` VALUES (431,'API Key','智能体:系统配置:API Key',308,414,'','/agent/apiKey/list','',90,1,'',1794556800000,1,1794556800000,1);
 /*!40000 ALTER TABLE `fs_member_menu` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -646,6 +647,11 @@ INSERT INTO `fs_member_resource` VALUES (485,'stats','网站资产:系统状态'
 INSERT INTO `fs_member_resource` VALUES (486,'mongoSample','网站资产:采集索引样例',309,0,'backend','siteSystem','mongoSample',10,1,'',1794195502000,1,1794195502000,1);
 INSERT INTO `fs_member_resource` VALUES (487,'rebuildSearch','网站资产:重建检索索引',309,0,'backend','siteSystem','rebuildSearch',10,1,'',1794195502000,1,1794195502000,1);
 INSERT INTO `fs_member_resource` VALUES (488,'spider','网站资产:同步采集:执行',309,0,'backend','siteSync','spider',10,1,'',1794195502000,1,1794195502000,1);
+INSERT INTO `fs_member_resource` VALUES (493,'网站域名','网站资产:网站入口:网站域名',309,469,'backend','siteEntry','domains',10,1,'域名黑名单维护的网站域名选项',1794211258000,1,1794211258000,1);
+INSERT INTO `fs_member_resource` VALUES (494,'API Key','智能体:API Key',308,0,'agent','apiKey','',0,1,'',1794556800000,1,1794556800000,1);
+INSERT INTO `fs_member_resource` VALUES (495,'添加','智能体:API Key:添加',308,494,'agent','apiKey','add',0,1,'',1794556800000,1,1794556800000,1);
+INSERT INTO `fs_member_resource` VALUES (496,'修改','智能体:API Key:修改',308,494,'agent','apiKey','modify',0,1,'',1794556800000,1,1794556800000,1);
+INSERT INTO `fs_member_resource` VALUES (497,'删除','智能体:API Key:删除',308,494,'agent','apiKey','delete',0,1,'',1794556800000,1,1794556800000,1);
 /*!40000 ALTER TABLE `fs_member_resource` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -658,4 +664,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-11-09 11:45:35
+-- Dump completed on 2026-11-11 18:31:58

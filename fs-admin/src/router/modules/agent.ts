@@ -34,6 +34,10 @@ export const layouts = [{
       meta: { title: '流程统计', permit: ['agent:agentic:'] },
       component: () => import('@/views/agent/agentic/statistic.vue')
     }, {
+      path: '/agent/apiKey/list',
+      meta: { title: 'API Key', permit: ['agent:apiKey:'] },
+      component: () => import('@/views/agent/apiKey/list.vue')
+    }, {
     path: '/agent/chat/compare',
     meta: { title: '模型对比', fit: true, permit: ['agent:compare:'] },
     component: () => import('@/views/agent/chat/compare.vue')

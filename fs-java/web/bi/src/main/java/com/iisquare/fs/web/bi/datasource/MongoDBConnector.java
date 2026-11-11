@@ -46,6 +46,8 @@ public class MongoDBConnector extends DatasourceConnector<MongoClient> {
         if (DPUtil.empty(uri)) {
             uri = "mongodb://localhost:27017";
         }
+        String database = DPUtil.trim(config.at("/database").asText(""));
+        if (!DPUtil.empty(database)) uri = withDatabase(uri, database);
         String username = config.at("/username").asText("");
         String password = config.at("/password").asText("");
         if (DPUtil.empty(username) || uri.contains("@")) {
@@ -62,9 +64,50 @@ public class MongoDBConnector extends DatasourceConnector<MongoClient> {
                 suffix += "/";
             }
         }
-        suffix += suffix.contains("?") ? "&authSource=" : "?authSource=";
-        suffix += encode(authSource);
+        if (!suffix.contains("authSource=")) {
+            suffix += suffix.contains("?") ? "&authSource=" : "?authSource=";
+            suffix += encode(authSource);
+        }
         return scheme + encode(username) + ":" + encode(password) + "@" + hostPort + suffix;
+    }
+
+    /**
+     * Trino MongoDB 目录用于展示整个实例时不能带默认数据库，否则元数据只会暴露该库。
+     */
+    public String catalogConnectionUrl() {
+        String uri = connectionUrl();
+        return DPUtil.empty(config.at("/database").asText("")) ? withoutDatabase(uri) : uri;
+    }
+
+    private String withDatabase(String uri, String database) {
+        int scheme = uri.indexOf("://");
+        if (scheme < 0) return uri;
+        int authorityStart = scheme + 3;
+        int query = uri.indexOf('?', authorityStart);
+        int path = uri.indexOf('/', authorityStart);
+        String encoded = encode(database);
+        if (path >= 0 && (query < 0 || path < query)) {
+            return uri.substring(0, path + 1) + encoded + (query < 0 ? "" : uri.substring(query));
+        }
+        String before = query < 0 ? uri : uri.substring(0, query);
+        String after = query < 0 ? "" : uri.substring(query);
+        if (!before.endsWith("/")) before += "/";
+        return before + encoded + after;
+    }
+
+    private String withoutDatabase(String uri) {
+        int scheme = uri.indexOf("://");
+        if (scheme < 0) return uri;
+        int authorityStart = scheme + 3;
+        int query = uri.indexOf('?', authorityStart);
+        int path = uri.indexOf('/', authorityStart);
+        if (path < 0) {
+            return query < 0 ? uri : uri.substring(0, query) + "/" + uri.substring(query);
+        }
+        if (query >= 0 && path > query) {
+            return uri.substring(0, query) + "/" + uri.substring(query);
+        }
+        return uri.substring(0, path + 1) + (query < 0 ? "" : uri.substring(query));
     }
 
     private String encode(String value) {

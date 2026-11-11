@@ -28,6 +28,12 @@ export default {
   debug(data: any, tips = {}) {
     return base.post('/dag/debug', data, tips)
   },
+  tables(data: any, tips = {}) {
+    return base.post('/dag/tables', data, tips)
+  },
+  columns(data: any, tips = {}) {
+    return base.post('/dag/columns', data, tips)
+  },
   jarList(params: any = {}, tips = {}) {
     return base.post('/diagram/jar/list', params, tips)
   },

@@ -32,6 +32,69 @@ const widget = (type: string, label: string, title: string, icon: string, suppor
   type, label, title, icon, shape: 'flow-node', support, direction: directionOf(type), options: payload(options), property,
 })
 
+/** 节点级配置引导，属性面板在参数上方展示 */
+export const nodeGuides: any = {
+  FilterTransform: {
+    summary: '保留满足条件的记录。条件只作用于一个字段，多个条件请串联多个过滤节点，或使用 SQL 节点。',
+    points: [
+      '字段填写当前数据中的列名；Flink 的 JSON/CDC 数据可使用 after.status、user.name 等路径。',
+      '等于、包含等字符串条件可设置是否区分大小写；数值比较请把值类型选为 number。',
+      'IN 条件使用英文逗号分隔，例如 active,pending；IS_NULL / IS_NOT_NULL 无需填写比较值。',
+    ],
+    example: '示例：field = status，operator = EQ，value = active',
+  },
+  UnionTransform: {
+    summary: '把所有直接上游数据按连线顺序合并成一个输出，不需要配置额外参数。',
+    points: [
+      '上游字段结构必须一致；列位置和类型不一致时，先使用字段映射或 SQL 节点对齐。',
+      'Spark 与 Flink 的流处理和批处理均可使用。',
+    ],
+    example: '示例：两个 Kafka 读取节点同时连接到数据合并节点。',
+  },
+  ConvertTransform: {
+    summary: '每条映射把来源字段写入目标字段，可选择是否保留原有字段。目标字段会排在输出前面。',
+    points: [
+      '连接上游数据节点和下游 JDBC 写入节点后，点击“读取连线字段”即可读取两侧字段名称与类型；属性面板的映射表会显示 anchor 和连接线。',
+      '读取到的上下游字段结构和映射曲线会保存在节点配置中，重新打开编排后可直接恢复。',
+      '来源字段留空时默认与目标字段同名；来源字段不存在时输出 null。',
+      '类型留空时保持来源字段类型；字符串转数字等转换请明确选择目标类型。',
+      'KEEP_SOURCE 保留未冲突的源字段，REMOVE_SOURCE 删除被引用的源字段，ONLY_TARGET 只保留映射结果，REMOVE_TARGET 仅删除同名目标字段。',
+    ],
+    example: '示例：输出字段 user_id，来源字段 after.id，类型 Long。',
+  },
+  WindowTransform: {
+    summary: 'Flink 处理时间滚动窗口。窗口达到最大条数或窗口时长到期时触发一次，适合攒批后写入 Kafka、Elasticsearch 等下游。',
+    points: [
+      '分区字段留空时使用全局窗口；填写后会按字段值分组，每个分组独立计数和超时。',
+      '最大条数用于低延迟触发，窗口时长是兜底触发时间，两者先到先触发。',
+      '输出 JSON 字段：windowStart、windowEnd、windowKey、windowSize、timeMode、count、items。',
+    ],
+    example: '示例：分区字段 tenant_id，窗口 60 秒，最大 100 条，表示同一租户每满 100 条或每 60 秒输出一批。',
+  },
+  AggregateTransform: {
+    summary: '按分组字段执行聚合表达式。分组字段会自动加入输出，无需在聚合表达式里重复选择。',
+    points: [
+      '分组字段使用英文逗号分隔；留空表示对全部数据做一次聚合。',
+      '聚合表达式使用当前引擎支持的 SQL 语法，例如 count(*) AS total、sum(amount) AS amount_total。',
+    ],
+    example: '示例：groupBy = category,status，aggregations = count(*) AS total,sum(amount) AS amount_total',
+  },
+  SortTransform: {
+    summary: '按照其中一个字段对批处理结果排序。',
+    points: [
+      '字段填写当前数据中的列名；需要多字段排序时请使用 SQL 节点。',
+      '流处理没有确定的全量终点，因此该节点只在批处理模式开放。',
+    ],
+  },
+  LimitTransform: {
+    summary: '截取批处理结果的前 N 行，不保证业务意义上的“最新”或“最大”，需要顺序时请先连接排序节点。',
+    points: [
+      '返回行数必须大于 0。',
+      '该节点只在批处理模式开放。',
+    ],
+  },
+}
+
 /** 节点参数编辑字段，Property.vue 依据节点类型渲染 */
 export const fields: any = {
   JDBCSource: [
@@ -39,7 +102,10 @@ export const fields: any = {
       key: 'datasourceId', label: '数据源', component: 'datasource', datasourceTypes: ['mysql', 'doris', 'postgresql'],
       placeholder: '输入名称检索数据源', clearOptions: ['url', 'driver', 'username', 'password'],
     },
-    { key: 'sql', label: '查询语句', component: 'textarea' },
+    {
+      key: 'sql', label: '查询语句', component: 'sql', dialect: 'sql',
+      placeholder: '点击“获取表名”选择数据表并生成查询，或直接输入 SQL',
+    },
     { key: 'fetchSize', label: '抓取条数', component: 'number' },
     { key: 'partitionColumn', label: '分区字段' },
     { key: 'lowerBound', label: '下界' },
@@ -52,7 +118,14 @@ export const fields: any = {
       key: 'datasourceId', label: '数据源', component: 'datasource', datasourceTypes: ['mongodb'],
       placeholder: '输入名称检索数据源', clearOptions: ['hosts', 'username', 'password', 'database'],
     },
-    { key: 'collection', label: '集合' },
+    {
+      key: 'database', label: '数据库',
+      placeholder: '可手动填写；通过“获取集合”选择时自动回填',
+    },
+    {
+      key: 'collection', label: '集合', component: 'resource', resourceLabel: '集合',
+      resourceDatabaseField: 'database', resourceDatabaseFilter: true,
+    },
     { key: 'pipeline', label: '聚合管道', component: 'json' },
   ],
   ElasticsearchSource: [
@@ -60,7 +133,7 @@ export const fields: any = {
       key: 'datasourceId', label: '数据源', component: 'datasource', datasourceTypes: ['elasticsearch'],
       placeholder: '输入名称检索数据源', clearOptions: ['nodes', 'servers', 'username', 'password'],
     },
-    { key: 'collection', label: '索引', placeholder: 'index 或 index-*' },
+    { key: 'collection', label: '索引', component: 'resource', resourceLabel: '索引', placeholder: 'index 或 index-*' },
     { key: 'query', label: '查询DSL', component: 'json', placeholder: '{"query":{"match_all":{}}}' },
     { key: 'sourceFields', label: '返回字段', placeholder: 'name,status；为空返回全部字段' },
     { key: 'limit', label: '读取条数', component: 'number', placeholder: '0 表示不限制' },
@@ -78,18 +151,13 @@ export const fields: any = {
     {
       key: 'datasourceId', label: '数据源', component: 'datasource', datasourceTypes: ['kafka'],
       placeholder: '输入名称检索Kafka数据源',
-      clearOptions: ['servers', 'bootstrap', 'securityProtocol', 'saslMechanism', 'saslJaasConfig'],
+      clearOptions: ['servers', 'bootstrap', 'securityProtocol', 'saslMechanism', 'saslJaasConfig', 'consumerProperties'],
     },
-    { key: 'servers', label: '服务地址', placeholder: 'host1:9092,host2:9092；未选数据源时填写' },
-    { key: 'topic', label: '主题' },
+    { key: 'topic', label: '主题', component: 'resource', resourceLabel: '主题' },
     { key: 'groupId', label: '消费组' },
     { key: 'offset', label: '起始位置(简)', component: 'select', options: ['latest', 'earliest'] },
     { key: 'startingOffsets', label: '起始位置(高级)', placeholder: 'earliest / latest / {"topic":{"0":100}}' },
     { key: 'endingOffsets', label: '批量结束位置', placeholder: 'latest / {"topic":{"0":200}}' },
-    { key: 'securityProtocol', label: '安全协议', placeholder: 'PLAINTEXT / SASL_PLAINTEXT / SASL_SSL' },
-    { key: 'saslMechanism', label: 'SASL机制', placeholder: 'PLAIN / SCRAM-SHA-256' },
-    { key: 'saslJaasConfig', label: 'SASL认证配置', placeholder: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="..." password="...";' },
-    { key: 'consumerProperties', label: '消费者参数', component: 'json', placeholder: '{"auto.offset.reset":"latest"}' },
   ],
   MySQLCapture: [
     {
@@ -97,7 +165,11 @@ export const fields: any = {
       placeholder: '输入名称检索数据源', clearOptions: ['hostname', 'port', 'username', 'password', 'database', 'databaseList'],
     },
     { key: 'databaseList', label: '数据库/正则', placeholder: '多个值用换行分隔；留空使用数据源数据库' },
-    { key: 'tableList', label: '表/正则', placeholder: 'db\\.table 或 .*' },
+    {
+      key: 'tableList', label: '表/正则', component: 'resource', resourceLabel: '表',
+      resourceDatabaseField: 'databaseList',
+      placeholder: 'db\\.table 或 .*',
+    },
     { key: 'startup', label: '启动位置', placeholder: 'latest / initial / earliest / specific:文件,位置 / timestamp:毫秒' },
     { key: 'serverId', label: 'Server ID', placeholder: '多个CDC任务需使用不同ID' },
     { key: 'timeZone', label: '服务端时区', placeholder: 'Asia/Shanghai' },
@@ -118,7 +190,11 @@ export const fields: any = {
     },
     { key: 'database', label: '数据库', placeholder: '未选数据源时填写' },
     { key: 'schemaList', label: 'Schema/正则', placeholder: 'public；多个值用换行分隔' },
-    { key: 'tableList', label: '表/正则', placeholder: 'schema.table 或 .*' },
+    {
+      key: 'tableList', label: '表/正则', component: 'resource', resourceLabel: '表',
+      resourceDatabaseField: 'database', resourceDatabaseFilter: true,
+      placeholder: 'schema.table 或 .*',
+    },
     { key: 'startup', label: '启动位置', component: 'select', options: ['latest', 'initial', 'earliest'] },
     { key: 'slotName', label: '复制槽', placeholder: '留空按节点ID自动生成' },
     { key: 'decodingPluginName', label: '解码插件', component: 'select', options: ['pgoutput', 'decoderbufs'] },
@@ -128,29 +204,127 @@ export const fields: any = {
   MongoCapture: [
     {
       key: 'datasourceId', label: '数据源', component: 'datasource', datasourceTypes: ['mongodb'],
-      placeholder: '输入名称检索数据源', clearOptions: ['hosts', 'username', 'password', 'databaseList'],
+      placeholder: '输入名称检索数据源', clearOptions: ['hosts', 'username', 'password', 'databaseList', 'connectionOptions'],
     },
-    { key: 'hosts', label: '连接地址', placeholder: 'mongos1:27017,mongos2:27017；未选数据源时填写' },
-    { key: 'username', label: '用户名' },
-    { key: 'password', label: '密码' },
     { key: 'databaseList', label: '数据库/正则', placeholder: '多个值用换行分隔；留空使用数据源数据库' },
-    { key: 'collectionList', label: '集合/正则', placeholder: '.*' },
+    {
+      key: 'collectionList', label: '集合/正则', component: 'resource', resourceLabel: '集合',
+      resourceDatabaseField: 'databaseList',
+      placeholder: '.*',
+    },
     { key: 'startup', label: '启动位置', component: 'select', options: ['latest', 'initial', 'earliest', 'committed'] },
     { key: 'copyExisting', label: '复制存量数据', component: 'switch' },
     { key: 'scanFullChangelog', label: '扫描完整变更日志', component: 'switch' },
     { key: 'includeSchema', label: '输出Schema', component: 'switch' },
-    { key: 'connectionOptions', label: '连接参数', placeholder: 'replicaSet=rs0&authSource=admin' },
     { key: 'batchSize', label: '批大小', component: 'number' },
     { key: 'pollAwaitTimeMillis', label: '轮询等待(ms)', component: 'number' },
     { key: 'pollMaxBatchSize', label: '轮询最大批大小', component: 'number' },
     { key: 'heartbeatIntervalMillis', label: '心跳间隔(ms)', component: 'number' },
   ],
   SQLTransform: [
-    { key: 'sql', label: 'SQL语句', component: 'sql' },
+    {
+      key: 'sql', label: 'SQL语句', component: 'sql', dialect: 'spark',
+      placeholder: 'SELECT * FROM `上游节点名称` WHERE ...',
+    },
+  ],
+  FilterTransform: [
+    {
+      key: 'field', label: '过滤字段', placeholder: '如 status；Flink流式CDC可使用 after.status',
+      help: '填写当前数据中的列名或 JSON 点路径。',
+    },
+    {
+      key: 'operator', label: '条件', component: 'select',
+      options: [
+        { value: 'EQ', label: '等于 (=)' },
+        { value: 'NE', label: '不等于 (≠)' },
+        { value: 'GT', label: '大于 (>)' },
+        { value: 'GE', label: '大于等于 (≥)' },
+        { value: 'LT', label: '小于 (<)' },
+        { value: 'LE', label: '小于等于 (≤)' },
+        { value: 'IN', label: '属于列表 (IN)' },
+        { value: 'CONTAINS', label: '包含' },
+        { value: 'STARTS_WITH', label: '以指定文本开头' },
+        { value: 'ENDS_WITH', label: '以指定文本结尾' },
+        { value: 'REGEX', label: '正则匹配' },
+        { value: 'IS_NULL', label: '为空' },
+        { value: 'IS_NOT_NULL', label: '不为空' },
+      ],
+      help: 'IN 使用英文逗号分隔多个值；为空类条件不需要比较值。',
+    },
+    {
+      key: 'value', label: '比较值', placeholder: '如 active、100 或 active,pending',
+      help: 'IS_NULL / IS_NOT_NULL 可以留空；其他条件需要填写期望值。',
+    },
+    {
+      key: 'valueType', label: '值类型', component: 'select',
+      options: [
+        { value: 'string', label: '字符串' },
+        { value: 'number', label: '数值' },
+        { value: 'boolean', label: '布尔值' },
+      ],
+      help: '决定比较值的解析方式；数值比较请选择“数值”。',
+    },
+    {
+      key: 'caseSensitive', label: '区分大小写', component: 'switch',
+      help: '仅对字符串条件和正则表达式生效。',
+    },
+  ],
+  AggregateTransform: [
+    {
+      key: 'groupBy', label: '分组字段', placeholder: '如 category,status；留空表示不分组',
+      help: '使用英文逗号分隔字段名，分组字段会自动出现在输出中。',
+    },
+    {
+      key: 'aggregations', label: '聚合表达式', component: 'textarea',
+      placeholder: '如 count(*) AS total,sum(amount) AS amount_total',
+      help: '填写当前 Spark/Flink SQL 引擎支持的聚合表达式，多个表达式用英文逗号分隔。',
+    },
+  ],
+  SortTransform: [
+    {
+      key: 'field', label: '排序字段', placeholder: '如 created_at',
+      help: '仅支持一个顶层字段，多字段排序请使用 SQL 节点。',
+    },
+    {
+      key: 'direction', label: '排序方向', component: 'select',
+      options: [{ value: 'ASC', label: '升序（小到大）' }, { value: 'DESC', label: '降序（大到小）' }],
+    },
+  ],
+  LimitTransform: [
+    {
+      key: 'limit', label: '返回行数', component: 'number', placeholder: '必须大于0',
+      help: '只截取前 N 行；需要明确“最新 N 行”时，请先连接排序节点。',
+    },
+  ],
+  WindowTransform: [
+    {
+      key: 'keyField', label: '分区字段', placeholder: '留空使用全局窗口；如 tenant_id',
+      help: '填写后按字段值分组，每个分组独立计数和超时；JSON 数据支持点路径。',
+    },
+    {
+      key: 'windowSeconds', label: '窗口时长(秒)', component: 'number', placeholder: '如 60',
+      help: '窗口到期时兜底触发，必须大于 0。',
+    },
+    {
+      key: 'maxCount', label: '最大条数', component: 'number', placeholder: '如 100',
+      help: '达到条数时提前触发，必须大于 0；与窗口时长先到先触发。',
+    },
   ],
   ConvertTransform: [
-    { key: 'mode', label: '处理方式', component: 'select', options: ['KEEP_SOURCE', 'REMOVE_SOURCE', 'ONLY_TARGET', 'REMOVE_TARGET'] },
-    { key: 'items', label: '字段映射', component: 'json', placeholder: '[{"target":"字段","source":"来源","clsType":"java.lang.String"}]' },
+    {
+      key: 'mode', label: '源字段处理', component: 'select',
+      options: [
+        { value: 'KEEP_SOURCE', label: '保留源字段（目标字段覆盖）' },
+        { value: 'REMOVE_SOURCE', label: '删除被引用源字段' },
+        { value: 'ONLY_TARGET', label: '仅保留目标字段' },
+        { value: 'REMOVE_TARGET', label: '仅删除同名源字段' },
+      ],
+      help: '默认保留未与目标字段冲突的源字段。',
+    },
+    {
+      key: 'items', label: '字段映射', component: 'mapping',
+      help: '按行添加目标字段、来源字段和目标类型；来源字段留空时默认与目标同名。',
+    },
   ],
   JSONStringifyTransform: [
     { key: 'fields', label: '字段列表', component: 'json' },
@@ -163,7 +337,7 @@ export const fields: any = {
       key: 'datasourceId', label: '数据源', component: 'datasource', datasourceTypes: ['mysql', 'doris', 'postgresql'],
       placeholder: '输入名称检索数据源', clearOptions: ['url', 'driver', 'username', 'password'],
     },
-    { key: 'table', label: '目标表', placeholder: 'schema.table' },
+    { key: 'table', label: '目标表', component: 'resource', resourceLabel: '表名', placeholder: 'schema.table' },
     { key: 'mode', label: '写入模式', component: 'select', options: ['append', 'overwrite', 'upsert'] },
     { key: 'keyFields', label: '主键字段', placeholder: 'domain,path' },
     { key: 'updateExclude', label: '不更新字段', placeholder: 'created_time' },
@@ -174,7 +348,14 @@ export const fields: any = {
       key: 'datasourceId', label: '数据源', component: 'datasource', datasourceTypes: ['mongodb'],
       placeholder: '输入名称检索数据源', clearOptions: ['hosts', 'username', 'password', 'database'],
     },
-    { key: 'collection', label: '集合' },
+    {
+      key: 'database', label: '数据库',
+      placeholder: '可手动填写；通过“获取集合”选择时自动回填',
+    },
+    {
+      key: 'collection', label: '集合', component: 'resource', resourceLabel: '集合',
+      resourceDatabaseField: 'database', resourceDatabaseFilter: true,
+    },
   ],
   Neo4jSink: [
     {
@@ -213,7 +394,7 @@ export const fields: any = {
       key: 'datasourceId', label: '数据源', component: 'datasource', datasourceTypes: ['elasticsearch'],
       placeholder: '输入名称检索数据源', clearOptions: ['nodes', 'servers', 'username', 'password'],
     },
-    { key: 'collection', label: '索引' },
+    { key: 'collection', label: '索引', component: 'resource', resourceLabel: '索引' },
     { key: 'idField', label: '主键字段' },
     { key: 'mode', label: '写入模式', component: 'select', options: ['index', 'create', 'update', 'upsert'] },
     { key: 'batchSize', label: '批大小', component: 'number' },
@@ -222,19 +403,14 @@ export const fields: any = {
     {
       key: 'datasourceId', label: '数据源', component: 'datasource', datasourceTypes: ['kafka'],
       placeholder: '输入名称检索Kafka数据源',
-      clearOptions: ['servers', 'bootstrap', 'securityProtocol', 'saslMechanism', 'saslJaasConfig'],
+      clearOptions: ['servers', 'bootstrap', 'securityProtocol', 'saslMechanism', 'saslJaasConfig', 'producerProperties'],
     },
-    { key: 'servers', label: '服务地址', placeholder: 'host1:9092,host2:9092；未选数据源时填写' },
-    { key: 'topic', label: '主题' },
+    { key: 'topic', label: '主题', component: 'resource', resourceLabel: '主题' },
     { key: 'checkpoint', label: 'Spark流检查点', placeholder: '留空自动按节点名生成' },
     { key: 'topicKey', label: '动态主题字段', placeholder: '消息JSON中的字段名（Spark/Flink）' },
     { key: 'partitionKey', label: '动态分区字段', placeholder: '消息JSON中的字段名（Flink）' },
     { key: 'messageField', label: '消息字段', placeholder: '默认读取 message' },
     { key: 'semantic', label: 'Flink投递语义', component: 'select', options: ['NONE', 'AT_LEAST_ONCE', 'EXACTLY_ONCE'] },
-    { key: 'securityProtocol', label: '安全协议' },
-    { key: 'saslMechanism', label: 'SASL机制' },
-    { key: 'saslJaasConfig', label: 'SASL认证配置' },
-    { key: 'producerProperties', label: '生产者参数', component: 'json', placeholder: '{"acks":"all"}' },
   ],
   APIConfig: [
     { key: 'url', label: '接口地址' },
@@ -292,7 +468,7 @@ const widgets = [{
       partitionColumn: '', lowerBound: '', upperBound: '', numPartitions: 0, iterable: false,
     }),
     widget('MongoSource', 'MongoDB读取', 'MongoDB读取', 'basic.mongodb', { spark: ['batch'] }, {
-      datasourceId: undefined, collection: '', pipeline: '',
+      datasourceId: undefined, database: '', collection: '', pipeline: '',
     }),
     widget('ElasticsearchSource', 'Elasticsearch读取', 'Elasticsearch索引读取', 'basic.elasticsearch', { spark: ['batch'] }, {
       datasourceId: undefined, collection: '', query: '{"query":{"match_all":{}}}', sourceFields: '', limit: 0,
@@ -304,8 +480,7 @@ const widgets = [{
       datasourceId: undefined, ontologyId: undefined, entityLabel: '', filters: {}, orderField: '', orderDirection: 'ASC', limit: 1000,
     }),
     widget('KafkaSource', 'Kafka读取', 'Kafka流式或指定区间批量读取', 'basic.kafka', { spark: ['batch', 'stream'], flink: ['batch', 'stream'] }, {
-      datasourceId: undefined, servers: '', topic: '', groupId: '', offset: 'latest', startingOffsets: '', endingOffsets: 'latest',
-      securityProtocol: '', saslMechanism: '', saslJaasConfig: '', consumerProperties: {},
+      datasourceId: undefined, topic: '', groupId: '', offset: 'latest', startingOffsets: '', endingOffsets: 'latest',
     }),
     widget('MySQLCapture', 'MySQL CDC', 'MySQL Binlog变更捕获', 'basic.mysql', { flink: ['stream'] }, {
       datasourceId: undefined, databaseList: '', tableList: '.*', startup: 'latest', serverId: '',
@@ -318,17 +493,33 @@ const widgets = [{
       slotName: '', decodingPluginName: 'pgoutput', includeSchema: true, debeziumProperties: {},
     }),
     widget('MongoCapture', 'MongoDB CDC', 'MongoDB Change Stream变更捕获', 'basic.mongodb', { flink: ['stream'] }, {
-      datasourceId: undefined, hosts: '', username: '', password: '', databaseList: '', collectionList: '.*',
+      datasourceId: undefined, databaseList: '', collectionList: '.*',
       startup: 'latest', copyExisting: true, scanFullChangelog: false, includeSchema: false,
-      connectionOptions: '', batchSize: 0, pollAwaitTimeMillis: 1000, pollMaxBatchSize: 0, heartbeatIntervalMillis: 0,
+      batchSize: 0, pollAwaitTimeMillis: 1000, pollMaxBatchSize: 0, heartbeatIntervalMillis: 0,
     }),
   ],
 }, {
   name: '数据加工',
   children: [
     widget('SQLTransform', 'SQL', 'SQL转换', 'flow.transform', { spark: ['batch'], flink: ['batch'] }, { sql: '' }),
-    widget('ConvertTransform', '字段转换', '字段映射与类型转换', 'flow.transform', { spark: ['batch'] }, {
+    widget('FilterTransform', '条件过滤', '按字段条件过滤数据，支持Flink JSON与CDC数据', 'flow.transform', { spark: ['batch', 'stream'], flink: ['batch', 'stream'] }, {
+      field: '', operator: 'EQ', value: '', valueType: 'string', caseSensitive: true,
+    }),
+    widget('UnionTransform', '数据合并', '按入边顺序合并多个上游数据；要求结构一致', 'flow.transform', { spark: ['batch', 'stream'], flink: ['batch', 'stream'] }),
+    widget('ConvertTransform', '字段映射', '映射目标字段并按需转换类型', 'flow.transform', { spark: ['batch'], flink: ['batch', 'stream'] }, {
       mode: 'KEEP_SOURCE', items: [],
+    }),
+    widget('WindowTransform', '窗口聚合', '按条数或窗口超时触发，输出带窗口边界和明细的JSON批次', 'flow.transform', { flink: ['stream'] }, {
+      keyField: '', windowSeconds: 60, maxCount: 100,
+    }),
+    widget('AggregateTransform', '分组聚合', '按字段分组并计算聚合表达式', 'flow.transform', { spark: ['batch'], flink: ['batch'] }, {
+      groupBy: '', aggregations: 'count(*) AS total',
+    }),
+    widget('SortTransform', '排序', '按指定字段排序', 'flow.transform', { spark: ['batch'], flink: ['batch'] }, {
+      field: '', direction: 'ASC',
+    }),
+    widget('LimitTransform', '行数限制', '限制输出数据的行数', 'flow.transform', { spark: ['batch'], flink: ['batch'] }, {
+      limit: 100,
     }),
     widget('JSONStringifyTransform', 'JSON序列化', '生成JSON字符串', 'flow.transform', { spark: ['batch'] }, {
       fields: [],
@@ -355,7 +546,7 @@ const widgets = [{
       datasourceId: undefined, table: '', mode: 'append', keyFields: '', updateExclude: '', batchSize: 500,
     }),
     widget('MongoSink', 'MongoDB写入', 'MongoDB写入', 'basic.mongodb', { spark: ['batch'] }, {
-      datasourceId: undefined, collection: '',
+      datasourceId: undefined, database: '', collection: '',
     }),
     widget('Neo4jSink', 'Neo4j写入', '通过Cypher UNWIND批量写入图数据', 'basic.neo4j', { spark: ['batch'] }, {
       datasourceId: undefined, cypher: 'UNWIND $rows AS row\nRETURN row', batchSize: 500,
@@ -367,9 +558,8 @@ const widgets = [{
       datasourceId: undefined, collection: '', idField: '', mode: 'index', batchSize: 1000,
     }),
     widget('KafkaSink', 'Kafka写入', 'Kafka流式或批量消息写入', 'basic.kafka', { spark: ['batch', 'stream'], flink: ['batch', 'stream'] }, {
-      datasourceId: undefined, servers: '', topic: '', checkpoint: '', topicKey: '', partitionKey: '',
+      datasourceId: undefined, topic: '', checkpoint: '', topicKey: '', partitionKey: '',
       messageField: 'message', semantic: 'AT_LEAST_ONCE',
-      securityProtocol: '', saslMechanism: '', saslJaasConfig: '', producerProperties: {},
     }),
   ],
 }, {
@@ -403,6 +593,7 @@ export default {
   canvas: { options: () => ({}), property: () => import('./Canvas.vue') },
   edge: { options: () => ({}), property: () => import('./EdgeProperty.vue') },
   widgets: DesignUtil.widgets(widgets),
+  nodeGuides,
   timezones: ['GMT', 'GMT+1', 'GMT+2', 'GMT+3', 'GMT+4', 'GMT+5', 'GMT+6', 'GMT+7', 'GMT+8', 'GMT+9', 'GMT+10', 'GMT+11', 'GMT-1', 'GMT-2', 'GMT-3', 'GMT-4', 'GMT-5', 'GMT-6', 'GMT-7', 'GMT-8', 'GMT-9', 'GMT-10', 'GMT-11'],
   locales: ['zh_CN', 'zh_TW', 'en_US', 'en_GB', 'ja_JP', 'ko_KR'],
   toolbars: [{

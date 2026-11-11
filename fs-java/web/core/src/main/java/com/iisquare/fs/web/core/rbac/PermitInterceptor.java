@@ -35,6 +35,11 @@ public class PermitInterceptor implements HandlerInterceptor {
             throw new PermitException(PermitException.CALLER_DENIED);
         }
         if(!(method.getBean() instanceof PermitControllerBase instance)) return true;
+        ApiKeyAuth apiKeyAuth = method.getMethodAnnotation(ApiKeyAuth.class);
+        if (null != apiKeyAuth && !DPUtil.empty(request.getHeader(apiKeyAuth.header()))) {
+            // 密钥是否有效及生效用户由业务接口校验；这里只放行，避免在进入接口前按登录会话拒绝
+            return true;
+        }
         String[] names = DPUtil.explode("\\.", instance.getClass().getName(), null, false);
         if(names.length < 5) throw new PermitException(PermitException.NO_PACKAGE);
         String module = names[names.length - 2];

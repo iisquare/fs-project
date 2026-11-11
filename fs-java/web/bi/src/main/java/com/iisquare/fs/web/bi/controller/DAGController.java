@@ -53,4 +53,14 @@ public class DAGController extends PermitControllerBase {
         return ApiUtil.echoResult(dagService.debug(id, param, request));
     }
 
+    @RequestMapping("/columns")
+    public String columnsAction(@RequestBody Map<?, ?> param) {
+        return ApiUtil.echoResult(dagService.columns(param));
+    }
+
+    @RequestMapping("/tables")
+    public String tablesAction(@RequestBody Map<?, ?> param) {
+        return ApiUtil.echoResult(dagService.tables(param));
+    }
+
 }

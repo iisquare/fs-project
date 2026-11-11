@@ -219,7 +219,7 @@ public class TrinoService extends ServiceBase {
 
     private List<CatalogDefinition> mongoCatalogDefinitions(Datasource datasource, JsonNode config, MongoDBConnector connector) {
         Map<String, String> properties = new LinkedHashMap<>();
-        properties.put("mongodb.connection-url", connector.connectionUrl());
+        properties.put("mongodb.connection-url", connector.catalogConnectionUrl());
         return List.of(new CatalogDefinition(datasource.getName(), "mongodb", properties));
     }
 
