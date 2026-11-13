@@ -67,8 +67,7 @@ public class ParameterExtractorNodeHandler implements AgenticNodeHandler {
     protected ObjectNode extractor(AgenticNodeContext ctx, ObjectNode data) throws Exception {
         ObjectNode json = ctx.chat(data);
         ArrayNode messages = (ArrayNode) json.at("/messages");
-        // 提取器同样支持多模态输入
-        ctx.userMessage(messages, ctx.text(data.at("/query").asText("")), data);
+        messages.addObject().put("role", "user").put("content", ctx.text(data.at("/query").asText("")));
         messages.addObject().put("role", "system").put("content", "请严格按以下参数返回 JSON 对象，不要输出多余内容："
                 + DPUtil.stringify(data.at("/parameters")));
         String answer = ctx.completion(json).at("/choices/0/message/content").asText("");

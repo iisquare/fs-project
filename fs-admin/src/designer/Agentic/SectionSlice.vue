@@ -22,7 +22,7 @@ const {
 </script>
 
 <template>
-  <PropertySection :title="title" :open="!collapsed">
+  <PropertySection class="agent-property-section" :title="title" :open="!collapsed">
     <template v-if="$slots.title" #title><slot name="title"></slot></template>
     <template v-if="$slots.actions" #extra><slot name="actions"></slot></template>
     <slot></slot>
@@ -34,5 +34,53 @@ const {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+/* Agent 节点属性统一使用更清晰的标题层级与参数间距 */
+:deep(.property-section.agent-property-section) {
+  margin: 0 -12px;
+  border-bottom-color: var(--el-border-color-lighter);
+
+  > .property-section__header {
+    height: 42px;
+    padding: 0 14px;
+    background: linear-gradient(180deg, var(--el-fill-color-blank), var(--el-fill-color-lighter));
+
+    &:hover {
+      background: var(--el-color-primary-light-9);
+    }
+
+    strong {
+      font-size: 13px;
+      font-weight: 650;
+      letter-spacing: 0.01em;
+    }
+  }
+
+  .property-section__chevron {
+    width: 7px;
+    height: 7px;
+    border-width: 1.5px;
+    border-color: var(--el-text-color-placeholder);
+  }
+
+  > .property-section__content {
+    padding: 12px 14px 16px;
+
+    > .el-form-item {
+      margin-bottom: 14px;
+    }
+
+    > .el-form-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .el-form-item__label {
+      padding-bottom: 5px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--el-text-color-regular);
+    }
+  }
 }
 </style>

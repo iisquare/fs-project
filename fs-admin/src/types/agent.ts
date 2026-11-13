@@ -46,7 +46,6 @@ export interface ChatMessageItem {
   notice?: { summary?: string; detail?: string } | null
   createdTime?: number
   logId?: any
-  charts?: any[]
   steps?: any[]
   progress?: any[]
   rounds?: any[]

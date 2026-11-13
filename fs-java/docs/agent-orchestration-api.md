@@ -14,7 +14,7 @@
 2. 确认编排状态为“启用”。
 3. 如果编排配置了授权角色，确保最终生效用户拥有其中至少一个角色。
 4. 在 LM 运营监控中创建模型访问密钥，其 secret 与 agent 配置项 `fs.agent.token` 一致。
-5. 在 agent「API Key」页面为每个外部系统创建独立密钥，选择允许调用的流程。
+5. 在 agent「API Key」页面为每个外部系统创建独立密钥；允许调用的流程可以留空，留空表示全部流程。
 6. 把 Agent API Key 交给外部系统，作为调用 agent 时的 `x-api-key`。
 
 外部系统传入的 `x-api-key` 只由 agent 校验。agent 调用 LM 时使用统一服务密钥：
@@ -60,7 +60,7 @@ Accept: text/event-stream
 
 | Header | 必填 | 说明 |
 | --- | --- | --- |
-| `x-api-key` | 是 | Agent API Key，由 agent 创建并绑定允许调用的流程 |
+| `x-api-key` | 是 | Agent API Key；可配置流程范围，留空表示全部流程 |
 | `Content-Type` | 是 | 固定为 `application/json` |
 | `Accept` | 否 | 普通调用填 `application/json`；流式调用填 `text/event-stream` |
 | `x-auth-token` | 否 | member 登录会话令牌，不带 `Bearer ` 前缀 |
@@ -73,8 +73,8 @@ Accept: text/event-stream
 
 ### 2.4 用户代理
 
-- Agent API Key 未开启“用户代理”：忽略 `x-auth-token`，积分、会话、运行日志和授权角色均按 API Key 所属用户处理。
-- Agent API Key 已开启“用户代理”且传入有效 `x-auth-token`：使用会话用户作为最终生效用户。
+- 未传 `x-auth-token`：积分、会话、运行日志和授权角色均按 API Key 所属用户处理。
+- 传入有效 `x-auth-token`：使用会话用户作为最终生效用户。
 - 已传 `x-auth-token` 但会话无效：请求被拒绝，不会回退到 API Key 所属用户。
 
 ## 3. 接口列表
@@ -166,7 +166,6 @@ HTTP 状态通常为 `200`，业务结果以响应体中的 `code` 和 `data.sta
         "duration": 2530
       }
     ],
-    "charts": [],
     "duration": 2680,
     "traceId": "order-callback-20261111-001",
     "inputs": {
@@ -194,7 +193,6 @@ HTTP 状态通常为 `200`，业务结果以响应体中的 `code` 和 `data.sta
 | `data.outputs` | object | 以节点 ID 为键的节点输出 |
 | `data.conversation` | object | 本轮运行后的会话变量 |
 | `data.steps` | array | 节点执行明细 |
-| `data.charts` | array | 图表节点输出 |
 | `data.duration` | integer | 本轮执行耗时，毫秒 |
 | `data.id` | integer | 编排应用 ID |
 | `data.name` | string | 编排应用名称 |
@@ -378,7 +376,7 @@ agent 不发送额外的 `[DONE]` 哨兵。客户端收到 `done` 或 `error` �
 | `1001` | 200 | Agent API Key 无效、禁用、过期或 Secret 不匹配 |
 | `1002` | 200 | 编排未发布、已停用或发布内容无效 |
 | `1004` | 200 | 缺少开始节点必填参数 |
-| `9403` | 200 | 流程不在 API Key 白名单，或最终生效用户不满足编排授权角色 |
+| `9403` | 200 | 流程不在 API Key 授权范围，或最终生效用户不满足编排授权角色 |
 | `9500` | 200 | 执行过程中发生异常，`data.traceId` 可用于排查 |
 
 ### 7.2 错误示例
@@ -516,5 +514,5 @@ LM 用量统一记录到 `fs.agent.token` 对应的服务密钥，并使用相�
 
 - 响应对象可能增加新字段，客户端应忽略未知字段。
 - SSE 事件可能增加新字段或新的事件类型，客户端应容忍未知类型。
-- 文档中的 `outputs`、`conversation`、`steps` 和 `charts` 内容取决于编排配置。
+- 文档中的 `outputs`、`conversation` 和 `steps` 内容取决于编排配置。
 - `inputs` 参数由每个编排应用的开始节点定义，不由平台接口固定。

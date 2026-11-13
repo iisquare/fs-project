@@ -22,7 +22,6 @@ const columns = ref([
   { prop: 'secret', label: '密钥', slot: 'secret' },
   { prop: 'uidUserInfo.name', label: '所属用户' },
   { prop: 'agenticIds', label: '授权流程', slot: 'agentics' },
-  { prop: 'proxyable', label: '用户代理', slot: 'proxyable' },
   { prop: 'statusText', label: '状态' },
   { prop: 'lastUsedTime', label: '最后使用', formatter: DateUtil.render },
   { prop: 'expiredTime', label: '过期时间', formatter: DateUtil.render },
@@ -63,7 +62,6 @@ const formRef = ref<FormInstance>()
 const rules = ref({
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
   uid: [{ required: true, message: '请选择所属用户', trigger: 'change' }],
-  agenticIds: [{ required: true, message: '请选择允许调用的流程', trigger: 'change', type: 'array' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 })
 
@@ -74,7 +72,6 @@ const handleAdd = () => {
     secret: '',
     uid: '',
     agenticIds: [],
-    proxyable: false,
     status: 1,
   }
   formVisible.value = true
@@ -164,14 +161,10 @@ const handleDelete = () => {
           <form-password v-model="scope.row.secret" level="medium" />
         </template>
         <template #agentics="scope">
-          <el-space wrap :size="4">
+          <el-tag v-if="!scope.row.agentics?.length" type="info">全部流程</el-tag>
+          <el-space v-else wrap :size="4">
             <el-tag v-for="item in scope.row.agentics" :key="item.id" size="small">{{ item.name }}</el-tag>
           </el-space>
-        </template>
-        <template #proxyable="scope">
-          <el-tag :type="scope.row.proxyable ? 'success' : 'info'">
-            {{ scope.row.proxyable ? '允许' : '禁止' }}
-          </el-tag>
         </template>
       </TableColumn>
       <el-table-column label="操作" width="80">
@@ -207,10 +200,7 @@ const handleDelete = () => {
         <el-input v-model="form.secret" type="password" show-password maxlength="64" placeholder="留空时自动生成" />
       </el-form-item>
       <el-form-item prop="agenticIds" label="允许调用的流程">
-        <form-select v-model="form.agenticIds" :callback="AgenticApi.list" multiple clearable placeholder="请选择流程" />
-      </el-form-item>
-      <el-form-item prop="proxyable" label="用户代理">
-        <el-checkbox v-model="form.proxyable">携带有效用户会话时按会话用户记账</el-checkbox>
+        <form-select v-model="form.agenticIds" :callback="AgenticApi.list" multiple clearable placeholder="留空表示全部流程" />
       </el-form-item>
       <el-form-item prop="expiredTime" label="过期时间">
         <form-date-picker v-model="form.expiredTime" placeholder="留空为永久有效" />

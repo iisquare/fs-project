@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * 消息气泡 - 对话三页（流程对话 / 对话历史详情 / 模型对话）共用的一行消息：
- * 头像 + 气泡（思考过程、正文与图表、空回复占位、输出状态、工具条）+ 气泡外的异常图标
+ * 头像 + 气泡（思考过程、图文混排回复、空回复占位、输出状态、工具条）+ 气泡外的异常图标
  * （助手回复的图标排在气泡右侧，用户请求级异常的图标与气泡同排、随气泡垂直居中）。
  *
  * 页面差异走插槽：`#steps`（执行过程：时间线 / 执行明细）、`#extra`（页面自有的补充内容，如模型的原始输出）；
@@ -32,7 +32,6 @@ import ChatBranches from '@/components/Chat/ChatBranches.vue'
 import ChatLoading from '@/components/Chat/ChatLoading.vue'
 import ChatNotice from '@/components/Chat/ChatNotice.vue'
 import ChatToolbar from '@/components/Chat/ChatToolbar.vue'
-import DataResultChart from '@/components/Data/DataResultChart.vue'
 import MarkdownEditor from '@/components/Editor/MarkdownEditor.vue'
 import AgenticUtil from '@/utils/AgenticUtil'
 import DateUtil from '@/utils/DateUtil'
@@ -100,10 +99,9 @@ const isAssistant = computed(() => 'assistant' === props.item?.role)
 /** 独立异常行：没有对应消息时的整行提示 */
 const isError = computed(() => 'error' === props.item?.role)
 const isStreaming = computed(() => props.streaming ?? !!props.item?.streaming)
-/** 回复分段：文本走 Markdown，图表按「图表占位符」落到指定位置（未引用的追加在末尾） */
-const parts = computed<any[]>(() => AgenticUtil.replyParts(props.item) ?? [])
-/** 空回复：没有正文也没有图表，给个占位避免只剩一个空气泡 */
-const empty = computed(() => isAssistant.value && !isStreaming.value && !props.item?.content && !parts.value.length)
+const hasContent = computed(() => '' !== String(props.item?.content ?? '').trim())
+/** 空回复：没有正文时给个占位避免只剩一个空气泡 */
+const empty = computed(() => isAssistant.value && !isStreaming.value && !hasContent.value)
 
 /**
  * 助手回复里的知识库图片（形如 ![说明](kb:图片标识)）按当前授权实时签发地址：
@@ -163,29 +161,15 @@ const streamingText = computed(() => {
                 <el-button type="primary" size="small" :disabled="!String(draft ?? '').trim()" @click="submitEdit">重新发送</el-button>
               </div>
             </div>
-            <!-- 助手回复按 Markdown 渲染
-                 （显式判断角色：上面插了用户消息的判断后，这里若继续用 v-else 就会串到那个 v-if 上，
-                  非历史页会因此把用户消息再按助手回复渲染一遍） -->
-            <template v-if="isAssistant">
-              <template :key="partIndex" v-for="(part, partIndex) in parts">
-                <MarkdownEditor
-                  class="chat-markdown"
-                  v-if="'text' === part.type"
-                  :model-value="part.text"
-                  :resolve-images="resolveImages"
-                  readonly />
-                <DataResultChart
-                  class="chat-chart"
-                  v-else
-                  :type="part.chart.type"
-                  :title="part.chart.title"
-                  :source="part.chart.source"
-                  :categories="part.chart.categories"
-                  :series="part.chart.series" />
-              </template>
-            </template>
+            <!-- 助手回复整体交给 Markdown 渲染；echarts 代码块由 Markdown 预览组件原位渲染为图表 -->
+            <MarkdownEditor
+              class="chat-markdown"
+              v-if="isAssistant && hasContent"
+              :model-value="item.content"
+              :resolve-images="resolveImages"
+              readonly />
             <!-- 没有正文的异常轮次（如角色授权被撤销）：失败原因直接显示在气泡里，不必点图标才知道原因 -->
-            <div class="chat-notice-text" v-if="isAssistant && item.notice && !item.content && !isStreaming">
+            <div class="chat-notice-text" v-if="isAssistant && item.notice && !hasContent && !isStreaming">
               {{ item.notice.summary }}
             </div>
             <!-- 空回复：给出占位，避免只剩一个空气泡 -->
@@ -198,7 +182,7 @@ const streamingText = computed(() => {
             <!-- 回复工具条：复制 / 反馈 / 时间（空回复与流式中不展示） -->
             <ChatToolbar
               class="chat-toolbar"
-              v-if="isAssistant && !isStreaming && (item.content || parts.length)"
+              v-if="isAssistant && !isStreaming && hasContent"
               :item="item"
               :disabled="disabled"
               :feedback="feedback"
@@ -426,10 +410,6 @@ const streamingText = computed(() => {
     padding: 0;
     font-size: 13px;
   }
-}
-/* 最终回复里的图表：与回复内容之间留白 */
-.chat-chart {
-  margin-top: 8px;
 }
 /* 流式输出状态：跟在内容下方，与正文留出间距；内容为空时作为首行不加上边距 */
 .chat-streaming {

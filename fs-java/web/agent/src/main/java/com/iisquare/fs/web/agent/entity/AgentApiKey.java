@@ -9,7 +9,7 @@ import org.hibernate.annotations.DynamicUpdate;
  * agent 外部调用密钥。
  *
  * secret 与 LM 授权密钥一致，保存密钥原文供授权管理员查看和复制。
- * agenticIds 是流程白名单；proxyable 控制是否读取 x-auth-token 并按会话用户记账。
+ * agenticIds 是流程白名单；请求携带有效 x-auth-token 时始终按会话用户记账。
  */
 @Entity
 @Table(name = "api_key")
@@ -35,8 +35,6 @@ public class AgentApiKey {
     private String secret; // 密钥
     @Column
     private String agenticIds; // 允许调用的编排流程
-    @Column
-    private Integer proxyable; // 是否接受用户会话并按会话用户记账
     @Column
     private Integer status; // 1-启用，2-禁用
     @Column

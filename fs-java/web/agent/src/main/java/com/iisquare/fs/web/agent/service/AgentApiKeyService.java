@@ -79,7 +79,6 @@ public class AgentApiKeyService extends JPAServiceBase {
         int status = DPUtil.parseInt(param.get("status"));
         if (!status().containsKey(status)) return ApiUtil.result(1003, "状态异常", status);
         List<Integer> agenticIds = DPUtil.parseIntList(param.get("agenticIds"));
-        if (agenticIds.isEmpty()) return ApiUtil.result(1004, "至少需选择一个允许调用的编排流程", null);
         for (Integer agenticId : agenticIds) {
             Agentic agentic = info(agenticDao, agenticId);
             if (null == agentic) return ApiUtil.result(1005, "编排流程不存在", agenticId);
@@ -109,7 +108,6 @@ public class AgentApiKeyService extends JPAServiceBase {
         info.setSecret(secret);
         info.setUid(uid);
         info.setAgenticIds(DPUtil.implode(",", agenticIds));
-        info.setProxyable(DPUtil.parseBoolean(param.get("proxyable")) ? 1 : 0);
         info.setStatus(status);
         info.setExpiredTime(parseExpiredTime(param.get("expiredTime")));
         info.setLastUsedTime(null == info.getLastUsedTime() ? 0L : info.getLastUsedTime());
@@ -119,6 +117,12 @@ public class AgentApiKeyService extends JPAServiceBase {
         if (null == data) data = DPUtil.objectNode();
         data.put("agenticIds", DPUtil.toJSON(agenticIds));
         return ApiUtil.result(0, null, data);
+    }
+
+    /** 流程授权范围：未配置时默认允许全部流程。 */
+    public boolean allows(AgentApiKey key, int agenticId) {
+        List<Integer> allowed = DPUtil.parseIntList(null == key ? "" : key.getAgenticIds());
+        return allowed.isEmpty() || allowed.contains(agenticId);
     }
 
     protected long parseExpiredTime(Object value) {
@@ -149,7 +153,6 @@ public class AgentApiKeyService extends JPAServiceBase {
             ObjectNode node = (ObjectNode) row;
             List<Integer> ids = agenticIds(node.get("agenticIds"));
             node.replace("agenticIds", DPUtil.toJSON(ids));
-            node.put("proxyable", 1 == node.at("/proxyable").asInt(0));
         }
         return rows;
     }
@@ -211,7 +214,7 @@ public class AgentApiKeyService extends JPAServiceBase {
         }
     }
 
-    /** 外部调用鉴权：按密钥查询，随后按用户代理开关确定生效身份。 */
+    /** 外部调用鉴权：按密钥查询，显式携带有效用户会话时切换到会话用户。 */
     public AuthenticatedKey authenticate(String secret, HttpServletRequest request) {
         if (DPUtil.empty(secret)) return null;
         AgentApiKey key = agentApiKeyDao.findFirstBySecretAndDeletedTime(secret, 0L).orElse(null);
@@ -219,10 +222,9 @@ public class AgentApiKeyService extends JPAServiceBase {
         if (null != key.getExpiredTime() && key.getExpiredTime() > 0
                 && key.getExpiredTime() <= System.currentTimeMillis()) return null;
 
-        boolean proxyable = 1 == DPUtil.parseInt(key.getProxyable());
-        String suppliedSession = request.getHeader(FeignInterceptor.HEADER_AUTH_TOKEN);
-        String session = proxyable ? rbacService.token(request) : "";
-        if (proxyable && !DPUtil.empty(suppliedSession) && DPUtil.empty(session)) return null;
+        String suppliedSession = DPUtil.trim(request.getHeader(FeignInterceptor.HEADER_AUTH_TOKEN));
+        String session = DPUtil.empty(suppliedSession) ? "" : rbacService.token(request);
+        if (!DPUtil.empty(suppliedSession) && DPUtil.empty(session)) return null;
         // 密钥属主必须仍然有效；用户代理只切换生效用户，不绕过 Key 属主停用。
         JsonNode owner = rbacService.identityById(key.getUid());
         if (null == owner || owner.isNull() || owner.isEmpty()) return null;

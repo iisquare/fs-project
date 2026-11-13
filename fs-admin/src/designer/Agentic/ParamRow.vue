@@ -24,7 +24,7 @@ const {
 </script>
 
 <template>
-  <el-form-item label="">
+  <el-form-item class="param-form-item" label="">
     <div class="param-row" :class="{ 'is-wide': wide }">
       <span class="param-name">{{ label }}</span>
       <el-switch v-if="switchable" v-model="enabled" />
@@ -38,16 +38,18 @@ const {
 <style lang="scss" scoped>
 .param-row {
   width: 100%;
+  min-height: 24px;
   /* 面板变窄时行内元素可收缩，避免撑出横向滚动条 */
   min-width: 0;
   @include flex-start();
-  gap: 8px;
+  gap: 10px;
   .param-name {
     /* 参数名列保持基准宽度，必要时才收缩 */
-    flex: 0 1 56px;
+    flex: 0 1 58px;
     min-width: 0;
-    font-size: 13px;
-    color: var(--el-text-color-primary);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--el-text-color-regular);
     @include text-wrap();
   }
   .el-switch {
@@ -92,5 +94,9 @@ const {
       }
     }
   }
+}
+
+.param-form-item {
+  margin-bottom: 10px;
 }
 </style>

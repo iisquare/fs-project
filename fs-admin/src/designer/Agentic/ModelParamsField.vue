@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 模型配置 - 模型名称（可输入 + 远程联想）、温度、思考模式、思考强度、多模态输入参数，
+ * 模型配置 - 模型名称（可输入 + 远程联想）、温度、思考模式、思考强度、系统提示词，
  * 大语言模型 / 问题分类器 / 参数提取器共用；节点专有参数（如 AGENT 策略）通过 #extra 插槽插在中间。
  *
  * 布局：每个参数一行——左侧参数名（后三项各带启用开关），右侧取值控件，
@@ -8,14 +8,13 @@
  *
  * @v-model {Object} data   - 节点 data 对象，直接读写其中的模型参数字段
  * @prop {*} config     - 全局配置字典（thinkModes、thinkEfforts）
- * @prop {*} instance   - 画布实例（多模态参数的变量选择需要）
- * @prop {*} activeItem - 当前激活节点（多模态参数的变量选择需要）
+ * @prop {*} instance   - 画布实例（系统提示词的变量选择需要）
+ * @prop {*} activeItem - 当前激活节点（系统提示词的变量选择需要）
  * @prop {String} systemPlaceholder - 系统提示词的占位提示（各节点可自定义）
- * @slot extra - 节点专有参数，插在思考参数与多模态参数之间
+ * @slot extra - 节点专有参数，插在思考参数与系统提示词之间
  */
 import { computed } from 'vue'
 import AgenticApi from '@/api/agent/AgenticApi'
-import MultimodalField from './MultimodalField.vue'
 import ParamRow from './ParamRow.vue'
 import SectionSlice from './SectionSlice.vue'
 import VariableField from './VariableField.vue'
@@ -80,13 +79,12 @@ const effortEnabled = computed(() => false !== data.value?.thinkEffortEnabled)
       :instance="instance"
       :active-item="activeItem"
       :height="140"
-      :placeholder="systemPlaceholder" />
-    <!-- 多模态输入参数随模型配置一起 -->
-    <MultimodalField
-      v-model="data.multimodal"
-      v-model:enabled="data.multimodalEnabled"
-      :instance="instance"
-      :active-item="activeItem" />
+      :placeholder="systemPlaceholder">
+      <!-- 系统提示词展开时才显示的节点专有能力操作 -->
+      <template #after>
+        <slot name="system-extra"></slot>
+      </template>
+    </VariableField>
   </SectionSlice>
 </template>
 

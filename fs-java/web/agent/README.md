@@ -44,7 +44,7 @@
   节点实现按类型拆到 `com.iisquare.fs.web.agent.runner` 包下（`XxxNodeHandler`，实现 `AgenticNodeHandler`）；
   共用能力放在 `com.iisquare.fs.web.agent.core`：
   `AgenticNodeContext`（节点上下文：配置、入参、上游输出、会话变量、历史对话、变量解析、模型与工具调用）、
-  `AgenticRuntime`（变量解析、模型网关、工具调用、多模态、记忆窗口等运行时能力）、
+  `AgenticRuntime`（变量解析、模型网关、工具调用、记忆窗口等运行时能力）、
   `AgenticScheduler`（容器节点执行内部子图的调度接口，由 AgenticRunner 实现）。
   新增节点类型只需加一个 `@Service` 实现类，无需改动调度器；
 - ReAct 工具（大语言模型可调用的能力）按类型拆分到 `com.iisquare.fs.web.agent.react` 包：
@@ -64,7 +64,6 @@
 - 已支持节点：`Start`（入参）、`End`（回复内容与输出变量）、`Template`、`HTTP`、
   `LLM`（模型网关 `/v1/chat/completions`，地址取 `rpc.lm.rest`；网页运行使用服务级 `fs.agent.token`，
   外部调用同样只使用 `fs.agent.token` 访问 LM，外部身份由 agent API Key 管理）、
-  `Chart`（输出图表：把上游数据交给模型按内置提示词归纳成图表定义）、
   `VariableAggregator`（分组聚合）、`VariableAssigner`（会话变量赋值）、`SwitchCase`（条件分支）；
   其它节点类型会返回「节点类型暂未支持」并中断执行，日志里会标明失败节点。
 - 大语言模型节点支持流式输出：`/agentic/runStream`（SSE）逐段推送模型增量，事件为
@@ -90,26 +89,13 @@
   `react` 循环迭代（工具结果回填上下文继续推理，直到模型给出非工具调用的回复），
   轮次上限取节点配置的 `maxIterations`，跑满上限仍在请求工具时按节点异常处理；
   每轮的模型输出与该轮工具调用记录在节点输出的 `rounds` 里，调试面板与运行日志按调用链展示；
-- 最终回复里的图表：由「输出图表」节点（`Chart`）产生——节点不需要配置图表类型与图表要求，
-  默认只取本轮的记录：用户问题（开始节点入参，去掉文件列表）与上游大语言模型节点的本轮输出
-  （回复文本 + 工具调用明细，工具结果里就是真实数据）；流程里没有大语言模型节点时
-  （如 HTTP 直接接图表），才退回使用其它上游节点的输出；
-  不做长度截断，历史按节点自己的记忆配置取用（默认「仅用户提问」，见下节「记忆（多轮上下文）」），
-  再按内置提示词要求模型只返回一个图表定义 `{"type","title","source","categories","series"}`，
-  `type` 取 bar / line / pie / table，由模型按数据与问题自行选择（对比用柱状、趋势用折线、占比用饼图、明细用表格）；
-  数据必须来自上下文并按问题口径归纳（分组汇总、排序取前 10 项等），不是把中间查询结果直接搬到回复里；
-  上下文里没有可绘图的数据或问题与数据无关时模型返回 `{"type":"none"}`，节点不产出图表、回复照常；
-  节点输出 `hasChart`（本轮是否真的产出了图表：模型判定无需绘图时为 `false`，可直接用于条件分支）、
-  `type` / `title` / `source` / `categories` / `series` / `text`，可被下游节点引用；
-  其中的 `placeholder`（图表占位符，形如 `[[chart:节点标识]]`，是正文里的一行标记而不是画布位置）
-  用于在回复内容里指定图表位置：
-  结束节点的回复内容写成「正文 + `{{#图表节点.placeholder#}}` + 正文」即可把图表渲染在中间，
-  没有引用到的图表追加在回复末尾，模型判断无需绘图（`type=none`）时占位符会被自动去掉、不留痕迹；
-  占位符会保留在回复文本里（前端按它分段渲染，复制时自动去掉），接口对接需要纯文本时不要引用它；
-  运行结果按画布顺序收集这些图表到 `charts`，前端在回复气泡里渲染表格 / 柱状 / 折线 / 饼图并允许切换；
-  图表右上角可下载 PNG 图片（导出时把标题写进画布，表格视图需先切到图表视图）；
-  图表随会话消息持久化（消息的 `reference` 里带上 `charts`，`chatInfo` 按消息回带），
-  历史记录打开后与当时展示一致，工具调用明细里仍只保留参数与返回原文；
+- 模型回复直接支持 Markdown 图文混排：正文照常写结论与统计口径，需要图表时插入
+  `echarts` 代码块（围栏标记为 `` ```echarts ``）。每个代码块内是一个完整 JSON 对象，
+  可直接作为 ECharts 5 的 `option` 传给 `setOption`，支持 bar、line、pie、scatter、gauge、radar 等标准图表；
+  一条回复可包含多个 echarts 代码块，前端 Markdown 只读渲染器会在原位置把代码块替换成图表，因此正文与图表自然交错；
+  图表配置会随回复正文一起保存，历史消息打开后重新解析渲染；构建模型上下文时直接使用消息原文，
+  已包含的 echarts 代码块也会按普通历史内容交给模型；
+  图表需要由模型根据用户问题和可用数据生成，可在系统提示词或用户输入中说明图表要求并提供输出示例；
 - 运行日志记录：编排、来源（draft/published）、版本、状态、耗时、入参、输出（含回复内容）、
   逐节点步骤与失败原因、来源 IP；运行日志入口在「流程管理」列表页（按编排标识带 `agenticId` 打开日志页），
   「对话历史」里每条助手回复也可展开对应的完整执行过程。
@@ -148,9 +134,9 @@ Content-Type: application/json
 
 - agent 自有 `fs_agent_api_key` 管理外部系统 Key，Secret 与 LM 授权密钥一致，可在列表中查看和复制，
   编辑时留空会自动生成新密钥；
-- API Key 必须绑定允许调用的 `agenticIds`；不在白名单中的流程直接拒绝；
-- API Key 开启「用户代理」且同时携带有效 `x-auth-token` 时，生效用户切换为会话用户，
-  积分、限流、会话、运行日志与编排授权角色都按该用户处理；未开启代理时忽略请求中的会话；
+- API Key 的 `agenticIds` 可留空；留空表示授权全部流程，配置后不在范围内的流程直接拒绝；
+- API Key 调用携带有效 `x-auth-token` 时，生效用户切换为会话用户，
+  积分、限流、会话、运行日志与编排授权角色都按该用户处理；未携带时归 API Key 所属用户；
 - 编排运行中的所有 LM 调用只使用 `fs.agent.token`，不再向 LM 传外部 API Key 或 `x-proxy-key`；
   允许用户代理时透传 `x-auth-token` 与 `x-trace-id`；
 - agent API Key 和用户会话都不写入会话正文或 LM 用量请求头；无密钥的网页调用继续使用
@@ -227,7 +213,7 @@ Content-Type: application/json
 ### 记忆（多轮上下文）
 
 记忆按「节点自身的配置」逐节点生效：节点之间不共享历史、也不互相读取对方的输入输出；需要上游数据时一律用
-`{{#节点标识.变量名#}}` 显式引用（唯一例外是「输出图表」节点，见上文——它按职责读取本轮的用户问题与直连大语言模型的回复、工具调用）。
+`{{#节点标识.变量名#}}` 显式引用。
 
 节点配置 `memory` 的四个字段（`fs_agent_agentic_dialog` 里每轮存一条用户消息与一条助手回复，记忆从这里取）：
 
@@ -243,8 +229,7 @@ Content-Type: application/json
   工具返回内容按其原始 JSON 文本给出，失败时给出失败原因（便于模型下一轮自行修正参数）；
 - `user`：只取最近 `window` 条用户提问，适合只需理解「用户问了什么」的节点；
 - 未配置 `memory` 字段的模型节点不带历史（不产生隐式上下文）；上下文不做长度截断，记忆窗口是唯一口径；
-- 各节点默认值：大语言模型 = 完整对话（`conversation`，窗口 10）；问题分类器、参数提取器、输出图表 = 仅用户提问（`user`，窗口 10）。
-  需要「按上一轮的数据继续画图」这类跨轮追问时，把对应节点的记忆范围改成完整对话并开启工具链即可；
+- 各节点默认值：大语言模型 = 完整对话（`conversation`，窗口 10）；问题分类器、参数提取器 = 仅用户提问（`user`，窗口 10）。
 - 兼容：老数据没有 `scope` 字段时按 `conversation` 处理（保持升级前的行为），设计器属性面板会补上默认值。
 
 入参校验：开始节点里声明为必填的自定义参数若未传值，`run` / `invoke` 返回 `1004` 与缺失参数名。
@@ -578,7 +563,7 @@ POST /knowledgeImage/url
 | --- | --- | --- |
 | `agent:agent:` | AgentController | 智能体：应用管理 |
 | `agent:agentic:` | AgenticController | 智能体：应用管理（编排列表）、应用编排（画布、调试运行、发布、外部调用） |
-| `agent:apiKey:` | ApiKeyController | Agent 外部调用密钥：列表、启用状态、流程白名单与 Secret 维护 |
+| `agent:apiKey:` | ApiKeyController | Agent 外部调用密钥：列表、启用状态、流程范围与 Secret 维护 |
 | `agent:chat:` | ChatController | 模型对话：模型调试、模型对话、模型对比 |
 | `agent:knowledge:` | KnowledgeController、KnowledgeDocumentController、KnowledgeSegmentController、KnowledgeChunkController | 知识库：知识管理、文档管理、分段管理、知识召回 |
 | `agent:tool:` | ToolController | 插件管理：工具管理、MCP 服务 |

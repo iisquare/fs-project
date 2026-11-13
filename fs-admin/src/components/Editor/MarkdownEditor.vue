@@ -54,7 +54,14 @@ const previewRef = ref<HTMLDivElement>()
 let vditor: Vditor | null = null
 let observer: MutationObserver | null = null
 let refreshScheduled = false
+let previewSequence = 0
 const imageUrls: Record<string, string> = {}
+
+/**
+ * Vditor 的动态资源必须和已安装包使用同一版本。
+ * 版本号由 Vite 从 node_modules/vditor/package.json 注入，路径与构建产物一一对应。
+ */
+const vditorCdn = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/vditor/${__VDITOR_VERSION__}`
 
 const schemeName = () => (imageScheme || 'kb').replace(/[^A-Za-z0-9_-]/g, '')
 const escapeRe = (text: string) => (text || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -162,20 +169,34 @@ const hardBreaks = (content: string) => {
   }).join('\n')
 }
 
-const loadPreview = (content: string) => {
-  if (!previewRef.value) return
+const loadPreview = async (content: string) => {
+  const host = previewRef.value
+  if (!host) return
+  const sequence = ++previewSequence
   if (!content) {
-    previewRef.value.innerHTML = '<span style="color: var(--el-text-color-placeholder)">暂无内容</span>'
+    const empty = document.createElement('span')
+    empty.className = 'fs-markdown-empty'
+    empty.textContent = '暂无内容'
+    host.replaceChildren(empty)
     return
   }
   // 兼容内容里残留占位地址的情况，先统一还原为标识再解析
   const html = hardBreaks(normalizeOut(content)).replace(imagePattern(), (all: string, id: string) => {
     return `](${imageUrls[id] || fallbackImage})`
   })
-  Vditor.preview(previewRef.value, html, {
-    mode: 'light',
-    hljs: { lineNumber: true },
-  })
+  const body = document.createElement('div')
+  body.className = 'fs-markdown-preview-body'
+  host.replaceChildren(body)
+  try {
+    await Vditor.preview(body, html, {
+      cdn: vditorCdn,
+      mode: 'light',
+      hljs: { lineNumber: true },
+    })
+  } catch (error) {
+    if (sequence !== previewSequence) return
+    body.textContent = `Markdown 渲染失败：${error instanceof Error ? error.message : String(error)}`
+  }
 }
 
 
@@ -183,7 +204,7 @@ const refresh = async (content?: string) => {
   const text = content ?? getContent()
   await resolve(text)
   if (readonly) {
-    loadPreview(text)
+    await loadPreview(text)
   } else {
     nextTick(() => decorate())
   }
@@ -253,6 +274,7 @@ const observeEditor = () => {
 const loadEditor = () => {
   if (!editorRef.value) return
   vditor = new Vditor(editorRef.value, {
+    cdn: vditorCdn,
     height,
     mode: 'wysiwyg',
     lang: 'zh_CN',
@@ -350,7 +372,7 @@ defineExpose({ getContent, setContent })
 
 <template>
   <div class="fs-markdown-editor">
-    <div ref="previewRef" class="fs-markdown-preview vditor-reset" v-if="readonly" @dblclick="handlePreviewDblClick"></div>
+    <div ref="previewRef" class="fs-markdown-preview" v-if="readonly" @dblclick="handlePreviewDblClick"></div>
     <div ref="editorRef" v-else></div>
     <el-image-viewer
       v-if="previewVisible"
@@ -370,6 +392,14 @@ defineExpose({ getContent, setContent })
 .fs-markdown-preview {
   padding: 8px 0;
   word-break: break-word;
+  .fs-markdown-empty,
+  .fs-markdown-preview-body {
+    display: block;
+    min-width: 0;
+  }
+  .fs-markdown-empty {
+    color: var(--el-text-color-placeholder);
+  }
   :deep(p:last-child) {
     margin-bottom: 0;
   }

@@ -72,8 +72,7 @@ public class QuestionClassifierNodeHandler implements AgenticNodeHandler {
                     .append(ctx.text(item.at("/description").asText(""))).append("\n");
         }
         prompt.append("用户问题：").append(ctx.text(data.at("/query").asText("")));
-        // 分类器同样支持多模态：把分类说明与用户问题作为用户消息发送
-        ctx.userMessage((ArrayNode) json.at("/messages"), prompt.toString(), data);
+        ((ArrayNode) json.at("/messages")).addObject().put("role", "user").put("content", prompt.toString());
         String answer = ctx.completion(json).at("/choices/0/message/content").asText("");
         ObjectNode result = DPUtil.objectNode();
         for (JsonNode item : data.at("/classes")) {

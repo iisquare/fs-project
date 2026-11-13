@@ -143,30 +143,6 @@ const LLMOptions = () => {
     tools: [],
     // 记忆：范围 conversation=完整对话（多轮对话需要）/ user=仅用户提问；工具链开启后历史轮次的工具调用加入上下文
     memory: { enabled: true, window: 10, scope: 'conversation', toolchain: false },
-    // 多模态输入参数：{ name, type, variable }
-    multimodalEnabled: false,
-    multimodal: [],
-  }
-}
-
-const ChartOptions = () => {
-  return {
-    model: '',
-    // 温度、思考模式与思考强度各自可开关，默认不启用，关闭时该参数不参与请求
-    temperatureEnabled: false,
-    temperature: 0.7,
-    thinkModeEnabled: false,
-    thinkMode: 'auto',
-    thinkEffortEnabled: false,
-    thinkEffort: 'medium',
-    // 图表类型、展示数据与图表说明都由模型按用户问题与大语言模型本轮记录自动决定，节点不需要额外配置；
-    // 默认读取开始节点的用户输入与上游大语言模型本轮的回复、工具调用结果，其余上游节点仅在缺少模型节点时兜底；
-    // 这里只保留系统提示词（补充统计口径等要求）与多模态输入参数，与其它模型节点保持一致
-    systemPrompt: '',
-    // 记忆：图表只根据用户问题和本轮数据归纳，默认只带历史里的用户提问
-    memory: { enabled: true, window: 10, scope: 'user', toolchain: false },
-    multimodalEnabled: false,
-    multimodal: [],
   }
 }
 
@@ -194,9 +170,6 @@ const ClassifierOptions = () => {
     systemPrompt: '',
     // 记忆：分类只关心用户问题，默认只带历史里的用户提问
     memory: { enabled: true, window: 10, scope: 'user', toolchain: false },
-    // 多模态输入参数：{ name, type, variable }
-    multimodalEnabled: false,
-    multimodal: [],
     classes: [
       { id: DesignUtil.uuid(), name: '分类一', description: '当用户的问题与分类一相关时命中' },
       { id: DesignUtil.uuid(), name: '分类二', description: '当用户的问题与分类二相关时命中' },
@@ -204,12 +177,14 @@ const ClassifierOptions = () => {
   }
 }
 
-/** 兼容历史数据：已配置多模态输入参数时默认启用（多模态开关是后加的，默认关闭） */
-const MultimodalRepair = (data: any) => {
+/**
+ * 兼容历史数据：节点级多模态输入已移除，图片/音视频分析改由 MCP 工具方法 multimodalAnalyze 完成。
+ * 打开旧节点时清理遗留字段，避免再次保存时继续携带无效配置。
+ */
+const LegacyMultimodalCleanup = (data: any) => {
   if (!data) return data
-  if (Array.isArray(data.multimodal) && data.multimodal.length && undefined === data.multimodalEnabled) {
-    data.multimodalEnabled = true
-  }
+  delete data.multimodalEnabled
+  delete data.multimodal
   return MemoryRepair(data)
 }
 
@@ -240,7 +215,7 @@ const ClassifierRepair = (data: any) => {
     }
     delete data.instruction
   }
-  return MultimodalRepair(data)
+  return LegacyMultimodalCleanup(data)
 }
 
 /**
@@ -251,7 +226,7 @@ const ClassifierRepair = (data: any) => {
 const ContinueRepair = (data: any) => {
   if (!data) return data
   if (undefined === data.continueCount || '' === data.continueCount) data.continueCount = 2
-  return MultimodalRepair(data)
+  return LegacyMultimodalCleanup(data)
 }
 
 const SwitchOptions = () => {
@@ -418,9 +393,6 @@ const ParameterOptions = () => {
     systemPrompt: '',
     // 记忆：提取器只按本轮输入提取，默认只带历史里的用户提问
     memory: { enabled: true, window: 10, scope: 'user', toolchain: false },
-    // 多模态输入参数：{ name, type, variable }
-    multimodalEnabled: false,
-    multimodal: [],
     // 参数名是模型返回值的键（英文标识），标题名称用于输出变量等处的展示
     parameters: [{ name: 'language', label: '编程语言', type: 'String', required: true, description: '编程语言名称' }],
   }
@@ -435,7 +407,7 @@ const ParameterRepair = (data: any) => {
     }
     delete data.instruction
   }
-  return MultimodalRepair(data)
+  return LegacyMultimodalCleanup(data)
 }
 
 const HttpOptions = () => {
@@ -546,19 +518,8 @@ const outputs: any = {
     { name: 'text', label: '回复文本', type: 'String', description: '模型回复内容' },
     { name: 'reasoning', label: '思考过程', type: 'String', description: '模型思考过程' },
     { name: 'usage', label: '令牌用量', type: 'Object', description: '令牌用量信息' },
-    { name: 'calls', label: '工具调用', type: 'Array<Object>', description: '本轮工具调用明细（方法名、参数与返回结果），可交给「输出图表」节点归纳成图表数据' },
+    { name: 'calls', label: '工具调用', type: 'Array<Object>', description: '本轮工具调用明细（方法名、参数与返回结果）' },
     { name: 'wrapped', label: '是否被收尾', type: 'Boolean', description: '跑满迭代次数 × (1 + 接续次数) 轮工具往返、再用一次不带工具的收尾调用作答时为 true：可在条件分支里提示用户或改写后续提示词，模型自然收尾为 false' },
-  ],
-  // 输出图表：模型按内置提示词归纳出的图表定义，下游节点可引用其中任意字段
-  Chart: () => [
-    { name: 'hasChart', label: '是否有图表', type: 'Boolean', description: '本轮上下文是否产出了图表：模型判定无需绘图时为 false，可在条件分支里引用' },
-    { name: 'placeholder', label: '图表占位符', type: 'String', description: '把它插入到结束节点的回复内容里（如 正文 + {{#n1.placeholder#}} + 结尾），图表就渲染在这个位置；不引用则追加在回复末尾。它只是正文里的一行标记，不是画布位置' },
-    { name: 'type', label: '图表类型', type: 'String', description: 'bar 柱状 / line 折线 / pie 饼图 / table 表格' },
-    { name: 'title', label: '图表标题', type: 'String', description: '图表标题（统计口径）' },
-    { name: 'source', label: '数据来源', type: 'String', description: '数据来源说明' },
-    { name: 'categories', label: '分类取值', type: 'Array<Object>', description: '分类轴取值' },
-    { name: 'series', label: '系列数据', type: 'Array<Object>', description: '数值系列：{ name, data }' },
-    { name: 'text', label: '模型输出', type: 'String', description: '模型返回的原始图表定义' },
   ],
   Knowledge: () => [
     { name: 'result', label: '召回结果', type: 'Array<Object>', description: '召回结果列表' },
@@ -681,7 +642,7 @@ const fileTypes = [
   { label: '压缩包', value: 'archive' },
 ]
 
-// 大语言模型：思考模式、思考强度、AGENT 策略与多模态输入类型
+// 大语言模型：思考模式、思考强度与 AGENT 策略
 const thinkModes = [
   { label: '自动', value: 'auto' },
   { label: '开启', value: 'on' },
@@ -699,13 +660,6 @@ const agentStrategies = [
   { label: '无', value: 'none' },
   { label: 'ReAct', value: 'react' },
   { label: 'FunctionCalling', value: 'functionCalling' },
-]
-
-const multimodalTypes = [
-  { label: '图片', value: 'image' },
-  { label: '音频', value: 'audio' },
-  { label: '视频', value: 'video' },
-  { label: '文件', value: 'file' },
 ]
 
 const operators = [
@@ -838,10 +792,6 @@ const widgets = DesignUtil.widgets([{
     shape: 'agent-node', options: LLMOptions, repair: ContinueRepair,
     property: () => import('./LLMProperty.vue')
   }, {
-    type: 'Chart', label: '输出图表', title: '把上游数据交给模型归纳成图表定义，随回复一起展示', icon: 'PieChart',
-    shape: 'agent-node', options: ChartOptions, repair: MultimodalRepair,
-    property: () => import('./ChartProperty.vue')
-  }, {
     type: 'Knowledge', label: '知识检索', title: '从知识库中查询与用户问题相关的文本内容', icon: 'algorithm.retrieval',
     shape: 'agent-node', options: KnowledgeOptions, property: () => import('./KnowledgeProperty.vue')
   }, {
@@ -914,7 +864,6 @@ export default Object.assign(config, {
   thinkModes,
   thinkEfforts,
   agentStrategies,
-  multimodalTypes,
   startInputs: StartInputs,
   startRepair: StartRepair,
   operators,

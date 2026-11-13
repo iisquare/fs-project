@@ -2,6 +2,7 @@ package com.iisquare.fs.web.agent.service;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.iisquare.fs.base.core.util.DPUtil;
+import com.iisquare.fs.web.agent.entity.AgentApiKey;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -43,6 +44,27 @@ public class AgentApiKeyServiceTest {
         array.add(2);
         array.add(5);
         Assert.assertEquals(List.of(2, 5), service.agenticIds(array));
+    }
+
+    @Test
+    public void emptyAgenticIdsAllowsAllFlows() {
+        AgentApiKeyService service = new AgentApiKeyService();
+        AgentApiKey key = new AgentApiKey();
+        key.setAgenticIds("");
+
+        Assert.assertTrue(service.allows(key, 1));
+        Assert.assertTrue(service.allows(key, 999));
+    }
+
+    @Test
+    public void configuredAgenticIdsRestrictFlows() {
+        AgentApiKeyService service = new AgentApiKeyService();
+        AgentApiKey key = new AgentApiKey();
+        key.setAgenticIds("2,5");
+
+        Assert.assertTrue(service.allows(key, 2));
+        Assert.assertTrue(service.allows(key, 5));
+        Assert.assertFalse(service.allows(key, 3));
     }
 
 }

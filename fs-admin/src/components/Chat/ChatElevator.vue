@@ -29,42 +29,53 @@ const {
   target?: HTMLElement | null
   selector?: string
   textSelector?: string
+  /** 达到该条数才显示：只有一条时没有定位意义 */
   min?: number
-  revision?: number
+  /** 内容版本号（会话标识 + 消息条数），变化时重新采集 */
+  revision?: string | number
 }>()
 
-/** 导航条目：一条用户消息一条，摘要最多 40 字 */
-const marks = ref<any[]>([])
+interface ElevatorMark {
+  key: string
+  index: number
+  text: string
+}
+
+const marks = ref<ElevatorMark[]>([])
 /** 当前所在条：最下面一条已越过容器顶部的消息 */
 const activeMark = ref('')
-/** 悬停/聚焦的条：文字与横条共用同一个状态，保证两侧变化同步 */
+/** 悬停 / 聚焦的条：文字与横条共用同一个状态，两侧变化保持同步 */
 const hoverMark = ref('')
-/** 是否展开内容列表 */
 const open = ref(false)
-const rootRef = ref<HTMLDivElement>()
+const rootRef = ref<any>(null)
+
+function rows(): HTMLElement[] {
+  return target ? Array.from(target.querySelectorAll<HTMLElement>(selector)) : []
+}
 
 /** 当前所在条：取最下面一条已越过容器顶部的消息 */
-const syncActive = () => {
+function syncActive(): void {
   const element = target
   if (!element) return
   const base = element.getBoundingClientRect().top
   let current = ''
-  element.querySelectorAll(selector).forEach((row: any, index: number) => {
+  rows().forEach((row, index) => {
     if (row.getBoundingClientRect().top - base <= 28) current = `item-${index}`
   })
   activeMark.value = current
 }
 
-/** 采集导航条目：从已渲染的消息里取文本摘要（序号即消息在列表中的顺序） */
-const collect = () => {
-  const element = target
-  if (!element) {
+/** 采集导航条目：摘要直接取自已渲染的消息 */
+function collect(): void {
+  if (!target) {
     marks.value = []
     return
   }
-  marks.value = Array.from(element.querySelectorAll(selector)).map((row: any, index: number) => {
-    const source: any = textSelector ? row.querySelector(textSelector) : row
-    const text = String(source?.textContent ?? '').replace(/\s+/g, ' ').trim()
+  marks.value = rows().map((row, index) => {
+    const source: HTMLElement = textSelector
+      ? (row.querySelector<HTMLElement>(textSelector) ?? row)
+      : row
+    const text = String(source.textContent ?? '').replace(/\s+/g, ' ').trim()
     return {
       key: `item-${index}`,
       index,
@@ -75,165 +86,188 @@ const collect = () => {
 }
 
 /** 定位：按容器内偏移量平滑滚动，不调用 scrollIntoView（避免连带滚动外层布局） */
-const scrollTo = (mark: any) => {
+function scrollTo(mark: ElevatorMark): void {
   const element = target
-  const rows: any[] = element ? Array.from(element.querySelectorAll(selector)) : []
-  const row: any = rows[mark.index]
+  const row = rows()[mark.index]
   if (!element || !row) return
   const offset = row.getBoundingClientRect().top - element.getBoundingClientRect().top
   element.scrollTo({ top: element.scrollTop + offset - 12, behavior: 'smooth' })
   activeMark.value = mark.key
 }
 
-/** 展开或当前条变化时，把对应的一条滚进可视区（横条列与内容列表都可滚动） */
-const revealActive = () => {
-  const element: any = rootRef.value
-  const row: any = element?.querySelector('.elevator-item.is-active')
+/** 展开或当前位置变化时，把对应条目滚进可视化区（横条列与展开列表都可滚动） */
+function revealActive(): void {
+  // ElScrollbar 暴露的是 wrapRef（可能已被解包成元素，两种形状都兼容）
+  const wrap = rootRef.value?.wrapRef
+  const element: HTMLElement | null = wrap?.value ?? wrap ?? null
+  const row = element?.querySelector<HTMLElement>('.elevator-item.is-active')
   if (!element || !row) return
   const top = row.offsetTop
-  if (top >= element.scrollTop && top + row.offsetHeight <= element.scrollTop + element.clientHeight) return
-  element.scrollTo({ top: Math.max(0, top - element.clientHeight / 2 + row.offsetHeight / 2), behavior: 'smooth' })
+  if (
+    top >= element.scrollTop &&
+    top + row.offsetHeight <= element.scrollTop + element.clientHeight
+  )
+    return
+  element.scrollTo({
+    top: Math.max(0, top - element.clientHeight / 2 + row.offsetHeight / 2),
+    behavior: 'smooth',
+  })
 }
 
 // 容器或内容变化：重新采集条目
 watch(() => [target, revision], () => nextTick(collect), { immediate: true })
 // 容器滚动：组件自己同步当前条
-watch(() => target, (element, previous) => {
-  previous?.removeEventListener('scroll', syncActive)
-  element?.addEventListener('scroll', syncActive, { passive: true })
-  nextTick(syncActive)
-}, { immediate: true })
-// 展开或当前位置变化：把对应条目滚进可视区
+watch(
+  () => target,
+  (element, previous) => {
+    previous?.removeEventListener('scroll', syncActive)
+    element?.addEventListener('scroll', syncActive, { passive: true })
+    nextTick(syncActive)
+  },
+  { immediate: true },
+)
 watch([open, activeMark], () => nextTick(revealActive))
 onBeforeUnmount(() => target?.removeEventListener('scroll', syncActive))
 </script>
 
 <template>
-  <!-- 横条列：收起只显示横条，悬停/聚焦展开成内容列表，文字与行尾横条同行对齐 -->
-  <div
+  <!-- 横条列：收起只显示横条，悬停 / 聚焦展开成内容列表 -->
+  <el-scrollbar
+    v-if="marks.length >= min"
+    ref="rootRef"
     class="elevator"
     :class="{ 'is-open': open }"
-    ref="rootRef"
-    v-if="marks.length >= min"
     @mouseenter="open = true"
     @mouseleave="open = false"
     @focusin="open = true"
-    @focusout="open = false">
+    @focusout="open = false"
+  >
     <div
+      v-for="mark in marks"
+      :key="mark.key"
       class="elevator-item"
       :class="{ 'is-hover': mark.key === hoverMark, 'is-active': mark.key === activeMark }"
-      :key="mark.key"
-      v-for="mark in marks"
       @mouseenter="hoverMark = mark.key"
       @mouseleave="hoverMark = ''"
-      @click="scrollTo(mark)">
+      @click="scrollTo(mark)"
+    >
       <span class="elevator-text">{{ mark.text }}</span>
       <span
         class="elevator-bar"
-        :tabindex="0"
+        tabindex="0"
         @focus="hoverMark = mark.key"
         @blur="hoverMark = ''"
         @keydown.enter.prevent="scrollTo(mark)"
-        @keydown.space.prevent="scrollTo(mark)"></span>
+        @keydown.space.prevent="scrollTo(mark)"
+      />
     </div>
-  </div>
+  </el-scrollbar>
 </template>
 
 <style lang="scss" scoped>
 /**
  * 电梯导航：贴容器右侧垂直居中。每条消息一行（文字 + 行尾横条），
- * 横条跟着自己那一行走，所以文字与横条永远对齐（参考 DeepSeek 的滚动导航）。
- * 收起只留横条；展开后整块共用同一个底板，视觉上是一个整体。
+ * 横条跟着自己那一行走，所以文字与横条永远对齐；收起只留横条，
+ * 展开后整块共用同一块底板，视觉上是一个整体。
+ * 消息列的右侧内边距只有 16px，还得让开 6px 滚动条：横条收成 8px，
+ * 正好卡在「滚动条 8px — 气泡边 16px」这条空缝里，两态都不压气泡。
  */
 .elevator {
   position: absolute;
   top: 50%;
-  right: 28px;
+  right: 8px;
   transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  /* 行距统一：收起与展开都按 19px 一行排，展开时横条不会上下跳 */
-  gap: 0;
+  /* el-scrollbar 默认 height: 100%：这里按内容定高，太长时才由 max-height 收敛 */
+  height: auto;
   max-height: 60vh;
   z-index: 1;
-  /**
-   * 条目过多时自身可滚动（很细的横条列上放滚动条很难看，收起态直接隐藏滚动条）；
-   * 展开成列表后保留项目自带的细滚动条
-   */
+
+  /* 条目一行一条：文字在左、横条在行尾 */
+  :deep(.el-scrollbar__view) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+  }
+
+  /* 收起态只有一列细横条，不放滚动条 */
   &:not(.is-open) {
-    overflow-x: hidden;
-    overflow-y: auto;
-    scrollbar-width: none;
-    &::-webkit-scrollbar {
-      width: 0;
-      height: 0;
+    :deep(.el-scrollbar__bar) {
+      display: none;
     }
   }
-  /* 展开：文字与横条同处一块底板；右移 11px（内边距 10 + 描边 1）让横条位置保持不变 */
+
+  /* 展开：文字与横条同处一块底板；右移 8px（内边距 7 + 描边 1）让横条位置保持不变 */
   &.is-open {
-    right: 17px;
-    align-items: stretch;
-    gap: 0;
-    /* 面板宽度收在固定区间内：短消息不被撑小，长消息也不会把面板撑宽（文字单行省略） */
+    right: 0;
     min-width: 220px;
     max-width: 320px;
-    padding: 8px 10px;
+    padding: 8px 7px;
     border-radius: 10px;
     border: solid 1px var(--el-border-color-lighter);
     background: var(--el-bg-color);
     box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
-    /* 列表过长时整体滚动：文字与横条一起滚，保持一一对应 */
-    overflow-y: auto;
+
+    :deep(.el-scrollbar__view) {
+      align-items: stretch;
+    }
   }
-  /* 一行：文字（可伸缩、超长省略）+ 行尾横条 */
+
   .elevator-item {
     /* 行高固定：收起时这一行只有横条，展开后同一行放文字，两态行位置一致 */
-    height: 19px;
+    height: 16px;
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
     cursor: pointer;
+
     .elevator-text {
       flex: 1 1 auto;
       min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
       font-size: 12px;
-      line-height: 19px;
+      line-height: 16px;
       color: var(--el-text-color-regular);
       transition: color 0.2s;
-      @include text-wrap();
     }
-    /* hover：文字与横条同时变中性黑 */
+
     &.is-hover {
       .elevator-text {
         color: var(--el-text-color-primary);
       }
+
       .elevator-bar {
         background: var(--el-text-color-primary);
       }
     }
+
     /* 当前所在位置：文字用主色，横条比其它条长一点点 */
     &.is-active {
       .elevator-text {
         color: var(--el-color-primary);
       }
+
       .elevator-bar {
-        width: 20px;
+        width: 12px;
         background: var(--el-color-primary);
       }
     }
   }
+
   .elevator-bar {
     flex: none;
-    width: 16px;
-    height: 3px;
-    border-radius: 2px;
+    width: 8px;
+    height: 2px;
+    border-radius: 1px;
     /* 默认灰 → hover 黑 → 选中主色，三档区分 */
     background: var(--el-text-color-placeholder);
     transition: background-color 0.2s;
   }
 }
+
 /* 收起状态：隐藏文字，只留一列横条 */
 .elevator:not(.is-open) .elevator-text {
   display: none;

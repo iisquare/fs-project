@@ -34,7 +34,6 @@ declare module 'vue' {
     DataFilter: typeof import('./src/components/Data/DataFilter.vue')['default']
     DataPreview: typeof import('./src/components/Data/DataPreview.vue')['default']
     DataQueryFilter: typeof import('./src/components/Data/DataQueryFilter.vue')['default']
-    DataResultChart: typeof import('./src/components/Data/DataResultChart.vue')['default']
     DataSchemaTable: typeof import('./src/components/Data/DataSchemaTable.vue')['default']
     DataSchemaText: typeof import('./src/components/Data/DataSchemaText.vue')['default']
     DictionaryCascader: typeof import('./src/components/Dictionary/DictionaryCascader.vue')['default']

@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.web.agent.core.AgenticRuntime;
-import com.iisquare.fs.web.agent.tool.FileFetcher;
-import com.iisquare.fs.web.core.rpc.FileRpc;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -30,7 +28,7 @@ import org.springframework.stereotype.Service;
  * 编排运行时 - 各节点实现共用的能力集合：
  * 1. 线程局部状态：容器作用域、画布节点与连线、系统变量、当前节点解析后入参、步骤日志（并行迭代时子线程继承）；
  * 2. 变量解析：`{{#节点标识.变量名#}}` 的取值与文本替换（含系统变量、会话变量、容器作用域）；
- * 3. 模型调用：模型网关请求（/v1/chat/completions）、多模态消息构造、历史记忆窗口；
+ * 3. 模型调用：模型网关请求（/v1/chat/completions）与历史记忆窗口；
  * 4. 工具调用：工具方法定义（function calling schema）、参数绑定与执行。
  */
 @Service
@@ -52,8 +50,6 @@ public class AgenticRuntime {
     private int chatConnectTimeout;
     @Value("${fs.agent.gateway.chatReadTimeout:600000}")
     private int chatReadTimeout;
-    @Autowired
-    FileRpc fileRpc;
     @Autowired
     AgentGatewayAuth gatewayAuth;
 
@@ -620,11 +616,19 @@ public class AgenticRuntime {
      * - scope = conversation（完整对话，默认）：取最近 window 轮，一轮 = 用户消息 + 助手回复；
      *   开启 toolchain 时，带工具调用的助手回复还原为 assistant(tool_calls) + tool(调用结果) 的消息序列；
      * - scope = user（仅用户提问）：只取最近 window 条用户消息，适合只需理解问题的节点
-     *   （问题分类器、参数提取器、输出图表）；
+     *   （问题分类器、参数提取器等）；
      * - enabled = false：不带历史。
      * 上下文不做长度截断，记忆窗口是唯一口径。
      */
     public ArrayNode historyMessages(ArrayNode history, ObjectNode data) {
+        return historyMessages(history, data, currentNode());
+    }
+
+    /**
+     * 历史消息按节点还原：会话里保存的是用户原始问题；模型节点首次请求时展开后的用户消息
+     * （含文件变量等）按节点标识单独保存，后续轮次优先使用它作为该节点的历史用户消息。
+     */
+    public ArrayNode historyMessages(ArrayNode history, ObjectNode data, String nodeId) {
         ArrayNode result = DPUtil.arrayNode();
         if (null == history || history.isEmpty()) return result;
         JsonNode memory = data.at("/memory");
@@ -663,9 +667,16 @@ public class AgenticRuntime {
             }
             ObjectNode message = result.addObject();
             message.put("role", item.at("/role").asText("user"));
-            message.put("content", item.at("/content").asText(""));
+            message.put("content", historyContent(item, nodeId));
         }
         return result;
+    }
+
+    protected String historyContent(JsonNode item, String nodeId) {
+        JsonNode contents = item.at("/nodeContents");
+        JsonNode content = contents.isObject() && !DPUtil.empty(nodeId) ? contents.get(nodeId) : null;
+        return null != content && content.isTextual()
+                ? content.asText("") : item.at("/content").asText("");
     }
 
     /**
@@ -701,55 +712,6 @@ public class AgenticRuntime {
         return indexes;
     }
 
-    public ArrayNode multimodalParts(ObjectNode data, Map<String, ObjectNode> outputs, Map<String, Object> context) {
-        ArrayNode parts = DPUtil.arrayNode();
-        for (JsonNode item : data.at("/multimodal")) {
-            String type = item.at("/type").asText("file");
-            Object value = value(item.at("/variable").asText(""), outputs, context);
-            for (Object file : list(value)) {
-                Map<?, ?> info = file instanceof Map ? (Map<?, ?>) file : DPUtil.buildMap("id", file);
-                String id = DPUtil.parseString(info.get("id"));
-                if (DPUtil.empty(id)) continue;
-                String filename = DPUtil.parseString(info.get("name"));
-                if ("image".equals(type)) {
-                    parts.addObject().put("type", "image_url")
-                            .putObject("image_url").put("url", dataUrl(id, filename, DPUtil.parseString(info.get("type"))));
-                    continue;
-                }
-                ObjectNode part = parts.addObject();
-                part.put("type", "file");
-                part.putObject("file").put("file_id", id)
-                        .put("filename", DPUtil.empty(filename) ? item.at("/name").asText(type) : filename);
-            }
-        }
-        return parts;
-    }
-
-    public String dataUrl(String fileId, String filename, String contentType) {
-        try {
-            String url = FileFetcher.url(fileRpc, fileId, filename);
-            byte[] bytes = FileFetcher.bytes(url, filename);
-            String type = DPUtil.empty(contentType) ? "image/png" : contentType;
-            return "data:" + type + ";base64," + Base64.getEncoder().encodeToString(bytes);
-        } catch (Exception e) {
-            throw new IllegalStateException("读取图片失败：" + message(e));
-        }
-    }
-
-    public ObjectNode userMessage(ArrayNode messages, String prompt, ObjectNode data,
-                                     Map<String, ObjectNode> outputs, Map<String, Object> context) {
-        ArrayNode parts = multimodalParts(data, outputs, context);
-        ObjectNode user = messages.addObject().put("role", "user");
-        if (parts.isEmpty()) {
-            user.put("content", prompt);
-            return user;
-        }
-        ArrayNode content = user.putArray("content");
-        content.addObject().put("type", "text").put("text", prompt);
-        parts.forEach(content::add);
-        return user;
-    }
-
     public ObjectNode chat(ObjectNode data, Map<String, ObjectNode> outputs, Map<String, Object> context, ArrayNode history) {
         if (DPUtil.empty(gatewayEndpoint)) throw new IllegalStateException("未配置模型网关地址（rpc.lm.rest）");
         ObjectNode json = DPUtil.objectNode();
@@ -762,7 +724,7 @@ public class AgenticRuntime {
         ArrayNode messages = json.putArray("messages");
         String system = text(data.at("/systemPrompt").asText(""), outputs, context);
         if (!DPUtil.empty(system)) messages.addObject().put("role", "system").put("content", system);
-        for (JsonNode item : historyMessages(history, data)) messages.add(item);
+        for (JsonNode item : historyMessages(history, data, currentNode())) messages.add(item);
         return json;
     }
 

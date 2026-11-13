@@ -10,7 +10,7 @@ import jakarta.persistence.*;
  * 会话消息：一轮对话落两条 —— 用户提问（role=user）与助手回复（role=assistant）。
  *
  * - 只存「展示与多轮记忆」需要的字段：content 正文、reasoningContent 思考过程、
- *   reference 参考数据（工具调用明细与图表）、feedback* 点赞点踩；
+ *   reference 参考数据（用户消息按模型节点保存的上下文、助手工具调用明细与图表）、feedback* 点赞点踩；
  * - parentId 组成消息树：0 表示分支起点，其余指向上一轮消息。
  *   编辑提问或重新生成回复时新起分支，记忆按会话的 leafId 沿 parentId 回溯取；
  * - 运行明细（入参、节点与工具调用过程）单独存 agentic_log，按 agentic_log.answer_id 关联本轮回复，
@@ -41,7 +41,7 @@ public class AgenticDialog {
     @Column
     private String content; // 消息内容
     @Column
-    private String reference; // 参考数据（工具调用明细与图表）
+    private String reference; // 参考数据（用户消息上下文、工具调用明细与图表）
     @Column
     private String feedbackEmotion; // 反馈情绪：positive-赞，negative-踩，cancel-取消
     @Column

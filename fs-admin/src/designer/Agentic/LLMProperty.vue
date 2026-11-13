@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 大语言模型节点属性 - 模型配置（模型名称、温度、思考模式与强度、AGENT 策略、系统提示词、多模态输入参数）、
+ * 大语言模型节点属性 - 模型配置（模型名称、温度、思考模式与强度、AGENT 策略、系统提示词）、
  * 用户输入（变量编辑器）、工具列表（可添加与启用/停用）、记忆配置。
  */
 import { ref, watch } from 'vue'
@@ -12,6 +12,7 @@ import DataThemeApi from '@/api/bi/DataThemeApi'
 import OntologyApi from '@/api/kg/OntologyApi'
 import ToolApi from '@/api/agent/ToolApi'
 import CollapseItem from './CollapseItem.vue'
+import CapabilityEnhanceField from './CapabilityEnhanceField.vue'
 import MemoryField from './MemoryField.vue'
 import ModelParamsField from './ModelParamsField.vue'
 import NodeSlice from './NodeSlice.vue'
@@ -336,6 +337,9 @@ const handleToolMethodChange = (item: any, value: any, row: any = null) => {
                 节点按已有信息作答并在输出上标记 wrapped，不再按节点异常中断。
               </tip-text>
             </el-form-item>
+          </template>
+          <template #system-extra>
+            <CapabilityEnhanceField v-model="model.data.systemPrompt" />
           </template>
         </ModelParamsField>
         <VariableField

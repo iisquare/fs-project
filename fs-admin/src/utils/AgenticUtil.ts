@@ -7,7 +7,6 @@ const AgenticUtil = {
     Start: 'flow.startEvent',
     End: 'flow.endEvent',
     LLM: 'ai.model',
-    Chart: 'PieChart',
     Knowledge: 'algorithm.retrieval',
     QuestionClassifier: 'Guide',
     ParameterExtractor: 'algorithm.extraction',
@@ -124,60 +123,9 @@ const AgenticUtil = {
     if (!list.length && 2 === (data?.status ?? 1) && data?.error) list.push(data.error)
     return list
   },
-  /**
-   * 最终回复里要展示的图表：后端收集「输出图表」节点的结果后随运行结果下发 charts，
-   * 历史消息直接带在消息上（chatInfo 按消息回带），这里两种载体都支持。
-   */
-  replyCharts (data: any): any[] {
-    const run = data?.result ?? data
-    return AgenticUtil.chartList(run?.charts)
-  },
-  /** 图表定义规整：没有分类或系列时视为无效（没有可展示的内容） */
-  chartList (value: any): any[] {
-    if (!Array.isArray(value)) return []
-    return value.map((chart: any) => ({
-      id: String(chart?.id ?? ''),
-      type: String(chart?.type ?? 'bar'),
-      title: String(chart?.title ?? ''),
-      source: String(chart?.source ?? ''),
-      categories: Array.isArray(chart?.categories) ? chart.categories : [],
-      series: Array.isArray(chart?.series) ? chart.series.map((item: any) => ({
-        name: String(item?.name ?? ''),
-        data: Array.isArray(item?.data) ? item.data : [],
-      })) : [],
-    })).filter((chart: any) => chart.categories.length && chart.series.length)
-  },
-  /**
-   * 回复分段：按图表占位符（`[[chart:节点标识]]`，由「输出图表」节点的「图表占位符」变量给出）
-   * 把正文与图表分开，图表就能渲染在回复里指定的位置；没有引用到的图表追加在末尾，
-   * 占位符没有对应图表时（模型判断无需绘图）直接去掉，不留占位文本。
-   */
-  replyParts (data: any): any[] {
-    const charts = AgenticUtil.replyCharts(data)
-    const content = String(data?.content ?? '')
-    const parts: any[] = []
-    const used: string[] = []
-    const matcher = /\[\[chart:([^\]]+)\]\]/g
-    let last = 0
-    let matched: RegExpExecArray | null
-    while (null !== (matched = matcher.exec(content))) {
-      const chart = charts.find((item: any) => item.id === matched?.[1])
-      parts.push({ type: 'text', text: content.slice(last, matched.index) })
-      if (chart) {
-        parts.push({ type: 'chart', chart: chart })
-        used.push(chart.id)
-      }
-      last = matched.index + matched[0].length
-    }
-    parts.push({ type: 'text', text: content.slice(last) })
-    charts.forEach((chart: any) => {
-      if (used.indexOf(chart.id) < 0) parts.push({ type: 'chart', chart: chart })
-    })
-    return parts.filter((part: any) => 'chart' === part.type || '' !== String(part.text ?? '').trim())
-  },
-  /** 复制用的回复正文：去掉图表占位符（图表不在文本里，复制文本保持干净） */
+  /** 复制用的回复正文：保留完整 Markdown，包含 echarts 代码块 */
   answerText (content: any): string {
-    return String(content ?? '').replace(/\[\[chart:[^\]]+\]\]/g, '').trim()
+    return String(content ?? '').trim()
   },
   /**
    * 实时节点进度：running 追加一条（同一节点在循环里会执行多次），

@@ -454,6 +454,7 @@ const runMessages: any = branch.messages
 /** 模板渲染用：当前分支路径上的消息（尚未落库的流式消息始终可见） */
 const runVisibleMessages = computed<any[]>(() => branch.visible.value)
 const runMessage: any = ref('')
+const runFileLoading = ref('')
 // 回放令牌：自增即取消上一轮回放（关闭抽屉、新会话、重新回放）
 let playToken = 0
 // 流式输出中：模型增量仍在推送（用于输入区提示与按钮状态）
@@ -516,18 +517,26 @@ const attachNotice = (summary: string, detail = '') => {
 // 发送：用户输入与文件属于底部输入区，其余自定义参数在「参数设置」里维护
 const handleRunChat = () => {
   if (runLoading.value) return
+  if (runFileLoading.value) {
+    ElMessage.warning('文件上传中，请稍候')
+    return
+  }
   const message = String(runMessage.value ?? '').trim()
   // 开始节点启用「用户输入」时必须填写内容，未启用时允许只带参数运行
   if (!message && queryParam.value) {
     ElMessage.warning('请输入内容')
     return
   }
-  runMessage.value = ''
-  // 续写位置：会话当前分支尾（没有分支时就是最后一条消息）
+  // 先快照本轮文件：清空输入区后仍要把同一批文件随消息提交
+  const files = filesParam.value ? runFileList.value.slice() : []
   const parentId = Number(branch.activeLeaf.value ?? 0) || 0
   const question: any = { role: 'user', content: message || '（按参数运行）', parentId }
+  if (files.length) question.files = files
+  runMessage.value = ''
+  // 文件随本轮消息提交后清空输入区，避免文件标签残留到下一轮
+  if (filesParam.value) runInputs.value[filesParam.value.name] = []
   runMessages.value.push(question)
-  handleRunSubmit(message, { parentId, question })
+  handleRunSubmit(message, { parentId, question, files })
 }
 
 /** 切换分支：按当前消息的兄弟节点前后移动（只影响展示与续写位置） */
@@ -544,8 +553,10 @@ const handleRunEdit = (item: any, content: string) => {
   }
   const parentId = Number(item?.parentId ?? 0) || 0
   const question: any = { role: 'user', content, parentId, createdTime: Date.now() }
+  const files = Array.isArray(item?.files) ? item.files.slice() : []
+  if (files.length) question.files = files
   runMessages.value.push(question)
-  handleRunSubmit(content, { parentId, question })
+  handleRunSubmit(content, { parentId, question, files })
 }
 
 /** 重新生成回复：不重复落用户消息，只在同一条提问下新增一条助手回复 */
@@ -559,7 +570,8 @@ const handleRunRegenerate = (item: any) => {
     ElMessage.warning('找不到该回复对应的提问，无法重新生成')
     return
   }
-  handleRunSubmit(String(question.content ?? ''), { parentId: item.parentId, reuseQuestion: true })
+  const files = Array.isArray(question?.files) ? question.files.slice() : []
+  handleRunSubmit(String(question.content ?? ''), { parentId: item.parentId, reuseQuestion: true, files })
 }
 
 /**
@@ -867,7 +879,7 @@ const paramBlank = (item: any) => {
 }
 const missingParams = computed<any[]>(() => runParams.value.filter((item: any) => true === item.required && paramBlank(item)))
 const canSend = computed(() => {
-  if (runLoading.value) return false
+  if (runLoading.value || runFileLoading.value) return false
   if (queryParam.value) return '' !== String(runMessage.value ?? '').trim()
   return true
 })
@@ -881,8 +893,6 @@ const runDefault = (type: string) => {
 }
 
 /* ------------------------------- 文件上传（走文件服务） ------------------------------- */
-
-const runFileLoading = ref('')
 
 // 上传文件 → 文件服务返回 { id, name, type, ... }，作为开始节点 files 数组的元素
 const handleRunFileUpload = (item: any, file: File) => {
@@ -958,11 +968,13 @@ const handleRunSubmit = (message = '', options: any = {}) => {
     return
   }
   const inputs: any = {}
+  const optionFiles = Array.isArray(options?.files) ? options.files : null
   runVariables.value.forEach((item: any) => {
     const value = runInputs.value[item.name]
-    // 文件列表为文件信息数组，支持 JSON 数组或逗号分隔的文件ID
-    // 文件列表为文件信息数组（由上传得到），直接按数组传入
-    inputs[item.name] = 'Array<File>' === item.type ? (Array.isArray(value) ? value : []) : value
+    // 文件列表为文件信息数组（由上传得到）：优先使用发送时快照，避免清空输入区后本轮文件丢失
+    inputs[item.name] = 'Array<File>' === item.type
+      ? (optionFiles ?? (Array.isArray(value) ? value : []))
+      : value
   })
   // 对话输入：作为开始节点的 query 传入（多轮对话时同一会话内沿用其它入参）
   if (message) inputs.query = message
@@ -1392,6 +1404,9 @@ onMounted(() => {
   margin-left: auto;
   margin-right: auto;
 }
+$run-output-font: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+$run-output-size: 13px;
+$run-output-line-height: 1.7;
 .diagram-name {
   font-size: 13px;
   color: var(--el-text-color-regular);
@@ -1463,6 +1478,9 @@ onMounted(() => {
         max-width: 100%;
       }
     }
+    & + .run-message {
+      margin-top: 12px;
+    }
   }
   :deep(.chat-avatar) {
     width: var(--run-avatar-size);
@@ -1473,6 +1491,135 @@ onMounted(() => {
   :deep(.chat-bubble) {
     flex: 0 1 auto;
     max-width: calc(100% - var(--run-avatar-size) - var(--run-gap));
+  }
+  /* 调试输出采用与流程对话、对话历史一致的紧凑字阶 */
+  .run-message.is-assistant {
+    :deep(.chat-bubble) {
+      padding: 10px 12px;
+    }
+    :deep(.chat-markdown) {
+      display: block;
+      color: var(--el-text-color-primary);
+      font-family: $run-output-font;
+      font-size: $run-output-size;
+      line-height: $run-output-line-height;
+    }
+    :deep(.chat-markdown .fs-markdown-preview),
+    :deep(.chat-markdown .fs-markdown-preview-body.vditor-reset) {
+      padding: 0;
+      color: inherit;
+      font-family: inherit;
+      font-size: $run-output-size;
+      line-height: $run-output-line-height;
+    }
+    :deep(.chat-markdown .fs-markdown-preview-body) {
+      > :first-child {
+        margin-top: 0 !important;
+      }
+      > :last-child {
+        margin-bottom: 0 !important;
+      }
+      p {
+        margin: 0 0 8px;
+        line-height: inherit;
+      }
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        margin: 12px 0 6px;
+        font-weight: 600;
+        line-height: 1.4;
+      }
+      h1 {
+        font-size: 18px;
+      }
+      h2 {
+        font-size: 16px;
+      }
+      h3 {
+        font-size: 15px;
+      }
+      h4,
+      h5,
+      h6 {
+        font-size: 13px;
+      }
+      ul,
+      ol {
+        margin: 0 0 8px;
+        padding-left: 20px;
+      }
+      li {
+        line-height: inherit;
+      }
+      li + li {
+        margin-top: 3px;
+      }
+      li > p {
+        margin: 0 0 3px;
+      }
+      blockquote {
+        margin: 0 0 9px;
+        padding: 6px 10px;
+        border-left: 3px solid var(--el-color-primary-light-5);
+        border-radius: 0 6px 6px 0;
+        background: var(--el-fill-color-lighter);
+        color: var(--el-text-color-secondary);
+      }
+      hr {
+        margin: 14px 0;
+      }
+      a {
+        color: var(--el-color-primary);
+        text-decoration: none;
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+      img {
+        border-radius: 6px;
+      }
+      code:not(.hljs):not(.highlight-chroma) {
+        padding: 1px 4px;
+        border-radius: 4px;
+        background: var(--el-fill-color);
+        font-size: 0.88em;
+      }
+      pre {
+        margin: 10px 0;
+        overflow: hidden;
+        border: solid 1px var(--el-border-color-lighter);
+        border-radius: 7px;
+        background: var(--el-fill-color-light);
+      }
+      pre > code {
+        padding: 10px 12px;
+        background-color: transparent;
+        background-image: none;
+        font-size: 11.5px;
+        line-height: 1.6;
+      }
+      table {
+        margin-bottom: 10px;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+      th,
+      td {
+        padding: 5px 8px;
+      }
+      .language-echarts {
+        height: 300px !important;
+        margin-bottom: 12px;
+      }
+    }
+    :deep(.chat-reasoning-text) {
+      font-size: 12px;
+      line-height: 1.65;
+    }
   }
   /* 折叠面板头：默认 48px 对气泡内的过程信息太高，压到 28px（与调试面板一致） */
   :deep(.chat-reasoning .el-collapse-item__header) {

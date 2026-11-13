@@ -221,14 +221,6 @@ public class AgenticNodeContext {
         return runtime.historyMessages(history, data);
     }
 
-    public ArrayNode multimodalParts(ObjectNode data) {
-        return runtime.multimodalParts(data, outputs, variables);
-    }
-
-    public ObjectNode userMessage(ArrayNode messages, String prompt, ObjectNode data) {
-        return runtime.userMessage(messages, prompt, data, outputs, variables);
-    }
-
     /* ------------------------------- 工具调用 ------------------------------- */
 
     public ArrayNode toolDefinitions(ObjectNode data) {

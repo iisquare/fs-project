@@ -25,7 +25,7 @@ import java.util.regex.Matcher;
  * 5. 统一处理错误中断与运行结果组装。
  *
  * 节点实现见 com.iisquare.fs.web.agent.runner.node 包；运行期共用能力（变量解析、模型调用、
- * 工具调用、多模态、记忆窗口）见 {@link AgenticRuntime}。
+ * 工具调用、记忆窗口）见 {@link AgenticRuntime}。
  */
 @Service
 public class AgenticRunner implements AgenticScheduler {
@@ -199,8 +199,6 @@ public class AgenticRunner implements AgenticScheduler {
         result.set("outputs", DPUtil.toJSON(outputs));
         result.set("conversation", DPUtil.toJSON(variables));
         result.set("steps", runtime.steps());
-        // 回复里的图表：由「输出图表」节点按内置提示词让模型归纳出图表类型与数据，这里按执行顺序收集
-        result.set("charts", charts(nodes, outputs));
         result.put("duration", System.currentTimeMillis() - begin);
         // 最终回复整段下发：模板拼装等非模型输出也走流式通道，前端直接把内容替换为最终结果
         if (!DPUtil.empty(answer)) runtime.emitAnswer(answer);
@@ -228,23 +226,6 @@ public class AgenticRunner implements AgenticScheduler {
             if (!DPUtil.empty(answer)) return answer;
         }
         return "";
-    }
-
-    /**
-     * 回复里的图表：取「输出图表」节点的运行结果（图表类型与展示数据由该节点的模型归纳给出），
-     * 按画布顺序收集，供前端跟在最终回复里展示（节点没跑到或执行失败时自然没有图表）。
-     */
-    protected ArrayNode charts(Map<String, ObjectNode> nodes, Map<String, ObjectNode> outputs) {
-        ArrayNode charts = DPUtil.arrayNode();
-        for (Map.Entry<String, ObjectNode> entry : nodes.entrySet()) {
-            if (!"Chart".equals(type(entry.getValue()))) continue;
-            ObjectNode output = outputs.get(entry.getKey());
-            if (null == output) continue;
-            // hasChart 由图表节点按本轮上下文判定（模型返回 type=none 时为 false），这里据此收集
-            if (!output.at("/hasChart").asBoolean(!output.at("/series").isEmpty())) continue;
-            charts.add(output);
-        }
-        return charts;
     }
 
     /**

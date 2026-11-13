@@ -35,7 +35,7 @@ import java.util.Map;
  *
  * 模型名称由调用方自行指定（方法参数 model），留空用服务配置 {@code fs.agent.multimodal.model} 的默认值。
  * 文件三种给法（都不接受本地路径 —— 服务端读不到调用方的本地磁盘）：
- * - {@code {id}}：文件服务标识，服务端取回原文件后内联（与 {@code AgenticRuntime} 的多模态节点同一做法）；
+ * - {@code {id}}：文件服务标识，服务端取回原文件后内联；
  * - {@code {data}}：base64 内容（可带 data: 前缀），服务端按类型补成 data URL；
  * - {@code {url}}：可直接访问的地址（http/https/data），原样放进内容块、由上游自行获取。
  * 类型优先取调用方给的 type（contentType），其次文件名后缀，最后按内容魔数嗅探。
@@ -161,7 +161,7 @@ public class MultimodalTool {
                 // 二进制：调用方直接给 base64（可带 data: 前缀），服务端按文件类型补成 data URL
                 bytes = FileUploader.decode(content);
             } else if (!DPUtil.empty(id)) {
-                // 文件服务标识：取回原文件后内联，与编排里的多模态节点同一做法
+                // 文件服务标识：取回原文件后内联
                 String download;
                 try {
                     download = FileFetcher.url(fileRpc, id, name);

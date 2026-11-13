@@ -98,8 +98,7 @@ public class LlmNodeHandler implements AgenticNodeHandler {
         if (!DPUtil.empty(system)) messages.addObject().put("role", "system").put("content", system);
         // 多轮对话：历史消息插在系统提示词与本次输入之间
         for (JsonNode item : ctx.historyMessages(data)) messages.add(item);
-        // 多模态输入：有图片/音频/视频/文件参数时，用户消息的 content 改成多段数组
-        ctx.userMessage(messages, ctx.text(data.at("/prompt").asText("")), data);
+        messages.addObject().put("role", "user").put("content", ctx.text(data.at("/prompt").asText("")));
         ArrayNode calls = DPUtil.arrayNode();
         // ReAct 调用链：逐轮记下模型输出（思考 + 内容）与该轮触发的工具调用及其返回结果
         ArrayNode rounds = DPUtil.arrayNode();

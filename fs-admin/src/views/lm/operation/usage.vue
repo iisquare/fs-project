@@ -145,29 +145,14 @@ const handleDelete = () => {
 <template>
   <el-card :bordered="false" shadow="never" class="fs-table-search" v-show="searchable">
     <form-search ref="filterRef" :model="filters">
+      <form-search-item label="处理开始时间" prop="beginTimeBegin">
+        <form-date-picker v-model="filters.beginTimeBegin" placeholder="开始时间" />
+      </form-search-item>
       <form-search-item label="用户" prop="uid">
         <form-select v-model="filters.uid" :callback="UserApi.list" clearable />
       </form-search-item>
       <form-search-item label="调用密钥" prop="authId">
         <form-select v-model="filters.authId" :callback="AuthApi.list" clearable />
-      </form-search-item>
-      <form-search-item label="追踪标识" prop="traceId">
-        <el-input v-model="filters.traceId" clearable />
-      </form-search-item>
-      <form-search-item label="处理开始时间" prop="beginTimeBegin">
-        <form-date-picker v-model="filters.beginTimeBegin" placeholder="开始时间" />
-      </form-search-item>
-      <form-search-item label="处理结束时间" prop="beginTimeEnd">
-        <form-date-picker v-model="filters.beginTimeEnd" placeholder="结束时间" />
-      </form-search-item>
-      <form-search-item label="调用服务" prop="place">
-        <el-input v-model="filters.place" clearable />
-      </form-search-item>
-      <form-search-item label="提供商" prop="providerId">
-        <form-select v-model="filters.providerId" :callback="ProviderApi.list" clearable />
-      </form-search-item>
-      <form-search-item label="调用模型" prop="modelId">
-        <form-select v-model="filters.modelId" :callback="ModelApi.list" clearable />
       </form-search-item>
       <form-search-item>
         <el-button type="primary" @click="handleRefresh(true, false)" :loading="loading">查询</el-button>
@@ -175,6 +160,21 @@ const handleDelete = () => {
         <button-advanced v-model="filters.advanced" />
       </form-search-item>
       <template v-if="filters.advanced">
+        <form-search-item label="处理结束时间" prop="beginTimeEnd">
+          <form-date-picker v-model="filters.beginTimeEnd" placeholder="结束时间" />
+        </form-search-item>
+        <form-search-item label="追踪标识" prop="traceId">
+          <el-input v-model="filters.traceId" clearable />
+        </form-search-item>
+        <form-search-item label="调用服务" prop="place">
+          <el-input v-model="filters.place" clearable />
+        </form-search-item>
+        <form-search-item label="提供商" prop="providerId">
+          <form-select v-model="filters.providerId" :callback="ProviderApi.list" clearable />
+        </form-search-item>
+        <form-search-item label="调用模型" prop="modelId">
+          <form-select v-model="filters.modelId" :callback="ModelApi.list" clearable />
+        </form-search-item>
         <form-search-item label="请求内容" prop="requestPrompt">
           <el-input v-model="filters.requestPrompt" clearable />
         </form-search-item>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * 记忆配置 - 记忆范围与窗口大小，需要模型的节点共用。
- * 「是否启用记忆」开关直接放在分组标题栏里（与多模态一致）；
+ * 「是否启用记忆」开关直接放在分组标题栏里；
  * 范围与窗口始终展示（关闭记忆时也能先设好值），避免分组展开后内部为空。
  * 「工具链」默认关闭，开启后完整对话里历史轮次的工具调用会一并加入上下文。
  *
@@ -29,7 +29,7 @@ const handleScope = (value: string) => {
     <el-form-item label="记忆范围" class="fs-form-inline">
       <template #label>
         <span>记忆范围</span>
-        <LayoutHelp text="完整对话：带上一轮的用户提问与助手回复（多轮对话需要）；仅用户提问：只带上一轮的用户提问，适合分类器、参数提取器、输出图表这类只关心问题的节点" />
+        <LayoutHelp text="完整对话：带上一轮的用户提问与助手回复（多轮对话需要）；仅用户提问：只带上一轮的用户提问，适合分类器、参数提取器等只关心问题的节点" />
       </template>
       <el-select :model-value="scope" class="memory-scope" @change="handleScope">
         <el-option label="完整对话" value="conversation" />

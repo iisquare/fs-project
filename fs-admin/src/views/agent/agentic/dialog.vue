@@ -136,6 +136,10 @@ const handleDeleteChat = (item: any) => {
  * 结束后取回运行结果（会话标识、日志标识）并刷新会话列表
  */
 const handleSend = () => {
+  if (uploading.value) {
+    ElMessage.warning('文件上传中，请稍候')
+    return
+  }
   const text = String(message.value ?? '').trim()
   // 允许只发附件：有文件没有文字时同样提交（query 传空）；
   // 开始节点关闭「用户输入」时没有可填的内容，直接发送（只带参数运行）
@@ -158,7 +162,10 @@ const handleSend = () => {
 }
 
 /** 发送按钮可用性：关闭用户输入时可直接发送，否则至少要有文字或附件 */
-const canSend = computed(() => !queryInput.value || !!String(message.value ?? '').trim() || runFiles.value.length > 0)
+const canSend = computed(() => {
+  if (uploading.value) return false
+  return !queryInput.value || !!String(message.value ?? '').trim() || runFiles.value.length > 0
+})
 
 /**
  * 起一轮对话：普通提问落「用户气泡 + 回复气泡」，重新生成（reuseQuestion）只落回复气泡。
@@ -194,7 +201,6 @@ const sendRound = (options: any) => {
     notice: null,
     createdTime: 0,
     logId: 0,
-    charts: [],
     parentId,
     // 实时执行进度：后端每执行一个节点推一次 step 事件（只含节点与状态）
     progress: [],
@@ -289,7 +295,6 @@ const fallbackInvoke = (payload: any, reply: any, question: any) => {
       const source: string = Object.keys(outputs).find((id: string) => outputs[id]?.reasoning) ?? ''
       if (source) reply.reasoning = outputs[source].reasoning
     }
-    reply.charts = Array.isArray(data.charts) ? data.charts : []
     reply.logId = data.logId ?? 0
     reply.steps = Array.isArray(data.steps) ? data.steps : reply.steps
     reply.id = data.answerId ?? 0
@@ -385,7 +390,6 @@ const stream = useAgenticStream({
       if (source) reply.reasoning = outputs[source].reasoning
     }
     // 图表随回复一起展示（与调试面板一致）
-    reply.charts = Array.isArray(data.charts) ? data.charts : []
     reply.logId = data.logId ?? 0
     // 本轮完整步骤随运行结果返回：完成后直接展示执行过程，不必再请求一次运行日志
     reply.steps = Array.isArray(data.steps) ? data.steps : reply.steps
@@ -838,6 +842,9 @@ $dialog-inset: $dialog-avatar + $dialog-gap;       /* 36px：一侧头像区宽�
 $dialog-min: 600px;                                /* 内容列最小宽度 */
 $dialog-max: 788px;                                /* 内容列最大宽度：气泡与输入框共用 */
 $dialog-row-max: $dialog-max + $dialog-inset * 2;  /* 860px：消息行总宽 */
+$dialog-output-font: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+$dialog-output-size: 13px;
+$dialog-output-line-height: 1.7;
 
 /* 内容列：固定像素上下限 + 居中；消息行与输入框共用同一套宽度保证竖线一致 */
 @mixin dialog-column($min, $max) {
@@ -1171,6 +1178,138 @@ $dialog-row-max: $dialog-max + $dialog-inset * 2;  /* 860px：消息行总宽 */
       &.is-user :deep(.chat-bubble) {
         flex: 0 1 auto;
         background: var(--el-color-primary-light-9);
+      }
+      /**
+       * Agent 输出优先保证长文阅读：正文、列表与代码块使用同一套字阶和纵向节奏，
+       * 不再让 Vditor 默认的 16px / 1.5 与提问正文形成明显断层。
+       */
+      &.is-assistant {
+        :deep(.chat-bubble) {
+          padding: 10px 12px;
+        }
+        :deep(.chat-markdown) {
+          display: block;
+          color: var(--el-text-color-primary);
+          font-family: $dialog-output-font;
+          font-size: $dialog-output-size;
+          line-height: $dialog-output-line-height;
+        }
+        :deep(.chat-markdown .fs-markdown-preview),
+        :deep(.chat-markdown .fs-markdown-preview-body.vditor-reset) {
+          padding: 0;
+          color: inherit;
+          font-family: inherit;
+          font-size: $dialog-output-size;
+          line-height: $dialog-output-line-height;
+        }
+        :deep(.chat-markdown .fs-markdown-preview-body) {
+          > :first-child {
+            margin-top: 0 !important;
+          }
+          > :last-child {
+            margin-bottom: 0 !important;
+          }
+          p {
+            margin: 0 0 8px;
+            line-height: inherit;
+          }
+          h1,
+          h2,
+          h3,
+          h4,
+          h5,
+          h6 {
+            margin: 12px 0 6px;
+            font-weight: 600;
+            line-height: 1.4;
+          }
+          h1 {
+            font-size: 18px;
+          }
+          h2 {
+            font-size: 16px;
+          }
+          h3 {
+            font-size: 15px;
+          }
+          h4,
+          h5,
+          h6 {
+            font-size: 13px;
+          }
+          ul,
+          ol {
+            margin: 0 0 8px;
+            padding-left: 20px;
+          }
+          li {
+            line-height: inherit;
+          }
+          li + li {
+            margin-top: 3px;
+          }
+          li > p {
+            margin: 0 0 3px;
+          }
+          blockquote {
+            margin: 0 0 9px;
+            padding: 6px 10px;
+            border-left: 3px solid var(--el-color-primary-light-5);
+            border-radius: 0 6px 6px 0;
+            background: var(--el-fill-color-lighter);
+            color: var(--el-text-color-secondary);
+          }
+          hr {
+            margin: 14px 0;
+          }
+          a {
+            color: var(--el-color-primary);
+            text-decoration: none;
+            &:hover {
+              text-decoration: underline;
+            }
+          }
+          img {
+            border-radius: 6px;
+          }
+          code:not(.hljs):not(.highlight-chroma) {
+            padding: 1px 4px;
+            border-radius: 4px;
+            background: var(--el-fill-color);
+            font-size: 0.88em;
+          }
+          pre {
+            margin: 10px 0;
+            overflow: hidden;
+            border: solid 1px var(--el-border-color-lighter);
+            border-radius: 7px;
+            background: var(--el-fill-color-light);
+          }
+          pre > code {
+            padding: 10px 12px;
+            background-color: transparent;
+            background-image: none;
+            font-size: 11.5px;
+            line-height: 1.6;
+          }
+          table {
+            margin-bottom: 10px;
+            font-size: 12px;
+            line-height: 1.6;
+          }
+          th,
+          td {
+            padding: 5px 8px;
+          }
+          .language-echarts {
+            height: 300px !important;
+            margin-bottom: 12px;
+          }
+        }
+        :deep(.chat-reasoning-text) {
+          font-size: 12px;
+          line-height: 1.65;
+        }
       }
       /* 折叠面板头：默认 48px 对气泡内的过程信息太高，压到 22px（折叠头高度与行高都跟随该变量） */
       :deep(.chat-reasoning.el-collapse) {

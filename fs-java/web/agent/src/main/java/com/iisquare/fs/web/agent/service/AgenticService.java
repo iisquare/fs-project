@@ -22,7 +22,6 @@ import com.iisquare.fs.web.agent.core.AgentGatewayAuth;
 import com.iisquare.fs.web.agent.core.AgentInvocation;
 import com.iisquare.fs.web.agent.mapper.AgenticStatisticMapper;
 import com.iisquare.fs.web.agent.mvc.Configuration;
-import com.iisquare.fs.web.agent.runner.ChartNodeHandler;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rpc.FileRpc;
 import com.iisquare.fs.web.core.file.StreamFileUploader;
@@ -752,8 +751,7 @@ public class AgenticService extends JPAServiceBase {
         } else {
             AgentApiKeyService.AuthenticatedKey auth = agentApiKeyService.authenticate(apiKey, request);
             if (null == auth) return ApiUtil.result(1001, "无效的 Agent API Key", null);
-            List<Integer> allowed = DPUtil.parseIntList(auth.key().getAgenticIds());
-            if (!allowed.contains(id)) {
+            if (!agentApiKeyService.allows(auth.key(), id)) {
                 return ApiUtil.result(9403, "API Key 无权调用该编排流程", id);
             }
             invocation = new AgentInvocation(auth.uid(), auth.identity(), auth.session(),
@@ -960,22 +958,61 @@ public class AgenticService extends JPAServiceBase {
         // 分支起点重发（branchStart）时上下文就是空的，不能退回全部消息，否则新分支会读到旧分支的问答；
         // 其余情况（早期数据没有分支尾）仍退回全部消息，保持升级前的上下文口径
         if (branch.isEmpty() && !branchStart) branch = rows;
+        // 旧轮次没有保存用户消息的模型上下文时，用该轮回复日志里的实际请求补一份（只读回退）
+        Map<Integer, String> historySteps = oldHistorySteps(chatId, branch);
         for (AgenticDialog row : branch) {
             // 标记删除的消息不进模型上下文
             if (null != row.getDeletedTime() && row.getDeletedTime() > 0) continue;
             if (!Arrays.asList("user", "assistant").contains(DPUtil.parseString(row.getRole()))) continue;
-            // 回复正文里的图表占位符不进上下文（图表由前端按占位符渲染，不是模型该读的内容）
-            String content = ChartNodeHandler.stripPlaceholder(DPUtil.parseString(row.getContent()));
+            String content = DPUtil.parseString(row.getContent());
             if (DPUtil.empty(content)) continue;
             ObjectNode item = result.addObject();
             item.put("role", DPUtil.parseString(row.getRole()));
             item.put("content", content);
             // 工具调用明细随历史一起带给节点，由节点按「工具链」开关决定是否加入上下文
             String reference = DPUtil.parseString(row.getReference());
-            if (!DPUtil.empty(reference)) {
-                ArrayNode calls = referenceCalls(reference);
+            JsonNode metadata = DPUtil.empty(reference) ? null : DPUtil.parseJSON(reference);
+            if ("user".equals(item.at("/role").asText(""))) {
+                JsonNode nodeContents = null == metadata ? null : metadata.at("/userMessages");
+                if (null == nodeContents || !nodeContents.isObject() || nodeContents.isEmpty()) {
+                    String steps = historySteps.get(row.getId());
+                    metadata = DPUtil.empty(steps) ? null : DPUtil.parseJSON(steps);
+                    nodeContents = null == metadata ? null : metadata.at("/userMessages");
+                }
+                if (null != nodeContents && nodeContents.isObject() && !nodeContents.isEmpty()) {
+                    item.set("nodeContents", nodeContents.deepCopy());
+                }
+            } else if (null != metadata) {
+                ArrayNode calls = calls(metadata);
                 if (!calls.isEmpty()) item.set("toolCalls", calls);
             }
+        }
+        return result;
+    }
+
+    /**
+     * 兼容修复前落库的会话：日志按 answerId 关联助手回复，助手回复的 parentId 指向前一条用户消息。
+     * 仅当分支中的用户消息缺少模型上下文时才读取带 steps 的日志，避免新会话重复读取大字段。
+     */
+    protected Map<Integer, String> oldHistorySteps(Integer chatId, List<AgenticDialog> branch) {
+        Map<Integer, String> result = new LinkedHashMap<>();
+        boolean missing = false;
+        for (AgenticDialog row : branch) {
+            if (!"user".equals(DPUtil.parseString(row.getRole())) || !DPUtil.empty(row.getReference())) continue;
+            missing = true;
+            break;
+        }
+        if (!missing) return result;
+        Map<Integer, String> stepsByAnswer = new LinkedHashMap<>();
+        for (AgenticLogDao.HistorySteps item : agenticLogDao.findHistoryStepsByChatId(chatId)) {
+            if (null != item.getAnswerId()) stepsByAnswer.put(item.getAnswerId(), item.getSteps());
+        }
+        for (AgenticDialog row : branch) {
+            if (!"assistant".equals(DPUtil.parseString(row.getRole()))) continue;
+            Integer parentId = row.getParentId();
+            String steps = stepsByAnswer.get(row.getId());
+            if (null == parentId || parentId < 1 || DPUtil.empty(steps)) continue;
+            result.put(parentId, steps);
         }
         return result;
     }
@@ -1005,19 +1042,40 @@ public class AgenticService extends JPAServiceBase {
         return row.getId();
     }
 
-    /**
-     * 会话消息的参考数据：工具调用明细（供开启「工具链」记忆的节点在后续轮次里复用）
-     * 与最终回复要展示的图表（供历史消息回显）。没有图表时沿用早期的工具调用数组格式。
-     */
+    /** 会话消息的参考数据：工具调用明细（供开启「工具链」记忆的节点在后续轮次里复用） */
     protected String reference(ObjectNode result) {
         ArrayNode calls = calls(result);
-        ArrayNode charts = result.at("/charts").isArray()
-                ? (ArrayNode) result.at("/charts") : DPUtil.arrayNode();
-        if (charts.isEmpty()) return calls.isEmpty() ? "" : DPUtil.stringify(calls);
-        ObjectNode reference = DPUtil.objectNode();
-        reference.set("calls", calls);
-        reference.set("charts", charts);
-        return DPUtil.stringify(reference);
+        return calls.isEmpty() ? "" : DPUtil.stringify(calls);
+    }
+
+    /**
+     * 用户消息的模型上下文：每个 LLM 节点首次实际发送的用户消息可能包含文件变量、
+     * 上游输出等内容，不能只保存用户输入的 query。这里按节点标识保存展开后的用户消息，
+     * 下一轮由 AgenticRuntime.historyMessages 按当前节点还原。
+     */
+    protected String historyReference(ObjectNode result) {
+        return historyReference(result.at("/steps"));
+    }
+
+    protected String historyReference(JsonNode steps) {
+        ObjectNode userMessages = DPUtil.objectNode();
+        for (JsonNode step : steps) {
+            if (2 == step.at("/status").asInt(1) || !"LLM".equals(step.at("/type").asText(""))) continue;
+            JsonNode messages = step.at("/request/messages");
+            for (int index = messages.size() - 1; index >= 0; index--) {
+                JsonNode message = messages.get(index);
+                if (!"user".equals(message.at("/role").asText(""))) continue;
+                JsonNode content = message.at("/content");
+                if (content.isTextual() && !DPUtil.empty(content.asText(""))) {
+                    userMessages.put(step.at("/id").asText(""), content.asText(""));
+                }
+                break;
+            }
+        }
+        if (userMessages.isEmpty()) return "";
+        ObjectNode metadata = DPUtil.objectNode();
+        metadata.set("userMessages", userMessages);
+        return DPUtil.stringify(metadata);
     }
 
     /** 本轮的工具调用明细：取自各节点输出里的 calls（工具方法名、参数、返回结果） */
@@ -1030,29 +1088,23 @@ public class AgenticService extends JPAServiceBase {
         return calls;
     }
 
-    /**
-     * 会话消息参考数据里的工具调用明细：早期直接存数组，带图表后存 {calls, charts} 对象，
-     * 这里统一取工具调用，两种格式都能用于「工具链」记忆。
-     */
+    /** 会话消息参考数据里的工具调用明细 */
     protected ArrayNode referenceCalls(String reference) {
         if (DPUtil.empty(reference)) return DPUtil.arrayNode();
-        JsonNode json = DPUtil.parseJSON(reference);
-        if (null == json) return DPUtil.arrayNode();
-        JsonNode calls = json.isObject() ? json.at("/calls") : json;
-        return calls.isArray() ? (ArrayNode) calls : DPUtil.arrayNode();
+        return calls(DPUtil.parseJSON(reference));
     }
 
-    /** 会话消息参考数据里的图表：没有图表（早期数据）时返回空数组 */
-    protected ArrayNode referenceCharts(String reference) {
-        if (DPUtil.empty(reference)) return DPUtil.arrayNode();
-        JsonNode json = DPUtil.parseJSON(reference);
-        JsonNode charts = null == json ? null : json.at("/charts");
-        return null != charts && charts.isArray() ? (ArrayNode) charts : DPUtil.arrayNode();
+    protected ArrayNode calls(JsonNode reference) {
+        if (null == reference) return DPUtil.arrayNode();
+        if (reference.isArray()) return (ArrayNode) reference;
+        JsonNode calls = reference.at("/calls");
+        return calls.isArray() ? (ArrayNode) calls : DPUtil.arrayNode();
     }
 
     /**
      * 追加会话消息：parentId 指定这条消息接在哪条消息之后（0 表示分支起点）；
-     * 追加后把会话的 leafId 指向新消息（当前分支尾）并刷新更新时间，reference 存本轮的工具调用明细。
+     * 追加后把会话的 leafId 指向新消息（当前分支尾）并刷新更新时间；
+     * reference 按消息角色保存用户消息的模型上下文或助手的工具调用明细。
      */
     protected AgenticDialog appendDialog(AgenticChat chat, Integer parentId, String role, String content, String reasoning, String reference, Integer uid) {
         if (DPUtil.empty(content)) return null;
@@ -1093,7 +1145,7 @@ public class AgenticService extends JPAServiceBase {
         Integer parentId = branch;
         if (!reuseQuestion) {
             question = appendDialog(chat, branch, "user",
-                    DPUtil.empty(query) ? DPUtil.stringify(inputs) : query, "", "", uid);
+                    DPUtil.empty(query) ? DPUtil.stringify(inputs) : query, "", historyReference(result), uid);
             parentId = null == question ? branch : question.getId();
         }
         AgenticDialog reply = appendDialog(chat, parentId, "assistant",
@@ -1180,9 +1232,6 @@ public class AgenticService extends JPAServiceBase {
             node.put("feedbackTag", DPUtil.parseString(dialog.getFeedbackTag()));
             node.put("feedbackContent", DPUtil.parseString(dialog.getFeedbackContent()));
             node.put("createdTime", null == dialog.getCreatedTime() ? 0L : dialog.getCreatedTime());
-            // 本轮回复要展示的图表：随消息返回，历史记录打开后与当时展示一致
-            ArrayNode charts = referenceCharts(DPUtil.parseString(dialog.getReference()));
-            if (!charts.isEmpty()) node.set("charts", charts);
             // 本轮运行日志标识：前端按它拉取完整的节点与工具调用过程（定位问题用）
             Integer logId = logByAnswer.get(dialog.getId());
             if (null != logId) {

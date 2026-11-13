@@ -13,6 +13,7 @@
  * @prop {Boolean} single     - 单行精简模式：只渲染一行编辑器，不带标题与操作按钮（变量用 `/` 唤起插入）
  * @prop {Boolean} collapsible - 是否可折叠（折叠后只显示标题、内容预览与操作按钮）
  * @prop {Boolean} defaultExpanded - 折叠时的初始状态，默认收起
+ * @slot after - 编辑器下方的附加内容；折叠模式下仅在展开时渲染
  */
 import { computed, ref } from 'vue'
 import CollapseItem from './CollapseItem.vue'
@@ -99,6 +100,7 @@ const handleCopy = () => editorRef.value?.copy()
       :height="height"
       :single="single"
       :placeholder="placeholder" />
+    <slot name="after"></slot>
   </CollapseItem>
   <!-- 紧凑模式：标题 + 操作按钮一行，编辑器紧随其下（用于折叠卡片、窄容器内部） -->
   <div class="variable-field" v-else-if="compact">
@@ -121,6 +123,7 @@ const handleCopy = () => editorRef.value?.copy()
       :height="height"
       :single="single"
       :placeholder="placeholder" />
+    <slot name="after"></slot>
   </div>
   <!-- 面板模式：分组标题样式的一行 + 独立编辑器行 -->
   <SectionSlice :title="title" v-if="!compact && !collapsible">
@@ -140,6 +143,7 @@ const handleCopy = () => editorRef.value?.copy()
         :height="height"
         :single="single"
         :placeholder="placeholder" />
+      <slot name="after"></slot>
     </el-form-item>
   </SectionSlice>
 </template>

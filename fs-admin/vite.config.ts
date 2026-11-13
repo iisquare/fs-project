@@ -1,6 +1,8 @@
 import { fileURLToPath, URL } from 'node:url'
+import { createReadStream, cpSync, existsSync, readFileSync, statSync } from 'node:fs'
+import { extname, join, resolve, sep } from 'node:path'
 
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import vueDevTools from 'vite-plugin-vue-devtools'
@@ -10,6 +12,92 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import copy from 'rollup-plugin-copy'
 
 // https://vite.dev/config/
+
+const vditorRoot = fileURLToPath(new URL('./node_modules/vditor', import.meta.url))
+const vditorVersion = String(
+  JSON.parse(readFileSync(join(vditorRoot, 'package.json'), 'utf8')).version
+)
+const vditorRoute = `/vditor/${vditorVersion}`
+const vditorDist = join(vditorRoot, 'dist')
+const staticFileTypes: Record<string, string> = {
+  '.css': 'text/css; charset=utf-8',
+  '.eot': 'application/vnd.ms-fontobject',
+  '.gif': 'image/gif',
+  '.js': 'text/javascript; charset=utf-8',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.json': 'application/json; charset=utf-8',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.otf': 'font/otf',
+  '.ttf': 'font/ttf',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+}
+
+/**
+ * Vditor 的主包由业务 chunk 加载，而 Lute、主题、图标、Mermaid、ECharts 等
+ * 会在运行时通过 options.cdn 动态追加 /dist/...。
+ *
+ * 开发态直接从 node_modules 提供，生产构建复制到 Vite 输出目录。
+ * URL 带包版本；生产缓存仍沿用服务端现有策略，本插件不额外设置。
+ */
+function vditorAssets(): Plugin {
+  return {
+    name: 'vditor-local-assets',
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        const pathname = new URL(request.url || '/', 'http://localhost').pathname
+        const prefix = `${vditorRoute}/dist/`
+        if (!pathname.startsWith(prefix)) {
+          next()
+          return
+        }
+        let target = ''
+        try {
+          const relative = decodeURIComponent(pathname.slice(prefix.length))
+          target = resolve(vditorDist, relative)
+        } catch {
+          response.statusCode = 400
+          response.end()
+          return
+        }
+        if (target !== vditorDist && !target.startsWith(`${vditorDist}${sep}`)) {
+          response.statusCode = 403
+          response.end()
+          return
+        }
+        if (!existsSync(target)) {
+          next()
+          return
+        }
+        const stats = statSync(target)
+        if (!stats.isFile()) {
+          next()
+          return
+        }
+        response.setHeader(
+          'Content-Type',
+          staticFileTypes[extname(target).toLowerCase()] || 'application/octet-stream'
+        )
+        response.setHeader('Content-Length', stats.size)
+        // 开发态不缓存，避免更新 node_modules 后仍取到上一份文件
+        response.setHeader('Cache-Control', 'no-cache')
+        if (request.method === 'HEAD') {
+          response.end()
+          return
+        }
+        const stream = createReadStream(target)
+        stream.on('error', () => response.destroy())
+        stream.pipe(response)
+      })
+    },
+    writeBundle(options) {
+      const outDir = resolve(options.dir || '../fs-java/web/admin/src/main/resources/static')
+      cpSync(vditorDist, join(outDir, 'vditor', vditorVersion, 'dist'), { recursive: true })
+    },
+  }
+}
 
 /**
  * 取模块所属的包名。
@@ -105,6 +193,9 @@ function vendorChunkName(pkg: string): string {
 }
 
 export default defineConfig({
+  define: {
+    __VDITOR_VERSION__: JSON.stringify(vditorVersion),
+  },
   server: {
     allowedHosts: ['wsl'],
   },
@@ -128,7 +219,6 @@ export default defineConfig({
              * 这些库只有个别组件用，把组件本身并进库分块后，用到的页面一次性把两者都取回，
              * 同目录里其他组件则不会被这些大库牵连（例如只用 DataFilter 的页面不该下 echarts）。
              */
-            if (id.includes('/src/components/Data/DataResultChart.vue')) return 'echarts'
             if (id.includes('/src/components/Editor/CodeEditor.vue')) return 'codemirror'
             if (id.includes('/src/components/Editor/MarkdownEditor.vue')) return 'vditor'
             if (id.includes('/src/components/Form/FormCron.vue')) return 'cron-parser'
@@ -167,6 +257,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    vditorAssets(),
     vue(),
     vueJsx(),
     vueDevTools(),
