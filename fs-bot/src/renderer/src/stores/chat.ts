@@ -17,6 +17,7 @@ import {
 } from '@renderer/core/AgentRuntime'
 import { useProjectStore } from './project'
 import type { Project } from '@renderer/db/ProjectDb'
+import { capabilityPrompt, normalizeCapabilities } from '@renderer/core/ProjectCapabilities'
 
 /**
  * 会话运行态：按会话保存消息与流式连接。
@@ -95,6 +96,8 @@ export interface ChatSession {
   memory: string
   /** 是否启用客户端记忆：关闭时记忆内容不下发，模型也没有 memory 工具 */
   memoryEnabled: boolean
+  /** 已启用的输出增强能力：随项目配置同步，用于组装系统提示词 */
+  capabilities: string[]
   thinkEffort: string
   messages: ChatMessage[]
   /** 当前分支尾：页面只渲染它沿 parentId 回溯到根的那条路径 */
@@ -148,6 +151,7 @@ export interface ChatProfile {
   systemPrompt: string
   memory: string
   memoryEnabled: boolean
+  capabilities: string[]
   thinkEffort: string
 }
 
@@ -159,6 +163,7 @@ export function chatProfile(project?: Project | null): ChatProfile {
     systemPrompt: String(project?.systemPrompt ?? ''),
     memory: String(project?.memory ?? ''),
     memoryEnabled: true === project?.memoryEnabled,
+    capabilities: normalizeCapabilities(project),
     thinkEffort: String(project?.thinkEffort ?? '')
   }
 }
@@ -174,16 +179,22 @@ function memoryBlock(memory: string, enabled: boolean): string {
 }
 
 /**
- * 下发给服务端的系统提示词：项目自己的提示词在前，接着是项目记忆，最后是主进程给的本机说明；
- * 三段都为空时不下发。服务端把这一整段作为首条 system 消息补在最前。
+ * 下发给服务端的系统提示词：项目自己的提示词、静态能力说明、主进程给的本机说明、项目记忆。
+ * 内容按稳定性排序，易变的项目记忆固定放在最后；全部为空时不下发。
  */
 function systemPromptOf(
-  session: Pick<ChatSession, 'systemPrompt' | 'memory' | 'memoryEnabled' | 'workspacePrompt'>
+  session: Pick<
+    ChatSession,
+    'systemPrompt' | 'memory' | 'memoryEnabled' | 'capabilities' | 'workspacePrompt'
+  >
 ): string {
+  const capability = capabilityPrompt({ capabilities: session.capabilities })
   return [
     session.systemPrompt,
-    memoryBlock(session.memory, session.memoryEnabled),
-    session.workspacePrompt
+    // 手工系统提示词已经写了同一段时不再重复追加，避免规则占两份上下文
+    capability && !session.systemPrompt.includes('## 可视化输出') ? capability : '',
+    session.workspacePrompt,
+    memoryBlock(session.memory, session.memoryEnabled)
   ]
     .map((text) => String(text ?? '').trim())
     .filter(Boolean)
@@ -479,6 +490,7 @@ export const useChatStore = defineStore('chat', () => {
         systemPrompt: profile.systemPrompt ?? '',
         memory: profile.memory ?? '',
         memoryEnabled: profile.memoryEnabled ?? false,
+        capabilities: [...(profile.capabilities ?? [])],
         thinkEffort: profile.thinkEffort ?? '',
         messages: [],
         leafId: '',
@@ -513,6 +525,11 @@ export const useChatStore = defineStore('chat', () => {
         session.tools = null
       }
       session.memoryEnabled = profile.memoryEnabled
+    }
+    if (profile.capabilities !== undefined) {
+      // 子 Agent 能力会影响主 Agent 的工具定义，变化后下一次发送前重新组装
+      if (profile.capabilities.join(',') !== session.capabilities.join(',')) session.tools = null
+      session.capabilities = [...profile.capabilities]
     }
     if (profile.thinkEffort !== undefined) session.thinkEffort = profile.thinkEffort
     return session
@@ -1424,6 +1441,7 @@ export const useChatStore = defineStore('chat', () => {
       systemPrompt: session.systemPrompt,
       memory: session.memory,
       memoryEnabled: session.memoryEnabled,
+      capabilities: [...session.capabilities],
       thinkEffort: session.thinkEffort,
       query: text,
       mentions: message.mentions ?? [],
@@ -1445,6 +1463,7 @@ export const useChatStore = defineStore('chat', () => {
       systemPrompt: session.systemPrompt,
       memory: session.memory,
       memoryEnabled: session.memoryEnabled,
+      capabilities: [...session.capabilities],
       thinkEffort: session.thinkEffort,
       query: question.content,
       mentions: question.mentions ?? [],

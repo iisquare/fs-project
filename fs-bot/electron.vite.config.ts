@@ -1,4 +1,5 @@
-import { resolve } from 'path'
+import { createReadStream, cpSync, existsSync, statSync } from 'fs'
+import { extname, join, resolve, sep } from 'path'
 import { defineConfig } from 'electron-vite'
 import vue from '@vitejs/plugin-vue'
 import AutoImport from 'unplugin-auto-import/vite'
@@ -7,6 +8,67 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import Icons from 'unplugin-icons/vite'
 import IconsResolver from 'unplugin-icons/resolver'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
+import type { Plugin } from 'vite'
+
+const VDITOR_ROOT = resolve('node_modules/vditor')
+const VDITOR_MIME: Record<string, string> = {
+  '.css': 'text/css; charset=utf-8',
+  '.gif': 'image/gif',
+  '.js': 'text/javascript; charset=utf-8',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.json': 'application/json; charset=utf-8',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2'
+}
+
+/**
+ * Vditor 的 Lute、主题、高亮和图表运行时都由 cdn 参数动态加载。
+ * 开发态从 node_modules 直接提供，构建时复制进 renderer 产物，保证离线可用且不违反 CSP。
+ */
+function vditorAssets(): Plugin {
+  return {
+    name: 'vditor-local-assets',
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        const pathname = String(request.url ?? '').split('?', 1)[0]
+        if (!pathname.startsWith('/vditor/')) {
+          next()
+          return
+        }
+        let target = ''
+        try {
+          target = resolve(VDITOR_ROOT, `.${decodeURIComponent(pathname.slice('/vditor'.length))}`)
+        } catch {
+          response.statusCode = 400
+          response.end()
+          return
+        }
+        if (target !== VDITOR_ROOT && !target.startsWith(`${VDITOR_ROOT}${sep}`)) {
+          response.statusCode = 403
+          response.end()
+          return
+        }
+        if (!existsSync(target) || !statSync(target).isFile()) {
+          next()
+          return
+        }
+        response.setHeader(
+          'Content-Type',
+          VDITOR_MIME[extname(target).toLowerCase()] ?? 'application/octet-stream'
+        )
+        response.setHeader('Cache-Control', 'no-cache')
+        createReadStream(target).pipe(response)
+      })
+    },
+    writeBundle(options) {
+      const outDir = resolve(options.dir ?? 'out/renderer')
+      cpSync(join(VDITOR_ROOT, 'dist'), join(outDir, 'vditor', 'dist'), { recursive: true })
+    }
+  }
+}
 
 export default defineConfig({
   main: {
@@ -34,6 +96,7 @@ export default defineConfig({
       }
     },
     plugins: [
+      vditorAssets(),
       vue(),
       AutoImport({
         imports: ['vue', 'vue-router'],

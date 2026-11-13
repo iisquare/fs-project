@@ -425,6 +425,8 @@ async function copy(): Promise<void> {
             :content="message.content"
             :project-id="projectId"
             :conversation-id="conversationId"
+            :streaming="streaming"
+            :complete="'done' === message.status"
           />
           <div v-else-if="idle" class="chat-content placeholder">（无回复内容）</div>
           <div v-if="streaming" class="chat-streaming">

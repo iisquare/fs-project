@@ -16,7 +16,6 @@ declare module 'vue' {
     AppLoading: typeof import('./components/Layout/AppLoading.vue')['default']
     ApprovalBanner: typeof import('./components/Chat/ApprovalBanner.vue')['default']
     BrandLogo: typeof import('./components/Brand/BrandLogo.vue')['default']
-    ChatCode: typeof import('./components/Chat/ChatCode.vue')['default']
     ChatComposer: typeof import('./components/Chat/ChatComposer.vue')['default']
     ChatElevator: typeof import('./components/Chat/ChatElevator.vue')['default']
     ChatMarkdown: typeof import('./components/Chat/ChatMarkdown.vue')['default']

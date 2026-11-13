@@ -1,4 +1,5 @@
 import type { Project } from '@renderer/db/ProjectDb'
+import { normalizeCapabilities } from '@renderer/core/ProjectCapabilities'
 
 /**
  * 项目配置文件：导入 / 导出与「从分享创建本地项目」共用同一份格式。
@@ -6,7 +7,7 @@ import type { Project } from '@renderer/db/ProjectDb'
  * ```
  * {
  *   "type": "fs-bot-project",      // 格式标识，导入时据此识别
- *   "version": 1,                  // 格式版本，将来结构变化时递增
+ *   "version": 2,                  // 格式版本：v2 用 capabilities 统一描述项目能力
  *   "exportedAt": "2026-10-14T...",// 导出时间（仅记录用）
  *   "share": { ... } | null,       // 从分享导出的文件才带来源信息
  *   "project": { ... }             // 项目配置本身（不含本地 id 与时间戳）
@@ -18,7 +19,7 @@ import type { Project } from '@renderer/db/ProjectDb'
  */
 
 export const PROJECT_FILE_TYPE = 'fs-bot-project'
-export const PROJECT_FILE_VERSION = 1
+export const PROJECT_FILE_VERSION = 2
 
 /** 配置文件里的项目配置：本地标识（id）与时间戳不导出，导入时重新生成 */
 export interface ProjectConfig {
@@ -32,10 +33,8 @@ export interface ProjectConfig {
   memory: string
   /** 是否启用客户端记忆：默认关闭；旧配置文件里没有这一项时按关闭处理 */
   memoryEnabled: boolean
-  /** 三类子 Agent 各自独立启用，默认关闭；旧配置缺少对应字段时也按关闭处理 */
-  browserAgentEnabled: boolean
-  projectToolAgentEnabled: boolean
-  desktopAgentEnabled: boolean
+  /** 项目能力标识；旧配置里的三个子 Agent 布尔字段会在 configOf 中自动转换 */
+  capabilities: string[]
   thinkEffort: string
   name: string
   description: string
@@ -95,9 +94,7 @@ export function configOf(source: Partial<Project> | Record<string, any>): Projec
     systemPrompt: text(source?.systemPrompt),
     memory: text(source?.memory),
     memoryEnabled: flag(source?.memoryEnabled),
-    browserAgentEnabled: flag(source?.browserAgentEnabled),
-    projectToolAgentEnabled: flag(source?.projectToolAgentEnabled),
-    desktopAgentEnabled: flag(source?.desktopAgentEnabled),
+    capabilities: normalizeCapabilities(source),
     thinkEffort: text(source?.thinkEffort),
     name: text(source?.name),
     description: text(source?.description),

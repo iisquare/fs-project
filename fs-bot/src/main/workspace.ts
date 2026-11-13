@@ -712,9 +712,9 @@ export class WorkspaceManager {
     const lines = [
       `# 环境信息`,
       `## 本机环境`,
-      `- 当前日期：${localDateLabel()}`,
       `- 操作系统：${SYSTEM}`,
-      `- 命令执行：${COMMAND_SHELL}`
+      `- 命令执行：${COMMAND_SHELL}`,
+      `- 当前日期：${localDateLabel()}`
     ]
     lines.push(`## 工作区`)
     if (roots.length < 1) {

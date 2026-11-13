@@ -12,6 +12,7 @@ import { useUserStore } from '@renderer/stores/user'
 import { useAgentStore } from '@renderer/stores/agents'
 import { useFilesStore, FILES_WIDTH_MIN, FILES_WIDTH_MAX } from '@renderer/stores/files'
 import { useWindowStore } from '@renderer/stores/window'
+import { useChatViewStore } from '@renderer/stores/chatView'
 import BotApi from '@renderer/api/agent/BotApi'
 import { errorMessage } from '@renderer/utils/ErrorUtil'
 import { chatProfile, useChatStore, type ChatMention } from '@renderer/stores/chat'
@@ -46,6 +47,7 @@ const catalogStore = useCatalogStore()
 const userStore = useUserStore()
 const chatStore = useChatStore()
 const agentStore = useAgentStore()
+const chatView = useChatViewStore()
 
 const draft = ref('')
 const mentions = ref<ChatMention[]>([])
@@ -121,6 +123,15 @@ const POLICY_LABELS: Record<string, string> = {
   deny: '自动拒绝',
   full: '完全访问权限'
 }
+
+function setTableDisplayMode(command: string | number | object): void {
+  const mode = String(command)
+  if ('wrap' === mode || 'nowrap' === mode) chatView.setTableMode(mode)
+}
+
+const tableModeLabel = computed(() =>
+  'wrap' === chatView.tableMode ? '自动换行' : '不换行（横向滚动）'
+)
 
 /** 当前会话：历史里的那条，或还没发过消息、还没落库的新会话 */
 const conversation = computed(() => conversationStore.current)
@@ -784,6 +795,124 @@ async function uploadFiles(): Promise<void> {
                 effect="plain"
                 >等待用户</el-tag
               >
+              <el-dropdown
+                class="conversation-view-menu"
+                trigger="click"
+                placement="bottom-end"
+                popper-class="conversation-view-menu-popover"
+                @command="setTableDisplayMode"
+              >
+                <button
+                  type="button"
+                  class="conversation-view-trigger"
+                  :title="`表格显示方式：${tableModeLabel}`"
+                  :aria-label="`表格显示方式，当前${tableModeLabel}`"
+                >
+                  <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+                    <circle cx="3.5" cy="8" r="1.25" fill="currentColor" />
+                    <circle cx="8" cy="8" r="1.25" fill="currentColor" />
+                    <circle cx="12.5" cy="8" r="1.25" fill="currentColor" />
+                  </svg>
+                </button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item
+                      command="wrap"
+                      role="menuitemradio"
+                      :aria-checked="'wrap' === chatView.tableMode"
+                      :class="{ 'is-selected': 'wrap' === chatView.tableMode }"
+                    >
+                      <template #icon>
+                        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                          <path
+                            d="M2.4 3.5h11.2M2.4 7.1h7.2c2.2 0 3.2 1 3.2 2.4s-1 2.4-3.2 2.4H6.9"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.2"
+                            stroke-linecap="round"
+                          />
+                          <path
+                            d="m8.5 10.2-1.8 1.7 1.8 1.7"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </template>
+                      <span class="view-option-copy">
+                        <span>自动换行</span>
+                        <small>按消息宽度折行，减少横向滚动</small>
+                      </span>
+                      <svg
+                        v-if="'wrap' === chatView.tableMode"
+                        class="view-option-check"
+                        viewBox="0 0 16 16"
+                        width="13"
+                        height="13"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="m3.3 8.2 3 3 6.4-6.6"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </el-dropdown-item>
+                    <el-dropdown-item
+                      command="nowrap"
+                      role="menuitemradio"
+                      :aria-checked="'nowrap' === chatView.tableMode"
+                      :class="{ 'is-selected': 'nowrap' === chatView.tableMode }"
+                    >
+                      <template #icon>
+                        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                          <path
+                            d="M2.4 3.5h11.2M2.4 7.1h10.1M2.4 10.7h6.4"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.2"
+                            stroke-linecap="round"
+                          />
+                          <path
+                            d="M10.8 8.4h2.8m0 0-1.2-1.2m1.2 1.2-1.2 1.2"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.1"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </template>
+                      <span class="view-option-copy">
+                        <span>不换行</span>
+                        <small>保持长表格布局，横向滚动查看全部列</small>
+                      </span>
+                      <svg
+                        v-if="'nowrap' === chatView.tableMode"
+                        class="view-option-check"
+                        viewBox="0 0 16 16"
+                        width="13"
+                        height="13"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="m3.3 8.2 3 3 6.4-6.6"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
             </header>
 
             <!--
@@ -1329,6 +1458,41 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
   .conv-tag {
     flex: none;
   }
+
+  .conversation-view-menu {
+    flex: none;
+    margin-left: auto;
+  }
+
+  .conversation-view-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--el-text-color-placeholder);
+    cursor: pointer;
+    transition:
+      color 0.16s,
+      border-color 0.16s,
+      background-color 0.16s;
+
+    &:hover,
+    &:focus-visible {
+      border-color: var(--el-border-color-lighter);
+      background: var(--el-fill-color-light);
+      color: var(--el-color-primary);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--el-color-primary);
+      outline-offset: 1px;
+    }
+  }
 }
 
 @keyframes agent-icon-pulse {
@@ -1475,5 +1639,68 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
   max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+</style>
+
+<!-- 下拉面板被 teleport 到 body，脱离组件根节点，只能用非 scoped 样式命中 -->
+<style lang="scss">
+.conversation-view-menu-popover.el-popper {
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.conversation-view-menu-popover .el-dropdown-menu {
+  padding: 0;
+}
+
+.conversation-view-menu-popover .el-dropdown-menu__item {
+  gap: 9px;
+  min-width: 272px;
+  height: auto;
+  padding: 8px 9px;
+  border-radius: 6px;
+  line-height: 1.35;
+}
+
+.conversation-view-menu-popover .el-dropdown-menu__item:not(.is-disabled):hover,
+.conversation-view-menu-popover .el-dropdown-menu__item:not(.is-disabled):focus {
+  color: var(--el-text-color-primary);
+  background: var(--el-fill-color-lighter);
+}
+
+.conversation-view-menu-popover .el-dropdown-menu__item.is-selected {
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+}
+
+.conversation-view-menu-popover .el-dropdown-menu__item.is-selected:hover,
+.conversation-view-menu-popover .el-dropdown-menu__item.is-selected:focus {
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+}
+
+.conversation-view-menu-popover .view-option-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+
+  > span {
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  small {
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--el-text-color-secondary);
+  }
+}
+
+.conversation-view-menu-popover .view-option-check {
+  flex: none;
+  margin-left: 6px;
+  color: var(--el-color-primary);
 }
 </style>

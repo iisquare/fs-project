@@ -1,7 +1,5 @@
 import './assets/main.scss'
 import 'element-plus/dist/index.css'
-/* 代码块配色：与 fs-admin（Vditor 内置的那套）同一个 github 主题 */
-import 'highlight.js/styles/github.css'
 
 import { createApp, nextTick } from 'vue'
 import { createPinia } from 'pinia'

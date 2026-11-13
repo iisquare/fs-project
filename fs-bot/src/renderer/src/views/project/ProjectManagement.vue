@@ -185,7 +185,7 @@ function shareNewVersion(share: ShareProject): void {
       <div class="ui-page-header__copy">
         <h1 class="ui-page-title">项目管理</h1>
         <p class="ui-page-desc">
-          项目选用模型，并在此配置环境变量、工具与工作区；编排应用作为一种工具被调用，新会话按项目创建。
+          项目选用模型，并在此配置能力增强、环境变量、工具与工作区；编排应用作为一种工具被调用，新会话按项目创建。
           项目配置可以导出 / 导入，也可以发布到服务端分享：「我的分享」管理自己发布的项目与版本，
           「浏览分享」里可以取用别人分享的项目。
         </p>

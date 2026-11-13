@@ -15,6 +15,7 @@ import v14 from './sql/schema-v14.sql?raw'
 import v15 from './sql/schema-v15.sql?raw'
 import v16 from './sql/schema-v16.sql?raw'
 import v17 from './sql/schema-v17.sql?raw'
+import v18 from './sql/schema-v18.sql?raw'
 
 /**
  * 用户库 schema 版本管理。
@@ -59,7 +60,8 @@ export const USER_SCHEMAS: Record<number, string> = {
   14: v14,
   15: v15,
   16: v16,
-  17: v17
+  17: v17,
+  18: v18
 }
 
 /** 应用当前使用的用户库版本：取已登记的最大版本号 */

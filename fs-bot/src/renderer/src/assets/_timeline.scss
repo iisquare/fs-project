@@ -1,5 +1,8 @@
 @use 'sass:math';
 
+/* 主轴与节点共用的视觉中心；1px 线用 left 偏移把它本身的中点也放到这条轴上 */
+$rail-center-x: 5.5px;
+
 /**
  * 调用过程的时间线：一轮、一次思考、一次工具调用都是这条线上的一个节点。
  *
@@ -16,7 +19,7 @@
   content: '';
   position: absolute;
   /* 落在整数像素上：1px 的线压在半像素上会被摊成两条浅影，几乎看不见 */
-  left: 5px;
+  left: $rail-center-x - 0.5px;
   top: 0;
   bottom: 0;
   width: 1px;
@@ -47,7 +50,7 @@
   &::after {
     content: '';
     position: absolute;
-    left: 5px - math.div($size, 2);
+    left: $rail-center-x - math.div($size, 2);
     top: 13px - math.div($size, 2);
     width: $size;
     height: $size;

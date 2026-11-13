@@ -14,6 +14,7 @@ import { sharedToolset } from './ToolCache'
 import { runAgentTask } from './AgentRuntime'
 import type { AgentKind } from '@renderer/db/AgentDb'
 import { PROJECT_TOOL_KIND_LABELS, projectToolCapabilitySummary } from './ProjectToolCapabilities'
+import { PROJECT_CAPABILITY, hasCapability } from './ProjectCapabilities'
 
 /**
  * 工具层：把「模型能调用的能力」归一成一份 function 定义清单，并提供按函数名的执行入口。
@@ -721,9 +722,9 @@ async function invokeAgentDelegation(
   const project = useProjectStore().find(projectId)
   if (!project) throw new Error(`找不到当前项目：${projectId}`)
   const enabled =
-    ('browser' === agent && project.browserAgentEnabled) ||
-    ('project_tools' === agent && project.projectToolAgentEnabled) ||
-    ('desktop' === agent && project.desktopAgentEnabled)
+    ('browser' === agent && hasCapability(project, PROJECT_CAPABILITY.BROWSER)) ||
+    ('project_tools' === agent && hasCapability(project, PROJECT_CAPABILITY.PROJECT_TOOLS)) ||
+    ('desktop' === agent && hasCapability(project, PROJECT_CAPABILITY.DESKTOP))
   if (!enabled) {
     const label =
       'browser' === agent
@@ -1505,9 +1506,9 @@ async function buildProjectTools(
 ): Promise<{ toolset: ToolSet; complete: boolean }> {
   const refs = (project?.tools ?? []).filter((item) => false !== item?.enabled)
   const memoryEnabled = true === project?.memoryEnabled
-  const browserAgentEnabled = true === project?.browserAgentEnabled
-  const projectToolAgentEnabled = true === project?.projectToolAgentEnabled
-  const desktopAgentEnabled = true === project?.desktopAgentEnabled
+  const browserAgentEnabled = hasCapability(project, PROJECT_CAPABILITY.BROWSER)
+  const projectToolAgentEnabled = hasCapability(project, PROJECT_CAPABILITY.PROJECT_TOOLS)
+  const desktopAgentEnabled = hasCapability(project, PROJECT_CAPABILITY.DESKTOP)
   // 技能在客户端解析（读本机技能目录），不发给 /bot/tools——服务端只认它自己的五类工具；
   // 启用清单同时决定 local_skill 这个函数下不下发、作用范围有多大
   const skills = refs.filter((item) => 'skill' === item.kind)

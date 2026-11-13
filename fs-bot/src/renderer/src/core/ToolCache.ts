@@ -1,4 +1,5 @@
 import type { Project } from '@renderer/db/ProjectDb'
+import { normalizeCapabilities } from '@renderer/core/ProjectCapabilities'
 
 /**
  * 工具集共享缓存：键只由项目工具配置决定，不包含会话标识。
@@ -20,14 +21,13 @@ const cache = new Map<string, unknown>()
 const pendingBuilds = new Map<string, PendingBuild<unknown>>()
 const revisions = new Map<string, number>()
 
-/** 共享工具集的配置键：工具引用、记忆或任一子 Agent 开关变化时视为新的一份配置 */
+/** 共享工具集的配置键：工具引用、记忆或任一项目能力变化时视为新的一份配置 */
 export function toolConfigKey(project: Project | null): string {
   const refs = (project?.tools ?? []).filter((item) => false !== item?.enabled)
+  const capabilities = normalizeCapabilities(project).slice().sort()
   return (
     `${JSON.stringify(refs)}|memory:${true === project?.memoryEnabled ? 1 : 0}` +
-    `|browserAgent:${true === project?.browserAgentEnabled ? 1 : 0}` +
-    `|projectToolAgent:${true === project?.projectToolAgentEnabled ? 1 : 0}` +
-    `|desktopAgent:${true === project?.desktopAgentEnabled ? 1 : 0}`
+    `|capabilities:${capabilities.join(',')}`
   )
 }
 

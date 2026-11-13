@@ -15,6 +15,7 @@ import v14 from './sql/migrations-v14.sql?raw'
 import v15 from './sql/migrations-v15.sql?raw'
 import v16 from './sql/migrations-v16.sql?raw'
 import v17 from './sql/migrations-v17.sql?raw'
+import v18 from './sql/migrations-v18.sql?raw'
 import { USER_META_TABLES, USER_SCHEMA_VERSION, getUserSchema } from './schema'
 
 /**
@@ -58,7 +59,8 @@ export const USER_MIGRATIONS: Record<number, string> = {
   14: v14,
   15: v15,
   16: v16,
-  17: v17
+  17: v17,
+  18: v18
 }
 
 /**

@@ -1,10 +1,10 @@
-import { marked, Renderer, type MarkedOptions, type Token, type Tokens } from 'marked'
+import { marked, type Token, type Tokens } from 'marked'
 import DOMPurify from 'dompurify'
-import { highlightCode } from './Highlight'
 import { localPath } from './LocalPath'
 
 /**
- * Markdown 渲染：模型输出属于不可信内容，marked 只做转换，结果必须过一遍 DOMPurify 再插入 DOM。
+ * Markdown 图片预处理：marked 只负责词法识别，最终渲染交给 Vditor。
+ * 模型输出属于不可信内容，Vditor 转换结果必须过一遍 DOMPurify 再插入 DOM。
  * 渲染进程手里有 ipc 通道，正文里的脚本绝不能原样上屏。
  * 链接统一补 target="_blank"，交给主进程的窗口打开策略（外部浏览器打开）处理，
  * 否则点击一个普通链接会把整个渲染进程导航走。
@@ -14,13 +14,7 @@ import { localPath } from './LocalPath'
  * 换不到地址时调用方也要给出一张默认图——正文里不会留下 kb: 这种浏览器不认识、只会渲染成破图的地址。
  */
 
-marked.setOptions({ gfm: true, breaks: true })
-
-/**
- * 渲染选项：marked 会把未识别的选项原样带进渲染器（类型里没有这一项，取值处从 this.options 收窄），
- * 这里补上知识库图片的解析入口
- */
-export interface MarkdownOptions extends MarkedOptions {
+export interface MarkdownOptions {
   /** 知识库图片标识 → 可展示地址（含解析期间的占位图与取不到地址时的默认图） */
   knowledgeImage?: (id: string) => string
   /** 本机图片路径 → 可展示地址（解析期间占位图、失败默认图，由调用方保证） */
@@ -39,51 +33,6 @@ const IMAGE_FILE = /\.(?:png|jpe?g|gif|webp|bmp|avif)$/i
 const ALLOWED_URI =
   /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix|chat-image):|[^a-z]|[a-z+.-]+(?:[^a-z+.:-]|$))/i
 
-/** 渲染器上下文：这次渲染的选项挂在渲染器上 */
-interface RendererContext {
-  options?: MarkdownOptions
-}
-
-/** 自定义渲染：代码块自己着色，知识库图片把标识换成实时地址 */
-marked.use({
-  renderer: {
-    /**
-     * 代码块着色：顶层的围栏代码块由 ChatCode 单独渲染（见 markdownParts），
-     * 这里管的是留在 Markdown 里的那些（写在列表 / 引用内部的），走同一套高亮与配色，
-     * 免得同一个回复里两种代码块一个有色一个没色。
-     */
-    code(token: Tokens.Code): string {
-      const info = String(token?.lang ?? '').trim()
-      const name = info.split(/\s+/, 1)[0]
-      const className = name ? ` language-${name}` : ''
-      return `<pre><code class="hljs${className}">${highlightCode(token?.text ?? '', info)}</code></pre>`
-    },
-    /**
-     * 图片：知识库图片与本机图片先把标识 / 路径换成可展示地址，其余交给默认渲染
-     * 只认词法阶段识别出来的图片，代码块里的同形文本不是图片、不会被换
-     */
-    image(this: RendererContext, token: Tokens.Image): string {
-      const options = this?.options
-      const href = String(token?.href ?? '')
-      const id = options?.knowledgeImage ? KNOWLEDGE_IMAGE.exec(href)?.[1] : null
-      if (id) {
-        return Renderer.prototype.image.call(this as unknown as Renderer, {
-          ...token,
-          href: options!.knowledgeImage!(id)
-        })
-      }
-      const path = options?.localImage ? localImagePath(href) : ''
-      if (path) {
-        return Renderer.prototype.image.call(this as unknown as Renderer, {
-          ...token,
-          href: options!.localImage!(path)
-        })
-      }
-      return Renderer.prototype.image.call(this as unknown as Renderer, token)
-    }
-  }
-})
-
 /** 只注册一次（模块级），避免每个组件实例各挂一个钩子 */
 DOMPurify.addHook('afterSanitizeAttributes', (node: Node) => {
   const element = node as Element
@@ -93,15 +42,12 @@ DOMPurify.addHook('afterSanitizeAttributes', (node: Node) => {
   }
 })
 
-export function renderMarkdown(text: string, options: MarkdownOptions = {}): string {
-  const value = String(text ?? '')
-  if (!value) return ''
-  const rendered = marked.parser(tokensOf(value), {
-    ...marked.defaults,
-    ...options,
-    async: false
+/** Markdown 转换结果统一从这里清洗，Vditor 的 transform 回调也复用这一份白名单 */
+export function sanitizeMarkdownHtml(html: string): string {
+  return DOMPurify.sanitize(String(html ?? ''), {
+    ADD_ATTR: ['target'],
+    ALLOWED_URI_REGEXP: ALLOWED_URI
   })
-  return DOMPurify.sanitize(rendered, { ADD_ATTR: ['target'], ALLOWED_URI_REGEXP: ALLOWED_URI })
 }
 
 /** 词法结果里可能继续嵌套 token 的字段（列表、引用、表格单元格等） */
@@ -176,11 +122,16 @@ function tokensOf(text: string): Token[] {
  * 只扫词法阶段识别出来的图片，代码块里的同形文本不是图片。
  */
 function imageHrefs(text: string): string[] {
-  const hrefs: string[] = []
+  return imageTokens(text).map((token) => String(token.href ?? ''))
+}
+
+/** 文档顺序里的图片 token（包括列表、引用、表格单元格里的图片） */
+function imageTokens(text: string): Tokens.Image[] {
+  const images: Tokens.Image[] = []
   const visit = (tokens: Token[]): void => {
     for (const token of tokens) {
       if ('image' === token.type) {
-        hrefs.push(String((token as Tokens.Image).href ?? ''))
+        images.push(token as Tokens.Image)
         continue
       }
       const nested = token as unknown as {
@@ -200,7 +151,59 @@ function imageHrefs(text: string): string[] {
     }
   }
   visit(tokensOf(text))
-  return hrefs
+  return images
+}
+
+/**
+ * 把正文里的知识库 / 本机图片目的地替换成实际展示地址，再交给 Vditor。
+ *
+ * marked 在这里只负责识别图片节点与 Windows 路径，不参与 Vditor 的最终渲染。
+ * `token.raw` 保留原始 Markdown，因此替换不会破坏用户写的说明和标题。
+ */
+export function resolveMarkdownImages(text: string, options: MarkdownOptions = {}): string {
+  const value = String(text ?? '')
+  if (!value) return ''
+  let cursor = 0
+  let result = ''
+  for (const token of imageTokens(value)) {
+    const raw = String(token.raw ?? '')
+    if (!raw) continue
+    const start = value.indexOf(raw, cursor)
+    if (start < 0) continue
+    const href = String(token.href ?? '')
+    const id = options.knowledgeImage ? KNOWLEDGE_IMAGE.exec(href)?.[1] : null
+    const path = options.localImage && !id ? localImagePath(href) : ''
+    const target = id ? options.knowledgeImage!(id) : path ? options.localImage!(path) : ''
+    if (!target) continue
+    result += value.slice(cursor, start) + replaceImageTarget(raw, target)
+    cursor = start + raw.length
+  }
+  return result + value.slice(cursor)
+}
+
+/** 只替换图片目的地，保留说明文字、括号写法和可选标题 */
+function replaceImageTarget(raw: string, target: string): string {
+  const marker = raw.lastIndexOf('](')
+  if (marker < 0 || !raw.endsWith(')')) return raw
+  const body = raw.slice(marker + 2, -1)
+  let end = body.length
+  if (body.startsWith('<')) {
+    const close = body.indexOf('>')
+    if (close > 0) end = close + 1
+  } else {
+    for (let index = 0; index < body.length; index++) {
+      if (!/\s/.test(body[index])) continue
+      let slashes = 0
+      for (let cursor = index - 1; cursor >= 0 && body[cursor] === '\\'; cursor--) slashes++
+      if (slashes % 2 === 0) {
+        end = index
+        break
+      }
+    }
+  }
+  let value = target.replace(/</g, '%3C').replace(/>/g, '%3E')
+  if (/[\s()]/.test(value)) value = `<${value}>`
+  return raw.slice(0, marker + 2) + value + body.slice(end) + ')'
 }
 
 /**
@@ -249,60 +252,4 @@ export function localImagePaths(text: string): string[] {
     if (path) paths.push(path)
   }
   return Array.from(new Set(paths))
-}
-
-/** 正文分段：代码块单独取出交给组件渲染（行号、复制），其余仍是 Markdown 片段 */
-export type MarkdownPart =
-  | { type: 'text'; html: string }
-  | { type: 'code'; lang: string; code: string }
-  | { type: 'table'; html: string }
-
-/**
- * 按顶层词法单元把正文切成「普通片段 + 代码块」。
- * 连续的普通内容一起解析，避免切成多个 html 块后块级间距被断开。
- * 说明：只处理顶层的围栏代码块；写在列表 / 引用内部的那种仍按普通 Markdown 渲染。
- */
-export function markdownParts(text: string, options: MarkdownOptions = {}): MarkdownPart[] {
-  const value = String(text ?? '')
-  if (!value) return []
-  const tokens = tokensOf(value)
-  const parts: MarkdownPart[] = []
-  let buffer: Token[] = []
-  const render = (tokens: Token[]): string => {
-    const html = marked.parser(tokens, { ...marked.defaults, ...options, async: false })
-    return DOMPurify.sanitize(html, { ADD_ATTR: ['target'], ALLOWED_URI_REGEXP: ALLOWED_URI })
-  }
-  const flush = (): void => {
-    if (!buffer.length) return
-    /**
-     * 必须带上 marked.defaults：marked 的 parser(tokens, options) 不会像 parse() 那样并入默认项，
-     * 而 use() 注册的渲染器就在默认项里——漏掉它就退回内置渲染器，
-     * 正文里的知识库图片换不到地址（还是 kb: 标识，被清洗掉后一片空白），代码块也不再着色
-     */
-    parts.push({ type: 'text', html: render(buffer) })
-    buffer = []
-  }
-  for (const token of tokens) {
-    if ('code' === token.type) {
-      flush()
-      parts.push({
-        type: 'code',
-        lang: String(token.lang ?? '').trim(),
-        code: String(token.text ?? '')
-      })
-      continue
-    }
-    /**
-     * 顶层表格单独交给 el-scrollbar：窄窗口里只横向滚动表格，
-     * 不会把整条消息撑宽，也不会留下常驻的原生滚动条
-     */
-    if ('table' === token.type) {
-      flush()
-      parts.push({ type: 'table', html: render([token]) })
-      continue
-    }
-    buffer.push(token)
-  }
-  flush()
-  return parts
 }

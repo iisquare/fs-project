@@ -179,7 +179,7 @@ async function submit(): Promise<void> {
         />
       </el-select>
       <div class="field-tip">
-        分享的是这个项目的当前配置：模型、上下文大小、系统提示词、记忆、思考强度、工具、环境变量（标了「密钥」的除外）与工作区目录。
+        分享的是这个项目的当前配置：模型、上下文大小、系统提示词、记忆、思考强度、能力增强、工具、环境变量（标了「密钥」的除外）与工作区目录。
       </div>
       <div v-if="sharingProject && !sharingProject.model" class="field-tip">
         这个项目还没配置模型：别人取用这份配置后要自己补一个模型才能跑起来。

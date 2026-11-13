@@ -10,6 +10,11 @@ import ApiUtil from '@renderer/utils/ApiUtil'
 import { errorMessage } from '@renderer/utils/ErrorUtil'
 import { formatTokens } from '@renderer/core/Tokens'
 import {
+  PROJECT_CAPABILITY,
+  PROJECT_CAPABILITY_DEFINITIONS,
+  hasCapability
+} from '@renderer/core/ProjectCapabilities'
+import {
   fixedCount,
   paramFields,
   paramHint,
@@ -59,9 +64,7 @@ interface ProjectForm {
   systemPrompt: string
   memory: string
   memoryEnabled: boolean
-  browserAgentEnabled: boolean
-  projectToolAgentEnabled: boolean
-  desktopAgentEnabled: boolean
+  capabilities: string[]
   thinkEffort: string
   name: string
   description: string
@@ -114,10 +117,29 @@ const isEdit = computed(() => Boolean(form.value.id))
 const desktopSetupRequired = computed(
   () =>
     desktopStatusLoaded.value &&
-    form.value.desktopAgentEnabled &&
+    hasCapability(form.value, PROJECT_CAPABILITY.DESKTOP) &&
     settingsStore.desktopAutomationSupported &&
     !settingsStore.desktopAutomationEnabled
 )
+
+const subAgentCapabilities = computed(() =>
+  PROJECT_CAPABILITY_DEFINITIONS.filter((item) => 'subAgent' === item.group)
+)
+const enhancementCapabilities = computed(() =>
+  PROJECT_CAPABILITY_DEFINITIONS.filter((item) => 'enhancement' === item.group)
+)
+
+function capabilityEnabled(id: string): boolean {
+  return hasCapability(form.value, id)
+}
+
+function setCapability(id: string, value: string | number | boolean): void {
+  const enabled = true === value || 1 === value || 'true' === value
+  const next = new Set(form.value.capabilities)
+  if (enabled) next.add(id)
+  else next.delete(id)
+  form.value.capabilities = Array.from(next)
+}
 
 async function refreshDesktopStatus(): Promise<void> {
   try {
@@ -181,9 +203,7 @@ function emptyForm(): ProjectForm {
     systemPrompt: '',
     memory: '',
     memoryEnabled: false,
-    browserAgentEnabled: false,
-    projectToolAgentEnabled: false,
-    desktopAgentEnabled: false,
+    capabilities: [],
     thinkEffort: '',
     name: '',
     description: '',
@@ -205,9 +225,7 @@ function load(project: Project | null) {
         systemPrompt: project.systemPrompt,
         memory: project.memory,
         memoryEnabled: project.memoryEnabled,
-        browserAgentEnabled: project.browserAgentEnabled,
-        projectToolAgentEnabled: project.projectToolAgentEnabled,
-        desktopAgentEnabled: project.desktopAgentEnabled,
+        capabilities: [...project.capabilities],
         thinkEffort: project.thinkEffort,
         name: project.name,
         description: project.description,
@@ -707,9 +725,7 @@ async function submit(): Promise<string> {
       systemPrompt: form.value.systemPrompt,
       memory: form.value.memory,
       memoryEnabled: form.value.memoryEnabled,
-      browserAgentEnabled: form.value.browserAgentEnabled,
-      projectToolAgentEnabled: form.value.projectToolAgentEnabled,
-      desktopAgentEnabled: form.value.desktopAgentEnabled,
+      capabilities: [...form.value.capabilities],
       thinkEffort: form.value.thinkEffort,
       name: form.value.name,
       description: form.value.description,
@@ -1153,54 +1169,27 @@ async function share(): Promise<void> {
         </div>
       </div>
       <div class="agent-settings-card">
-        <div class="agent-setting-item">
-          <div class="agent-setting-label">
-            <span class="agent-setting-title">项目工具 Agent</span>
-            <span class="agent-setting-desc">
-              开启且有已启用的项目工具时，由独立子 Agent 执行；关闭时这些工具由主 Agent 直接调用。
-            </span>
+        <template v-for="(item, index) in subAgentCapabilities" :key="item.id">
+          <el-divider v-if="index > 0" />
+          <div class="agent-setting-item">
+            <div class="agent-setting-label">
+              <span class="agent-setting-title">{{ item.title }}</span>
+              <span class="agent-setting-desc">{{ item.description }}</span>
+            </div>
+            <div class="agent-setting-action">
+              <span
+                class="agent-setting-state"
+                :class="{ 'is-enabled': capabilityEnabled(item.id) }"
+              >
+                {{ capabilityEnabled(item.id) ? '已启用' : '未启用' }}
+              </span>
+              <el-switch
+                :model-value="capabilityEnabled(item.id)"
+                @update:model-value="(value) => setCapability(item.id, value)"
+              />
+            </div>
           </div>
-          <div class="agent-setting-action">
-            <span
-              class="agent-setting-state"
-              :class="{ 'is-enabled': form.projectToolAgentEnabled }"
-            >
-              {{ form.projectToolAgentEnabled ? '已启用' : '未启用' }}
-            </span>
-            <el-switch v-model="form.projectToolAgentEnabled" />
-          </div>
-        </div>
-        <el-divider />
-        <div class="agent-setting-item">
-          <div class="agent-setting-label">
-            <span class="agent-setting-title">浏览器 Agent</span>
-            <span class="agent-setting-desc">
-              允许主 Agent 委派网页浏览、点击、填表、登录辅助、信息提取与截图任务。
-            </span>
-          </div>
-          <div class="agent-setting-action">
-            <span class="agent-setting-state" :class="{ 'is-enabled': form.browserAgentEnabled }">
-              {{ form.browserAgentEnabled ? '已启用' : '未启用' }}
-            </span>
-            <el-switch v-model="form.browserAgentEnabled" />
-          </div>
-        </div>
-        <el-divider />
-        <div class="agent-setting-item">
-          <div class="agent-setting-label">
-            <span class="agent-setting-title">桌面 Agent</span>
-            <span class="agent-setting-desc">
-              允许主 Agent 委派本机桌面截图、窗口与鼠标键盘操作；仍需在系统设置中启用桌面子
-              Agent，并按桌面授权策略请求授权或自动允许。
-            </span>
-          </div>
-          <div class="agent-setting-action">
-            <span class="agent-setting-state" :class="{ 'is-enabled': form.desktopAgentEnabled }">
-              {{ form.desktopAgentEnabled ? '已启用' : '未启用' }}
-            </span>
-            <el-switch v-model="form.desktopAgentEnabled" />
-          </div>
-        </div>
+        </template>
         <el-alert
           v-if="desktopSetupRequired"
           class="desktop-agent-guide"
@@ -1264,6 +1253,40 @@ async function share(): Promise<void> {
         </el-input>
         <el-checkbox v-model="item.secret">密钥</el-checkbox>
         <el-button text type="danger" @click="removeEnv(index)">删除</el-button>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div class="section-label">
+          <span class="section-title">能力增强</span>
+        </div>
+      </div>
+      <div class="section-note">
+        <div>开启后会向本项目自动组装的系统提示词追加能力说明，不修改手工填写的系统提示词。</div>
+      </div>
+      <div class="agent-settings-card">
+        <template v-for="(item, index) in enhancementCapabilities" :key="item.id">
+          <el-divider v-if="index > 0" />
+          <div class="agent-setting-item">
+            <div class="agent-setting-label">
+              <span class="agent-setting-title">{{ item.title }}</span>
+              <span class="agent-setting-desc">{{ item.description }}</span>
+            </div>
+            <div class="agent-setting-action">
+              <span
+                class="agent-setting-state"
+                :class="{ 'is-enabled': capabilityEnabled(item.id) }"
+              >
+                {{ capabilityEnabled(item.id) ? '已启用' : '未启用' }}
+              </span>
+              <el-switch
+                :model-value="capabilityEnabled(item.id)"
+                @update:model-value="(value) => setCapability(item.id, value)"
+              />
+            </div>
+          </div>
+        </template>
       </div>
     </section>
 

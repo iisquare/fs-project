@@ -197,6 +197,7 @@ const selectedMessages = computed<ChatMessageView[]>(() => {
 
 function mergeTask(task: AgentInteractionTask): void {
   const previousLatest = tasks.value.at(-1)?.id ?? ''
+  const selectedWasLatest = !selectedTaskId.value || selectedTaskId.value === previousLatest
   const index = tasks.value.findIndex((item) => item.id === task.id)
   if (index >= 0) tasks.value[index] = task
   else tasks.value.push(task)
@@ -205,10 +206,11 @@ function mergeTask(task: AgentInteractionTask): void {
   )
   const latest = tasks.value.at(-1)
   if (!latest) return
-  if (!selectedTaskId.value || selectedTaskId.value === previousLatest) {
-    selectedTaskId.value = visibleTasks.value.at(-1)?.id ?? latest.id
+  const nextTaskId = visibleTasks.value.at(-1)?.id ?? latest.id
+  if (selectedWasLatest && selectedTaskId.value !== nextTaskId) {
+    selectedTaskId.value = nextTaskId
     autoFollow.value = true
-    followLatest()
+    followLatest(true)
   }
 }
 
@@ -216,6 +218,7 @@ async function load(): Promise<void> {
   if (!visible.value || !props.sessionId) return
   loading.value = true
   error.value = ''
+  autoFollow.value = true
   tasks.value = []
   selectedTaskId.value = ''
   try {
@@ -226,10 +229,10 @@ async function load(): Promise<void> {
     if (props.run?.interaction) mergeTask(props.run.interaction)
     loading.value = false
     if (!selectedTaskId.value && tasks.value.length) {
-      selectedTaskId.value = tasks.value.at(-1)!.id
+      selectedTaskId.value = visibleTasks.value.at(-1)?.id ?? tasks.value.at(-1)!.id
     }
     await nextTick()
-    followLatest()
+    followLatest(true)
   }
 }
 
@@ -241,6 +244,7 @@ watch(
       tasks.value = []
       selectedTaskId.value = ''
       taskFilter.value = 'all'
+      autoFollow.value = true
       error.value = ''
     }
   },
@@ -265,14 +269,19 @@ watch(
 function selectTask(taskId: string): void {
   selectedTaskId.value = taskId
   autoFollow.value = true
-  void nextTick(() => followLatest())
+  followLatest(true)
 }
 
-function followLatest(): void {
-  if (!autoFollow.value) return
+function followLatest(force = false): void {
+  if (!force && !autoFollow.value) return
+  const current = scrollWrap()
+  if (!force && current && !isAtBottom(current)) {
+    autoFollow.value = false
+    return
+  }
   void nextTick(() => {
     const wrap = scrollWrap()
-    if (!wrap) return
+    if (!wrap || !autoFollow.value) return
     detailScroll.value?.setScrollTop(wrap.scrollHeight)
   })
 }
@@ -280,7 +289,11 @@ function followLatest(): void {
 function onDetailScroll(): void {
   const wrap = scrollWrap()
   if (!wrap) return
-  autoFollow.value = wrap.scrollTop + wrap.clientHeight >= wrap.scrollHeight - 24
+  autoFollow.value = isAtBottom(wrap)
+}
+
+function isAtBottom(wrap: HTMLElement): boolean {
+  return wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight <= 24
 }
 
 function scrollWrap(): HTMLElement | undefined {
