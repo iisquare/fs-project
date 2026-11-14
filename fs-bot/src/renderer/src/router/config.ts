@@ -2,6 +2,7 @@ export const page = {
   root: '/',
   login: '/login',
   agentDetail: '/agent-detail',
+  messagePreview: '/message-preview',
   home: '/home',
   search: '/search',
   profile: '/profile',

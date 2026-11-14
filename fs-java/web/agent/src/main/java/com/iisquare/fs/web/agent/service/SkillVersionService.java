@@ -17,6 +17,7 @@ import com.iisquare.fs.web.agent.dao.SkillVersionDao;
 import com.iisquare.fs.web.agent.entity.Skill;
 import com.iisquare.fs.web.agent.entity.SkillVersion;
 import com.iisquare.fs.web.agent.mvc.Configuration;
+import com.iisquare.fs.web.agent.storage.AgentStorage;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -48,9 +49,8 @@ public class SkillVersionService extends JPAServiceBase {
     FileRpc fileRpc;
     @Autowired
     StreamFileUploader streamFileUploader;
-
-    /** 技能版本包的文件桶：单独存放，便于按技能清理旧版本 */
-    public static final String bucket = "fs-skill";
+    @Autowired
+    AgentStorage storage;
 
     @Override
     public Map<String, String> sorts() {
@@ -94,15 +94,15 @@ public class SkillVersionService extends JPAServiceBase {
         SkillVersion version = new SkillVersion();
         version.setSkillId(skillId);
         version.setName(name);
-        version.setFilepath(String.format("skill-%d/versions/", skillId));
+        version.setFilepath("");
         version.setFileSize(file.getSize());
         version.setStatus(1);
         version.setDescription(description);
         version = save(versionDao, version, uid);
         // 上传到文件服务
-        String filepath = String.format("skill-%d/versions/%d.zip", skillId, version.getId());
+        String filepath = storage.skillVersion(skillId, version.getId());
         Map<String, Object> result = streamFileUploader.upload("/file/upload", DPUtil.buildMap(
-                "bucket", bucket, "filepath", filepath,
+                "bucket", storage.bucket(), "filepath", filepath,
                 "traceIdentity", String.format("fs-skill-%d-version-%d", skillId, version.getId())
         ), file);
         if (ApiUtil.failed(result)) {
@@ -256,8 +256,6 @@ public class SkillVersionService extends JPAServiceBase {
                     ArrayNode args = DPUtil.arrayNode();
                     ObjectNode item = args.addObject();
                     item.put("id", version.getFileId());
-                    item.put("bucket", bucket);
-                    item.put("filepath", version.getFilepath());
                     Map<String, Object> result = RpcUtil.result(fileRpc.post("/file/delete", args));
                     if (ApiUtil.failed(result)) {
                         return ApiUtil.result(ApiUtil.code(result), ApiUtil.message(result),
@@ -280,8 +278,6 @@ public class SkillVersionService extends JPAServiceBase {
                 ArrayNode args = DPUtil.arrayNode();
                 ObjectNode item = args.addObject();
                 item.put("id", version.getFileId());
-                item.put("bucket", bucket);
-                item.put("filepath", version.getFilepath());
                 fileRpc.post("/file/delete", args);
             }
         }

@@ -14,9 +14,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -25,18 +23,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * MCP 客户端（HTTP 传输）：工具方法同步（initialize / tools/list）与调用（tools/call）都走它。
- * 两种传输按地址自动判别：
+ * 两种传输按客户端填写的端点类型确定，不自动切换：
  *
  * - HTTP + SSE（2024-11-05）：GET 建立事件流，服务端在流里下发消息端点，之后 POST 消息、结果回到流里。
  *   自家 fs-mcp-server 的 {@code /sse} 属于这种。
  * - 流式 HTTP（2025-03-26 起，标准路径 {@code /mcp}）：只 POST，结果就在本次响应体里（JSON 或 SSE 帧），
  *   会话标识放在 {@code Mcp-Session-Id} 响应头。高德 {@code https://mcp.amap.com/mcp} 属于这种，
- *   它对 GET 直接返回 405，只做 SSE 的客户端连不上。
+ *   它对 GET 直接返回 405。
+ *
+ * 端点路径以 {@code /sse} 结尾时只走 SSE，其它端点只走流式 HTTP。某一种传输失败时直接返回失败，
+ * 不向另一种传输切换，也不更换请求地址重试。
  *
  * 为什么不直接用 MCP Java SDK：SDK 的 SSE 传输用 {@code baseUri.resolve(endpoint)} 解析服务端下发的消息
  * 端点，服务地址带反向代理前缀时会把前缀丢掉（{@code http://host/api/agent/sse} → POST 落到
  * {@code http://host/mcp/message}），而且它访问不了只提供流式 HTTP 的服务。这里自己实现握手，
- * 端点解析「按 SSE 地址的父路径补全优先、标准解析兜底」，并补齐规范要求的请求头
+ * SSE 消息端点按 SSE 地址的父路径补全并固定使用，不更换地址重试，并补齐规范要求的请求头
  * （MCP-Protocol-Version、Mcp-Session-Id）以及 POST 响应内联结果的解析。
  *
  * 只实现同步与调用需要的请求：initialize、notifications/initialized、tools/list、tools/call。
@@ -58,7 +59,7 @@ public class McpHttpClient implements AutoCloseable {
     private static final String STREAMABLE_ACCEPT = "application/json, text/event-stream";
     /** 清单分页上限：服务端游标异常时不至于无限翻页 */
     private static final int MAX_PAGES = 50;
-    /** 等待 SSE 消息端点的上限：超过它还没等到，就按流式 HTTP 再试一次 */
+    /** 等待 SSE 消息端点的上限：超过它还没等到就返回失败，不切换为流式 HTTP */
     private static final long ENDPOINT_TIMEOUT = 8000;
 
     private final URI sseUri;
@@ -76,12 +77,10 @@ public class McpHttpClient implements AutoCloseable {
     private volatile boolean endpointReady;
     private volatile String endpointError;
     private volatile boolean closed;
-    /** 补全后（带代理前缀）的消息端点；POST 命中后固定使用 */
+    /** 补全后（带代理前缀）的消息端点：整个会话固定使用，不切换地址重试 */
     private volatile String messageUrl;
-    /** 标准 URI 解析得到的消息端点：前缀优先时作为退回方案 */
-    private volatile String messageUrlStandard;
-    /** 该地址是否为流式 HTTP 传输：由连接探测决定（GET 拿不到事件流就按流式 HTTP 走） */
-    private volatile boolean streamable;
+    /** 该地址是否为流式 HTTP 传输：按客户端填写的端点类型固定 */
+    private final boolean streamable;
     /** 流式 HTTP 的会话标识 */
     private volatile String sessionId;
     /** 协商出的协议版本：流式 HTTP 的后续请求要带上它 */
@@ -95,6 +94,8 @@ public class McpHttpClient implements AutoCloseable {
         this.readTimeout = readTimeout > 0 ? readTimeout : 60000;
         long connect = connectTimeout > 0 ? connectTimeout : 10000;
         this.client = HttpClient.newBuilder().connectTimeout(Duration.ofMillis(connect)).build();
+        this.streamable = !isSseEndpoint(this.sseUri);
+        if (streamable) useStreamable();
     }
 
     /**
@@ -180,6 +181,7 @@ public class McpHttpClient implements AutoCloseable {
     /* ------------------------------- 连接与端点 ------------------------------- */
 
     private void connect() throws Exception {
+        if (streamable) return;
         HttpResponse<InputStream> probe;
         try {
             probe = client.send(sseRequest(), HttpResponse.BodyHandlers.ofInputStream());
@@ -189,11 +191,9 @@ public class McpHttpClient implements AutoCloseable {
         int status = probe.statusCode();
         String contentType = DPUtil.parseString(probe.headers().firstValue("content-type").orElse(""));
         if (status < 200 || status >= 300 || contentType.indexOf("text/event-stream") < 0) {
-            // 该地址不是 SSE 端点：按流式 HTTP 处理 —— POST 到同一地址，结果直接在响应体里返回
-            // （高德 https://mcp.amap.com/mcp 就是这样：GET 返回 405 Method not allowed）
             closeStream(probe);
-            useStreamable();
-            return;
+            throw new IllegalStateException("SSE 端点未返回事件流（HTTP " + status
+                    + (DPUtil.empty(contentType) ? "" : "，" + contentType) + "）：" + sseUri);
         }
         response = probe;
         readerThread = new Thread(this::readStream, "mcp-sse-reader");
@@ -204,19 +204,21 @@ public class McpHttpClient implements AutoCloseable {
             while (!endpointReady && System.currentTimeMillis() < deadline) endpointMonitor.wait(200);
         }
         if (!endpointReady) {
-            // 事件流开着却没下发消息端点：多半是流式 HTTP 服务对 GET 回了一条流，改走流式 HTTP
             closeStream(response);
-            useStreamable();
-            return;
+            throw new IllegalStateException("SSE 端点未下发消息端点：" + sseUri);
         }
         if (!DPUtil.empty(endpointError)) throw new IllegalStateException(endpointError);
     }
 
-    /** 退回流式 HTTP：消息端点就是用户填的地址本身，没有事件流可读 */
+    /** 流式 HTTP：消息端点就是用户填的地址本身，没有事件流可读 */
     private void useStreamable() {
-        streamable = true;
         messageUrl = sseUri.toString();
-        messageUrlStandard = messageUrl;
+    }
+
+    /** 客户端请求类型：/sse 为 SSE，其它端点按流式 HTTP 发送 */
+    private boolean isSseEndpoint(URI uri) {
+        String path = DPUtil.trim(uri.getPath()).replaceAll("/+$", "");
+        return "/sse".equals(path) || path.endsWith("/sse");
     }
 
     private HttpRequest sseRequest() {
@@ -289,7 +291,7 @@ public class McpHttpClient implements AutoCloseable {
     /**
      * 解析服务端下发的消息端点：
      * 相对路径按 SSE 地址的父路径补全（这样 {@code http://host/api/agent/sse} 会得到
-     * {@code http://host/api/agent/mcp/message}），标准解析结果留作退回方案。
+     * {@code http://host/api/agent/mcp/message}），后续请求固定使用该地址。
      */
     private void resolveMessageUrl(String endpoint) {
         String raw = DPUtil.trim(endpoint);
@@ -302,7 +304,6 @@ public class McpHttpClient implements AutoCloseable {
             prefixed = raw.startsWith("/") ? origin + path + raw.substring(1) : origin + path + raw;
         }
         messageUrl = prefixed;
-        messageUrlStandard = sseUri.resolve(raw).toString();
         synchronized (endpointMonitor) {
             endpointReady = true;
             endpointMonitor.notifyAll();
@@ -310,14 +311,6 @@ public class McpHttpClient implements AutoCloseable {
     }
 
     /* ------------------------------- 请求 ------------------------------- */
-
-    /** 消息端点候选：优先补全前缀的地址，退回标准解析地址；命中后只留命中的那个 */
-    private List<String> targets() {
-        List<String> targets = new ArrayList<>();
-        if (!DPUtil.empty(messageUrl)) targets.add(messageUrl);
-        if (!DPUtil.empty(messageUrlStandard) && !messageUrlStandard.equals(messageUrl)) targets.add(messageUrlStandard);
-        return targets;
-    }
 
     /**
      * 发送 JSON-RPC 消息，返回响应体里的内联响应。
@@ -327,43 +320,37 @@ public class McpHttpClient implements AutoCloseable {
      * 流式 HTTP：结果就在响应体里，必须声明两种 Accept，并在初始化后回传会话与协议版本。
      */
     private JsonNode post(String json) throws Exception {
-        Exception failure = null;
-        List<String> targets = targets();
-        if (targets.isEmpty()) throw new IllegalStateException("未获取到 MCP 消息端点：" + sseUri);
-        for (String target : targets) {
-            try {
-                HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(target))
-                        .timeout(Duration.ofMillis(readTimeout))
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8));
-                if (streamable) {
-                    builder.header("Accept", STREAMABLE_ACCEPT);
-                    if (!DPUtil.empty(sessionId)) builder.header(SESSION_HEADER, sessionId);
-                    if (!DPUtil.empty(negotiatedVersion)) builder.header(PROTOCOL_VERSION_HEADER, negotiatedVersion);
-                } else {
-                    builder.header(PROTOCOL_VERSION_HEADER, SSE_PROTOCOL_VERSION);
-                }
-                headers.forEach(builder::header);
-                HttpResponse<String> result = client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-                // 流式 HTTP 的会话标识由服务端在 initialize 响应头里下发，后续请求要回传
-                if (streamable && DPUtil.empty(sessionId)) {
-                    sessionId = DPUtil.trim(result.headers().firstValue(SESSION_HEADER).orElse(""));
-                }
-                if (result.statusCode() >= 200 && result.statusCode() < 300) {
-                    messageUrl = target;
-                    messageUrlStandard = target;
-                    return inline(result.body());
-                }
-                String detail = errorDetail(result.body());
-                failure = new IllegalStateException("POST " + target + " 返回 HTTP " + result.statusCode()
-                        + (DPUtil.empty(detail) ? "" : "：" + detail));
-            } catch (Exception e) {
-                failure = e;
-                if (e instanceof InterruptedException) Thread.currentThread().interrupt();
-            }
+        String target = messageUrl;
+        if (DPUtil.empty(target)) throw new IllegalStateException("未获取到 MCP 消息端点：" + sseUri);
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(target))
+                .timeout(Duration.ofMillis(readTimeout))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8));
+        if (streamable) {
+            builder.header("Accept", STREAMABLE_ACCEPT);
+            if (!DPUtil.empty(sessionId)) builder.header(SESSION_HEADER, sessionId);
+            if (!DPUtil.empty(negotiatedVersion)) builder.header(PROTOCOL_VERSION_HEADER, negotiatedVersion);
+        } else {
+            builder.header(PROTOCOL_VERSION_HEADER, SSE_PROTOCOL_VERSION);
         }
-        if (null == failure) throw new IllegalStateException("MCP 消息端点不可用：" + sseUri);
-        throw new IllegalStateException("消息端点请求失败：" + describe(failure) + "（" + targets.get(0) + "）", failure);
+        headers.forEach(builder::header);
+        HttpResponse<String> result;
+        try {
+            result = client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
+        }
+        // 流式 HTTP 的会话标识由服务端在 initialize 响应头里下发，后续请求要回传
+        if (streamable && DPUtil.empty(sessionId)) {
+            sessionId = DPUtil.trim(result.headers().firstValue(SESSION_HEADER).orElse(""));
+        }
+        if (result.statusCode() < 200 || result.statusCode() >= 300) {
+            String detail = errorDetail(result.body());
+            throw new IllegalStateException("POST " + target + " 返回 HTTP " + result.statusCode()
+                    + (DPUtil.empty(detail) ? "" : "：" + detail));
+        }
+        return inline(result.body());
     }
 
     /**

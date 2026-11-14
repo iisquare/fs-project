@@ -173,7 +173,7 @@ public class LlmNodeHandler implements AgenticNodeHandler {
                 begin.put("method", name);
                 ctx.runtime().emitRound(roundEvent(round + 1, maxRounds, "calling", begin));
                 try {
-                    tool = ctx.invokeTool(data, name, args);
+                    tool = ctx.invokeTool(data, name, args, "brief");
                     record.put("status", 1);
                     record.set("result", ctx.summary(DPUtil.toJSON(tool)));
                 } catch (Exception e) {

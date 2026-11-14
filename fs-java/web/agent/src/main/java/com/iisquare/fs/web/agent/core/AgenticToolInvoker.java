@@ -18,4 +18,13 @@ public interface AgenticToolInvoker {
     Object invoke(AgenticRuntime runtime, JsonNode items, String methodName, Map<String, Object> args,
                   Map<String, com.fasterxml.jackson.databind.node.ObjectNode> outputs, Map<String, Object> variables);
 
+    /**
+     * 执行工具并指定返回格式。默认保持完整结果，兼容只关心原始数据的调用方。
+     */
+    default Object invoke(AgenticRuntime runtime, JsonNode items, String methodName, Map<String, Object> args,
+                          Map<String, com.fasterxml.jackson.databind.node.ObjectNode> outputs,
+                          Map<String, Object> variables, String format) {
+        return invoke(runtime, items, methodName, args, outputs, variables);
+    }
+
 }

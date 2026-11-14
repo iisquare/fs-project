@@ -61,6 +61,15 @@ public class AgenticToolService implements AgenticToolInvoker {
     /** 执行工具调用：按方法名匹配工具项后交给对应实现 */
     public Object invoke(AgenticRuntime runtime, JsonNode items, String methodName, Map<String, Object> args,
                          Map<String, ObjectNode> outputs, Map<String, Object> variables) {
+        return invoke(runtime, items, methodName, args, outputs, variables,
+                ToolResultFormatter.FORMAT_FULL);
+    }
+
+    /**
+     * 执行工具并按调用方要求生成模型视图。format 只作用于返回结果，不进入工具参数。
+     */
+    public Object invoke(AgenticRuntime runtime, JsonNode items, String methodName, Map<String, Object> args,
+                         Map<String, ObjectNode> outputs, Map<String, Object> variables, String format) {
         Set<String> used = new HashSet<>();
         for (JsonNode item : items) {
             if (item.has("enabled") && !item.at("/enabled").asBoolean(true)) continue;
@@ -71,7 +80,8 @@ public class AgenticToolService implements AgenticToolInvoker {
             String name = ToolFunctionName.unique(item, used);
             if (!methodName.equals(name)) continue;
             try {
-                return tool.invoke(runtime, item, args, outputs, variables);
+                Object value = tool.invoke(runtime, item, args, outputs, variables);
+                return ToolResultFormatter.format(kind, value, format);
             } catch (RuntimeException e) {
                 throw e;
             } catch (Exception e) {

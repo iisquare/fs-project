@@ -91,8 +91,8 @@ public class BotController extends PermitControllerBase {
     }
 
     /**
-     * 执行一次服务端工具调用：请求体 `{ tool: { kind, id, ..., args }, args: {} }`，
-     * 返回 `{ data: <工具返回> }`；本地文件工具由客户端自己执行，不走这里
+     * 执行一次服务端工具调用：请求体 `{ tool: { kind, id, ..., args }, args: {}, format? }`，
+     * format=brief 返回模型字段视图；本地文件工具由客户端自己执行，不走这里
      */
     @RequestMapping("/tool")
     @Permission("")

@@ -226,7 +226,7 @@ public class ProviderService extends JPAServiceBase {
         info.setStatus(status);
         info.setDescription(DPUtil.parseString(param.get("description")));
         info = save(providerDao, info, rbacService.uid(request));
-        return ApiUtil.result(0, null, safeInfo(info));
+        return ApiUtil.result(0, null, info);
     }
 
     public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {
@@ -251,24 +251,17 @@ public class ProviderService extends JPAServiceBase {
     }
 
     public JsonNode format(JsonNode rows) {
-        for (JsonNode row : rows) {
-            ObjectNode node = (ObjectNode) row;
-            maskSecretFields(node);
-        }
         return rows;
     }
 
-    /** 对外供应商对象只保留是否配置密钥，不回传密钥正文或可能含认证信息的配置。 */
-    protected ObjectNode maskSecretFields(ObjectNode node) {
-        String token = node.at("/token").asText("");
-        node.put("tokenConfigured", !DPUtil.empty(token));
-        node.remove("token");
-        node.remove("content");
-        return node;
-    }
-
-    protected ObjectNode safeInfo(Provider info) {
-        return maskSecretFields(DPUtil.toJSON(info, ObjectNode.class));
+    @Override
+    public JsonNode filter(JsonNode json) {
+        for (JsonNode row : json) {
+            ObjectNode node = (ObjectNode) row;
+            node.remove("token");
+            node.remove("content");
+        }
+        return json;
     }
 
     public Map<String, Object> remove(List<Integer> ids) {
@@ -279,14 +272,6 @@ public class ProviderService extends JPAServiceBase {
     }
 
     public JsonNode fillInfo(JsonNode rows, String ...properties) {
-        JsonNode result = fillInfo(providerDao, rows, properties);
-        for (JsonNode row : rows) {
-            for (String property : properties) {
-                JsonNode source = row.get(property + "Info");
-                if (null == source || !source.isObject()) continue;
-                maskSecretFields((ObjectNode) source);
-            }
-        }
-        return result;
+        return fillInfo(providerDao, rows, properties);
     }
 }

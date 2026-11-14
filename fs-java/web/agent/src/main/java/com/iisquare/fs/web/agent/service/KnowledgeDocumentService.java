@@ -23,6 +23,7 @@ import com.iisquare.fs.web.agent.entity.KnowledgeChunk;
 import com.iisquare.fs.web.agent.entity.KnowledgeDocument;
 import com.iisquare.fs.web.agent.entity.KnowledgeImage;
 import com.iisquare.fs.web.agent.entity.KnowledgeSegment;
+import com.iisquare.fs.web.agent.storage.AgentStorage;
 import com.iisquare.fs.web.agent.tool.DocumentParser;
 import com.iisquare.fs.web.agent.tool.ParsedDocument;
 import com.iisquare.fs.web.agent.tool.TextSplitter;
@@ -67,9 +68,8 @@ public class KnowledgeDocumentService extends JPAServiceBase {
     KnowledgeImageService knowledgeImageService;
     @Autowired
     KnowledgeChunkES chunkES;
-
-    /** 知识库文档的文件桶：与技能 / 编排 / MCP 上传分开，便于按用途管理与清理 */
-    public static final String bucket = "fs-knowledge";
+    @Autowired
+    AgentStorage storage;
 
     @Override
     public Map<String, String> sorts() {
@@ -123,7 +123,7 @@ public class KnowledgeDocumentService extends JPAServiceBase {
         KnowledgeDocument document = new KnowledgeDocument();
         document.setName(filename);
         document.setKnowledgeId(knowledgeId);
-        document.setFilepath(String.format("knowledge-%d/%s/%s", knowledgeId, date, name));
+        document.setFilepath(storage.knowledgeDocument(knowledgeId, date, name));
         document.setTokenSize(markdown.length());
         document.setMetadata(DPUtil.stringify(DPUtil.objectNode()));
         document.setStatus(1);
@@ -181,7 +181,7 @@ public class KnowledgeDocumentService extends JPAServiceBase {
             }
         }
         Map<String, Object> result = streamFileUploader.upload("/file/upload", DPUtil.buildMap(
-                "bucket", bucket, "filepath", document.getFilepath(),
+                "bucket", storage.bucket(), "filepath", document.getFilepath(),
                 "traceIdentity", String.format("fs-knowledge-%d-document-%d", knowledgeId, document.getId())
         ), file);
         if (ApiUtil.failed(result)) {
@@ -285,8 +285,6 @@ public class KnowledgeDocumentService extends JPAServiceBase {
             for (KnowledgeDocument document : documentDao.findAllById(ids)) {
                 ObjectNode item = args.addObject();
                 item.put("id", document.getId());
-                item.put("bucket", bucket);
-                item.put("filepath", document.getFilepath());
             }
             // 文档中的图片与文档本体一并删除
             images = knowledgeImageService.listByDocument(ids);

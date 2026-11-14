@@ -48,15 +48,17 @@ export default {
     return base.post('/bot/tools', { tools }, tips)
   },
   /**
-   * 执行一次服务端工具调用：`{ tool: ref, args }`，返回 `{ data: <工具返回> }`。
-   * 客户端驱动调用循环，凭据与真实调用都留在服务端。
+   * 执行一次服务端工具调用：`{ tool: ref, args, format }`，返回 `{ data: <工具返回> }`。
+   * 客户端驱动调用循环，凭据与真实调用都留在服务端。默认格式 brief 仅保留模型所需字段；
+   * 需要完整业务数据（如调试工具返回）时可显式传 full。
    */
   tool(
     tool: unknown,
     args: Record<string, unknown>,
     tips = {},
-    options: Record<string, unknown> = {}
+    options: Record<string, unknown> = {},
+    format: 'brief' | 'full' = 'brief'
   ) {
-    return base.post('/bot/tool', { tool, args }, tips, options)
+    return base.post('/bot/tool', { tool, args, format }, tips, options)
   }
 }

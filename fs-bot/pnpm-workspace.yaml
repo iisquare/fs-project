@@ -1,5 +1,6 @@
 allowBuilds:
   '@parcel/watcher': true
+  '@turbodocx/html-to-docx': false
   better-sqlite3-multiple-ciphers: true
   electron: true
   electron-winstaller: true

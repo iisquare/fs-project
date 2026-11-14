@@ -14,6 +14,11 @@ const routes = [
     component: () => import('@renderer/views/agent/AgentDetailWindow.vue')
   },
   {
+    path: page.messagePreview,
+    meta: { title: '模型回复预览' },
+    component: () => import('@renderer/views/chat/MessagePreviewWindow.vue')
+  },
+  {
     path: page.root,
     component: () => import('@renderer/views/index.vue'),
     redirect: page.home,

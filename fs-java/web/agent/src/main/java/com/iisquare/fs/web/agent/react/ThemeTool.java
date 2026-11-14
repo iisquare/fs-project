@@ -75,7 +75,11 @@ public class ThemeTool implements AgenticTool {
         ObjectNode value = DPUtil.objectNode();
         value.put("themeId", themeId);
         value.put("themeName", dictionary.at("/themeName").asText(""));
+        value.put("description", dictionary.at("/description").asText(""));
         value.put("sql", sql);
+        // 查询结果同时保留表/字段字典，模型无需为了列注释和关联关系再调用一次字典。
+        value.set("datasets", dictionary.at("/datasets"));
+        value.set("relations", dictionary.at("/relations"));
         value.set("data", null == data ? DPUtil.objectNode() : data);
         return value;
     }

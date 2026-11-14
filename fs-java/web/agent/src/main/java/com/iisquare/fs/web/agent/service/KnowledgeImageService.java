@@ -14,6 +14,7 @@ import com.iisquare.fs.web.agent.entity.Knowledge;
 import com.iisquare.fs.web.agent.entity.KnowledgeDocument;
 import com.iisquare.fs.web.agent.entity.KnowledgeImage;
 import com.iisquare.fs.web.agent.mvc.Configuration;
+import com.iisquare.fs.web.agent.storage.AgentStorage;
 import com.iisquare.fs.web.agent.tool.ByteArrayMultipartFile;
 import com.iisquare.fs.web.agent.tool.ParsedImage;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
@@ -53,9 +54,6 @@ public class KnowledgeImageService extends JPAServiceBase {
 
     private static final Logger logger = LoggerFactory.getLogger(KnowledgeImageService.class);
 
-    /** 知识库文档内嵌图片的文件桶：与文档同桶，按 traceIdentity 归属到具体文档 */
-    public static final String bucket = "fs-knowledge";
-
     /** 图片引用：![说明](占位地址#kb:文件标识)，兼容仅带标识的写法 */
     private static final Pattern IMAGE_REF = Pattern.compile("!\\[([^\\]]*)\\]\\([^)]*kb:[^)\\s]+\\)");
     /** 解析阶段占位符 */
@@ -79,6 +77,8 @@ public class KnowledgeImageService extends JPAServiceBase {
     StreamFileUploader streamFileUploader;
     @Autowired
     Configuration configuration;
+    @Autowired
+    AgentStorage storage;
 
     @Override
     public Map<String, String> sorts() {
@@ -307,11 +307,11 @@ public class KnowledgeImageService extends JPAServiceBase {
         String suffix = suffixOfName(name, type);
         if (suffix.isEmpty()) return null;
         String date = new SimpleDateFormat("yyyyMMdd").format(new Date());
-        String filepath = String.format("knowledge-%d/image/%s/%s%s", knowledgeId, date,
+        String filepath = storage.knowledgeImage(knowledgeId, date,
                 UUID.randomUUID().toString().replace("-", ""), suffix);
         String traceIdentity = String.format("fs-knowledge-%d-document-%s-image", knowledgeId, documentId);
         Map<String, Object> result = streamFileUploader.upload("/file/upload", DPUtil.buildMap(
-                "bucket", bucket, "filepath", filepath, "traceIdentity", traceIdentity
+                "bucket", storage.bucket(), "filepath", filepath, "traceIdentity", traceIdentity
         ), new ByteArrayMultipartFile("file", name, type, data));
         if (ApiUtil.failed(result)) {
             logger.warn("upload knowledge image failed: {} - {}", filepath, ApiUtil.message(result));

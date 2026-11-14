@@ -61,6 +61,14 @@ public class ToolMethodService extends JPAServiceBase {
     private int toolConnectTimeout;
     @Value("${fs.agent.tool.readTimeout:60000}")
     private int toolReadTimeout;
+    /**
+     * MCP 工具方法调用超时：多模态分析需要等待媒体解析和模型推理，单独放宽到 10 分钟；
+     * schema 工具仍使用上面的短超时。
+     */
+    @Value("${fs.agent.mcp.connectTimeout:10000}")
+    private int mcpConnectTimeout;
+    @Value("${fs.agent.mcp.readTimeout:600000}")
+    private int mcpReadTimeout;
 
     @Autowired
     ToolDao toolDao;
@@ -606,7 +614,7 @@ public class ToolMethodService extends JPAServiceBase {
         Map<?, ?> request = DPUtil.buildMap("method", "tools/call", "url", url,
                 "header", headers, "body", DPUtil.buildMap("name", method.getOriginName(), "arguments", args));
         // 与同步同一套客户端：SSE 端点与流式 HTTP 端点都能调用
-        try (McpHttpClient client = new McpHttpClient(url, callHeaders, toolConnectTimeout, toolReadTimeout)) {
+        try (McpHttpClient client = new McpHttpClient(url, callHeaders, mcpConnectTimeout, mcpReadTimeout)) {
             client.initialize();
             JsonNode result = client.callTool(method.getOriginName(), args);
             boolean missing = null == result || result.isMissingNode() || result.isNull();

@@ -14,6 +14,7 @@ import com.iisquare.fs.web.agent.dao.ClientUpdateLogDao;
 import com.iisquare.fs.web.agent.entity.ClientVersion;
 import com.iisquare.fs.web.agent.entity.ClientUpdateLog;
 import com.iisquare.fs.web.agent.mvc.Configuration;
+import com.iisquare.fs.web.agent.storage.AgentStorage;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rpc.FileRpc;
 import com.iisquare.fs.web.core.file.StreamFileUploader;
@@ -69,10 +70,8 @@ public class ClientVersionService extends JPAServiceBase {
     FileRpc fileRpc;
     @Autowired
     StreamFileUploader streamFileUploader;
-
-    /** 安装包统一放文件服务；默认复用客户端已有权限的桶，可用配置改为专用桶 */
-    @Value("${fs.agent.bot.version.bucket:fs-mcp}")
-    private String bucket;
+    @Autowired
+    AgentStorage storage;
     @Value("${fs.agent.bot.version.maxSize:1073741824}")
     private long maxSize;
 
@@ -198,9 +197,9 @@ public class ClientVersionService extends JPAServiceBase {
         info.setStatus(status);
         info = save(clientVersionDao, info, uid);
 
-        String filepath = String.format("client-versions/%d/%s", info.getId(), fileName);
+        String filepath = storage.clientVersion(info.getId(), fileName);
         Map<String, Object> result = streamFileUploader.upload("/file/upload", DPUtil.buildMap(
-                "bucket", bucket,
+                "bucket", storage.bucket(),
                 "filepath", filepath,
                 "traceIdentity", String.format("fs-client-version-%d", info.getId())
         ), file);
@@ -404,8 +403,6 @@ public class ClientVersionService extends JPAServiceBase {
             ArrayNode args = DPUtil.arrayNode();
             ObjectNode item = args.addObject();
             item.put("id", version.getFileId());
-            item.put("bucket", bucket);
-            item.put("filepath", version.getFilepath());
             Map<String, Object> result = RpcUtil.result(fileRpc.post("/file/delete", args));
             if (ApiUtil.failed(result)) {
                 TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();

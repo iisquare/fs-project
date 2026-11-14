@@ -53,6 +53,19 @@ public class AgenticToolServiceTest {
                 null, items, "same_2", Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap()));
     }
 
+    @Test
+    public void briefFormatIsAppliedAfterInvocation() {
+        ArrayNode items = DPUtil.arrayNode();
+        items.add(item("rows", true));
+
+        Object value = service.invoke(null, items, "rows", Collections.emptyMap(),
+                Collections.emptyMap(), Collections.emptyMap(), "brief");
+        JsonNode result = DPUtil.toJSON(value);
+
+        Assert.assertEquals("id", result.at("/columns/0").asText());
+        Assert.assertEquals(1, result.at("/rows/0/0").asInt());
+    }
+
     protected ObjectNode item(String name, boolean available) {
         ObjectNode item = DPUtil.objectNode();
         item.put("kind", "fake");
@@ -77,6 +90,11 @@ public class AgenticToolServiceTest {
         @Override
         public Object invoke(AgenticRuntime runtime, JsonNode item, Map<String, Object> args,
                              Map<String, ObjectNode> outputs, Map<String, Object> variables) {
+            if ("rows".equals(item.at("/name").asText())) {
+                ArrayNode rows = DPUtil.arrayNode();
+                rows.addObject().put("id", 1);
+                return rows;
+            }
             return "same".equals(item.at("/name").asText()) ? "second" : "first";
         }
     }

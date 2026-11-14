@@ -15,6 +15,10 @@ spring:
       max-request-size: 4096MB
 fs:
   agent:
+    # 所有 Agent 相关文件统一落在一个桶中，由语义明确的顶层场景目录区分用途。
+    # 桶需预先在 MinIO / S3 中创建。
+    storage:
+      bucket: fs-agent
     # 模型网关调用超时（毫秒）：向量化 / 重排序等接口慢，读超时给足；
     # 会话补全的读超时是「相邻两次读取」的间隔上限，流式长回复不会被整体耗时掐断
     gateway:
@@ -35,19 +39,21 @@ fs:
     # 工具页「MCP样例」按钮填入的地址：本服务自带的 MCP 服务（SSE 传输，见 spring.ai.mcp.server）
     mcp:
       sampleUrl: http://localhost:7827/sse
-    # 本地客户端（桌面端）上传的文件：上传到哪个桶（需先存在于 MinIO / S3）与单个文件的上限
+      connectTimeout: 10000
+      readTimeout: 600000       # MCP 工具调用等待上限（10 分钟，多模态分析需要）
+    # 本地客户端（桌面端）上传的文件：统一进入 fs.agent.storage.bucket，按 bot/ 目录区分
     bot:
       upload:
-        bucket: fs-mcp
         maxSize: 104857600
       # 桌面端安装包：与普通聊天附件分开配置；Electron 安装包常超过默认 100MB
       version:
-        bucket: fs-mcp
         maxSize: 4294967296
     # 多模态工具（MCP 的 multimodalAnalyze）：默认模型名称与单文件字节上限；
-    # 调用时给出的 model 参数优先，两者都没有会直接报错提醒配置
+    # 调用时给出的 model 参数优先，两者都没有会直接报错提醒配置；
+    # timeout 为调用模型网关的读超时（毫秒）
     multimodal:
       maxSize: 20971520
+      timeout: 600000
     # 网页搜索 / 网页抓取工具（MCP 的 webSearch / webFetch）：
     # 模型别名取网关里类型为 search / fetch 的模型，服务级密钥需已开通这两个模型；
     # maxContent 为单次抓取返回的正文上限，maxResultContent 为搜索单条正文的上限（字符）

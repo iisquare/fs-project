@@ -13,6 +13,7 @@
  * （见 ChatMarkdown 的链接拦截与 ToolCallList 的文件卡片）。
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import ChatMarkdown from './ChatMarkdown.vue'
 import ToolCallList from './ToolCallList.vue'
 import { formatDuration, formatMessageTime } from '@renderer/utils/TimeUtil'
@@ -136,6 +137,7 @@ const streamingText = computed(() => {
 })
 
 const copied = ref(false)
+const previewOpening = ref(false)
 /** 编辑态：改完重新发送会新起一条分支，原提问与原回复都保留 */
 const editing = ref(false)
 const draft = ref('')
@@ -230,6 +232,25 @@ async function copy(): Promise<void> {
     setTimeout(() => (copied.value = false), 1500)
   } catch {
     copied.value = false
+  }
+}
+
+/** 在独立窗口中查看完整回复；导出按钮放在预览窗口里。 */
+async function openPreview(): Promise<void> {
+  const content = String(props.message.content ?? '')
+  if (!content.trim() || previewOpening.value) return
+  previewOpening.value = true
+  try {
+    await window.ipc.messageWindow.open({
+      title: '模型回复',
+      content,
+      projectId: String(props.projectId ?? ''),
+      conversationId: String(props.conversationId ?? '')
+    })
+  } catch (error) {
+    ElMessage.error(`打开预览窗口失败：${error instanceof Error ? error.message : String(error)}`)
+  } finally {
+    previewOpening.value = false
   }
 }
 </script>
@@ -435,7 +456,7 @@ async function copy(): Promise<void> {
           </div>
         </template>
       </div>
-      <!-- 气泡下方：复制 / 编辑 / 重新生成 / 分支切换 / 异常状态 / 时间 -->
+      <!-- 气泡下方：复制 / 新窗口预览 / 编辑 / 重新生成 / 分支切换 / 异常状态 / 时间 -->
       <div v-if="!streaming" class="chat-toolbar">
         <el-button
           v-if="hasBody"
@@ -488,6 +509,32 @@ async function copy(): Promise<void> {
               stroke="currentColor"
               stroke-width="1.2"
               stroke-linejoin="round"
+            />
+          </svg>
+        </el-button>
+        <el-button
+          v-if="!isUser && hasBody"
+          class="chat-action chat-preview-action"
+          link
+          :loading="previewOpening"
+          title="在新窗口中查看"
+          @click="openPreview"
+        >
+          <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+            <path
+              d="M9.2 3.2h3.6v3.6M12.8 3.2 7.7 8.3"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M7.2 4H4.4a1.2 1.2 0 0 0-1.2 1.2v6.4A1.2 1.2 0 0 0 4.4 12.8h6.4a1.2 1.2 0 0 0 1.2-1.2V8.8"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
             />
           </svg>
         </el-button>
@@ -898,14 +945,14 @@ async function copy(): Promise<void> {
 .chat-toolbar {
   display: flex;
   align-items: center;
-  /* 助手：复制在左、时间在右，两项挨着，整体左对齐到气泡左边缘 */
+  /* 助手：操作从左向右排，整体左对齐到气泡左边缘 */
   justify-content: flex-start;
   gap: 8px;
   margin-top: 6px;
   font-size: 12px;
   color: var(--el-text-color-placeholder);
 
-  /* 助手：复制 → 重新生成 → 分支 → 状态 → 时间 */
+  /* 助手：复制 → 新窗口预览 → 重新生成 → 分支 → 状态 → 时间 */
   .chat-action {
     height: 18px;
     padding: 0;
@@ -923,19 +970,23 @@ async function copy(): Promise<void> {
   }
 
   .chat-regen {
+    order: 3;
+  }
+
+  .chat-preview-action {
     order: 2;
   }
 
   .chat-branches {
-    order: 3;
-  }
-
-  .chat-status {
     order: 4;
   }
 
-  .chat-time {
+  .chat-status {
     order: 5;
+  }
+
+  .chat-time {
+    order: 6;
     flex: none;
     font-size: 11px;
   }

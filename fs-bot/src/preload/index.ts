@@ -1,5 +1,11 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { CLIENT_UPGRADE_REQUIRED_CHANNEL } from '../shared/client'
+import type {
+  MessageExportRequest,
+  MessagePreviewPayload,
+  MessagePreviewRequest,
+  MessagePrintRequest
+} from '../shared/message-export'
 
 /** 沙箱 preload 只暴露渲染层真正需要的只读环境信息。 */
 const electronAPI = Object.freeze({
@@ -300,6 +306,17 @@ const ipc = {
     },
     closeSelf: () => ipcRenderer.invoke('agent-window:close-self'),
     closeAll: () => ipcRenderer.invoke('agent-window:close-all')
+  },
+  /** 模型回复的独立预览窗口与导出：内容快照只保存在主进程内存中。 */
+  messageWindow: {
+    open: (request: MessagePreviewRequest) => ipcRenderer.invoke('message-window:open', request),
+    load: (id: string) =>
+      ipcRenderer.invoke('message-window:load', { id }) as Promise<MessagePreviewPayload | null>,
+    closeAll: () => ipcRenderer.invoke('message-window:close-all')
+  },
+  messageExport: {
+    save: (request: MessageExportRequest) => ipcRenderer.invoke('message-export:save', request),
+    print: (request: MessagePrintRequest) => ipcRenderer.invoke('message-export:print', request)
   },
   // 本地图标：由主进程选图并复制到图标目录，渲染进程只回填拿到的地址
   icon: {

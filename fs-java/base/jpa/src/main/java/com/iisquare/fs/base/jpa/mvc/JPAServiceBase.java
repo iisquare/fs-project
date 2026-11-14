@@ -19,6 +19,9 @@ import java.util.*;
 
 public abstract class JPAServiceBase extends ServiceBase {
 
+    /**
+     * 可继承覆盖该方法，用于过滤敏感信息
+     */
     public JsonNode filter(JsonNode json) {
         return json;
     }

@@ -26,6 +26,7 @@ import { ConfigStore } from './config'
 import { normalizeDesktopApprovalPolicy } from './desktop-policy'
 import { SkillManager } from './skills'
 import { exportProject, importProject } from './projects'
+import { exportMessage, printMessage } from './message-export'
 import { ICON_SCHEME, initIcons, pickIcon, serveIcon } from './icons'
 import { CHAT_IMAGE_SCHEME, serveChatImage } from './images'
 import { parseProjectEnvVars } from './project-env'
@@ -98,6 +99,12 @@ import {
 } from '../shared/client'
 import { installAsciiConsoleLogging, LocalizedError } from './logging'
 import { externalUrl } from './external-url'
+import type {
+  MessageExportRequest,
+  MessagePreviewPayload,
+  MessagePreviewRequest,
+  MessagePrintRequest
+} from '../shared/message-export'
 
 // Electron prints rejected IPC handlers through console.error. Install the encoding guard before
 // any handler can fail, so localized error messages never reach a GBK output reader as mojibake.
@@ -146,6 +153,7 @@ function openSafeExternalUrl(raw: string): void {
 
 let mainWindow: BrowserWindow | null = null
 const agentWindows = new Map<string, BrowserWindow>()
+const messageWindows = new Map<string, { window: BrowserWindow; payload: MessagePreviewPayload }>()
 
 const LOGIN_WINDOW_SIZE = { width: 450, height: 600 }
 const MAIN_WINDOW_SIZE = { width: 900, height: 670 }
@@ -544,6 +552,72 @@ function closeAgentWindows(): void {
   agentSnapshots.clear()
 }
 
+function closeMessageWindows(): void {
+  for (const entry of messageWindows.values()) {
+    if (!entry.window.isDestroyed()) entry.window.close()
+  }
+  messageWindows.clear()
+}
+
+function openMessageWindow(request: MessagePreviewRequest): MessagePreviewPayload {
+  const id = randomUUID()
+  const title = String(request?.title ?? '').trim() || '模型回复'
+  const payload: MessagePreviewPayload = {
+    id,
+    title,
+    content: String(request?.content ?? ''),
+    projectId: String(request?.projectId ?? ''),
+    conversationId: String(request?.conversationId ?? '')
+  }
+  if (!payload.content.trim()) {
+    throw new LocalizedError(
+      'MESSAGE_PREVIEW_EMPTY',
+      '没有可预览的回复内容',
+      'Message preview content is empty'
+    )
+  }
+
+  const previewWindow = new BrowserWindow({
+    width: 1080,
+    height: 800,
+    minWidth: 720,
+    minHeight: 520,
+    show: false,
+    autoHideMenuBar: true,
+    title,
+    backgroundColor: '#f2f3f5',
+    ...(process.platform === 'linux' ? { icon } : {}),
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: true,
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  })
+  previewWindow.center()
+  messageWindows.set(id, { window: previewWindow, payload })
+
+  previewWindow.once('ready-to-show', () => {
+    previewWindow.show()
+    previewWindow.focus()
+  })
+  previewWindow.on('closed', () => {
+    messageWindows.delete(id)
+  })
+  previewWindow.webContents.setWindowOpenHandler(({ url }) => {
+    openSafeExternalUrl(url)
+    return { action: 'deny' }
+  })
+
+  const hash = `/message-preview?windowId=${encodeURIComponent(id)}`
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    void previewWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#${hash}`)
+  } else {
+    void previewWindow.loadFile(join(__dirname, '../renderer/index.html'), { hash })
+  }
+  return payload
+}
+
 function openAgentWindow(sessionId: string): BrowserWindow {
   const existing = agentWindows.get(sessionId)
   if (existing && !existing.isDestroyed()) {
@@ -684,6 +758,7 @@ function createWindow(): void {
   mainWindow.webContents.on('render-process-gone', () => schedule.stop())
   mainWindow.on('closed', () => {
     closeAgentWindows()
+    closeMessageWindows()
     mainWindow = null
     // 窗口关闭即视为客户端停止：不在后台继续跑定时任务
     schedule.stop()
@@ -965,6 +1040,38 @@ app.whenReady().then(async () => {
   ipcMain.handle('agent-window:close-all', (event) => {
     if (!mainWindow || event.sender !== mainWindow.webContents) return
     closeAgentWindows()
+  })
+
+  ipcMain.handle('message-window:open', (event, request: MessagePreviewRequest) => {
+    if (!mainWindow || event.sender !== mainWindow.webContents) {
+      throw new LocalizedError(
+        'MESSAGE_PREVIEW_SOURCE_INVALID',
+        '只能从主对话窗口打开回复预览',
+        'Message preview can only be opened from the main conversation window'
+      )
+    }
+    const payload = openMessageWindow(request)
+    return { opened: true, id: payload.id }
+  })
+
+  ipcMain.handle('message-window:load', (event, request: { id?: string }) => {
+    const id = String(request?.id ?? '').trim()
+    const entry = id ? messageWindows.get(id) : undefined
+    if (!entry || entry.window.webContents !== event.sender) return null
+    return entry.payload
+  })
+
+  ipcMain.handle('message-window:close-all', (event) => {
+    if (!mainWindow || event.sender !== mainWindow.webContents) return
+    closeMessageWindows()
+  })
+
+  ipcMain.handle('message-export:save', (event, request: MessageExportRequest) => {
+    return exportMessage(BrowserWindow.fromWebContents(event.sender), request)
+  })
+
+  ipcMain.handle('message-export:print', (event, request: MessagePrintRequest) => {
+    return printMessage(BrowserWindow.fromWebContents(event.sender), request)
   })
 
   ipcMain.handle('db:init-user', async (_event, request: DbInitUserRequest) => {

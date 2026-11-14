@@ -1,5 +1,13 @@
 import type { ClientMeta } from '../shared/client'
 import type {
+  MessageExportRequest,
+  MessageExportResult,
+  MessagePreviewPayload,
+  MessagePreviewRequest,
+  MessagePrintRequest,
+  MessagePrintResult
+} from '../shared/message-export'
+import type {
   DesktopAgentUnavailableNotice,
   DesktopApprovalPolicy,
   DesktopAutomationStatus,
@@ -479,6 +487,23 @@ declare global {
         ) => () => void
         closeSelf: () => Promise<void>
         closeAll: () => Promise<void>
+      }
+      messageWindow: {
+        /** 从主对话打开一条模型回复的独立预览窗口 */
+        open: (request: MessagePreviewRequest) => Promise<{
+          opened: boolean
+          id: string
+        }>
+        /** 预览窗口按标识取回主进程内存里的内容快照 */
+        load: (id: string) => Promise<MessagePreviewPayload | null>
+        /** 退出登录时关闭全部回复预览窗口 */
+        closeAll: () => Promise<void>
+      }
+      messageExport: {
+        /** 在保存对话框里选择路径并导出 Word / PDF */
+        save: (request: MessageExportRequest) => Promise<MessageExportResult>
+        /** 使用系统打印对话框打印当前渲染正文 */
+        print: (request: MessagePrintRequest) => Promise<MessagePrintResult>
       }
       icon: {
         /** 选图后返回可直接放进 img 的地址（取消返回空串） */

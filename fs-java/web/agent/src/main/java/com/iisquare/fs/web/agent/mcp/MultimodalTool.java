@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -47,6 +48,8 @@ public class MultimodalTool {
 
     /** 支持的媒体类型：内容块的类型名即「类型 + _url」 */
     private static final List<String> MEDIA_KINDS = Arrays.asList("image", "video", "audio");
+    /** DeepSeek 图像理解的细节级别；其它模型网关按同一 OpenAI 兼容字段转发 */
+    private static final List<String> IMAGE_DETAIL_LEVELS = Arrays.asList("low", "high", "original", "auto");
     /** 调用方没给分析要求时的默认提示词 */
     private static final String DEFAULT_PROMPT = "请描述该文件的内容，包含其中的关键信息。";
 
@@ -81,6 +84,7 @@ public class MultimodalTool {
                     + "③ {id, name, type}：文件服务标识（服务端取回原文件后内联）；"
                     + "④ 数组元素直接是字符串（data URL / base64 / http 地址）或字节数组。"
                     + "name 为文件名，type 为 contentType（如 image/png，也可写 image / video / audio）；"
+                    + "图片可选择 detail（low / high / original / auto），也可用顶层 detail 统一指定，单文件 detail 优先；"
                     + "缺省时服务端按文件名后缀与内容嗅探判断。"
                     + "调用方有本地文件时：读成 base64 / 字节数组放进 data，或先把文件传到文件服务再按 id 引用"
                     + "（本机文件由调用方自己上传，服务端不读调用方的磁盘）")
@@ -91,6 +95,11 @@ public class MultimodalTool {
             @ToolParam(name = "model", description = "多模态模型名称，留空用服务配置的默认模型",
                     required = false)
             String model,
+            @ToolParam(name = "detail", description = "图片细节级别：low 缩放到 512×512，更省 token；"
+                    + "high / original 保留原图；auto 自动选择。仅对图片生效，"
+                    + "也可在 files 单项中设置 detail 覆盖此值；留空时不发送该字段",
+                    required = false)
+            String detail,
             @ToolParam(name = "system", description = "系统提示词，留空则不发送", required = false)
             String system) {
         String session = toolSessionSupport.requireSession();
@@ -102,7 +111,7 @@ public class MultimodalTool {
         }
         ArrayNode content = DPUtil.arrayNode();
         content.addObject().put("type", "text").put("text", DPUtil.empty(prompt) ? DEFAULT_PROMPT : prompt);
-        for (Object item : files) content.add(mediaPart(fileItem(item)));
+        for (Object item : files) content.add(mediaPart(fileItem(item), detail));
         ObjectNode body = DPUtil.objectNode();
         body.put("model", current);
         body.put("stream", false);
@@ -133,8 +142,9 @@ public class MultimodalTool {
     /**
      * 单个文件的内容块：地址按可访问地址或 data URL 给出，类型按 image / video / audio 拼成
      * {@code <类型>_url}（图片 image_url、视频 video_url、音频 audio_url）。
+     * 图片的 detail 按 OpenAI 兼容格式放进 image_url 对象；仅图片支持，视频、音频不发送。
      */
-    protected ObjectNode mediaPart(Map<String, Object> file) {
+    protected ObjectNode mediaPart(Map<String, Object> file, String defaultDetail) {
         String id = DPUtil.parseString(file.get("id"));
         String url = DPUtil.parseString(file.get("url"));
         Object content = content(file);
@@ -192,8 +202,27 @@ public class MultimodalTool {
         String kind = kind(media, name);
         ObjectNode part = DPUtil.objectNode();
         part.put("type", kind + "_url");
-        part.putObject(kind + "_url").put("url", address);
+        ObjectNode mediaUrl = part.putObject(kind + "_url").put("url", address);
+        if ("image".equals(kind)) {
+            String level = imageDetail(file, defaultDetail);
+            if (!DPUtil.empty(level)) mediaUrl.put("detail", level);
+        }
         return part;
+    }
+
+    /**
+     * 图片细节级别：单文件配置优先于工具顶层配置，缺省不发送。
+     * 取值按 DeepSeek 图像理解文档校验，避免把拼写错误原样透传给上游后才报 400。
+     */
+    protected String imageDetail(Map<String, Object> file, String defaultDetail) {
+        String value = DPUtil.trim(DPUtil.parseString(file.get("detail")));
+        if (DPUtil.empty(value)) value = DPUtil.trim(DPUtil.parseString(defaultDetail));
+        if (DPUtil.empty(value)) return "";
+        value = value.toLowerCase(Locale.ROOT);
+        if (!IMAGE_DETAIL_LEVELS.contains(value)) {
+            throw new IllegalStateException("图片细节级别只支持 low / high / original / auto：" + cut(value));
+        }
+        return value;
     }
 
     /**

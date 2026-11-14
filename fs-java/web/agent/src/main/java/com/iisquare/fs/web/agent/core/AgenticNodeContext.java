@@ -228,7 +228,11 @@ public class AgenticNodeContext {
     }
 
     public Object invokeTool(ObjectNode data, String methodName, Map<String, Object> args) {
-        return toolService.invoke(runtime, data.at("/tools"), methodName, args, outputs, variables);
+        return invokeTool(data, methodName, args, "full");
+    }
+
+    public Object invokeTool(ObjectNode data, String methodName, Map<String, Object> args, String format) {
+        return toolService.invoke(runtime, data.at("/tools"), methodName, args, outputs, variables, format);
     }
 
     public Map<String, Object> parseArguments(String text) {

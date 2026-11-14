@@ -204,7 +204,7 @@ public class ToolService extends JPAServiceBase {
         // 与工具方法调用同一口径：是否传调用方会话只看工具配置开关
         boolean passSession = DPUtil.parseInt(param.get("passSession")) == 1;
         headers = toolSessionSupport.headers(headers, passSession, request);
-        // 客户端按地址自动判别传输：SSE 端点（/sse）与流式 HTTP 端点（/mcp）都能同步
+        // 按客户端填写的端点类型发送：/sse 走 SSE，其它端点（如 /mcp）走流式 HTTP
         try (McpHttpClient client = new McpHttpClient(endpoint, headers, toolConnectTimeout, toolReadTimeout)) {
             client.initialize();
             JsonNode capabilities = client.serverCapabilities();

@@ -1707,7 +1707,8 @@ async function buildRemoteTools(
       target.ref,
       args ?? {},
       { error: false, warning: false },
-      { signal }
+      { signal },
+      'brief'
     )
     if (!ApiUtil.succeed(result)) throw new Error(ApiUtil.message(result) || '工具调用失败')
     const data = ApiUtil.data(result)

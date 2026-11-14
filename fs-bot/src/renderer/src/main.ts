@@ -12,7 +12,9 @@ import { useUpdateStore } from './stores/update'
 
 const app = createApp(App)
 const pinia = createPinia()
-const standaloneDetail = window.location.hash.startsWith('#/agent-detail')
+const standaloneDetail =
+  window.location.hash.startsWith('#/agent-detail') ||
+  window.location.hash.startsWith('#/message-preview')
 
 app.use(pinia)
 
@@ -43,7 +45,7 @@ const releaseBoot = appLoading.show('正在启动客户端...')
 app.use(router)
 app.mount('#app')
 
-// 更新检查只由主窗口发起；独立子 Agent 详情窗口不应重复弹更新或占用网络。
+// 更新检查只由主窗口发起；独立详情与回复预览窗口不应重复弹更新或占用网络。
 if (!standaloneDetail) {
   void useUpdateStore(pinia).checkOnStartup()
 }

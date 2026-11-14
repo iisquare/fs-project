@@ -32,7 +32,9 @@ let stopDesktopUnavailable: (() => void) | null = null
 const desktopUnavailableDialog = ref(false)
 const desktopUnavailableNotice = ref<DesktopAgentUnavailableNotice | null>(null)
 const contentBlocked = computed(() => appLoading.visible || (update.forceUpgrade && update.visible))
-const standaloneDetail = window.location.hash.startsWith('#/agent-detail')
+const standaloneDetail =
+  window.location.hash.startsWith('#/agent-detail') ||
+  window.location.hash.startsWith('#/message-preview')
 
 /** 已经准备过的身份（用户 + 令牌）：同一个身份只准备一次 */
 let bootstrappedFor = ''
@@ -41,6 +43,7 @@ async function logout(): Promise<void> {
   await UserApi.logout().finally(async () => {
     // 退出前断开所有流并停掉调度，避免携带上一个账号的会话继续跑
     await window.ipc.agent.closeAll()
+    await window.ipc.messageWindow.closeAll()
     await useChatStore().reset()
     useScheduleStore().stop()
     useConversationStore().reset()

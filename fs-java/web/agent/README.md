@@ -297,7 +297,8 @@ Content-Type: application/json
   服务端读不到客户端的磁盘，本机路径进不了工具方法（如 `multimodalAnalyze`），
   所以本地文件的顺序是「先传一次拿 `id`，再把 `id` 交给工具方法」；
   类型以客户端给的 contentType 为准，缺省（含 `application/octet-stream`）时按文件名后缀补齐。
-  默认落到 `fs.agent.bot.upload.bucket`（`fs-mcp`）指定的桶，单文件上限 `fs.agent.bot.upload.maxSize`（100MB）。
+  默认落到 `fs.agent.storage.bucket` 的 `bot-uploads/` 目录，单文件上限
+  `fs.agent.bot.upload.maxSize`（100MB）。
 - 会话历史、落库与标题都在客户端侧（本地库），服务端只负责这一轮模型调用，
   因此这里不写运行日志、也不产生服务端会话。
 - 用户代理记账：客户端以登录会话作为 Bearer 令牌访问本服务，`/bot/chat` 把该会话标识原样透传给模型网关
@@ -310,7 +311,7 @@ Content-Type: application/json
 | POST `/bot/models` | 可用模型清单：出参 `{ rows: [{ name, ownedBy, contextLength }] }` | `agent:bot:` |
 | POST `/bot/chat` | 模型对话（SSE，客户端自带 messages 历史） | `agent:bot:` |
 | POST `/bot/tools` | 工具定义清单：入参 `{ tools: [{ kind, id, name, toolId, methodName }] }`，出参 `{ descriptionVersion, rows: [{ ref, function }] }` | `agent:bot:` |
-| POST `/bot/tool` | 执行一次工具调用：入参 `{ tool: ref, args }`，出参 `{ data: <工具返回> }` | `agent:bot:` |
+| POST `/bot/tool` | 执行一次工具调用：入参 `{ tool: ref, args, format? }`，`format=brief` 返回模型所需字段，`full` 或省略保持完整 JSON；出参 `{ data: <工具返回> }` | `agent:bot:` |
 | POST `/bot/upload` | 上传本机文件（multipart：`file`、可选 `name`）：出参 `{ id, name, type, suffix, size }`，供后续按标识引用 | `agent:bot:` |
 | POST `/bot/project/mine` | 我分享过的项目：入参 `{ name?, page?, pageSize? }`，出参 `{ page, pageSize, total, rows }`（行带 `versionCount` 与 `latestVersion`） | `agent:bot:` |
 | POST `/bot/project/browse` | 浏览分享的项目：只给「已启用 + 授权命中」，出参同上并带 `mine` 标记 | `agent:bot:` |
@@ -320,6 +321,13 @@ Content-Type: application/json
 
 工具定义与调用的口径与编排里的大语言模型节点完全一致（同一套 `AgenticToolService`），
 因此函数名按 `[0-9a-zA-Z_-]` 归一后随 `ref.functionName` 回带；客户端调用时把该 ref 原样带回即可定位到同一只工具。
+`format=brief` 由 Bot 客户端与 ReAct 调用链自动使用：知识库去掉重复正文，数据主题查询返回
+`{ columns: ["字段名"], columnMeta: [{...}], rows: [[...]] }` 的列式 JSON，其中 columnMeta
+保留标题、类型、注释、精度等字段信息，并同时带上数据集描述、字段元数据和关联关系；
+知识库同时保留文档名称与元数据，知识图谱检索同样折叠重复字段、路径结果保留起止节点；
+工具方法去掉请求与响应头回显，
+解析并压缩 JSON 响应中的对象数组。
+该参数只控制结果格式，不进入 function schema，模型无需也不应把它作为业务参数生成。
 
 项目分享的五个接口是客户端侧的入口：项目配置（模型、提示词、工具、环境变量、工作区等）由客户端序列化成 JSON
 提交，服务端只当版本快照保存，不解释其结构；浏览与导出走同一套可见性口径（见「项目分享」一节）。
@@ -370,8 +378,7 @@ Content-Type: application/json
   以及受信任的发布渠道共同保证。SHA-512 不能替代平台代码签名，发布链路仍须限制管理员权限。
 - 后台维护接口：`/clientVersion/list`、`upload`、`save`、`delete`、`download`、`config`，
   权限键为 `agent:clientVersion:`（写操作分别追加 `add` / `modify` / `delete`）。
-- 安装包默认写入文件服务的 `fs-mcp` 桶，路径前缀 `client-versions/`；可用
-  `fs.agent.bot.version.bucket` 改为专用桶，单包上限由
+- 安装包默认写入 `fs-agent/client-versions/`，单包上限由
   `fs.agent.bot.version.maxSize` 控制（默认 1GB）。存量环境先执行
   [`docs/fs_agent_client_version.sql`](../../docs/fs_agent_client_version.sql) 建表并登记菜单 / 资源。
 - 安装包上传还受前置网关 / Nginx 的请求体上限约束；部署时要把
@@ -473,6 +480,8 @@ POST /knowledgeImage/url
   不下发配置内容；版本下拉展开时再按 `/skillVersion/available` 取该技能的整份启用版本清单。
 - MCP 服务：以 `spring-ai-mcp-server-webmvc` 暴露本地工具（`multimodalAnalyze` 多模态分析、
   `webSearch` 网页搜索、`webFetch` 网页抓取），供模型通过模型上下文协议调用。
+  调用远端 MCP 时按客户端填写的端点类型原样发送：路径以 `/sse` 结尾只走 SSE，其它端点（如 `/mcp`）
+  只走流式 HTTP POST；协议探测或首发请求失败时直接返回失败，不自动切换传输或换地址重试。
   - **用户鉴权**：`webSearch`、`webFetch`、`multimodalAnalyze` 在工具方法入口通过
     `ToolSessionSupport.requireSession()` 校验调用方登录会话（`x-auth-token` 或
     `Authorization: Bearer`）；没有会话、会话过期或用户不可用时直接报错。
@@ -486,6 +495,12 @@ POST /knowledgeImage/url
     调用记录里展示的 header 仍是配置原值，不会把自动补的会话回显给前端。
   - `multimodalAnalyze`：文件按内容（base64 文本 / 字节数组）、可访问地址或文件服务标识给出，
     不接受本机路径；文件上传走文件服务的 multipart 接口（前端上传后按 id 引用）。
+    图片支持可选参数 `detail`（`low` / `high` / `original` / `auto`），会写入上游
+    `image_url.detail`；顶层 `detail` 作用于所有图片，也可在 `files` 单项中用 `detail`
+    覆盖。`low` 适合快速识图并节省 token，`high` / `original` 保留原图细节；
+    该字段不发送给视频、音频。
+    模型调用与 MCP 工具等待默认均为 600 秒，可分别由 `fs.agent.multimodal.timeout`、
+    `fs.agent.mcp.readTimeout` 调整。
   - `webSearch` / `webFetch`：转调模型网关的 `/v1/tools/search`、`/v1/tools/fetch`
     （DeepSeek Search / Fetch API），鉴权、模型授权与按次计费与对话同一口径；
     调用端必须带登录会话，网关据此按用户代理记账。
@@ -594,8 +609,11 @@ POST /knowledgeImage/url
 | `rpc.lm.rest` | 模型网关地址，对话转发、词嵌入、重排经此调用 |
 | `fs.agent.token` | agent 访问 LM 的唯一服务级模型密钥；外部调用方身份由 agent API Key 单独管理 |
 | `fs.agent.web.searchModel` / `fs.agent.web.fetchModel` | MCP 网页搜索 / 抓取使用的网关模型别名，默认 `deepseek-search` / `deepseek-fetch`；也可由工具参数 `model` 临时指定 |
+| `fs.agent.multimodal.timeout` | MCP 多模态分析调用模型网关的读超时（毫秒），默认 600000 |
+| `fs.agent.mcp.connectTimeout` / `fs.agent.mcp.readTimeout` | MCP 工具调用的连接 / 等待超时（毫秒），默认 10000 / 600000 |
 | `fs.agent.web.maxContent` / `fs.agent.web.maxResultContent` | 网页抓取正文、搜索单条结果正文的字符上限，默认 30000 / 8000 |
 | `fs.agent.image.expire` | 原图地址签发有效期（毫秒），默认 1800000 |
+| `fs.agent.storage.bucket` | Agent 文件的统一存储桶，默认 `fs-agent`；各业务场景使用唯一的顶层目录 |
 | `rpc.file.rest` | 文件服务地址，图片上传与地址签发经此调用 |
 | `fs.format.date` | 日期格式 |
 
@@ -614,8 +632,23 @@ JPA 表前缀策略为 `com.iisquare.fs.web.agent.dsconfig.NamingStrategy`。
 - 流程统计的明细查询走 MyBatis（`mapper/AgenticStatisticMapper.xml`），与 JPA 共用同一数据源
   （`spring.datasource.agent`，即 `@Primary` 的 `agentDataSource`）。
 - Elasticsearch：检索块集合 `fs_lm_knowledge_chunk`。
-- 文件服务：桶按用途分开 —— 知识库文档与内嵌图片 `fs-knowledge`、技能版本包 `fs-skill`、
-  编排调试附件 `fs-agentic`、MCP 工具上传与本地客户端上传 `fs-mcp`（桶需先在建好的 MinIO / S3 里存在）。
+- 文件服务：统一使用 `fs-agent` 桶，具体布局如下；桶需先在建好的 MinIO / S3 中存在。
+
+```text
+fs-agent/
+  bot-uploads/{yyyyMMdd}/                客户端上传的普通文件
+  agentic-uploads/{yyyyMMdd}/            网页端智能体编排上传的附件
+  client-versions/{versionId}/           桌面端安装包
+  knowledge-documents/{knowledgeId}/{yyyyMMdd}/  知识库原文档
+  knowledge-images/{knowledgeId}/{yyyyMMdd}/     知识库文档内嵌图片
+  skill-versions/{skillId}/              技能版本包
+```
+
+  Agent 服务通过 `StreamFileUploader` 调用文件服务 `/file/upload` 写入，文件服务负责落
+  `fs_file_archive` 并写 S3。读取统一按文件 ID 调 `/file/url` 或 `/file/download`，最终由
+  `/file/{id}`、`/raw/{id}` 读取 S3；删除按文件 ID 查 `fs_file_archive` 中保存的实际
+  `bucket + filepath`。因此旧桶中的历史对象仍可按原记录读取，迁移步骤见
+  [`docs/fs_agent_storage_migration.md`](../../docs/fs_agent_storage_migration.md)。
 
 #### 会话表结构说明
 

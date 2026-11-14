@@ -50,6 +50,9 @@ public class AIService implements DisposableBean {
     private int gatewaySocketTimeout;
     @Value("${fs.agent.gateway.requestTimeout:10000}")
     private int gatewayRequestTimeout;
+    /** MCP 多模态工具调用模型网关的超时：媒体分析可能长时间排队或推理，单独放宽到 10 分钟 */
+    @Value("${fs.agent.multimodal.timeout:600000}")
+    private int multimodalTimeout;
     @Autowired
     AgentGatewayAuth gatewayAuth;
 
@@ -65,8 +68,12 @@ public class AIService implements DisposableBean {
 
     @PostConstruct
     public void initialize() {
-        config = RequestConfig.custom()
-                .setSocketTimeout(gatewaySocketTimeout)
+        config = config(gatewaySocketTimeout);
+    }
+
+    private RequestConfig config(int socketTimeout) {
+        return RequestConfig.custom()
+                .setSocketTimeout(socketTimeout)
                 .setConnectTimeout(gatewayConnectTimeout)
                 .setConnectionRequestTimeout(gatewayRequestTimeout)
                 .build();
@@ -83,6 +90,11 @@ public class AIService implements DisposableBean {
     }
 
     public Map<String, Object> post(String url, JsonNode json, Map<String, String> headers) {
+        return post(url, json, headers, config);
+    }
+
+    public Map<String, Object> post(String url, JsonNode json, Map<String, String> headers,
+                                    RequestConfig requestConfig) {
         HttpPost http = new HttpPost(url);
         if (headers != null) {
             for (Map.Entry<String, String> entry : headers.entrySet()) {
@@ -94,13 +106,17 @@ public class AIService implements DisposableBean {
         StringEntity entity = new StringEntity(body, StandardCharsets.UTF_8);
         entity.setContentType("application/json");
         http.setEntity(entity);
-        return this.execute(http);
+        return this.execute(http, requestConfig);
     }
 
     public Map<String, Object> execute(HttpRequestBase http) {
+        return execute(http, config);
+    }
+
+    public Map<String, Object> execute(HttpRequestBase http, RequestConfig requestConfig) {
         CloseableHttpResponse response = null;
         try {
-            http.setConfig(this.config);
+            http.setConfig(requestConfig);
             response = client.execute(http);
             int code = response.getStatusLine().getStatusCode();
             HttpEntity entity = response.getEntity();
@@ -210,7 +226,8 @@ public class AIService implements DisposableBean {
      * （x-auth-token），供网关按「用户代理」口径记账（密钥未开启代理时网关忽略该头）。
      */
     public Map<String, Object> chat(JsonNode body, String session) {
-        return post(gatewayEndpoint + "/v1/chat/completions", body, gatewayHeaders(session));
+        int timeout = multimodalTimeout > 0 ? multimodalTimeout : 600000;
+        return post(gatewayEndpoint + "/v1/chat/completions", body, gatewayHeaders(session), config(timeout));
     }
 
     /**

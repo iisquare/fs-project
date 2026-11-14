@@ -203,7 +203,7 @@ const handleModel = (scope: any, env: any) => {
         <el-descriptions-item label="唯一标识"><el-input v-model="form.serial" /></el-descriptions-item>
         <el-descriptions-item label="供应商名称"><el-input v-model="form.name" /></el-descriptions-item>
         <el-descriptions-item label="调用地址" :span="3"><el-input type="textarea" v-model="form.endpoint" /></el-descriptions-item>
-        <el-descriptions-item label="认证标识"><el-input v-model="form.token" type="password" placeholder="留空表示不修改" show-password /></el-descriptions-item>
+        <el-descriptions-item label="认证标识"><el-input v-model="form.token" type="password" placeholder="请输入认证标识" show-password /></el-descriptions-item>
         <el-descriptions-item label="排序"><el-input-number v-model="form.sort" /></el-descriptions-item>
         <el-descriptions-item label="状态">
           <el-select v-model="form.status" placeholder="请选择">

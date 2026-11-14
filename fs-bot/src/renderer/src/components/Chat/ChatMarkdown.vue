@@ -9,7 +9,16 @@
 import Vditor from 'vditor'
 import 'vditor/dist/index.css'
 import { ElScrollbar } from 'element-plus'
-import { computed, h, onBeforeUnmount, onMounted, ref, render as renderVNode, watch } from 'vue'
+import {
+  computed,
+  h,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  render as renderVNode,
+  watch
+} from 'vue'
 import { knowledgeImageIds, localImagePaths, resolveMarkdownImages } from '@renderer/core/Markdown'
 import {
   diagramSource,
@@ -23,6 +32,7 @@ import {
 import KnowledgeImageUtil from '@renderer/utils/KnowledgeImageUtil'
 import LocalImageUtil from '@renderer/utils/LocalImageUtil'
 import FileActionUtil from '@renderer/utils/FileActionUtil'
+import { renderedMessageHtml } from '@renderer/utils/MessageExportUtil'
 import { useChatViewStore } from '@renderer/stores/chatView'
 import loadingImage from '@renderer/assets/images/knowledge-image-loading.svg?url'
 import fallbackImage from '@renderer/assets/images/knowledge-image-fallback.svg?url'
@@ -36,10 +46,15 @@ interface EChartsInstance {
   setOption(option: Record<string, unknown>): void
   resize(): void
   dispose(): void
+  getDataURL(options?: Record<string, unknown>): string
 }
 
 interface EChartsRuntime {
-  init(element: HTMLElement): EChartsInstance
+  init(
+    element: HTMLElement,
+    theme?: string | Record<string, unknown> | null,
+    options?: { renderer?: 'canvas' | 'svg' }
+  ): EChartsInstance
 }
 
 declare global {
@@ -58,9 +73,22 @@ const props = defineProps<{
   streaming?: boolean
   /** 消息已正常完成；停止或失败时保留中性占位，不把半截图表标成错误 */
   complete?: boolean
+  /** 独立预览窗口使用更宽松的正文字号与行距 */
+  large?: boolean
+  /** 大字号预览的正文字号（px） */
+  fontSize?: number
+  /** 大字号预览的行距倍数 */
+  lineHeight?: number
 }>()
 
 const chatView = useChatViewStore()
+const typographyStyle = computed<Record<string, string> | undefined>(() => {
+  if (!props.large) return undefined
+  return {
+    '--chat-markdown-font-size': `${Number(props.fontSize) || 15}px`,
+    '--chat-markdown-line-height': String(Number(props.lineHeight) || 1.8)
+  }
+})
 
 /**
  * 已解析的图片标识 → 地址
@@ -226,6 +254,21 @@ function loadMermaid(): Promise<MermaidRuntime> {
 
 let chartsReady: Promise<EChartsRuntime> | null = null
 
+function exportChartOption(option: Record<string, unknown>): Record<string, unknown> {
+  const compactGrid = (grid: unknown): Record<string, unknown> => ({
+    ...(grid && 'object' === typeof grid ? grid : {}),
+    bottom: 16,
+    containLabel: true
+  })
+  return {
+    ...option,
+    animation: false,
+    grid: Array.isArray(option.grid)
+      ? option.grid.map((grid) => compactGrid(grid))
+      : compactGrid(option.grid)
+  }
+}
+
 function loadECharts(): Promise<EChartsRuntime> {
   if (chartsReady) return chartsReady
   chartsReady = import('echarts').then((runtime) => ({ init: runtime.init }))
@@ -259,7 +302,64 @@ async function renderECharts(block: HTMLElement, sequence: number): Promise<void
   // 先切到 ready 让 CSS 给 ECharts 固定画布尺寸，再初始化，避免先用占位高度布局。
   block.dataset.state = 'ready'
   const chart = runtime.init(block)
-  chart.setOption(option)
+  const exportChart = async (width: number, height: number): Promise<string> => {
+    const host = document.createElement('div')
+    host.style.cssText = `position:fixed;left:-100000px;top:0;width:${width}px;height:${height}px;visibility:hidden;pointer-events:none;`
+    host.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(host)
+    const exportInstance = runtime.init(host, null, { renderer: 'svg' })
+    try {
+      exportInstance.setOption(exportChartOption(option))
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      )
+      const svg = host.querySelector('svg')
+      if (!svg) {
+        return exportInstance.getDataURL({
+          type: 'png',
+          pixelRatio: 2,
+          backgroundColor: '#ffffff'
+        })
+      }
+      const serialized = new XMLSerializer().serializeToString(svg)
+      const source = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(serialized)}`
+      const image = new Image()
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve()
+        image.onerror = () => reject(new Error('ECharts SVG 转换失败'))
+        image.src = source
+      })
+      const canvas = document.createElement('canvas')
+      canvas.width = width * 2
+      canvas.height = height * 2
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('ECharts 导出画布不可用')
+      context.fillStyle = '#ffffff'
+      context.fillRect(0, 0, canvas.width, canvas.height)
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+      return canvas.toDataURL('image/png')
+    } finally {
+      exportInstance.dispose()
+      host.remove()
+    }
+  }
+  ;(
+    block as HTMLElement & {
+      __fsBotECharts?: EChartsInstance
+      __fsBotEChartsExport?: (width: number, height: number) => Promise<string>
+    }
+  ).__fsBotECharts = chart
+  ;(
+    block as HTMLElement & {
+      __fsBotEChartsExport?: (width: number, height: number) => Promise<string>
+    }
+  ).__fsBotEChartsExport = exportChart
+  // 导出会直接读取 canvas：关闭动画并在下一帧后返回，避免截到数值尚未绘制的空图表。
+  chart.setOption({ ...option, animation: false })
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  )
+  if (disposed || sequence !== renderSequence || !block.isConnected) return
   const observer = new ResizeObserver(() => chart.resize())
   observer.observe(block)
   const previous = chartCleanup
@@ -379,6 +479,37 @@ onBeforeUnmount(() => {
   disposeTableScrollers()
 })
 
+/** 给预览窗口导出用：先确保当前 Markdown 已渲染，再生成自包含的快照。 */
+async function ensureRenderedRoot(): Promise<HTMLElement> {
+  if (renderTimer) {
+    window.clearTimeout(renderTimer)
+    renderTimer = null
+  }
+  await resolve(props.content)
+  await resolveLocal(props.content)
+  if (renderTimer) {
+    window.clearTimeout(renderTimer)
+    renderTimer = null
+  }
+  await renderNow()
+  await nextTick()
+  const root = renderRef.value?.querySelector<HTMLElement>('.chat-markdown-text')
+  if (!root) throw new Error('回复尚未渲染完成')
+  return root
+}
+
+async function buildExportHtml(): Promise<string> {
+  return renderedMessageHtml(await ensureRenderedRoot())
+}
+
+/** TXT 导出使用当前渲染结果，保留段落、列表、代码和表格的可读换行。 */
+async function buildPlainText(): Promise<string> {
+  const root = await ensureRenderedRoot()
+  return root.innerText.replace(/\n{3,}/g, '\n\n').trim()
+}
+
+defineExpose({ buildExportHtml, buildPlainText })
+
 function openPreview(event: MouseEvent): void {
   const image = (event.target as Element | null)?.closest?.('img')
   if (!image || !rootRef.value) return
@@ -439,7 +570,8 @@ function fallbackImageOnError(event: Event): void {
   <div
     ref="rootRef"
     class="chat-markdown"
-    :class="{ 'is-table-wrap': 'wrap' === chatView.tableMode }"
+    :class="{ 'is-table-wrap': 'wrap' === chatView.tableMode, 'is-large': large }"
+    :style="typographyStyle"
     @click="onClick"
     @error.capture="fallbackImageOnError"
   >
@@ -690,6 +822,44 @@ function fallbackImageOnError(event: Event): void {
         width: 100%;
         min-width: 100%;
         max-width: 100%;
+      }
+    }
+  }
+
+  &.is-large {
+    font-size: var(--chat-markdown-font-size, 15px);
+    line-height: var(--chat-markdown-line-height, 1.8);
+
+    :deep(.chat-markdown-text) {
+      font-size: var(--chat-markdown-font-size, 15px);
+      line-height: var(--chat-markdown-line-height, 1.8);
+
+      p {
+        margin-bottom: 0.74em;
+      }
+
+      h1 {
+        margin: 1.45em 0 0.8em;
+        font-size: 1.6em;
+      }
+
+      h2 {
+        margin: 1.35em 0 0.66em;
+        font-size: 1.33em;
+      }
+
+      h3,
+      h4,
+      h5,
+      h6 {
+        margin: 1.15em 0 0.54em;
+        font-size: 1.13em;
+      }
+
+      th,
+      td {
+        padding: 7px 10px;
+        font-size: 0.93em;
       }
     }
   }

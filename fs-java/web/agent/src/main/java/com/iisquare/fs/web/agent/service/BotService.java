@@ -14,6 +14,7 @@ import com.iisquare.fs.web.agent.core.AgenticRuntime;
 import com.iisquare.fs.web.agent.entity.Agentic;
 import com.iisquare.fs.web.agent.react.AgenticToolService;
 import com.iisquare.fs.web.agent.react.ToolFunctionName;
+import com.iisquare.fs.web.agent.storage.AgentStorage;
 import com.iisquare.fs.web.agent.tool.FileUploader;
 import com.iisquare.fs.web.core.mvc.FeignInterceptor;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
@@ -80,9 +81,8 @@ public class BotService implements DisposableBean {
     FileRpc fileRpc;
     @Autowired
     StreamFileUploader streamFileUploader;
-    /** 客户端上传的文件桶：默认与 MCP 工具取用的文件同桶（桶需先存在于 MinIO / S3，可换成自建桶） */
-    @Value("${fs.agent.bot.upload.bucket:fs-mcp}")
-    private String uploadBucket;
+    @Autowired
+    AgentStorage storage;
     /** 单个文件的上传上限：与 servlet 的 multipart 上限同一量级（超出由容器先拦一次） */
     @Value("${fs.agent.bot.upload.maxSize:104857600}")
     private long uploadMaxSize;
@@ -290,10 +290,11 @@ public class BotService implements DisposableBean {
         if (DPUtil.empty(type)) type = "application/octet-stream";
         String suffix = FileUploader.suffix(filename);
         String date = new SimpleDateFormat("yyyyMMdd").format(new Date());
-        String filepath = String.format("bot/%s/%s%s", date,
-                UUID.randomUUID().toString().replace("-", ""), DPUtil.empty(suffix) ? "" : "." + suffix);
+        String filepath = storage.botUpload(date,
+                UUID.randomUUID().toString().replace("-", ""), suffix);
         Map<String, Object> result = streamFileUploader.upload("/file/upload", DPUtil.buildMap(
-                "bucket", uploadBucket, "filepath", filepath, "traceIdentity", "fs-agent-bot-upload"),
+                "bucket", storage.bucket(), "filepath", filepath,
+                "traceIdentity", "fs-agent-bot-upload"),
                 file, filename, type);
         if (ApiUtil.failed(result)) return result;
         JsonNode data = ApiUtil.data(result, ObjectNode.class);
@@ -371,8 +372,9 @@ public class BotService implements DisposableBean {
     }
 
     /**
-     * 执行一次服务端工具调用：客户端给出工具 ref 与模型给出的参数，这里跑完并返回结果。
-     * 结果统一按 JSON 返回，失败给出原因（客户端把它作为该次工具调用的返回喂回模型，便于下一轮自行修正）。
+     * 执行一次服务端工具调用：客户端给出工具 ref、模型参数与可选的 format。
+     * format=brief 返回面向模型的字段投影，缺省或 full 保持完整 JSON；
+     * 失败给出原因（客户端把它作为该次工具调用的返回喂回模型，便于下一轮自行修正）。
      */
     public Map<String, Object> tool(String body, Integer uid, HttpServletRequest request) {
         ObjectNode json = parse(body);
@@ -385,11 +387,13 @@ public class BotService implements DisposableBean {
         }
         String kind = item.at("/kind").asText("method");
         String methodName = "method".equals(kind) ? item.at("/method").asText("") : item.at("/name").asText("");
+        String format = request.getParameter("format");
+        if (DPUtil.empty(format)) format = json.at("/format").asText("");
         // 编排作为工具：运行前注入编排调用器（与编排运行同一套实现，子编排不写会话与运行日志）
         agenticService.prepareRuntime(uid, request);
         try {
             Object data = agenticToolService.invoke(agenticRuntime, DPUtil.arrayNode().add(item), methodName, args,
-                    new LinkedHashMap<>(), new LinkedHashMap<>());
+                    new LinkedHashMap<>(), new LinkedHashMap<>(), format);
             return ApiUtil.result(0, null, DPUtil.toJSON(data));
         } catch (Exception e) {
             return ApiUtil.result(1002, DPUtil.parseString(e.getMessage()), null);

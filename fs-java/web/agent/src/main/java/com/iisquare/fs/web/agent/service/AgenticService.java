@@ -22,6 +22,7 @@ import com.iisquare.fs.web.agent.core.AgentGatewayAuth;
 import com.iisquare.fs.web.agent.core.AgentInvocation;
 import com.iisquare.fs.web.agent.mapper.AgenticStatisticMapper;
 import com.iisquare.fs.web.agent.mvc.Configuration;
+import com.iisquare.fs.web.agent.storage.AgentStorage;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.core.rpc.FileRpc;
 import com.iisquare.fs.web.core.file.StreamFileUploader;
@@ -98,9 +99,8 @@ public class AgenticService extends JPAServiceBase {
     AgentApiKeyService agentApiKeyService;
     @Autowired
     AIService aiService;
-
-    /** 编排调试上传的文件桶：编排会话的附件单独成桶，路径按 agentic 前缀隔离 */
-    public static final String BUCKET = "fs-agentic";
+    @Autowired
+    AgentStorage storage;
 
     /** 编排工具（子编排）允许的最大嵌套层数：防止 A→B→A 这类相互调用无限嵌套 */
     private static final int MAX_NESTED_DEPTH = 5;
@@ -120,10 +120,11 @@ public class AgenticService extends JPAServiceBase {
         int at = filename.lastIndexOf('.');
         String suffix = at < 0 ? "" : filename.substring(at + 1);
         String date = new SimpleDateFormat("yyyyMMdd").format(new Date());
-        String filepath = String.format("agentic/%s/%s%s", date,
-                UUID.randomUUID().toString().replace("-", ""), DPUtil.empty(suffix) ? "" : "." + suffix);
+        String filepath = storage.agenticUpload(date,
+                UUID.randomUUID().toString().replace("-", ""), suffix);
         Map<String, Object> result = streamFileUploader.upload("/file/upload", DPUtil.buildMap(
-                "bucket", BUCKET, "filepath", filepath, "traceIdentity", "fs-agent-agentic-debug"), file);
+                "bucket", storage.bucket(), "filepath", filepath,
+                "traceIdentity", "fs-agent-agentic-debug"), file);
         if (ApiUtil.failed(result)) return result;
         JsonNode data = ApiUtil.data(result, ObjectNode.class);
         Map<String, Object> item = new LinkedHashMap<>();
