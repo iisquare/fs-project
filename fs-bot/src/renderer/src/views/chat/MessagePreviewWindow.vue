@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } 
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import ChatMarkdown from '@renderer/components/Chat/ChatMarkdown.vue'
-import { useChatViewStore } from '@renderer/stores/chatView'
+import ChatFormatMenu from '@renderer/components/Chat/ChatFormatMenu.vue'
 import type { MessageExportFormat, MessagePreviewPayload } from '../../../../shared/message-export'
 
 interface ChatMarkdownHandle {
@@ -19,7 +19,6 @@ const exporting = ref(false)
 const printing = ref(false)
 const copied = ref(false)
 const markdownRef = ref<ChatMarkdownHandle | null>(null)
-const chatView = useChatViewStore()
 const DISPLAY_SETTINGS_KEY = 'fs_message_preview_display'
 const DEFAULT_DISPLAY_SETTINGS = {
   zoom: 100,
@@ -98,10 +97,6 @@ watch(
 )
 
 const title = computed(() => payload.value?.title || '模型回复')
-const tableModeLabel = computed(() =>
-  'wrap' === chatView.tableMode ? '表格自动换行' : '表格不换行'
-)
-const tableModeShortLabel = computed(() => ('wrap' === chatView.tableMode ? '换行' : '不换行'))
 
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
@@ -140,10 +135,6 @@ async function printPreview(): Promise<void> {
   } finally {
     printing.value = false
   }
-}
-
-function setTableDisplayMode(value: string | number | object): void {
-  chatView.setTableMode(String(value))
 }
 
 function resetDisplaySettings(): void {
@@ -358,7 +349,6 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="preview-formatbar" role="toolbar" aria-label="显示调整">
-        <span class="formatbar-caption">显示</span>
         <div class="format-stepper" title="缩放，Ctrl + 滚轮可快速调整">
           <span class="format-stepper__label">缩放</span>
           <button
@@ -425,119 +415,71 @@ onBeforeUnmount(() => {
             +
           </button>
         </div>
-        <el-dropdown
-          trigger="click"
-          popper-class="preview-table-menu"
-          @command="setTableDisplayMode"
+        <ChatFormatMenu
+          placement="bottom-end"
+          label="设置"
+          trigger-label="设置"
+          show-reset
+          reset-label="恢复默认显示设置"
+          @reset="resetDisplaySettings"
         >
-          <button type="button" class="format-select-button" :title="tableModeLabel">
-            <svg class="control-icon" viewBox="0 0 16 16" aria-hidden="true">
-              <rect
-                x="2.2"
-                y="3.2"
-                width="11.6"
-                height="9.6"
-                rx="1"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.2"
-              />
-              <path
-                d="M2.2 6.4h11.6M2.2 9.7h11.6M6.2 3.2v9.6M10.2 3.2v9.6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.1"
-              />
-            </svg>
-            <span>{{ tableModeShortLabel }}</span>
-            <svg class="control-caret" viewBox="0 0 12 12" aria-hidden="true">
-              <path
-                d="m3.2 4.7 2.8 2.9 2.8-2.9"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item
-                command="wrap"
-                role="menuitemradio"
-                :aria-checked="'wrap' === chatView.tableMode"
-              >
-                <span class="table-mode-option">
-                  <span class="table-mode-option__copy">
-                    <strong>自动换行</strong>
-                    <small>按窗口宽度折行显示列内容</small>
-                  </span>
-                  <svg
-                    v-if="'wrap' === chatView.tableMode"
-                    class="option-check"
-                    viewBox="0 0 16 16"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="m3.4 8.2 3 3 6.2-6.4"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-              </el-dropdown-item>
-              <el-dropdown-item
-                command="nowrap"
-                role="menuitemradio"
-                :aria-checked="'nowrap' === chatView.tableMode"
-              >
-                <span class="table-mode-option">
-                  <span class="table-mode-option__copy">
-                    <strong>不换行</strong>
-                    <small>保持表格布局，横向滚动查看</small>
-                  </span>
-                  <svg
-                    v-if="'nowrap' === chatView.tableMode"
-                    class="option-check"
-                    viewBox="0 0 16 16"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="m3.4 8.2 3 3 6.2-6.4"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-              </el-dropdown-item>
-            </el-dropdown-menu>
+          <template #trigger="{ visible, label, shortLabel }">
+            <button
+              type="button"
+              class="format-select-button"
+              :class="{ 'is-active': visible }"
+              :title="label"
+              :aria-label="label"
+              aria-haspopup="menu"
+              :aria-expanded="visible"
+            >
+              <svg class="control-icon" viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  d="M2.4 4.2h3.4M8.6 4.2h5M2.4 8h5.6M11.4 8h2.2M2.4 11.8h4.8M10 11.8h3.6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                  stroke-linecap="round"
+                />
+                <circle
+                  cx="7.2"
+                  cy="4.2"
+                  r="1.25"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                />
+                <circle
+                  cx="9.8"
+                  cy="8"
+                  r="1.25"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                />
+                <circle
+                  cx="8.4"
+                  cy="11.8"
+                  r="1.25"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                />
+              </svg>
+              <span>{{ shortLabel }}</span>
+              <svg class="control-caret" viewBox="0 0 12 12" aria-hidden="true">
+                <path
+                  d="m3.2 4.7 2.8 2.9 2.8-2.9"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.25"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
           </template>
-        </el-dropdown>
-        <button
-          type="button"
-          class="format-reset"
-          title="恢复默认显示设置"
-          aria-label="恢复默认显示设置"
-          @click="resetDisplaySettings"
-        >
-          <svg viewBox="0 0 16 16" aria-hidden="true">
-            <path
-              d="M12.6 5.1A5.2 5.2 0 1 0 13 9.3M12.6 5.1V2.7M12.6 5.1H10.2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.25"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
+        </ChatFormatMenu>
       </div>
     </header>
 
@@ -766,10 +708,6 @@ onBeforeUnmount(() => {
   }
 }
 
-.formatbar-caption {
-  display: none;
-}
-
 .format-stepper {
   display: inline-flex;
   height: 28px;
@@ -850,30 +788,16 @@ onBeforeUnmount(() => {
     border-color 0.15s,
     background-color 0.15s;
 
-  &:hover {
+  &:hover,
+  &:focus-visible,
+  &.is-active {
     color: var(--el-color-primary);
     background: var(--el-color-primary-light-9);
   }
-}
 
-.format-reset {
-  display: grid;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  place-items: center;
-  border: 0;
-  color: var(--el-text-color-placeholder);
-  background: transparent;
-  cursor: pointer;
-
-  &:hover {
-    color: var(--el-color-primary);
-  }
-
-  svg {
-    width: 15px;
-    height: 15px;
+  &:focus-visible {
+    outline: 1px solid var(--el-color-primary);
+    outline-offset: 1px;
   }
 }
 
@@ -1002,54 +926,6 @@ onBeforeUnmount(() => {
     font-size: 13px;
     color: var(--el-text-color-placeholder);
   }
-}
-
-:global(.preview-table-menu .el-dropdown-menu) {
-  min-width: 246px;
-  padding: 6px;
-}
-
-:global(.preview-table-menu .el-dropdown-menu__item) {
-  min-height: 48px;
-  margin: 2px 0;
-  padding: 8px 10px;
-  border-radius: 8px;
-}
-
-.table-mode-option {
-  display: flex;
-  width: 100%;
-  min-width: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.table-mode-option__copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 1px;
-  text-align: left;
-
-  strong {
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 1.45;
-  }
-
-  small {
-    font-size: 11px;
-    line-height: 1.45;
-    color: var(--el-text-color-placeholder);
-  }
-}
-
-.option-check {
-  flex: none;
-  width: 15px;
-  height: 15px;
-  color: var(--el-color-primary);
 }
 
 @keyframes preview-loading {

@@ -301,6 +301,11 @@ export async function renderedMessageHtml(root: HTMLElement): Promise<string> {
     const table = wrapper.querySelector('table')
     if (table) wrapper.replaceWith(table)
   })
+  // 代码块同样为了滚动包了 ElScrollbar；导出时保留原始 pre，避免内容被滚动容器裁切。
+  clone.querySelectorAll('.chat-markdown-code').forEach((wrapper) => {
+    const pre = wrapper.querySelector('pre')
+    if (pre) wrapper.replaceWith(pre)
+  })
   clone.querySelectorAll('table').forEach((table) => {
     appendStyle(table, 'width:100%;max-width:100%;border-collapse:collapse;table-layout:auto;')
     table.querySelectorAll('th, td').forEach((cell) => {

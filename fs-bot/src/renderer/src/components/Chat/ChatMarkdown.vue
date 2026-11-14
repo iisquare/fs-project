@@ -25,7 +25,9 @@ import {
   markDiagramError,
   parseEChartsOption,
   prepareVditorHtml,
+  removeInlineEventHandlers,
   sanitizeMermaidSvg,
+  VDITOR_CODE_RENDER_SKIP_HEIGHT,
   vditorAsset,
   vditorCdn
 } from '@renderer/core/VditorMarkdown'
@@ -196,6 +198,9 @@ let renderSequence = 0
 let disposed = false
 let chartCleanup: (() => void) | null = null
 const tableScrollers: HTMLElement[] = []
+const codeScrollers: HTMLElement[] = []
+let codeNumberResizeObserver: ResizeObserver | null = null
+let codeNumberSyncFrame = 0
 
 function scheduleRender(): void {
   if (renderTimer) return
@@ -206,6 +211,7 @@ function scheduleRender(): void {
 }
 
 watch([source, () => Boolean(props.streaming), () => Boolean(props.complete)], scheduleRender)
+watch(() => chatView.codeMode, scheduleCodeNumberSync, { flush: 'post' })
 
 const scripts = new Map<string, Promise<void>>()
 
@@ -430,12 +436,194 @@ function disposeTableScrollers(): void {
   tableScrollers.splice(0).forEach((container) => renderVNode(null, container))
 }
 
+function codeLanguageLabel(code: HTMLElement): string {
+  const language = Array.from(code.classList)
+    .find((name) => name.startsWith('language-'))
+    ?.slice('language-'.length)
+  return language || '代码'
+}
+
+/**
+ * Vditor 的代码块默认在 code 元素上做原生滚动。这里把代码块交给 ElScrollbar：
+ * 横竖滚动条和主题保持一致；语言类型与复制按钮固定在标题栏中，不随代码滚动。
+ */
+function mountCodeScrollers(root: HTMLElement): void {
+  root.querySelectorAll<HTMLElement>('pre').forEach((pre) => {
+    const code = pre.querySelector<HTMLElement>(':scope > code')
+    if (!code || !pre.parentNode) return
+
+    const container = document.createElement('div')
+    container.className = 'chat-markdown-code'
+    const maxHeight =
+      code.style.maxHeight === VDITOR_CODE_RENDER_SKIP_HEIGHT ? '' : code.style.maxHeight
+    const language = codeLanguageLabel(code)
+    pre.querySelector<HTMLElement>(':scope > .vditor-copy')?.remove()
+    code.style.removeProperty('max-height')
+
+    pre.replaceWith(container)
+    codeScrollers.push(container)
+    renderVNode(
+      h('div', { class: 'chat-markdown-code-shell' }, [
+        h('div', { class: 'chat-markdown-code-header' }, [
+          h('span', { class: 'chat-markdown-code-type' }, [
+            h('span', { class: 'chat-markdown-code-dot', 'aria-hidden': 'true' }),
+            language
+          ]),
+          h(
+            'button',
+            {
+              type: 'button',
+              class: 'chat-markdown-code-copy-button',
+              'data-code-copy': '',
+              title: '复制代码',
+              'aria-label': '复制代码'
+            },
+            [
+              h('svg', { viewBox: '0 0 16 16', width: 13, height: 13, 'aria-hidden': 'true' }, [
+                h('rect', {
+                  x: 5,
+                  y: 5,
+                  width: 7.5,
+                  height: 8,
+                  rx: 1.3,
+                  fill: 'none',
+                  stroke: 'currentColor',
+                  'stroke-width': 1.2
+                }),
+                h('path', {
+                  d: 'M3.5 10.7V3.8c0-.7.6-1.3 1.3-1.3h5.7',
+                  fill: 'none',
+                  stroke: 'currentColor',
+                  'stroke-width': 1.2,
+                  'stroke-linecap': 'round'
+                })
+              ]),
+              h('span', { class: 'chat-markdown-code-copy-label' }, '复制')
+            ]
+          )
+        ]),
+        h(
+          ElScrollbar,
+          {
+            class: 'chat-markdown-code-scroll',
+            maxHeight: maxHeight || undefined
+          },
+          {
+            default: () =>
+              h('div', {
+                class: 'chat-markdown-code-content',
+                innerHTML: pre.outerHTML
+              })
+          }
+        )
+      ]),
+      container
+    )
+  })
+}
+
+function disposeCodeScrollers(): void {
+  codeScrollers.splice(0).forEach((container) => renderVNode(null, container))
+}
+
+/**
+ * Vditor 只在渲染当下按 white-space 计算行号高度。
+ * 切换自动换行或代码区宽度变化后，需要重新按每条逻辑代码行的实际视觉高度同步行号块。
+ */
+function syncCodeLineNumbers(root?: HTMLElement): void {
+  const target = root ?? rootRef.value
+  if (!target) return
+  target
+    .querySelectorAll<HTMLElement>('.chat-markdown-code-content pre > code.vditor-linenumber')
+    .forEach((code) => {
+      const rows = Array.from(
+        code.querySelectorAll<HTMLElement>(':scope > .vditor-linenumber__rows > span')
+      )
+      if (!rows.length) return
+
+      const style = getComputedStyle(code)
+      if (style.whiteSpace !== 'pre-wrap' && style.whiteSpace !== 'pre-line') {
+        rows.forEach((row) => row.style.removeProperty('height'))
+        return
+      }
+
+      const clone = code.cloneNode(true) as HTMLElement
+      clone
+        .querySelectorAll('.vditor-linenumber__temp, .vditor-linenumber__rows')
+        .forEach((element) => element.remove())
+      const lines = String(clone.textContent ?? '').split(/\r\n|\r|\n/)
+      if (lines.at(-1) === '') lines.pop()
+      if (lines.length !== rows.length) return
+
+      const width =
+        code.clientWidth -
+        Number.parseFloat(style.paddingLeft) -
+        Number.parseFloat(style.paddingRight)
+      if (!Number.isFinite(width) || width <= 0) return
+
+      const measure = document.createElement('div')
+      Object.assign(measure.style, {
+        position: 'fixed',
+        top: '0',
+        left: '-100000px',
+        width: `${width}px`,
+        visibility: 'hidden',
+        pointerEvents: 'none',
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-word',
+        overflowWrap: 'anywhere',
+        boxSizing: 'border-box',
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        fontStyle: style.fontStyle,
+        fontWeight: style.fontWeight,
+        letterSpacing: style.letterSpacing,
+        lineHeight: style.lineHeight,
+        tabSize: style.tabSize
+      })
+      document.body.appendChild(measure)
+      rows.forEach((row, index) => {
+        measure.textContent = lines[index] || '\u00a0'
+        row.style.height = `${Math.ceil(measure.getBoundingClientRect().height)}px`
+      })
+      measure.remove()
+    })
+}
+
+function scheduleCodeNumberSync(): void {
+  if (codeNumberSyncFrame) return
+  codeNumberSyncFrame = requestAnimationFrame(() => {
+    codeNumberSyncFrame = 0
+    syncCodeLineNumbers()
+  })
+}
+
+function observeCodeLineNumbers(root: HTMLElement): void {
+  codeNumberResizeObserver?.disconnect()
+  if (typeof ResizeObserver === 'undefined') return
+  codeNumberResizeObserver = new ResizeObserver(scheduleCodeNumberSync)
+  root
+    .querySelectorAll<HTMLElement>('.chat-markdown-code-content')
+    .forEach((content) => codeNumberResizeObserver?.observe(content))
+}
+
+function disposeCodeLineNumbers(): void {
+  codeNumberResizeObserver?.disconnect()
+  codeNumberResizeObserver = null
+  if (codeNumberSyncFrame) {
+    cancelAnimationFrame(codeNumberSyncFrame)
+    codeNumberSyncFrame = 0
+  }
+}
+
 async function renderNow(): Promise<void> {
   const host = renderRef.value
   if (!host || disposed) return
   const sequence = ++renderSequence
   disposeCharts()
   disposeTableScrollers()
+  disposeCodeScrollers()
+  disposeCodeLineNumbers()
   const next = document.createElement('div')
   next.className = 'chat-markdown-text'
   host.replaceChildren(next)
@@ -450,14 +638,14 @@ async function renderNow(): Promise<void> {
         lineNumber: true,
         style: 'github'
       },
-      transform: prepareVditorHtml
+      transform: prepareVditorHtml,
+      after: () => removeInlineEventHandlers(next)
     })
     if (sequence !== renderSequence || disposed) return
-    next.querySelectorAll('[onclick], [onmouseover]').forEach((element) => {
-      element.removeAttribute('onclick')
-      element.removeAttribute('onmouseover')
-    })
     mountTableScrollers(next)
+    mountCodeScrollers(next)
+    observeCodeLineNumbers(next)
+    scheduleCodeNumberSync()
     await renderDiagrams(next, sequence)
   } catch (error) {
     if (sequence !== renderSequence || disposed) return
@@ -477,6 +665,8 @@ onBeforeUnmount(() => {
   if (renderTimer) clearTimeout(renderTimer)
   disposeCharts()
   disposeTableScrollers()
+  disposeCodeScrollers()
+  disposeCodeLineNumbers()
 })
 
 /** 给预览窗口导出用：先确保当前 Markdown 已渲染，再生成自包含的快照。 */
@@ -545,15 +735,43 @@ function onClick(event: MouseEvent): void {
 }
 
 function onCodeCopy(event: MouseEvent): boolean {
-  const button = (event.target as Element | null)?.closest?.('.vditor-copy')
-  if (!button) return false
-  const pre = button.closest('pre')
-  const code = pre?.querySelector(':scope > code')?.textContent ?? ''
+  const target = event.target as Element | null
+  const button = target?.closest?.<HTMLElement>('[data-code-copy]')
+  if (button) {
+    const code =
+      button.closest('.chat-markdown-code')?.querySelector('pre > code')?.textContent ?? ''
+    const label = button.querySelector<HTMLElement>('.chat-markdown-code-copy-label')
+    event.preventDefault()
+    void navigator.clipboard
+      .writeText(code.replace(/\n$/, ''))
+      .then(() => {
+        button.classList.add('is-copied')
+        button.setAttribute('aria-label', '已复制代码')
+        button.setAttribute('title', '已复制代码')
+        if (label) label.textContent = '已复制'
+        window.setTimeout(() => {
+          if (!button.isConnected) return
+          button.classList.remove('is-copied')
+          button.setAttribute('aria-label', '复制代码')
+          button.setAttribute('title', '复制代码')
+          if (label) label.textContent = '复制'
+        }, 1500)
+      })
+      .catch(() => {})
+    return true
+  }
+
+  const legacyButton = target?.closest?.('.vditor-copy')
+  if (!legacyButton) return false
+  const code =
+    legacyButton.closest('.chat-markdown-code')?.querySelector('pre > code')?.textContent ??
+    legacyButton.closest('pre')?.querySelector(':scope > code')?.textContent ??
+    ''
   event.preventDefault()
   void navigator.clipboard
     .writeText(code.replace(/\n$/, ''))
     .then(() => {
-      button.querySelector('[aria-label]')?.setAttribute('aria-label', '已复制')
+      legacyButton.querySelector('[aria-label]')?.setAttribute('aria-label', '已复制')
     })
     .catch(() => {})
   return true
@@ -570,7 +788,11 @@ function fallbackImageOnError(event: Event): void {
   <div
     ref="rootRef"
     class="chat-markdown"
-    :class="{ 'is-table-wrap': 'wrap' === chatView.tableMode, 'is-large': large }"
+    :class="{
+      'is-table-wrap': 'wrap' === chatView.tableMode,
+      'is-code-wrap': 'wrap' === chatView.codeMode,
+      'is-large': large
+    }"
     :style="typographyStyle"
     @click="onClick"
     @error.capture="fallbackImageOnError"
@@ -792,6 +1014,134 @@ function fallbackImageOnError(event: Event): void {
       width: max-content;
       min-width: 100%;
       margin: 0;
+    }
+  }
+
+  :deep(.chat-markdown-code) {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0 0 8px;
+  }
+
+  :deep(.chat-markdown-code-shell) {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 8px;
+    background: var(--el-fill-color-light);
+  }
+
+  :deep(.chat-markdown-code-header) {
+    display: flex;
+    min-height: 32px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 8px 0 11px;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+    background: var(--el-fill-color-light);
+  }
+
+  :deep(.chat-markdown-code-type) {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 7px;
+    overflow: hidden;
+    color: var(--el-text-color-secondary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  :deep(.chat-markdown-code-dot) {
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--el-color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--el-color-primary) 11%, transparent);
+  }
+
+  :deep(.chat-markdown-code-copy-button) {
+    display: inline-flex;
+    flex: none;
+    height: 24px;
+    align-items: center;
+    gap: 5px;
+    padding: 0 7px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--el-text-color-secondary);
+    font: inherit;
+    font-size: 11.5px;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+      color 0.16s,
+      background-color 0.16s;
+
+    &:hover,
+    &:focus-visible,
+    &.is-copied {
+      background: color-mix(in srgb, var(--el-bg-color) 72%, transparent);
+      color: var(--el-color-primary);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--el-color-primary-light-5);
+      outline-offset: 0;
+    }
+  }
+
+  :deep(.chat-markdown-code-scroll) {
+    width: 100%;
+    height: auto;
+  }
+
+  :deep(.chat-markdown-code-content) {
+    width: max-content;
+    min-width: 100%;
+
+    pre {
+      width: max-content;
+      min-width: 100%;
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+
+      > code {
+        overflow: visible;
+      }
+    }
+  }
+
+  &.is-code-wrap {
+    :deep(.chat-markdown-code-content) {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+
+      pre {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      pre > code {
+        max-width: 100%;
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
     }
   }
 

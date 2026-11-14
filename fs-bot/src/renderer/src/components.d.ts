@@ -18,6 +18,7 @@ declare module 'vue' {
     BrandLogo: typeof import('./components/Brand/BrandLogo.vue')['default']
     ChatComposer: typeof import('./components/Chat/ChatComposer.vue')['default']
     ChatElevator: typeof import('./components/Chat/ChatElevator.vue')['default']
+    ChatFormatMenu: typeof import('./components/Chat/ChatFormatMenu.vue')['default']
     ChatMarkdown: typeof import('./components/Chat/ChatMarkdown.vue')['default']
     ChatMessage: typeof import('./components/Chat/ChatMessage.vue')['default']
     ContextRing: typeof import('./components/Chat/ContextRing.vue')['default']

@@ -7,7 +7,28 @@ vi.mock('dompurify', () => ({
   }
 }))
 
-import { parseEChartsOption } from './VditorMarkdown'
+import { parseEChartsOption, removeInlineEventHandlers } from './VditorMarkdown'
+
+describe('Vditor preview security cleanup', () => {
+  it('removes every inline event handler exposed by the generated preview', () => {
+    const element = {
+      attributes: [
+        { name: 'class' },
+        { name: 'onclick' },
+        { name: 'ONMOUSEOVER' },
+        { name: 'data-type' }
+      ],
+      removeAttribute: vi.fn()
+    }
+    const root = {
+      querySelectorAll: vi.fn(() => [element])
+    } as unknown as ParentNode
+
+    removeInlineEventHandlers(root)
+
+    expect(element.removeAttribute.mock.calls).toEqual([['onclick'], ['ONMOUSEOVER']])
+  })
+})
 
 describe('Vditor ECharts options', () => {
   it('accepts common JSON5 formatting without executing JavaScript', () => {

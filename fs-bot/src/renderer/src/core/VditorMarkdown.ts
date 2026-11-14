@@ -17,6 +17,13 @@ export function vditorAsset(path: string): string {
 const MAX_DIAGRAM_SOURCE = 256 * 1024
 
 /**
+ * Vditor's codeRender only reuses a code block when its inline max-height contains
+ * a px unit. Preparing all remaining code blocks this way makes it skip generating
+ * its CSP-incompatible inline copy control; ChatMarkdown supplies the copy button.
+ */
+export const VDITOR_CODE_RENDER_SKIP_HEIGHT = '100000px'
+
+/**
  * Vditor 完成 Markdown → HTML 后、插入 DOM 前调用。
  *
  * Mermaid / ECharts 不交给 Vditor 内置渲染器：前者默认 securityLevel=loose，
@@ -43,6 +50,9 @@ export function prepareVditorHtml(html: string): string {
       element.replaceWith(block)
     })
   }
+  template.content.querySelectorAll<HTMLElement>('pre > code').forEach((code) => {
+    code.style.maxHeight = VDITOR_CODE_RENDER_SKIP_HEIGHT
+  })
   return sanitizeMarkdownHtml(template.innerHTML)
 }
 
@@ -54,6 +64,21 @@ export function sanitizeMermaidSvg(svg: string): string {
     ADD_ATTR: ['dominant-baseline', 'target'],
     ALLOWED_URI_REGEXP:
       /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix|chat-image):|[^a-z]|[a-z+.-]+(?:[^a-z.:-]|$))/i
+  })
+}
+
+/**
+ * Vditor 的只读预览会在转换之后给代码块注入带 onclick/onmouseover 的复制按钮，
+ * 因而不受 transform 中的 DOMPurify 清洗约束。当前 CSP 禁止内联事件处理器，
+ * 这里在 Vditor 完成渲染时统一移除，复制行为由 ChatMarkdown 自己的 Vue 按钮接管。
+ */
+export function removeInlineEventHandlers(root: ParentNode): void {
+  root.querySelectorAll('*').forEach((element) => {
+    for (const attribute of Array.from(element.attributes)) {
+      if (attribute.name.toLowerCase().startsWith('on')) {
+        element.removeAttribute(attribute.name)
+      }
+    }
   })
 }
 

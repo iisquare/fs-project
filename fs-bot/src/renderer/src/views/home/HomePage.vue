@@ -127,11 +127,48 @@ const POLICY_LABELS: Record<string, string> = {
 function setTableDisplayMode(command: string | number | object): void {
   const mode = String(command)
   if ('wrap' === mode || 'nowrap' === mode) chatView.setTableMode(mode)
+  closeViewMenu()
 }
 
-const tableModeLabel = computed(() =>
-  'wrap' === chatView.tableMode ? '自动换行' : '不换行（横向滚动）'
+const tableModeLabel = computed(() => ('wrap' === chatView.tableMode ? '自动换行' : '不换行'))
+const codeModeLabel = computed(() => ('wrap' === chatView.codeMode ? '自动换行' : '不换行'))
+const viewMenuLabel = computed(
+  () => `正文格式设置：表格${tableModeLabel.value}，代码块${codeModeLabel.value}`
 )
+const viewMenuVisible = ref(false)
+const formatMenuPanelRef = ref<HTMLElement | null>(null)
+const formatSubmenuSide = ref<'left' | 'right'>('left')
+
+function closeViewMenu(): void {
+  viewMenuVisible.value = false
+}
+
+function setCodeDisplayMode(command: string | number | object): void {
+  const mode = String(command)
+  if ('wrap' === mode || 'nowrap' === mode) chatView.setCodeMode(mode)
+  closeViewMenu()
+}
+
+function updateFormatSubmenuSide(): void {
+  const panel = formatMenuPanelRef.value
+  if (!panel) return
+  const rect = panel.getBoundingClientRect()
+  const required = 266
+  const leftSpace = Math.max(0, rect.left)
+  const rightSpace = Math.max(0, window.innerWidth - rect.right)
+  formatSubmenuSide.value = rightSpace >= required || rightSpace >= leftSpace ? 'right' : 'left'
+}
+
+async function handleViewMenuVisible(open: boolean): Promise<void> {
+  window.removeEventListener('resize', updateFormatSubmenuSide)
+  if (!open) return
+  await nextTick()
+  updateFormatSubmenuSide()
+  window.addEventListener('resize', updateFormatSubmenuSide)
+}
+
+watch(viewMenuVisible, (open) => void handleViewMenuVisible(open))
+onBeforeUnmount(() => window.removeEventListener('resize', updateFormatSubmenuSide))
 
 /** 当前会话：历史里的那条，或还没发过消息、还没落库的新会话 */
 const conversation = computed(() => conversationStore.current)
@@ -795,124 +832,276 @@ async function uploadFiles(): Promise<void> {
                 effect="plain"
                 >等待用户</el-tag
               >
-              <el-dropdown
-                class="conversation-view-menu"
-                trigger="click"
-                placement="bottom-end"
-                popper-class="conversation-view-menu-popover"
-                @command="setTableDisplayMode"
-              >
-                <button
-                  type="button"
-                  class="conversation-view-trigger"
-                  :title="`表格显示方式：${tableModeLabel}`"
-                  :aria-label="`表格显示方式，当前${tableModeLabel}`"
+              <span class="conversation-view-menu">
+                <el-popover
+                  v-model:visible="viewMenuVisible"
+                  trigger="click"
+                  placement="bottom-end"
+                  popper-class="conversation-view-menu-popover"
+                  :show-arrow="false"
+                  :width="260"
                 >
-                  <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
-                    <circle cx="3.5" cy="8" r="1.25" fill="currentColor" />
-                    <circle cx="8" cy="8" r="1.25" fill="currentColor" />
-                    <circle cx="12.5" cy="8" r="1.25" fill="currentColor" />
-                  </svg>
-                </button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item
-                      command="wrap"
-                      role="menuitemradio"
-                      :aria-checked="'wrap' === chatView.tableMode"
-                      :class="{ 'is-selected': 'wrap' === chatView.tableMode }"
+                  <template #reference>
+                    <button
+                      type="button"
+                      class="conversation-view-trigger"
+                      :class="{ 'is-active': viewMenuVisible }"
+                      :title="viewMenuLabel"
+                      :aria-label="viewMenuLabel"
+                      aria-haspopup="menu"
+                      :aria-expanded="viewMenuVisible"
                     >
-                      <template #icon>
-                        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-                          <path
-                            d="M2.4 3.5h11.2M2.4 7.1h7.2c2.2 0 3.2 1 3.2 2.4s-1 2.4-3.2 2.4H6.9"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.2"
-                            stroke-linecap="round"
-                          />
-                          <path
-                            d="m8.5 10.2-1.8 1.7 1.8 1.7"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          />
-                        </svg>
-                      </template>
+                      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+                        <circle cx="3.5" cy="8" r="1.25" fill="currentColor" />
+                        <circle cx="8" cy="8" r="1.25" fill="currentColor" />
+                        <circle cx="12.5" cy="8" r="1.25" fill="currentColor" />
+                      </svg>
+                    </button>
+                  </template>
+
+                  <div
+                    ref="formatMenuPanelRef"
+                    class="conversation-format-menu"
+                    role="menu"
+                    :aria-label="viewMenuLabel"
+                    @keydown.esc.stop="closeViewMenu"
+                  >
+                    <div
+                      class="conversation-format-row"
+                      role="menuitem"
+                      tabindex="0"
+                      aria-haspopup="menu"
+                    >
+                      <svg
+                        class="conversation-format-icon"
+                        viewBox="0 0 16 16"
+                        width="15"
+                        height="15"
+                        aria-hidden="true"
+                      >
+                        <rect
+                          x="2.2"
+                          y="3.2"
+                          width="11.6"
+                          height="9.6"
+                          rx="1"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.2"
+                        />
+                        <path
+                          d="M2.2 6.4h11.6M2.2 9.7h11.6M6.2 3.2v9.6M10.2 3.2v9.6"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.1"
+                        />
+                      </svg>
                       <span class="view-option-copy">
-                        <span>自动换行</span>
-                        <small>按消息宽度折行，减少横向滚动</small>
+                        <span>表格换行</span>
+                        <small>当前：{{ tableModeLabel }}</small>
                       </span>
                       <svg
-                        v-if="'wrap' === chatView.tableMode"
-                        class="view-option-check"
-                        viewBox="0 0 16 16"
-                        width="13"
-                        height="13"
+                        class="conversation-format-arrow"
+                        viewBox="0 0 12 12"
+                        width="11"
+                        height="11"
                         aria-hidden="true"
                       >
                         <path
-                          d="m3.3 8.2 3 3 6.4-6.6"
+                          d="m4.6 2.8 3.2 3.2-3.2 3.2"
                           fill="none"
                           stroke="currentColor"
-                          stroke-width="1.5"
+                          stroke-width="1.25"
                           stroke-linecap="round"
                           stroke-linejoin="round"
                         />
                       </svg>
-                    </el-dropdown-item>
-                    <el-dropdown-item
-                      command="nowrap"
-                      role="menuitemradio"
-                      :aria-checked="'nowrap' === chatView.tableMode"
-                      :class="{ 'is-selected': 'nowrap' === chatView.tableMode }"
+
+                      <div
+                        class="conversation-format-submenu"
+                        :class="{ 'is-right': 'right' === formatSubmenuSide }"
+                        role="menu"
+                        aria-label="表格换行"
+                      >
+                        <div class="conversation-format-submenu-title">表格显示方式</div>
+                        <button
+                          type="button"
+                          role="menuitemradio"
+                          class="conversation-format-option"
+                          :class="{ 'is-selected': 'wrap' === chatView.tableMode }"
+                          :aria-checked="'wrap' === chatView.tableMode"
+                          @click="setTableDisplayMode('wrap')"
+                        >
+                          <span class="view-option-copy">
+                            <span>自动换行</span>
+                            <small>按消息宽度折行，减少横向滚动</small>
+                          </span>
+                          <svg
+                            v-if="'wrap' === chatView.tableMode"
+                            class="view-option-check"
+                            viewBox="0 0 16 16"
+                            width="13"
+                            height="13"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m3.3 8.2 3 3 6.4-6.6"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitemradio"
+                          class="conversation-format-option"
+                          :class="{ 'is-selected': 'nowrap' === chatView.tableMode }"
+                          :aria-checked="'nowrap' === chatView.tableMode"
+                          @click="setTableDisplayMode('nowrap')"
+                        >
+                          <span class="view-option-copy">
+                            <span>不换行</span>
+                            <small>保持表格宽度，横向滚动</small>
+                          </span>
+                          <svg
+                            v-if="'nowrap' === chatView.tableMode"
+                            class="view-option-check"
+                            viewBox="0 0 16 16"
+                            width="13"
+                            height="13"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m3.3 8.2 3 3 6.4-6.6"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div
+                      class="conversation-format-row"
+                      role="menuitem"
+                      tabindex="0"
+                      aria-haspopup="menu"
                     >
-                      <template #icon>
-                        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-                          <path
-                            d="M2.4 3.5h11.2M2.4 7.1h10.1M2.4 10.7h6.4"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.2"
-                            stroke-linecap="round"
-                          />
-                          <path
-                            d="M10.8 8.4h2.8m0 0-1.2-1.2m1.2 1.2-1.2 1.2"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.1"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          />
-                        </svg>
-                      </template>
-                      <span class="view-option-copy">
-                        <span>不换行</span>
-                        <small>保持长表格布局，横向滚动查看全部列</small>
-                      </span>
                       <svg
-                        v-if="'nowrap' === chatView.tableMode"
-                        class="view-option-check"
+                        class="conversation-format-icon"
                         viewBox="0 0 16 16"
-                        width="13"
-                        height="13"
+                        width="15"
+                        height="15"
                         aria-hidden="true"
                       >
                         <path
-                          d="m3.3 8.2 3 3 6.4-6.6"
+                          d="m5.7 4.4-3.2 3.6 3.2 3.6M10.3 4.4l3.2 3.6-3.2 3.6M9.1 2.8 6.9 13.2"
                           fill="none"
                           stroke="currentColor"
-                          stroke-width="1.5"
+                          stroke-width="1.2"
                           stroke-linecap="round"
                           stroke-linejoin="round"
                         />
                       </svg>
-                    </el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
+                      <span class="view-option-copy">
+                        <span>代码块换行</span>
+                        <small>当前：{{ codeModeLabel }}</small>
+                      </span>
+                      <svg
+                        class="conversation-format-arrow"
+                        viewBox="0 0 12 12"
+                        width="11"
+                        height="11"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="m4.6 2.8 3.2 3.2-3.2 3.2"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.25"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+
+                      <div
+                        class="conversation-format-submenu"
+                        :class="{ 'is-right': 'right' === formatSubmenuSide }"
+                        role="menu"
+                        aria-label="代码块换行"
+                      >
+                        <div class="conversation-format-submenu-title">代码块显示方式</div>
+                        <button
+                          type="button"
+                          role="menuitemradio"
+                          class="conversation-format-option"
+                          :class="{ 'is-selected': 'wrap' === chatView.codeMode }"
+                          :aria-checked="'wrap' === chatView.codeMode"
+                          @click="setCodeDisplayMode('wrap')"
+                        >
+                          <span class="view-option-copy">
+                            <span>自动换行</span>
+                            <small>长代码按消息宽度折行，保留缩进</small>
+                          </span>
+                          <svg
+                            v-if="'wrap' === chatView.codeMode"
+                            class="view-option-check"
+                            viewBox="0 0 16 16"
+                            width="13"
+                            height="13"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m3.3 8.2 3 3 6.4-6.6"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitemradio"
+                          class="conversation-format-option"
+                          :class="{ 'is-selected': 'nowrap' === chatView.codeMode }"
+                          :aria-checked="'nowrap' === chatView.codeMode"
+                          @click="setCodeDisplayMode('nowrap')"
+                        >
+                          <span class="view-option-copy">
+                            <span>不换行</span>
+                            <small>保持代码行宽，横向滚动查看</small>
+                          </span>
+                          <svg
+                            v-if="'nowrap' === chatView.codeMode"
+                            class="view-option-check"
+                            viewBox="0 0 16 16"
+                            width="13"
+                            height="13"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="m3.3 8.2 3 3 6.4-6.6"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </el-popover>
+              </span>
             </header>
 
             <!--
@@ -1462,6 +1651,7 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
   .conversation-view-menu {
     flex: none;
     margin-left: auto;
+    display: inline-flex;
   }
 
   .conversation-view-trigger {
@@ -1482,7 +1672,8 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
       background-color 0.16s;
 
     &:hover,
-    &:focus-visible {
+    &:focus-visible,
+    &.is-active {
       border-color: var(--el-border-color-lighter);
       background: var(--el-fill-color-light);
       color: var(--el-color-primary);
@@ -1642,41 +1833,192 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
 }
 </style>
 
-<!-- 下拉面板被 teleport 到 body，脱离组件根节点，只能用非 scoped 样式命中 -->
+<!-- 弹出面板被 teleport 到 body，脱离组件根节点，只能用非 scoped 样式命中 -->
 <style lang="scss">
 .conversation-view-menu-popover.el-popper {
-  padding: 4px;
-  border-radius: 10px;
+  padding: 6px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 12px;
+  background: var(--el-bg-color-overlay);
+  box-shadow:
+    0 14px 38px color-mix(in srgb, var(--el-text-color-primary) 15%, transparent),
+    0 3px 10px color-mix(in srgb, var(--el-text-color-primary) 7%, transparent);
+  overflow: visible;
 }
 
-.conversation-view-menu-popover .el-dropdown-menu {
-  padding: 0;
+.conversation-format-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
 }
 
-.conversation-view-menu-popover .el-dropdown-menu__item {
-  gap: 9px;
-  min-width: 272px;
-  height: auto;
-  padding: 8px 9px;
-  border-radius: 6px;
+.conversation-format-row {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 58px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
   line-height: 1.35;
+  cursor: default;
+  transition:
+    color 0.16s,
+    background-color 0.16s,
+    box-shadow 0.16s;
+
+  &:hover,
+  &:focus,
+  &:focus-within {
+    background: var(--el-fill-color-lighter);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 1px var(--el-color-primary-light-5);
+  }
+
+  & + &::before {
+    position: absolute;
+    top: -1px;
+    right: 10px;
+    left: 50px;
+    height: 1px;
+    background: var(--el-border-color-extra-light);
+    content: '';
+  }
 }
 
-.conversation-view-menu-popover .el-dropdown-menu__item:not(.is-disabled):hover,
-.conversation-view-menu-popover .el-dropdown-menu__item:not(.is-disabled):focus {
+.conversation-format-icon {
+  flex: none;
+  box-sizing: border-box;
+  width: 30px;
+  height: 30px;
+  padding: 7px;
+  border-radius: 8px;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-secondary);
+  transition:
+    color 0.16s,
+    background-color 0.16s;
+}
+
+.conversation-format-row:hover .conversation-format-icon,
+.conversation-format-row:focus-within .conversation-format-icon {
+  background: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+}
+
+.conversation-format-arrow {
+  flex: none;
+  margin-left: 2px;
+  color: var(--el-text-color-placeholder);
+  transition:
+    color 0.16s,
+    transform 0.16s;
+}
+
+.conversation-format-row:hover .conversation-format-arrow,
+.conversation-format-row:focus-within .conversation-format-arrow {
+  color: var(--el-color-primary);
+  transform: translateX(2px);
+}
+
+.conversation-format-submenu {
+  position: absolute;
+  top: -6px;
+  right: calc(100% + 6px);
+  z-index: 1;
+  box-sizing: border-box;
+  width: 260px;
+  padding: 6px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 12px;
+  background: var(--el-bg-color-overlay);
+  box-shadow:
+    0 14px 38px color-mix(in srgb, var(--el-text-color-primary) 15%, transparent),
+    0 3px 10px color-mix(in srgb, var(--el-text-color-primary) 7%, transparent);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(6px) scale(0.985);
+  transform-origin: right top;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease,
+    visibility 0.16s;
+
+  &::before {
+    position: absolute;
+    top: 0;
+    right: -7px;
+    width: 7px;
+    height: 100%;
+    content: '';
+  }
+
+  &.is-right {
+    right: auto;
+    left: calc(100% + 6px);
+    transform: translateX(-6px) scale(0.985);
+    transform-origin: left top;
+
+    &::before {
+      right: auto;
+      left: -7px;
+    }
+  }
+}
+
+.conversation-format-row:hover .conversation-format-submenu,
+.conversation-format-row:focus-within .conversation-format-submenu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(0) scale(1);
+}
+
+.conversation-format-submenu-title {
+  padding: 4px 10px 6px;
+  color: var(--el-text-color-placeholder);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+}
+
+.conversation-format-option {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 54px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
   color: var(--el-text-color-primary);
-  background: var(--el-fill-color-lighter);
-}
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color 0.16s,
+    background-color 0.16s;
 
-.conversation-view-menu-popover .el-dropdown-menu__item.is-selected {
-  color: var(--el-color-primary);
-  background: var(--el-color-primary-light-9);
-}
+  &:hover,
+  &:focus-visible {
+    background: var(--el-fill-color-light);
+    outline: none;
+  }
 
-.conversation-view-menu-popover .el-dropdown-menu__item.is-selected:hover,
-.conversation-view-menu-popover .el-dropdown-menu__item.is-selected:focus {
-  color: var(--el-color-primary);
-  background: var(--el-color-primary-light-9);
+  &.is-selected {
+    color: var(--el-color-primary);
+    background: color-mix(in srgb, var(--el-color-primary) 7%, var(--el-bg-color-overlay));
+  }
 }
 
 .conversation-view-menu-popover .view-option-copy {
@@ -1684,23 +2026,24 @@ $chat-max: 768px; /* 内容列最大宽度：气泡与输入框共用 */
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 
   > span {
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 550;
+    line-height: 1.35;
   }
 
   small {
-    font-size: 11px;
-    line-height: 1.45;
+    font-size: 11.5px;
+    line-height: 1.5;
     color: var(--el-text-color-secondary);
   }
 }
 
 .conversation-view-menu-popover .view-option-check {
   flex: none;
-  margin-left: 6px;
+  margin-left: 8px;
   color: var(--el-color-primary);
 }
 </style>
