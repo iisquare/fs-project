@@ -104,6 +104,12 @@ public class KnowledgeService extends JPAServiceBase {
         return info(knowledgeDao, id);
     }
 
+    /** 批量读取知识库基础信息，供工具定义一次装配使用。 */
+    public List<Knowledge> infos(Collection<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return new ArrayList<>();
+        return knowledgeDao.findAllById(ids);
+    }
+
     public Map<String, Object> info(Map<?, ?> param) {
         Knowledge info = info(DPUtil.parseInt(param.get("id")));
         if (null == info) return ApiUtil.result(1404, "信息不存在", null);

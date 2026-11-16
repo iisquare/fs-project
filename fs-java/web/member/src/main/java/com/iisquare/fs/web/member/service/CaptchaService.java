@@ -20,12 +20,14 @@ import java.util.UUID;
 @Service
 public class CaptchaService {
 
+    private static final long TIME_TOLERANCE_MILLIS = 60_000;
+
     @Autowired
     StringRedisTemplate redis;
 
     public Map<String, Object> generate(HttpServletRequest request, HttpServletResponse response) {
         long time = DPUtil.parseLong(request.getParameter("time"));
-        if (Math.abs(time - System.currentTimeMillis()) > 6000) {
+        if (Math.abs(time - System.currentTimeMillis()) > TIME_TOLERANCE_MILLIS) {
             return ApiUtil.result(1001, "时间戳不同步", time);
         }
 

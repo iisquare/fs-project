@@ -16,6 +16,7 @@ import com.iisquare.fs.web.agent.entity.Agentic;
 import com.iisquare.fs.web.agent.entity.AgenticChat;
 import com.iisquare.fs.web.agent.entity.AgenticDialog;
 import com.iisquare.fs.web.agent.entity.AgenticLog;
+import com.iisquare.fs.web.agent.entity.Knowledge;
 import com.iisquare.fs.web.agent.entity.Tool;
 import com.iisquare.fs.web.agent.entity.ToolMethod;
 import com.iisquare.fs.web.agent.core.AgentGatewayAuth;
@@ -172,6 +173,12 @@ public class AgenticService extends JPAServiceBase {
         return info(agenticDao, id);
     }
 
+    /** 批量读取编排应用，供工具定义装配一次取回同一批引用。 */
+    public List<Agentic> infos(Collection<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return new ArrayList<>();
+        return agenticDao.findAllById(ids);
+    }
+
     /** 调用人的角色标识集合（授权角色校验用） */
     /**
      * 删除状态筛选（与前端 form-deleted 组件一致）：`only` 只看已删除、`without` 只看未删除、其余为全部
@@ -214,6 +221,19 @@ public class AgenticService extends JPAServiceBase {
         Set<Integer> allowed = new LinkedHashSet<>(DPUtil.parseIntList(info.getRoleIds()));
         if (allowed.isEmpty()) return true;
         return !Collections.disjoint(allowed, roleIds(identity));
+    }
+
+    /** 批量筛选当前用户可用的编排应用，避免一次工具装配逐个查询与鉴权。 */
+    public Map<Integer, Agentic> authorizedByIds(Collection<Integer> ids, HttpServletRequest request) {
+        Map<Integer, Agentic> result = new LinkedHashMap<>();
+        if (null == ids || ids.isEmpty()) return result;
+        JsonNode identity = rbacService.identity(request);
+        for (Agentic info : infos(ids)) {
+            if (1 != DPUtil.parseInt(info.getStatus())) continue;
+            if (!authorized(info, identity)) continue;
+            result.put(info.getId(), info);
+        }
+        return result;
     }
 
     /**
@@ -368,6 +388,39 @@ public class AgenticService extends JPAServiceBase {
      * 校验通过后把方法定义（名称 / 描述 / 参数 / 调用信息）快照进发布内容，供运行时直接使用
      */
     protected void bindToolMethods(JsonNode content, List<String> errors) {
+        Set<Integer> toolIds = new LinkedHashSet<>();
+        Set<Integer> knowledgeIds = new LinkedHashSet<>();
+        Set<Integer> agenticIds = new LinkedHashSet<>();
+        for (JsonNode cell : content.at("/cells")) {
+            JsonNode data = cell.at("/data");
+            if (!"LLM".equals(data.at("/type").asText())) continue;
+            if ("none".equalsIgnoreCase(data.at("/agentStrategy").asText("none"))) continue;
+            for (JsonNode row : data.at("/tools")) {
+                if (row.at("/enabled").isBoolean() && !row.at("/enabled").asBoolean()) continue;
+                String kind = row.at("/kind").asText("method");
+                if ("knowledge".equals(kind)) {
+                    int id = row.at("/knowledgeId").asInt(0);
+                    if (id > 0) knowledgeIds.add(id);
+                } else if ("agentic".equals(kind)) {
+                    int id = row.at("/agenticId").asInt(0);
+                    if (id > 0) agenticIds.add(id);
+                } else if (!"theme".equals(kind) && !"ontology".equals(kind)) {
+                    int id = row.at("/toolId").asInt(0);
+                    if (id > 0) toolIds.add(id);
+                }
+            }
+        }
+        Map<Integer, Tool> tools = new LinkedHashMap<>();
+        for (Tool tool : toolService.infos(toolIds)) tools.put(tool.getId(), tool);
+        Map<String, ToolMethod> methods = new LinkedHashMap<>();
+        for (ToolMethod method : toolMethodService.all(toolIds)) {
+            methods.put(toolMethodKey(method.getToolId(), method.getName()), method);
+        }
+        Map<Integer, Knowledge> knowledges = new LinkedHashMap<>();
+        for (Knowledge knowledge : knowledgeService.infos(knowledgeIds)) knowledges.put(knowledge.getId(), knowledge);
+        Map<Integer, Agentic> agentics = new LinkedHashMap<>();
+        for (Agentic target : infos(agenticIds)) agentics.put(target.getId(), target);
+
         for (JsonNode cell : content.at("/cells")) {
             JsonNode data = cell.at("/data");
             if (!"LLM".equals(data.at("/type").asText())) continue;
@@ -390,14 +443,14 @@ public class AgenticService extends JPAServiceBase {
                     if (knowledge) {
                         int knowledgeId = row.at("/knowledgeId").asInt(0);
                         if (knowledgeId < 1) errors.add("存在未选择知识库的工具");
-                        else if (null == knowledgeService.info(knowledgeId)) errors.add("知识库不存在（ID：" + knowledgeId + "）");
+                        else if (null == knowledges.get(knowledgeId)) errors.add("知识库不存在（ID：" + knowledgeId + "）");
                     } else if (theme) {
                         if (row.at("/themeId").asInt(0) < 1) errors.add("存在未选择数据主题的工具");
                     } else if (ontology) {
                         if (row.at("/ontologyId").asInt(0) < 1) errors.add("存在未选择本体的工具");
                     } else {
                         int agenticId = row.at("/agenticId").asInt(0);
-                        Agentic target = agenticId < 1 ? null : info(agenticId);
+                        Agentic target = agenticId < 1 ? null : agentics.get(agenticId);
                         if (agenticId < 1) errors.add("存在未选择编排应用的工具");
                         else if (null == target) errors.add("编排应用不存在（ID：" + agenticId + "）");
                         else if (1 != DPUtil.parseInt(target.getStatus())) {
@@ -415,7 +468,7 @@ public class AgenticService extends JPAServiceBase {
                     errors.add("存在未选择完整的工具引用，请重新选择工具与方法");
                     continue;
                 }
-                Tool tool = toolService.info(toolId);
+                Tool tool = tools.get(toolId);
                 if (null == tool) {
                     errors.add("工具不存在（ID：" + toolId + "）");
                     continue;
@@ -424,13 +477,7 @@ public class AgenticService extends JPAServiceBase {
                     errors.add("工具已停用：" + tool.getName());
                     continue;
                 }
-                ToolMethod method = null;
-                for (ToolMethod item : toolMethodService.all(toolId)) {
-                    if (methodName.equals(item.getName())) {
-                        method = item;
-                        break;
-                    }
-                }
+                ToolMethod method = methods.get(toolMethodKey(toolId, methodName));
                 String label = tool.getName() + "." + methodName;
                 if (null == method) {
                     errors.add("方法不存在：" + label);
@@ -446,7 +493,8 @@ public class AgenticService extends JPAServiceBase {
                 }
                 // 执行变量绑定：来源为引用变量或固定值时必须有取值
                 JsonNode args = row.at("/args");
-                for (Map<String, Object> parameter : toolMethodService.methodParams(method)) {
+                List<Map<String, Object>> methodParams = toolMethodService.methodParams(method);
+                for (Map<String, Object> parameter : methodParams) {
                     String name = DPUtil.parseString(parameter.get("name"));
                     Map<String, Object> properties = schemaProperties(parameter);
                     if (!properties.isEmpty()) {
@@ -462,7 +510,7 @@ public class AgenticService extends JPAServiceBase {
                 ((ObjectNode) row).put("methodTitle", DPUtil.parseString(method.getTitle()));
                 ((ObjectNode) row).put("methodOriginName", DPUtil.parseString(method.getOriginName()));
                 ((ObjectNode) row).put("methodDescription", DPUtil.parseString(method.getDescription()));
-                ((ObjectNode) row).set("methodParams", DPUtil.toJSON(toolMethodService.methodParams(method)));
+                ((ObjectNode) row).set("methodParams", DPUtil.toJSON(methodParams));
                 ((ObjectNode) row).set("methodInvoke", DPUtil.toJSON(toolMethodService.methodInvoke(method)));
                 // 工具级调用配置一并快照：运行时按快照发起调用，不受工具后续改动影响
                 ((ObjectNode) row).put("toolType", DPUtil.parseString(tool.getType()));
@@ -473,6 +521,10 @@ public class AgenticService extends JPAServiceBase {
                 ((ObjectNode) row).put("toolPassSession", null == tool.getPassSession() ? 0 : tool.getPassSession());
             }
         }
+    }
+
+    private String toolMethodKey(Integer toolId, String name) {
+        return DPUtil.parseString(toolId) + "\u0000" + DPUtil.parseString(name);
     }
 
     /** 参数的结构化字段：对象参数（schema.properties）按字段绑定执行变量 */

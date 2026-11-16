@@ -53,7 +53,9 @@ public class McpHttpClientTest {
                 exchange.sendResponseHeaders(405, -1);
             } else {
                 posts.incrementAndGet();
-                exchange.sendResponseHeaders(500, -1);
+                byte[] body = "server error".getBytes();
+                exchange.sendResponseHeaders(500, body.length);
+                exchange.getResponseBody().write(body);
             }
             exchange.close();
         });

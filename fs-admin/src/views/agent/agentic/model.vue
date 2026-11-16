@@ -1405,8 +1405,8 @@ onMounted(() => {
   margin-right: auto;
 }
 $run-output-font: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
-$run-output-size: 13px;
-$run-output-line-height: 1.7;
+$run-output-size: 13.5px;
+$run-output-line-height: 1.75;
 .diagram-name {
   font-size: 13px;
   color: var(--el-text-color-regular);
@@ -1468,8 +1468,8 @@ $run-output-line-height: 1.7;
   /* 消息行：结构与通用样式在 components/Chat/ChatMessage.vue，这里只保留模型对话自己的口径 */
   .run-message {
     /* 头像尺寸与间距：气泡的左右边界以两侧头像的竖线为准 */
-    --run-avatar-size: 26px;
-    --run-gap: 8px;
+    --run-avatar-size: 28px;
+    --run-gap: 10px;
     gap: var(--run-gap);
     &.is-user {
       flex-direction: row-reverse;
@@ -1492,11 +1492,14 @@ $run-output-line-height: 1.7;
     flex: 0 1 auto;
     max-width: calc(100% - var(--run-avatar-size) - var(--run-gap));
   }
+  .run-message.is-assistant :deep(.chat-bubble) {
+    flex: 1 1 auto;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
   /* 调试输出采用与流程对话、对话历史一致的紧凑字阶 */
   .run-message.is-assistant {
-    :deep(.chat-bubble) {
-      padding: 10px 12px;
-    }
     :deep(.chat-markdown) {
       display: block;
       color: var(--el-text-color-primary);
@@ -1512,118 +1515,10 @@ $run-output-line-height: 1.7;
       font-size: $run-output-size;
       line-height: $run-output-line-height;
     }
-    :deep(.chat-markdown .fs-markdown-preview-body) {
-      > :first-child {
-        margin-top: 0 !important;
-      }
-      > :last-child {
-        margin-bottom: 0 !important;
-      }
-      p {
-        margin: 0 0 8px;
-        line-height: inherit;
-      }
-      h1,
-      h2,
-      h3,
-      h4,
-      h5,
-      h6 {
-        margin: 12px 0 6px;
-        font-weight: 600;
-        line-height: 1.4;
-      }
-      h1 {
-        font-size: 18px;
-      }
-      h2 {
-        font-size: 16px;
-      }
-      h3 {
-        font-size: 15px;
-      }
-      h4,
-      h5,
-      h6 {
-        font-size: 13px;
-      }
-      ul,
-      ol {
-        margin: 0 0 8px;
-        padding-left: 20px;
-      }
-      li {
-        line-height: inherit;
-      }
-      li + li {
-        margin-top: 3px;
-      }
-      li > p {
-        margin: 0 0 3px;
-      }
-      blockquote {
-        margin: 0 0 9px;
-        padding: 6px 10px;
-        border-left: 3px solid var(--el-color-primary-light-5);
-        border-radius: 0 6px 6px 0;
-        background: var(--el-fill-color-lighter);
-        color: var(--el-text-color-secondary);
-      }
-      hr {
-        margin: 14px 0;
-      }
-      a {
-        color: var(--el-color-primary);
-        text-decoration: none;
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-      img {
-        border-radius: 6px;
-      }
-      code:not(.hljs):not(.highlight-chroma) {
-        padding: 1px 4px;
-        border-radius: 4px;
-        background: var(--el-fill-color);
-        font-size: 0.88em;
-      }
-      pre {
-        margin: 10px 0;
-        overflow: hidden;
-        border: solid 1px var(--el-border-color-lighter);
-        border-radius: 7px;
-        background: var(--el-fill-color-light);
-      }
-      pre > code {
-        padding: 10px 12px;
-        background-color: transparent;
-        background-image: none;
-        font-size: 11.5px;
-        line-height: 1.6;
-      }
-      table {
-        margin-bottom: 10px;
-        font-size: 12px;
-        line-height: 1.6;
-      }
-      th,
-      td {
-        padding: 5px 8px;
-      }
-      .language-echarts {
-        height: 300px !important;
-        margin-bottom: 12px;
-      }
-    }
     :deep(.chat-reasoning-text) {
       font-size: 12px;
-      line-height: 1.65;
+      line-height: 1.7;
     }
-  }
-  /* 折叠面板头：默认 48px 对气泡内的过程信息太高，压到 28px（与调试面板一致） */
-  :deep(.chat-reasoning .el-collapse-item__header) {
-    height: 28px;
   }
 }
 .run-detail {

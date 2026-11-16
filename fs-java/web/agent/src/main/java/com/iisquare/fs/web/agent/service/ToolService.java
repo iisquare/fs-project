@@ -8,6 +8,7 @@ import com.iisquare.fs.base.jpa.mvc.JPAServiceBase;
 import com.iisquare.fs.web.core.rbac.DefaultRbacService;
 import com.iisquare.fs.web.agent.dao.ToolDao;
 import com.iisquare.fs.web.agent.entity.Tool;
+import com.iisquare.fs.web.agent.entity.ToolMethod;
 import com.iisquare.fs.web.agent.mvc.Configuration;
 import com.iisquare.fs.web.agent.mcp.McpHttpClient;
 import com.iisquare.fs.web.agent.mcp.ToolSessionSupport;
@@ -18,9 +19,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class ToolService extends JPAServiceBase {
@@ -68,6 +73,12 @@ public class ToolService extends JPAServiceBase {
 
     public Tool info(Integer id) {
         return info(toolDao, id);
+    }
+
+    /** 批量读取工具配置，供同一次工具装配复用。 */
+    public List<Tool> infos(Collection<Integer> ids) {
+        if (null == ids || ids.isEmpty()) return new ArrayList<>();
+        return toolDao.findAllById(ids);
     }
 
     public Map<String, Object> info(Map<?, ?> param) {
@@ -138,9 +149,18 @@ public class ToolService extends JPAServiceBase {
             rbacService.fillInfos(rows);
         }
         if (!DPUtil.empty(args.get("withMethodCount"))) {
+            Set<Integer> toolIds = new LinkedHashSet<>();
             for (JsonNode row : rows) {
                 int toolId = row.at("/id").asInt(0);
-                ((ObjectNode) row).put("methodCount", toolId > 0 ? toolMethodService.all(toolId).size() : 0);
+                if (toolId > 0) toolIds.add(toolId);
+            }
+            Map<Integer, Integer> counts = new LinkedHashMap<>();
+            for (ToolMethod method : toolMethodService.all(toolIds)) {
+                counts.merge(method.getToolId(), 1, Integer::sum);
+            }
+            for (JsonNode row : rows) {
+                int toolId = row.at("/id").asInt(0);
+                ((ObjectNode) row).put("methodCount", counts.getOrDefault(toolId, 0));
             }
         }
         return result;

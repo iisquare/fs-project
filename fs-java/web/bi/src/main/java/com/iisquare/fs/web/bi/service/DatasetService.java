@@ -165,6 +165,35 @@ public class DatasetService extends JPAServiceBase {
         Integer id = DPUtil.parseInt(param.get("id"));
         Dataset info = info(id);
         if (null == info || 1 != info.getStatus()) return ApiUtil.result(61001, "数据集状态异常", id);
+        return ApiUtil.result(0, null, datasetColumns(info));
+    }
+
+    /** 多个数据集的字段查询：一次加载全部 Dataset 记录，保持请求顺序。 */
+    public Map<String, Object> columnsBatch(Map<?, ?> param) {
+        List<Integer> requested = DPUtil.parseIntList(param.get("ids"));
+        Set<Integer> ids = new LinkedHashSet<>();
+        for (Integer id : requested) {
+            if (null != id && id > 0) ids.add(id);
+        }
+        if (ids.isEmpty()) return ApiUtil.result(1001, "数据集标识不能为空", requested);
+        Map<Integer, Dataset> datasets = new LinkedHashMap<>();
+        for (Dataset info : datasetDao.findAllById(ids)) {
+            datasets.put(info.getId(), info);
+        }
+        ArrayNode rows = DPUtil.arrayNode();
+        for (Integer id : ids) {
+            Dataset info = datasets.get(id);
+            if (null == info || 1 != info.getStatus()) continue;
+            rows.add(datasetColumns(info));
+        }
+        ObjectNode data = DPUtil.objectNode();
+        data.put("total", rows.size());
+        data.set("rows", rows);
+        return ApiUtil.result(0, null, data);
+    }
+
+    /** 数据集字段输出：优先使用维护好的 fields，缺失时才从数据集查询解析。 */
+    protected ObjectNode datasetColumns(Dataset info) {
         ObjectNode result = DPUtil.objectNode();
         result.put("id", info.getId());
         result.put("name", info.getName());
@@ -182,12 +211,12 @@ public class DatasetService extends JPAServiceBase {
         }
         if (columns.isEmpty() && !DPUtil.empty(info.getContent())) { // 未维护字段配置时，按查询语句解析字段
             try {
-                columns.addAll(describe(from(ApiUtil.data(dataset(id), JsonNode.class))));
+                columns.addAll(describe(from(info)));
             } catch (Exception e) {
-                logger.warn("解析数据集字段失败, id: {}, message: {}", id, e.getMessage());
+                logger.warn("解析数据集字段失败, id: {}, message: {}", info.getId(), e.getMessage());
             }
         }
-        return ApiUtil.result(0, null, result);
+        return result;
     }
 
     private ArrayNode describe(String from) throws SQLException {
@@ -208,6 +237,16 @@ public class DatasetService extends JPAServiceBase {
             }
         }
         return columns;
+    }
+
+    /** 已加载的 Dataset 直接生成查询包装，避免回退解析时再次按 id 查询数据库。 */
+    private String from(Dataset info) {
+        String sql = DPUtil.trim(DPUtil.parseString(info.getContent()));
+        while (sql.endsWith(";")) {
+            sql = DPUtil.trim(sql.substring(0, sql.length() - 1));
+        }
+        String name = DPUtil.empty(info.getName()) ? "dataset" : info.getName();
+        return String.format("(%s) as %s", sql, "\"" + name.replace("\"", "\"\"") + "\"");
     }
 
     /**

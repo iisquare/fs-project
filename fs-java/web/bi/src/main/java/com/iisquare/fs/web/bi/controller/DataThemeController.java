@@ -30,6 +30,13 @@ public class DataThemeController extends PermitControllerBase {
         return ApiUtil.echoResult(result);
     }
 
+    @RequestMapping("/infos")
+    @Permission("")
+    public String infosAction(@RequestBody Map<?, ?> param) {
+        Map<String, Object> result = dataThemeService.infos(param);
+        return ApiUtil.echoResult(result);
+    }
+
     @RequestMapping("/list")
     @Permission("")
     public String listAction(@RequestBody Map<String, Object> param) {

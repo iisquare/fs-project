@@ -141,14 +141,6 @@ gradle :web:admin:test --tests com.iisquare.fs.web.admin.controller.IndexControl
 
 ### Dependency Injection Pattern
 
-All applications use custom BeanNameGenerator:
-
-```java
-new SpringApplicationBuilder(AdminApplication.class)
-    .beanNameGenerator(new BeanNameGenerator())
-    .run(args);
-```
-
 Component scanning configured per application with specific base packages.
 
 ### Database

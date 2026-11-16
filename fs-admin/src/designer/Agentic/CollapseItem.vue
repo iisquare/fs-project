@@ -70,12 +70,12 @@ const handleToggle = () => {
 .collapse-item {
   width: 100%;
   padding: 9px 11px;
-  /* 灰色面板之上的白卡片（与全站 el-card 的用法一致：常态无描边、无阴影），
-     只有悬停与展开才用主色描边表达状态，静态时不留框线 */
-  border: solid 1px var(--el-border-color-lighter);
+  /* 灰色面板之上的白卡片：常态与展开态都靠底色区分层级，避免深色描边；
+     只有悬停时才用主色描边提示可交互 */
+  border: solid 1px transparent;
   border-radius: 7px;
   background: var(--el-bg-color);
-  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, background-color 0.2s;
   & + .collapse-item {
     margin-top: 6px;
   }
@@ -112,7 +112,6 @@ const handleToggle = () => {
   /* 悬停：只描边变色，保持白面干净 */
   &.is-collapsible:hover {
     border-color: var(--el-color-primary-light-5);
-    box-shadow: 0 2px 8px rgb(0 0 0 / 4%);
   }
   &.is-collapsible .collapse-head:hover {
     color: var(--el-color-primary);
@@ -120,11 +119,9 @@ const handleToggle = () => {
       color: var(--el-color-primary);
     }
   }
-  /* 展开：主色描边 + 极浅主色底，当前正在编辑的项一眼可辨 */
+  /* 展开：只用极浅主色底区分当前正在编辑的项 */
   &.is-expanded {
-    border-color: var(--el-color-primary-light-6);
     background: var(--el-color-primary-light-9);
-    box-shadow: 0 2px 10px var(--el-color-primary-light-8);
     .collapse-head {
       margin-bottom: 6px;
     }

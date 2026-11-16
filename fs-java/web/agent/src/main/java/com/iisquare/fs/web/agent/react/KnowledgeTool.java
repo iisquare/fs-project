@@ -12,8 +12,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 知识库（kind = knowledge） - 内部调用：模型给出 query，按知识库召回并回填结果。
@@ -32,11 +34,29 @@ public class KnowledgeTool implements AgenticTool {
     }
 
     @Override
+    public ArrayNode definitions(JsonNode items) {
+        Set<Integer> ids = new LinkedHashSet<>();
+        for (JsonNode item : items) {
+            int id = item.at("/knowledgeId").asInt(0);
+            if (id > 0) ids.add(id);
+        }
+        Map<Integer, Knowledge> knowledges = new LinkedHashMap<>();
+        for (Knowledge info : knowledgeService.infos(ids)) knowledges.put(info.getId(), info);
+        ArrayNode result = DPUtil.arrayNode();
+        for (JsonNode item : items) {
+            result.add(definition(item, knowledges.get(item.at("/knowledgeId").asInt(0))));
+        }
+        return result;
+    }
+
+    @Override
     public ObjectNode definition(JsonNode item) {
+        return definition(item, knowledgeService.info(item.at("/knowledgeId").asInt(0)));
+    }
+
+    protected ObjectNode definition(JsonNode item, Knowledge info) {
         String name = item.at("/name").asText("");
         if (DPUtil.empty(name)) return null;
-        int knowledgeId = item.at("/knowledgeId").asInt(0);
-        Knowledge info = knowledgeId < 1 ? null : knowledgeService.info(knowledgeId);
         if (null == info || 1 != DPUtil.parseInt(info.getStatus())) return null;
         if (item.isObject()) {
             ObjectNode value = (ObjectNode) item;

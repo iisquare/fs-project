@@ -1,6 +1,7 @@
 package com.iisquare.fs.web.kg.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
@@ -94,22 +95,27 @@ public class OntologyService extends JPAServiceBase {
     public OntologyModel model(int id) {
         Ontology info = info(id);
         if (null == info) return null;
+        return model(info);
+    }
+
+    /** 已加载本体记录生成模型，供批量装配复用一次数据库读取。 */
+    protected OntologyModel model(Ontology info) {
         long stamp = DPUtil.parseLong(info.getUpdatedTime());
-        CachedModel cached = modelCache.get(id);
+        CachedModel cached = modelCache.get(info.getId());
         if (null != cached && cached.stamp == stamp) return cached.model;
-        OntologyModel model = ontologyDefinitionService.load(id);
+        OntologyModel model = ontologyDefinitionService.load(info.getId());
         if (model.getEntities().isEmpty() && model.getRelationships().isEmpty()) {
             OntologyModel parsed = OntologyModel.parse(DPUtil.parseJSON(info.getContent()));
             if (!parsed.getEntities().isEmpty() || !parsed.getRelationships().isEmpty()) {
                 // 历史数据首次访问时迁移到规范化存储
-                ontologyDefinitionService.save(id, parsed, 0);
-                model = ontologyDefinitionService.load(id);
-                stamp = DPUtil.parseLong(info(id).getUpdatedTime());
+                ontologyDefinitionService.save(info.getId(), parsed, 0);
+                model = ontologyDefinitionService.load(info.getId());
+                stamp = DPUtil.parseLong(info(info.getId()).getUpdatedTime());
             } else {
                 model = parsed;
             }
         }
-        modelCache.put(id, new CachedModel(stamp, model));
+        modelCache.put(info.getId(), new CachedModel(stamp, model));
         return model;
     }
 
@@ -120,15 +126,42 @@ public class OntologyService extends JPAServiceBase {
         int id = DPUtil.parseInt(param.get("id"));
         OntologyModel model = model(id);
         if (null == model) return ApiUtil.result(1404, "本体信息不存在", null);
-        ObjectNode data = model.toJson();
         Ontology info = info(id);
+        return ApiUtil.result(0, null, modelData(info, model));
+    }
+
+    /** 批量本体模型：一次加载本体记录，模型定义仍按本体分别构建。 */
+    public Map<String, Object> models(Map<?, ?> param) {
+        List<Integer> requested = DPUtil.parseIntList(param.get("ids"));
+        Set<Integer> ids = new LinkedHashSet<>();
+        for (Integer id : requested) {
+            if (null != id && id > 0) ids.add(id);
+        }
+        if (ids.isEmpty()) return ApiUtil.result(1001, "本体标识不能为空", requested);
+        Map<Integer, Ontology> ontologies = new LinkedHashMap<>();
+        for (Ontology info : ontologyDao.findAllById(ids)) ontologies.put(info.getId(), info);
+        ArrayNode rows = DPUtil.arrayNode();
+        for (Integer id : ids) {
+            Ontology info = ontologies.get(id);
+            OntologyModel model = null == info ? null : model(info);
+            if (null != model) rows.add(modelData(info, model));
+        }
+        ObjectNode data = DPUtil.objectNode();
+        data.put("total", rows.size());
+        data.set("rows", rows);
+        return ApiUtil.result(0, null, data);
+    }
+
+    protected ObjectNode modelData(Ontology info, OntologyModel model) {
+        ObjectNode data = model.toJson();
+        int id = info.getId();
         data.put("id", id);
         data.put("name", null == info ? "" : info.getName());
         data.put("description", null == info ? "" : DPUtil.parseString(info.getDescription()));
         data.put("status", null == info ? 0 : DPUtil.parseInt(info.getStatus()));
         data.put("version", null == info ? 0 : DPUtil.parseInt(info.getVersion()));
         data.put("updatedTime", null == info ? 0L : DPUtil.parseLong(info.getUpdatedTime()));
-        return ApiUtil.result(0, null, data);
+        return data;
     }
 
     @Transactional

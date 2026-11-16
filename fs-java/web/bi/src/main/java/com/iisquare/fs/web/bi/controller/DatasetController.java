@@ -69,6 +69,13 @@ public class DatasetController extends PermitControllerBase {
         return ApiUtil.echoResult(result);
     }
 
+    @RequestMapping("/columnsBatch")
+    @Permission("")
+    public String columnsBatchAction(@RequestBody Map<?, ?> param) {
+        Map<String, Object> result = datasetService.columnsBatch(param);
+        return ApiUtil.echoResult(result);
+    }
+
     @RequestMapping("/config")
     @Permission("")
     public String configAction(ModelMap model) {

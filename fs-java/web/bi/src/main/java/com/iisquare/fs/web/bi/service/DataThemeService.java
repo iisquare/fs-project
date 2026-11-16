@@ -69,16 +69,43 @@ public class DataThemeService extends JPAServiceBase {
         if (null == entity) {
             result = ApiUtil.result(404, null, id);
         } else {
-            JsonNode rows = format(DPUtil.toArrayNode(entity), DPUtil.buildMap(
-                    "withUserInfo", true,
-                    "withStatusText", true,
-                    "withDatasetInfo", true,
-                    "withRoles", true));
-            ObjectNode data = (ObjectNode) DPUtil.firstNode(rows);
-            data.replace("content", parseContent(entity.getContent()));
-            result = ApiUtil.result(0, null, data);
+            result = ApiUtil.result(0, null, infoData(entity, true));
         }
         return result;
+    }
+
+    /** 批量主题详情：一次加载全部主题及其数据集信息，保持请求中的主题顺序。 */
+    public Map<String, Object> infos(Map<?, ?> param) {
+        List<Integer> requested = DPUtil.parseIntList(param.get("ids"));
+        Set<Integer> ids = new LinkedHashSet<>();
+        for (Integer id : requested) {
+            if (null != id && id > 0) ids.add(id);
+        }
+        if (ids.isEmpty()) return ApiUtil.result(1001, "主题标识不能为空", requested);
+        Map<Integer, DataTheme> themes = new LinkedHashMap<>();
+        for (DataTheme theme : dataThemeDao.findAllById(ids)) themes.put(theme.getId(), theme);
+        boolean withDatasetInfo = DPUtil.parseBoolean(param.get("withDatasetInfo"));
+        ArrayNode rows = DPUtil.arrayNode();
+        for (Integer id : ids) {
+            DataTheme theme = themes.get(id);
+            if (null != theme) rows.add(infoData(theme, withDatasetInfo));
+        }
+        ObjectNode data = DPUtil.objectNode();
+        data.put("total", rows.size());
+        data.set("rows", rows);
+        return ApiUtil.result(0, null, data);
+    }
+
+    protected ObjectNode infoData(DataTheme entity, boolean withDatasetInfo) {
+        Map<String, Object> options = new LinkedHashMap<>();
+        options.put("withUserInfo", true);
+        options.put("withStatusText", true);
+        options.put("withRoles", true);
+        if (withDatasetInfo) options.put("withDatasetInfo", true);
+        JsonNode rows = format(DPUtil.toArrayNode(entity), options);
+        ObjectNode data = (ObjectNode) DPUtil.firstNode(rows);
+        data.replace("content", parseContent(entity.getContent()));
+        return data;
     }
 
     public ObjectNode search(Map<String, Object> param, Map<?, ?> args) {

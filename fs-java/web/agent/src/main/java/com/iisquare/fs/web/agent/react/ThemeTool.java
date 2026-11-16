@@ -35,12 +35,29 @@ public class ThemeTool implements AgenticTool {
     }
 
     @Override
+    public ArrayNode definitions(JsonNode items) {
+        Set<Integer> ids = new LinkedHashSet<>();
+        for (JsonNode item : items) {
+            int id = item.at("/themeId").asInt(0);
+            if (id > 0) ids.add(id);
+        }
+        Map<Integer, JsonNode> themes = infos(ids);
+        ArrayNode result = DPUtil.arrayNode();
+        for (JsonNode item : items) {
+            result.add(definition(item, themes.get(item.at("/themeId").asInt(0))));
+        }
+        return result;
+    }
+
+    @Override
     public ObjectNode definition(JsonNode item) {
+        int themeId = item.at("/themeId").asInt(0);
+        return definition(item, themeId < 1 ? null : info(themeId));
+    }
+
+    protected ObjectNode definition(JsonNode item, JsonNode info) {
         String name = item.at("/name").asText("");
         if (DPUtil.empty(name)) return null;
-        int themeId = item.at("/themeId").asInt(0);
-        if (themeId < 1) return null;
-        JsonNode info = info(themeId);
         if (null == info) return null;
         if (info.has("status") && 1 != info.at("/status").asInt(0)) return null;
         // 取一次详情确认主题存在且当前用户可访问；类型说明由 ToolDescriptionService 统一生成，
@@ -55,6 +72,21 @@ public class ThemeTool implements AgenticTool {
                 "针对主题内数据集编写的查询 SQL（表名用数据集名称）；不传则返回主题的数据字典")));
         params.add(AgenticTool.parameter("limit", false, AgenticTool.schema("integer", "返回的最大行数，默认 100")));
         return AgenticTool.definition(name, params, item);
+    }
+
+    /** 一次取回多个主题详情；定义阶段只消费主题及数据集基础信息。 */
+    protected Map<Integer, JsonNode> infos(Set<Integer> ids) {
+        Map<Integer, JsonNode> result = new LinkedHashMap<>();
+        if (ids.isEmpty()) return result;
+        Map<String, Object> param = new LinkedHashMap<>();
+        param.put("ids", ids);
+        param.put("withDatasetInfo", false);
+        JsonNode data = RpcUtil.data(biRpc.post("/dataTheme/infos", param), false);
+        if (null == data) return result;
+        for (JsonNode row : data.at("/rows")) {
+            result.put(row.at("/id").asInt(0), row);
+        }
+        return result;
     }
 
     @Override
@@ -111,25 +143,64 @@ public class ThemeTool implements AgenticTool {
             int id = item.asInt(0);
             if (id > 0) datasetIds.add(id);
         }
+        Set<Integer> unresolved = new LinkedHashSet<>();
+        for (Integer id : datasetIds) {
+            if (columns(datasetInfos.get(String.valueOf(id))).isEmpty()) unresolved.add(id);
+        }
+        Map<String, JsonNode> batchColumns = unresolved.isEmpty()
+                ? new LinkedHashMap<>() : columns(unresolved);
         ArrayNode datasets = result.putArray("datasets");
         for (Integer id : datasetIds) {
             ObjectNode dataset = datasets.addObject();
             dataset.put("id", id);
-            Map<String, Object> columnsParam = new LinkedHashMap<>();
-            columnsParam.put("id", id);
-            JsonNode columns = RpcUtil.data(biRpc.post("/dataset/columns", columnsParam), false);
             JsonNode known = datasetInfos.get(String.valueOf(id));
+            JsonNode loaded = batchColumns.get(String.valueOf(id));
             String name = null == known ? "" : known.at("/name").asText("");
-            if (DPUtil.empty(name) && null != columns) name = columns.at("/name").asText("");
+            if (DPUtil.empty(name) && null != loaded) name = loaded.at("/name").asText("");
             dataset.put("name", DPUtil.empty(name) ? String.valueOf(id) : name);
-            String description = null == columns ? "" : columns.at("/description").asText("");
-            if (DPUtil.empty(description) && null != known) {
-                description = known.at("/description").asText("");
-            }
+            String description = null == known ? "" : known.at("/description").asText("");
+            if (DPUtil.empty(description) && null != loaded) description = loaded.at("/description").asText("");
             dataset.put("description", description);
-            dataset.set("columns", null == columns ? DPUtil.arrayNode() : columns.at("/columns"));
+            ArrayNode columns = columns(known);
+            if (columns.isEmpty() && null != loaded && loaded.at("/columns").isArray()) {
+                columns = (ArrayNode) loaded.at("/columns").deepCopy();
+            }
+            dataset.set("columns", columns);
         }
         result.set("relations", info.at("/content/relations"));
+        return result;
+    }
+
+    /** 主题详情已经批量带出字段配置时直接转换，只把字段为空的数据集交给批量接口解析。 */
+    protected ArrayNode columns(JsonNode dataset) {
+        ArrayNode result = DPUtil.arrayNode();
+        if (null == dataset) return result;
+        JsonNode fields = dataset.at("/fields");
+        if (fields.isTextual()) fields = DPUtil.parseJSON(fields.asText(""));
+        if (!fields.isArray()) return result;
+        for (JsonNode field : fields) {
+            String name = field.at("/name").asText("");
+            if (DPUtil.empty(name)) continue;
+            ObjectNode column = result.addObject();
+            column.put("name", name);
+            column.put("title", field.at("/title").asText(name));
+            column.put("type", field.at("/type").asText(""));
+            column.put("comment", field.at("/comment").asText(""));
+        }
+        return result;
+    }
+
+    /** 未维护字段的数据集一次批量解析，返回 id → 字段结果。 */
+    protected Map<String, JsonNode> columns(Set<Integer> ids) {
+        Map<String, JsonNode> result = new LinkedHashMap<>();
+        if (ids.isEmpty()) return result;
+        Map<String, Object> param = new LinkedHashMap<>();
+        param.put("ids", ids);
+        JsonNode data = RpcUtil.data(biRpc.post("/dataset/columnsBatch", param), false);
+        if (null == data) return result;
+        for (JsonNode row : data.at("/rows")) {
+            result.put(row.at("/id").asText(""), row);
+        }
         return result;
     }
 

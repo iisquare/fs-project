@@ -155,17 +155,27 @@ const entries = computed<any[]>(() => {
   return list
 })
 
-/** 标题：运行中显示当前节点，完成后显示节点数与日志标识 */
-const title = computed(() => {
-  if (!streaming) return `执行过程（${(steps ?? []).length} 个节点${logId ? ` · 日志 ${logId}` : ''}）`
+/** 过程摘要：状态点单独展示，节点数与日志标识作为次级信息跟在标题后。 */
+const processMeta = computed(() => {
+  if (!streaming) return `${(steps ?? []).length} 个节点${logId ? ` · 日志 ${logId}` : ''}`
   const running: any = nodes.value.find((node: any) => 'running' === node.state)
-  return `执行过程（${nodes.value.length} 个节点${running ? ` · 执行中：${running.name}` : ' · 准备中'}）`
+  return `${nodes.value.length} 个节点${running ? ` · 执行中：${running.name}` : ' · 准备中'}`
+})
+
+const processState = computed(() => {
+  if (streaming) return 'running'
+  return nodes.value.some((node: any) => 'failed' === node.state) ? 'failed' : 'success'
 })
 </script>
 
 <template>
   <el-collapse class="steps" :model-value="expanded ? ['steps'] : []" @change="handleChange">
-    <el-collapse-item name="steps" :title="title">
+    <el-collapse-item name="steps">
+      <template #title>
+        <span class="process-state" :class="processState"></span>
+        <span class="process-title">执行过程</span>
+        <span class="process-meta">{{ processMeta }}</span>
+      </template>
       <div class="steps-body" v-loading="loading">
         <el-timeline class="steps-timeline">
           <!-- 节点与工具调用共用一条时间线：节点用类型图标，工具调用用小圆点 -->
@@ -200,7 +210,7 @@ const title = computed(() => {
 <style lang="scss" scoped>
 /* 折叠面板头：默认 48px 对气泡内的过程信息太高，压到 22px（头部高度与行高都跟随该变量） */
 .steps.el-collapse {
-  --el-collapse-header-height: 22px;
+  --el-collapse-header-height: 30px;
   /* 与思考过程同处理：折叠面板自带的上下边框与白色底都去掉 */
   border-top: none;
   border-bottom: none;
@@ -211,15 +221,69 @@ const title = computed(() => {
   font-size: 12px;
   color: var(--el-text-color-secondary);
   :deep(.el-collapse-item__header) {
+    gap: 7px;
+    padding: 0 2px;
     font-size: 12px;
     color: var(--el-text-color-secondary);
     border-bottom: none;
+  }
+  :deep(.el-collapse-item__title) {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+    gap: 7px;
+  }
+  :deep(.el-collapse-item__arrow) {
+    flex: none;
+    margin: 0 2px 0 8px;
+    color: var(--el-text-color-placeholder);
   }
   :deep(.el-collapse-item__wrap) {
     border-bottom: none;
   }
   :deep(.el-collapse-item__content) {
     padding-bottom: 2px;
+  }
+}
+.process-state {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--el-text-color-placeholder);
+  &.running {
+    background: var(--el-color-primary);
+    animation: process-pulse 1s ease-in-out infinite;
+  }
+  &.success {
+    background: var(--el-color-success);
+  }
+  &.failed {
+    background: var(--el-color-danger);
+  }
+}
+.process-title {
+  flex: none;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+.process-meta {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--el-text-color-placeholder);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@keyframes process-pulse {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.82);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
   }
 }
 .steps-body {

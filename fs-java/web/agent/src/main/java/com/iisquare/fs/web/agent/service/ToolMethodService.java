@@ -382,6 +382,15 @@ public class ToolMethodService extends JPAServiceBase {
         });
     }
 
+    /** 一次读取多个工具下的全部方法，供批量工具定义使用。 */
+    public List<ToolMethod> all(Collection<Integer> toolIds) {
+        if (null == toolIds || toolIds.isEmpty()) return new ArrayList<>();
+        return toolMethodDao.findAll((root, query, cb) -> {
+            query.orderBy(cb.asc(root.get("toolId")), cb.asc(root.get("sort")), cb.asc(root.get("id")));
+            return root.get("toolId").in(toolIds);
+        });
+    }
+
     /** 工具删除时清理其方法行 */
     public void removeByToolId(Integer toolId) {
         List<ToolMethod> rows = all(toolId);

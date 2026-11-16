@@ -24,7 +24,10 @@
  */
 import Vditor from 'vditor'
 import 'vditor/dist/index.css'
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import DOMPurify from 'dompurify'
+import JSON5 from 'json5'
+import { ElScrollbar } from 'element-plus'
+import { h, nextTick, onBeforeUnmount, onMounted, ref, render as renderVNode, watch } from 'vue'
 
 const model: any = defineModel()
 const {
@@ -37,6 +40,7 @@ const {
   fallbackImage = '/images/no-permit.png',
   resolveImages,
   uploadImage,
+  streaming = false,
 } = defineProps({
   readonly: { type: Boolean, required: false },
   height: { type: Number, required: false },
@@ -47,6 +51,7 @@ const {
   fallbackImage: { type: String, required: false },
   resolveImages: { type: Function, required: false },
   uploadImage: { type: Function, required: false },
+  streaming: { type: Boolean, required: false },
 })
 
 const editorRef = ref<HTMLDivElement>()
@@ -56,6 +61,142 @@ let observer: MutationObserver | null = null
 let refreshScheduled = false
 let previewSequence = 0
 const imageUrls: Record<string, string> = {}
+
+interface EChartsInstance {
+  setOption(option: Record<string, unknown>): void
+  resize(): void
+  dispose(): void
+}
+
+interface EChartsRuntime {
+  init(element: HTMLElement): EChartsInstance
+}
+
+const chartInstances: EChartsInstance[] = []
+const chartObservers: ResizeObserver[] = []
+const tableScrollHosts: HTMLElement[] = []
+const codeScrollHosts: HTMLElement[] = []
+let chartsReady: Promise<EChartsRuntime> | null = null
+
+const CODE_RENDER_SKIP_HEIGHT = '100000px'
+const MAX_ECHARTS_SOURCE = 256 * 1024
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && 'object' === typeof value && !Array.isArray(value)
+
+const plainOption = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(plainOption)
+  if (!value || 'object' !== typeof value) return value
+  const result: Record<string, unknown> = {}
+  Object.entries(value).forEach(([key, item]) => {
+    if (['__proto__', 'prototype', 'constructor'].includes(key)) return
+    result[key] = plainOption(item)
+  })
+  return result
+}
+
+/**
+ * ECharts 只接收数据配置；JSON5 兼容模型常见的单引号、尾逗号和注释，
+ * 函数表达式会在解析阶段直接失败，不会作为脚本执行。
+ */
+const parseChartOption = (source: string): Record<string, unknown> => {
+  const text = String(source ?? '')
+    .trim()
+    .replace(/^(?:const|let|var)?\s*option\s*=\s*/i, '')
+    .replace(/;\s*$/, '')
+  if (!text) throw new Error('图表配置为空')
+  const parsed = plainOption(JSON5.parse(text))
+  if (!isRecord(parsed)) throw new Error('图表配置必须是对象')
+  return optimizeChartLayout(parsed)
+}
+
+const titleState = (value: unknown): { present: boolean, subtitle: boolean } => {
+  const titles = Array.isArray(value) ? value : value ? [value] : []
+  let present = false
+  let subtitle = false
+  titles.forEach((item) => {
+    if (!isRecord(item)) return
+    const alias = [item.subtitle, item.subTitle].find(
+      (value) => 'string' === typeof value && Boolean(value.trim()),
+    )
+    if (alias && !('string' === typeof item.subtext && item.subtext.trim())) item.subtext = alias
+    delete item.subtitle
+    delete item.subTitle
+    present ||= Boolean(item.text || item.subtext)
+    subtitle ||= Boolean(item.subtext)
+  })
+  return { present, subtitle }
+}
+
+/** 统一标题、图例和绘图区的留白，避免模型生成的配置把元素挤在一起。 */
+const optimizeChartLayout = (option: Record<string, unknown>): Record<string, unknown> => {
+  const title = titleState(option.title)
+  if (!title.present) return option
+
+  const safeLegendTop = title.subtitle ? 60 : 36
+  const legends = Array.isArray(option.legend) ? option.legend : option.legend ? [option.legend] : []
+  legends.forEach((legend) => {
+    if (!isRecord(legend) || legend.bottom !== undefined) return
+    if (legend.right !== undefined && legend.left === undefined) return
+    if ('number' === typeof legend.top && legend.top >= safeLegendTop) return
+    if ('string' === typeof legend.top && /^\d+(?:\.\d+)?%$/.test(legend.top)) {
+      if (Number.parseFloat(legend.top) >= 15) return
+    }
+    legend.top = safeLegendTop
+  })
+
+  if (option.xAxis !== undefined || option.yAxis !== undefined) {
+    const safeGridTop = title.subtitle ? 96 : 64
+    const grids = Array.isArray(option.grid) ? option.grid : option.grid ? [option.grid] : []
+    if (!grids.length) {
+      option.grid = { top: safeGridTop }
+    } else {
+      grids.forEach((grid) => {
+        if (!isRecord(grid)) return
+        if ('number' === typeof grid.top && grid.top >= safeGridTop) return
+        grid.top = safeGridTop
+      })
+    }
+  }
+
+  const series = Array.isArray(option.series) ? option.series : option.series ? [option.series] : []
+  const pieLegend: string[] = []
+  series.forEach((item) => {
+    if (!isRecord(item) || item.type !== 'pie') return
+    const data = Array.isArray(item.data) ? item.data : []
+    const names = data
+      .map((entry) => isRecord(entry) ? String(entry.name ?? '').trim() : '')
+      .filter(Boolean)
+    pieLegend.push(...names)
+    if (data.length > 4) {
+      // 窄气泡里外侧标签会互相遮挡；改用可滚动图例，悬浮或点击时仍可看单项数值。
+      const label = isRecord(item.label) ? item.label : {}
+      if (label.show !== true) label.show = false
+      const labelLine = isRecord(item.labelLine) ? item.labelLine : {}
+      if (label.show !== true) labelLine.show = false
+      item.label = label
+      item.labelLine = labelLine
+      item.avoidLabelOverlap = true
+    }
+    if (item.center === undefined) item.center = ['50%', '53%']
+    if (item.itemStyle === undefined) item.itemStyle = { borderColor: '#fff', borderWidth: 2 }
+  })
+  if (pieLegend.length > 4 && option.legend === undefined) {
+    option.legend = {
+      type: 'scroll',
+      bottom: 2,
+      left: 'center',
+      itemWidth: 8,
+      itemHeight: 8,
+      itemGap: 12,
+      textStyle: { fontSize: 11, color: '#606266' },
+    }
+  }
+  if (series.some((item) => isRecord(item) && item.type === 'pie') && option.tooltip === undefined) {
+    option.tooltip = { trigger: 'item', confine: true }
+  }
+  return option
+}
 
 /**
  * Vditor 的动态资源必须和已安装包使用同一版本。
@@ -169,10 +310,221 @@ const hardBreaks = (content: string) => {
   }).join('\n')
 }
 
+/**
+ * Vditor 默认会把 echarts 代码块交给它内置的 ECharts 运行时，并使用动态
+ * Function 解析配置。这里先换成受控占位块，再由本组件用 JSON5 + ECharts 实例渲染，
+ * 同时统一关闭 Vditor 自带的代码复制按钮，避免和标题栏里的复制入口重复。
+ */
+const preparePreviewHtml = (html: string): string => {
+  const template = document.createElement('template')
+  template.innerHTML = String(html ?? '')
+  template.content.querySelectorAll<HTMLElement>('.language-echarts').forEach((element) => {
+    const source = String(element.textContent ?? '').trim()
+    const threshold = source.length > MAX_ECHARTS_SOURCE
+    const block = document.createElement('div')
+    block.className = 'fs-markdown-echarts'
+    block.dataset.state = threshold ? 'error' : 'pending'
+    if (threshold) block.title = '图表配置超过 256 KiB'
+    const sourceBlock = document.createElement('pre')
+    sourceBlock.className = 'fs-markdown-echarts-source'
+    sourceBlock.textContent = threshold ? '图表配置超过 256 KiB' : source || '图表配置为空'
+    block.appendChild(sourceBlock)
+    element.replaceWith(block)
+  })
+  template.content.querySelectorAll<HTMLElement>('pre > code').forEach((code) => {
+    code.style.maxHeight = CODE_RENDER_SKIP_HEIGHT
+  })
+  return DOMPurify.sanitize(template.innerHTML)
+}
+
+const cleanupPreviewEnhancements = () => {
+  chartObservers.splice(0).forEach((observer) => observer.disconnect())
+  chartInstances.splice(0).forEach((chart) => chart.dispose())
+  tableScrollHosts.splice(0).forEach((host) => renderVNode(null, host))
+  codeScrollHosts.splice(0).forEach((host) => renderVNode(null, host))
+}
+
+const loadECharts = (): Promise<EChartsRuntime> => {
+  if (!chartsReady) {
+    chartsReady = import('echarts').then((runtime) => ({ init: runtime.init }))
+    chartsReady.catch(() => {
+      chartsReady = null
+    })
+  }
+  return chartsReady
+}
+
+const waitForHighlight = async (root: HTMLElement): Promise<void> => {
+  const codes = Array.from(root.querySelectorAll<HTMLElement>('pre > code'))
+  if (!codes.length) return
+  const deadline = performance.now() + 1600
+  while (performance.now() < deadline) {
+    if (codes.every((code) => code.classList.contains('hljs') && code.classList.contains('vditor-linenumber'))) {
+      return
+    }
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 32))
+  }
+}
+
+const renderCharts = async (root: HTMLElement, sequence: number): Promise<void> => {
+  const blocks = Array.from(root.querySelectorAll<HTMLElement>('.fs-markdown-echarts'))
+  if (!blocks.length) return
+  const runtime = await loadECharts()
+  for (const block of blocks) {
+    if (sequence !== previewSequence || !block.isConnected) return
+    if (block.dataset.state === 'error') continue
+    try {
+      const source = String(block.querySelector('.fs-markdown-echarts-source')?.textContent ?? '').trim()
+      const option = parseChartOption(source)
+      block.replaceChildren()
+      block.dataset.state = 'ready'
+      block.removeAttribute('title')
+      const chart = runtime.init(block)
+      chart.setOption(option)
+      chartInstances.push(chart)
+      if (typeof ResizeObserver !== 'undefined') {
+        const observer = new ResizeObserver(() => chart.resize())
+        observer.observe(block)
+        chartObservers.push(observer)
+      }
+    } catch (error) {
+      // 流式输出中的配置通常还没闭合，保持占位而不是频繁闪红。
+      if (streaming) {
+        block.dataset.state = 'pending'
+        continue
+      }
+      block.dataset.state = 'error'
+      block.setAttribute('title', error instanceof Error ? error.message : String(error))
+    }
+  }
+}
+
+const mountTables = (root: HTMLElement) => {
+  root.querySelectorAll<HTMLTableElement>('table').forEach((table) => {
+    if (!table.parentNode) return
+    const host = document.createElement('div')
+    host.className = 'fs-markdown-table'
+    table.replaceWith(host)
+    tableScrollHosts.push(host)
+    renderVNode(
+      h(
+        ElScrollbar,
+        {
+          class: 'fs-markdown-table-scroll',
+          tabindex: 0,
+          role: 'region',
+          'aria-label': '可横向滚动的表格',
+        },
+        {
+          default: () => h('div', {
+            class: 'fs-markdown-table-content',
+            innerHTML: table.outerHTML,
+          }),
+        },
+      ),
+      host,
+    )
+  })
+}
+
+const codeLanguage = (code: HTMLElement): string => {
+  const language = Array.from(code.classList)
+    .find((name) => name.startsWith('language-'))
+    ?.slice('language-'.length)
+  return language || '代码'
+}
+
+const codeText = (code: HTMLElement): string => {
+  const clone = code.cloneNode(true) as HTMLElement
+  clone
+    .querySelectorAll('.vditor-linenumber__temp, .vditor-linenumber__rows')
+    .forEach((element) => element.remove())
+  return String(clone.textContent ?? '').replace(/\n$/, '')
+}
+
+const writeClipboard = async (text: string): Promise<void> => {
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.style.cssText = 'position:fixed;left:-100000px;top:0;'
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    textarea.remove()
+  }
+}
+
+const mountCodeBlocks = (root: HTMLElement) => {
+  root.querySelectorAll<HTMLPreElement>('pre').forEach((pre) => {
+    const code = pre.querySelector<HTMLElement>(':scope > code')
+    if (!code || !pre.parentNode) return
+    const language = codeLanguage(code)
+    pre.querySelector<HTMLElement>(':scope > .vditor-copy')?.remove()
+    const block = document.createElement('div')
+    block.className = 'fs-markdown-code'
+    block.dataset.language = language
+
+    const shell = document.createElement('div')
+    shell.className = 'fs-markdown-code-shell'
+    const header = document.createElement('div')
+    header.className = 'fs-markdown-code-header'
+    const type = document.createElement('span')
+    type.className = 'fs-markdown-code-type'
+    const dot = document.createElement('span')
+    dot.className = 'fs-markdown-code-dot'
+    dot.setAttribute('aria-hidden', 'true')
+    type.append(dot, document.createTextNode(language))
+
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'fs-markdown-code-copy'
+    button.dataset.markdownCopy = ''
+    button.title = '复制代码'
+    button.setAttribute('aria-label', '复制代码')
+    button.innerHTML = `
+      <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+        <rect x="5" y="5" width="7.5" height="8" rx="1.3" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+        <path d="M3.5 10.7V3.8c0-.7.6-1.3 1.3-1.3h5.7" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></path>
+      </svg>
+      <span>复制</span>
+    `
+    header.append(type, button)
+
+    const body = document.createElement('div')
+    body.className = 'fs-markdown-code-body-host'
+    pre.replaceWith(block)
+    shell.append(header, body)
+    block.appendChild(shell)
+    codeScrollHosts.push(body)
+    renderVNode(
+      h(
+        ElScrollbar,
+        {
+          class: 'fs-markdown-code-body',
+          maxHeight: 'min(520px, 55vh)',
+          tabindex: 0,
+          role: 'region',
+          'aria-label': `${language} 代码`,
+        },
+        {
+          default: () => h('div', {
+            class: 'fs-markdown-code-content',
+            innerHTML: pre.outerHTML,
+          }),
+        },
+      ),
+      body,
+    )
+  })
+}
+
 const loadPreview = async (content: string) => {
   const host = previewRef.value
   if (!host) return
   const sequence = ++previewSequence
+  cleanupPreviewEnhancements()
   if (!content) {
     const empty = document.createElement('span')
     empty.className = 'fs-markdown-empty'
@@ -191,11 +543,25 @@ const loadPreview = async (content: string) => {
     await Vditor.preview(body, html, {
       cdn: vditorCdn,
       mode: 'light',
-      hljs: { lineNumber: true },
+      hljs: {
+        enable: true,
+        lineNumber: true,
+        style: 'github',
+      },
+      transform: preparePreviewHtml,
     })
+    if (sequence !== previewSequence) return
+    await waitForHighlight(body)
+    if (sequence !== previewSequence) return
+    mountTables(body)
+    mountCodeBlocks(body)
+    await renderCharts(body, sequence)
   } catch (error) {
     if (sequence !== previewSequence) return
-    body.textContent = `Markdown 渲染失败：${error instanceof Error ? error.message : String(error)}`
+    const failed = document.createElement('div')
+    failed.className = 'fs-markdown-error'
+    failed.textContent = `Markdown 渲染失败：${error instanceof Error ? error.message : String(error)}`
+    body.replaceChildren(failed)
   }
 }
 
@@ -244,6 +610,29 @@ const openPreview = (element: HTMLElement) => {
   previewUrlList.value = urls.length > 0 ? urls : [current]
   previewIndex.value = Math.max(0, previewUrlList.value.indexOf(current))
   previewVisible.value = true
+}
+
+const handlePreviewClick = (event: MouseEvent) => {
+  const button = (event.target as Element | null)?.closest?.<HTMLButtonElement>('[data-markdown-copy]')
+  if (!button) return
+  const code = button.closest('.fs-markdown-code')?.querySelector('pre > code')
+  if (!code) return
+  event.preventDefault()
+  event.stopImmediatePropagation()
+  void writeClipboard(codeText(code as HTMLElement)).then(() => {
+    button.classList.add('is-copied')
+    button.title = '已复制代码'
+    button.setAttribute('aria-label', '已复制代码')
+    const label = button.querySelector('span')
+    if (label) label.textContent = '已复制'
+    window.setTimeout(() => {
+      if (!button.isConnected) return
+      button.classList.remove('is-copied')
+      button.title = '复制代码'
+      button.setAttribute('aria-label', '复制代码')
+      if (label) label.textContent = '复制'
+    }, 1500)
+  }).catch(() => {})
 }
 
 /**
@@ -356,6 +745,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  previewSequence++
+  cleanupPreviewEnhancements()
   if (observer) {
     observer.disconnect()
     observer = null
@@ -372,7 +763,12 @@ defineExpose({ getContent, setContent })
 
 <template>
   <div class="fs-markdown-editor">
-    <div ref="previewRef" class="fs-markdown-preview" v-if="readonly" @dblclick="handlePreviewDblClick"></div>
+    <div
+      ref="previewRef"
+      class="fs-markdown-preview"
+      v-if="readonly"
+      @click.capture="handlePreviewClick"
+      @dblclick="handlePreviewDblClick"></div>
     <div ref="editorRef" v-else></div>
     <el-image-viewer
       v-if="previewVisible"
@@ -403,10 +799,429 @@ defineExpose({ getContent, setContent })
   :deep(p:last-child) {
     margin-bottom: 0;
   }
+  :deep(.fs-markdown-preview-body) {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    color: var(--el-text-color-primary);
+
+    > :first-child {
+      margin-top: 0 !important;
+    }
+
+    > :last-child {
+      margin-bottom: 0 !important;
+    }
+
+    p {
+      margin: 0 0 8px;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      margin: 13px 0 7px;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    h1 {
+      font-size: 18px;
+    }
+
+    h2 {
+      font-size: 16px;
+    }
+
+    h3 {
+      font-size: 15px;
+    }
+
+    h4,
+    h5,
+    h6 {
+      font-size: 13px;
+    }
+
+    ul,
+    ol {
+      margin: 0 0 8px;
+      padding-left: 20px;
+    }
+
+    li {
+      line-height: inherit;
+    }
+
+    li + li {
+      margin-top: 3px;
+    }
+
+    li > p {
+      margin-bottom: 3px;
+    }
+
+    blockquote {
+      margin: 0 0 9px;
+      padding: 6px 10px;
+      border-left: 3px solid var(--el-color-primary-light-5);
+      border-radius: 0 6px 6px 0;
+      background: var(--el-fill-color-lighter);
+      color: var(--el-text-color-secondary);
+    }
+
+    hr {
+      margin: 14px 0;
+      border: 0;
+      border-top: 1px solid var(--el-border-color-lighter);
+    }
+
+    a {
+      color: var(--el-color-primary);
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    code:not(pre code) {
+      padding: 1px 5px;
+      border: 1px solid var(--el-border-color-lighter);
+      border-radius: 4px;
+      background: var(--el-fill-color-light);
+      color: var(--el-color-danger-dark-2);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.88em;
+      overflow-wrap: anywhere;
+    }
+
+    .fs-markdown-table {
+      width: 100%;
+      max-width: 100%;
+      margin: 0 0 10px;
+      overflow: hidden;
+      border: 1px solid var(--el-border-color-lighter);
+      border-radius: 7px;
+      background: var(--el-bg-color);
+      outline: none;
+    }
+
+    .fs-markdown-table-scroll {
+      width: 100%;
+      outline: none;
+    }
+
+    .fs-markdown-table-content {
+      width: max-content;
+      min-width: 100%;
+      background: var(--el-bg-color);
+    }
+
+    table {
+      display: table !important;
+      width: max-content;
+      min-width: 100%;
+      margin: 0 !important;
+      border: 0;
+      border-collapse: collapse;
+      table-layout: auto;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .fs-markdown-table table {
+      width: 100% !important;
+      min-width: 100%;
+    }
+
+    /* Vditor 默认给每条 tr 加的 #c6cbd1 顶线会和单元格分隔线叠成深色顶边。 */
+    .fs-markdown-table table tr {
+      border-top: 0;
+    }
+
+    .fs-markdown-table .el-scrollbar__view {
+      min-width: 100%;
+    }
+
+    .fs-markdown-table .el-scrollbar__bar.is-horizontal {
+      height: 6px;
+    }
+
+    th,
+    td {
+      padding: 6px 9px;
+      border: 0;
+      border-right: 1px solid var(--el-border-color-lighter);
+      border-bottom: 1px solid var(--el-border-color-lighter);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th:last-child,
+    td:last-child {
+      border-right: 0;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    th {
+      color: var(--el-text-color-regular);
+      font-weight: 600;
+      background: var(--el-fill-color-lighter);
+    }
+
+    th[align='right'],
+    td[align='right'] {
+      text-align: right;
+    }
+
+    th[align='center'],
+    td[align='center'] {
+      text-align: center;
+    }
+
+    tbody tr:nth-child(even) {
+      background: color-mix(in srgb, var(--el-fill-color-lighter) 55%, transparent);
+    }
+
+    .fs-markdown-code {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      margin: 10px 0 12px;
+    }
+
+    .fs-markdown-code-shell {
+      width: 100%;
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--el-border-color-lighter);
+      border-radius: 8px;
+      background: var(--el-fill-color-light);
+      box-shadow: 0 1px 2px rgb(0 0 0 / 3%);
+    }
+
+    .fs-markdown-code-header {
+      display: flex;
+      min-height: 32px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 8px 0 11px;
+      border-bottom: 1px solid var(--el-border-color-lighter);
+      background:
+        linear-gradient(90deg, rgb(255 255 255 / 45%), transparent 62%),
+        var(--el-fill-color-light);
+    }
+
+    .fs-markdown-code-type {
+      display: inline-flex;
+      min-width: 0;
+      align-items: center;
+      gap: 7px;
+      overflow: hidden;
+      color: var(--el-text-color-secondary);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .fs-markdown-code-dot {
+      flex: none;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--el-color-primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--el-color-primary) 11%, transparent);
+    }
+
+    .fs-markdown-code-copy {
+      display: inline-flex;
+      flex: none;
+      height: 24px;
+      align-items: center;
+      gap: 5px;
+      padding: 0 7px;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--el-text-color-secondary);
+      font: inherit;
+      font-size: 11.5px;
+      line-height: 1;
+      cursor: pointer;
+      transition: color 0.16s, background-color 0.16s;
+
+      &:hover,
+      &:focus-visible,
+      &.is-copied {
+        background: color-mix(in srgb, var(--el-bg-color) 72%, transparent);
+        color: var(--el-color-primary);
+      }
+
+      &:focus-visible {
+        outline: 1px solid var(--el-color-primary-light-5);
+        outline-offset: 0;
+      }
+    }
+
+    .fs-markdown-code-body-host {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .fs-markdown-code-body {
+      width: 100%;
+      overflow: hidden;
+      outline: none;
+      background: var(--el-fill-color-light);
+    }
+
+    .fs-markdown-code-body .el-scrollbar__wrap {
+      max-height: min(520px, 55vh);
+      overscroll-behavior: contain;
+    }
+
+    .fs-markdown-code-body .el-scrollbar__view {
+      min-width: 100%;
+    }
+
+    .fs-markdown-code-content {
+      width: max-content;
+      min-width: 100%;
+    }
+
+    .fs-markdown-code-content pre {
+      width: max-content;
+      min-width: 100%;
+      margin: 0 !important;
+      overflow: visible;
+      border: 0 !important;
+      border-radius: 0;
+      background: transparent !important;
+    }
+
+    .fs-markdown-code-content pre > code {
+      display: block;
+      width: max-content;
+      min-width: 100%;
+      margin: 0;
+      padding: 12px 14px 14px;
+      overflow: visible;
+      border: 0;
+      border-radius: 0;
+      background: transparent !important;
+      background-image: none !important;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 11.5px;
+      line-height: 1.7;
+      tab-size: 2;
+      white-space: pre;
+      word-break: normal;
+      overflow-wrap: normal;
+    }
+
+    .fs-markdown-code-content code.vditor-linenumber {
+      padding-left: 4.5em;
+    }
+
+    .fs-markdown-code-content .vditor-linenumber__rows {
+      top: 12px;
+      bottom: 14px;
+      width: 3.5em;
+      border-right: 1px solid var(--el-border-color-lighter);
+      background: var(--el-fill-color-light);
+    }
+
+    .fs-markdown-code-content .vditor-linenumber__rows > span::before {
+      padding-right: 0.9em;
+      color: var(--el-text-color-placeholder);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .fs-markdown-code-content .vditor-linenumber__temp {
+      display: none !important;
+    }
+
+    .fs-markdown-echarts {
+      width: 100%;
+      max-width: 100%;
+      margin: 14px 0 16px;
+      padding: 12px 12px 16px;
+      overflow: hidden;
+      border: 1px solid var(--el-border-color-lighter);
+      border-radius: 8px;
+      background: var(--el-bg-color);
+
+      &[data-state='ready'] {
+        height: clamp(320px, 42vh, 440px);
+        min-height: 300px;
+      }
+
+      &[data-state='pending'],
+      &[data-state='error'] {
+        display: flex;
+        min-height: 76px;
+        align-items: center;
+        padding: 12px 14px;
+        overflow: auto;
+      }
+
+      &[data-state='pending'] {
+        color: var(--el-text-color-secondary);
+        background:
+          linear-gradient(100deg, transparent 22%, rgb(255 255 255 / 48%) 45%, transparent 68%)
+            0 0 / 220% 100%,
+          var(--el-fill-color-lighter);
+        animation: fs-markdown-chart-loading 1.8s linear infinite;
+      }
+
+      &[data-state='error'] {
+        border-color: var(--el-color-danger-light-5);
+        background: var(--el-color-danger-light-9);
+      }
+    }
+
+    .fs-markdown-echarts-source {
+      width: max-content;
+      min-width: 100%;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      background: transparent !important;
+      color: var(--el-text-color-secondary);
+      font-size: 11.5px;
+      line-height: 1.6;
+      white-space: pre;
+    }
+
+    .fs-markdown-error {
+      padding: 9px 11px;
+      border: 1px solid var(--el-color-danger-light-5);
+      border-radius: 7px;
+      background: var(--el-color-danger-light-9);
+      color: var(--el-color-danger);
+      white-space: pre-wrap;
+    }
+  }
   /* 双击打开查看器：给出可交互的提示 */
   :deep(img) {
     max-width: 100%;
     cursor: zoom-in;
+  }
+}
+@keyframes fs-markdown-chart-loading {
+  to {
+    background-position: 220% 0, 0 0;
   }
 }
 // 编辑区图片：src 是占位地址（保存时会还原为标识），解析完成后通过 content 换成真实地址

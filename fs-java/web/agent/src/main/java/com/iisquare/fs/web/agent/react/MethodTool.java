@@ -13,7 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 工具方法（kind = method） - 外部调用：
@@ -34,17 +36,51 @@ public class MethodTool implements AgenticTool {
     }
 
     @Override
+    public ArrayNode definitions(JsonNode items) {
+        Set<Integer> toolIds = new LinkedHashSet<>();
+        for (JsonNode item : items) {
+            if (item.at("/methodParams").isArray()) continue;
+            int toolId = item.at("/toolId").asInt(0);
+            if (toolId > 0) toolIds.add(toolId);
+        }
+        Map<Integer, Tool> tools = new LinkedHashMap<>();
+        for (Tool tool : toolService.infos(toolIds)) tools.put(tool.getId(), tool);
+        Map<String, ToolMethod> methods = new LinkedHashMap<>();
+        for (ToolMethod method : toolMethodService.all(toolIds)) {
+            if (1 != DPUtil.parseInt(null == method.getPresent() ? 1 : method.getPresent())
+                    || 1 != DPUtil.parseInt(null == method.getStatus() ? 1 : method.getStatus())) continue;
+            methods.put(methodKey(method.getToolId(), method.getName()), method);
+        }
+        ArrayNode result = DPUtil.arrayNode();
+        for (JsonNode item : items) {
+            int toolId = item.at("/toolId").asInt(0);
+            Tool tool = tools.get(toolId);
+            ToolMethod method = methods.get(methodKey(toolId, item.at("/method").asText("")));
+            result.add(definition(item, tool, method));
+        }
+        return result;
+    }
+
+    @Override
     public ObjectNode definition(JsonNode item) {
         String methodName = item.at("/method").asText("");
         if (DPUtil.empty(methodName)) return null;
         // 发布内容里带了方法快照时直接用，草稿运行按工具标识实时解析
         JsonNode params = item.at("/methodParams");
+        if (params.isArray()) return definition(item, null, null);
+        int toolId = item.at("/toolId").asInt(0);
+        Tool tool = toolId < 1 ? null : toolService.info(toolId);
+        ToolMethod method = method(toolId, methodName);
+        return definition(item, tool, method);
+    }
+
+    /** 已批量加载工具与方法后的定义组装；快照项允许 tool/method 为空。 */
+    protected ObjectNode definition(JsonNode item, Tool tool, ToolMethod method) {
+        String methodName = item.at("/method").asText("");
+        if (DPUtil.empty(methodName)) return null;
+        JsonNode params = item.at("/methodParams");
         if (!params.isArray()) {
-            int toolId = item.at("/toolId").asInt(0);
-            Tool tool = toolId < 1 ? null : toolService.info(toolId);
-            if (null == tool || 1 != DPUtil.parseInt(tool.getStatus())) return null;
-            ToolMethod method = method(toolId, methodName);
-            if (null == method) return null;
+            if (null == tool || 1 != DPUtil.parseInt(tool.getStatus()) || null == method) return null;
             params = DPUtil.toJSON(toolMethodService.methodParams(method));
             if (item.isObject()) {
                 ObjectNode value = (ObjectNode) item;
@@ -133,6 +169,10 @@ public class MethodTool implements AgenticTool {
             }
         }
         return null;
+    }
+
+    protected String methodKey(Integer toolId, String name) {
+        return DPUtil.parseString(toolId) + "\u0000" + DPUtil.parseString(name);
     }
 
 }

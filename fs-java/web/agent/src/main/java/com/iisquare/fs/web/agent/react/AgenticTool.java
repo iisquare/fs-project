@@ -34,6 +34,17 @@ public interface AgenticTool {
     ObjectNode definition(JsonNode item);
 
     /**
+     * 批量生成 function 定义，返回顺序必须与 items 一致。
+     * 默认逐项生成；同类型工具可以覆盖此方法，在一次批量取数后逐项组装，
+     * 避免多个工具引用重复查询同一批数据。
+     */
+    default ArrayNode definitions(JsonNode items) {
+        ArrayNode result = DPUtil.arrayNode();
+        for (JsonNode item : items) result.add(definition(item));
+        return result;
+    }
+
+    /**
      * 执行工具调用
      * @param runtime 运行时：手工绑定的执行变量需要按变量解析取值
      * @param item    编排里配置的工具项

@@ -141,7 +141,10 @@ const streamingText = computed(() => {
             <!-- 思考过程：流式时直接展示，输出完成后收进折叠面板（与调试面板一致） -->
             <div class="chat-reasoning-text" v-if="isAssistant && item.reasoning && isStreaming">{{ item.reasoning }}</div>
             <el-collapse class="chat-reasoning" v-else-if="isAssistant && item.reasoning">
-              <el-collapse-item title="思考过程">
+              <el-collapse-item>
+                <template #title>
+                  <span class="chat-reasoning-title">思考过程</span>
+                </template>
                 <div class="chat-reasoning-text">{{ item.reasoning }}</div>
               </el-collapse-item>
             </el-collapse>
@@ -167,6 +170,7 @@ const streamingText = computed(() => {
               v-if="isAssistant && hasContent"
               :model-value="item.content"
               :resolve-images="resolveImages"
+              :streaming="isStreaming"
               readonly />
             <!-- 没有正文的异常轮次（如角色授权被撤销）：失败原因直接显示在气泡里，不必点图标才知道原因 -->
             <div class="chat-notice-text" v-if="isAssistant && item.notice && !hasContent && !isStreaming">
@@ -221,7 +225,7 @@ const streamingText = computed(() => {
 .chat-message {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
   & + .chat-message {
     margin-top: 10px;
   }
@@ -290,8 +294,8 @@ const streamingText = computed(() => {
 /* 气泡：尺寸与配色随页面（对话页扁平、历史/模型页带边框），这里只给统一的内边距与排版 */
 .chat-bubble {
   min-width: 0;
-  padding: 8px 10px;
-  border-radius: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
   text-align: left;
   border: solid 1px var(--el-border-color-lighter);
   background: var(--el-bg-color);
@@ -369,7 +373,8 @@ const streamingText = computed(() => {
 }
 /* 思考过程：折叠面板不带上下边框，流式时直接展示文本 */
 .chat-reasoning {
-  margin: 0 0 6px;
+  --el-collapse-header-height: 28px;
+  margin: 0 0 8px;
   font-size: 12px;
   color: var(--el-text-color-secondary);
   &.el-collapse {
@@ -380,9 +385,21 @@ const streamingText = computed(() => {
     --el-collapse-content-bg-color: transparent;
   }
   :deep(.el-collapse-item__header) {
+    gap: 7px;
+    padding: 0 2px;
     font-size: 12px;
     color: var(--el-text-color-secondary);
     border-bottom: none;
+  }
+  :deep(.el-collapse-item__title) {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+  }
+  :deep(.el-collapse-item__arrow) {
+    flex: none;
+    margin: 0 2px 0 8px;
+    color: var(--el-text-color-placeholder);
   }
   :deep(.el-collapse-item__wrap) {
     border-bottom: none;
@@ -390,6 +407,9 @@ const streamingText = computed(() => {
   :deep(.el-collapse-item__content) {
     padding-bottom: 4px;
   }
+}
+.chat-reasoning-title {
+  font-weight: 500;
 }
 .chat-reasoning-text {
   font-size: 12px;

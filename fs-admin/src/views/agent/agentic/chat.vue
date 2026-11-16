@@ -294,8 +294,8 @@ const { feeding, submit: handleFeedback } = useChatFeedback('该消息不支持�
   margin-right: auto;
 }
 $chat-output-font: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
-$chat-output-size: 13px;
-$chat-output-line-height: 1.7;
+$chat-output-size: 13.5px;
+$chat-output-line-height: 1.75;
 .chat-panel {
   display: flex;
   flex-direction: column;
@@ -343,6 +343,13 @@ $chat-output-line-height: 1.7;
     display: inline-block;
     max-width: 92%;
   }
+  .chat-message.is-assistant :deep(.chat-bubble) {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
   /* 用户消息：操作条与气泡同一个列容器，整块最宽 92%；气泡本身按容器满宽收起 */
   .chat-message.is-user :deep(.chat-main) {
     max-width: 92%;
@@ -352,9 +359,6 @@ $chat-output-line-height: 1.7;
   }
   /* 助手输出与对话页共用一套紧凑字阶，长文和表格不会显得过度放大 */
   .chat-message.is-assistant {
-    :deep(.chat-bubble) {
-      padding: 10px 12px;
-    }
     :deep(.chat-markdown) {
       display: block;
       color: var(--el-text-color-primary);
@@ -370,118 +374,10 @@ $chat-output-line-height: 1.7;
       font-size: $chat-output-size;
       line-height: $chat-output-line-height;
     }
-    :deep(.chat-markdown .fs-markdown-preview-body) {
-      > :first-child {
-        margin-top: 0 !important;
-      }
-      > :last-child {
-        margin-bottom: 0 !important;
-      }
-      p {
-        margin: 0 0 8px;
-        line-height: inherit;
-      }
-      h1,
-      h2,
-      h3,
-      h4,
-      h5,
-      h6 {
-        margin: 12px 0 6px;
-        font-weight: 600;
-        line-height: 1.4;
-      }
-      h1 {
-        font-size: 18px;
-      }
-      h2 {
-        font-size: 16px;
-      }
-      h3 {
-        font-size: 15px;
-      }
-      h4,
-      h5,
-      h6 {
-        font-size: 13px;
-      }
-      ul,
-      ol {
-        margin: 0 0 8px;
-        padding-left: 20px;
-      }
-      li {
-        line-height: inherit;
-      }
-      li + li {
-        margin-top: 3px;
-      }
-      li > p {
-        margin: 0 0 3px;
-      }
-      blockquote {
-        margin: 0 0 9px;
-        padding: 6px 10px;
-        border-left: 3px solid var(--el-color-primary-light-5);
-        border-radius: 0 6px 6px 0;
-        background: var(--el-fill-color-lighter);
-        color: var(--el-text-color-secondary);
-      }
-      hr {
-        margin: 14px 0;
-      }
-      a {
-        color: var(--el-color-primary);
-        text-decoration: none;
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-      img {
-        border-radius: 6px;
-      }
-      code:not(.hljs):not(.highlight-chroma) {
-        padding: 1px 4px;
-        border-radius: 4px;
-        background: var(--el-fill-color);
-        font-size: 0.88em;
-      }
-      pre {
-        margin: 10px 0;
-        overflow: hidden;
-        border: solid 1px var(--el-border-color-lighter);
-        border-radius: 7px;
-        background: var(--el-fill-color-light);
-      }
-      pre > code {
-        padding: 10px 12px;
-        background-color: transparent;
-        background-image: none;
-        font-size: 11.5px;
-        line-height: 1.6;
-      }
-      table {
-        margin-bottom: 10px;
-        font-size: 12px;
-        line-height: 1.6;
-      }
-      th,
-      td {
-        padding: 5px 8px;
-      }
-      .language-echarts {
-        height: 300px !important;
-        margin-bottom: 12px;
-      }
-    }
     :deep(.chat-reasoning-text) {
       font-size: 12px;
-      line-height: 1.65;
+      line-height: 1.7;
     }
-  }
-  /* 折叠面板头：默认 48px 对气泡内的过程信息太高，压到 28px（与调试面板一致） */
-  :deep(.chat-reasoning .el-collapse-item__header) {
-    height: 28px;
   }
   /* 执行过程：逐节点展开完整明细，表格/长文本都在气泡内滚动 */
   .chat-steps {

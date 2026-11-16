@@ -10,7 +10,10 @@ import com.iisquare.fs.web.agent.entity.Agentic;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 /**
@@ -50,11 +53,31 @@ public class AgenticInvokeTool implements AgenticTool {
     }
 
     @Override
+    public ArrayNode definitions(JsonNode items) {
+        Set<Integer> ids = new LinkedHashSet<>();
+        for (JsonNode item : items) {
+            int id = item.at("/agenticId").asInt(0);
+            if (id > 0) ids.add(id);
+        }
+        Map<Integer, Agentic> targets = new LinkedHashMap<>();
+        for (Agentic target : agenticDao.findAllById(ids)) targets.put(target.getId(), target);
+        ArrayNode result = DPUtil.arrayNode();
+        for (JsonNode item : items) {
+            result.add(definition(item, targets.get(item.at("/agenticId").asInt(0))));
+        }
+        return result;
+    }
+
+    @Override
     public ObjectNode definition(JsonNode item) {
-        String name = item.at("/name").asText("");
-        if (DPUtil.empty(name)) return null;
         int agenticId = item.at("/agenticId").asInt(0);
         Agentic target = agenticId < 1 ? null : agenticDao.findById(agenticId).orElse(null);
+        return definition(item, target);
+    }
+
+    protected ObjectNode definition(JsonNode item, Agentic target) {
+        String name = item.at("/name").asText("");
+        if (DPUtil.empty(name)) return null;
         if (null == target || 1 != DPUtil.parseInt(target.getStatus())
                 || DPUtil.parseInt(target.getPublishedVersion()) < 1
                 || DPUtil.empty(target.getPublishedContent())) {

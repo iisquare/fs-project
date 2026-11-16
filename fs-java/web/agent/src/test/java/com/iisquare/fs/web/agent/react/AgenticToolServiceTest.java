@@ -34,6 +34,7 @@ public class AgenticToolServiceTest {
 
         ArrayNode definitions = service.definitions(items);
         Assert.assertEquals(2, definitions.size());
+        Assert.assertEquals(1, ((FakeTool) service.toolList.get(0)).batchCalls);
         Assert.assertEquals("same", definitions.at("/0/function/name").asText());
         Assert.assertEquals("same_2", definitions.at("/1/function/name").asText());
         Assert.assertEquals("second", service.invoke(
@@ -51,6 +52,21 @@ public class AgenticToolServiceTest {
         Assert.assertEquals("same_2", definitions.at("/0/function/name").asText());
         Assert.assertEquals("second", service.invoke(
                 null, items, "same_2", Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap()));
+    }
+
+    @Test
+    public void definitionSlotKeepsOriginalConfigurationIndex() {
+        ArrayNode items = DPUtil.arrayNode();
+        ObjectNode disabled = item("disabled", true);
+        disabled.put("enabled", false);
+        items.add(disabled);
+        items.add(item("enabled", true));
+
+        ArrayNode slots = service.definitionSlots(items);
+
+        Assert.assertEquals(1, slots.size());
+        Assert.assertEquals(1, slots.at("/0/index").asInt());
+        Assert.assertEquals("enabled", slots.at("/0/functionName").asText());
     }
 
     @Test
@@ -75,10 +91,17 @@ public class AgenticToolServiceTest {
     }
 
     protected static class FakeTool implements AgenticTool {
+        private int batchCalls;
 
         @Override
         public String kind() {
             return "fake";
+        }
+
+        @Override
+        public ArrayNode definitions(JsonNode items) {
+            batchCalls++;
+            return AgenticTool.super.definitions(items);
         }
 
         @Override

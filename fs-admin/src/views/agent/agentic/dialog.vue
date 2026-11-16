@@ -836,15 +836,15 @@ onBeforeUnmount(() => {
  * 对话列几何：消息行 = 头像区 + 内容列 + 头像区，气泡与输入框同宽同线。
  * 尺寸一律用固定像素，不随容器百分比收缩；窗口不够宽时由内容区横向滚动。
  */
-$dialog-avatar: 26px;
+$dialog-avatar: 28px;
 $dialog-gap: 10px;
-$dialog-inset: $dialog-avatar + $dialog-gap;       /* 36px：一侧头像区宽度 */
-$dialog-min: 600px;                                /* 内容列最小宽度 */
-$dialog-max: 788px;                                /* 内容列最大宽度：气泡与输入框共用 */
-$dialog-row-max: $dialog-max + $dialog-inset * 2;  /* 860px：消息行总宽 */
+$dialog-inset: $dialog-avatar + $dialog-gap;       /* 38px：一侧头像区宽度 */
+$dialog-min: 620px;                                /* 内容列最小宽度 */
+$dialog-max: 820px;                                /* 内容列最大宽度：气泡与输入框共用 */
+$dialog-row-max: $dialog-max + $dialog-inset * 2;  /* 896px：消息行总宽 */
 $dialog-output-font: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
-$dialog-output-size: 13px;
-$dialog-output-line-height: 1.7;
+$dialog-output-size: 13.5px;
+$dialog-output-line-height: 1.75;
 
 /* 内容列：固定像素上下限 + 居中；消息行与输入框共用同一套宽度保证竖线一致 */
 @mixin dialog-column($min, $max) {
@@ -1169,14 +1169,16 @@ $dialog-output-line-height: 1.7;
        */
       :deep(.chat-bubble) {
         flex: 1 1 auto;
+        width: 100%;
         max-width: $dialog-max;
-        padding: 8px 12px;
-        border-radius: 10px;
-        border: none;
-        background: var(--el-fill-color-light);
+        padding: 12px 14px;
+        border-radius: 12px;
       }
       &.is-user :deep(.chat-bubble) {
         flex: 0 1 auto;
+        width: auto;
+        padding: 9px 12px;
+        border-radius: 10px;
         background: var(--el-color-primary-light-9);
       }
       /**
@@ -1184,9 +1186,6 @@ $dialog-output-line-height: 1.7;
        * 不再让 Vditor 默认的 16px / 1.5 与提问正文形成明显断层。
        */
       &.is-assistant {
-        :deep(.chat-bubble) {
-          padding: 10px 12px;
-        }
         :deep(.chat-markdown) {
           display: block;
           color: var(--el-text-color-primary);
@@ -1202,118 +1201,10 @@ $dialog-output-line-height: 1.7;
           font-size: $dialog-output-size;
           line-height: $dialog-output-line-height;
         }
-        :deep(.chat-markdown .fs-markdown-preview-body) {
-          > :first-child {
-            margin-top: 0 !important;
-          }
-          > :last-child {
-            margin-bottom: 0 !important;
-          }
-          p {
-            margin: 0 0 8px;
-            line-height: inherit;
-          }
-          h1,
-          h2,
-          h3,
-          h4,
-          h5,
-          h6 {
-            margin: 12px 0 6px;
-            font-weight: 600;
-            line-height: 1.4;
-          }
-          h1 {
-            font-size: 18px;
-          }
-          h2 {
-            font-size: 16px;
-          }
-          h3 {
-            font-size: 15px;
-          }
-          h4,
-          h5,
-          h6 {
-            font-size: 13px;
-          }
-          ul,
-          ol {
-            margin: 0 0 8px;
-            padding-left: 20px;
-          }
-          li {
-            line-height: inherit;
-          }
-          li + li {
-            margin-top: 3px;
-          }
-          li > p {
-            margin: 0 0 3px;
-          }
-          blockquote {
-            margin: 0 0 9px;
-            padding: 6px 10px;
-            border-left: 3px solid var(--el-color-primary-light-5);
-            border-radius: 0 6px 6px 0;
-            background: var(--el-fill-color-lighter);
-            color: var(--el-text-color-secondary);
-          }
-          hr {
-            margin: 14px 0;
-          }
-          a {
-            color: var(--el-color-primary);
-            text-decoration: none;
-            &:hover {
-              text-decoration: underline;
-            }
-          }
-          img {
-            border-radius: 6px;
-          }
-          code:not(.hljs):not(.highlight-chroma) {
-            padding: 1px 4px;
-            border-radius: 4px;
-            background: var(--el-fill-color);
-            font-size: 0.88em;
-          }
-          pre {
-            margin: 10px 0;
-            overflow: hidden;
-            border: solid 1px var(--el-border-color-lighter);
-            border-radius: 7px;
-            background: var(--el-fill-color-light);
-          }
-          pre > code {
-            padding: 10px 12px;
-            background-color: transparent;
-            background-image: none;
-            font-size: 11.5px;
-            line-height: 1.6;
-          }
-          table {
-            margin-bottom: 10px;
-            font-size: 12px;
-            line-height: 1.6;
-          }
-          th,
-          td {
-            padding: 5px 8px;
-          }
-          .language-echarts {
-            height: 300px !important;
-            margin-bottom: 12px;
-          }
-        }
         :deep(.chat-reasoning-text) {
           font-size: 12px;
-          line-height: 1.65;
+          line-height: 1.7;
         }
-      }
-      /* 折叠面板头：默认 48px 对气泡内的过程信息太高，压到 22px（折叠头高度与行高都跟随该变量） */
-      :deep(.chat-reasoning.el-collapse) {
-        --el-collapse-header-height: 22px;
       }
       /* 回复工具条：仅靠间距与正文分隔，时间靠右 */
       :deep(.chat-toolbar) {

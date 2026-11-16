@@ -12,8 +12,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 知识图谱（kind = ontology） - 内部调用：每个本体定义作为一个工具，支持两种动作（对应 /kg/retrieval/traverse 页面）：
@@ -34,12 +36,30 @@ public class OntologyTool implements AgenticTool {
     }
 
     @Override
+    public ArrayNode definitions(JsonNode items) {
+        Set<Integer> ids = new LinkedHashSet<>();
+        for (JsonNode item : items) {
+            int id = item.at("/ontologyId").asInt(0);
+            if (id > 0) ids.add(id);
+        }
+        Map<Integer, JsonNode> models = models(ids);
+        ArrayNode result = DPUtil.arrayNode();
+        for (JsonNode item : items) {
+            result.add(definition(item, models.get(item.at("/ontologyId").asInt(0))));
+        }
+        return result;
+    }
+
+    @Override
     public ObjectNode definition(JsonNode item) {
+        int ontologyId = item.at("/ontologyId").asInt(0);
+        return definition(item, ontologyId < 1 ? null : model(ontologyId));
+    }
+
+    protected ObjectNode definition(JsonNode item, JsonNode model) {
         String name = item.at("/name").asText("");
         if (DPUtil.empty(name)) return null;
-        int ontologyId = item.at("/ontologyId").asInt(0);
-        if (ontologyId < 1) return null;
-        JsonNode model = model(ontologyId);
+        if (null == model) return null;
         if (model.has("status") && 1 != model.at("/status").asInt(0)) return null;
         if (item.isObject()) {
             ObjectNode value = (ObjectNode) item;
@@ -62,6 +82,20 @@ public class OntologyTool implements AgenticTool {
         params.add(AgenticTool.parameter("maxDepth", false, AgenticTool.schema("integer", "路径最大深度，默认 3，最大 5（path 用）")));
         params.add(AgenticTool.parameter("limit", false, AgenticTool.schema("integer", "返回条数：search 默认 15、path 默认 5，最大 100")));
         return AgenticTool.definition(name, params, item);
+    }
+
+    /** 一次取回多个本体模型，避免同一次工具装配逐个 RPC。 */
+    protected Map<Integer, JsonNode> models(Set<Integer> ids) {
+        Map<Integer, JsonNode> result = new LinkedHashMap<>();
+        if (ids.isEmpty()) return result;
+        Map<String, Object> param = new LinkedHashMap<>();
+        param.put("ids", ids);
+        JsonNode data = RpcUtil.data(kgRpc.post("/ontology/models", param), false);
+        if (null == data) return result;
+        for (JsonNode row : data.at("/rows")) {
+            result.put(row.at("/id").asInt(0), row);
+        }
+        return result;
     }
 
     @Override

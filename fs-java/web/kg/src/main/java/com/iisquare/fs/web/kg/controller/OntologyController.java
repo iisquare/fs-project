@@ -38,6 +38,13 @@ public class OntologyController extends PermitControllerBase {
         return ApiUtil.echoResult(result);
     }
 
+    @RequestMapping("/models")
+    @Permission("")
+    public String modelsAction(@RequestBody Map<?, ?> param) {
+        Map<String, Object> result = ontologyService.models(param);
+        return ApiUtil.echoResult(result);
+    }
+
     @RequestMapping("/list")
     @Permission("")
     public String listAction(@RequestBody Map<String, Object> param) {

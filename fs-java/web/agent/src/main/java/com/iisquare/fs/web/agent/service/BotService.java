@@ -11,9 +11,7 @@ import com.iisquare.fs.base.web.sse.SsePlainRequest;
 import com.iisquare.fs.base.web.sse.SsePlainRequestPool;
 import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.agent.core.AgenticRuntime;
-import com.iisquare.fs.web.agent.entity.Agentic;
 import com.iisquare.fs.web.agent.react.AgenticToolService;
-import com.iisquare.fs.web.agent.react.ToolFunctionName;
 import com.iisquare.fs.web.agent.storage.AgentStorage;
 import com.iisquare.fs.web.agent.tool.FileUploader;
 import com.iisquare.fs.web.core.mvc.FeignInterceptor;
@@ -38,8 +36,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -336,34 +334,48 @@ public class BotService implements DisposableBean {
     public Map<String, Object> tools(String body, HttpServletRequest request) {
         ObjectNode json = parse(body);
         ArrayNode rows = DPUtil.arrayNode();
-        Set<String> used = new HashSet<>();
+        ArrayNode items = DPUtil.arrayNode();
+        ArrayNode refs = DPUtil.arrayNode();
+        Set<Integer> agenticIds = new LinkedHashSet<>();
         for (JsonNode ref : json.at("/tools")) {
             ObjectNode item = item(ref);
             if (null == item) continue;
+            items.add(item);
+            refs.add(ref);
             if ("agentic".equals(item.at("/kind").asText(""))) {
                 int agenticId = item.at("/agenticId").asInt(0);
-                Agentic target = agenticId < 1 ? null : agenticService.info(agenticId);
-                if (null == target || 1 != DPUtil.parseInt(target.getStatus())
-                        || !agenticService.authorized(target, request)) continue;
+                if (agenticId > 0) agenticIds.add(agenticId);
             }
-            String functionName = ToolFunctionName.unique(item, used);
-            item.put("name", functionName);
-            ArrayNode definitions;
-            try {
-                definitions = agenticToolService.definitions(DPUtil.arrayNode().add(item));
-            } catch (Exception e) {
-                continue; // 单只工具不可用（本体取不到模型等）不拖累其余工具
-            }
-            if (definitions.isEmpty() || !definitions.get(0).isObject()) continue;
-            ObjectNode definition = ((ObjectNode) definitions.get(0)).deepCopy();
+        }
+        var authorized = agenticService.authorizedByIds(agenticIds, request);
+        ArrayNode acceptedItems = DPUtil.arrayNode();
+        ArrayNode acceptedRefs = DPUtil.arrayNode();
+        for (int index = 0; index < items.size(); index++) {
+            JsonNode item = items.get(index);
+            if ("agentic".equals(item.at("/kind").asText(""))
+                    && !authorized.containsKey(item.at("/agenticId").asInt(0))) continue;
+            acceptedItems.add(item);
+            acceptedRefs.add(refs.get(index));
+        }
+
+        ArrayNode slots;
+        try {
+            // 同类工具在 AgenticToolService 中批量取数并组定义。
+            slots = agenticToolService.definitionSlots(acceptedItems);
+        } catch (Exception e) {
+            slots = DPUtil.arrayNode();
+        }
+        for (JsonNode slot : slots) {
+            int index = slot.at("/index").asInt(-1);
+            if (index < 0 || index >= acceptedRefs.size()) continue;
+            String functionName = slot.at("/functionName").asText("");
+            JsonNode definition = slot.at("/definition");
             JsonNode function = definition.at("/function");
             if (!function.isObject()) continue;
-            // 归一后的函数名以服务端为准：中文名也必须是合法函数名，模型才调用得动
-            ((ObjectNode) function).put("name", functionName);
             ObjectNode row = rows.addObject();
-            ObjectNode target = refWithName(ref, functionName);
+            ObjectNode target = refWithName(acceptedRefs.get(index), functionName);
             row.set("ref", target);
-            row.set("function", function);
+            row.set("function", function.deepCopy());
         }
         ObjectNode data = DPUtil.objectNode();
         data.put("descriptionVersion", ToolDescriptionService.VERSION);
