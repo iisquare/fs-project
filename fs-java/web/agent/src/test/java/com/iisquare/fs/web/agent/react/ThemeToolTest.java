@@ -6,6 +6,7 @@ import com.iisquare.fs.base.core.util.DPUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -39,6 +40,36 @@ public class ThemeToolTest {
         Assert.assertEquals("customer_id", dictionary.at("/datasets/1/columns/0/name").asText());
     }
 
+    @Test
+    public void queryLoadsThemeInfoWithoutRepeatingFieldDictionary() {
+        StubThemeTool tool = new StubThemeTool(themeInfo(true, true));
+        ObjectNode item = DPUtil.objectNode().put("themeId", 1);
+        Map<String, Object> args = new LinkedHashMap<>();
+        args.put("sql", "select date_format(created_at, '%Y-%m') as month from orders");
+
+        JsonNode result = (JsonNode) tool.invoke(null, item, args,
+                new LinkedHashMap<>(), new LinkedHashMap<>());
+
+        Assert.assertEquals(1, tool.infoCalls);
+        Assert.assertEquals(1, tool.queryDataCalls);
+        Assert.assertEquals(0, tool.batchCalls);
+        Assert.assertEquals("销售主题", result.at("/themeName").asText());
+        Assert.assertEquals("month", result.at("/data/columns/0/name").asText());
+        Assert.assertFalse(result.has("datasets"));
+        Assert.assertFalse(result.has("description"));
+    }
+
+    @Test
+    public void definitionsUseBasicThemeInfoOnly() {
+        StubThemeTool tool = new StubThemeTool(themeInfo(true, true));
+        ObjectNode item = DPUtil.objectNode().put("themeId", 1).put("name", "sales");
+
+        tool.definitions(DPUtil.arrayNode().add(item));
+
+        Assert.assertEquals(0, tool.infoCalls);
+        Assert.assertEquals(1, tool.basicInfoCalls);
+    }
+
     private ObjectNode themeInfo(boolean firstFields, boolean secondFields) {
         ObjectNode info = DPUtil.objectNode();
         info.put("id", 1);
@@ -68,6 +99,9 @@ public class ThemeToolTest {
     private static class StubThemeTool extends ThemeTool {
         private final JsonNode info;
         private int batchCalls;
+        private int infoCalls;
+        private int basicInfoCalls;
+        private int queryDataCalls;
         private Set<Integer> batchIds = new LinkedHashSet<>();
 
         private StubThemeTool(JsonNode info) {
@@ -76,7 +110,25 @@ public class ThemeToolTest {
 
         @Override
         protected JsonNode info(int themeId) {
+            infoCalls++;
             return info;
+        }
+
+        @Override
+        protected Map<Integer, JsonNode> infos(Set<Integer> ids) {
+            basicInfoCalls++;
+            Map<Integer, JsonNode> result = new LinkedHashMap<>();
+            for (Integer id : ids) result.put(id, info);
+            return result;
+        }
+
+        @Override
+        protected JsonNode queryData(int themeId, String themeName, String sql, int limit) {
+            queryDataCalls++;
+            ObjectNode data = DPUtil.objectNode();
+            data.putArray("columns").addObject().put("name", "month").put("type", "varchar");
+            data.putArray("rows").addObject().put("month", "2026-11");
+            return data;
         }
 
         @Override

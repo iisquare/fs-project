@@ -184,7 +184,7 @@ public class OlapService extends ServiceBase {
     }
 
     public Map<String, Object> query(Map<?, ?> param, boolean bOnlyDataset, HttpServletRequest request, HttpServletResponse response) {
-        String sql = DPUtil.parseString(param.get("sql"));
+        String sql = SqlParserUtil.stripTrailingSemicolons(DPUtil.parseString(param.get("sql")));
         if (DPUtil.empty(sql)) {
             return ApiUtil.result(1001, "SQL不能为空", null);
         }

@@ -3,6 +3,7 @@ package com.iisquare.fs.web.agent.react;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.iisquare.fs.base.core.util.ApiUtil;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.web.util.RpcUtil;
 import com.iisquare.fs.web.agent.core.AgenticRuntime;
@@ -52,7 +53,7 @@ public class ThemeTool implements AgenticTool {
     @Override
     public ObjectNode definition(JsonNode item) {
         int themeId = item.at("/themeId").asInt(0);
-        return definition(item, themeId < 1 ? null : info(themeId));
+        return definition(item, themeId < 1 ? null : infos(Set.of(themeId)).get(themeId));
     }
 
     protected ObjectNode definition(JsonNode item, JsonNode info) {
@@ -60,7 +61,7 @@ public class ThemeTool implements AgenticTool {
         if (DPUtil.empty(name)) return null;
         if (null == info) return null;
         if (info.has("status") && 1 != info.at("/status").asInt(0)) return null;
-        // 取一次详情确认主题存在且当前用户可访问；类型说明由 ToolDescriptionService 统一生成，
+        // 取一次基础信息确认主题存在且当前用户可访问；类型说明由 ToolDescriptionService 统一生成，
         // 描述附在说明末尾，用服务端当前值而不是项目里的旧快照
         if (item.isObject()) {
             ObjectNode value = (ObjectNode) item;
@@ -74,7 +75,7 @@ public class ThemeTool implements AgenticTool {
         return AgenticTool.definition(name, params, item);
     }
 
-    /** 一次取回多个主题详情；定义阶段只消费主题及数据集基础信息。 */
+    /** 一次取回多个主题基础信息，不加载数据集详情。 */
     protected Map<Integer, JsonNode> infos(Set<Integer> ids) {
         Map<Integer, JsonNode> result = new LinkedHashMap<>();
         if (ids.isEmpty()) return result;
@@ -95,36 +96,48 @@ public class ThemeTool implements AgenticTool {
         int themeId = item.at("/themeId").asInt(0);
         if (themeId < 1) throw new IllegalStateException("数据主题工具未选择主题");
         String sql = DPUtil.parseString(args.get("sql"));
-        ObjectNode dictionary = dictionary(themeId);
-        if (DPUtil.empty(sql)) return dictionary;
-        Map<String, Object> param = new LinkedHashMap<>();
-        param.put("sql", sql);
-        param.put("themeId", themeId); // 供数据查询日志归类到所属数据主题
-        param.put("themeName", dictionary.at("/themeName").asText(""));
-        param.put("limit", null == args.get("limit") || DPUtil.parseInt(args.get("limit")) < 1
-                ? 100 : Math.min(DPUtil.parseInt(args.get("limit")), 10000));
-        JsonNode data = RpcUtil.data(biRpc.get("/dataset/query", param), false);
+        JsonNode info = available(themeId);
+        if (DPUtil.empty(sql)) return dictionary(themeId, info);
+        String themeName = info.at("/name").asText("");
+        int limit = null == args.get("limit") || DPUtil.parseInt(args.get("limit")) < 1
+                ? 100 : Math.min(DPUtil.parseInt(args.get("limit")), 10000);
+        JsonNode data = queryData(themeId, themeName, sql, limit);
         ObjectNode value = DPUtil.objectNode();
         value.put("themeId", themeId);
-        value.put("themeName", dictionary.at("/themeName").asText(""));
-        value.put("description", dictionary.at("/description").asText(""));
+        value.put("themeName", themeName);
         value.put("sql", sql);
-        // 查询结果同时保留表/字段字典，模型无需为了列注释和关联关系再调用一次字典。
-        value.set("datasets", dictionary.at("/datasets"));
-        value.set("relations", dictionary.at("/relations"));
         value.set("data", null == data ? DPUtil.objectNode() : data);
         return value;
     }
 
+    /** 向 BI 发起一次数据主题范围内的 SQL 查询。 */
+    protected JsonNode queryData(int themeId, String themeName, String sql, int limit) {
+        Map<String, Object> param = new LinkedHashMap<>();
+        param.put("sql", sql);
+        param.put("themeId", themeId); // 供数据查询日志归类到所属数据主题
+        param.put("themeName", themeName);
+        param.put("limit", limit);
+        Map<String, Object> result = RpcUtil.result(biRpc.get("/dataset/query", param));
+        if (ApiUtil.failed(result)) {
+            String message = ApiUtil.message(result);
+            Object detail = ApiUtil.data(result, Object.class);
+            if (null != detail) {
+                String detailText = detail instanceof CharSequence
+                        ? detail.toString() : DPUtil.stringify(detail);
+                if (!DPUtil.empty(detailText)) message += "：" + detailText;
+            }
+            throw new IllegalStateException(DPUtil.empty(message) ? "数据主题查询失败" : message);
+        }
+        return DPUtil.toJSON(ApiUtil.data(result, Object.class));
+    }
+
     /** 主题数据字典：主题基础信息 + 数据集（名称、描述、字段）+ 关联关系 */
     public ObjectNode dictionary(int themeId) {
-        JsonNode info = info(themeId);
-        if (null == info) {
-            throw new IllegalStateException("数据主题不存在或无权访问：" + themeId);
-        }
-        if (info.has("status") && 1 != info.at("/status").asInt(0)) {
-            throw new IllegalStateException("数据主题已停用：" + themeId);
-        }
+        return dictionary(themeId, available(themeId));
+    }
+
+    /** 使用已加载的主题详情生成数据字典，避免重复请求主题详情。 */
+    protected ObjectNode dictionary(int themeId, JsonNode info) {
         ObjectNode result = DPUtil.objectNode();
         result.put("themeId", themeId);
         result.put("themeName", info.at("/name").asText(""));
@@ -171,6 +184,22 @@ public class ThemeTool implements AgenticTool {
         return result;
     }
 
+    /** 校验主题存在且可用，查询只需要主题基础信息时也必须执行同一套校验。 */
+    protected JsonNode available(int themeId) {
+        return available(info(themeId), themeId);
+    }
+
+    /** 统一校验主题存在性与状态，调用方可以传入完整信息或基础信息。 */
+    protected JsonNode available(JsonNode info, int themeId) {
+        if (null == info) {
+            throw new IllegalStateException("数据主题不存在或无权访问：" + themeId);
+        }
+        if (info.has("status") && 1 != info.at("/status").asInt(0)) {
+            throw new IllegalStateException("数据主题已停用：" + themeId);
+        }
+        return info;
+    }
+
     /** 主题详情已经批量带出字段配置时直接转换，只把字段为空的数据集交给批量接口解析。 */
     protected ArrayNode columns(JsonNode dataset) {
         ArrayNode result = DPUtil.arrayNode();
@@ -204,7 +233,7 @@ public class ThemeTool implements AgenticTool {
         return result;
     }
 
-    /** 当前主题详情：定义与数据字典都从 BI 服务实时读取，不在 Agent 进程内缓存 */
+    /** 当前主题详情：实际工具调用及数据字典都从 BI 服务实时读取，不在 Agent 进程内缓存。 */
     protected JsonNode info(int themeId) {
         Map<String, Object> param = new LinkedHashMap<>();
         param.put("id", themeId);

@@ -13,9 +13,11 @@ import useChatBranch from '@/composables/useChatBranch'
 import UserApi from '@/api/member/UserApi'
 import AgenticSteps from '@/components/Agentic/AgenticSteps.vue'
 import AgenticTimeline from '@/components/Agentic/AgenticTimeline.vue'
+import ChatAttachments from '@/components/Chat/ChatAttachments.vue'
 import ChatElevator from '@/components/Chat/ChatElevator.vue'
 import ChatMessage from '@/components/Chat/ChatMessage.vue'
 import ChatTextBlock from '@/components/Chat/ChatTextBlock.vue'
+import AgenticUtil from '@/utils/AgenticUtil'
 import ApiUtil from '@/utils/ApiUtil'
 import DateUtil from '@/utils/DateUtil'
 import RouteUtil from '@/utils/RouteUtil'
@@ -112,6 +114,7 @@ const stepLoading = ref<Record<string, boolean>>({})
 /** 本轮运行日志详情（步骤 + 运行入参 + 运行输出），与运行日志详情页保持同样的内容 */
 const logOf = (item: any) => stepCache.value[String(item?.logId ?? '')] ?? null
 const stepsOf = (item: any) => logOf(item)?.steps ?? []
+const inputFilesOf = (item: any) => AgenticUtil.inputFiles(logOf(item)?.inputs)
 const loadSteps = (item: any) => {
   const logId = String(item?.logId ?? '')
   if (!logId || stepCache.value[logId] || stepLoading.value[logId]) return
@@ -260,6 +263,7 @@ const { feeding, submit: handleFeedback } = useChatFeedback('该消息不支持�
                 <!-- 运行入参与运行输出：与运行日志详情页一致，排查时不必再跳页 -->
                 <el-collapse class="chat-raw" v-if="logOf(item)">
                   <el-collapse-item title="运行入参">
+                    <ChatAttachments class="chat-input-files" :files="inputFilesOf(item)" />
                     <ChatTextBlock :value="logOf(item).inputs ?? {}" />
                   </el-collapse-item>
                   <el-collapse-item title="运行输出">
@@ -323,6 +327,8 @@ $chat-output-line-height: 1.75;
   min-height: 0;
   padding: 8px;
   overflow: auto;
+  /* 始终预留滚动条宽度，避免首次出现滚动条时消息区域整体位移。 */
+  scrollbar-gutter: stable both-edges;
   border-radius: 4px;
   background: var(--el-fill-color-lighter);
   /* 消息行：结构与通用样式在 components/Chat/ChatMessage.vue，这里只保留对话历史自己的口径 */
@@ -386,6 +392,9 @@ $chat-output-line-height: 1.75;
     /* 运行入参 / 运行输出：内容与运行日志详情页一致 */
     .chat-raw {
       margin-top: 8px;
+      .chat-input-files {
+        margin-bottom: 8px;
+      }
       &.el-collapse {
         border-top: none;
         border-bottom: none;

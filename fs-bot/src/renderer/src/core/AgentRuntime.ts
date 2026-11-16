@@ -12,7 +12,7 @@ import ModelChat, {
   type ModelContentPart,
   type ModelToolCall
 } from './ModelChat'
-import type { ToolInvocationResult, ToolSet } from './Toolbox'
+import type { ToolInfo, ToolInvocationResult, ToolSet } from './Toolbox'
 import {
   cancelAgentParentRun,
   isAgentParentRunCanceled,
@@ -332,6 +332,17 @@ function outputText(value: string, limit = MAX_SUMMARY): string {
 
 function toolResult(value: string | ToolInvocationResult): ToolInvocationResult {
   return 'string' === typeof value ? { content: value } : value
+}
+
+function interactionCallMeta(
+  info: ToolInfo | undefined,
+  name: string
+): Pick<AgentInteractionRound['calls'][number], 'scope' | 'label' | 'category'> {
+  return {
+    scope: info?.scope ?? 'local',
+    label: outputText(info?.label || name, 200),
+    ...(info?.category ? { category: outputText(info.category, 80) } : {})
+  }
 }
 
 function reusableExperience(text: string): string {
@@ -686,6 +697,15 @@ async function runModelOnce(
                 MAX_INTERACTION_ARGS
               )
             }
+            if (current.function.name) {
+              Object.assign(
+                liveCall,
+                interactionCallMeta(
+                  input.tools.catalog[current.function.name],
+                  current.function.name
+                )
+              )
+            }
             liveRound.calls[index] = liveCall
           }
         }
@@ -737,7 +757,8 @@ async function runModelOnce(
               args: outputText(call.function.arguments, MAX_INTERACTION_ARGS),
               result: '',
               status: 'running',
-              durationMs: 0
+              durationMs: 0,
+              ...interactionCallMeta(input.tools.catalog[call.function.name], call.function.name)
             }))
         }
         resolve({

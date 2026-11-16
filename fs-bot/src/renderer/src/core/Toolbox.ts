@@ -50,6 +50,8 @@ export interface ToolInfo {
   scope: ToolScope
   /** 展示用短标签：本地工具即函数名，项目工具按类型给出中文名 */
   label: string
+  /** 工具类型：项目工具为“数据主题”等，浏览器与桌面 Agent 为对应操作类型 */
+  category?: string
 }
 
 export interface ToolInvocationImage {
@@ -123,12 +125,14 @@ function serverToolMeta(
   ref: ServerToolRef | null | undefined,
   functionName: string,
   serverDescription: string
-): Pick<ToolInfo, 'description' | 'label'> {
+): Pick<ToolInfo, 'description' | 'label' | 'category'> {
   const name =
     String(ref?.name ?? '').trim() || String(ref?.title ?? ref?.methodName ?? functionName).trim()
+  const category = PROJECT_TOOL_KIND_LABELS[kind] ?? '项目工具'
   return {
     description: serverDescription,
-    label: `${PROJECT_TOOL_KIND_LABELS[kind] ?? '项目工具'}：${name}`
+    label: `${category}：${name}`,
+    category
   }
 }
 
@@ -139,7 +143,8 @@ function row(
   properties: any,
   required: string[] = [],
   scope: ToolScope = 'local',
-  label = name
+  label = name,
+  category = ''
 ): { tool: any; info: ToolInfo } {
   const tool = {
     type: 'function',
@@ -149,7 +154,7 @@ function row(
       parameters: { type: 'object', properties, ...(required.length ? { required } : {}) }
     }
   }
-  return { tool, info: { name, description, scope, label } }
+  return { tool, info: { name, description, scope, label, ...(category ? { category } : {}) } }
 }
 
 const text = (description: string): { type: string; description: string } => ({
@@ -324,7 +329,10 @@ function browserTools(): Array<{ tool: any; info: ToolInfo }> {
           }
         }
       },
-      ['action']
+      ['action'],
+      'local',
+      'browser_op',
+      '浏览器操作'
     )
   ]
 }
@@ -392,7 +400,10 @@ function desktopTools(): Array<{ tool: any; info: ToolInfo }> {
         toY: { type: 'integer', description: '拖拽终点纵坐标，0-1000（drag 需要）' },
         ms: { type: 'integer', description: '等待毫秒数（wait 选填，默认 800，最多 10000）' }
       },
-      ['action']
+      ['action'],
+      'local',
+      'desktop_op',
+      '桌面操作'
     )
   ]
 }
@@ -1675,7 +1686,8 @@ async function buildRemoteTools(
         name,
         description: meta.description,
         scope: 'server',
-        label: meta.label
+        label: meta.label,
+        category: meta.category
       }
       definitions.push({
         type: 'function',

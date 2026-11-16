@@ -28,6 +28,7 @@
 import { computed, nextTick, ref } from 'vue'
 import { Edit, MagicStick, UserFilled } from '@element-plus/icons-vue'
 import ButtonCopy from '@/components/Button/ButtonCopy.vue'
+import ChatAttachments from '@/components/Chat/ChatAttachments.vue'
 import ChatBranches from '@/components/Chat/ChatBranches.vue'
 import ChatLoading from '@/components/Chat/ChatLoading.vue'
 import ChatNotice from '@/components/Chat/ChatNotice.vue'
@@ -102,6 +103,8 @@ const isStreaming = computed(() => props.streaming ?? !!props.item?.streaming)
 const hasContent = computed(() => '' !== String(props.item?.content ?? '').trim())
 /** 空回复：没有正文时给个占位避免只剩一个空气泡 */
 const empty = computed(() => isAssistant.value && !isStreaming.value && !hasContent.value)
+/** 用户本轮发送的附件：消息上的 files 为文件服务返回的文件信息 */
+const attachments = computed<any[]>(() => Array.isArray(props.item?.files) ? props.item.files : [])
 
 /**
  * 助手回复里的知识库图片（形如 ![说明](kb:图片标识)）按当前授权实时签发地址：
@@ -149,7 +152,9 @@ const streamingText = computed(() => {
               </el-collapse-item>
             </el-collapse>
             <!-- 用户提问保持原文 -->
-            <div class="chat-content" v-if="isUser && !editing" data-chat-text>{{ item.content }}</div>
+            <div class="chat-content" v-if="isUser && !editing && hasContent" data-chat-text>{{ item.content }}</div>
+            <!-- 用户气泡内的附件：点击在新页面打开文件服务签发的下载地址 -->
+            <ChatAttachments class="chat-attachments" :files="isUser ? attachments : []" />
             <!-- 编辑提问：改完重新发送会在同一处新起一条分支（原提问与原回复都保留） -->
             <div class="chat-edit" v-if="isUser && editing">
               <el-input
@@ -309,6 +314,12 @@ const streamingText = computed(() => {
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-word;
+}
+.chat-attachments {
+  margin-top: 6px;
+  &:first-child {
+    margin-top: 0;
+  }
 }
 /* 编辑提问：与正文同一字号，底部工具行右对齐（取消 / 重新发送） */
 .chat-edit {

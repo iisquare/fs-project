@@ -29,6 +29,21 @@ public final class SqlParserUtil {
     }
 
     /**
+     * 去掉 SQL 末尾的语句分隔符。Trino JDBC 不接受 SELECT 语句末尾的分号，
+     * 但数据集查询等调用方通常会按 SQL 编辑器习惯附带分号。
+     */
+    public static String stripTrailingSemicolons(String sql) {
+        if (null == sql) {
+            return "";
+        }
+        String normalized = sql.strip();
+        while (normalized.endsWith(";")) {
+            normalized = normalized.substring(0, normalized.length() - 1).strip();
+        }
+        return normalized;
+    }
+
+    /**
      * 解析SQL并返回其中包含的全部表名。
      * 表名去除引号，未加引号的标识符统一转为小写；带catalog或schema的表名以英文点号分隔。
      */

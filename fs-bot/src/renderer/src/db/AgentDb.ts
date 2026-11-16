@@ -34,6 +34,7 @@ export interface AgentTraceEntry {
 }
 
 export type AgentInteractionCallStatus = 'running' | 'success' | 'failed' | 'stopped' | 'not_run'
+export type AgentInteractionToolScope = 'local' | 'server' | 'agent'
 
 export interface AgentInteractionToolCall {
   id: string
@@ -42,6 +43,12 @@ export interface AgentInteractionToolCall {
   result: string
   status: AgentInteractionCallStatus
   durationMs: number
+  /** 实际执行边界；旧记录没有该字段，由详情页按所属 Agent 回退 */
+  scope?: AgentInteractionToolScope
+  /** 展示用完整名称，例如“数据主题：销售分析” */
+  label?: string
+  /** 工具类型，例如“数据主题”“浏览器操作” */
+  category?: string
   error?: string
 }
 
@@ -153,6 +160,10 @@ function interactionStatus(value: unknown): AgentStatus {
   return 'failed'
 }
 
+function interactionToolScope(value: unknown): AgentInteractionToolScope | undefined {
+  return value === 'local' || value === 'server' || value === 'agent' ? value : undefined
+}
+
 function parseInteractionTask(value: unknown): AgentInteractionTask | null {
   if (typeof value !== 'string' || !value) return null
   try {
@@ -178,6 +189,13 @@ function parseInteractionTask(value: unknown): AgentInteractionTask | null {
           calls: calls.slice(0, MAX_INTERACTION_CALLS).map((rawCall) => {
             const call = (rawCall ?? {}) as Record<string, unknown>
             const status = String(call.status ?? '')
+            const scope = interactionToolScope(call.scope)
+            const label = String(call.label ?? '')
+              .trim()
+              .slice(0, 200)
+            const category = String(call.category ?? '')
+              .trim()
+              .slice(0, 80)
             return {
               id: String(call.id ?? ''),
               name: String(call.name ?? ''),
@@ -187,6 +205,9 @@ function parseInteractionTask(value: unknown): AgentInteractionTask | null {
                 ? status
                 : 'failed') as AgentInteractionCallStatus,
               durationMs: Math.max(0, Number(call.durationMs ?? 0) || 0),
+              ...(scope ? { scope } : {}),
+              ...(label ? { label } : {}),
+              ...(category ? { category } : {}),
               ...(call.error ? { error: String(call.error) } : {})
             }
           })

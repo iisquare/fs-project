@@ -152,8 +152,8 @@ public final class ToolResultFormatter {
     }
 
     /**
-     * 数据主题：字典保留主题、数据集描述、完整字段元数据和关联关系；查询结果的
-     * columns 只放字段名，columnMeta 保留标题、类型、注释等必要信息。
+     * 数据主题：空 sql 的字典保留主题、数据集描述、完整字段元数据和关联关系；
+     * 查询结果只保留列名、运行期列类型与数据行，不重复返回数据集字段配置。
      */
     protected static JsonNode theme(JsonNode source) {
         if (!source.isObject()) return generic(source);
@@ -166,16 +166,10 @@ public final class ToolResultFormatter {
         ObjectNode result = DPUtil.objectNode();
         copyText(result, source, "themeName");
         copyText(result, source, "sql");
-        copyText(result, source, "description");
-        if (!result.has("description")) copyText(result, query, "description");
-        copyValue(result, source, "datasets");
-        copyValue(result, source, "relations");
         JsonNode columns = query.get("columns");
         JsonNode rows = query.get("rows");
         ObjectNode table = queryTable(columns, rows);
         result.set("columns", table.get("columns"));
-        JsonNode columnMeta = table.get("columnMeta");
-        if (null != columnMeta && !columnMeta.isEmpty()) result.set("columnMeta", columnMeta);
         result.set("rows", table.get("rows"));
         copyValue(result, query, "truncated");
         copyValue(result, query, "total");
@@ -192,17 +186,35 @@ public final class ToolResultFormatter {
             for (JsonNode dataset : datasets) {
                 if (!dataset.isObject()) continue;
                 ObjectNode item = rows.addObject();
-                // relations 通过 sourceDatasetId / targetDatasetId 引用数据集，必须保留主键。
                 copyValue(item, dataset, "id");
                 copyText(item, dataset, "name");
                 copyText(item, dataset, "description");
-                JsonNode columns = dataset.get("columns");
-                if (null != columns && columns.isArray()) {
-                    item.set("columns", dictionaryColumns(columns));
-                }
+                item.set("fields", fieldTable(dataset.get("columns")));
             }
         }
-        copyValue(result, source, "relations");
+        JsonNode relations = source.get("relations");
+        if (null != relations && relations.isArray()) {
+            result.set("relations", compactArray(relations));
+        } else {
+            copyValue(result, source, "relations");
+        }
+        return result;
+    }
+
+    /** 每个数据集内嵌一张字段表，避免把 datasetId 复制到每条字段行。 */
+    protected static ObjectNode fieldTable(JsonNode columns) {
+        ObjectNode result = DPUtil.objectNode();
+        result.putArray("columns").add("name").add("title").add("type").add("comment");
+        ArrayNode rows = result.putArray("rows");
+        if (null == columns || !columns.isArray()) return result;
+        for (JsonNode column : columns) {
+            if (!column.isObject()) continue;
+            ArrayNode row = rows.addArray();
+            addText(row, column, "name");
+            addText(row, column, "title");
+            addText(row, column, "type");
+            addText(row, column, "comment");
+        }
         return result;
     }
 
@@ -296,21 +308,15 @@ public final class ToolResultFormatter {
             empty.set("rows", DPUtil.arrayNode());
             return empty;
         }
-        ArrayNode briefColumns = DPUtil.arrayNode();
+        ArrayNode resultColumns = DPUtil.arrayNode();
         ArrayNode names = DPUtil.arrayNode();
         for (JsonNode column : columns) {
             String name = column.at("/name").asText("");
             if (DPUtil.empty(name)) name = column.at("/label").asText("");
             names.add(name);
-            ObjectNode item = briefColumns.addObject();
+            ObjectNode item = resultColumns.addObject();
             if (!DPUtil.empty(name)) item.put("name", name);
-            String label = column.at("/label").asText("");
-            if (!DPUtil.empty(label)) item.put("label", label);
-            String type = column.at("/type").asText("");
-            if (!DPUtil.empty(type)) item.put("type", type);
-            copyText(item, column, "title");
-            copyText(item, column, "comment");
-            copyText(item, column, "description");
+            copyText(item, column, "type");
             copyValue(item, column, "nullable");
             copyValue(item, column, "precision");
             copyValue(item, column, "scale");
@@ -329,19 +335,8 @@ public final class ToolResultFormatter {
             }
         }
         ObjectNode result = DPUtil.objectNode();
-        result.set("columns", names);
-        result.set("columnMeta", briefColumns);
+        result.set("columns", resultColumns);
         result.set("rows", values);
-        return result;
-    }
-
-    protected static ArrayNode dictionaryColumns(JsonNode columns) {
-        ArrayNode result = DPUtil.arrayNode();
-        for (JsonNode column : columns) {
-            if (!column.isObject()) continue;
-            // 字典用于编写查询：字段名、标题、类型、注释等都属于必要信息，原样保留。
-            result.add(column.deepCopy());
-        }
         return result;
     }
 
@@ -380,5 +375,9 @@ public final class ToolResultFormatter {
         if (null != value && !value.isMissingNode() && !value.isNull()) {
             target.set(field, value.deepCopy());
         }
+    }
+
+    protected static void addText(ArrayNode target, JsonNode source, String field) {
+        target.add(source.at("/" + field).asText(""));
     }
 }

@@ -163,9 +163,9 @@ async function openAgentDetail(call: ChatToolCall): Promise<void> {
         'agent' === call.scope ? call.label || call.name : call.name || '（未命名调用）'
       }}</span>
       <span class="step-summary">{{ summary(call) }}</span>
-      <el-tag v-if="'server' === call.scope" class="tool-scope" size="small" effect="plain"
-        >项目工具</el-tag
-      >
+      <el-tag v-if="'server' === call.scope" class="tool-scope" size="small" effect="plain">{{
+        call.category || '项目工具'
+      }}</el-tag>
       <button
         v-else-if="'agent' === call.scope && agentSessionId(call)"
         type="button"
@@ -183,6 +183,9 @@ async function openAgentDetail(call: ChatToolCall): Promise<void> {
         effect="plain"
         >子 Agent</el-tag
       >
+      <el-tag v-else-if="call.category" class="tool-scope" size="small" effect="plain">{{
+        call.category
+      }}</el-tag>
       <span class="step-meta">{{ state(call) }} {{ formatDuration(call.duration) }}</span>
       <svg class="step-caret" viewBox="0 0 16 16" width="10" height="10" aria-hidden="true">
         <path

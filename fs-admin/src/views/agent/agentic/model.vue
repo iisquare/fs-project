@@ -13,6 +13,7 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { CircleCloseFilled, Download, Paperclip, Plus, Promotion, Upload } from '@element-plus/icons-vue'
+import ChatAttachments from '@/components/Chat/ChatAttachments.vue'
 import ChatMessage from '@/components/Chat/ChatMessage.vue'
 import ChatTextBlock from '@/components/Chat/ChatTextBlock.vue'
 import AgenticSteps from '@/components/Agentic/AgenticSteps.vue'
@@ -454,7 +455,13 @@ const runMessages: any = branch.messages
 /** 模板渲染用：当前分支路径上的消息（尚未落库的流式消息始终可见） */
 const runVisibleMessages = computed<any[]>(() => branch.visible.value)
 const runMessage: any = ref('')
-const runFileLoading = ref('')
+/** 按文件输入分别计数：多选上传时所有请求结束前禁止发送 */
+const runFileUploads = ref<Record<string, number>>({})
+const runPendingFiles = ref<Record<string, any[]>>({})
+const runFileLoading = computed(() => Object.values(runFileUploads.value).some((count: number) => count > 0))
+const runFileLoadingOf = (item: any) => (runFileUploads.value[String(item?.name ?? '')] ?? 0) > 0
+/** 新会话序号：旧会话未完成的上传不能回填到新会话 */
+const runFileEpoch = ref(0)
 // 回放令牌：自增即取消上一轮回放（关闭抽屉、新会话、重新回放）
 let playToken = 0
 // 流式输出中：模型增量仍在推送（用于输入区提示与按钮状态）
@@ -470,6 +477,10 @@ const handleRunNew = () => {
   runChatId.value = 0
   branch.reset()
   runResult.value = null
+  runMessage.value = ''
+  runFileEpoch.value++
+  runPendingFiles.value = {}
+  if (filesParam.value) runInputs.value[filesParam.value.name] = []
   // 新会话：终止回放并清掉画布上的运行态高亮
   resetRunState()
 }
@@ -530,7 +541,7 @@ const handleRunChat = () => {
   // 先快照本轮文件：清空输入区后仍要把同一批文件随消息提交
   const files = filesParam.value ? runFileList.value.slice() : []
   const parentId = Number(branch.activeLeaf.value ?? 0) || 0
-  const question: any = { role: 'user', content: message || '（按参数运行）', parentId }
+  const question: any = { role: 'user', content: message || (files.length ? '' : '（按参数运行）'), parentId }
   if (files.length) question.files = files
   runMessage.value = ''
   // 文件随本轮消息提交后清空输入区，避免文件标签残留到下一轮
@@ -863,6 +874,11 @@ const runFileList = computed<any[]>(() => {
   const value = name ? runInputs.value[name] : null
   return Array.isArray(value) ? value : []
 })
+const runPendingFileList = computed<any[]>(() => {
+  const name = filesParam.value?.name
+  return name ? runPendingFiles.value[name] ?? [] : []
+})
+const runComposerFiles = computed<any[]>(() => [...runFileList.value, ...runPendingFileList.value])
 // 输入区提示：占位用开始节点的用户输入说明，底部补充文件数量与类型限制
 const composerPlaceholder = computed(() => {
   // 输入法回车用于选词，提示里写清换行与发送的按键
@@ -896,15 +912,34 @@ const runDefault = (type: string) => {
 
 // 上传文件 → 文件服务返回 { id, name, type, ... }，作为开始节点 files 数组的元素
 const handleRunFileUpload = (item: any, file: File) => {
-  runFileLoading.value = item.name
+  const name = String(item.name)
+  const epoch = runFileEpoch.value
+  const pending: any = {
+    key: `upload-${epoch}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name: file.name,
+    type: file.type,
+    size: file.size,
+    status: 'uploading',
+  }
+  runPendingFiles.value[name] = [...(runPendingFiles.value[name] ?? []), pending]
+  runFileUploads.value[name] = (runFileUploads.value[name] ?? 0) + 1
+  const removePending = () => {
+    runPendingFiles.value[name] = (runPendingFiles.value[name] ?? [])
+      .filter((row: any) => row.key !== pending.key)
+  }
   AgenticApi.upload(file, { success: false }).then((result: any) => {
     const data: any = ApiUtil.data(result)
-    if (!data?.id) return
-    const files: any[] = Array.isArray(runInputs.value[item.name]) ? runInputs.value[item.name] : []
+    removePending()
+    if (!data?.id || epoch !== runFileEpoch.value) return
+    const files: any[] = Array.isArray(runInputs.value[name]) ? runInputs.value[name] : []
     files.push({ id: data.id, name: data.name, type: data.type, suffix: data.suffix, size: data.size })
-    runInputs.value[item.name] = files
-  }).catch(() => {}).finally(() => {
-    runFileLoading.value = ''
+    runInputs.value[name] = files
+  }).catch(() => {
+    removePending()
+  }).finally(() => {
+    const remaining = Math.max(0, (runFileUploads.value[name] ?? 1) - 1)
+    if (remaining > 0) runFileUploads.value[name] = remaining
+    else delete runFileUploads.value[name]
   })
   // 由前端调用上传接口，不使用 el-upload 的内置请求
   return false
@@ -1345,17 +1380,12 @@ onMounted(() => {
       <div class="run-composer">
         <div class="composer-box">
           <!-- 第 1 行：已上传文件的回显 -->
-          <div class="composer-files" v-if="runFileList.length">
-            <el-tag
-              class="run-file"
-              :key="file.id"
-              closable
-              size="small"
-              type="info"
-              effect="plain"
-              v-for="file in runFileList"
-              @close="handleRunFileRemove(filesParam, file)">{{ file.name || file.id }}</el-tag>
-          </div>
+          <ChatAttachments
+            class="composer-files"
+            title="已添加附件"
+            :files="runComposerFiles"
+            removable
+            @remove="(file: any) => handleRunFileRemove(filesParam, file)" />
           <!-- 第 2 行：文本区域占满整宽，高度只随文本增减（不含按钮行） -->
           <el-input
             class="composer-input"
@@ -1368,9 +1398,9 @@ onMounted(() => {
           <!-- 第 3 行：附件与发送 -->
           <div class="composer-tools">
             <div class="composer-tools-main">
-              <el-upload v-if="filesParam" :show-file-list="false" :before-upload="(file: File) => handleRunFileUpload(filesParam, file)">
+              <el-upload v-if="filesParam" multiple :show-file-list="false" :before-upload="(file: File) => handleRunFileUpload(filesParam, file)">
                 <el-tooltip :content="composerTips ? '上传文件：' + composerTips : '上传文件'" placement="top">
-                  <el-button class="composer-attach" link :icon="Paperclip" :loading="runFileLoading === filesParam.name" />
+                  <el-button class="composer-attach" link :icon="Paperclip" :loading="runFileLoadingOf(filesParam)" />
                 </el-tooltip>
               </el-upload>
               <span class="composer-tips" v-if="composerTips">{{ composerTips }}</span>
@@ -1463,6 +1493,8 @@ $run-output-line-height: 1.75;
   min-height: 0;
   padding: 8px;
   overflow: auto;
+  /* 始终预留滚动条宽度，流式内容超过首屏时消息列不会横向跳动。 */
+  scrollbar-gutter: stable both-edges;
   border-radius: 4px;
   background: var(--el-fill-color-lighter);
   /* 消息行：结构与通用样式在 components/Chat/ChatMessage.vue，这里只保留模型对话自己的口径 */
@@ -1586,11 +1618,6 @@ $run-output-line-height: 1.75;
   /* 第 1 行：已上传文件，没有文件时整行不占位 */
   .composer-files {
     margin-bottom: 6px;
-    @include flex-wrap();
-    gap: 6px;
-    .run-file {
-      max-width: 100%;
-    }
   }
   /* 第 2 行：文本区域占满整宽，高度只随文本增减（不含按钮行） */
   .composer-input {

@@ -17,46 +17,51 @@ public class ToolResultFormatterTest {
     }
 
     @Test
-    public void themeQueryUsesColumnarJsonWithoutJdbcMetadata() {
+    public void themeQueryKeepsRuntimeColumnTypesWithoutDictionary() {
         ObjectNode source = DPUtil.objectNode();
         source.put("themeId", 9);
         source.put("themeName", "销售主题");
         source.put("description", "销售订单分析主题");
-        source.put("sql", "select id, amount from orders");
+        source.put("sql", "select date_format(created_at, '%Y-%m') as month, sum(amount) as total "
+                + "from orders group by 1");
         ObjectNode sourceDataset = source.putArray("datasets").addObject();
         sourceDataset.put("id", 7);
         sourceDataset.put("name", "orders");
         sourceDataset.put("description", "订单主表");
-        sourceDataset.putArray("columns").addObject().put("name", "id")
-                .put("title", "订单ID").put("type", "bigint").put("comment", "订单主键");
+        sourceDataset.putArray("columns").addObject().put("name", "amount")
+                .put("title", "订单金额").put("type", "decimal").put("comment", "订单总金额");
         source.putArray("relations").addObject().put("sourceDatasetId", 7).put("targetDatasetId", 8);
         ObjectNode query = source.putObject("data");
         query.put("limit", 100);
         query.put("timeout", 15);
         ArrayNode columns = query.putArray("columns");
-        columns.addObject().put("index", 1).put("name", "id").put("label", "订单ID")
-                .put("type", "bigint")
-                .put("jdbcType", -5).put("className", "java.lang.Long");
-        columns.addObject().put("index", 2).put("name", "amount").put("label", "金额")
-                .put("type", "decimal").put("precision", 18).put("scale", 2);
+        columns.addObject().put("index", 1).put("name", "month").put("label", "月份")
+                .put("type", "varchar").put("jdbcType", 12)
+                .put("className", "java.lang.String").put("nullable", true);
+        columns.addObject().put("index", 2).put("name", "total").put("label", "销售总额")
+                .put("type", "decimal").put("jdbcType", 3).put("className", "java.math.BigDecimal")
+                .put("precision", 38).put("scale", 2);
         ArrayNode rows = query.putArray("rows");
-        rows.addObject().put("id", 1001).put("amount", 12.5);
+        rows.addObject().put("month", "2026-11").put("total", 12.5);
 
         JsonNode result = (JsonNode) ToolResultFormatter.format("theme", source, "brief");
 
         Assert.assertFalse(result.has("themeId"));
         Assert.assertEquals("销售主题", result.at("/themeName").asText());
-        Assert.assertEquals("销售订单分析主题", result.at("/description").asText());
-        Assert.assertEquals("订单主表", result.at("/datasets/0/description").asText());
-        Assert.assertEquals("订单主键", result.at("/datasets/0/columns/0/comment").asText());
-        Assert.assertEquals(7, result.at("/relations/0/sourceDatasetId").asInt());
-        Assert.assertEquals("id", result.at("/columns/0").asText());
-        Assert.assertEquals("amount", result.at("/columns/1").asText());
-        Assert.assertEquals("订单ID", result.at("/columnMeta/0/label").asText());
-        Assert.assertEquals("bigint", result.at("/columnMeta/0/type").asText());
-        Assert.assertEquals(18, result.at("/columnMeta/1/precision").asInt());
-        Assert.assertFalse(result.at("/columnMeta/0").has("jdbcType"));
-        Assert.assertEquals(1001, result.at("/rows/0/0").asInt());
+        Assert.assertFalse(result.has("description"));
+        Assert.assertFalse(result.has("datasets"));
+        Assert.assertFalse(result.has("relations"));
+        Assert.assertEquals("month", result.at("/columns/0/name").asText());
+        Assert.assertEquals("total", result.at("/columns/1/name").asText());
+        Assert.assertEquals("varchar", result.at("/columns/0/type").asText());
+        Assert.assertTrue(result.at("/columns/0/nullable").asBoolean());
+        Assert.assertEquals("decimal", result.at("/columns/1/type").asText());
+        Assert.assertEquals(38, result.at("/columns/1/precision").asInt());
+        Assert.assertEquals(2, result.at("/columns/1/scale").asInt());
+        Assert.assertFalse(result.at("/columns/0").has("comment"));
+        Assert.assertFalse(result.at("/columns/0").has("jdbcType"));
+        Assert.assertFalse(result.has("columnMeta"));
+        Assert.assertEquals("2026-11", result.at("/rows/0/0").asText());
         Assert.assertEquals(12.5, result.at("/rows/0/1").asDouble(), 0.001);
     }
 
@@ -87,7 +92,7 @@ public class ToolResultFormatterTest {
     }
 
     @Test
-    public void themeDictionaryKeepsDatasetIdsUsedByRelations() {
+    public void themeDictionaryKeepsDatasetsAndTablesFieldsInsideEachDataset() {
         ObjectNode source = DPUtil.objectNode();
         source.put("themeName", "销售主题");
         ObjectNode dataset = source.putArray("datasets").addObject();
@@ -105,9 +110,14 @@ public class ToolResultFormatterTest {
         Assert.assertEquals(7, result.at("/datasets/0/id").asInt());
         Assert.assertEquals("orders", result.at("/datasets/0/name").asText());
         Assert.assertEquals("订单明细表", result.at("/datasets/0/description").asText());
-        Assert.assertEquals("id", result.at("/datasets/0/columns/0/title").asText());
-        Assert.assertEquals("订单主键", result.at("/datasets/0/columns/0/comment").asText());
-        Assert.assertEquals(7, result.at("/relations/0/sourceDatasetId").asInt());
+        Assert.assertEquals("name", result.at("/datasets/0/fields/columns/0").asText());
+        Assert.assertEquals("id", result.at("/datasets/0/fields/rows/0/0").asText());
+        Assert.assertEquals("id", result.at("/datasets/0/fields/rows/0/1").asText());
+        Assert.assertEquals("bigint", result.at("/datasets/0/fields/rows/0/2").asText());
+        Assert.assertEquals("订单主键", result.at("/datasets/0/fields/rows/0/3").asText());
+        Assert.assertFalse(result.has("fields"));
+        Assert.assertEquals("sourceDatasetId", result.at("/relations/columns/0").asText());
+        Assert.assertEquals(7, result.at("/relations/rows/0/0").asInt());
     }
 
     @Test

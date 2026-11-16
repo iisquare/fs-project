@@ -47,6 +47,8 @@ export interface ChatToolCall {
   scope: ToolScope
   /** 展示名：本地工具即函数名，项目工具按类型给出中文名 */
   label: string
+  /** 工具类型：项目工具为“数据主题”等，浏览器与桌面操作使用对应类型 */
+  category?: string
 }
 
 /** 一轮模型输出：正文、思考过程与这一轮发起的工具调用 */
@@ -1155,7 +1157,8 @@ export const useChatStore = defineStore('chat', () => {
           result: '',
           duration: 0,
           scope: 'local',
-          label: ''
+          label: '',
+          category: ''
         })
       }
       const call = round.calls[index]
@@ -1166,6 +1169,7 @@ export const useChatStore = defineStore('chat', () => {
       const info = tools.catalog[call.name]
       call.scope = info?.scope ?? 'local'
       call.label = info?.label ?? call.name
+      call.category = info?.category ?? ''
     }
   }
 

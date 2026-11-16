@@ -40,6 +40,42 @@ const AgenticUtil = {
     return output && 'object' === typeof output ? output : {}
   },
   /**
+   * 从运行入参中提取附件：开始节点发送的 files 为文件服务返回的对象数组，
+   * 兼容字符串 JSON、数组根节点，并按 id 去重。
+   */
+  inputFiles (inputs: any): any[] {
+    let source: any = inputs
+    if ('string' === typeof source) {
+      try {
+        source = JSON.parse(source)
+      } catch (error) {
+        return []
+      }
+    }
+    if (!source || 'object' !== typeof source) return []
+    const values: any[] = Array.isArray(source) ? source : Object.values(source)
+    const files: any[] = []
+    const seen = new Set<string>()
+    values.forEach((value: any) => {
+      if (!Array.isArray(value)) return
+      value.forEach((file: any) => {
+        if (!file || 'object' !== typeof file || !file.id) return
+        const id = String(file.id)
+        if (seen.has(id)) return
+        seen.add(id)
+        files.push({
+          id: file.id,
+          name: file.name,
+          type: file.type,
+          suffix: file.suffix,
+          size: file.size,
+          filepath: file.filepath,
+        })
+      })
+    })
+    return files
+  },
+  /**
    * 工具调用记录：按节点顺序展开每个节点的 ReAct 轮次，只保留真正调用了工具的轮次
    * （最后一轮是模型直出，不作为工具调用列出）。
    */

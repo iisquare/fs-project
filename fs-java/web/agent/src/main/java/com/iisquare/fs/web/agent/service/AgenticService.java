@@ -1110,6 +1110,51 @@ public class AgenticService extends JPAServiceBase {
         return historyReference(result.at("/steps"));
     }
 
+    /**
+     * 用户消息的参考数据：既保留各 LLM 节点实际收到的上下文，也保存本轮附件信息。
+     * 附件不参与模型上下文，但会话详情回看时仍要能展示对应的用户附件。
+     */
+    protected String userReference(ObjectNode result, ObjectNode inputs) {
+        ObjectNode metadata = DPUtil.objectNode();
+        JsonNode history = DPUtil.parseJSON(historyReference(result));
+        if (null != history && history.isObject()) {
+            history.fields().forEachRemaining(entry -> metadata.set(entry.getKey(), entry.getValue()));
+        }
+        ArrayNode files = inputFiles(inputs);
+        if (!files.isEmpty()) metadata.set("files", files);
+        return metadata.isEmpty() ? "" : DPUtil.stringify(metadata);
+    }
+
+    /** 从运行入参中提取附件元数据：当前开始节点的文件列表为 [{ id, name, type, suffix, size }] */
+    protected ArrayNode inputFiles(JsonNode inputs) {
+        ArrayNode result = DPUtil.arrayNode();
+        if (null == inputs || !inputs.isObject()) return result;
+        Set<String> seen = new LinkedHashSet<>();
+        for (JsonNode value : inputs) {
+            if (!value.isArray()) continue;
+            for (JsonNode item : value) {
+                if (!item.isObject()) continue;
+                String id = item.at("/id").asText("");
+                if (DPUtil.empty(id) || !seen.add(id)) continue;
+                ObjectNode file = result.addObject();
+                for (String field : Arrays.asList("id", "name", "type", "suffix", "size", "filepath")) {
+                    if (item.has(field)) file.set(field, item.get(field).deepCopy());
+                }
+            }
+        }
+        return result;
+    }
+
+    /** 会话消息的附件：新数据从 reference.files 读取，旧数据兼容 content 中保存的完整运行入参 */
+    protected ArrayNode dialogFiles(String reference, String content) {
+        JsonNode metadata = DPUtil.empty(reference) ? null : DPUtil.parseJSON(reference);
+        JsonNode files = null == metadata ? null : metadata.at("/files");
+        if (null != files && files.isArray() && !files.isEmpty()) return (ArrayNode) files.deepCopy();
+        JsonNode inputs = DPUtil.parseJSON(content);
+        if (null == inputs || !inputs.isObject()) return DPUtil.arrayNode();
+        return inputFiles(inputs);
+    }
+
     protected String historyReference(JsonNode steps) {
         ObjectNode userMessages = DPUtil.objectNode();
         for (JsonNode step : steps) {
@@ -1198,7 +1243,7 @@ public class AgenticService extends JPAServiceBase {
         Integer parentId = branch;
         if (!reuseQuestion) {
             question = appendDialog(chat, branch, "user",
-                    DPUtil.empty(query) ? DPUtil.stringify(inputs) : query, "", historyReference(result), uid);
+                    DPUtil.empty(query) ? DPUtil.stringify(inputs) : query, "", userReference(result, inputs), uid);
             parentId = null == question ? branch : question.getId();
         }
         AgenticDialog reply = appendDialog(chat, parentId, "assistant",
@@ -1285,6 +1330,19 @@ public class AgenticService extends JPAServiceBase {
             node.put("feedbackTag", DPUtil.parseString(dialog.getFeedbackTag()));
             node.put("feedbackContent", DPUtil.parseString(dialog.getFeedbackContent()));
             node.put("createdTime", null == dialog.getCreatedTime() ? 0L : dialog.getCreatedTime());
+            // 用户附件随消息返回，刷新会话后仍能在对应气泡中展示并下载
+            if ("user".equals(DPUtil.parseString(dialog.getRole()))) {
+                ArrayNode files = dialogFiles(dialog.getReference(), dialog.getContent());
+                if (!files.isEmpty()) {
+                    node.set("files", files);
+                    // 兼容旧数据仅附件、无文字时 content 保存的是完整入参 JSON 的情况
+                    JsonNode stored = DPUtil.parseJSON(dialog.getContent());
+                    if (null != stored && stored.isObject()
+                            && DPUtil.empty(stored.at("/query").asText(""))) {
+                        node.put("content", "");
+                    }
+                }
+            }
             // 本轮运行日志标识：前端按它拉取完整的节点与工具调用过程（定位问题用）
             Integer logId = logByAnswer.get(dialog.getId());
             if (null != logId) {
@@ -1579,13 +1637,18 @@ public class AgenticService extends JPAServiceBase {
     public JsonNode formatLog(JsonNode rows, boolean withDetail) {
         for (JsonNode row : rows) {
             ObjectNode node = (ObjectNode) row;
+            String rawInputs = node.at("/inputs").asText("");
             if (withDetail) {
-                node.replace("inputs", parseObject(node.at("/inputs").asText("")));
+                ObjectNode parsedInputs = parseObject(rawInputs);
+                node.replace("inputs", parsedInputs);
                 node.replace("outputs", parseObject(node.at("/outputs").asText("")));
                 node.replace("steps", parseArray(node.at("/steps").asText("")));
+                ArrayNode files = inputFiles(parsedInputs);
+                if (!files.isEmpty()) node.set("files", files);
             } else {
                 // 列表不返回大字段，但「用户输入」是列表的检索线索：只抽一条摘要，不整块返回
-                node.put("inputsText", logInput(node.at("/inputs").asText("")));
+                node.put("inputsText", logInput(rawInputs));
+                node.put("attachmentCount", logAttachmentCount(rawInputs));
                 node.remove("inputs");
                 node.remove("outputs");
                 node.remove("steps");
@@ -1603,6 +1666,12 @@ public class AgenticService extends JPAServiceBase {
             node.put("deletedText", node.at("/deletedTime").asLong(0) > 0 ? "已删除" : "正常");
         }
         return rows;
+    }
+
+    /** 运行日志列表的附件数量：只解析小字段计数，不返回附件明细 */
+    private int logAttachmentCount(String inputs) {
+        if (DPUtil.empty(inputs) || inputs.length() > LOG_INPUT_PARSE_LIMIT) return 0;
+        return inputFiles(parseObject(inputs)).size();
     }
 
     /** 运行日志里的编排名称：按 agenticId 关联编排填充（列表与详情共用） */

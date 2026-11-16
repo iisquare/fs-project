@@ -17,6 +17,7 @@ declare module 'vue' {
     ButtonEdit: typeof import('./src/components/Button/ButtonEdit.vue')['default']
     ButtonRefresh: typeof import('./src/components/Button/ButtonRefresh.vue')['default']
     ButtonSearch: typeof import('./src/components/Button/ButtonSearch.vue')['default']
+    ChatAttachments: typeof import('./src/components/Chat/ChatAttachments.vue')['default']
     ChatBranches: typeof import('./src/components/Chat/ChatBranches.vue')['default']
     ChatElevator: typeof import('./src/components/Chat/ChatElevator.vue')['default']
     ChatFeedback: typeof import('./src/components/Chat/ChatFeedback.vue')['default']

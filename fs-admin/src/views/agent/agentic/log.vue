@@ -6,12 +6,15 @@
  */
 import { computed, onMounted, ref } from 'vue'
 import type { FormInstance, TableInstance } from 'element-plus'
+import { Paperclip } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import AgenticApi from '@/api/agent/AgenticApi'
 import AgentApiKeyApi from '@/api/agent/ApiKeyApi'
 import UserApi from '@/api/member/UserApi'
 import StepDetail from '@/components/Agentic/StepDetail.vue'
+import ChatAttachments from '@/components/Chat/ChatAttachments.vue'
 import ChatTextBlock from '@/components/Chat/ChatTextBlock.vue'
+import AgenticUtil from '@/utils/AgenticUtil'
 import ApiUtil from '@/utils/ApiUtil'
 import DateUtil from '@/utils/DateUtil'
 import RouteUtil from '@/utils/RouteUtil'
@@ -79,6 +82,7 @@ const infoLoading = ref(false)
 const steps = computed<any[]>(() => info.value?.steps ?? [])
 const inputsText = computed(() => JSON.stringify(info.value?.inputs ?? {}, null, 2))
 const outputsText = computed(() => JSON.stringify(info.value?.outputs ?? {}, null, 2))
+const inputFiles = computed<any[]>(() => AgenticUtil.inputFiles(info.value?.inputs))
 
 const handleShow = (scope: any) => {
   infoVisible.value = true
@@ -196,7 +200,15 @@ const statusText = (status: number) => 2 === status ? '失败' : '成功'
       <el-table-column type="selection" />
       <TableColumn :columns="columns">
         <!-- 用户输入由后端从入参里抽好（inputsText，已截断成一行），列表接口不返回 inputs 大字段 -->
-        <template #input="scope">{{ scope.row.inputsText }}</template>
+        <template #input="scope">
+          <div class="log-input-cell">
+            <span class="log-input-text" v-if="scope.row.inputsText">{{ scope.row.inputsText }}</span>
+            <el-tag class="log-input-files" size="small" type="info" effect="plain" v-if="scope.row.attachmentCount">
+              <el-icon><Paperclip /></el-icon>
+              {{ scope.row.attachmentCount }} 个附件
+            </el-tag>
+          </div>
+        </template>
         <template #createdUid="scope">{{ scope.row.createdUserInfo?.name || '系统' }}</template>
         <template #userProxy="scope">
           <el-tag :type="scope.row.userProxy ? 'warning' : 'info'" size="small" effect="plain">
@@ -246,6 +258,10 @@ const statusText = (status: number) => 2 === status ? '失败' : '成功'
       <el-divider>回复内容</el-divider>
       <ChatTextBlock :text="info.outputs.answer" />
     </template>
+    <template v-if="inputFiles.length">
+      <el-divider>用户附件（{{ inputFiles.length }}）</el-divider>
+      <ChatAttachments :files="inputFiles" />
+    </template>
     <el-divider>运行入参</el-divider>
     <ChatTextBlock :text="inputsText" />
     <el-divider>执行步骤</el-divider>
@@ -282,6 +298,24 @@ const statusText = (status: number) => 2 === status ? '失败' : '成功'
 <style lang="scss" scoped>
 .log-alert {
   margin-top: 12px;
+}
+.log-input-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  .log-input-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .log-input-files {
+    flex: none;
+    :deep(.el-icon) {
+      margin-right: 3px;
+    }
+  }
 }
 /* 展开行里的分组标签：节点输入 / 解析后入参 / 节点输出 */
 .step-detail {

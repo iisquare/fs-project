@@ -9,6 +9,7 @@ import {
 import type { AgentRunView } from '@renderer/stores/agents'
 import { useAgentStore } from '@renderer/stores/agents'
 import type { ChatMessage as ChatMessageView, ChatRound, ChatToolCall } from '@renderer/stores/chat'
+import { agentToolDisplay } from '@renderer/core/AgentToolDisplay'
 import ChatMessage from './ChatMessage.vue'
 
 const props = defineProps<{
@@ -303,23 +304,27 @@ function scrollWrap(): HTMLElement | undefined {
 }
 
 function calls(round: AgentInteractionRound): ChatToolCall[] {
-  return round.calls.map((call, index) => ({
-    id: call.id || `call-${index}`,
-    name: call.name,
-    args: call.args,
-    status:
-      'success' === call.status
-        ? 'success'
-        : 'running' === call.status
-          ? 'running'
-          : 'failed' === call.status
-            ? 'failed'
-            : 'stopped',
-    result: call.error && !call.result ? `调用失败：${call.error}` : call.result,
-    duration: call.durationMs,
-    scope: 'agent',
-    label: call.name
-  }))
+  return round.calls.map((call, index) => {
+    const display = agentToolDisplay(call, props.run?.agent)
+    return {
+      id: call.id || `call-${index}`,
+      name: call.name,
+      args: call.args,
+      status:
+        'success' === call.status
+          ? 'success'
+          : 'running' === call.status
+            ? 'running'
+            : 'failed' === call.status
+              ? 'failed'
+              : 'stopped',
+      result: call.error && !call.result ? `调用失败：${call.error}` : call.result,
+      duration: call.durationMs,
+      scope: display.scope,
+      label: display.label,
+      ...(display.category ? { category: display.category } : {})
+    }
+  })
 }
 
 function duration(task: AgentInteractionTask): string {

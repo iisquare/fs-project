@@ -60,7 +60,12 @@ let vditor: Vditor | null = null
 let observer: MutationObserver | null = null
 let refreshScheduled = false
 let previewSequence = 0
+let previewTimer: number | null = null
+let previewBusy = false
+let previewDirty = false
+let pendingPreviewContent = ''
 const imageUrls: Record<string, string> = {}
+const PREVIEW_STREAM_INTERVAL = 80
 
 interface EChartsInstance {
   setOption(option: Record<string, unknown>): void
@@ -524,8 +529,8 @@ const loadPreview = async (content: string) => {
   const host = previewRef.value
   if (!host) return
   const sequence = ++previewSequence
-  cleanupPreviewEnhancements()
   if (!content) {
+    cleanupPreviewEnhancements()
     const empty = document.createElement('span')
     empty.className = 'fs-markdown-empty'
     empty.textContent = '暂无内容'
@@ -538,8 +543,8 @@ const loadPreview = async (content: string) => {
   })
   const body = document.createElement('div')
   body.className = 'fs-markdown-preview-body'
-  host.replaceChildren(body)
   try {
+    // 先解析到离屏节点。流式输出时旧内容保持可见，避免每次增量都先塌陷再撑开。
     await Vditor.preview(body, html, {
       cdn: vditorCdn,
       mode: 'light',
@@ -551,20 +556,25 @@ const loadPreview = async (content: string) => {
       transform: preparePreviewHtml,
     })
     if (sequence !== previewSequence) return
-    await waitForHighlight(body)
-    if (sequence !== previewSequence) return
+    // 代码高亮和图表通常在最终内容上才稳定，流式期间不等待它们，避免阻塞下一帧。
+    if (!streaming) {
+      await waitForHighlight(body)
+      if (sequence !== previewSequence) return
+    }
+    cleanupPreviewEnhancements()
+    host.replaceChildren(body)
     mountTables(body)
     mountCodeBlocks(body)
-    await renderCharts(body, sequence)
+    if (!streaming) await renderCharts(body, sequence)
   } catch (error) {
     if (sequence !== previewSequence) return
+    cleanupPreviewEnhancements()
     const failed = document.createElement('div')
     failed.className = 'fs-markdown-error'
     failed.textContent = `Markdown 渲染失败：${error instanceof Error ? error.message : String(error)}`
-    body.replaceChildren(failed)
+    host.replaceChildren(failed)
   }
 }
-
 
 const refresh = async (content?: string) => {
   const text = content ?? getContent()
@@ -574,6 +584,49 @@ const refresh = async (content?: string) => {
   } else {
     nextTick(() => decorate())
   }
+}
+
+const clearPreviewTimer = () => {
+  if (previewTimer === null) return
+  window.clearTimeout(previewTimer)
+  previewTimer = null
+}
+
+/**
+ * 串行合并流式重绘：最多每 80ms 解析一次最新内容，上一帧未结束时只记脏标记，
+ * 不再为每个 token 启动一轮 Markdown 解析和 DOM 替换。输出结束时立即补最终一帧。
+ */
+const runPreviewQueue = async () => {
+  if (previewBusy || !previewDirty) return
+  previewBusy = true
+  try {
+    while (previewDirty) {
+      previewDirty = false
+      await refresh(pendingPreviewContent)
+      if (previewDirty && streaming) {
+        await new Promise<void>((resolve) => window.setTimeout(resolve, PREVIEW_STREAM_INTERVAL))
+      }
+    }
+  } finally {
+    previewBusy = false
+    if (previewDirty) schedulePreviewRefresh(pendingPreviewContent)
+  }
+}
+
+const schedulePreviewRefresh = (content: string) => {
+  pendingPreviewContent = content
+  previewDirty = true
+  if (previewBusy) return
+  if (!streaming) {
+    clearPreviewTimer()
+    void runPreviewQueue()
+    return
+  }
+  if (previewTimer !== null) return
+  previewTimer = window.setTimeout(() => {
+    previewTimer = null
+    void runPreviewQueue()
+  }, PREVIEW_STREAM_INTERVAL)
 }
 
 /**
@@ -725,9 +778,9 @@ const loadEditor = () => {
   })
 }
 
-watch(() => model.value, () => {
+watch([() => model.value, () => streaming], () => {
   if (readonly) {
-    nextTick(() => refresh())
+    schedulePreviewRefresh(model.value ?? '')
   } else if (vditor && model.value !== normalizeOut(vditor.getValue())) {
     vditor.setValue(normalizeIn(model.value ?? ''))
   }
@@ -736,7 +789,7 @@ watch(() => model.value, () => {
 onMounted(() => {
   nextTick(() => {
     if (readonly) {
-      refresh()
+      schedulePreviewRefresh(model.value ?? '')
     } else {
       loadEditor()
       observeEditor()
@@ -746,6 +799,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   previewSequence++
+  clearPreviewTimer()
+  previewDirty = false
   cleanupPreviewEnhancements()
   if (observer) {
     observer.disconnect()
@@ -934,7 +989,8 @@ defineExpose({ getContent, setContent })
     }
 
     .fs-markdown-table table {
-      width: 100% !important;
+      /* 外框始终占满气泡；表格按内容展开，超宽时只在表格内部横向滚动。 */
+      width: max-content !important;
       min-width: 100%;
     }
 

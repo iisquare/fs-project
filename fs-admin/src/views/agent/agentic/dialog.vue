@@ -96,6 +96,8 @@ const handleOpen = (item: any) => {
   chatId.value = item.id
   // 选中的会话写进路由，刷新后仍停在这一条历史记录上
   syncRouteChat(item.id)
+  // 打开历史会话时清掉输入区的临时附件，避免带到另一条会话的新一轮
+  clearComposerFiles()
   infoLoading.value = true
   AgenticApi.chatInfo(item.id, { warning: false }).then((result: any) => {
     info.value = ApiUtil.data(result) ?? {}
@@ -116,6 +118,7 @@ const handleNew = () => {
   info.value = {}
   branch.reset()
   message.value = ''
+  clearComposerFiles()
 }
 
 /** 删除会话：确认后删除，删的是当前打开的会话时回到新会话状态 */
@@ -136,6 +139,10 @@ const handleDeleteChat = (item: any) => {
  * 结束后取回运行结果（会话标识、日志标识）并刷新会话列表
  */
 const handleSend = () => {
+  if (sending.value) {
+    ElMessage.warning('上一轮对话还在运行中，请稍候')
+    return
+  }
   if (uploading.value) {
     ElMessage.warning('文件上传中，请稍候')
     return
@@ -177,7 +184,8 @@ const sendRound = (options: any) => {
     return
   }
   const text = String(options?.text ?? '')
-  const files: any[] = Array.isArray(options?.files) ? options.files.slice() : []
+  // 每轮使用独立快照：后续轮次修改输入区或附件对象，不会影响已经展示的用户气泡
+  const files: any[] = Array.isArray(options?.files) ? options.files.map((file: any) => ({ ...file })) : []
   const parentId = Number(options?.parentId ?? 0) || 0
   const reuseQuestion = true === options?.reuseQuestion
   sending.value = true
@@ -187,9 +195,10 @@ const sendRound = (options: any) => {
   if (!reuseQuestion) {
     // 先补一条提问，避免等待期间看不到自己发的内容
     // 没有用户输入也没有附件时（开始节点关闭了固定输入）只说明「按参数运行」
-    const content = text || (files.length ? `（上传了 ${files.length} 个文件）` : '（按参数运行）')
+    // 只有附件时正文留空，由气泡里的附件卡承担展示，避免再重复一句文件数量
+    const content = text || (files.length ? '' : '（按参数运行）')
     question = { role: 'user', content, createdTime: Date.now(), notice: null, parentId }
-    if (files.length) question.files = files
+    if (files.length) question.files = files.map((file: any) => ({ ...file }))
     list.push(question)
   }
   // 本轮的回复消息：流式增量直接写在这里，结束后补上日志标识与异常提示
@@ -258,18 +267,55 @@ const sending = ref(false)
 const message = ref('')
 /** 附件：走文件服务存储，随本轮 inputs.files 传给开始节点（与调试面板一致） */
 const runFiles = ref<any[]>([])
-const uploading = ref(false)
+const pendingFiles = ref<any[]>([])
+const composerFiles = computed(() => [...runFiles.value, ...pendingFiles.value])
+/** 上传序号：切换会话时递增，旧会话尚未完成的上传不能回填到新会话输入区 */
+const uploadEpoch = ref(0)
+const clearComposerFiles = () => {
+  uploadEpoch.value++
+  runFiles.value = []
+  pendingFiles.value = []
+}
+/** 按输入区轮次分别计数：多选或连续上传时，当前所有请求结束前都禁止发送 */
+const uploadCounts = reactive<Record<number, number>>({})
+const uploading = computed(() => (uploadCounts[uploadEpoch.value] ?? 0) > 0)
+let uploadSerial = 0
 const handleUpload = (file: File) => {
-  uploading.value = true
+  const epoch = uploadEpoch.value
+  const pending: any = {
+    key: `upload-${epoch}-${++uploadSerial}`,
+    name: file.name,
+    type: file.type,
+    size: file.size,
+    status: 'uploading',
+  }
+  pendingFiles.value.push(pending)
+  uploadCounts[epoch] = (uploadCounts[epoch] ?? 0) + 1
   AgenticApi.upload(file, { success: false }).then((result: any) => {
     const data: any = ApiUtil.data(result)
-    if (data?.id) runFiles.value.push(data)
+    pendingFiles.value = pendingFiles.value.filter((item: any) => item.key !== pending.key)
+    if (data?.id && epoch === uploadEpoch.value) {
+      runFiles.value.push({
+        id: data.id,
+        name: data.name,
+        type: data.type,
+        suffix: data.suffix,
+        size: data.size,
+      })
+    }
   }).catch(() => {
-    ElMessage.error('文件上传失败')
+    pendingFiles.value = pendingFiles.value.filter((item: any) => item.key !== pending.key)
+    if (epoch === uploadEpoch.value) ElMessage.error('文件上传失败')
   }).finally(() => {
-    uploading.value = false
+    const remaining = Math.max(0, (uploadCounts[epoch] ?? 1) - 1)
+    if (remaining > 0) uploadCounts[epoch] = remaining
+    else delete uploadCounts[epoch]
   })
   return false
+}
+
+const removeComposerFile = (file: any) => {
+  runFiles.value = runFiles.value.filter((item: any) => String(item.id) !== String(file.id))
 }
 
 /**
@@ -545,7 +591,7 @@ const applyStartConfig = (config: any) => {
   filesInput.value = item.files ?? null
   startParams.value = item.params ?? []
   // 关闭文件列表后：已选附件不再回显，也不会随入参提交
-  if (!filesInput.value) runFiles.value = []
+  if (!filesInput.value) clearComposerFiles()
   // 表单取值：切换流程后按新参数重建，同名参数沿用已填写的值
   const values: Record<string, any> = {}
   startParams.value.forEach((param: any) => {
@@ -783,17 +829,12 @@ onBeforeUnmount(() => {
                开始节点关闭「用户输入」时不展示文本区，关闭「文件列表」时不展示上传入口 -->
           <div class="composer-box">
             <!-- 第 1 行：附件回显（没有附件时整行不占位） -->
-            <div class="composer-files" v-if="runFiles.length">
-              <el-tag
-                class="composer-file"
-                size="small"
-                type="info"
-                effect="plain"
-                v-for="(file, fileIndex) in runFiles"
-                :key="file.id ?? fileIndex"
-                @close="runFiles.splice(fileIndex, 1)"
-                closable>{{ file.name || file.id }}</el-tag>
-            </div>
+            <ChatAttachments
+              class="composer-files"
+              title="已添加附件"
+              :files="composerFiles"
+              removable
+              @remove="removeComposerFile" />
             <el-input
               v-if="queryInput"
               class="composer-input"
@@ -805,8 +846,8 @@ onBeforeUnmount(() => {
               @keydown.enter="handleComposerSend" />
             <div class="composer-tools">
               <div class="composer-tools-main">
-                <el-upload v-if="filesInput" :show-file-list="false" :before-upload="handleUpload">
-                  <el-tooltip content="上传文件" placement="top">
+                <el-upload v-if="filesInput" multiple :show-file-list="false" :before-upload="handleUpload">
+                  <el-tooltip content="上传文件（可多选，也可连续上传）" placement="top">
                     <el-button class="composer-attach" link :icon="Paperclip" :loading="uploading" />
                   </el-tooltip>
                 </el-upload>
@@ -1345,14 +1386,9 @@ $dialog-output-line-height: 1.75;
         }
       }
     }
-    /* 附件回显：小标签一行，超出折行 */
+    /* 附件回显：文件卡自动换行 */
     .composer-files {
       margin-bottom: 6px;
-      @include flex-wrap();
-      gap: 6px;
-      .composer-file {
-        max-width: 100%;
-      }
     }
   }
 }
