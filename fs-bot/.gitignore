@@ -1,6 +1,7 @@
 node_modules
 dist
 out
+output
 .DS_Store
 .eslintcache
 *.log*
@@ -8,3 +9,4 @@ out
 userdata/
 skills/
 /.env.production
+/.codex-ref

@@ -14,6 +14,63 @@ export function vditorAsset(path: string): string {
   return `${vditorCdn()}/dist/${path.replace(/^\/+/, '')}`
 }
 
+const vditorScripts = new Map<string, Promise<void>>()
+
+/**
+ * 同一个运行时的多个消息可能同时挂载。不能仅凭同 ID 的 script 已插入 DOM
+ * 就认为它执行完毕，否则后挂载的消息会在 window.mermaid 尚未出现时渲染失败。
+ * 这里共享同一份加载 Promise，并显式等待 script 的 load / error 事件。
+ */
+export function loadVditorScript(
+  path: string,
+  id: string,
+  isReady: () => boolean = () => false
+): Promise<void> {
+  if (isReady()) return Promise.resolve()
+  const src = vditorAsset(path)
+  const cached = vditorScripts.get(src)
+  if (cached) return cached
+
+  const existing = document.getElementById(id) as HTMLScriptElement | null
+  const existingState = existing?.dataset.fsBotLoadState
+  if (existingState === 'loaded') return Promise.resolve()
+
+  let script = existingState === 'loading' ? existing : null
+  if (!script) {
+    existing?.remove()
+    script = document.createElement('script')
+    script.id = id
+    script.src = src
+    script.async = true
+    script.dataset.fsBotLoadState = 'loading'
+  }
+
+  const task = new Promise<void>((resolveTask, rejectTask) => {
+    script!.addEventListener(
+      'load',
+      () => {
+        script!.dataset.fsBotLoadState = 'loaded'
+        resolveTask()
+      },
+      { once: true }
+    )
+    script!.addEventListener(
+      'error',
+      () => {
+        script!.remove()
+        rejectTask(new Error(`加载失败：${src}`))
+      },
+      { once: true }
+    )
+    if (script!.parentNode !== document.head) document.head.appendChild(script!)
+  })
+  vditorScripts.set(src, task)
+  task.catch(() => {
+    if (vditorScripts.get(src) === task) vditorScripts.delete(src)
+  })
+  return task
+}
+
 const MAX_DIAGRAM_SOURCE = 256 * 1024
 
 /**
@@ -56,12 +113,82 @@ export function prepareVditorHtml(html: string): string {
   return sanitizeMarkdownHtml(template.innerHTML)
 }
 
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
+const MERMAID_LABEL_LINE_HEIGHT = 18
+
+/**
+ * DOMPurify 处理字符串形式的 SVG 时会保留 foreignObject，却清空其 XHTML
+ * 子节点；Mermaid 11 的节点标签恰好都放在 foreignObject 中，结果就是只剩空框。
+ *
+ * 在清洗前把标签降级成纯文本 SVG tspan：既能保留多行文字和布局，也不把
+ * Mermaid 生成的任意 HTML 直接放回页面。清洗后仍按同一条不可信输出边界处理。
+ */
+function mermaidSvgTextLabels(svg: string): string {
+  if (!svg.includes('foreignObject')) return svg
+  // Mermaid 的 XHTML 标签使用 HTML 的 <br> 写法；按 XML 解析会把标签内容截断。
+  const parsed = new DOMParser().parseFromString(svg, 'text/html')
+  const root = parsed.querySelector('svg')
+  if (!root) return svg
+  const textMetrics = document.createElement('canvas').getContext('2d')
+  if (textMetrics) {
+    textMetrics.font = '16px "trebuchet ms", verdana, arial, sans-serif'
+  }
+
+  root.querySelectorAll('foreignObject').forEach((label) => {
+    const lines: string[] = ['']
+    const readText = (node: Node): void => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        lines[lines.length - 1] += node.textContent ?? ''
+        return
+      }
+      if (!(node instanceof Element)) return
+      if (node.localName.toLowerCase() === 'br') {
+        lines.push('')
+        return
+      }
+      node.childNodes.forEach(readText)
+    }
+    label.childNodes.forEach(readText)
+
+    const normalized = lines
+      .map((line) => line.replace(/\s+/g, ' ').trim())
+      .filter((line, index, all) => line || (index > 0 && index < all.length - 1))
+    if (!normalized.length) {
+      label.remove()
+      return
+    }
+
+    const width = Number.parseFloat(label.getAttribute('width') ?? '') || 0
+    const height = Number.parseFloat(label.getAttribute('height') ?? '') || 0
+    const firstLineY = height / 2 - ((normalized.length - 1) * MERMAID_LABEL_LINE_HEIGHT) / 2
+    const text = parsed.createElementNS(SVG_NAMESPACE, 'text')
+    text.setAttribute('class', 'fs-mermaid-label')
+    text.setAttribute('text-anchor', 'middle')
+    text.setAttribute('dominant-baseline', 'middle')
+    normalized.forEach((line, index) => {
+      const tspan = parsed.createElementNS(SVG_NAMESPACE, 'tspan')
+      tspan.setAttribute('x', String(width / 2))
+      tspan.setAttribute('y', String(firstLineY + index * MERMAID_LABEL_LINE_HEIGHT))
+      tspan.textContent = line || ' '
+      // SVG text 不会自动限制在 foreignObject 的宽度内；只收窄确实超宽的行。
+      if (textMetrics && width > 0 && textMetrics.measureText(line).width > width) {
+        tspan.setAttribute('textLength', String(width))
+        tspan.setAttribute('lengthAdjust', 'spacingAndGlyphs')
+      }
+      text.appendChild(tspan)
+    })
+    label.replaceWith(text)
+  })
+
+  return new XMLSerializer().serializeToString(root)
+}
+
 /** Mermaid 生成的是 SVG；仍按同一条“模型输出不可信”边界清洗 */
 export function sanitizeMermaidSvg(svg: string): string {
-  return DOMPurify.sanitize(String(svg ?? ''), {
+  const source = mermaidSvgTextLabels(String(svg ?? ''))
+  return DOMPurify.sanitize(source, {
     USE_PROFILES: { html: true, svg: true, svgFilters: true },
-    ADD_TAGS: ['foreignObject'],
-    ADD_ATTR: ['dominant-baseline', 'target'],
+    ADD_ATTR: ['dominant-baseline', 'lengthAdjust', 'target', 'textLength'],
     ALLOWED_URI_REGEXP:
       /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix|chat-image):|[^a-z]|[a-z+.-]+(?:[^a-z.:-]|$))/i
   })

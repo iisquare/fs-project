@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('dompurify', () => ({
   default: {
@@ -7,7 +7,48 @@ vi.mock('dompurify', () => ({
   }
 }))
 
-import { parseEChartsOption, removeInlineEventHandlers } from './VditorMarkdown'
+import { loadVditorScript, parseEChartsOption, removeInlineEventHandlers } from './VditorMarkdown'
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+function scriptDocument(withExisting = false) {
+  const listeners = new Map<string, () => void>()
+  const appendChild = vi.fn((node: HTMLScriptElement) => {
+    Object.defineProperty(node, 'parentNode', { value: head, configurable: true })
+  })
+  const head = { appendChild } as unknown as HTMLHeadElement
+  const makeScript = (parent: HTMLHeadElement | null): HTMLScriptElement =>
+    ({
+      id: '',
+      src: '',
+      async: false,
+      dataset: {} as DOMStringMap,
+      parentNode: parent,
+      addEventListener: vi.fn((type: string, listener: () => void) => {
+        listeners.set(type, listener)
+      }),
+      remove: vi.fn(() => {
+        Object.defineProperty(script, 'parentNode', { value: null, configurable: true })
+      })
+    }) as unknown as HTMLScriptElement
+  const script = makeScript(null)
+  const existing = withExisting ? makeScript(head) : null
+  if (existing) existing.dataset.fsBotLoadState = 'loading'
+  vi.stubGlobal('document', {
+    baseURI: 'http://localhost/',
+    head,
+    getElementById: vi.fn(() => existing),
+    createElement: vi.fn(() => script)
+  })
+  return {
+    script,
+    existing,
+    appendChild,
+    fire: (type: string) => listeners.get(type)?.()
+  }
+}
 
 describe('Vditor preview security cleanup', () => {
   it('removes every inline event handler exposed by the generated preview', () => {
@@ -27,6 +68,35 @@ describe('Vditor preview security cleanup', () => {
     removeInlineEventHandlers(root)
 
     expect(element.removeAttribute.mock.calls).toEqual([['onclick'], ['ONMOUSEOVER']])
+  })
+})
+
+describe('Vditor runtime loading', () => {
+  it('shares one script load and only resolves after the load event', async () => {
+    const mock = scriptDocument()
+    const first = loadVditorScript('test/race-shared.js', 'race-shared', () => false)
+    const second = loadVditorScript('test/race-shared.js', 'race-shared-2', () => false)
+
+    expect(mock.appendChild).toHaveBeenCalledTimes(1)
+    mock.fire('load')
+    await Promise.all([first, second])
+    expect(mock.script.dataset.fsBotLoadState).toBe('loaded')
+  })
+
+  it('waits for a script that another renderer already inserted', async () => {
+    const mock = scriptDocument(true)
+    const loading = loadVditorScript('test/race-existing.js', 'race-existing', () => false)
+    let settled = false
+    void loading.then(() => {
+      settled = true
+    })
+
+    await Promise.resolve()
+    expect(mock.appendChild).not.toHaveBeenCalled()
+    expect(settled).toBe(false)
+    mock.fire('load')
+    await loading
+    expect(mock.existing?.dataset.fsBotLoadState).toBe('loaded')
   })
 })
 

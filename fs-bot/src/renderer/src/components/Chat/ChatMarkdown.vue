@@ -22,13 +22,13 @@ import {
 import { knowledgeImageIds, localImagePaths, resolveMarkdownImages } from '@renderer/core/Markdown'
 import {
   diagramSource,
+  loadVditorScript,
   markDiagramError,
   parseEChartsOption,
   prepareVditorHtml,
   removeInlineEventHandlers,
   sanitizeMermaidSvg,
   VDITOR_CODE_RENDER_SKIP_HEIGHT,
-  vditorAsset,
   vditorCdn
 } from '@renderer/core/VditorMarkdown'
 import KnowledgeImageUtil from '@renderer/utils/KnowledgeImageUtil'
@@ -213,34 +213,13 @@ function scheduleRender(): void {
 watch([source, () => Boolean(props.streaming), () => Boolean(props.complete)], scheduleRender)
 watch(() => chatView.codeMode, scheduleCodeNumberSync, { flush: 'post' })
 
-const scripts = new Map<string, Promise<void>>()
-
-function loadScript(path: string, id: string): Promise<void> {
-  if (document.getElementById(id)) return Promise.resolve()
-  const src = vditorAsset(path)
-  const cached = scripts.get(src)
-  if (cached) return cached
-  const task = new Promise<void>((resolveTask, rejectTask) => {
-    const script = document.createElement('script')
-    script.id = id
-    script.src = src
-    script.async = true
-    script.onload = () => resolveTask()
-    script.onerror = () => {
-      script.remove()
-      rejectTask(new Error(`加载失败：${src}`))
-    }
-    document.head.appendChild(script)
-  })
-  scripts.set(src, task)
-  return task
-}
-
 let mermaidReady: Promise<MermaidRuntime> | null = null
 
 function loadMermaid(): Promise<MermaidRuntime> {
   if (mermaidReady) return mermaidReady
-  mermaidReady = loadScript('js/mermaid/mermaid.min.js?v=11.6.0', 'fsBotVditorMermaid').then(() => {
+  mermaidReady = loadVditorScript('js/mermaid/mermaid.min.js?v=11.6.0', 'fsBotVditorMermaid', () =>
+    Boolean(window.mermaid)
+  ).then(() => {
     if (!window.mermaid) throw new Error('Mermaid 运行时未加载')
     window.mermaid.initialize({
       startOnLoad: false,
@@ -289,15 +268,26 @@ let mermaidId = 0
 async function renderMermaid(block: HTMLElement, sequence: number): Promise<void> {
   const runtime = await loadMermaid()
   if (disposed || sequence !== renderSequence || !block.isConnected) return
-  const rendered = await Promise.resolve(
-    runtime.render(`fsBotMermaid${Date.now()}${++mermaidId}`, diagramSource(block))
-  )
-  if (disposed || sequence !== renderSequence || !block.isConnected) return
-  const svg = 'string' === typeof rendered ? rendered : rendered.svg
-  const safe = sanitizeMermaidSvg(svg)
-  if (!safe) throw new Error('Mermaid 输出为空')
-  block.innerHTML = safe
-  block.dataset.state = 'ready'
+  const id = `fsBotMermaid${Date.now()}${++mermaidId}`
+  try {
+    const rendered = await Promise.resolve(runtime.render(id, diagramSource(block)))
+    if (disposed || sequence !== renderSequence || !block.isConnected) return
+    const svg = 'string' === typeof rendered ? rendered : rendered.svg
+    const safe = sanitizeMermaidSvg(svg)
+    if (!safe) throw new Error('Mermaid 输出为空')
+    block.innerHTML = safe
+    block.dataset.state = 'ready'
+  } finally {
+    // Mermaid 渲染失败时会把炸弹图追加到 body，流式输出每次重试都会再挂一个。
+    document.getElementById(`d${id}`)?.remove()
+  }
+}
+
+/** 清掉流式重试和历史渲染留下的 Mermaid 错误图。 */
+function removeMermaidErrorArtifacts(): void {
+  document
+    .querySelectorAll<HTMLElement>('body > [id^="dfsBotMermaid"]')
+    .forEach((element) => element.remove())
 }
 
 async function renderECharts(block: HTMLElement, sequence: number): Promise<void> {
@@ -620,6 +610,7 @@ async function renderNow(): Promise<void> {
   const host = renderRef.value
   if (!host || disposed) return
   const sequence = ++renderSequence
+  removeMermaidErrorArtifacts()
   disposeCharts()
   disposeTableScrollers()
   disposeCodeScrollers()
@@ -661,6 +652,7 @@ onMounted(scheduleRender)
 onBeforeUnmount(() => {
   disposed = true
   renderSequence++
+  removeMermaidErrorArtifacts()
   if (resolveTimer) clearTimeout(resolveTimer)
   if (renderTimer) clearTimeout(renderTimer)
   disposeCharts()
