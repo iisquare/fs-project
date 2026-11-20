@@ -610,6 +610,7 @@ const loadMappingSchema = async () => {
               v-else-if="field.component === 'textarea'"
               type="textarea"
               :rows="4"
+              :autosize="field.autosize"
               v-model="options[field.key]"
               :placeholder="field.placeholder"
             />

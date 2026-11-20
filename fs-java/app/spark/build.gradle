@@ -1,3 +1,51 @@
+configurations.runtimeClasspath {
+    // 不固定 Spark 运行库版本：运行时直接使用 $SPARK_HOME/jars，升级 Spark 时无需同步修改这里
+    exclude group: 'org.apache.spark'
+    exclude group: 'org.scala-lang'
+    exclude group: 'org.scala-lang.modules'
+    exclude group: 'org.apache.logging.log4j'
+    exclude group: 'com.fasterxml.jackson.core'
+    exclude group: 'com.fasterxml.jackson.datatype'
+    exclude group: 'com.fasterxml.jackson.module'
+
+    [
+        'com.google.code.findbugs:jsr305',
+        'com.google.code.gson:gson',
+        'com.google.guava:guava',
+        'com.thoughtworks.paranamer:paranamer',
+        'commons-cli:commons-cli',
+        'commons-codec:commons-codec',
+        'commons-io:commons-io',
+        'commons-logging:commons-logging',
+        'io.netty:netty-all',
+        'io.netty:netty-buffer',
+        'io.netty:netty-codec',
+        'io.netty:netty-codec-http',
+        'io.netty:netty-codec-http2',
+        'io.netty:netty-codec-socks',
+        'io.netty:netty-common',
+        'io.netty:netty-handler',
+        'io.netty:netty-handler-proxy',
+        'io.netty:netty-resolver',
+        'io.netty:netty-transport',
+        'io.netty:netty-transport-classes-epoll',
+        'io.netty:netty-transport-classes-kqueue',
+        'io.netty:netty-transport-native-epoll',
+        'io.netty:netty-transport-native-kqueue',
+        'io.netty:netty-transport-native-unix-common',
+        'org.apache.commons:commons-compress',
+        'org.apache.commons:commons-lang3',
+        'org.apache.commons:commons-text',
+        'org.apache.yetus:audience-annotations',
+        'org.objenesis:objenesis',
+        'org.slf4j:slf4j-api',
+        'org.yaml:snakeyaml'
+    ].each { notation ->
+        def (String group, String module) = notation.split(':', 2)
+        exclude group: group, module: module
+    }
+}
+
 dependencies {
     api project(':base:dag')
     api group: 'org.apache.spark', name: 'spark-core_' + scalaVersion, version: sparkVersion
@@ -20,6 +68,8 @@ dependencies {
         }
         exclude group: 'org.elasticsearch', module: 'elasticsearch-hadoop-mr'
         exclude group: 'org.elasticsearch', module: 'elasticsearch-spark_' + scalaVersion
+        // Spark 运行库由 spark-submit / SPARK_HOME 提供，连接器只保留自身实现
+        exclude group: 'org.apache.spark'
     }
     api group: 'org.apache.spark', name: 'spark-sql-kafka-0-10_' + scalaVersion, version: sparkVersion
     api group: 'org.apache.spark', name: 'spark-streaming-kafka-0-10_' + scalaVersion, version: sparkVersion
@@ -28,13 +78,30 @@ dependencies {
     api group: 'com.clickhouse', name: 'clickhouse-jdbc', version: '0.4.6'
     api group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: neo4jVersion
 
-    api (group: 'com.crealytics', name: 'spark-excel_' + scalaVersion, version: '3.5.1_0.20.4') {
-        exclude group: 'org.apache.logging.log4j', module: 'log4j-core'
-        exclude group: 'org.scala-lang', module: 'scala-library'
-        exclude group: 'org.apache.spark', module: 'spark-core_' + scalaVersion
-        exclude group: 'org.apache.spark', module: 'spark-sql_' + scalaVersion
-        exclude group: 'org.apache.spark', module: 'spark-hive_' + scalaVersion
-    }
+    implementation group: 'org.apache.poi', name: 'poi-ooxml', version: poiVersion
 
     testImplementation project(':base:test')
+}
+
+test {
+    enabled = project.hasProperty('runSparkTests')
+    systemProperty 'file.encoding', 'UTF-8'
+    jvmArgs(
+            '--add-opens=java.base/java.lang=ALL-UNNAMED',
+            '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
+            '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
+            '--add-opens=java.base/java.io=ALL-UNNAMED',
+            '--add-opens=java.base/java.net=ALL-UNNAMED',
+            '--add-opens=java.base/java.nio=ALL-UNNAMED',
+            '--add-opens=java.base/java.util=ALL-UNNAMED',
+            '--add-opens=java.base/java.util.concurrent=ALL-UNNAMED',
+            '--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED',
+            '--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED',
+            '--add-opens=java.base/sun.nio.ch=ALL-UNNAMED',
+            '--add-opens=java.base/sun.nio.cs=ALL-UNNAMED',
+            '--add-opens=java.base/sun.security.action=ALL-UNNAMED',
+            '--add-opens=java.base/sun.util.calendar=ALL-UNNAMED',
+            '--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED',
+            '-Djdk.reflect.useDirectMethodHandle=false'
+    )
 }

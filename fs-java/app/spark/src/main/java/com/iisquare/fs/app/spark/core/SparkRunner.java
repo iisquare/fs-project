@@ -10,11 +10,22 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.StructField;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Iterator;
 
 public class SparkRunner extends DAGRunner {
+
+    public static List<String> limitSources = Arrays.asList(
+            "MongoSource",
+            "JDBCSource",
+            "ElasticsearchSource",
+            "Neo4jSource",
+            "OntologySource",
+            "ExcelSource",
+            "Jar"
+    );
 
     private SparkSession session;
 
@@ -35,28 +46,28 @@ public class SparkRunner extends DAGRunner {
     }
 
     public int debugLimit() {
-        return Math.max(1, Math.min(diagram.at("/debugLimit").asInt(20), 1000));
+        int defaultLimit = isDebug() ? 20 : 0;
+        int limit = diagram.at("/debugLimit").asInt(defaultLimit);
+        return Math.max(0, Math.min(limit, 1000));
     }
 
     @Override
     public com.iisquare.fs.base.dag.core.DAGExecution execute() {
-        if (isDebug() && diagram instanceof ObjectNode root) {
+        if ((isDebug() || diagram.has("debugLimit")) && diagram instanceof ObjectNode root) {
             JsonNode nodes = root.get("nodes");
             if (null != nodes && nodes.isArray()) {
                 int limit = debugLimit();
-                Iterator<JsonNode> iterator = nodes.iterator();
-                while (iterator.hasNext()) {
-                    JsonNode item = iterator.next();
+                for (JsonNode item : nodes) {
                     if (!item.isObject()) continue;
                     String type = item.at("/type").asText();
-                    if (!"MongoSource".equals(type)
-                            && !"JDBCSource".equals(type)
-                            && !"ElasticsearchSource".equals(type)
-                            && !"Neo4jSource".equals(type)
-                            && !"OntologySource".equals(type)) continue;
+                    if (!limitSources.contains(type)) continue;
                     ObjectNode node = (ObjectNode) item;
-                    ObjectNode options = node.with("options");
-                    options.put("debugLimit", limit);
+                    ObjectNode options = node.withObject("options");
+                    if (limit > 0) {
+                        options.put("debugLimit", limit);
+                    } else {
+                        options.remove("debugLimit");
+                    }
                 }
             }
         }
@@ -69,8 +80,7 @@ public class SparkRunner extends DAGRunner {
     @Override
     protected JsonNode describe(DAGNode<?> node) {
         Object result = node.result();
-        if (result instanceof Dataset) {
-            Dataset<?> dataset = (Dataset<?>) result;
+        if (result instanceof Dataset<?> dataset) {
             ObjectNode json = DPUtil.objectNode();
             json.put("type", "Dataset");
             ObjectNode schema = json.putObject("schema");
@@ -81,7 +91,8 @@ public class SparkRunner extends DAGRunner {
             json.put("limit", limit);
             try {
                 ArrayNode rows = json.putArray("rows");
-                List<String> list = dataset.limit(limit).toJSON().collectAsList();
+                Dataset<?> preview = limit > 0 ? dataset.limit(limit) : dataset;
+                List<String> list = preview.toJSON().collectAsList();
                 for (String row : list) {
                     rows.add(DPUtil.parseJSON(row));
                 }

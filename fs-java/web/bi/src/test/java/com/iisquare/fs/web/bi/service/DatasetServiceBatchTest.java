@@ -62,6 +62,20 @@ public class DatasetServiceBatchTest {
         verify(dao, times(1)).findAllById(any());
     }
 
+    @Test
+    public void findsDatasetByExactNameForConflictOverwrite() {
+        DatasetDao dao = mock(DatasetDao.class);
+        DatasetService service = new DatasetService();
+        service.datasetDao = dao;
+        when(dao.findFirstByName("orders")).thenReturn(Optional.of(dataset(7, "orders", "id")));
+
+        Dataset info = service.infoByName(" orders ");
+
+        Assert.assertNotNull(info);
+        Assert.assertEquals(Integer.valueOf(7), info.getId());
+        verify(dao).findFirstByName("orders");
+    }
+
     private Dataset dataset(int id, String name, String field) {
         return Dataset.builder()
                 .id(id)

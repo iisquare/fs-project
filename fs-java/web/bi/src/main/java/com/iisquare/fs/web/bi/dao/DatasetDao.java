@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface DatasetDao extends DaoBase<Dataset, Integer> {
 
@@ -14,5 +15,7 @@ public interface DatasetDao extends DaoBase<Dataset, Integer> {
     int exist(@Param("name") String name, @Param("id") int id);
 
     List<Dataset> findAllByNameIn(Collection<String> names);
+
+    Optional<Dataset> findFirstByName(String name);
 
 }

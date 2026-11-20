@@ -17,3 +17,4 @@ fs:
       bucket: fs-bi
       public-base-url: http://127.0.0.1:7815
       max-size: 1073741824
+      debug-expire: 21600000 # 调试临时授权时长，单位毫秒，默认 6 小时

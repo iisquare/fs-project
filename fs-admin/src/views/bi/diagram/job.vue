@@ -164,7 +164,7 @@ const handleDelete = () => {
         <template #default="scope">
           <el-button link @click="handleShow(scope)" v-permit="'bi:job:'">详情</el-button>
           <el-button link @click="handleCancel(scope)" v-permit="'bi:job:'" v-if="['RUNNING', 'SUBMITTING'].includes(scope.row.state)">取消</el-button>
-          <el-button link @click="handleRestart(scope)" v-permit="'bi:job:'" v-if="['FAILED', 'CANCELLED', 'FINISHED'].includes(scope.row.state)">重跑</el-button>
+          <el-button link @click="handleRestart(scope)" v-permit="'bi:diagram:run'" v-if="['FAILED', 'CANCELLED', 'FINISHED'].includes(scope.row.state)">重跑</el-button>
         </template>
       </el-table-column>
     </el-table>

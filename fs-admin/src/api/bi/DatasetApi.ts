@@ -4,6 +4,12 @@ export default {
   info(id: any, tips = {}) {
     return base.post('/dataset/info', { id }, tips)
   },
+  byName(name: any, tips = {}) {
+    return base.post('/dataset/byName', { name }, tips)
+  },
+  byNames(names: any[], tips = {}) {
+    return base.post('/dataset/byNames', { names }, tips)
+  },
   trigger(id: any, tips = {}) {
     return base.post('/dataset/trigger', { id }, tips)
   },

@@ -29,7 +29,8 @@ export default {
   columns(params: any = {}, tips = {}) {
     return base.post('/olap/columns', params, tips).then((result: any) => {
       const data = result.data || {}
-      data.columns = (data.columns || []).slice().sort(byName)
+      data.columns = (data.columns || []).slice().sort((a: any, b: any) =>
+        (Number(a.index) || 0) - (Number(b.index) || 0))
       return result
     })
   },

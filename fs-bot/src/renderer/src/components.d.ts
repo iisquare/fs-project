@@ -15,6 +15,7 @@ declare module 'vue' {
     AgentSessionDetail: typeof import('./components/Chat/AgentSessionDetail.vue')['default']
     AppLoading: typeof import('./components/Layout/AppLoading.vue')['default']
     ApprovalBanner: typeof import('./components/Chat/ApprovalBanner.vue')['default']
+    AutoResizeTextarea: typeof import('./components/Form/AutoResizeTextarea.vue')['default']
     BrandLogo: typeof import('./components/Brand/BrandLogo.vue')['default']
     ChatComposer: typeof import('./components/Chat/ChatComposer.vue')['default']
     ChatElevator: typeof import('./components/Chat/ChatElevator.vue')['default']

@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import LayoutIcon from '@/components/Layout/LayoutIcon.vue'
+import LayoutHelp from '@/components/Layout/LayoutHelp.vue'
 import DiagramApi from '@/api/bi/DiagramApi'
 import ApiUtil from '@/utils/ApiUtil'
 import ElementUtil from '@/utils/ElementUtil'
@@ -29,7 +30,22 @@ const options = computed(() => {
   return model.value.data.options
 })
 
-const nodes = computed(() => selectedJar.value?.nodes ?? [])
+const localMode = computed({
+  get: () => options.value.localMode === true
+    || (!options.value.jarId && !options.value.jarURI && !!options.value.pkgClass),
+  set: (value: boolean) => {
+    options.value.localMode = value
+    if (value) {
+      options.value.jarId = ''
+      options.value.jarURI = ''
+      selectedJar.value = null
+    } else if (!options.value.jarURI) {
+      options.value.pkgClass = ''
+    }
+  },
+})
+const nodes = computed(() => (selectedJar.value?.nodes ?? [])
+  .filter((node: any) => ['source', 'transform', 'sink'].includes(node.kind)))
 const jarOptions = computed(() => {
   if (!selectedJar.value || jars.value.some((jar: any) => jar.id === selectedJar.value.id)) {
     return jars.value
@@ -106,6 +122,7 @@ const chooseJar = (id: string) => {
     options.value.pkgClass = ''
     return
   }
+  options.value.localMode = false
   options.value.jarId = jar.id
   options.value.jarURI = jar.uri
   selectedJar.value = jar
@@ -116,10 +133,6 @@ const chooseJar = (id: string) => {
 
 const chooseJob = (className: string) => {
   options.value.pkgClass = className
-  if (className === 'OfficialSiteCleanTransform') {
-    options.value.urlField ||= 'url'
-    options.value.titleField ||= 'title'
-  }
 }
 
 const validateJarFile = (file: File) => {
@@ -165,6 +178,7 @@ const deleteJar = () => {
     jars.value = jars.value.filter((item: any) => item.id !== jar.id)
     total.value = Math.max(0, total.value - 1)
     selectedJar.value = null
+    options.value.localMode = false
     options.value.jarId = ''
     options.value.jarURI = ''
     options.value.pkgClass = ''
@@ -206,33 +220,16 @@ onBeforeUnmount(() => {
         </el-form-item>
       </property-section>
 
-      <property-section title="JAR 文件" :reset-key="model.id">
-        <div class="jar-actions">
-          <el-select
-            v-model="options.jarId"
-            filterable
-            remote
-            :remote-method="searchJars"
-            :remote-show-suffix="true"
-            clearable
-            placeholder="输入文件名、SHA-256 或作业类检索"
-            :loading="loading"
-            style="flex: 1"
-            @change="chooseJar"
-          >
-            <el-option
-              v-for="jar in jarOptions"
-              :key="jar.id"
-              :value="jar.id"
-              :label="jarOptionLabel(jar)"
-            />
-          </el-select>
-          <el-button text :loading="loading" :title="`刷新 JAR 列表（共 ${total} 个）`" @click="refreshJars">
-            <LayoutIcon name="Refresh" />
-          </el-button>
-          <el-button v-if="selectedJar" text type="danger" @click="deleteJar">删除</el-button>
+      <property-section title="作业来源" :reset-key="model.id">
+        <div class="source-mode">
+          <div class="source-mode__label">
+            <strong>本地类路径</strong>
+            <LayoutHelp text="仅用于 IDE/测试进程 classpath；正式运行请使用 JAR" />
+          </div>
+          <el-switch v-model="localMode" />
         </div>
         <el-upload
+          v-if="!localMode"
           class="jar-drop"
           drag
           accept=".jar"
@@ -250,7 +247,32 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </el-upload>
-        <el-descriptions v-if="selectedJar" :column="1" size="small" border class="jar-detail">
+        <div v-if="!localMode" class="jar-actions">
+          <el-select
+            v-model="options.jarId"
+            class="jar-select"
+            filterable
+            remote
+            :remote-method="searchJars"
+            :remote-show-suffix="true"
+            clearable
+            placeholder="输入文件名、SHA-256 或作业类检索"
+            :loading="loading"
+            @change="chooseJar"
+          >
+            <el-option
+              v-for="jar in jarOptions"
+              :key="jar.id"
+              :value="jar.id"
+              :label="jarOptionLabel(jar)"
+            />
+          </el-select>
+          <el-button text :loading="loading" :title="`刷新 JAR 列表（共 ${total} 个）`" @click="refreshJars">
+            <LayoutIcon name="Refresh" />
+          </el-button>
+          <el-button v-if="selectedJar" text type="danger" @click="deleteJar">删除</el-button>
+        </div>
+        <el-descriptions v-if="!localMode && selectedJar" :column="1" size="small" border class="jar-detail">
           <el-descriptions-item label="文件名">{{ selectedJar.name }}</el-descriptions-item>
           <el-descriptions-item label="JAR标识">{{ selectedJar.id }}</el-descriptions-item>
           <el-descriptions-item label="SHA-256">
@@ -260,9 +282,28 @@ onBeforeUnmount(() => {
           <el-descriptions-item label="文件大小">{{ formatSize(selectedJar.size) }}</el-descriptions-item>
           <el-descriptions-item label="作业节点">{{ selectedJar.nodes?.length || 0 }} 个</el-descriptions-item>
         </el-descriptions>
+        <el-form-item v-if="localMode" label="节点类型">
+          <el-radio-group v-model="model.data.direction" class="node-kind-group">
+            <el-radio-button value="source">数据源</el-radio-button>
+            <el-radio-button value="transform">数据转换</el-radio-button>
+            <el-radio-button value="sink">数据输出</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="localMode" label="本机作业类">
+          <el-input
+            v-model="options.pkgClass"
+            class="local-class-input"
+            type="textarea"
+            :autosize="{ minRows: 2, maxRows: 5 }"
+            resize="none"
+            clearable
+            placeholder="输入完整类名，如 com.example.MyTransformNode"
+            @change="chooseJob"
+          />
+        </el-form-item>
       </property-section>
 
-      <property-section title="作业节点" :reset-key="model.id">
+      <property-section v-if="!localMode" title="作业节点" :reset-key="model.id">
         <el-form-item label="JAR作业">
           <el-select
             v-model="options.pkgClass"
@@ -297,18 +338,6 @@ onBeforeUnmount(() => {
         </el-descriptions>
       </property-section>
 
-      <property-section
-        v-if="selectedNode?.className === 'OfficialSiteCleanTransform'"
-        title="官方站点清洗参数"
-        :reset-key="model.id"
-      >
-          <el-form-item label="URL字段">
-            <el-input v-model="options.urlField" placeholder="url" />
-          </el-form-item>
-          <el-form-item label="标题字段">
-            <el-input v-model="options.titleField" placeholder="title" />
-          </el-form-item>
-      </property-section>
     </el-form>
   </property-panel>
 </template>
@@ -317,14 +346,72 @@ onBeforeUnmount(() => {
 .jar-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  :deep(.el-button) {
+    flex: none;
+    margin-left: 0;
+  }
+}
+.source-mode {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 10px;
+}
+.source-mode__label {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  strong {
+    color: var(--el-text-color-primary);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+}
+.jar-select {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+}
+.local-class-input :deep(.el-textarea__inner) {
+  min-height: 52px !important;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.node-kind-group {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  :deep(.el-radio-button) {
+    flex: 1;
+    min-width: 0;
+  }
+  :deep(.el-radio-button__inner) {
+    width: 100%;
+    padding: 7px 3px;
+    font-size: 12px;
+  }
+}
+:deep(.el-form-item),
+:deep(.el-form-item__content) {
+  min-width: 0;
 }
 .jar-drop {
   display: block;
   width: 100%;
-  margin-top: 8px;
+  min-width: 0;
+  margin: 8px 0;
+  box-sizing: border-box;
   :deep(.el-upload) {
     width: 100%;
+    min-width: 0;
   }
   :deep(.el-upload-dragger) {
     --el-upload-dragger-padding-horizontal: 12px;
@@ -337,6 +424,9 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   min-height: 32px;
   color: var(--el-text-color-regular);
   line-height: 1.45;
@@ -361,10 +451,25 @@ onBeforeUnmount(() => {
   font-size: 20px;
 }
 .jar-detail {
+  display: block;
+  width: 100%;
+  min-width: 0;
   margin-top: 8px;
+  :deep(.el-descriptions__body) {
+    overflow: hidden;
+  }
+  :deep(.el-descriptions__table) {
+    width: 100%;
+    table-layout: fixed;
+  }
   :deep(.el-descriptions__label) {
-    width: 72px;
+    width: 64px;
     white-space: nowrap;
+  }
+  :deep(.el-descriptions__content) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 }
 .jar-hash {

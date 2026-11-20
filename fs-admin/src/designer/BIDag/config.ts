@@ -34,6 +34,15 @@ const widget = (type: string, label: string, title: string, icon: string, suppor
 
 /** 节点级配置引导，属性面板在参数上方展示 */
 export const nodeGuides: any = {
+  ExcelSource: {
+    summary: '读取本地或 Hadoop 文件系统中的 Excel，转换为 Spark Dataset。',
+    points: [
+      '文件路径支持 file://、HDFS、S3 等 Spark 可识别的 Hadoop FileSystem 地址。',
+      '工作表地址使用 Excel 名称加感叹号的形式，例如 \'Sheet1\'!；留空时读取第一个工作表。',
+      'Excel 由 Driver 读取，适合配置导入、调试和中小规模数据；超大文件建议先转换为 Parquet 或 CSV。',
+    ],
+    example: '示例：path = file:///data/input.xlsx，worksheet = \'Sheet1\'!',
+  },
   FilterTransform: {
     summary: '保留满足条件的记录。条件只作用于一个字段，多个条件请串联多个过滤节点，或使用 SQL 节点。',
     points: [
@@ -97,6 +106,34 @@ export const nodeGuides: any = {
 
 /** 节点参数编辑字段，Property.vue 依据节点类型渲染 */
 export const fields: any = {
+  ExcelSource: [
+    {
+      key: 'path', label: 'Excel文件', component: 'textarea',
+      autosize: { minRows: 1, maxRows: 4 },
+      placeholder: 'file:///data/input.xlsx 或 hdfs:///data/input.xlsx',
+    },
+    {
+      key: 'dataAddress', label: '工作表', placeholder: "'Sheet1'!",
+    },
+    {
+      key: 'header', label: '首行为表头', component: 'switch',
+    },
+    {
+      key: 'headerRow', label: '表头行号', component: 'number', placeholder: '留空使用第一行',
+    },
+    {
+      key: 'limit', label: '读取行数', component: 'number', placeholder: '0 表示不限制',
+    },
+    {
+      key: 'maxRows', label: '最大行数', component: 'number', placeholder: '默认 100000',
+    },
+    {
+      key: 'maxColumns', label: '最大列数', component: 'number', placeholder: '默认 1024',
+    },
+    {
+      key: 'maxBytes', label: '最大文件字节数', component: 'number', placeholder: '默认 104857600',
+    },
+  ],
   JDBCSource: [
     {
       key: 'datasourceId', label: '数据源', component: 'datasource', datasourceTypes: ['mysql', 'doris', 'postgresql'],
@@ -463,6 +500,10 @@ export const fields: any = {
 const widgets = [{
   name: '数据读取',
   children: [
+    widget('ExcelSource', 'Excel读取', '读取Excel并转换为Dataset', 'basic.excel', { spark: ['batch'] }, {
+      path: '', dataAddress: '', header: true, limit: 0,
+      maxRows: 100000, maxColumns: 1024, maxBytes: 104857600,
+    }),
     widget('JDBCSource', '数据库读取', '关系型数据库读取', 'basic.database', { spark: ['batch'], flink: ['batch'] }, {
       datasourceId: undefined, sql: '', fetchSize: 0,
       partitionColumn: '', lowerBound: '', upperBound: '', numPartitions: 0, iterable: false,
@@ -525,15 +566,15 @@ const widgets = [{
       fields: [],
     }),
     {
-      type: 'ScriptTransform',
+      type: 'Jar',
       label: 'JAR作业',
-      title: '上传或选择历史 JAR，并选择其中的作业节点',
+      title: '上传或选择 JAR，也可在测试时直接使用本机 classpath 中的作业类',
       icon: 'flow.script',
       shape: 'flow-node',
       direction: 'transform',
       support: { spark: ['batch', 'stream'], flink: ['batch', 'stream'] },
       property: jarProperty,
-      options: payload({ jarId: '', jarURI: '', pkgClass: '' }),
+      options: payload({ localMode: false, jarId: '', jarURI: '', pkgClass: '' }),
     },
   ],
 }, {

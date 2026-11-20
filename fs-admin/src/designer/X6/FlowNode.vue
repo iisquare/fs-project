@@ -7,7 +7,7 @@ const node = (inject('getNode') as any)() as X6.Node
 const data: any = ref(node.getData())
 const role = computed(() => {
   if (data.value.direction) return data.value.direction
-  const type = data.value.type === 'ScriptTransform'
+  const type = data.value.type === 'Jar'
     ? (data.value.options?.pkgClass ?? '')
     : (data.value.type ?? '')
   if (type.endsWith('Source') || type.endsWith('Capture')) return 'source'

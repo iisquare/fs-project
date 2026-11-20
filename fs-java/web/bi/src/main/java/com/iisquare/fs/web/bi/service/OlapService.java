@@ -39,6 +39,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.LinkedHashSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class OlapService extends ServiceBase {
@@ -107,6 +110,7 @@ public class OlapService extends ServiceBase {
         result.put("schema", schema);
         ArrayNode tables = result.putArray("tables");
         try {
+            Map<String, ObjectNode> nodes = new LinkedHashMap<>();
             String sql = "SELECT table_name, table_type FROM " + trinoService.quoteIdentifier(catalog)
                     + ".information_schema.tables WHERE table_schema = ? ORDER BY table_name";
             trinoService.query(sql, statement -> {
@@ -117,11 +121,34 @@ public class OlapService extends ServiceBase {
                 String type = resultSet.getString(2);
                 table.put("type", "BASE TABLE".equals(type) ? "TABLE" : type);
                 table.put("remark", "");
+                nodes.put(table.at("/name").asText(), table);
                 tables.add(table);
             });
+            fillTableRemarks(catalog, schema, nodes);
             return ApiUtil.result(0, null, result);
         } catch (Exception e) {
             return ApiUtil.result(1500, "获取表列表失败", e.getMessage());
+        }
+    }
+
+    /**
+     * 补充表注释。system.metadata 的表注释元数据并非所有 Trino 部署都启用，
+     * 获取失败时保持空注释，不影响表目录浏览与数据集创建。
+     */
+    private void fillTableRemarks(String catalog, String schema, Map<String, ObjectNode> nodes) {
+        if (nodes.isEmpty()) return;
+        try {
+            String sql = "SELECT table_name, comment FROM system.metadata.table_comments "
+                    + "WHERE catalog_name = ? AND schema_name = ?";
+            trinoService.query(sql, statement -> {
+                statement.setString(1, catalog);
+                statement.setString(2, schema);
+            }, resultSet -> {
+                ObjectNode table = nodes.get(resultSet.getString(1));
+                if (null != table) table.put("remark", DPUtil.parseString(resultSet.getString(2)));
+            });
+        } catch (Exception e) {
+            logger.warn("获取表注释失败, catalog: {}, schema: {}, message: {}", catalog, schema, e.getMessage());
         }
     }
 
@@ -143,6 +170,7 @@ public class OlapService extends ServiceBase {
         result.put("schema", schema);
         result.put("table", table);
         ArrayNode columns = result.putArray("columns");
+        ArrayNode pks = result.putArray("pks");
         try {
             String sql = "SELECT column_name, data_type, is_nullable, ordinal_position, comment "
                     + "FROM " + trinoService.quoteIdentifier(catalog)
@@ -160,10 +188,58 @@ public class OlapService extends ServiceBase {
                 column.put("index", resultSet.getInt(4));
                 columns.add(column);
             });
+            for (String pk : primaryKeys(catalog, schema, table)) {
+                pks.add(pk);
+            }
             return ApiUtil.result(0, null, result);
         } catch (Exception e) {
             return ApiUtil.result(1500, "获取表结构失败", e.getMessage());
         }
+    }
+
+    /**
+     * 从 SHOW CREATE TABLE 的 connector 表属性中解析主键。
+     * Trino JDBC 的主键元数据接口固定返回空结果，而 MySQL 等目录会在建表语句中
+     * 输出 primary_key = ARRAY[...]，因此这里作为通用元数据补充。
+     */
+    private List<String> primaryKeys(String catalog, String schema, String table) {
+        final String[] ddl = new String[1];
+        try {
+            String sql = "SHOW CREATE TABLE " + trinoService.quoteIdentifier(catalog) + "."
+                    + trinoService.quoteIdentifier(schema) + "."
+                    + trinoService.quoteIdentifier(table);
+            trinoService.query(sql, null, resultSet -> {
+                if (null == ddl[0]) ddl[0] = resultSet.getString(1);
+            });
+        } catch (Exception e) {
+            logger.warn("获取表主键失败, catalog: {}, schema: {}, table: {}, message: {}",
+                    catalog, schema, table, e.getMessage());
+        }
+        return primaryKeysFromCreate(ddl[0]);
+    }
+
+    static List<String> primaryKeysFromCreate(String ddl) {
+        LinkedHashSet<String> result = new LinkedHashSet<>();
+        if (DPUtil.empty(ddl)) return new ArrayList<>(result);
+        Matcher property = Pattern.compile(
+                "(?is)primary_key\\s*=\\s*ARRAY\\s*\\[(.*?)]").matcher(ddl);
+        if (property.find()) {
+            Matcher value = Pattern.compile("'((?:''|[^'])*)'").matcher(property.group(1));
+            while (value.find()) {
+                result.add(value.group(1).replace("''", "'"));
+            }
+        }
+        if (result.isEmpty()) {
+            Matcher constraint = Pattern.compile(
+                    "(?is)PRIMARY\\s+KEY\\s*\\(([^)]*)\\)").matcher(ddl);
+            if (constraint.find()) {
+                for (String item : constraint.group(1).split(",")) {
+                    String name = DPUtil.trim(item).replaceAll("^[`\"]|[`\"]$", "");
+                    if (!DPUtil.empty(name)) result.add(name);
+                }
+            }
+        }
+        return new ArrayList<>(result);
     }
 
     public ObjectNode variables() {

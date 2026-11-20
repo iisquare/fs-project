@@ -46,8 +46,7 @@ public class BIService {
                     DAGCore.class.getPackage().getName() + ".node",
                     DAGCore.class.getPackage().getName() + ".config");
             batch = DAGUtil.scanNodes(
-                    SparkApplication.class.getPackage().getName() + ".batch",
-                    "com.iisquare.fs.ext.spark");
+                    SparkApplication.class.getPackage().getName() + ".batch");
             stream = DAGUtil.scanNodes(
                     SparkApplication.class.getPackage().getName() + ".stream");
         } catch (ClassNotFoundException e) {

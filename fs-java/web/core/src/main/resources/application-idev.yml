@@ -5,7 +5,7 @@ fs:
     date: yyyy-MM-dd HH:mm:ss
   site:
     urls:
-      file: //127.0.0.1:7812
+      file: //hostmachine:7812
       static: //127.0.0.1/fs-project-vip/static/resources
 
 rpc:

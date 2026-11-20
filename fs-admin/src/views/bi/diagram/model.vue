@@ -27,7 +27,7 @@ const tips: any = ref({ text: '' })
 const activeItem: any = ref({})
 const debugRuns: any = ref([])
 const activeDebugRun: any = ref(null)
-const debugLimit = ref(20)
+const debugLimit = ref(200)
 let debugRunId = 0
 const loading = ref(false)
 const diagram: any = ref(Object.assign(config.canvas.options(), {
@@ -448,8 +448,8 @@ watch(
       <el-space>
         <span class="debug-limit-label">调试行数</span>
         <el-input-number v-model="debugLimit" :min="1" :max="1000" :controls="false" class="debug-limit" />
-        <el-button @click="handleDebug" :loading="loading">调试节点</el-button>
-        <el-button @click="handleRun" :loading="loading">运行作业</el-button>
+        <el-button v-permit="'bi:diagram:run'" @click="handleDebug" :loading="loading">调试节点</el-button>
+        <el-button v-permit="'bi:diagram:run'" @click="handleRun" :loading="loading">运行作业</el-button>
         <el-button type="primary" @click="handleSubmit" :loading="loading">保存</el-button>
       </el-space>
     </template>

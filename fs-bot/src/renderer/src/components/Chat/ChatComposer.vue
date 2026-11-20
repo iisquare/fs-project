@@ -17,6 +17,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import PolicyIcon from './PolicyIcon.vue'
 import ContextRing, { type ContextInfo } from './ContextRing.vue'
+import AutoResizeTextarea from '@renderer/components/Form/AutoResizeTextarea.vue'
 import type { ChatMention } from '@renderer/stores/chat'
 
 export interface MentionCandidate {
@@ -34,6 +35,10 @@ export interface ComposerCommand {
   name: string
   label: string
   description: string
+}
+
+interface AutoResizeTextareaExpose {
+  textarea: () => HTMLTextAreaElement | null
 }
 
 const props = defineProps<{
@@ -62,7 +67,7 @@ const emit = defineEmits<{
   'update:contextLimit': [value: number | null]
 }>()
 
-const inputRef = ref<any>(null)
+const inputRef = ref<AutoResizeTextareaExpose | null>(null)
 /** 底衬层：只画引用的底色块，文字与光标仍由文本区负责 */
 const mirrorRef = ref<HTMLElement | null>(null)
 const menu = ref<{ kind: '' | 'mention' | 'command'; index: number; from: number; to: number }>({
@@ -110,7 +115,7 @@ const POLICY_HINTS: Record<string, string> = {
 }
 
 function textarea(): HTMLTextAreaElement | null {
-  return (inputRef.value?.textarea as HTMLTextAreaElement) ?? null
+  return inputRef.value?.textarea() ?? null
 }
 
 /** 引用在输入框里的那一小段文本：技能是 skill:名称，本机选择的文件 / 文件夹是绝对路径 */
@@ -654,16 +659,16 @@ defineExpose({ focus, addPaths })
       -->
       <div class="composer-field">
         <div ref="mirrorRef" class="composer-mirror" aria-hidden="true" v-html="mirrorHtml" />
-        <el-input
+        <AutoResizeTextarea
           ref="inputRef"
           class="composer-input"
           :model-value="modelValue"
-          type="textarea"
-          :autosize="{ minRows: 1, maxRows: 8 }"
+          :max-rows="8"
           resize="none"
           :disabled="disabled"
           :placeholder="placeholder"
           @update:model-value="onInput"
+          @resize="syncScroll"
           @keydown="onKeydown"
           @click="refreshMenu()"
         />

@@ -164,9 +164,10 @@ Base64 快照或 `diagramUrl`，由 `FlinkApplication` / `SparkApplication` 的 
 编排流程（`web:bi`）：
 
 - `POST /bi/diagram/{info,list,save,delete,config}`：编排流程 CRUD
-- `GET /bi/dag/diagram?id=`：导出计算有向无环图
-- `POST /bi/dag/run`：提交作业（`{id, clusterId, data}`）
-- `POST /bi/dag/debug`：指定节点调试（`{id, nodeId, previewLimit}`），返回各节点输出
+- `GET /bi/dag/diagram?id=`：导出原始计算有向无环图
+- `GET /bi/dag/diagram?id=&execution=true`：导出已展开数据源的执行配置，仅限开发/测试环境本机调用
+- `POST /bi/dag/run`：提交作业（`{id, clusterId, data}`），需要 `bi:diagram:run`
+- `POST /bi/dag/debug`：指定节点调试（`{id, nodeId, previewLimit}`），返回各节点输出，需要 `bi:diagram:run`
 - `POST /bi/dag/tables`：读取数据源可选资源（`{datasourceId}`），支持关系库表/视图、MongoDB 集合、Elasticsearch 索引和 Kafka 主题
 - `POST /bi/dag/columns`：读取指定表的字段结构（`{datasourceId, table}`）
 
@@ -290,12 +291,24 @@ fs:
 - `POST /bi/diagram/jar/upload`：multipart 字段 `file`，仅接受 JAR
 - `POST /bi/diagram/jar/list`：按 `keyword` 分页检索文件名、SHA-256 或作业节点
 - `GET /bi/diagram/jar/info?id=`：读取单个 JAR 及已解析节点
-- `GET /bi/diagram/jar/nodes?id=`：读取指定 JAR 内可用的 `DAGNode` 实现
+- `GET /bi/diagram/jar/nodes?id=`：读取指定 JAR 内可用的 `DAGSource`、`DAGTransform` 和 `DAGSink`
 - `GET /bi/diagram/jar/download?id=`：供计算引擎加载插件
 
-插件类需实现 `com.iisquare.fs.base.dag.core.DAGSource`、`DAGTransform`、
-`DAGSink` 或 `DAGConfig`。设计器会从 JAR 读取输入/输出类型，并将插件包装为
-`ScriptTransform` 节点；拖入画布后按正常节点方式连接上下游即可执行。
+插件类需实现 `com.iisquare.fs.base.dag.core.DAGSource`、`DAGTransform` 或
+`DAGSink`。设计器会从 JAR 读取输入/输出类型，并将插件包装为
+`Jar` 节点；拖入画布后按正常节点方式连接上下游即可执行。
+
+调试执行时，BI 服务会按节点配置的 `jarId` 向文件服务换取带签名的临时下载地址，
+并只覆盖本次调试执行配置中的 `jarURI`，不会改写流程配置或作业快照。临时地址默认
+有效 6 小时，可通过 `fs.bi.jar.debug-expire` 调整，单位毫秒。
+
+本地开发 `ext:spark` 节点时，可以不构建和上传 JAR：在“JAR作业”属性中开启
+“本地类路径”，填写完整类名，例如
+`com.example.MyTransformNode`。运行进程的 classpath 中存在该类时，
+`JarNode` 会直接加载并执行。正式运行的节点仍应配置可被计算节点访问的 `jarURI`。
+
+该本地执行接口只在 `dev`、`test` 环境通过本机回环地址开放，避免向普通导出
+接口或远端请求泄露执行凭据。
 
 JAR 文件本体通过文件服务保存到 `fs-bi` 桶，BI 服务数据库只保存文件标识、
 对象路径、SHA-256、大小和节点元数据。上传时完成解析，之后列表检索直接查询数据库。
@@ -308,6 +321,7 @@ fs:
       bucket: fs-bi
       public-base-url: http://127.0.0.1:7815
       max-size: 1073741824
+      debug-expire: 21600000
 ```
 
 `public-base-url` 必须是 Spark/Flink 计算节点可访问的 BI 地址。计算引擎请求

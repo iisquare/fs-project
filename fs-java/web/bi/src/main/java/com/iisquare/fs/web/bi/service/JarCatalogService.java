@@ -39,8 +39,8 @@ import java.util.jar.JarFile;
 /**
  * 自定义计算节点 JAR 目录。
  *
- * 文件本体写入文件服务，扫描结果写入 BI 元数据表。运行时由 ScriptTransformNode
- * 通过 BI 下载地址取得文件服务签名链接并加载插件。
+ * 文件本体写入文件服务，扫描结果写入 BI 元数据表。常规运行由 JarNode
+ * 通过 BI 下载地址取得文件服务签名链接；调试运行则直接注入带有效期的文件地址。
  */
 @Service
 public class JarCatalogService extends JPAServiceBase {
@@ -230,6 +230,31 @@ public class JarCatalogService extends JPAServiceBase {
         return response.at("/data").asText("");
     }
 
+    /**
+     * 根据 JAR 标识签发文件服务下载地址，供调试执行直接加载。
+     * expire 单位为毫秒，调用方负责控制默认值与上限。
+     */
+    public String temporaryUrl(String id, int expire) {
+        Jar info = info(id);
+        if (null == info || !Integer.valueOf(1).equals(info.getStatus())
+                || DPUtil.empty(info.getFileId()) || expire < 1) {
+            return null;
+        }
+        ObjectNode param = DPUtil.objectNode();
+        param.putObject(info.getFileId()).put("type", "file").put("expire", expire);
+        Map<String, Object> result;
+        try {
+            result = RpcUtil.result(fileRpc.post("/file/url", param));
+        } catch (Exception e) {
+            log.warn("issue temporary jar url failed: jar={}", id, e);
+            return null;
+        }
+        if (ApiUtil.failed(result)) return null;
+        JsonNode data = DPUtil.toJSON(ApiUtil.data(result, Object.class));
+        if (null == data) return null;
+        return DPUtil.trim(data.at("/" + info.getFileId() + "/url").asText(""));
+    }
+
     public Jar info(String id) {
         return info(DPUtil.parseInt(id));
     }
@@ -312,7 +337,8 @@ public class JarCatalogService extends JPAServiceBase {
                 String className = name.substring(0, name.length() - 6).replace('/', '.');
                 try {
                     Class<?> cls = Class.forName(className, false, loader);
-                    if (!DAGNode.class.isAssignableFrom(cls) || Modifier.isAbstract(cls.getModifiers())) continue;
+                    if (!DAGNode.class.isAssignableFrom(cls) || Modifier.isAbstract(cls.getModifiers())
+                            || DAGConfig.class.isAssignableFrom(cls)) continue;
                     ObjectNode node = DPUtil.objectNode();
                     node.put("className", className);
                     String simpleName = cls.getSimpleName();

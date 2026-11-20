@@ -1,6 +1,7 @@
 package com.iisquare.fs.app.flink;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.app.flink.core.FlinkRunner;
 import com.iisquare.fs.base.dag.DAGCore;
 import com.iisquare.fs.base.dag.core.DAGNode;
@@ -20,7 +21,28 @@ import java.util.Map;
 public class FlinkApplication {
 
     public static void main(String... args) throws Exception {
-        JsonNode diagram = DAGUtil.loadDiagram(args[0]);
+        execute(args[0], null);
+    }
+
+    /**
+     * 本地调试执行，默认限制 200 行；limit=0 表示不限制。
+     */
+    public static void debug(String uri) throws Exception {
+        debug(uri, 200);
+    }
+
+    /**
+     * 本地调试执行；limit=0 表示不限制，正数最大限制 1000 行。
+     */
+    public static void debug(String uri, int limit) throws Exception {
+        execute(uri, Math.max(0, limit));
+    }
+
+    private static void execute(String uri, Integer debugLimit) throws Exception {
+        JsonNode diagram = DAGUtil.loadDiagram(uri);
+        if (null != debugLimit && diagram instanceof ObjectNode root) {
+            root.put("debugLimit", debugLimit);
+        }
         String model = diagram.at("/model").asText("");
         if (!"batch".equals(model) && !"stream".equals(model)) {
             throw new RuntimeException("处理模式仅支持batch与stream，当前model=" + model);

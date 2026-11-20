@@ -46,6 +46,7 @@ FlinkUtil.union()
 
 ### 插件开发
 
-- ScriptTransformNode的jarURI在本地开发时通过JarClassLoader加载，线上直接通过CLI提交文件后清除jarURI值。
-- 在app中调试plugins需要配置对应的jarURI路径；在plugins中调试app则无需配置当前jarURI路径，plugins即为app。
-- JarClassLoader会优先加载同一个Jar文件下的父类，请勿将主依赖打包进插件中，否则isAssignableFrom校验不通过。
+- 在 `ext:flink` 本地调试时无需构建 JAR：清空 `jarURI` 并填写完整 `pkgClass`，节点会从当前进程 classpath 加载。
+- 正式运行时应配置可被计算节点访问的 `jarURI`，由 `JarClassLoader` 加载插件。
+- `JarClassLoader` 使用标准双亲委派；不要将框架主依赖重复打包进插件，否则可能因类型来自不同 Class 实例而导致校验失败。
+- 本地调试可使用 `FlinkApplication.debug(uri)`，默认限制 JDBC 数据源读取 200 行；`FlinkApplication.debug(uri, 0)` 表示不限制。

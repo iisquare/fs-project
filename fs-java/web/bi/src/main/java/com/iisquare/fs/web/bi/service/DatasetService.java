@@ -93,6 +93,34 @@ public class DatasetService extends JPAServiceBase {
         return info(datasetDao, id);
     }
 
+    public Dataset infoByName(String name) {
+        String normalized = DPUtil.trim(name);
+        if (DPUtil.empty(normalized)) return null;
+        return datasetDao.findFirstByName(normalized).orElse(null);
+    }
+
+    /**
+     * 按名称批量解析数据集，保持请求顺序并返回完整记录，供数据主题等页面一次添加多个数据集。
+     */
+    public Map<String, Object> infosByNames(Map<?, ?> param) {
+        Set<String> requested = new LinkedHashSet<>();
+        for (String name : DPUtil.parseStringList(param.get("names"))) {
+            String normalized = DPUtil.trim(name);
+            if (!DPUtil.empty(normalized)) requested.add(normalized);
+        }
+        if (requested.isEmpty()) return ApiUtil.result(1001, "数据集名称不能为空", requested);
+        Map<String, Dataset> indexed = new HashMap<>();
+        for (Dataset info : datasetDao.findAllByNameIn(requested)) {
+            indexed.put(info.getName(), info);
+        }
+        ArrayNode rows = DPUtil.arrayNode();
+        for (String name : requested) {
+            Dataset info = indexed.get(name);
+            if (null != info) rows.add(DPUtil.toJSON(info));
+        }
+        return ApiUtil.result(0, null, rows);
+    }
+
     /**
      * 解析数据集：校验状态并返回名称及其查询语句，供矩阵、报表等运算使用。
      */

@@ -67,7 +67,7 @@ public class JobController extends PermitControllerBase {
     }
 
     @RequestMapping("/run")
-    @Permission("")
+    @Permission("bi:diagram:run")
     public String runAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         int id = ValidateUtil.filterInteger(param.get("diagramId"), 1, null, 0);
         return ApiUtil.echoResult(dagService.run(id, param, request, Job.TRIGGER_MANUAL));
@@ -81,7 +81,7 @@ public class JobController extends PermitControllerBase {
     }
 
     @RequestMapping("/restart")
-    @Permission("")
+    @Permission("bi:diagram:run")
     public String restartAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {
         int id = ValidateUtil.filterInteger(param.get("id"), 1, null, 0);
         return ApiUtil.echoResult(dagService.restart(id, param, request, Job.TRIGGER_MANUAL));

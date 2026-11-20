@@ -40,6 +40,28 @@ public class DatasetController extends PermitControllerBase {
         return ApiUtil.echoResult(result);
     }
 
+    @RequestMapping("/byName")
+    @Permission("")
+    public String byNameAction(@RequestBody Map<?, ?> param) {
+        String name = DPUtil.trim(DPUtil.parseString(param.get("name")));
+        if (DPUtil.empty(name)) return ApiUtil.echoResult(1001, "数据集名称不能为空", null);
+        var info = datasetService.infoByName(name);
+        ObjectNode data = DPUtil.objectNode();
+        if (null != info) {
+            data.put("id", info.getId());
+            data.put("name", info.getName());
+            data.put("type", info.getType());
+            data.put("status", info.getStatus());
+        }
+        return ApiUtil.echoResult(0, null, data);
+    }
+
+    @RequestMapping("/byNames")
+    @Permission("")
+    public String byNamesAction(@RequestBody Map<?, ?> param) {
+        return ApiUtil.echoResult(datasetService.infosByNames(param));
+    }
+
     @RequestMapping("/delete")
     @Permission
     public String deleteAction(@RequestBody Map<?, ?> param, HttpServletRequest request) {

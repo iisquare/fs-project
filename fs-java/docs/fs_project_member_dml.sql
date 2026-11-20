@@ -248,7 +248,7 @@ INSERT INTO `fs_member_menu` VALUES (427,'大屏模板','商业智能:智能报�
 INSERT INTO `fs_member_menu` VALUES (428,'代理服务','数据采集:采集配置:代理服务',26,175,'','/spider/setting/proxy','',20,1,'代理渠道、代理分组与运行统计',1793750400000,1,1793785276773,1);
 INSERT INTO `fs_member_menu` VALUES (429,'网站资产','网站资产',309,0,'OfficeBuilding','/siteBackend/setting/site','',10,1,'',1794195502000,1,1794195502000,1);
 INSERT INTO `fs_member_menu` VALUES (430,'入口与名单','网站资产:入口与名单',309,429,'','/siteBackend/setting/site','',0,1,'',1794195502000,1,1794195502000,1);
-INSERT INTO `fs_member_menu` VALUES (431,'API Key','智能体:系统配置:API Key',308,414,'','/agent/apiKey/list','',90,1,'',1794556800000,1,1794556800000,1);
+INSERT INTO `fs_member_menu` VALUES (431,'API Key','智能体:系统配置:API Key',308,414,'','/agent/apiKey/list','',90,1,'',1794556800000,1,1794394047373,1);
 /*!40000 ALTER TABLE `fs_member_menu` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -652,6 +652,7 @@ INSERT INTO `fs_member_resource` VALUES (494,'API Key','智能体:API Key',308,0
 INSERT INTO `fs_member_resource` VALUES (495,'添加','智能体:API Key:添加',308,494,'agent','apiKey','add',0,1,'',1794556800000,1,1794556800000,1);
 INSERT INTO `fs_member_resource` VALUES (496,'修改','智能体:API Key:修改',308,494,'agent','apiKey','modify',0,1,'',1794556800000,1,1794556800000,1);
 INSERT INTO `fs_member_resource` VALUES (497,'删除','智能体:API Key:删除',308,494,'agent','apiKey','delete',0,1,'',1794556800000,1,1794556800000,1);
+INSERT INTO `fs_member_resource` VALUES (498,'运行','商业智能:数据加工:运行',31,32,'bi','diagram','run',0,1,'提交、调试和重新运行数据加工作业',1795050839000,1,1795050839000,1);
 /*!40000 ALTER TABLE `fs_member_resource` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -664,4 +665,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-11-11 18:31:58
+-- Dump completed on 2026-11-19  9:20:16

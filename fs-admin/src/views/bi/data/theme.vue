@@ -112,9 +112,32 @@ const rules = ref({
   name: [{ required: true, message: '请输入主题名称', trigger: 'blur' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 })
-const pendingDatasetId: any = ref(null)
-const pendingDataset: any = ref(null)
+const pendingDatasetIds: any = ref([])
+const pendingDatasets: any = ref([])
+const datasetNamesText = ref('')
+const datasetNamesLoading = ref(false)
+const datasetAddMode = ref<'select' | 'names'>('select')
+const datasetAddModes = [
+  { label: '搜索选择', value: 'select' },
+  { label: '名称批量', value: 'names' },
+]
 const relationRows = ref<any[]>([])
+const resetPendingDatasets = () => {
+  pendingDatasetIds.value = []
+  pendingDatasets.value = []
+  datasetNamesText.value = ''
+  datasetAddMode.value = 'select'
+}
+const datasetOptions = (params: any) => {
+  const selectedIds = new Set((form.value.content?.datasetIds || []).map(Number))
+  return DatasetApi.list(params).then((result: any) => {
+    result.data.rows = (result.data.rows || []).map((dataset: any) => ({
+      ...dataset,
+      disabled: selectedIds.has(Number(dataset.id)),
+    }))
+    return result
+  })
+}
 
 const loadInfo = (scope: any) => {
   form.value = Object.assign({}, scope.row, {
@@ -124,8 +147,7 @@ const loadInfo = (scope: any) => {
     content: emptyContent(),
   })
   relationRows.value = []
-  pendingDatasetId.value = null
-  pendingDataset.value = null
+  resetPendingDatasets()
   cacheDatasets(scope.row.datasets)
   return DataThemeApi.info(scope.row.id).then((result: any) => {
     const info = ApiUtil.data(result)
@@ -150,8 +172,7 @@ const handleAdd = () => {
     content: emptyContent(),
   }
   relationRows.value = []
-  pendingDatasetId.value = null
-  pendingDataset.value = null
+  resetPendingDatasets()
   formVisible.value = true
 }
 const handleShow = (scope: any) => {
@@ -162,21 +183,78 @@ const handleEdit = (scope: any) => {
   loadInfo(scope).catch(() => {})
   formVisible.value = true
 }
-const handleAddDataset = () => {
-  const dataset = pendingDataset.value
-  if (!dataset) {
-    ElMessage.warning('请先检索并选择一个数据集')
+const appendDatasets = (datasets: any[]) => {
+  const selectedIds = new Set(form.value.content.datasetIds.map(Number))
+  const addedDatasets: any[] = []
+  for (const dataset of datasets.filter((item: any) => item?.id)) {
+    const id = Number(dataset.id)
+    if (!id || selectedIds.has(id)) continue
+    selectedIds.add(id)
+    addedDatasets.push(dataset)
+  }
+  cacheDatasets(addedDatasets)
+  form.value.content.datasetIds.push(...addedDatasets.map((dataset: any) => Number(dataset.id)))
+  return { added: addedDatasets.length, skipped: datasets.length - addedDatasets.length }
+}
+const handleAddDatasets = () => {
+  const datasets = (pendingDatasets.value || []).filter((dataset: any) => dataset?.id)
+  if (!datasets.length) {
+    ElMessage.warning('请先检索并选择数据集')
     return
   }
-  const id = Number(dataset.id)
-  if (form.value.content.datasetIds.includes(id)) {
-    ElMessage.warning('该数据集已添加')
+  const result = appendDatasets(datasets)
+  const { added, skipped } = result
+  if (!added) {
+    ElMessage.warning('选中的数据集均已添加')
     return
   }
-  cacheDatasets([dataset])
-  form.value.content.datasetIds.push(id)
-  pendingDatasetId.value = null
-  pendingDataset.value = null
+  ElMessage.success('已添加 ' + added + ' 个数据集' + (skipped ? '，跳过 ' + skipped + ' 个已添加项' : ''))
+  resetPendingDatasets()
+}
+const parseDatasetNames = () => {
+  return Array.from(new Set(datasetNamesText.value
+    .split(/[\s,，;；、]+/u)
+    .map((name: string) => name.trim())
+    .filter((name: string) => name)))
+}
+const previewNames = (names: string[]) => {
+  const preview = names.slice(0, 6).join('、')
+  return names.length > 6 ? preview + ' 等 ' + names.length + ' 项' : preview
+}
+const handleAddDatasetsByNames = async () => {
+  if (datasetNamesLoading.value) return
+  const names = parseDatasetNames()
+  if (!names.length) {
+    ElMessage.warning('请输入需要添加的数据集名称')
+    return
+  }
+  datasetNamesLoading.value = true
+  try {
+    const result = await DatasetApi.byNames(names, { success: false, warning: false, error: false })
+    const datasets = (ApiUtil.data(result) || []).filter((dataset: any) => dataset?.id)
+    const foundNames = new Set(datasets.map((dataset: any) => String(dataset.name)))
+    const missingNames = names.filter((name: string) => !foundNames.has(name))
+    const inactiveDatasets = datasets.filter((dataset: any) => Number(dataset.status) !== 1)
+    const activeDatasets = datasets.filter((dataset: any) => Number(dataset.status) === 1)
+    const { added, skipped } = appendDatasets(activeDatasets)
+    const inactiveNames = inactiveDatasets.map((dataset: any) => String(dataset.name))
+    datasetNamesText.value = missingNames.concat(inactiveNames).join('\n')
+    const details: string[] = []
+    if (skipped) details.push('跳过已添加 ' + skipped + ' 个')
+    if (missingNames.length) details.push('未找到：' + previewNames(missingNames))
+    if (inactiveNames.length) details.push('已停用：' + previewNames(inactiveNames))
+    const message = (added ? '已添加 ' + added + ' 个数据集' : '未添加数据集')
+      + (details.length ? '；' + details.join('；') : '')
+    if (added && !missingNames.length && !inactiveNames.length) {
+      ElMessage.success(message)
+    } else {
+      ElMessage.warning(message)
+    }
+  } catch {
+    ElMessage.error('批量解析数据集失败，请稍后重试')
+  } finally {
+    datasetNamesLoading.value = false
+  }
 }
 const handleRemoveDataset = (datasetId: any) => {
   const id = Number(datasetId)
@@ -444,16 +522,33 @@ const handleDelete = () => {
         </el-descriptions-item>
       </el-descriptions>
 
-      <layout-heading title="数据集" description="通过下拉检索数据集并添加到主题中">
-        <template #extra>
-          <el-space>
-            <form-select v-model="pendingDatasetId" v-model:selected="pendingDataset" :callback="DatasetApi.list"
-                         placeholder="输入名称检索数据集" class="dataset-search" />
-            <el-button type="primary" @click="handleAddDataset">添加</el-button>
-          </el-space>
-        </template>
-      </layout-heading>
-      <el-empty v-if="!form.content.datasetIds.length" description="暂无数据集" />
+      <layout-heading title="数据集" description="添加数据集后，可继续配置字段与外键关联" />
+      <div class="dataset-add-panel">
+        <div class="dataset-add-header">
+          <el-segmented v-model="datasetAddMode" :options="datasetAddModes" size="small" />
+          <el-tag type="info" effect="plain" round>
+            已添加 {{ form.content.datasetIds.length }} 个
+          </el-tag>
+        </div>
+        <div v-if="datasetAddMode === 'select'" class="dataset-add-select-row">
+          <form-select v-model="pendingDatasetIds" v-model:selected="pendingDatasets" :callback="datasetOptions"
+                       multiple clearable placeholder="输入名称检索并选择多个数据集" class="dataset-add-select" />
+          <el-button type="primary" @click="handleAddDatasets">添加所选</el-button>
+        </div>
+        <div v-else class="dataset-add-names">
+          <el-input v-model="datasetNamesText" type="textarea" :autosize="{ minRows: 3, maxRows: 6 }"
+                    placeholder="粘贴数据集名称，例如：order_detail, user_info；region_dim"
+                    @keydown.ctrl.enter.prevent="handleAddDatasetsByNames" />
+          <div class="dataset-add-names-footer">
+            <span>支持空格、逗号、分号或换行分隔，快捷键 Ctrl + Enter</span>
+            <el-button type="primary" :loading="datasetNamesLoading" @click="handleAddDatasetsByNames">
+              批量添加
+            </el-button>
+          </div>
+        </div>
+      </div>
+      <el-empty v-if="!form.content.datasetIds.length" :image-size="56"
+                description="尚未添加数据集，请从上方选择或粘贴名称" />
       <el-table v-else :data="selectedDatasets" :row-key="(record: any) => record.id" :border="true" table-layout="auto" class="mb-15">
         <el-table-column type="expand">
           <template #default="scope">
@@ -489,7 +584,7 @@ const handleDelete = () => {
           <el-button text @click="handleAddRelation">添加关联</el-button>
         </template>
       </layout-heading>
-      <el-empty v-if="!relationRows.length" description="暂无字段关联" />
+      <el-empty v-if="!relationRows.length" :image-size="56" description="暂无字段关联" />
       <el-table v-else :data="relationRows" :border="true" table-layout="auto">
         <el-table-column label="源数据集" min-width="140">
           <template #default="scope">
@@ -542,7 +637,36 @@ const handleDelete = () => {
 .el-descriptions {
   margin-bottom: 15px;
 }
-.dataset-search {
-  width: 320px;
+.dataset-add-panel {
+  padding: 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  background: var(--el-fill-color-lighter);
+}
+.dataset-add-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.dataset-add-select-row {
+  display: flex;
+  gap: 8px;
+}
+.dataset-add-select {
+  flex: 1;
+  min-width: 0;
+}
+.dataset-add-names-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>

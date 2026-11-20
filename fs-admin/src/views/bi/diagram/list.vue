@@ -135,7 +135,7 @@ const handleDelete = () => {
       <el-table-column label="操作">
         <template #default="scope">
           <el-button link @click="handleModel(scope)" v-permit="'bi:diagram:'">设计</el-button>
-          <el-button link @click="handleRun(scope)" v-permit="'bi:diagram:add'">运行</el-button>
+          <el-button link @click="handleRun(scope)" v-permit="'bi:diagram:run'">运行</el-button>
           <el-button link @click="handleMonitor(scope)" v-permit="'bi:diagram:'">作业</el-button>
         </template>
       </el-table-column>

@@ -1,6 +1,7 @@
 package com.iisquare.fs.app.spark;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.app.spark.core.SparkRunner;
 import com.iisquare.fs.base.core.util.DPUtil;
 import com.iisquare.fs.base.dag.DAGCore;
@@ -14,7 +15,28 @@ import java.util.Map;
 public class SparkApplication {
 
     public static void main(String... args) throws Exception {
-        JsonNode diagram = DAGUtil.loadDiagram(args[0]);
+        execute(args[0], null);
+    }
+
+    /**
+     * 本地调试执行，默认限制 200 行；limit=0 表示不限制。
+     */
+    public static void debug(String uri) throws Exception {
+        debug(uri, 200);
+    }
+
+    /**
+     * 本地调试执行；limit=0 表示不限制，正数最大限制 1000 行。
+     */
+    public static void debug(String uri, int limit) throws Exception {
+        execute(uri, Math.max(0, limit));
+    }
+
+    private static void execute(String uri, Integer debugLimit) throws Exception {
+        JsonNode diagram = DAGUtil.loadDiagram(uri);
+        if (null != debugLimit && diagram instanceof ObjectNode root) {
+            root.put("debugLimit", debugLimit);
+        }
         Map<String, Class<? extends DAGNode<?>>> nodes = DAGUtil.scanNodes(
                 SparkApplication.class.getPackage().getName() + ".node",
                 SparkApplication.class.getPackage().getName() + ".batch",

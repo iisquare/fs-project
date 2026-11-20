@@ -61,6 +61,8 @@ public class DAGService extends ServiceBase {
     @Autowired
     AlarmService alarmService;
     @Autowired
+    JarCatalogService jarCatalogService;
+    @Autowired
     DefaultRbacService rbacService;
     @Autowired
     SparkRpc sparkRpc;
@@ -70,6 +72,8 @@ public class DAGService extends ServiceBase {
     KGRpc kgRpc;
     @Value("${fs.bi.debug.preview-limit:20}")
     int debugPreviewLimit;
+    @Value("${fs.bi.jar.debug-expire:21600000}")
+    int jarDebugExpire;
 
     private static final Pattern SAFE_NAME = Pattern.compile("^[A-Za-z][A-Za-z0-9_]*$");
     private static final int MAX_TABLE_ROWS = 1000;
@@ -141,6 +145,8 @@ public class DAGService extends ServiceBase {
         if (!DPUtil.empty(datasourceError)) return ApiUtil.result(1003, datasourceError, id);
         String ontologyError = resolveOntologies(executionFrame);
         if (!DPUtil.empty(ontologyError)) return ApiUtil.result(1003, ontologyError, id);
+        String jarError = resolveJars(executionFrame, jarDebugExpire);
+        if (!DPUtil.empty(jarError)) return ApiUtil.result(1003, jarError, id);
         int uid = null == request ? 0 : rbacUid(request);
         Job job = jobService.create(diagram, null, Job.TRIGGER_DEBUG, frame.at("/data"), frame, uid);
         Map<String, Object> result = submit(diagram.getEngine(), executionFrame);
@@ -158,6 +164,20 @@ public class DAGService extends ServiceBase {
         }
         result.put("job", job.getId());
         return result;
+    }
+
+    /**
+     * 返回已展开数据源的执行配置。
+     * 控制器只会在开发/测试环境通过本机回环地址暴露该结果。
+     */
+    public Map<String, Object> executionDiagram(Integer id) {
+        ObjectNode frame = diagram(id, DPUtil.objectNode());
+        if (null == frame) return ApiUtil.result(404, "编排流程不存在或已禁用", id);
+        String datasourceError = resolveDatasources(frame);
+        if (!DPUtil.empty(datasourceError)) return ApiUtil.result(1003, datasourceError, id);
+        String ontologyError = resolveOntologies(frame);
+        if (!DPUtil.empty(ontologyError)) return ApiUtil.result(1003, ontologyError, id);
+        return ApiUtil.result(0, null, frame);
     }
 
     /**
@@ -638,6 +658,35 @@ public class DAGService extends ServiceBase {
         return null;
     }
 
+    /**
+     * 调试执行时按 jarId 重新签发临时文件地址，只改写本次执行的临时 frame。
+     * 未配置 jarId 的节点继续保留原 jarURI，以兼容本地 classpath 和外部地址。
+     */
+    String resolveJars(ObjectNode frame, int expire) {
+        JsonNode nodes = frame.get("nodes");
+        if (null == nodes || !nodes.isArray()) return null;
+        Map<String, String> urls = new HashMap<>();
+        for (JsonNode item : nodes) {
+            if (!item.isObject() || !"Jar".equals(item.at("/type").asText())) continue;
+            JsonNode optionsNode = item.get("options");
+            if (null == optionsNode || !optionsNode.isObject()) continue;
+            ObjectNode options = (ObjectNode) optionsNode;
+            String jarId = DPUtil.trim(options.at("/jarId").asText(""));
+            if (DPUtil.empty(jarId)) continue;
+            String url = urls.get(jarId);
+            if (null == url) {
+                url = jarCatalogService.temporaryUrl(jarId, expire);
+                urls.put(jarId, null == url ? "" : url);
+            }
+            if (DPUtil.empty(url)) {
+                String name = item.at("/name").asText(item.at("/id").asText("未命名节点"));
+                return String.format("节点“%s”引用的 JAR 不存在、已删除或无法生成临时授权链接", name);
+            }
+            options.put("jarURI", url);
+        }
+        return null;
+    }
+
     private String applyDatasource(ObjectNode options, String nodeType, Datasource datasource) {
         JsonNode config = DPUtil.parseJSON(datasource.getContent());
         if (null == config || !config.isObject()) {
@@ -1066,7 +1115,7 @@ public class DAGService extends ServiceBase {
                 jars.addAll((ArrayNode) sub.at("/jars"));
                 continue;
             }
-            if ("ScriptTransform".equals(type)) {
+            if ("Jar".equals(type)) {
                 String jar = options.at("/jarURI").asText();
                 if (!DPUtil.empty(jar)) jars.add(jar);
             }

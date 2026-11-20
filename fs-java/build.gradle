@@ -79,7 +79,7 @@ subprojects {
         testAnnotationProcessor group: 'org.projectlombok', name: 'lombok', version: lombokVersion
     }
 
-    task jars(type: Copy) { // 导出模块所有的运行时依赖
+    task jars(type: Sync) { // 同步运行时依赖，同时清理已排除或升级后残留的JAR
         from configurations.runtimeClasspath
         into 'build/opt' // 目标依赖位置
     }

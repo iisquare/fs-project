@@ -1,4 +1,5 @@
 import elasticsearch from './elasticsearch.svg?raw'
+import excel from './excel.svg?raw'
 import schedule from './schedule.svg?raw'
 import database from './database.svg?raw'
 import rabbitmq from './rabbitmq.svg?raw'
@@ -10,6 +11,7 @@ import postgresql from './postgresql.svg?raw'
 
 export default {
   elasticsearch,
+  excel,
   schedule,
   database,
   rabbitmq,

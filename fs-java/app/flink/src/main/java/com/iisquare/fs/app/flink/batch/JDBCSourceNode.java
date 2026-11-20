@@ -36,6 +36,10 @@ public class JDBCSourceNode extends AbstractJDBCSource<DataStream<Row>> {
     public DataStream<Row> process() {
         String url = options.at("/url").asText();
         String sql = options.at("/sql").asText();
+        int debugLimit = Math.max(0, Math.min(options.at("/debugLimit").asInt(0), 1000));
+        if (debugLimit > 0) {
+            sql = "SELECT * FROM (" + sql + ") fs_debug_source LIMIT " + debugLimit;
+        }
         String driver = DAGCore.jdbcDriver(options.at("/driver").asText());
         String username = options.at("/username").asText();
         String password = options.at("/password").asText();

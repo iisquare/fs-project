@@ -12,6 +12,7 @@ import TableUtil from '@/utils/TableUtil';
 import RoleApi from '@/api/member/RoleApi';
 import DataSchemaTable from '@/components/Data/DataSchemaTable.vue';
 import DataFieldSelect from '@/components/Data/DataFieldSelect.vue';
+import DatasetBatchCreate from '@/views/bi/components/DatasetBatchCreate.vue';
 
 const route = useRoute()
 const router = useRouter()
@@ -65,6 +66,7 @@ onMounted(() => {
 })
 const infoVisible = ref(false)
 const formVisible = ref(false)
+const batchVisible = ref(false)
 const formLoading = ref(false)
 const triggerLoading = ref<any>(null)
 const fieldsLoading = ref(false)
@@ -200,6 +202,7 @@ const handleUpdateFields = () => {
     <div class="fs-table-toolbar flex-between">
       <el-space>
         <button-add v-permit="'bi:dataset:add'" @click="handleAdd" />
+        <el-button type="primary" plain v-permit="'bi:dataset:add'" @click="batchVisible = true">批量创建</el-button>
         <button-delete v-permit="'bi:dataset:delete'" :disabled="selection.length === 0" @click="handleDelete" />
       </el-space>
       <el-space>
@@ -342,6 +345,7 @@ const handleUpdateFields = () => {
       </el-tab-pane>
     </el-tabs>
   </el-drawer>
+  <DatasetBatchCreate v-model="batchVisible" @refresh="handleRefresh(false, true)" />
 </template>
 
 <style lang="scss" scoped>

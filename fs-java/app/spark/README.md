@@ -97,11 +97,54 @@ config.setJars(new String[]{ "http://path/to/app.jar" });
 SparkSession session = SparkSession.builder().config(config).getOrCreate();
 ```
 
+### Excel 数据源
+
+Excel 读取由 `ExcelUtil` 基于 Apache POI 实现，不再依赖 `spark-excel`。首版支持
+xls/xlsx、指定工作表、表头、基础类型推断、公式计算值和空行过滤。
+
+代码中读取：
+
+```java
+Dataset<Row> dataset = ExcelUtil.read(
+        session,
+        "/data/input.xlsx",
+        "'Sheet1'!",
+        true
+);
+```
+
+编排节点 `ExcelSource` 的常用配置：
+
+```json
+{
+  "path": "file:///data/input.xlsx",
+  "dataAddress": "'Sheet1'!",
+  "header": true,
+  "headerRow": 0,
+  "limit": 1000,
+  "maxRows": 100000,
+  "maxColumns": 1024,
+  "maxBytes": 104857600
+}
+```
+
+Excel 会先由 Driver 读取，再创建 Dataset，适用于配置导入、调试和中小规模数据。
+当前不处理合并单元格、加密文件、复杂公式和超大工作簿；超大文件应优先转换为
+Parquet/CSV 后再进入 Spark。
+
+可指定类运行读取测试：
+
+```
+gradle :app:spark:test -PrunSparkTests \
+  --tests com.iisquare.fs.app.spark.util.ExcelUtilTests
+```
+
 ### 插件开发
 
-- ScriptTransformNode的jarURI在本地开发时通过JarClassLoader加载，线上直接通过CLI提交文件后清除jarURI值。
-- 在app中调试plugins需要配置对应的jarURI路径；在plugins中调试app则无需配置当前jarURI路径，plugins即为app。
-- JarClassLoader会优先加载同一个Jar文件下的父类，请勿将主依赖打包进插件中，否则isAssignableFrom校验不通过。
+- 在 `ext:spark` 本地调试时无需构建 JAR：清空 `jarURI` 并填写完整 `pkgClass`，节点会从当前进程 classpath 加载。
+- 正式运行时应配置可被计算节点访问的 `jarURI`，由 `JarClassLoader` 加载插件。
+- `JarClassLoader` 使用标准双亲委派；不要将框架主依赖重复打包进插件，否则可能因类型来自不同 Class 实例而导致校验失败。
+- 本地调试可使用 `SparkApplication.debug(uri)`，默认限制数据源读取 200 行；`SparkApplication.debug(uri, 0)` 表示不限制。
 
 ## 参考
 - [Spark远程调用的几个坑](https://www.cnblogs.com/hanko/p/14086667.html)

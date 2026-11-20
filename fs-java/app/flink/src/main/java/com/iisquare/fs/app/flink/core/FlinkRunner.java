@@ -1,11 +1,14 @@
 package com.iisquare.fs.app.flink.core;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iisquare.fs.base.dag.core.DAGNode;
 import com.iisquare.fs.base.dag.core.DAGRunner;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,6 +21,7 @@ import java.util.Map;
  */
 public class FlinkRunner extends DAGRunner {
 
+    private static final List<String> LIMIT_SOURCES = Arrays.asList("JDBCSource", "Jar");
     private final StreamExecutionEnvironment environment;
     private StreamTableEnvironment tableEnvironment;
 
@@ -42,6 +46,32 @@ public class FlinkRunner extends DAGRunner {
 
     public boolean isBatch() {
         return "batch".equals(diagram.at("/model").asText(""));
+    }
+
+    public int debugLimit() {
+        int defaultLimit = isDebug() ? 20 : 0;
+        int limit = diagram.at("/debugLimit").asInt(defaultLimit);
+        return Math.max(0, Math.min(limit, 1000));
+    }
+
+    @Override
+    public com.iisquare.fs.base.dag.core.DAGExecution execute() {
+        if ((isDebug() || diagram.has("debugLimit")) && diagram instanceof ObjectNode root) {
+            JsonNode nodes = root.get("nodes");
+            if (null != nodes && nodes.isArray()) {
+                int limit = debugLimit();
+                for (JsonNode item : nodes) {
+                    if (!item.isObject() || !LIMIT_SOURCES.contains(item.at("/type").asText())) continue;
+                    ObjectNode options = ((ObjectNode) item).withObject("options");
+                    if (limit > 0) {
+                        options.put("debugLimit", limit);
+                    } else {
+                        options.remove("debugLimit");
+                    }
+                }
+            }
+        }
+        return super.execute();
     }
 
 }
